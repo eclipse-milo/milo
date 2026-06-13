@@ -87,7 +87,7 @@ import org.jspecify.annotations.Nullable;
  * is resolved for the group's mapping name (see {@link #resolveDeltaCapable}).
  *
  * <p>The baseline tracks the last TRANSMITTED values (§5.3.3), not merely the last drafted ones:
- * when {@link WriterGroupRuntime#publishPartition} fails to put a NetworkMessage on the wire
+ * when {@code WriterGroupRuntime#publishPartition} fails to put a NetworkMessage on the wire
  * (encode failure, oversize skip, send failure), it calls {@link #invalidateDeltaBaseline()} for
  * the writers whose data DataSetMessages the message carried, and the next data draft is a key
  * frame — otherwise the next delta would diff against values the subscriber never received and a
@@ -101,7 +101,7 @@ import org.jspecify.annotations.Nullable;
  * transmits no data (an honest failure with per-cycle diagnostics) instead of emitting deltas
  * against a baseline that can never be transmitted — though it still emits keep-alives when the
  * group has a keepAliveTime, because {@code lastSentNanos} only advances when a message is actually
- * handed to the transport channel (see {@link #lastSentNanos()} and {@link
+ * handed to the transport channel (see {@link #lastSentNanos()} and {@code
  * WriterGroupRuntime#publishPartition}).
  *
  * <p>The DataSetMessage sequence counter (§7.2.3) wraps at the wire DataType maximum of the group's
@@ -352,7 +352,7 @@ final class DataSetWriterRuntime extends AbstractComponentRuntime {
 
   /**
    * Mark the delta baseline as not reflecting what subscribers received, forcing the next data
-   * draft to be a key frame: called by {@link WriterGroupRuntime#publishPartition} when a
+   * draft to be a key frame: called by {@code WriterGroupRuntime#publishPartition} when a
    * NetworkMessage carrying this writer's data DataSetMessage was not transmitted (encode failure,
    * oversize skip, send failure). The §5.3.3 baseline is the last TRANSMITTED per-field values;
    * without this, the next delta would diff against values no subscriber ever saw. Safe to call
@@ -429,7 +429,7 @@ final class DataSetWriterRuntime extends AbstractComponentRuntime {
    * delta frame of the changed fields, or {@code null} when this is a no-change delta cycle and
    * nothing is sent (Part 14 §6.2.4.3). A suppressed cycle consumes no sequence number, and {@code
    * lastSentNanos} is never advanced here — only when an encoded NetworkMessage carrying the draft
-   * is actually handed to the transport channel ({@link WriterGroupRuntime#publishPartition}) — so
+   * is actually handed to the transport channel ({@code WriterGroupRuntime#publishPartition}) — so
    * the keep-alive emission of §6.2.6.3 remains reachable for suppressed cycles and for drafts that
    * die before transmission (oversize skip, encode failure, synchronous send failure). Publish task
    * thread only.

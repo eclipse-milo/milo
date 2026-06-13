@@ -159,12 +159,7 @@ class JsonEngineEndToEndTest {
     public SubscriberChannel openSubscriber(SubscriberTransportContext context) {
       topicConsumer.set(context.topicMessageConsumer());
       consumer.set(context.messageConsumer());
-      return new SubscriberChannel() {
-        @Override
-        public CompletableFuture<Void> closeAsync() {
-          return CompletableFuture.completedFuture(null);
-        }
-      };
+      return () -> CompletableFuture.completedFuture(null);
     }
 
     /** Deliver one wire document the way a broker subscription would. */

@@ -314,7 +314,7 @@ final class ConfigToDataTypeMapper {
 
     String path = parentPath + " dataSetWriter '%s'".formatted(writer.getName());
 
-    @Nullable DataSetWriterTransportDataType transportSettings;
+    DataSetWriterTransportDataType transportSettings;
     ExtensionObject rawTransport = writer.getRawTransportSettings();
     BrokerTransportSettings brokerTransport = writer.getBrokerTransport();
     if (rawTransport != null) {
@@ -378,14 +378,14 @@ final class ConfigToDataTypeMapper {
 
     String path = parentPath + " readerGroup '%s'".formatted(group.getName());
 
-    @Nullable ReaderGroupTransportDataType transportSettings = null;
+    ReaderGroupTransportDataType transportSettings = null;
     ExtensionObject rawTransport = group.getRawTransportSettings();
     if (rawTransport != null) {
       transportSettings =
           decodeRaw(rawTransport, ReaderGroupTransportDataType.class, encodingContext, path);
     }
 
-    @Nullable ReaderGroupMessageDataType messageSettings = null;
+    ReaderGroupMessageDataType messageSettings = null;
     ExtensionObject rawMessage = group.getRawMessageSettings();
     if (rawMessage != null) {
       messageSettings =
@@ -417,7 +417,7 @@ final class ConfigToDataTypeMapper {
 
     String path = parentPath + " dataSetReader '%s'".formatted(reader.getName());
 
-    @Nullable DataSetReaderTransportDataType transportSettings;
+    DataSetReaderTransportDataType transportSettings;
     ExtensionObject rawTransport = reader.getRawTransportSettings();
     BrokerTransportSettings brokerTransport = reader.getBrokerTransport();
     if (rawTransport != null) {

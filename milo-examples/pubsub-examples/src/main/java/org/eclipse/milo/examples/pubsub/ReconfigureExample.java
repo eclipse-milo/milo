@@ -21,6 +21,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.DataSetReaderRef;
 import org.eclipse.milo.opcua.sdk.pubsub.DataSetReceivedEvent;
 import org.eclipse.milo.opcua.sdk.pubsub.DataSetSnapshot;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubBindings;
+import org.eclipse.milo.opcua.sdk.pubsub.PubSubDiagnostics;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubService;
 import org.eclipse.milo.opcua.sdk.pubsub.PublishedDataSetReadContext;
 import org.eclipse.milo.opcua.sdk.pubsub.ReconfigureResult;
@@ -192,7 +193,7 @@ public class ReconfigureExample {
         publisher
             .diagnostics()
             .component("pub-conn/group/writer")
-            .map(diagnostics -> diagnostics.dataSetMessagesSent())
+            .map(PubSubDiagnostics.ComponentDiagnostics::dataSetMessagesSent)
             .orElse(0L);
 
     // Stop the publisher before tallying so the summary is the last thing logged.
@@ -204,7 +205,7 @@ public class ReconfigureExample {
         subscriber
             .diagnostics()
             .component("sub-conn/readers/reader")
-            .map(diagnostics -> diagnostics.dataSetMessagesReceived())
+            .map(PubSubDiagnostics.ComponentDiagnostics::dataSetMessagesReceived)
             .orElse(0L);
 
     subscriber.shutdown().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);

@@ -65,7 +65,6 @@ import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
-import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -345,7 +344,7 @@ class MqttJsonEndToEndTest {
             .build();
 
     var values =
-        new AtomicReference<Map<String, DataValue>>(
+        new AtomicReference<>(
             Map.of(
                 "temperature", new DataValue(Variant.ofDouble(21.5)),
                 "status", new DataValue(Variant.ofString("running"))));
@@ -401,7 +400,7 @@ class MqttJsonEndToEndTest {
   private static MetaDataReceivedEvent awaitMetaData(
       LinkedBlockingQueue<MetaDataReceivedEvent> events) throws InterruptedException {
 
-    @Nullable MetaDataReceivedEvent event = events.poll(TIMEOUT.toNanos(), TimeUnit.NANOSECONDS);
+    MetaDataReceivedEvent event = events.poll(TIMEOUT.toNanos(), TimeUnit.NANOSECONDS);
     if (event == null) {
       fail("timed out waiting for a MetaDataReceivedEvent");
     }

@@ -256,7 +256,7 @@ final class ReaderDispatcher {
     Set<ReaderGroupRuntime> oversizeGroups = Set.of();
 
     for (ReaderGroupRuntime group : connection.readerGroupRuntimes()) {
-      if (!isReceiving(group.state())) {
+      if (isNotReceiving(group.state())) {
         continue;
       }
       long maxNetworkMessageSize = group.config().getMaxNetworkMessageSize().longValue();
@@ -297,7 +297,7 @@ final class ReaderDispatcher {
         if (!reader.mappingName().equals(mappingName)) {
           continue;
         }
-        if (!isReceiving(reader.state())) {
+        if (isNotReceiving(reader.state())) {
           continue;
         }
 
@@ -378,7 +378,7 @@ final class ReaderDispatcher {
         if (!reader.mappingName().equals(mappingName)) {
           continue;
         }
-        if (!isReceiving(reader.state())) {
+        if (isNotReceiving(reader.state())) {
           continue;
         }
 
@@ -694,10 +694,10 @@ final class ReaderDispatcher {
     return reader.configuredMetaData();
   }
 
-  private static boolean isReceiving(PubSubState state) {
-    return state == PubSubState.PreOperational
-        || state == PubSubState.Operational
-        || state == PubSubState.Error;
+  private static boolean isNotReceiving(PubSubState state) {
+    return state != PubSubState.PreOperational
+        && state != PubSubState.Operational
+        && state != PubSubState.Error;
   }
 
   private static boolean matchesNetworkMessage(
@@ -725,11 +725,9 @@ final class ReaderDispatcher {
         return false;
       }
 
-      if (settings.getNetworkMessageNumber().intValue() != 0
-          && decoded.networkMessageNumber() != null
-          && !settings.getNetworkMessageNumber().equals(decoded.networkMessageNumber())) {
-        return false;
-      }
+      return settings.getNetworkMessageNumber().intValue() == 0
+          || decoded.networkMessageNumber() == null
+          || settings.getNetworkMessageNumber().equals(decoded.networkMessageNumber());
     }
 
     return true;

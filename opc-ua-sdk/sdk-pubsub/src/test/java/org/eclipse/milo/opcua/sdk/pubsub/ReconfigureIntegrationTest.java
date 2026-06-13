@@ -139,9 +139,7 @@ class ReconfigureIntegrationTest {
     int port = freeUdpPort();
     int discoveryPort = freeUdpPort();
 
-    var valuesA =
-        new AtomicReference<Map<String, DataValue>>(
-            Map.of("value-a", new DataValue(Variant.ofInt32(1))));
+    var valuesA = new AtomicReference<>(Map.of("value-a", new DataValue(Variant.ofInt32(1))));
 
     PubSubService publisher =
         track(
@@ -195,9 +193,7 @@ class ReconfigureIntegrationTest {
     awaitEvent(eventsA, event -> true);
 
     // the new writer's events arrive once its source is bound
-    var valuesB =
-        new AtomicReference<Map<String, DataValue>>(
-            Map.of("value-b", new DataValue(Variant.ofInt32(7))));
+    var valuesB = new AtomicReference<>(Map.of("value-b", new DataValue(Variant.ofInt32(7))));
     publisher.bindSource(new PublishedDataSetRef("ds-b"), mapSource(valuesB));
 
     DataSetReceivedEvent eventB =
@@ -215,9 +211,7 @@ class ReconfigureIntegrationTest {
     int port = freeUdpPort();
     int discoveryPort = freeUdpPort();
 
-    var valuesA =
-        new AtomicReference<Map<String, DataValue>>(
-            Map.of("value-a", new DataValue(Variant.ofInt32(3))));
+    var valuesA = new AtomicReference<>(Map.of("value-a", new DataValue(Variant.ofInt32(3))));
 
     PubSubService publisher =
         track(

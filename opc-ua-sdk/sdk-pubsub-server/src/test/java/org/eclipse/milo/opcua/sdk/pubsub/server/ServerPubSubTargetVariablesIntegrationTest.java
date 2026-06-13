@@ -167,7 +167,7 @@ class ServerPubSubTargetVariablesIntegrationTest {
     DateTime sourceTime = DateTime.now();
 
     var values =
-        new AtomicReference<Map<String, DataValue>>(
+        new AtomicReference<>(
             Map.of(
                 "temperature",
                     new DataValue(Variant.ofDouble(21.5), StatusCode.GOOD, sourceTime, null),
@@ -244,8 +244,7 @@ class ServerPubSubTargetVariablesIntegrationTest {
 
     var badValue = new DataValue(Variant.ofNull(), new StatusCode(StatusCodes.Bad_DeviceFailure));
 
-    var values =
-        new AtomicReference<Map<String, DataValue>>(Map.of("ov", badValue, "dis", badValue));
+    var values = new AtomicReference<>(Map.of("ov", badValue, "dis", badValue));
 
     TargetVariablesConfig targetVariables =
         TargetVariablesConfig.builder()
@@ -299,7 +298,7 @@ class ServerPubSubTargetVariablesIntegrationTest {
     var badValue = new DataValue(Variant.ofNull(), new StatusCode(StatusCodes.Bad_DeviceFailure));
 
     var values =
-        new AtomicReference<Map<String, DataValue>>(
+        new AtomicReference<>(
             Map.of("lu", new DataValue(Variant.ofDouble(5.5)), "never", badValue));
 
     TargetVariablesConfig targetVariables =
@@ -358,9 +357,7 @@ class ServerPubSubTargetVariablesIntegrationTest {
         testServer.addVariable(
             "TV4_Override", NodeIds.Double, new DataValue(Variant.ofDouble(0.0)));
 
-    var values =
-        new AtomicReference<Map<String, DataValue>>(
-            Map.of("sv", new DataValue(Variant.ofDouble(1.5))));
+    var values = new AtomicReference<>(Map.of("sv", new DataValue(Variant.ofDouble(1.5))));
 
     TargetVariablesConfig targetVariables =
         TargetVariablesConfig.builder()
@@ -456,9 +453,7 @@ class ServerPubSubTargetVariablesIntegrationTest {
         testServer.addVariable(
             "TV5_Writable", NodeIds.Double, new DataValue(Variant.ofDouble(0.0)));
 
-    var values =
-        new AtomicReference<Map<String, DataValue>>(
-            Map.of("v", new DataValue(Variant.ofDouble(1.5))));
+    var values = new AtomicReference<>(Map.of("v", new DataValue(Variant.ofDouble(1.5))));
 
     TargetVariablesConfig targetVariables =
         TargetVariablesConfig.builder()

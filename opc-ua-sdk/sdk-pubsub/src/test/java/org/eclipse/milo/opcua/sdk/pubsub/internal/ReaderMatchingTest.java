@@ -152,12 +152,7 @@ class ReaderMatchingTest {
     @Override
     public SubscriberChannel openSubscriber(SubscriberTransportContext context) {
       consumer.set(context.messageConsumer());
-      return new SubscriberChannel() {
-        @Override
-        public CompletableFuture<Void> closeAsync() {
-          return CompletableFuture.completedFuture(null);
-        }
-      };
+      return () -> CompletableFuture.completedFuture(null);
     }
 
     void inject(byte[] datagram) {

@@ -314,13 +314,11 @@ class MqttUadpEndToEndTest {
             .build();
 
     var valuesA =
-        new AtomicReference<Map<String, DataValue>>(
+        new AtomicReference<>(
             Map.of(
                 "temperature", new DataValue(Variant.ofDouble(21.5)),
                 "status", new DataValue(Variant.ofString("running"))));
-    var valuesB =
-        new AtomicReference<Map<String, DataValue>>(
-            Map.of("counter", new DataValue(Variant.ofInt32(42))));
+    var valuesB = new AtomicReference<>(Map.of("counter", new DataValue(Variant.ofInt32(42))));
 
     track(
             PubSubService.create(
@@ -489,7 +487,7 @@ class MqttUadpEndToEndTest {
             .build();
 
     var values =
-        new AtomicReference<Map<String, DataValue>>(
+        new AtomicReference<>(
             Map.of(
                 "temperature", new DataValue(Variant.ofDouble(21.5)),
                 "status", new DataValue(Variant.ofString("running"))));

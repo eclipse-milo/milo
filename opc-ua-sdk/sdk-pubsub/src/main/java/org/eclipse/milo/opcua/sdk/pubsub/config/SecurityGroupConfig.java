@@ -304,7 +304,7 @@ public final class SecurityGroupConfig {
      * @throws PubSubConfigValidationException if the configured values are invalid.
      */
     public SecurityGroupConfig build() {
-      if (name == null || name.isEmpty()) {
+      if (name.isEmpty()) {
         throw new PubSubConfigValidationException("SecurityGroupConfig: name must be non-empty");
       }
       if (keyLifeTime.isNegative()) {

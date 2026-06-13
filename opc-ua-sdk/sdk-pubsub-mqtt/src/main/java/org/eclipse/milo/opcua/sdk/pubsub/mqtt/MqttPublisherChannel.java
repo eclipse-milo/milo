@@ -19,7 +19,6 @@ import org.eclipse.milo.opcua.sdk.pubsub.transport.MessageAddress;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.PublisherChannel;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,7 +72,7 @@ final class MqttPublisherChannel implements PublisherChannel {
           new UaException(StatusCodes.Bad_InvalidState, "the MQTT publisher channel is closed"));
     }
 
-    @Nullable String topic = address.queueName();
+    String topic = address.queueName();
     if (topic == null) {
       return CompletableFuture.failedFuture(
           new UaException(StatusCodes.Bad_ConfigurationError, "message address has no queue name"));

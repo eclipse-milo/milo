@@ -160,12 +160,7 @@ class AddressedSendEngineTest {
 
     @Override
     public SubscriberChannel openSubscriber(SubscriberTransportContext context) {
-      return new SubscriberChannel() {
-        @Override
-        public CompletableFuture<Void> closeAsync() {
-          return CompletableFuture.completedFuture(null);
-        }
-      };
+      return () -> CompletableFuture.completedFuture(null);
     }
   }
 
@@ -283,7 +278,7 @@ class AddressedSendEngineTest {
     assertEquals(MessageAddress.CONTENT_TYPE_UADP, address.contentTypeHint());
 
     // UDP connections have no MetaDataPublisher: collect a few more cycles, everything is DATA
-    var collected = new ArrayList<Sent>(List.of(first));
+    var collected = new ArrayList<>(List.of(first));
     long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(500);
     while (System.nanoTime() < deadline) {
       Sent next = transport.sent.poll(50, TimeUnit.MILLISECONDS);

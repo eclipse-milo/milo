@@ -141,9 +141,12 @@ final class JsonNetworkMessageEncoder {
               new OutputStreamWriter(new ByteBufOutputStream(buffer), StandardCharsets.UTF_8))) {
         writer.setHtmlSafe(false);
 
-        var structEncoder = new OpcUaJsonEncoder(context.encodingContext());
-        structEncoder.setEncoding(OpcUaJsonEncoder.Encoding.COMPACT);
-        structEncoder.encodeStruct(null, metaData, DataSetMetaDataType.TYPE_ID);
+        String metaDataJson;
+        try (var structEncoder = new OpcUaJsonEncoder(context.encodingContext())) {
+          structEncoder.setEncoding(OpcUaJsonEncoder.Encoding.COMPACT);
+          structEncoder.encodeStruct(null, metaData, DataSetMetaDataType.TYPE_ID);
+          metaDataJson = structEncoder.getOutputString();
+        }
 
         writer.beginObject();
         writer.name("MessageId").value(UUID.randomUUID().toString());
@@ -153,7 +156,7 @@ final class JsonNetworkMessageEncoder {
         writer.name("WriterGroupName").value(context.writerGroup().getName());
         writer.name("DataSetWriterName").value(context.writer().getName());
         writer.name("Timestamp").jsonValue(isoTimestamp(context, DateTime.now()));
-        writer.name("MetaData").jsonValue(structEncoder.getOutputString());
+        writer.name("MetaData").jsonValue(metaDataJson);
         writer.endObject();
       }
 
@@ -169,6 +172,7 @@ final class JsonNetworkMessageEncoder {
   }
 
   private static String isoTimestamp(MetaDataEncodeContext context, DateTime timestamp) {
+    @SuppressWarnings("resource")
     var encoder = new OpcUaJsonEncoder(context.encodingContext());
     encoder.encodeDateTime(null, timestamp);
     return encoder.getOutputString();

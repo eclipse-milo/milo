@@ -91,7 +91,7 @@ final class MqttTlsSupport {
             StatusCodes.Bad_ConfigurationError,
             "clientCertificate and clientKey must both be configured for mutual TLS");
       }
-      if (clientCertificate != null && clientKey != null) {
+      if (clientCertificate != null) {
         builder = builder.keyManagerFactory(keyManagerFactory(clientCertificate, clientKey));
       }
     }

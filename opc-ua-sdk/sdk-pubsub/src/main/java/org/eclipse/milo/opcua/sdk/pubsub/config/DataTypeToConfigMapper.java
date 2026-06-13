@@ -34,7 +34,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
@@ -137,38 +136,30 @@ final class DataTypeToConfigMapper {
     SecurityGroupDataType[] securityGroupDataTypes = value.getSecurityGroups();
     if (securityGroupDataTypes != null) {
       for (SecurityGroupDataType securityGroup : securityGroupDataTypes) {
-        if (securityGroup != null) {
-          SecurityGroupConfig config = mapSecurityGroup(securityGroup);
-          securityGroups.add(config);
-          builder.securityGroup(config);
-        }
+        SecurityGroupConfig config = mapSecurityGroup(securityGroup);
+        securityGroups.add(config);
+        builder.securityGroup(config);
       }
     }
 
     PublishedDataSetDataType[] publishedDataSets = value.getPublishedDataSets();
     if (publishedDataSets != null) {
       for (PublishedDataSetDataType publishedDataSet : publishedDataSets) {
-        if (publishedDataSet != null) {
-          builder.publishedDataSet(mapPublishedDataSet(publishedDataSet));
-        }
+        builder.publishedDataSet(mapPublishedDataSet(publishedDataSet));
       }
     }
 
     StandaloneSubscribedDataSetDataType[] subscribedDataSets = value.getSubscribedDataSets();
     if (subscribedDataSets != null) {
       for (StandaloneSubscribedDataSetDataType subscribedDataSet : subscribedDataSets) {
-        if (subscribedDataSet != null) {
-          builder.standaloneSubscribedDataSet(mapStandaloneSubscribedDataSet(subscribedDataSet));
-        }
+        builder.standaloneSubscribedDataSet(mapStandaloneSubscribedDataSet(subscribedDataSet));
       }
     }
 
     PubSubConnectionDataType[] connections = value.getConnections();
     if (connections != null) {
       for (PubSubConnectionDataType connection : connections) {
-        if (connection != null) {
-          builder.connection(mapConnection(connection));
-        }
+        builder.connection(mapConnection(connection));
       }
     }
 
@@ -249,18 +240,14 @@ final class DataTypeToConfigMapper {
     WriterGroupDataType[] writerGroups = connection.getWriterGroups();
     if (writerGroups != null) {
       for (WriterGroupDataType writerGroup : writerGroups) {
-        if (writerGroup != null) {
-          builder.writerGroup(mapWriterGroup(writerGroup, path));
-        }
+        builder.writerGroup(mapWriterGroup(writerGroup, path));
       }
     }
 
     ReaderGroupDataType[] readerGroups = connection.getReaderGroups();
     if (readerGroups != null) {
       for (ReaderGroupDataType readerGroup : readerGroups) {
-        if (readerGroup != null) {
-          builder.readerGroup(mapReaderGroup(readerGroup, path));
-        }
+        builder.readerGroup(mapReaderGroup(readerGroup, path));
       }
     }
 
@@ -326,18 +313,14 @@ final class DataTypeToConfigMapper {
     WriterGroupDataType[] writerGroups = connection.getWriterGroups();
     if (writerGroups != null) {
       for (WriterGroupDataType writerGroup : writerGroups) {
-        if (writerGroup != null) {
-          builder.writerGroup(mapWriterGroup(writerGroup, path));
-        }
+        builder.writerGroup(mapWriterGroup(writerGroup, path));
       }
     }
 
     ReaderGroupDataType[] readerGroups = connection.getReaderGroups();
     if (readerGroups != null) {
       for (ReaderGroupDataType readerGroup : readerGroups) {
-        if (readerGroup != null) {
-          builder.readerGroup(mapReaderGroup(readerGroup, path));
-        }
+        builder.readerGroup(mapReaderGroup(readerGroup, path));
       }
     }
 
@@ -468,9 +451,7 @@ final class DataTypeToConfigMapper {
     DataSetWriterDataType[] dataSetWriters = group.getDataSetWriters();
     if (dataSetWriters != null) {
       for (DataSetWriterDataType writer : dataSetWriters) {
-        if (writer != null) {
-          builder.dataSetWriter(mapDataSetWriter(writer, path));
-        }
+        builder.dataSetWriter(mapDataSetWriter(writer, path));
       }
     }
 
@@ -602,9 +583,7 @@ final class DataTypeToConfigMapper {
     DataSetReaderDataType[] dataSetReaders = group.getDataSetReaders();
     if (dataSetReaders != null) {
       for (DataSetReaderDataType reader : dataSetReaders) {
-        if (reader != null) {
-          builder.dataSetReader(mapDataSetReader(reader, path));
-        }
+        builder.dataSetReader(mapDataSetReader(reader, path));
       }
     }
 
@@ -745,10 +724,6 @@ final class DataTypeToConfigMapper {
     TargetVariablesConfig.Builder builder = TargetVariablesConfig.builder();
 
     for (FieldTargetDataType target : targets) {
-      if (target == null) {
-        continue;
-      }
-
       UUID dataSetFieldId = target.getDataSetFieldId();
       if (dataSetFieldId == null) {
         throw new PubSubConfigValidationException(
@@ -828,9 +803,6 @@ final class DataTypeToConfigMapper {
 
     for (int i = 0; i < fields.length; i++) {
       FieldMetaData fieldMetaData = fields[i];
-      if (fieldMetaData == null) {
-        continue;
-      }
       PublishedVariableDataType variable = i < publishedData.length ? publishedData[i] : null;
       builder.field(mapFieldDefinition(fieldMetaData, variable, path));
     }
@@ -928,9 +900,6 @@ final class DataTypeToConfigMapper {
     FieldMetaData[] fields = metaData.getFields();
     if (fields != null) {
       for (FieldMetaData field : fields) {
-        if (field == null) {
-          continue;
-        }
         String fieldName = requireName(field.getName(), path + " metadata field");
         NodeId dataTypeId =
             field.getDataType() != null ? field.getDataType() : NodeIds.BaseDataType;
@@ -1035,7 +1004,7 @@ final class DataTypeToConfigMapper {
       builder.securityGroup(resolveSecurityGroupRef(securityGroupId));
     }
     if (!servicesAbsent) {
-      builder.keyServices(Arrays.stream(keyServices).filter(Objects::nonNull).toList());
+      builder.keyServices(Arrays.stream(keyServices).toList());
     }
     return builder.build();
   }

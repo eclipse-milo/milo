@@ -150,13 +150,11 @@ class UdpLoopbackIntegrationTest {
     int port = freeUdpPort();
 
     var valuesA =
-        new AtomicReference<Map<String, DataValue>>(
+        new AtomicReference<>(
             Map.of(
                 "temperature", new DataValue(Variant.ofDouble(21.5)),
                 "status", new DataValue(Variant.ofString("running"))));
-    var valuesB =
-        new AtomicReference<Map<String, DataValue>>(
-            Map.of("counter", new DataValue(Variant.ofInt32(42))));
+    var valuesB = new AtomicReference<>(Map.of("counter", new DataValue(Variant.ofInt32(42))));
 
     PubSubBindings publisherBindings =
         PubSubBindings.builder()
@@ -305,13 +303,11 @@ class UdpLoopbackIntegrationTest {
     int port = freeUdpPort();
 
     var valuesA =
-        new AtomicReference<Map<String, DataValue>>(
+        new AtomicReference<>(
             Map.of(
                 "temperature", new DataValue(Variant.ofDouble(1.0)),
                 "status", new DataValue(Variant.ofString("ok"))));
-    var valuesB =
-        new AtomicReference<Map<String, DataValue>>(
-            Map.of("counter", new DataValue(Variant.ofInt32(1))));
+    var valuesB = new AtomicReference<>(Map.of("counter", new DataValue(Variant.ofInt32(1))));
 
     // ds-b is published with ConfigurationVersion major 2, but reader-b's configured metadata
     // expects major 1: every message for reader-b must be dropped and counted
@@ -370,13 +366,11 @@ class UdpLoopbackIntegrationTest {
     int port = freeUdpPort();
 
     var valuesA =
-        new AtomicReference<Map<String, DataValue>>(
+        new AtomicReference<>(
             Map.of(
                 "temperature", new DataValue(Variant.ofDouble(2.0)),
                 "status", new DataValue(Variant.ofString("ok"))));
-    var valuesB =
-        new AtomicReference<Map<String, DataValue>>(
-            Map.of("counter", new DataValue(Variant.ofInt32(2))));
+    var valuesB = new AtomicReference<>(Map.of("counter", new DataValue(Variant.ofInt32(2))));
 
     PubSubService publisher =
         track(
@@ -466,9 +460,7 @@ class UdpLoopbackIntegrationTest {
                     .build())
             .build();
 
-    var values =
-        new AtomicReference<Map<String, DataValue>>(
-            Map.of("value", new DataValue(Variant.ofInt32(0))));
+    var values = new AtomicReference<>(Map.of("value", new DataValue(Variant.ofInt32(0))));
 
     PubSubService service =
         track(
@@ -565,9 +557,7 @@ class UdpLoopbackIntegrationTest {
                     .build())
             .build();
 
-    var values =
-        new AtomicReference<Map<String, DataValue>>(
-            Map.of("counter", new DataValue(Variant.ofInt32(5))));
+    var values = new AtomicReference<>(Map.of("counter", new DataValue(Variant.ofInt32(5))));
 
     PubSubService publisher =
         track(
@@ -606,7 +596,7 @@ class UdpLoopbackIntegrationTest {
     Arrays.fill(blob, (byte) 0x5A);
 
     var values =
-        new AtomicReference<Map<String, DataValue>>(
+        new AtomicReference<>(
             Map.of("blob", new DataValue(Variant.ofByteString(ByteString.of(blob)))));
 
     PubSubService publisher =
@@ -651,7 +641,7 @@ class UdpLoopbackIntegrationTest {
     Arrays.fill(resumedBlob, (byte) 0x03);
 
     var values =
-        new AtomicReference<Map<String, DataValue>>(
+        new AtomicReference<>(
             Map.of("blob", new DataValue(Variant.ofByteString(ByteString.of(initialBlob)))));
 
     PubSubService publisher =
@@ -705,7 +695,7 @@ class UdpLoopbackIntegrationTest {
     int port = freeUdpPort();
 
     var values =
-        new AtomicReference<Map<String, DataValue>>(
+        new AtomicReference<>(
             Map.of("blob", new DataValue(Variant.ofByteString(ByteString.of(new byte[16])))));
 
     PubSubService service =
@@ -726,7 +716,7 @@ class UdpLoopbackIntegrationTest {
     int port = freeUdpPort();
 
     var values =
-        new AtomicReference<Map<String, DataValue>>(
+        new AtomicReference<>(
             Map.of("blob", new DataValue(Variant.ofByteString(ByteString.of(new byte[16])))));
 
     PubSubService service =
@@ -793,7 +783,7 @@ class UdpLoopbackIntegrationTest {
     int discoveryPort = freeUdpPort(); // reused so only maxNetworkMessageSize differs
 
     var values =
-        new AtomicReference<Map<String, DataValue>>(
+        new AtomicReference<>(
             Map.of("blob", new DataValue(Variant.ofByteString(ByteString.of(new byte[16])))));
 
     PubSubService service =

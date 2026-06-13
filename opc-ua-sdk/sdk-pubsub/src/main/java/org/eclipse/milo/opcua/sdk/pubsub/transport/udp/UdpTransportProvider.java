@@ -23,7 +23,6 @@ import org.eclipse.milo.opcua.sdk.pubsub.transport.SubscriberTransportContext;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.TransportProvider;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.jspecify.annotations.Nullable;
 
 /**
  * The built-in {@link TransportProvider} for the {@code
@@ -91,12 +90,12 @@ public final class UdpTransportProvider implements TransportProvider {
    */
   static NetworkInterface resolveNetworkInterface(String nameOrAddress) throws UaException {
     try {
-      @Nullable NetworkInterface byName = NetworkInterface.getByName(nameOrAddress);
+      NetworkInterface byName = NetworkInterface.getByName(nameOrAddress);
       if (byName != null) {
         return byName;
       }
 
-      @Nullable NetworkInterface byAddress =
+      NetworkInterface byAddress =
           NetworkInterface.getByInetAddress(InetAddress.getByName(nameOrAddress));
       if (byAddress != null) {
         return byAddress;

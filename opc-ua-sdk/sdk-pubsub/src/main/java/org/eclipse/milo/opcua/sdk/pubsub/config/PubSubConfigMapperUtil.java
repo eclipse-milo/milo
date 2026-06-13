@@ -14,11 +14,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
@@ -110,7 +106,7 @@ final class PubSubConfigMapperUtil {
     Map<QualifiedName, Variant> properties = new LinkedHashMap<>();
     if (pairs != null) {
       for (KeyValuePair pair : pairs) {
-        if (pair == null || pair.getKey() == null) {
+        if (pair.getKey() == null) {
           continue;
         }
         Variant value = pair.getValue();
@@ -125,13 +121,11 @@ final class PubSubConfigMapperUtil {
    * well-known builtin DataTypes, otherwise ExtensionObject (22).
    */
   static UByte deriveBuiltInType(NodeId dataTypeId) {
-    OpcUaDataType dataType = OpcUaDataType.fromNodeId(dataTypeId);
+    OpcUaDataType dataType =
+        Objects.requireNonNullElse(
+            OpcUaDataType.fromNodeId(dataTypeId), OpcUaDataType.ExtensionObject);
 
-    if (dataType != null) {
-      return ubyte(dataType.getTypeId());
-    } else {
-      return ubyte(OpcUaDataType.ExtensionObject.getTypeId());
-    }
+    return ubyte(dataType.getTypeId());
   }
 
   /**

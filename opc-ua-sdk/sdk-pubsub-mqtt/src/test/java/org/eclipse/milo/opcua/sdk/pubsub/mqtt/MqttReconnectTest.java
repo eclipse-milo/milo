@@ -174,8 +174,7 @@ class MqttReconnectTest {
             .build();
 
     var values =
-        new AtomicReference<Map<String, DataValue>>(
-            Map.of("temperature", new DataValue(Variant.ofDouble(21.5))));
+        new AtomicReference<>(Map.of("temperature", new DataValue(Variant.ofDouble(21.5))));
 
     PubSubService publisher =
         track(

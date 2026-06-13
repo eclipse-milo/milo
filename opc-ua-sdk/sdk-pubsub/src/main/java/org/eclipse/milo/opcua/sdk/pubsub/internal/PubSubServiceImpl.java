@@ -1188,7 +1188,7 @@ public final class PubSubServiceImpl implements PubSubService {
 
           // a broker reader subscribes its configured data queue; the Part 14 §7.3.4.7.3 topic
           // derivation needs the publisher's WriterGroup name, which the reader does not know
-          if (broker && !hasDataQueueName(reader)) {
+          if (broker && lacksDataQueueName(reader)) {
             throw new UaException(
                 StatusCodes.Bad_ConfigurationError,
                 "dataset reader '%s/%s' on broker connection '%s' requires a data queueName"
@@ -1290,7 +1290,7 @@ public final class PubSubServiceImpl implements PubSubService {
                 "no MessageMappingProvider for mapping '%s' (dataset reader '%s/%s')"
                     .formatted(mappingName, groupPath, reader.getName()));
           }
-          if (broker && !hasDataQueueName(reader)) {
+          if (broker && lacksDataQueueName(reader)) {
             throw new UaRuntimeException(
                 StatusCodes.Bad_ConfigurationError,
                 "dataset reader '%s/%s' on broker connection '%s' requires a data queueName"
@@ -1435,11 +1435,9 @@ public final class PubSubServiceImpl implements PubSubService {
     return group.getDataSetWriters().stream().filter(DataSetWriterConfig::isEnabled).toList();
   }
 
-  private static boolean hasDataQueueName(DataSetReaderConfig reader) {
+  private static boolean lacksDataQueueName(DataSetReaderConfig reader) {
     BrokerTransportSettings settings = reader.getBrokerTransport();
-    return settings != null
-        && settings.getQueueName() != null
-        && !settings.getQueueName().isEmpty();
+    return settings == null || settings.getQueueName() == null || settings.getQueueName().isEmpty();
   }
 
   private static void checkMessageSecurity(@Nullable MessageSecurityConfig security, String path)

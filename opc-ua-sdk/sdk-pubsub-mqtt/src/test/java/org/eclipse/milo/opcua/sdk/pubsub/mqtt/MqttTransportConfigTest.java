@@ -445,9 +445,7 @@ class MqttTransportConfigTest {
                     .build())
             .build();
 
-    var values =
-        new AtomicReference<Map<String, DataValue>>(
-            Map.of("value", new DataValue(Variant.ofInt32(1))));
+    var values = new AtomicReference<>(Map.of("value", new DataValue(Variant.ofInt32(1))));
 
     PubSubService service =
         track(

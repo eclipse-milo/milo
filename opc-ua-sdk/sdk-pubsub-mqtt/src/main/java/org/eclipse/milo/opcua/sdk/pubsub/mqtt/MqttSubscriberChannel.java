@@ -30,7 +30,6 @@ import org.eclipse.milo.opcua.sdk.pubsub.mqtt.MqttClientSession.SubscriptionEntr
 import org.eclipse.milo.opcua.sdk.pubsub.transport.BrokerQualityOfService;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.SubscriberChannel;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.SubscriberTransportContext;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -141,7 +140,7 @@ final class MqttSubscriberChannel implements SubscriberChannel {
   }
 
   private BiConsumer<String, byte[]> deliveryConsumer(SubscriberTransportContext context) {
-    @Nullable BiConsumer<String, ByteBuf> topicMessageConsumer = context.topicMessageConsumer();
+    BiConsumer<String, ByteBuf> topicMessageConsumer = context.topicMessageConsumer();
     Consumer<ByteBuf> messageConsumer = context.messageConsumer();
 
     return (topic, payload) -> {

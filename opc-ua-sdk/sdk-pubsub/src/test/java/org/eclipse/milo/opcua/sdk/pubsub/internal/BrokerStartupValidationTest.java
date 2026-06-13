@@ -145,12 +145,7 @@ class BrokerStartupValidationTest {
 
     @Override
     public SubscriberChannel openSubscriber(SubscriberTransportContext context) {
-      return new SubscriberChannel() {
-        @Override
-        public CompletableFuture<Void> closeAsync() {
-          return CompletableFuture.completedFuture(null);
-        }
-      };
+      return () -> CompletableFuture.completedFuture(null);
     }
   }
 
