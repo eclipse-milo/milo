@@ -197,7 +197,9 @@ final class JsonFieldEncoder {
       writeDateTime(writer, sourceTime);
     }
     UShort sourcePicoseconds = value.sourcePicoseconds();
-    if (fieldMask.getSourcePicoSeconds()
+    // §6.2.4.2 Table 32: SourcePicoSeconds is ignored unless SourceTimestamp is also set
+    if (fieldMask.getSourceTimestamp()
+        && fieldMask.getSourcePicoSeconds()
         && sourcePicoseconds != null
         && sourcePicoseconds.intValue() > 0) {
       writer.name("SourcePicoseconds").value(sourcePicoseconds.intValue());
@@ -209,7 +211,9 @@ final class JsonFieldEncoder {
       writeDateTime(writer, serverTime);
     }
     UShort serverPicoseconds = value.serverPicoseconds();
-    if (fieldMask.getServerPicoSeconds()
+    // §6.2.4.2 Table 32: ServerPicoSeconds is ignored unless ServerTimestamp is also set
+    if (fieldMask.getServerTimestamp()
+        && fieldMask.getServerPicoSeconds()
         && serverPicoseconds != null
         && serverPicoseconds.intValue() > 0) {
       writer.name("ServerPicoseconds").value(serverPicoseconds.intValue());

@@ -195,6 +195,34 @@ class JsonFieldEncodingTest {
     assertEquals(Set.of("Value", "SourceTimestamp"), sourceOnly.keySet());
   }
 
+  /**
+   * §6.2.4.2 Table 32: SourcePicoSeconds and ServerPicoSeconds are ignored unless their parent
+   * timestamp bit is also set — even when the value carries them and a picosecond bit alone selects
+   * the DataValue representation.
+   */
+  @Test
+  void picosecondsRequireTheirParentTimestamp() throws Exception {
+    DateTime sourceTime = new DateTime(Instant.parse("2026-06-11T10:00:00Z"));
+    DateTime serverTime = new DateTime(Instant.parse("2026-06-11T10:00:01Z"));
+    var value =
+        new DataValue(
+            Variant.of(2.5), StatusCode.GOOD, sourceTime, ushort(100), serverTime, ushort(200));
+
+    JsonObject encoded =
+        encodeField(
+                VERBOSE_MASK,
+                DataSetFieldContentMask.of(
+                    DataSetFieldContentMask.Field.SourcePicoSeconds,
+                    DataSetFieldContentMask.Field.ServerPicoSeconds),
+                field("Speed", 11, NodeIds.Double, -1),
+                value)
+            .getAsJsonObject();
+
+    // the picosecond bits select the DataValue representation, but with neither parent timestamp
+    // masked in the picoseconds members must be absent
+    assertEquals(Set.of("Value"), encoded.keySet());
+  }
+
   /** Good status, null timestamps, and zero picoseconds are omitted as defaults. */
   @Test
   void dataValueRepresentationOmitsDefaults() throws Exception {
