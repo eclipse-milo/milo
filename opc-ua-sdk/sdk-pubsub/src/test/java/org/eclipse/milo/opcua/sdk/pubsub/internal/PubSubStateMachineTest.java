@@ -606,9 +606,9 @@ class PubSubStateMachineTest {
             .build();
 
     var draft =
-        new DataSetMessageDraft(
+        DataSetMessageDraft.of(
             writer,
-            ushort(0),
+            uint(0),
             null,
             null,
             new ConfigurationVersionDataType(uint(0), uint(0)),
@@ -633,9 +633,9 @@ class PubSubStateMachineTest {
             .build();
 
     var draft =
-        new DataSetMessageDraft(
+        DataSetMessageDraft.of(
             writer,
-            ushort(0),
+            uint(0),
             null,
             null,
             new ConfigurationVersionDataType(uint(0), uint(0)),

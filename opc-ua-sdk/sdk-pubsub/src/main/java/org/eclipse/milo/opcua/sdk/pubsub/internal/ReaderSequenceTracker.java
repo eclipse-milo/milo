@@ -42,14 +42,36 @@ import org.slf4j.LoggerFactory;
  * SequenceNumber." The check is lazy, per stream, on access: a record whose last <em>received</em>
  * observation — an accepted message or a keep-alive, both received messages in §7.2.3's sense — is
  * older than the discard period is reset before use, so the next message re-seeds the stream. A
- * keep-alive refreshes the discard clock without moving the window position, so a keep-alive-only
- * period of any length keeps the record alive. Rejected (stale/invalid) observations deliberately
- * do not refresh the discard clock — a publisher that restarts its numbering without a silent gap
- * would otherwise keep its own stream wedged forever; with the accept-clock it recovers after the
- * discard period. When the reader's messageReceiveTimeout is 0 (disabled) there is no time-based
- * discard. In both modes the maps are bounded at {@value #MAX_TRACKED_STREAMS} streams each,
- * evicting the least recently used stream (with a once-per-tracker WARN), purely as protection
- * against rogue traffic fabricating stream identities.
+ * consistent keep-alive refreshes the discard clock without moving the window position, so a
+ * keep-alive-only period of any length keeps the record alive; an INCONSISTENT keep-alive — one
+ * whose carried next-expected value classifies STALE or INVALID against the current window —
+ * reseeds the window to {@code carried - 1} (with a WARN naming the reader and the stream, once per
+ * occurrence): the keep-alive "provides the next expected sequence number for the DataSetWriter"
+ * (§7.2.4.5.8), so the publisher is authoritative about its own counter and a restarted publisher
+ * that emits keep-alives recovers its stream immediately, in both timeout modes. The trade-off is a
+ * reordered stale keep-alive causing a transient backward reseed that self-heals within a few
+ * messages (the next data message classifies invalid and drops, then the next current keep-alive
+ * reseeds forward); the WARN makes it visible. Rejected (stale/invalid) data observations
+ * deliberately do not refresh the discard clock — a publisher that restarts its numbering without a
+ * silent gap and without keep-alives would otherwise keep its own stream wedged forever; with the
+ * accept-clock it recovers after the discard period.
+ *
+ * <p>Restart recovery when the timeout is disabled: when the reader's messageReceiveTimeout is 0
+ * there is no time-based discard ({@code discardNanos == 0}), and §7.2.3's recovery rule is
+ * undefined — a restarted publisher's stream that carries no keep-alives would stay wedged forever.
+ * As a documented Milo extension, after {@value #RESTART_REJECTION_THRESHOLD} consecutive
+ * STALE/INVALID classifications on one stream with no intervening accepted message or keep-alive
+ * observation, the stream's record is discarded (with a WARN naming the reader and the stream) so
+ * the next message accepts and re-seeds the window. The heuristic is INERT whenever a time-based
+ * discard is armed ({@code discardNanos > 0}): there the pure spec semantics stand — rejects keep
+ * dropping for as long as the record lives, and only the two-times-timeout silence (or an
+ * inconsistent keep-alive) discards or reseeds it — so the replay-rejection posture a later
+ * security phase builds on this window (signature verification followed by the same recency check)
+ * is not weakened on deployments with a configured timeout.
+ *
+ * <p>In both modes the maps are bounded at {@value #MAX_TRACKED_STREAMS} streams each, evicting the
+ * least recently used stream (with a once-per-tracker WARN), purely as protection against rogue
+ * traffic fabricating stream identities.
  *
  * <p>Threading: dispatch is serialized per connection, so all observations happen on one thread at
  * a time; instances are reset by replacement through a volatile field on {@link
@@ -60,6 +82,13 @@ final class ReaderSequenceTracker {
 
   /** Bound on tracked streams per window kind; the least recently used stream is evicted. */
   static final int MAX_TRACKED_STREAMS = 4096;
+
+  /**
+   * Consecutive STALE/INVALID classifications on one stream — with no intervening accept or
+   * keep-alive — after which the stream's record is discarded so a restarted publisher recovers.
+   * Applies only when no time-based discard is armed ({@code discardNanos == 0}).
+   */
+  static final int RESTART_REJECTION_THRESHOLD = 16;
 
   /** NetworkMessage sequence numbers are UInt16 in the UADP mapping (§7.2.4.4.2 Table 154). */
   private static final int NETWORK_MESSAGE_BIT_WIDTH = 16;
@@ -96,7 +125,8 @@ final class ReaderSequenceTracker {
 
   /**
    * Classify a NetworkMessage sequence number against its (PublisherId, WriterGroupId) stream
-   * window without advancing it.
+   * window without advancing it. A rejected classification counts toward the restart-recovery
+   * heuristic (see class Javadoc).
    */
   SequenceNumberWindow.Classification classifyNetworkMessage(
       @Nullable PublisherId publisherId,
@@ -104,12 +134,13 @@ final class ReaderSequenceTracker {
       UShort sequenceNumber,
       long nowNanos) {
 
-    return window(
-            networkMessageWindows,
-            key(publisherId, writerGroupId),
-            NETWORK_MESSAGE_BIT_WIDTH,
-            nowNanos)
-        .classify(sequenceNumber.longValue());
+    return classify(
+        networkMessageWindows,
+        key(publisherId, writerGroupId),
+        NETWORK_MESSAGE_BIT_WIDTH,
+        sequenceNumber.longValue(),
+        nowNanos,
+        "NetworkMessage");
   }
 
   /**
@@ -134,7 +165,8 @@ final class ReaderSequenceTracker {
 
   /**
    * Classify a DataSetMessage sequence number against its (PublisherId, DataSetWriterId) stream
-   * window without advancing it.
+   * window without advancing it. A rejected classification counts toward the restart-recovery
+   * heuristic (see class Javadoc).
    */
   SequenceNumberWindow.Classification classifyDataSetMessage(
       @Nullable PublisherId publisherId,
@@ -142,12 +174,51 @@ final class ReaderSequenceTracker {
       UInteger sequenceNumber,
       long nowNanos) {
 
-    return window(
-            dataSetMessageWindows,
-            key(publisherId, dataSetWriterId),
-            dataSetMessageBitWidth,
-            nowNanos)
-        .classify(sequenceNumber.longValue());
+    return classify(
+        dataSetMessageWindows,
+        key(publisherId, dataSetWriterId),
+        dataSetMessageBitWidth,
+        sequenceNumber.longValue(),
+        nowNanos,
+        "DataSetMessage");
+  }
+
+  /**
+   * Classify {@code received} against the stream's window, recording rejections and applying the
+   * restart-recovery discard when no time-based discard is armed: after {@value
+   * #RESTART_REJECTION_THRESHOLD} consecutive rejections the record is forgotten (WARN, once per
+   * occurrence), so the message after the one that tripped the threshold accepts and re-seeds.
+   */
+  private SequenceNumberWindow.Classification classify(
+      Map<StreamKey, SequenceNumberWindow> windows,
+      StreamKey key,
+      int bitWidth,
+      long received,
+      long nowNanos,
+      String windowKind) {
+
+    SequenceNumberWindow window = window(windows, key, bitWidth, nowNanos);
+    SequenceNumberWindow.Classification classification = window.classify(received);
+
+    if (classification != SequenceNumberWindow.Classification.NEW
+        && window.recordRejection() >= RESTART_REJECTION_THRESHOLD
+        && discardNanos == 0) {
+      // with messageReceiveTimeout disabled there is no §7.2.3 time-based discard, and a
+      // publisher that restarted its numbering would stay wedged forever; discard the record so
+      // the next message accepts and re-seeds (documented Milo extension — inert when a
+      // time-based discard is armed, where the spec semantics stand; see class Javadoc)
+      window.reset();
+      LOGGER.warn(
+          "reader {} discarding the {} sequence-number record of stream {} after {} consecutive"
+              + " stale/invalid messages with no messageReceiveTimeout configured; the next"
+              + " message re-seeds the stream (restarted publisher?)",
+          readerPath,
+          windowKind,
+          key,
+          RESTART_REJECTION_THRESHOLD);
+    }
+
+    return classification;
   }
 
   /** Advance the (PublisherId, DataSetWriterId) stream window to an accepted sequence number. */
@@ -170,8 +241,11 @@ final class ReaderSequenceTracker {
   /**
    * Observe a keep-alive carrying the next expected DataSetMessage sequence number (§7.2.4.5.8,
    * §7.2.5.4.1): seeds an unseeded (PublisherId, DataSetWriterId) stream window to {@code
-   * nextExpected - 1}; never advances a seeded window and never counts as stale. Always refreshes
-   * the stream's §7.2.3 record-discard clock: a keep-alive is a received message.
+   * nextExpected - 1}; never advances a seeded window on a consistent carried value and never
+   * counts as stale, but reseeds the window to {@code nextExpected - 1} (WARN, once per occurrence)
+   * when the carried value classifies STALE or INVALID — the publisher is authoritative about its
+   * own counter, so an inconsistent keep-alive means the window is wrong (see class Javadoc).
+   * Always refreshes the stream's §7.2.3 record-discard clock: a keep-alive is a received message.
    */
   void observeKeepAlive(
       @Nullable PublisherId publisherId,
@@ -179,12 +253,23 @@ final class ReaderSequenceTracker {
       UInteger nextExpected,
       long nowNanos) {
 
-    window(
-            dataSetMessageWindows,
-            key(publisherId, dataSetWriterId),
-            dataSetMessageBitWidth,
-            nowNanos)
-        .observeKeepAlive(nextExpected.longValue(), nowNanos);
+    StreamKey key = key(publisherId, dataSetWriterId);
+
+    boolean reseeded =
+        window(dataSetMessageWindows, key, dataSetMessageBitWidth, nowNanos)
+            .observeKeepAlive(nextExpected.longValue(), nowNanos);
+
+    if (reseeded) {
+      LOGGER.warn(
+          "reader {} reseeding the DataSetMessage sequence-number window of stream {} to {} - 1:"
+              + " a keep-alive carried a next expected sequence number inconsistent with the"
+              + " current window, and the publisher is authoritative about its own counter"
+              + " (restarted publisher, or a reordered stale keep-alive that the next current"
+              + " keep-alive heals)",
+          readerPath,
+          key,
+          nextExpected);
+    }
   }
 
   /**

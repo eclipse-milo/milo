@@ -51,7 +51,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.sdk.pubsub.DataSetFieldValue;
@@ -231,10 +230,11 @@ public final class PubSubInteropTool {
             metadata announcement, and state change, plus a diagnostics dump every
             10 seconds. All filters are wildcards unless specified (id 0 = wildcard).
             --receive-timeout <ms> sets the reader's MessageReceiveTimeout (Part 14
-            6.2.9.6): with no DataSetMessage (including keep-alives) for that long the
-            reader transitions to Error (Bad_Timeout), logged as a state change. UDP
-            is connectionless, so this is the only publisher-liveness signal; 0 (the
-            default) disables the watchdog.
+            6.2.9.6): with no accepted DataSetMessage for that long the reader
+            transitions to Error (Bad_Timeout), logged as a state change. Keep-alives
+            reset the window; messages dropped by the Part 14 7.2.3 sequence-number
+            window do not. UDP is connectionless, so this is the only
+            publisher-liveness signal; 0 (the default) disables the watchdog.
 
         raw <address> <port> [--interface <name>]
             No engine: receive raw datagrams, hexdump each packet, attempt a UADP
@@ -285,9 +285,10 @@ public final class PubSubInteropTool {
             generic. Field types: bool|sbyte|byte|int16|uint16|int32|uint32|int64|
             uint64|float|double|string|datetime. --receive-timeout <ms> sets the
             DataSetReader's MessageReceiveTimeout (Part 14 6.2.9.6): if no
-            DataSetMessage (including keep-alives) arrives within that window the
-            reader transitions to Error (Bad_Timeout), logged as a state change;
-            0 (the default) disables the watchdog.
+            DataSetMessage is accepted within that window the reader transitions to
+            Error (Bad_Timeout), logged as a state change; keep-alives reset the
+            window, messages dropped by the Part 14 7.2.3 sequence-number window do
+            not. 0 (the default) disables the watchdog.
 
         mqtt-raw <brokerUri> [--topic <filter>]
             No engine: a plain MQTT 5 client subscribed to --topic (default
@@ -542,9 +543,15 @@ public final class PubSubInteropTool {
       return;
     }
 
+    // Tolerant decode: a non-null failure() means decoding could not complete (truncated,
+    // malformed, or unsupported chunked payload), but everything decoded before the failure
+    // point is still present and printed below.
+    DecodedNetworkMessage.Failure failure = decoded.failure();
+
     log(
-        "UADP decode OK: publisherId=%s writerGroupId=%s groupVersion=%s nmNumber=%s seq=%s"
+        "UADP decode %s: publisherId=%s writerGroupId=%s groupVersion=%s nmNumber=%s seq=%s"
             + " timestamp=%s messages=%d metaData=%d",
+        failure == null ? "OK" : "FAILED (partial)",
         decoded.publisherId() != null ? formatPublisherId(decoded.publisherId()) : "-",
         orDash(decoded.writerGroupId()),
         orDash(decoded.groupVersion()),
@@ -553,6 +560,10 @@ public final class PubSubInteropTool {
         formatTime(decoded.timestamp()),
         decoded.messages().size(),
         decoded.metaData().size());
+
+    if (failure != null) {
+      log("  failure: status=%s %s", formatStatus(failure.statusCode()), failure.message());
+    }
 
     for (DecodedDataSetMessage message : decoded.messages()) {
       log(
@@ -1065,30 +1076,21 @@ public final class PubSubInteropTool {
   }
 
   private static void addDataSetLogging(PubSubService service) {
-    // DataSetReceivedEvent does not expose wire sequence numbers, so keep a local receive count
-    // per publisher/group/writer as the sequence proxy.
-    var receiveCounts = new ConcurrentHashMap<String, AtomicLong>();
-
+    // nmSeq/dsmSeq are the Part 14 7.2.3 sequence numbers as present on the wire: nmSeq comes
+    // from the UADP GroupHeader (absent for JSON and when the GroupHeader is off), dsmSeq from
+    // the DataSetMessage header (absent when the header omits it). "-" means absent.
     service.addDataSetListener(
         event -> {
-          String writerKey =
-              formatPublisherId(event.publisherId())
-                  + "/"
-                  + event.writerGroupId()
-                  + "/"
-                  + event.dataSetWriterId();
-          long rxCount =
-              receiveCounts.computeIfAbsent(writerKey, k -> new AtomicLong()).incrementAndGet();
-
           log(
               "DATA publisherId=%s writerGroupId=%s dataSetWriterId=%s dataSet=%s fields=%d"
-                  + " rxCount=%d",
+                  + " nmSeq=%s dsmSeq=%s",
               formatPublisherId(event.publisherId()),
               event.writerGroupId(),
               event.dataSetWriterId(),
               orDash(event.dataSetName()),
               event.fields().size(),
-              rxCount);
+              orDash(event.networkMessageSequenceNumber()),
+              orDash(event.dataSetMessageSequenceNumber()));
 
           for (DataSetFieldValue field : event.fields()) {
             DataValue value = field.value();

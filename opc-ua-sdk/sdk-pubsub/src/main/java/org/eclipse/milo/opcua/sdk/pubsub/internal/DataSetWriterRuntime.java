@@ -10,8 +10,6 @@
 
 package org.eclipse.milo.opcua.sdk.pubsub.internal;
 
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -34,7 +32,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
@@ -101,8 +98,22 @@ import org.jspecify.annotations.Nullable;
  * drafted (and possibly transmitted) one more delta against the untransmitted baseline, healed by
  * the key frame one cycle later; and a key frame that itself exceeds the group's
  * maxNetworkMessageSize is dropped and re-forced every cycle, so such a misconfigured writer
- * transmits nothing (an honest failure with per-cycle diagnostics) instead of emitting deltas
- * against a baseline that can never be transmitted.
+ * transmits no data (an honest failure with per-cycle diagnostics) instead of emitting deltas
+ * against a baseline that can never be transmitted — though it still emits keep-alives when the
+ * group has a keepAliveTime, because {@code lastSentNanos} only advances when a message is actually
+ * handed to the transport channel (see {@link #lastSentNanos()} and {@link
+ * WriterGroupRuntime#publishPartition}).
+ *
+ * <p>The DataSetMessage sequence counter (§7.2.3) wraps at the wire DataType maximum of the group's
+ * mapping — 2^16 for UADP's UInt16, 2^32 for JSON's UInt32 and for custom mappings (see {@link
+ * DataSetMessageSequenceCounter}). The counter is instance state, so writer recreation —
+ * reconfigure, and the metadata/ConfigurationVersion changes that imply it — restarts the
+ * DataSetMessage sequence at 0; subscribers recover from the apparent backward jump by whichever
+ * comes first: the recreated writer's first keep-alive, whose carried next-expected value reseeds
+ * the subscriber's window in both timeout modes (§7.2.4.5.8 — the publisher is authoritative about
+ * its own counter; requires the group to emit keep-alives), the §7.2.3 two-times-receive-timeout
+ * record discard when a messageReceiveTimeout is configured, or the 16-consecutive-rejection
+ * restart heuristic of {@link ReaderSequenceTracker} when it is not.
  *
  * <p>Draft creation, the DataSetMessage sequence counter, the cadence counter, and the delta
  * baseline are confined to the owning group's publish task thread; the two cross-thread inputs are
@@ -129,8 +140,11 @@ final class DataSetWriterRuntime extends AbstractComponentRuntime {
   /** Whether the configuration can express (and safely carry) a delta frame on the wire. */
   private final boolean deltaCapable;
 
-  /** Only touched by the owning group's publish task. */
-  private int sequenceNumber = 0;
+  /**
+   * Wraps at the wire width of the group's mapping (§7.2.3 Table 152). Only touched by the owning
+   * group's publish task.
+   */
+  private final DataSetMessageSequenceCounter sequenceCounter;
 
   /**
    * Publishing-interval ticks since the last key frame; suppressed and keep-alive cycles advance it
@@ -196,6 +210,13 @@ final class DataSetWriterRuntime extends AbstractComponentRuntime {
     this.keyFrameCount = Math.max(1L, config.getKeyFrameCount().longValue());
     this.deltaCapable =
         resolveDeltaCapable(service.isBuiltinMapping(group.mappingName()), group.config(), config);
+
+    // the §7.2.3 counter wraps at the wire DataType maximum of the group's mapping: UInt16 for
+    // the UADP mapping; UInt32 for JSON and for custom mappings, mirroring the reader-side
+    // window width choice in DataSetReaderRuntime
+    int sequenceNumberBitWidth =
+        PubSubServiceImpl.MAPPING_UADP.equals(group.mappingName()) ? 16 : 32;
+    this.sequenceCounter = new DataSetMessageSequenceCounter(sequenceNumberBitWidth);
   }
 
   /**
@@ -271,10 +292,24 @@ final class DataSetWriterRuntime extends AbstractComponentRuntime {
     return metaData;
   }
 
+  /**
+   * The instant a NetworkMessage carrying one of this writer's DataSetMessages — data or keep-alive
+   * — was last handed to the transport channel, the §6.2.6.3 keep-alive reference. Drafting alone
+   * never advances it: a draft dropped at the size gate (or never encoded, or whose synchronous
+   * send failed) does not count as "sent", so keep-alive emission stays reachable for a writer
+   * whose data never reaches the wire.
+   */
   long lastSentNanos() {
     return lastSentNanos;
   }
 
+  /**
+   * Set the keep-alive reference: called by {@link WriterGroupRuntime} on group activation (engine
+   * thread — activation starts a fresh keep-alive period) and whenever a NetworkMessage carrying
+   * one of this writer's DataSetMessages is handed to the transport channel (publish task thread).
+   * The field is volatile; no further synchronization between the two writers is needed (group
+   * activation and the publish task it schedules are ordered).
+   */
   void resetLastSent(long nanos) {
     lastSentNanos = nanos;
   }
@@ -392,11 +427,14 @@ final class DataSetWriterRuntime extends AbstractComponentRuntime {
   /**
    * Create the data draft for this publish cycle from the current source snapshot: a key frame, a
    * delta frame of the changed fields, or {@code null} when this is a no-change delta cycle and
-   * nothing is sent (Part 14 §6.2.4.3). A suppressed cycle consumes no sequence number and does not
-   * advance {@code lastSentNanos}, so the keep-alive emission of §6.2.6.3 remains reachable.
-   * Publish task thread only.
+   * nothing is sent (Part 14 §6.2.4.3). A suppressed cycle consumes no sequence number, and {@code
+   * lastSentNanos} is never advanced here — only when an encoded NetworkMessage carrying the draft
+   * is actually handed to the transport channel ({@link WriterGroupRuntime#publishPartition}) — so
+   * the keep-alive emission of §6.2.6.3 remains reachable for suppressed cycles and for drafts that
+   * die before transmission (oversize skip, encode failure, synchronous send failure). Publish task
+   * thread only.
    */
-  @Nullable DataSetMessageDraft createDataDraft(DateTime timestamp, long nowNanos) {
+  @Nullable DataSetMessageDraft createDataDraft(DateTime timestamp) {
     long resetGeneration = this.resetGeneration;
     if (resetGeneration != appliedResetGeneration) {
       // a group (re)activation requested a frame-state reset; apply it here on the publish task
@@ -460,14 +498,9 @@ final class DataSetWriterRuntime extends AbstractComponentRuntime {
 
     if (keyFrame) {
       cyclesSinceKeyFrame = 0;
-    }
-
-    lastSentNanos = nowNanos;
-
-    if (keyFrame) {
-      return new DataSetMessageDraft(
+      return DataSetMessageDraft.of(
           config,
-          nextSequenceNumber(),
+          sequenceCounter.next(),
           includeTimestamp() ? timestamp : null,
           includeStatus() ? StatusCode.GOOD : null,
           configurationVersion,
@@ -477,7 +510,7 @@ final class DataSetWriterRuntime extends AbstractComponentRuntime {
     } else {
       return DataSetMessageDraft.ofDeltaFrame(
           config,
-          nextSequenceNumber(),
+          sequenceCounter.next(),
           includeTimestamp() ? timestamp : null,
           includeStatus() ? StatusCode.GOOD : null,
           configurationVersion,
@@ -549,14 +582,15 @@ final class DataSetWriterRuntime extends AbstractComponentRuntime {
 
   /**
    * Create a keep-alive draft. Carries the next expected sequence number without incrementing the
-   * counter, per Part 14 §7.2.3. Publish task thread only.
+   * counter, per Part 14 §7.2.3. Does not advance {@code lastSentNanos}: like data drafts, the
+   * keep-alive counts as "sent" (§6.2.6.3) only when its NetworkMessage is handed to the transport
+   * channel — a keep-alive lost at the size gate or to a synchronous send failure is simply drafted
+   * again on the next cycle. Publish task thread only.
    */
-  DataSetMessageDraft createKeepAliveDraft(DateTime timestamp, long nowNanos) {
-    lastSentNanos = nowNanos;
-
-    return new DataSetMessageDraft(
+  DataSetMessageDraft createKeepAliveDraft(DateTime timestamp) {
+    return DataSetMessageDraft.of(
         config,
-        peekSequenceNumber(),
+        sequenceCounter.peek(),
         includeTimestamp() ? timestamp : null,
         includeStatus() ? StatusCode.GOOD : null,
         configurationVersion,
@@ -628,15 +662,5 @@ final class DataSetWriterRuntime extends AbstractComponentRuntime {
   private boolean includeStatus() {
     return config.getSettings() instanceof UadpDataSetWriterSettings settings
         && settings.getDataSetMessageContentMask().getStatus();
-  }
-
-  private UShort nextSequenceNumber() {
-    int value = sequenceNumber;
-    sequenceNumber = (value + 1) & 0xFFFF;
-    return ushort(value);
-  }
-
-  private UShort peekSequenceNumber() {
-    return ushort(sequenceNumber);
   }
 }

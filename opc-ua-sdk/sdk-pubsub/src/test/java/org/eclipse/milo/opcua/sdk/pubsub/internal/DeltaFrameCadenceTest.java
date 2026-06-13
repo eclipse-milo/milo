@@ -61,11 +61,13 @@ import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
+import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpDataSetMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpNetworkMessageContentMask;
 import org.jspecify.annotations.Nullable;
@@ -87,7 +89,11 @@ import org.junit.jupiter.params.provider.MethodSource;
  * a non-zero ConfiguredSize never emits deltas — fixed-size layouts are key-frame-only (Annex
  * A.2.1.7), and an overflowing DataSetMessage would be valid-bit cleared yet still sent
  * (§6.3.1.3.3), bypassing the not-transmitted invalidation — so one that slips past validation
- * degrades to every-cycle key frames.
+ * degrades to every-cycle key frames. Keep-alive emission tracks actual transmission, not drafting:
+ * a writer whose data is dropped at the size gate every cycle still emits (budget-fitting,
+ * header-only) keep-alives once due, and a writer in {@code PubSubState.Error} emits none at all —
+ * a keep-alive asserts the writer is still active (§6.2.6.3), and would otherwise mask an
+ * activation failure from subscribers.
  *
  * <p>Following the PubSubStateMachineTest publish-cycle pattern: real publish scheduling with short
  * intervals and a stub transport whose sent queue is decoded and classified — assertions are on the
@@ -101,6 +107,7 @@ class DeltaFrameCadenceTest {
 
   private static final UUID COUNTER_FIELD_ID = new UUID(0L, 1L);
   private static final UUID CONSTANT_FIELD_ID = new UUID(0L, 2L);
+  private static final UUID BLOB_FIELD_ID = new UUID(0L, 3L);
 
   private @Nullable PubSubService service;
 
@@ -212,6 +219,68 @@ class DeltaFrameCadenceTest {
             .build();
   }
 
+  /** Three fields, one of variable wire size: counter (Int32), blob (ByteString), constant. */
+  private static PublishedDataSetConfig blobPublishedDataSet() {
+    return PublishedDataSetConfig.builder("PDS")
+        .field(
+            FieldDefinition.builder("counter")
+                .dataType(NodeIds.Int32)
+                .dataSetFieldId(COUNTER_FIELD_ID)
+                .build())
+        .field(
+            FieldDefinition.builder("blob")
+                .dataType(NodeIds.ByteString)
+                .dataSetFieldId(BLOB_FIELD_ID)
+                .build())
+        .field(
+            FieldDefinition.builder("constant")
+                .dataType(NodeIds.Int32)
+                .dataSetFieldId(CONSTANT_FIELD_ID)
+                .build())
+        .build();
+  }
+
+  /** Field 0 changes on every read; field 1 only when {@code blob} is mutated; field 2 never. */
+  private static PublishedDataSetSource blobSource(
+      AtomicInteger counter, AtomicReference<ByteString> blob) {
+
+    return context ->
+        DataSetSnapshot.builder(context)
+            .field("counter", new DataValue(Variant.ofInt32(counter.incrementAndGet())))
+            .field("blob", new DataValue(Variant.ofByteString(blob.get())))
+            .field("constant", new DataValue(Variant.ofInt32(100)))
+            .build();
+  }
+
+  /** The {@link #startPublisher} writer group shape, for tests that bring their own dataset. */
+  private static WriterGroupConfig blobWriterGroup(
+      int keyFrameCount, UInteger maxNetworkMessageSize) {
+
+    return WriterGroupConfig.builder("WG")
+        .writerGroupId(ushort(1))
+        .publishingInterval(Duration.ofMillis(25))
+        .maxNetworkMessageSize(maxNetworkMessageSize)
+        .messageSettings(
+            UadpWriterGroupSettings.builder()
+                .networkMessageContentMask(
+                    // 0x41: PublisherId | PayloadHeader, so frames carry the writer id
+                    new UadpNetworkMessageContentMask(uint(0x41)))
+                .build())
+        .dataSetWriter(
+            DataSetWriterConfig.builder("W1")
+                .dataSet(new PublishedDataSetRef("PDS"))
+                .dataSetWriterId(ushort(1))
+                .keyFrameCount(uint(keyFrameCount))
+                .settings(
+                    UadpDataSetWriterSettings.builder()
+                        .dataSetMessageContentMask(
+                            // 0x20: SequenceNumber
+                            new UadpDataSetMessageContentMask(uint(0x20)))
+                        .build())
+                .build())
+        .build();
+  }
+
   private StubTransport startPublisher(
       int keyFrameCount,
       @Nullable Duration keepAliveTime,
@@ -250,8 +319,6 @@ class DeltaFrameCadenceTest {
       boolean writerEnabled)
       throws Exception {
 
-    var transport = new StubTransport();
-
     WriterGroupConfig.Builder group =
         WriterGroupConfig.builder("WG")
             .writerGroupId(ushort(1))
@@ -281,6 +348,18 @@ class DeltaFrameCadenceTest {
       group.keepAliveTime(keepAliveTime);
     }
 
+    return startPublisher(publishedDataSet(), group.build(), source, discoveryAddress);
+  }
+
+  private StubTransport startPublisher(
+      PublishedDataSetConfig dataSet,
+      WriterGroupConfig group,
+      PublishedDataSetSource source,
+      UdpDatagramAddress discoveryAddress)
+      throws Exception {
+
+    var transport = new StubTransport();
+
     UdpConnectionConfig connection =
         UdpConnectionConfig.builder("conn")
             .publisherId(PublisherId.uint16(ushort(99)))
@@ -288,11 +367,11 @@ class DeltaFrameCadenceTest {
             // a connection with writer groups opens real UDP discovery sockets: keep them on a
             // unique loopback multicast group, never the 224.0.2.14:4840 default
             .discoveryAddress(discoveryAddress)
-            .writerGroup(group.build())
+            .writerGroup(group)
             .build();
 
     PubSubConfig config =
-        PubSubConfig.builder().publishedDataSet(publishedDataSet()).connection(connection).build();
+        PubSubConfig.builder().publishedDataSet(dataSet).connection(connection).build();
 
     PubSubBindings bindings =
         PubSubBindings.builder().source(new PublishedDataSetRef("PDS"), source).build();
@@ -640,6 +719,127 @@ class DeltaFrameCadenceTest {
   }
 
   /**
+   * An oversize-skipped DELTA never becomes the baseline: with a budget that admits the key frame
+   * and one-field counter deltas but not a frame carrying a grown blob field, the cycle whose delta
+   * carries the big blob is dropped at the size gate, every following big-blob cycle re-forces (and
+   * re-drops) a key frame, and the first frame transmitted after the blob shrinks again is a KEY
+   * frame carrying all fields. Without the invalidation that cycle would emit a small,
+   * budget-fitting delta diffed against the never-transmitted big-blob values (§5.3.3: the baseline
+   * is the last TRANSMITTED values) — a subscriber would conclude the blob changed big→small having
+   * never seen "big".
+   */
+  @Test
+  void oversizeSkippedDeltaForcesKeyFrameOnNextTransmittedMessage() throws Exception {
+    var counter = new AtomicInteger(0);
+    var blob = new AtomicReference<>(ByteString.of(new byte[4]));
+
+    // measure the key frame with an unrestricted publisher: all three fields are fixed-width on
+    // the wire while the blob keeps its 4-byte length, so every key frame has exactly this size
+    StubTransport unrestricted =
+        startPublisher(
+            blobPublishedDataSet(),
+            blobWriterGroup(100, uint(0)),
+            blobSource(counter, blob),
+            UdpDatagramAddress.multicast("239.255.74.29", 24759).networkInterface("127.0.0.1"));
+
+    byte[] keyFrame = unrestricted.sent.poll(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+    assertNotNull(keyFrame, "no frame published within the deadline");
+    assertEquals(DataSetMessageKind.KEY_FRAME, decode(keyFrame).messages().get(0).kind());
+
+    service.close();
+    service = null;
+
+    // budget = the small-blob key frame size: key frames and counter-only deltas fit, any frame
+    // carrying the 200-byte blob exceeds it; keyFrameCount 100 keeps the cadence out of the way
+    StubTransport restricted =
+        startPublisher(
+            blobPublishedDataSet(),
+            blobWriterGroup(100, uint(keyFrame.length)),
+            blobSource(counter, blob),
+            UdpDatagramAddress.multicast("239.255.74.30", 24760).networkInterface("127.0.0.1"));
+
+    var drops = new LinkedBlockingQueue<PubSubDiagnosticsEvent>();
+    service.addDiagnosticsListener(
+        event -> {
+          if (event.statusCode().value() == StatusCodes.Bad_EncodingLimitsExceeded) {
+            drops.add(event);
+          }
+        });
+
+    assertEquals(DataSetMessageKind.KEY_FRAME, nextFrame(restricted).kind());
+    assertEquals(DataSetMessageKind.DELTA_FRAME, nextFrame(restricted).kind());
+
+    // the blob grows: that cycle's delta {counter, blob} exceeds the budget and is dropped
+    blob.set(ByteString.of(new byte[200]));
+
+    PubSubDiagnosticsEvent drop = drops.poll(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+    assertNotNull(drop, "no oversize-drop diagnostics event within the deadline");
+    assertEquals("conn/WG", drop.path());
+
+    // every frame in the queue predates the drop (sends enqueue on the publish thread, cycles
+    // before the one whose drop we just observed); while the blob stays big, every cycle drafts
+    // a key frame carrying it, which is dropped too, so nothing further arrives
+    restricted.sent.clear();
+
+    // the blob shrinks: the first transmitted frame is the forced key frame with all fields,
+    // never a delta against the unsent big-blob baseline
+    blob.set(ByteString.of(new byte[] {1, 2, 3, 4}));
+
+    DecodedDataSetMessage healed = nextFrame(restricted);
+    assertEquals(DataSetMessageKind.KEY_FRAME, healed.kind());
+    assertEquals(3, healed.fields().size());
+
+    // and delta emission resumes against the freshly transmitted baseline
+    assertEquals(DataSetMessageKind.DELTA_FRAME, nextFrame(restricted).kind());
+  }
+
+  /**
+   * A writer whose data DataSetMessages all die at the size gate still emits keep-alives when a
+   * keepAliveTime is configured: {@code lastSentNanos} reflects NetworkMessages actually handed to
+   * the transport channel, never drafts, so the keep-alive emission (§6.2.6.3 "no DataSetMessage
+   * was sent in this period") stays reachable even though a (doomed) data draft exists every cycle
+   * — and the header-only keep-alive (§7.2.4.5.8) fits the budget the data does not. Subscribers
+   * keep learning the writer is alive instead of timing out while the publisher silently drops
+   * every cycle.
+   */
+  @Test
+  void keepAliveFiresWhenDataIsOversizeSkipped() throws Exception {
+    var counter = new AtomicInteger(0);
+    var constant = new AtomicReference<>(100);
+
+    // measure the (constant-sized) encoded key frame with an unrestricted publisher
+    StubTransport unrestricted =
+        startPublisher(
+            100,
+            null,
+            countingSource(counter, constant),
+            UdpDatagramAddress.multicast("239.255.74.31", 24761).networkInterface("127.0.0.1"));
+
+    byte[] keyFrame = unrestricted.sent.poll(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+    assertNotNull(keyFrame, "no frame published within the deadline");
+    assertEquals(DataSetMessageKind.KEY_FRAME, decode(keyFrame).messages().get(0).kind());
+
+    service.close();
+    service = null;
+
+    // restart with a budget one byte below the key frame size and a keep-alive time: every data
+    // frame (each cycle's re-forced key frame, the counter changes every read) is dropped
+    StubTransport restricted =
+        startPublisher(
+            100,
+            Duration.ofMillis(100),
+            countingSource(counter, constant),
+            UdpDatagramAddress.multicast("239.255.74.32", 24762).networkInterface("127.0.0.1"),
+            uint(keyFrame.length - 1));
+
+    // everything reaching the wire is a keep-alive
+    for (int i = 0; i < 3; i++) {
+      DecodedDataSetMessage frame = nextFrame(restricted);
+      assertEquals(DataSetMessageKind.KEEP_ALIVE, frame.kind(), "frame " + i);
+    }
+  }
+
+  /**
    * A UADP writer with a non-zero ConfiguredSize never emits delta frames: fixed-size layouts are
    * key-frame-only (Annex A.2.1.7), and a delta exceeding the ConfiguredSize would be valid-bit
    * cleared (§6.3.1.3.3) yet still SEND — bypassing the not-transmitted baseline invalidation and
@@ -674,6 +874,110 @@ class DeltaFrameCadenceTest {
       DecodedDataSetMessage message = nextFrame(transport);
       assertEquals(DataSetMessageKind.KEY_FRAME, message.kind(), "frame " + i);
       assertEquals(2, message.fields().size(), "frame " + i + " carries all fields");
+    }
+  }
+
+  // endregion
+
+  // region keep-alive gating by writer state
+
+  /**
+   * A writer in {@code PubSubState.Error} emits NO keep-alives: a keep-alive asserts the writer is
+   * still active (§6.2.6.3), which an Error writer is not — emitting one would mask its failure
+   * from subscribers, who would keep resetting their receive timeouts against a writer that can
+   * never produce data. Reached the HG4 way (the only path to a writer-level Error under an
+   * Operational group: the group-level activation re-check rejects any enabled RawData writer
+   * outright): a RawData writer disabled at startup (tolerated) is enabled at runtime and fails the
+   * writer-level activation re-check into Error, while its sibling keeps publishing. The sibling's
+   * source never changes, so after its initial key frame the wire carries nothing but its
+   * keep-alives; pre-gate, the Error writer's keep-alives (due from group activation on) joined the
+   * same shared partition — and since its RawData mask is rejected by the encoder backstop, they
+   * poisoned the whole NetworkMessage, silencing the healthy sibling too (with a feature the
+   * encoder could express, they would instead have masked the Error from subscribers).
+   * Disabled/Paused keep-alive emission is unchanged (pinned by
+   * PubSubStateMachineTest#keepAliveEmittedPerNonOperationalWriterWithoutSequenceIncrement).
+   */
+  @Test
+  void errorWriterEmitsNoKeepAlives() throws Exception {
+    PublishedDataSetSource constantSource =
+        context ->
+            DataSetSnapshot.builder(context)
+                .field("counter", new DataValue(Variant.ofInt32(7)))
+                .field("constant", new DataValue(Variant.ofInt32(100)))
+                .build();
+
+    WriterGroupConfig group =
+        WriterGroupConfig.builder("WG")
+            .writerGroupId(ushort(1))
+            .publishingInterval(Duration.ofMillis(25))
+            .keepAliveTime(Duration.ofMillis(200))
+            .messageSettings(
+                UadpWriterGroupSettings.builder()
+                    .networkMessageContentMask(
+                        // 0x41: PublisherId | PayloadHeader, so frames carry the writer id
+                        new UadpNetworkMessageContentMask(uint(0x41)))
+                    .build())
+            .dataSetWriter(
+                DataSetWriterConfig.builder("W1")
+                    .dataSet(new PublishedDataSetRef("PDS"))
+                    .dataSetWriterId(ushort(1))
+                    .keyFrameCount(uint(100))
+                    .settings(
+                        UadpDataSetWriterSettings.builder()
+                            .dataSetMessageContentMask(
+                                // 0x20: SequenceNumber
+                                new UadpDataSetMessageContentMask(uint(0x20)))
+                            .build())
+                    .build())
+            .dataSetWriter(
+                DataSetWriterConfig.builder("W2")
+                    // disabled at startup (tolerated): the group activates without it
+                    .enabled(false)
+                    .dataSet(new PublishedDataSetRef("PDS"))
+                    .dataSetWriterId(ushort(2))
+                    // unsupported under the built-in UADP mapping: activation fails into Error
+                    .fieldContentMask(
+                        DataSetFieldContentMask.of(DataSetFieldContentMask.Field.RawData))
+                    .settings(UadpDataSetWriterSettings.builder().build())
+                    .build())
+            .build();
+
+    StubTransport transport =
+        startPublisher(
+            publishedDataSet(),
+            group,
+            constantSource,
+            UdpDatagramAddress.multicast("239.255.74.33", 24763).networkInterface("127.0.0.1"));
+
+    // enabling W2 is first seen by the writer-level activation re-check, which fails it into
+    // Error (the HG4 backstop); the group and W1 stay Operational
+    PubSubHandle w2 = service.components().dataSetWriter("conn", "WG", "W2").orElseThrow();
+    service.enable(w2);
+
+    PubSubHandle groupHandle = service.components().writerGroup("conn", "WG").orElseThrow();
+    PubSubHandle w1 = service.components().dataSetWriter("conn", "WG", "W1").orElseThrow();
+    assertEquals(PubSubState.Operational, service.state(groupHandle));
+    assertEquals(PubSubState.Operational, service.state(w1));
+    assertEquals(PubSubState.Error, service.state(w2));
+
+    // drop everything captured before W2 entered Error (W1's initial key frame, typically); a
+    // W2 keep-alive cannot have been emitted in that window — its keep-alive reference was
+    // reset at group activation, moments ago at machine timescale, against a 200 ms period
+    transport.sent.clear();
+
+    // W1's constant source suppresses every delta cycle, so it emits a keep-alive every period;
+    // scan until three have passed — a window spanning several periods in which W2's
+    // keep-alives were due — asserting every wire DataSetMessage is W1's
+    int keepAlives = 0;
+    while (keepAlives < 3) {
+      byte[] frame = transport.sent.poll(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+      assertNotNull(frame, "no frame published within the deadline");
+      for (DecodedDataSetMessage message : decode(frame).messages()) {
+        assertEquals(ushort(1), message.dataSetWriterId(), "only the Operational writer emits");
+        if (message.kind() == DataSetMessageKind.KEEP_ALIVE) {
+          keepAlives++;
+        }
+      }
     }
   }
 

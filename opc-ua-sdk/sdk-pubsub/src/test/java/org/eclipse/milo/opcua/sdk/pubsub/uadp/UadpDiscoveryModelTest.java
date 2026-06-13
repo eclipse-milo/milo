@@ -185,9 +185,9 @@ class UadpDiscoveryModelTest {
             .build();
 
     DataSetMessageDraft draft =
-        new DataSetMessageDraft(
+        DataSetMessageDraft.of(
             writer,
-            ushort(1),
+            uint(1),
             null,
             null,
             new ConfigurationVersionDataType(uint(0), uint(0)),

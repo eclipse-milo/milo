@@ -400,8 +400,8 @@ class ReaderMatchingTest {
                     .build())
             .build();
 
-    return new DataSetMessageDraft(
-        writer, ushort(sequenceNumber), null, null, configurationVersion, keepAlive, values);
+    return DataSetMessageDraft.of(
+        writer, uint(sequenceNumber), null, null, configurationVersion, keepAlive, values);
   }
 
   private static UadpNetworkMessageContentMask nmMask(
@@ -1162,6 +1162,50 @@ class ReaderMatchingTest {
     DataSetReceivedEvent event = takeEvent("R1");
     assertEquals(ushort(9), event.networkMessageSequenceNumber());
     assertEquals(uint(5), event.dataSetMessageSequenceNumber());
+  }
+
+  /**
+   * The NetworkMessage window is observed once per (reader, NetworkMessage) for every
+   * NetworkMessage that passes the NetworkMessage-level filters and carries a sequence number —
+   * even when ZERO contained DataSetMessages match the reader's dataSetWriterId filter: the
+   * (PublisherId, WriterGroupId) stream consumed those numbers either way. A reader filtered to a
+   * quiet writer A must not have its NetworkMessage window starved while writer B of the same group
+   * consumes thousands of NetworkMessage sequence numbers — before this, A's next data
+   * NetworkMessage computed a huge forward jump and was wrongly dropped as INVALID.
+   */
+  @Test
+  void networkMessageWindowAdvancesOnNetworkMessagesWithNoMatchedDataSetMessages()
+      throws Exception {
+
+    startService(DataSetReaderConfig.builder("R1").dataSetWriterId(ushort(10)).build());
+
+    PublisherId pub = PublisherId.uint16(ushort(1));
+
+    // writer A's data NetworkMessage seeds R1's NetworkMessage window at 0
+    injectAndFlush(encode(pub, GROUP_SEQ_MASK, 7, uint(0), 0, draft(10, 1)));
+    assertEquals(1, eventCount("R1"));
+    clearEvents();
+
+    // writer B consumes 20000 NetworkMessage sequence numbers of the same group while A is
+    // silent; none of these DataSetMessages match R1's filter, so nothing is delivered and no
+    // drop counters tick — but each NetworkMessage must advance R1's window
+    assertNotNull(transport);
+    assertNotNull(transportExecutor);
+    DataSetMessageDraft writerBDraft = draft(11, 2);
+    for (int sequenceNumber = 1; sequenceNumber <= 20000; sequenceNumber++) {
+      transport.inject(encode(pub, GROUP_SEQ_MASK, 7, uint(0), sequenceNumber, writerBDraft));
+    }
+    transportExecutor.submit(() -> {}).get(10, TimeUnit.SECONDS);
+
+    assertEquals(0, eventCount("R1"));
+    assertEquals(0, diagnostics("conn/RG/R1").staleSequenceMessages());
+    assertEquals(0, diagnostics("conn/RG/R1").invalidSequenceMessages());
+
+    // A's next data NetworkMessage: (20001 - 1 - 20000) mod 2^16 = 0 → NEW and delivered. With
+    // the window stuck at 0 it would compute 20000 ≥ 2^14 and classify INVALID.
+    injectAndFlush(encode(pub, GROUP_SEQ_MASK, 7, uint(0), 20001, draft(10, 3)));
+    assertEquals(1, eventCount("R1"));
+    assertEquals(0, diagnostics("conn/RG/R1").invalidSequenceMessages());
   }
 
   /** §6.2.9.6: without a sequence number "each received DataSetMessage is considered new". */

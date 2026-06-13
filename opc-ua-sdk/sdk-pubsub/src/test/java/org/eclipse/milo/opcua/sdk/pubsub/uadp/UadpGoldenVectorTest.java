@@ -392,9 +392,9 @@ class UadpGoldenVectorTest {
     WriterGroupConfig group = group(uint(0x00), writer);
 
     DataSetMessageDraft draft =
-        new DataSetMessageDraft(
+        DataSetMessageDraft.of(
             writer,
-            ushort(7),
+            uint(7),
             new DateTime(0x0102030405060708L),
             new StatusCode(0x80000000L), // Bad
             new ConfigurationVersionDataType(uint(5), uint(6)),
@@ -532,9 +532,9 @@ class UadpGoldenVectorTest {
     WriterGroupConfig group = group(uint(0x41), writer);
 
     DataSetMessageDraft keepAlive =
-        new DataSetMessageDraft(
+        DataSetMessageDraft.of(
             writer,
-            ushort(5), // the NEXT EXPECTED sequence number; keep-alives do not increment
+            uint(5), // the NEXT EXPECTED sequence number; keep-alives do not increment
             null,
             null,
             new ConfigurationVersionDataType(uint(0), uint(0)),
@@ -894,9 +894,9 @@ class UadpGoldenVectorTest {
   private static DataSetMessageDraft keyFrame(
       DataSetWriterConfig writer, int sequenceNumber, DataValue... fields) {
 
-    return new DataSetMessageDraft(
+    return DataSetMessageDraft.of(
         writer,
-        ushort(sequenceNumber),
+        uint(sequenceNumber),
         null,
         null,
         new ConfigurationVersionDataType(uint(0), uint(0)),
@@ -909,7 +909,7 @@ class UadpGoldenVectorTest {
 
     return DataSetMessageDraft.ofDeltaFrame(
         writer,
-        ushort(sequenceNumber),
+        uint(sequenceNumber),
         null,
         null,
         new ConfigurationVersionDataType(uint(0), uint(0)),

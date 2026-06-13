@@ -108,7 +108,7 @@ class JsonGoldenVectorTest {
 
     return DataSetMessageDraft.of(
         writer("commands-writer", 17, EXAMPLE_DSM_MASK, EXAMPLE_FIELD_MASK),
-        ushort(1042),
+        uint(1042),
         new DateTime(Instant.parse("2026-06-11T18:45:19.555Z")),
         draftStatus,
         EXAMPLE_VERSION,
@@ -199,7 +199,7 @@ class JsonGoldenVectorTest {
     var draft =
         DataSetMessageDraft.of(
             writer("commands-writer", 17, dsmMask, DataSetFieldContentMask.of()),
-            ushort(1),
+            uint(1),
             new DateTime(Instant.parse("2026-06-11T18:45:19.555Z")),
             new StatusCode(0x80000000L),
             EXAMPLE_VERSION,
@@ -361,7 +361,7 @@ class JsonGoldenVectorTest {
     var draft =
         DataSetMessageDraft.ofDeltaFrame(
             writer("commands-writer", 17, dsmMask, DataSetFieldContentMask.of()),
-            ushort(1043),
+            uint(1043),
             null,
             null,
             EXAMPLE_VERSION,

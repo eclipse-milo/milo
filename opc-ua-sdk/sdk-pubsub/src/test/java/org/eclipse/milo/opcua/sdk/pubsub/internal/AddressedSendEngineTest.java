@@ -537,9 +537,9 @@ class AddressedSendEngineTest {
   }
 
   private static DataSetMessageDraft draft(String writerName, int dataSetWriterId, int value) {
-    return new DataSetMessageDraft(
+    return DataSetMessageDraft.of(
         writer(writerName, dataSetWriterId).build(),
-        ushort(0),
+        uint(0),
         null,
         null,
         new ConfigurationVersionDataType(uint(0), uint(0)),

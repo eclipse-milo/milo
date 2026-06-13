@@ -126,6 +126,17 @@ public interface PubSubService extends AutoCloseable {
    * added components) are stopped and replaced according to {@code mode}; handles for removed
    * components are invalidated.
    *
+   * <p>A replaced DataSetWriter restarts its DataSetMessage sequence number at 0 (Part 14 §7.2.3:
+   * the sequence "starts at 0"), so subscribers see a backward jump on that stream and drop its
+   * messages until their sequence-number records recover — by whichever of these comes first:
+   * immediately, when the replaced writer's first keep-alive arrives and its carried next-expected
+   * value reseeds the subscriber's window (§7.2.4.5.8 — the publisher is authoritative about its
+   * own counter; works in both timeout modes, but requires the group to emit keep-alives); after
+   * two times their {@code messageReceiveTimeout} of rejected traffic (the §7.2.3 record discard);
+   * or — when no timeout is configured — after 16 consecutively rejected messages (Milo's
+   * restart-recovery extension). The same applies to the NetworkMessage sequence number of a
+   * replaced WriterGroup, except that NetworkMessage streams carry no keep-alive reseed.
+   *
    * @param newConfig the new {@link PubSubConfig}.
    * @param mode the {@link ReconfigureMode} governing how affected components are restarted.
    * @return a {@link ReconfigureResult} listing the added, removed, and restarted components.

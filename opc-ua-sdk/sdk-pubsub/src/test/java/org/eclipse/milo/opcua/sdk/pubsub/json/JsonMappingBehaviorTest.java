@@ -79,7 +79,7 @@ class JsonMappingBehaviorTest {
   private static DataSetMessageDraft keepAliveDraft(JsonDataSetMessageContentMask dsmMask) {
     return DataSetMessageDraft.of(
         writer("w", 17, dsmMask, DataSetFieldContentMask.of()),
-        ushort(1044),
+        uint(1044),
         null,
         null,
         new ConfigurationVersionDataType(uint(1), uint(1)),
@@ -300,21 +300,28 @@ class JsonMappingBehaviorTest {
     assertEquals(uint(4294967295L), max.messages().get(0).sequenceNumber());
   }
 
-  /** Encoded sequence numbers are the engine's UInt16 counter widened into the UInt32 slot. */
+  /**
+   * Encoded sequence numbers span the full UInt32 range (Table 185): the engine's JSON sequence
+   * counter rolls over at the DataType maximum 2^32 (§7.2.3), NOT at the UADP UInt16 width, so
+   * 65535 is followed by 65536 on the wire and both round-trip losslessly, as does the largest
+   * UInt32 value.
+   */
   @Test
   void encodedSequenceNumberRoundTripsAsUInt32() throws Exception {
-    var draft =
-        keyFrame(
-            writer("w", 1, JsonDataSetMessageContentMask.of(), DataSetFieldContentMask.of()),
-            65535,
-            META,
-            new DataValue(Variant.of(1.0), StatusCode.GOOD, null, null));
+    for (long sequenceNumber : new long[] {65535L, 65536L, 4294967295L}) {
+      var draft =
+          keyFrame(
+              writer("w", 1, JsonDataSetMessageContentMask.of(), DataSetFieldContentMask.of()),
+              sequenceNumber,
+              META,
+              new DataValue(Variant.of(1.0), StatusCode.GOOD, null, null));
 
-    var encoded = encodeSingle(group(JsonNetworkMessageContentMask.of()), List.of(draft));
-    assertEquals(65535, firstMessage(encoded).get("SequenceNumber").getAsInt());
+      var encoded = encodeSingle(group(JsonNetworkMessageContentMask.of()), List.of(draft));
+      assertEquals(sequenceNumber, firstMessage(encoded).get("SequenceNumber").getAsLong());
 
-    DecodedNetworkMessage decoded = decode(encoded.toString());
-    assertEquals(uint(65535), decoded.messages().get(0).sequenceNumber());
+      DecodedNetworkMessage decoded = decode(encoded.toString());
+      assertEquals(uint(sequenceNumber), decoded.messages().get(0).sequenceNumber());
+    }
   }
 
   // endregion
@@ -487,9 +494,9 @@ class JsonMappingBehaviorTest {
   @Test
   void missingDraftMetaDataThrowsBadConfigurationError() {
     var draft =
-        new DataSetMessageDraft(
+        DataSetMessageDraft.of(
             writer("w", 1, JsonDataSetMessageContentMask.of(), DataSetFieldContentMask.of()),
-            ushort(1),
+            uint(1),
             null,
             null,
             new ConfigurationVersionDataType(uint(1), uint(1)),

@@ -143,13 +143,13 @@ final class JsonTestFixtures {
   /** A key frame draft at the given sequence number with no timestamp and no status. */
   static DataSetMessageDraft keyFrame(
       DataSetWriterConfig writer,
-      int sequenceNumber,
+      long sequenceNumber,
       DataSetMetaDataType metaData,
       DataValue... values) {
 
     return DataSetMessageDraft.of(
         writer,
-        ushort(sequenceNumber),
+        uint(sequenceNumber),
         null,
         null,
         new ConfigurationVersionDataType(uint(1), uint(1)),
@@ -167,7 +167,7 @@ final class JsonTestFixtures {
 
     return DataSetMessageDraft.ofDeltaFrame(
         writer,
-        ushort(sequenceNumber),
+        uint(sequenceNumber),
         null,
         null,
         new ConfigurationVersionDataType(uint(1), uint(1)),

@@ -38,9 +38,13 @@ package org.eclipse.milo.opcua.sdk.pubsub.internal;
  * rule for the first message of a stream (the publisher may have started long before the
  * subscriber), so the first observation is accepted and seeds the window. A keep-alive carries the
  * <em>next expected</em> sequence number without consuming it (§7.2.4.5.8, §7.2.5.4.1): {@link
- * #observeKeepAlive(long, long)} seeds an unseeded window to {@code carried - 1} and never advances
- * a seeded one — advancing would make the next data message, which carries the same number,
- * classify as a duplicate. It does, however, always refresh the liveness clock: §7.2.3 discards
+ * #observeKeepAlive(long, long)} seeds an unseeded window to {@code carried - 1}, and on a seeded
+ * window it never advances on consistent ({@link Classification#NEW}-classifying) keep-alives —
+ * advancing would make the next data message, which carries the same number, classify as a
+ * duplicate — but reseeds to {@code carried - 1} on inconsistent (stale- or invalid-classifying)
+ * ones, per §7.2.4.5.8: the carried value is the publisher's authoritative next expected sequence
+ * number, so a carried value the window would reject means the window, not the keep-alive, is wrong
+ * (typically a restarted publisher). It always refreshes the liveness clock: §7.2.3 discards
  * records when the subscriber does "not receive messages", and a keep-alive is a received message.
  *
  * <p>Not thread safe; confine each instance to one dispatch thread.
@@ -63,6 +67,7 @@ final class SequenceNumberWindow {
   private boolean seeded = false;
   private long lastProcessed = 0L;
   private long lastSeenNanos;
+  private int consecutiveRejections = 0;
 
   /**
    * @param bitWidth the wire width N of the sequence number (16 or 32).
@@ -93,27 +98,54 @@ final class SequenceNumberWindow {
     seeded = true;
     lastProcessed = received & valueMask;
     lastSeenNanos = nowNanos;
+    consecutiveRejections = 0;
   }
 
   /**
    * Observe a keep-alive carrying the next expected sequence number (§7.2.4.5.8, §7.2.5.4.1): seeds
-   * an unseeded window to {@code nextExpected - 1}; never advances a seeded window. Always
-   * refreshes the liveness clock — a keep-alive is a received message for the §7.2.3 record-discard
-   * rule, which fires only when the subscriber does "not receive messages" — while the window
-   * position stays put.
+   * an unseeded window to {@code nextExpected - 1}; never advances a seeded window on a consistent
+   * ({@link Classification#NEW}-classifying) carried value, but reseeds it to {@code nextExpected -
+   * 1} when the carried value classifies stale or invalid — the publisher is authoritative about
+   * its own counter, so an inconsistent keep-alive means the window is wrong (typically a restarted
+   * publisher). Always refreshes the liveness clock — a keep-alive is a received message for the
+   * §7.2.3 record-discard rule, which fires only when the subscriber does "not receive messages".
+   *
+   * @return {@code true} if a seeded window was reseeded from an inconsistent carried value, so the
+   *     caller can surface the occurrence.
    */
-  void observeKeepAlive(long nextExpected, long nowNanos) {
+  boolean observeKeepAlive(long nextExpected, long nowNanos) {
+    boolean reseeded = false;
     if (!seeded) {
       seeded = true;
       lastProcessed = (nextExpected - 1) & valueMask;
+    } else if (classify(lastProcessed, nextExpected, bitWidth) != Classification.NEW) {
+      // §7.2.4.5.8: the keep-alive "provides the next expected sequence number for the
+      // DataSetWriter" — a carried value this window would reject means the window, not the
+      // keep-alive, is wrong (restarted publisher); reseed so the stream recovers
+      lastProcessed = (nextExpected - 1) & valueMask;
+      reseeded = true;
     }
     lastSeenNanos = nowNanos;
+    consecutiveRejections = 0;
+    return reseeded;
   }
 
   /** Forget the stream state: the next observation re-seeds the window. */
   void reset() {
     seeded = false;
     lastProcessed = 0L;
+    consecutiveRejections = 0;
+  }
+
+  /**
+   * Record that the message just classified STALE/INVALID against this window was rejected, and
+   * return the length of the current uninterrupted rejection streak. The streak is cleared by any
+   * {@link #accept(long, long)}, {@link #observeKeepAlive(long, long)}, or {@link #reset()}; it
+   * feeds the {@code ReaderSequenceTracker} restart-recovery heuristic, which applies only when no
+   * time-based record discard is armed.
+   */
+  int recordRejection() {
+    return ++consecutiveRejections;
   }
 
   /** Whether the window has processed (or been seeded by) an observation since the last reset. */

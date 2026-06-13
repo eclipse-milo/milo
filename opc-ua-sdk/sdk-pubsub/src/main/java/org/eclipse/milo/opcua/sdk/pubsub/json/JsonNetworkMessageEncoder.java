@@ -392,8 +392,9 @@ final class JsonNetworkMessageEncoder {
       writer.name("WriterGroupName").value(context.writerGroup().getName());
     }
     if (messageMask.getSequenceNumber()) {
-      // emitted as UInt32 (Table 185); the engine counter is UInt16 and wraps at 65535
-      writer.name("SequenceNumber").value(draft.sequenceNumber().intValue());
+      // emitted as UInt32 (Table 185); the engine's JSON sequence counter spans the full UInt32
+      // range and rolls over at 2^32 (§7.2.3 rollover at the DataType maximum)
+      writer.name("SequenceNumber").value(draft.sequenceNumber().longValue());
     }
     if (messageMask.getMetaDataVersion()) {
       ConfigurationVersionDataType version = draft.configurationVersion();

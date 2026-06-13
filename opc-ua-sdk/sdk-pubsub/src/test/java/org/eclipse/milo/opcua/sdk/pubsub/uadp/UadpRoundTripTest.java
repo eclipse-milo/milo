@@ -207,9 +207,9 @@ class UadpRoundTripTest {
       DataSetWriterConfig writer = writer(i + 1, dataSetMask, fieldMask);
       writers.add(writer);
       drafts.add(
-          new DataSetMessageDraft(
+          DataSetMessageDraft.of(
               writer,
-              ushort(11 + i),
+              uint(11 + i),
               DSM_TIMESTAMP,
               DSM_STATUS,
               new ConfigurationVersionDataType(MAJOR_VERSION, MINOR_VERSION),
@@ -405,9 +405,9 @@ class UadpRoundTripTest {
 
     DataSetMessageDraft keyFrame = keyFrame(writer1, 21, List.of(goodValue(Variant.ofInt32(7))));
     DataSetMessageDraft keepAlive =
-        new DataSetMessageDraft(
+        DataSetMessageDraft.of(
             writer2,
-            ushort(33),
+            uint(33),
             null,
             null,
             new ConfigurationVersionDataType(uint(0), uint(0)),
@@ -659,7 +659,7 @@ class UadpRoundTripTest {
     DataSetMessageDraft draft =
         new DataSetMessageDraft(
             writer,
-            ushort(1),
+            uint(1),
             null,
             null,
             new ConfigurationVersionDataType(uint(0), uint(0)),
@@ -892,6 +892,42 @@ class UadpRoundTripTest {
   }
 
   /**
+   * Part 14 §7.2.4.5.4 Table 162: the DataSetMessageSequenceNumber is UInt16 on the wire. The
+   * engine's UADP sequence counter wraps at 2^16 and the keep-alive peek shares its width, so the
+   * limit is unreachable from a publish cycle; an externally constructed draft beyond it is
+   * rejected instead of silently truncated, while the boundary value 0xFFFF still encodes.
+   */
+  @Test
+  void encodeRejectsTransmittedSequenceNumberBeyondUInt16() throws Exception {
+    // UadpDataSetMessageContentMask bit 5 = SequenceNumber.
+    DataSetWriterConfig writer =
+        writer(
+            1, new UadpDataSetMessageContentMask(uint(0x20)), new DataSetFieldContentMask(uint(0)));
+    WriterGroupConfig group = group(new UadpNetworkMessageContentMask(uint(0x41)), List.of(writer));
+
+    EncodeContext context =
+        encodeContext(
+            group, List.of(keyFrame(writer, 0x10000, List.of(goodValue(Variant.ofInt32(1))))));
+
+    UaException e = assertThrows(UaException.class, () -> new UadpMessageMapping().encode(context));
+    assertEquals(StatusCodes.Bad_EncodingLimitsExceeded, e.getStatusCode().value());
+    assertTrue(e.getMessage().contains("Table 162"), "unexpected message: " + e.getMessage());
+
+    // the keep-alive peek path stays in range by construction: the counter's last value before
+    // the wrap, 0xFFFF — the largest value a keep-alive draft can carry — still encodes
+    DataSetMessageDraft keepAlive =
+        DataSetMessageDraft.of(
+            writer,
+            uint(0xFFFF),
+            null,
+            null,
+            new ConfigurationVersionDataType(uint(0), uint(0)),
+            true,
+            List.of());
+    assertNotNull(encodeToBytes(encodeContext(group, List.of(keepAlive))));
+  }
+
+  /**
    * Part 14 §7.2.4.5.6 Table 164: "A Publisher shall use an index only once." The engine's diff
    * cannot produce duplicate indices; the draft factory guards external mapping users.
    */
@@ -969,9 +1005,9 @@ class UadpRoundTripTest {
   private static DataSetMessageDraft keyFrame(
       DataSetWriterConfig writer, int sequenceNumber, List<DataValue> fields) {
 
-    return new DataSetMessageDraft(
+    return DataSetMessageDraft.of(
         writer,
-        ushort(sequenceNumber),
+        uint(sequenceNumber),
         null,
         null,
         new ConfigurationVersionDataType(uint(0), uint(0)),
@@ -984,7 +1020,7 @@ class UadpRoundTripTest {
 
     return DataSetMessageDraft.ofDeltaFrame(
         writer,
-        ushort(sequenceNumber),
+        uint(sequenceNumber),
         null,
         null,
         new ConfigurationVersionDataType(uint(0), uint(0)),

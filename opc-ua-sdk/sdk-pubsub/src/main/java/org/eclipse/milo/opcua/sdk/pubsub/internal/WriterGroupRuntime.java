@@ -15,7 +15,9 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.sdk.pubsub.ComponentType;
@@ -66,10 +68,17 @@ import org.slf4j.LoggerFactory;
  * their next message to be a key frame (see {@link DataSetWriterRuntime}).
  *
  * <p>Keep-alive: when a keep-alive time is configured, a keep-alive DataSetMessage is emitted for
- * every writer that has not produced a DataSetMessage within the keep-alive time (Part 14 §6.2.6.3:
- * "no DataSetMessage was sent in this period"). That covers non-operational writers and operational
- * writers whose delta cycles are suppressed because no fields changed (§6.2.4.3) — a suppressed
- * cycle does not count as "sent".
+ * every writer that has not had a DataSetMessage handed to the transport channel within the
+ * keep-alive time (Part 14 §6.2.6.3: "no DataSetMessage was sent in this period"). That covers
+ * non-operational writers, operational writers whose delta cycles are suppressed because no fields
+ * changed (§6.2.4.3), and — via a second keep-alive pass after the partitions were published —
+ * operational writers whose data DataSetMessages were produced but never transmitted (oversize
+ * skip, encode failure, synchronous send failure): "sent" means handed to the channel, never merely
+ * drafted, so a writer whose data perpetually exceeds the size budget still announces itself with
+ * keep-alives, which are header-only and fit budgets its data does not (§7.2.4.5.8). Writers in
+ * {@code PubSubState.Error} emit no keep-alives: a keep-alive asserts the writer is still active
+ * (§6.2.6.3), which an Error writer is not — emitting one would mask e.g. an activation failure
+ * from subscribers. Disabled and Paused writers keep emitting keep-alives.
  *
  * <p>The publish task is the single writer of all sequence counters; everything it reads from the
  * runtime tree is either immutable config or a volatile snapshot, so reconfiguration takes effect
@@ -354,12 +363,15 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
       if (writer.state() == PubSubState.Operational) {
         // null = suppressed no-change delta cycle, nothing is sent (Part 14 §6.2.4.3); the
         // suppressed writer falls through to the keep-alive check like a non-operational one
-        draft = writer.createDataDraft(now, nowNanos);
+        draft = writer.createDataDraft(now);
       }
       if (draft == null
+          && writer.state() != PubSubState.Error
           && keepAliveNanos != null
           && nowNanos - writer.lastSentNanos() >= keepAliveNanos) {
-        draft = writer.createKeepAliveDraft(now, nowNanos);
+        // an Error writer emits no keep-alives: a keep-alive asserts the writer is still active
+        // (§6.2.6.3), and emitting one would mask e.g. an activation failure from subscribers
+        draft = writer.createKeepAliveDraft(now);
       }
       if (draft == null) {
         continue;
@@ -375,9 +387,67 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
       partition.add(writer, draft);
     }
 
+    var notTransmitted = new LinkedHashSet<DataSetWriterRuntime>();
     for (Partition partition : partitions) {
       if (!partition.drafts.isEmpty()) {
-        publishPartition(mapping, channel, publisherId, now, broker, partition);
+        publishPartition(
+            mapping, channel, publisherId, now, nowNanos, broker, partition, notTransmitted);
+      }
+    }
+
+    if (keepAliveNanos != null && !notTransmitted.isEmpty()) {
+      publishKeepAlivesForUntransmitted(
+          mapping, channel, publisherId, now, nowNanos, keepAliveNanos, broker, notTransmitted);
+    }
+  }
+
+  /**
+   * Second keep-alive pass for the writers whose data DataSetMessages this cycle produced but never
+   * transmitted (oversize skip, encode failure, synchronous send failure): such a writer bypassed
+   * the regular keep-alive branch — it HAD a draft — yet nothing of it reached the wire, and its
+   * {@code lastSentNanos} correctly did not advance. Once the keep-alive time has elapsed since its
+   * last actual transmission, a keep-alive is emitted in its place (Part 14 §6.2.6.3: "no
+   * DataSetMessage was sent in this period"); keep-alives are header-only (§7.2.4.5.8) and fit size
+   * budgets the data does not, so a writer whose data is perpetually skipped still announces itself
+   * instead of going silent until its subscribers' receive timeouts expire. Writers in {@code
+   * PubSubState.Error} are excluded, like in the regular keep-alive branch.
+   */
+  private void publishKeepAlivesForUntransmitted(
+      MessageMappingProvider mapping,
+      PublisherChannel channel,
+      PublisherId publisherId,
+      DateTime now,
+      long nowNanos,
+      long keepAliveNanos,
+      boolean broker,
+      Set<DataSetWriterRuntime> notTransmitted) {
+
+    var sharedPartition = new Partition(null);
+    var partitions = new ArrayList<Partition>(1 + notTransmitted.size());
+    partitions.add(sharedPartition);
+
+    for (DataSetWriterRuntime writer : notTransmitted) {
+      if (writer.state() == PubSubState.Error
+          || nowNanos - writer.lastSentNanos() < keepAliveNanos) {
+        continue;
+      }
+      DataSetMessageDraft draft = writer.createKeepAliveDraft(now);
+
+      Partition partition;
+      if (broker && hasQueueOverride(writer.config())) {
+        partition = new Partition(writer.config());
+        partitions.add(partition);
+      } else {
+        partition = sharedPartition;
+      }
+      partition.add(writer, draft);
+    }
+
+    for (Partition partition : partitions) {
+      if (!partition.drafts.isEmpty()) {
+        // null: a keep-alive that is itself not transmitted gets no further recovery this
+        // cycle; lastSentNanos stays behind, so the next cycle simply tries again
+        publishPartition(mapping, channel, publisherId, now, nowNanos, broker, partition, null);
       }
     }
   }
@@ -392,14 +462,28 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
    * the invalidation the next delta would diff against values no subscriber received. The forced
    * key frame on the next cycle retransmits the full field image; the dropped message's consumed
    * sequence number is not rolled back (the gap is wire-indistinguishable from network loss).
+   *
+   * <p>Conversely, a NetworkMessage that IS handed to the transport channel advances {@code
+   * lastSentNanos} for every writer it is attributed to — keep-alive drafts included — so the
+   * keep-alive cadence (§6.2.6.3 "no DataSetMessage was sent in this period") reflects actual
+   * transmissions, never drafts that died at the size gate. Hand-off is the commit point: an
+   * asynchronous send failure reported later still invalidates the baseline but does not rewind
+   * {@code lastSentNanos}.
+   *
+   * @param notTransmitted collects the writers whose data DataSetMessages were synchronously not
+   *     transmitted (encode failure, oversize skip, synchronous send failure), so the caller can
+   *     run the keep-alive recovery pass for them; {@code null} to not collect (the recovery pass
+   *     itself). Writers whose only loss was a keep-alive draft are not collected.
    */
   private void publishPartition(
       MessageMappingProvider mapping,
       PublisherChannel channel,
       PublisherId publisherId,
       DateTime now,
+      long nowNanos,
       boolean broker,
-      Partition partition) {
+      Partition partition,
+      @Nullable Set<DataSetWriterRuntime> notTransmitted) {
 
     var encodeContext =
         EncodeContext.of(
@@ -420,11 +504,11 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
           .getDiagnostics()
           .error(path(), statusCodeOf(e), "failed to encode NetworkMessage: " + e.getMessage(), e);
       // nothing of this partition was transmitted
-      invalidateDeltaBaselines(partition, List.of());
+      invalidateDeltaBaselines(partition, List.of(), notTransmitted);
       return;
     }
 
-    encodedMessages = dropOversizeMessages(encodedMessages, partition);
+    encodedMessages = dropOversizeMessages(encodedMessages, partition, notTransmitted);
 
     if (encodedMessages.isEmpty()) {
       return;
@@ -451,10 +535,16 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
                             ex);
                     // not transmitted; may run on a transport thread, after later cycles —
                     // invalidateDeltaBaseline is the thread-safe seam and heals at the latest
-                    // one cycle after it lands
-                    invalidateDeltaBaselines(partition, encoded.writers());
+                    // one cycle after it lands (lastSentNanos is NOT rewound: the message was
+                    // handed to the channel, which is the keep-alive commit point)
+                    invalidateDeltaBaselines(partition, encoded.writers(), null);
                   }
                 });
+
+        // the message was handed to the channel: commit the keep-alive reference of every
+        // writer it is attributed to, keep-alive drafts included (§6.2.6.3 counts any sent
+        // DataSetMessage)
+        commitLastSent(partition, encoded.writers(), nowNanos);
 
         service.getDiagnostics().networkMessageSent(connection.path());
         service.getDiagnostics().networkMessageSent(path());
@@ -468,7 +558,7 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
       }
       // neither the message whose send threw nor the unsent remainder was transmitted
       for (int i = index; i < encodedMessages.size(); i++) {
-        invalidateDeltaBaselines(partition, encodedMessages.get(i).writers());
+        invalidateDeltaBaselines(partition, encodedMessages.get(i).writers(), notTransmitted);
       }
       service
           .getDiagnostics()
@@ -503,12 +593,15 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
    * limit.
    *
    * <p>A skipped message invalidates its contributing writers' delta baselines (it was never
-   * transmitted). A writer whose KEY frame exceeds the budget therefore re-forces (and re-drops) a
-   * key frame every cycle and transmits nothing — an honest, per-cycle-diagnosed failure — rather
-   * than emitting deltas against a baseline that can never be transmitted.
+   * transmitted) and does not advance their {@code lastSentNanos}. A writer whose KEY frame exceeds
+   * the budget therefore re-forces (and re-drops) a key frame every cycle and transmits nothing but
+   * keep-alives, once due, when a keep-alive time is configured — an honest, per-cycle-diagnosed
+   * failure — rather than emitting deltas against a baseline that can never be transmitted.
    */
   private List<EncodedNetworkMessage> dropOversizeMessages(
-      List<EncodedNetworkMessage> encodedMessages, Partition partition) {
+      List<EncodedNetworkMessage> encodedMessages,
+      Partition partition,
+      @Nullable Set<DataSetWriterRuntime> notTransmitted) {
 
     long maxNetworkMessageSize = config.getMaxNetworkMessageSize().longValue();
     if (maxNetworkMessageSize == 0) {
@@ -525,7 +618,7 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
           accepted = new ArrayList<>(encodedMessages.subList(0, index));
         }
         encoded.data().release();
-        invalidateDeltaBaselines(partition, encoded.writers());
+        invalidateDeltaBaselines(partition, encoded.writers(), notTransmitted);
         service
             .getDiagnostics()
             .error(
@@ -546,14 +639,19 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
    * Invalidate the delta baselines of the partition writers whose data DataSetMessages were carried
    * by a NetworkMessage that was not transmitted, so their next data draft is a key frame (the
    * §5.3.3 baseline is the last TRANSMITTED values). Keep-alive drafts are skipped: they carry no
-   * field values, so losing one leaves the baseline accurate.
+   * field values, so losing one leaves the baseline accurate (and the writer's {@code
+   * lastSentNanos} not advancing already retries the keep-alive on the next cycle).
    *
    * @param attribution the {@link EncodedNetworkMessage#writers()} of the dropped message; empty
    *     means unattributed (e.g. a custom mapping), conservatively treated as carrying every data
    *     draft of the partition — a spurious key frame is always safe, a missed one is not.
+   * @param notTransmitted when non-null, additionally collects the affected writers for the
+   *     caller's keep-alive recovery pass.
    */
   private static void invalidateDeltaBaselines(
-      Partition partition, List<EncodedNetworkMessage.Writer> attribution) {
+      Partition partition,
+      List<EncodedNetworkMessage.Writer> attribution,
+      @Nullable Set<DataSetWriterRuntime> notTransmitted) {
 
     for (int i = 0; i < partition.drafts.size(); i++) {
       DataSetMessageDraft draft = partition.drafts.get(i);
@@ -562,6 +660,31 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
       }
       if (attribution.isEmpty() || attributionContains(attribution, draft.writer().getName())) {
         partition.contributors.get(i).invalidateDeltaBaseline();
+        if (notTransmitted != null) {
+          notTransmitted.add(partition.contributors.get(i));
+        }
+      }
+    }
+  }
+
+  /**
+   * Advance the keep-alive reference ({@code lastSentNanos}) of the partition writers whose
+   * DataSetMessages — data or keep-alive — were carried by a NetworkMessage that was handed to the
+   * transport channel. The transmit-time commit (rather than draft-time) keeps the §6.2.6.3
+   * keep-alive cadence honest: a draft dropped at the size gate (or never encoded) leaves the
+   * writer's reference untouched, so keep-alive emission stays reachable for it.
+   *
+   * @param attribution the {@link EncodedNetworkMessage#writers()} of the sent message; empty means
+   *     unattributed (e.g. a custom mapping), treated as carrying every draft of the partition,
+   *     mirroring {@link #invalidateDeltaBaselines}.
+   */
+  private static void commitLastSent(
+      Partition partition, List<EncodedNetworkMessage.Writer> attribution, long nowNanos) {
+
+    for (int i = 0; i < partition.drafts.size(); i++) {
+      DataSetMessageDraft draft = partition.drafts.get(i);
+      if (attribution.isEmpty() || attributionContains(attribution, draft.writer().getName())) {
+        partition.contributors.get(i).resetLastSent(nowNanos);
       }
     }
   }

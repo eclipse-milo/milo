@@ -76,7 +76,9 @@ final class UadpNetworkMessageEncoder {
    *     PromotedFields, message security, event message emission), {@code Bad_ConfigurationError}
    *     if the group or a writer does not carry UADP message settings or a delta frame draft
    *     carries a non-zero ConfiguredSize (fixed-size layouts are key-frame-only, Part 14 Annex
-   *     A.2.1.7).
+   *     A.2.1.7), {@code Bad_EncodingLimitsExceeded} if a draft's sequence number would be
+   *     transmitted but exceeds the UInt16 wire range (Part 14 Table 162) or a count/size limit of
+   *     the wire format is exceeded.
    */
   static EncodedNetworkMessage encode(EncodeContext context) throws UaException {
     if (context.messages().isEmpty()) {
@@ -123,6 +125,21 @@ final class UadpNetworkMessageEncoder {
         throw new UaException(
             StatusCodes.Bad_NotSupported,
             "Event DataSetMessage emission is not supported (DataSetWriter \""
+                + writer.getName()
+                + "\")");
+      }
+      if (writerSettings.getDataSetMessageContentMask().getSequenceNumber()
+          && draft.sequenceNumber().longValue() > 0xFFFFL) {
+        // The DataSetMessageSequenceNumber is UInt16 on the wire (Part 14 §7.2.4.5.4 Table
+        // 162). The engine's UADP sequence counter wraps at 2^16 — keep-alive drafts peek the
+        // same counter, so they stay in range by construction — making this unreachable from a
+        // publish cycle; it guards externally constructed drafts, whose out-of-range value
+        // would otherwise be silently truncated on the wire.
+        throw new UaException(
+            StatusCodes.Bad_EncodingLimitsExceeded,
+            "DataSetMessage sequence number exceeds the UInt16 wire range (Part 14 Table 162): "
+                + draft.sequenceNumber()
+                + " (DataSetWriter \""
                 + writer.getName()
                 + "\")");
       }
@@ -433,7 +450,9 @@ final class UadpNetworkMessageEncoder {
     }
 
     if (mask.getSequenceNumber()) {
-      encoder.encodeUInt16(draft.sequenceNumber());
+      // UInt16 on the wire (Table 162): encode() rejected out-of-range drafts up front, and the
+      // engine's UADP sequence counter wraps at 2^16, so the widened slot's value always fits
+      encoder.encodeUInt16(ushort(draft.sequenceNumber().intValue()));
     }
     if (timestampEnabled) {
       DateTime timestamp = draft.timestamp();

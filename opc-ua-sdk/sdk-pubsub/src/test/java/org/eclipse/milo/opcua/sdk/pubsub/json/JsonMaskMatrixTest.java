@@ -106,7 +106,7 @@ class JsonMaskMatrixTest {
     var draft =
         DataSetMessageDraft.of(
             writer("w", 3, JsonDataSetMessageContentMask.of(), DataSetFieldContentMask.of()),
-            ushort(7),
+            uint(7),
             null,
             new StatusCode(0x80000000L),
             new ConfigurationVersionDataType(uint(1), uint(1)),

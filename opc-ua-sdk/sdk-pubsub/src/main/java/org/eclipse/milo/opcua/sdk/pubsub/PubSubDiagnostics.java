@@ -48,17 +48,22 @@ public interface PubSubDiagnostics {
    * @param path the path of the component, e.g. {@code "conn/group/writer"}.
    * @param networkMessagesSent the number of NetworkMessages sent.
    * @param networkMessagesReceived the number of NetworkMessages received. On a connection this
-   *     counts arrivals: it ticks once per received datagram or broker message, before decoding and
-   *     regardless of the decode outcome (a climbing connection counter with flat reader counters
-   *     therefore indicates traffic that does not decode or match). On a reader group it counts
-   *     NetworkMessages that delivered a DataSetMessage to at least one of the group's readers.
+   *     counts arrivals on the data path — one tick per received datagram or broker message, before
+   *     decoding and regardless of the decode outcome (a climbing connection counter with flat
+   *     reader counters therefore indicates traffic that does not decode or match) — plus, for UADP
+   *     connections with a discovery endpoint, one tick per discovery-socket datagram that decoded
+   *     to a discovery probe or metadata announcement (other discovery-socket traffic, including
+   *     undecodable input, is not counted). On a reader group it counts NetworkMessages that
+   *     carried at least one DataSetMessage matching one of the group's readers, whether or not
+   *     delivery followed (a matched message may still be dropped by the valid/metadata gates or
+   *     the sequence-number windows).
    * @param dataSetMessagesSent the number of DataSetMessages sent.
    * @param dataSetMessagesReceived the number of DataSetMessages received.
    * @param decodeErrors the number of messages dropped because they could not be decoded or were
    *     not accepted: undecodable or truncated input and unsupported chunked NetworkMessages at the
    *     connection; NetworkMessages exceeding a reader group's non-zero {@code
-   *     maxNetworkMessageSize} at the group; version mismatches and invalid DataSetMessages at the
-   *     reader.
+   *     maxNetworkMessageSize} at the group; version mismatches, invalid DataSetMessages, and
+   *     DataSetMetaData announcements that fail conversion at the reader.
    * @param sourceErrors the number of {@link PublishedDataSetSource} read failures.
    * @param staleSequenceMessages the number of DataSetMessages dropped by a DataSetReader's Part 14
    *     §7.2.3 sequence-number window as older than — or duplicating — the last processed message.

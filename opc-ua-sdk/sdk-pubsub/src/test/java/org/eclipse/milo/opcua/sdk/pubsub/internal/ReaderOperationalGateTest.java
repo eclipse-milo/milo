@@ -275,9 +275,9 @@ class ReaderOperationalGateTest {
             .build();
 
     var draft =
-        new DataSetMessageDraft(
+        DataSetMessageDraft.of(
             writer,
-            ushort(sequenceNumber),
+            uint(sequenceNumber),
             null,
             null,
             new ConfigurationVersionDataType(uint(0), uint(0)),

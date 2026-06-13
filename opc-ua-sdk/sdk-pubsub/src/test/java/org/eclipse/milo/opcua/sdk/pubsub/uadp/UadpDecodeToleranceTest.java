@@ -789,18 +789,18 @@ class UadpDecodeToleranceTest {
             ushort(2));
 
     DataSetMessageDraft draft1 =
-        new DataSetMessageDraft(
+        DataSetMessageDraft.of(
             writer1,
-            ushort(7),
+            uint(7),
             new DateTime(1_000L),
             new StatusCode(0x40950000L),
             new ConfigurationVersionDataType(uint(5), uint(6)),
             false,
             List.of(field));
     DataSetMessageDraft draft2 =
-        new DataSetMessageDraft(
+        DataSetMessageDraft.of(
             writer2,
-            ushort(8),
+            uint(8),
             new DateTime(2_000L),
             null,
             new ConfigurationVersionDataType(uint(5), uint(6)),
@@ -873,9 +873,9 @@ class UadpDecodeToleranceTest {
   private static DataSetMessageDraft keyFrame(
       DataSetWriterConfig writer, int sequenceNumber, DataValue... fields) {
 
-    return new DataSetMessageDraft(
+    return DataSetMessageDraft.of(
         writer,
-        ushort(sequenceNumber),
+        uint(sequenceNumber),
         null,
         null,
         new ConfigurationVersionDataType(uint(0), uint(0)),

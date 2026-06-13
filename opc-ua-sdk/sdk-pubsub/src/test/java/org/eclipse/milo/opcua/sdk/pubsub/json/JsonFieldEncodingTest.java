@@ -646,7 +646,7 @@ class JsonFieldEncodingTest {
     var draft =
         org.eclipse.milo.opcua.sdk.pubsub.uadp.DataSetMessageDraft.of(
             writer("w", 3, dsmMask, DataSetFieldContentMask.of()),
-            ushort(7),
+            uint(7),
             null,
             new StatusCode(0x80000000L),
             new ConfigurationVersionDataType(uint(1), uint(1)),

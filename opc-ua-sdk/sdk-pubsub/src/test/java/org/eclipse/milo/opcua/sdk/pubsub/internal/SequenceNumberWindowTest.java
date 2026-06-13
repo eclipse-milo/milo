@@ -29,9 +29,10 @@ import org.junit.jupiter.params.provider.MethodSource;
  * (received - 1 - lastProcessed) mod 2^N}, NEW below the lower bound 2^(N-2), STALE above the upper
  * bound 2^N - 2^(N-2), INVALID otherwise (both bounds included; Table 152: 16384/49152 for UInt16,
  * 2^30 / 2^32-2^30 for UInt32) — plus the window-record behaviors layered on it: accept-and-seed on
- * first observation, keep-alive seeding to carried-1 without ever advancing a seeded window
- * (§7.2.4.5.8, §7.2.5.4.1) while always refreshing the record-discard liveness clock, and explicit
- * reset.
+ * first observation, keep-alive seeding to carried-1, the keep-alive contract on a seeded window —
+ * never advance on a consistent carried value, reseed to carried-1 on an inconsistent one
+ * (§7.2.4.5.8, §7.2.5.4.1: the carried value is the publisher's authoritative next expected
+ * sequence number) — always refreshing the record-discard liveness clock, and explicit reset.
  */
 class SequenceNumberWindowTest {
 
@@ -133,7 +134,8 @@ class SequenceNumberWindowTest {
 
     // §7.2.4.5.8: "the sequence number provides the next expected sequence number for the
     // DataSetWriter" — the publisher literally told us next-expected, so seed to carried-1
-    window.observeKeepAlive(7, 1L);
+    // (seeding an unseeded window is not reported as a reseed)
+    assertFalse(window.observeKeepAlive(7, 1L));
     assertTrue(window.isSeeded());
     assertEquals(6, window.lastProcessed());
     assertEquals(1L, window.lastSeenNanos());
@@ -152,24 +154,43 @@ class SequenceNumberWindowTest {
   }
 
   @Test
-  void keepAliveNeverAdvancesASeededWindow() {
+  void consistentKeepAliveNeverAdvancesASeededWindow() {
     var window = new SequenceNumberWindow(16, 0L);
     window.accept(7, 0L);
 
     // the off-by-one trap: if the keep-alive (carrying next-expected 8) advanced the window to 8,
     // the next data message — which carries 8 — would compute 2^N-1 and be dropped as a duplicate
-    window.observeKeepAlive(8, 1L);
+    assertFalse(window.observeKeepAlive(8, 1L));
     assertEquals(7, window.lastProcessed());
     assertEquals(NEW, window.classify(8));
 
     // repeated keep-alives all carry the same next-expected value; none of them move the window,
     // but each refreshes the record-discard liveness clock — a keep-alive is a received message
     // (§7.2.3 discards records when the subscriber does "not receive messages")
-    window.observeKeepAlive(8, 2L);
-    window.observeKeepAlive(8, 3L);
+    assertFalse(window.observeKeepAlive(8, 2L));
+    assertFalse(window.observeKeepAlive(8, 3L));
     assertEquals(7, window.lastProcessed());
     assertEquals(3L, window.lastSeenNanos());
     assertEquals(NEW, window.classify(8));
+  }
+
+  @Test
+  void inconsistentKeepAliveReseedsASeededWindowToCarriedMinusOne() {
+    var window = new SequenceNumberWindow(16, 0L);
+    window.accept(5_000, 0L);
+
+    // a keep-alive carrying a STALE-classifying next-expected value (a restarted publisher):
+    // §7.2.4.5.8 makes the carried value authoritative, so the window — not the keep-alive — is
+    // wrong and reseeds to carried-1, refreshing the liveness clock
+    assertTrue(window.observeKeepAlive(1, 1L));
+    assertEquals(0, window.lastProcessed());
+    assertEquals(1L, window.lastSeenNanos());
+    assertEquals(NEW, window.classify(1));
+
+    // an INVALID-classifying carried value reseeds the same way
+    assertTrue(window.observeKeepAlive(30_000, 2L));
+    assertEquals(29_999, window.lastProcessed());
+    assertEquals(NEW, window.classify(30_000));
   }
 
   @Test

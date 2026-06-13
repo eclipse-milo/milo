@@ -16,7 +16,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetWriterConfig;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
 import org.jspecify.annotations.Nullable;
@@ -30,7 +30,13 @@ import org.jspecify.annotations.Nullable;
  * no fields at all.
  *
  * @param writer the config of the DataSetWriter producing the message.
- * @param sequenceNumber the DataSetMessage sequence number.
+ * @param sequenceNumber the DataSetMessage sequence number. The slot spans both wire widths of Part
+ *     14 §7.2.3 Table 152: the engine counter wraps at the DataType maximum of the group's mapping
+ *     — UInt16 for UADP (Table 162), UInt32 for JSON (Table 185) and for custom mappings — so the
+ *     UADP mapping always receives a value that fits in the UInt16 it writes, while the JSON
+ *     mapping writes the full UInt32 range. An externally constructed draft whose transmitted
+ *     sequence number exceeds the UADP mapping's UInt16 range is rejected at encode time with
+ *     {@code Bad_EncodingLimitsExceeded} rather than silently truncated.
  * @param timestamp the DataSetMessage timestamp, or {@code null} if not included.
  * @param status the DataSetMessage status, or {@code null} if not included.
  * @param configurationVersion the configuration version of the dataset.
@@ -46,15 +52,15 @@ import org.jspecify.annotations.Nullable;
  *     and types (e.g. the JSON mapping's name-keyed payloads) — or {@code null} when not available.
  *     The {@code fields} are in the order of {@code metaData}'s fields, and {@code deltaFields}
  *     indices are positions into them. The UADP mapping ignores it.
- * @apiNote Create instances via {@link #of(DataSetWriterConfig, UShort, DateTime, StatusCode,
+ * @apiNote Create instances via {@link #of(DataSetWriterConfig, UInteger, DateTime, StatusCode,
  *     ConfigurationVersionDataType, boolean, List, DataSetMetaDataType)} or {@link
- *     #ofDeltaFrame(DataSetWriterConfig, UShort, DateTime, StatusCode,
+ *     #ofDeltaFrame(DataSetWriterConfig, UInteger, DateTime, StatusCode,
  *     ConfigurationVersionDataType, List, DataSetMetaDataType)} rather than the canonical
  *     constructor; the factory methods are stable while the canonical constructor is not.
  */
 public record DataSetMessageDraft(
     DataSetWriterConfig writer,
-    UShort sequenceNumber,
+    UInteger sequenceNumber,
     @Nullable DateTime timestamp,
     @Nullable StatusCode status,
     ConfigurationVersionDataType configurationVersion,
@@ -107,66 +113,6 @@ public record DataSetMessageDraft(
   }
 
   /**
-   * Create a new key frame or keep-alive {@link DataSetMessageDraft} without resolved metadata.
-   *
-   * @param writer the config of the DataSetWriter producing the message.
-   * @param sequenceNumber the DataSetMessage sequence number.
-   * @param timestamp the DataSetMessage timestamp, or {@code null} if not included.
-   * @param status the DataSetMessage status, or {@code null} if not included.
-   * @param configurationVersion the configuration version of the dataset.
-   * @param keepAlive {@code true} if this is a keep-alive message; keep-alive messages carry no
-   *     fields.
-   * @param fields the field values of the message, in wire order; empty for keep-alive messages.
-   */
-  public DataSetMessageDraft(
-      DataSetWriterConfig writer,
-      UShort sequenceNumber,
-      @Nullable DateTime timestamp,
-      @Nullable StatusCode status,
-      ConfigurationVersionDataType configurationVersion,
-      boolean keepAlive,
-      List<DataValue> fields) {
-
-    this(writer, sequenceNumber, timestamp, status, configurationVersion, keepAlive, fields, null);
-  }
-
-  /**
-   * Create a new key frame or keep-alive {@link DataSetMessageDraft}.
-   *
-   * @param writer the config of the DataSetWriter producing the message.
-   * @param sequenceNumber the DataSetMessage sequence number.
-   * @param timestamp the DataSetMessage timestamp, or {@code null} if not included.
-   * @param status the DataSetMessage status, or {@code null} if not included.
-   * @param configurationVersion the configuration version of the dataset.
-   * @param keepAlive {@code true} if this is a keep-alive message; keep-alive messages carry no
-   *     fields.
-   * @param fields the field values of the message, in wire order; empty for keep-alive messages.
-   * @param metaData the resolved metadata of the writer's PublishedDataSet, or {@code null} when
-   *     not available.
-   */
-  public DataSetMessageDraft(
-      DataSetWriterConfig writer,
-      UShort sequenceNumber,
-      @Nullable DateTime timestamp,
-      @Nullable StatusCode status,
-      ConfigurationVersionDataType configurationVersion,
-      boolean keepAlive,
-      List<DataValue> fields,
-      @Nullable DataSetMetaDataType metaData) {
-
-    this(
-        writer,
-        sequenceNumber,
-        timestamp,
-        status,
-        configurationVersion,
-        keepAlive ? DataSetMessageKind.KEEP_ALIVE : DataSetMessageKind.KEY_FRAME,
-        fields,
-        List.of(),
-        metaData);
-  }
-
-  /**
    * Whether this draft is a keep-alive message.
    *
    * @return {@code true} if {@link #kind()} is {@link DataSetMessageKind#KEEP_ALIVE}.
@@ -192,7 +138,7 @@ public record DataSetMessageDraft(
    */
   public static DataSetMessageDraft of(
       DataSetWriterConfig writer,
-      UShort sequenceNumber,
+      UInteger sequenceNumber,
       @Nullable DateTime timestamp,
       @Nullable StatusCode status,
       ConfigurationVersionDataType configurationVersion,
@@ -206,8 +152,9 @@ public record DataSetMessageDraft(
         timestamp,
         status,
         configurationVersion,
-        keepAlive,
+        keepAlive ? DataSetMessageKind.KEEP_ALIVE : DataSetMessageKind.KEY_FRAME,
         fields,
+        List.of(),
         metaData);
   }
 
@@ -226,14 +173,14 @@ public record DataSetMessageDraft(
    */
   public static DataSetMessageDraft of(
       DataSetWriterConfig writer,
-      UShort sequenceNumber,
+      UInteger sequenceNumber,
       @Nullable DateTime timestamp,
       @Nullable StatusCode status,
       ConfigurationVersionDataType configurationVersion,
       boolean keepAlive,
       List<DataValue> fields) {
 
-    return new DataSetMessageDraft(
+    return of(
         writer, sequenceNumber, timestamp, status, configurationVersion, keepAlive, fields, null);
   }
 
@@ -256,7 +203,7 @@ public record DataSetMessageDraft(
    */
   public static DataSetMessageDraft ofDeltaFrame(
       DataSetWriterConfig writer,
-      UShort sequenceNumber,
+      UInteger sequenceNumber,
       @Nullable DateTime timestamp,
       @Nullable StatusCode status,
       ConfigurationVersionDataType configurationVersion,
