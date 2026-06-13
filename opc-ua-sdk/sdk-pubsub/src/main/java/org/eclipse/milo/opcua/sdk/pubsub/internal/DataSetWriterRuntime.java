@@ -451,7 +451,8 @@ final class DataSetWriterRuntime extends AbstractComponentRuntime {
       resetFrameState();
     }
 
-    List<DataValue> values = readSnapshotValues();
+    SnapshotRead read = readSnapshot();
+    List<DataValue> values = read.values();
     int fieldCount = values.size();
 
     // §6.2.4.3 counts PublishingInterval expirations, so every cycle advances the cadence,
@@ -502,7 +503,7 @@ final class DataSetWriterRuntime extends AbstractComponentRuntime {
           config,
           sequenceCounter.next(),
           includeTimestamp() ? timestamp : null,
-          includeStatus() ? StatusCode.GOOD : null,
+          read.status(),
           configurationVersion,
           false,
           values,
@@ -512,7 +513,7 @@ final class DataSetWriterRuntime extends AbstractComponentRuntime {
           config,
           sequenceCounter.next(),
           includeTimestamp() ? timestamp : null,
-          includeStatus() ? StatusCode.GOOD : null,
+          read.status(),
           configurationVersion,
           changed,
           metaData);
@@ -592,29 +593,30 @@ final class DataSetWriterRuntime extends AbstractComponentRuntime {
         config,
         sequenceCounter.peek(),
         includeTimestamp() ? timestamp : null,
-        includeStatus() ? StatusCode.GOOD : null,
+        StatusCode.GOOD,
         configurationVersion,
         true,
         List.of(),
         metaData);
   }
 
-  private List<DataValue> readSnapshotValues() {
+  private SnapshotRead readSnapshot() {
     int fieldCount = readContext.fields().size();
 
     PublishedDataSetSource source = service.getSource(config.getDataSet());
 
     if (source == null) {
+      var status = new StatusCode(StatusCodes.Bad_ConfigurationError);
       service
           .getDiagnostics()
           .sourceError(
               path(),
-              new StatusCode(StatusCodes.Bad_ConfigurationError),
+              status,
               "no PublishedDataSetSource bound for PublishedDataSet '%s'"
                   .formatted(config.getDataSet().name()),
               null);
 
-      return badValues(fieldCount);
+      return SnapshotRead.failed(fieldCount, status);
     }
 
     try {
@@ -622,45 +624,60 @@ final class DataSetWriterRuntime extends AbstractComponentRuntime {
       List<DataValue> values = snapshot.values();
 
       if (values.size() != fieldCount) {
+        var status = new StatusCode(StatusCodes.Bad_InternalError);
         service
             .getDiagnostics()
             .sourceError(
                 path(),
-                new StatusCode(StatusCodes.Bad_InternalError),
+                status,
                 "snapshot for PublishedDataSet '%s' has %d values, expected %d"
                     .formatted(config.getDataSet().name(), values.size(), fieldCount),
                 null);
 
-        return badValues(fieldCount);
+        return SnapshotRead.failed(fieldCount, status);
       }
 
-      return values;
+      return new SnapshotRead(values, StatusCode.GOOD);
     } catch (Exception e) {
+      var status =
+          UaException.extractStatusCode(e).orElse(new StatusCode(StatusCodes.Bad_InternalError));
       service
           .getDiagnostics()
           .sourceError(
               path(),
-              UaException.extractStatusCode(e)
-                  .orElse(new StatusCode(StatusCodes.Bad_InternalError)),
+              status,
               "PublishedDataSetSource for '%s' failed: %s"
                   .formatted(config.getDataSet().name(), e.getMessage()),
               e);
 
-      return badValues(fieldCount);
+      return SnapshotRead.failed(fieldCount, status);
     }
   }
 
-  private static List<DataValue> badValues(int fieldCount) {
-    return Collections.nCopies(fieldCount, new DataValue(StatusCodes.Bad_InternalError));
+  /**
+   * The outcome of one source read: the per-field values plus the DataSetMessage-level status.
+   *
+   * <p>On a fatal read failure (no bound source, a snapshot whose arity disagrees with the
+   * metadata, or a source exception) every field is set to {@code Bad_InternalError} and {@code
+   * status} carries the failure's StatusCode, which the mappings surface as the DataSetMessage
+   * header status (Part 14 §6.2.4.2: the header status is set to a bad code in a fatal error
+   * situation). A successful read carries {@link StatusCode#GOOD}; per-field quality then rides on
+   * the fields themselves per the Table 34/35 status propagation rules, so the header stays Good
+   * for the Variant and DataValue field representations.
+   *
+   * @param values the per-field values to publish, one per metadata field.
+   * @param status the DataSetMessage-level status.
+   */
+  private record SnapshotRead(List<DataValue> values, StatusCode status) {
+
+    static SnapshotRead failed(int fieldCount, StatusCode status) {
+      return new SnapshotRead(
+          Collections.nCopies(fieldCount, new DataValue(StatusCodes.Bad_InternalError)), status);
+    }
   }
 
   private boolean includeTimestamp() {
     return config.getSettings() instanceof UadpDataSetWriterSettings settings
         && settings.getDataSetMessageContentMask().getTimestamp();
-  }
-
-  private boolean includeStatus() {
-    return config.getSettings() instanceof UadpDataSetWriterSettings settings
-        && settings.getDataSetMessageContentMask().getStatus();
   }
 }
