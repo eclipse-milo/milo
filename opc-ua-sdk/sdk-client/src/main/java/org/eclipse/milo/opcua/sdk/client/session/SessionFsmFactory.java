@@ -34,7 +34,6 @@ import com.digitalpetri.fsm.dsl.FsmBuilder;
 import com.digitalpetri.netty.fsm.ChannelFsm;
 import com.google.common.collect.Streams;
 import io.netty.channel.Channel;
-import java.nio.ByteBuffer;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.cert.CertificateEncodingException;
@@ -65,11 +64,8 @@ import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.ChannelBoundSignatureData;
 import org.eclipse.milo.opcua.stack.core.security.EccEncryptedSecret;
-import org.eclipse.milo.opcua.stack.core.security.EccSignatureUtil;
 import org.eclipse.milo.opcua.stack.core.security.EccUserTokenAdditionalHeader;
-import org.eclipse.milo.opcua.stack.core.security.SecurityAlgorithm;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
-import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
 import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
@@ -103,7 +99,6 @@ import org.eclipse.milo.opcua.stack.core.types.structured.UserIdentityToken;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
-import org.eclipse.milo.opcua.stack.core.util.SignatureUtil;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransport;
@@ -1248,8 +1243,8 @@ public class SessionFsmFactory {
                           response.getServerNonce(),
                           clientCertificate);
 
-                  verifyApplicationSignature(
-                      securityPolicy, serverCertificate, serverSignature, dataBytes);
+                  ChannelBoundSignatureData.verify(
+                      securityPolicy, serverCertificate, dataBytes, serverSignature);
                 }
 
                 if (client.getConfig().isSessionEndpointValidationEnabled()) {
@@ -2065,7 +2060,6 @@ public class SessionFsmFactory {
     if (securityPolicy == SecurityPolicy.None) {
       return new SignatureData(null, null);
     } else {
-      SecurityAlgorithm signatureAlgorithm = securityPolicy.getAsymmetricSignatureAlgorithm();
       Optional<CertificateIdentity> certificateIdentity =
           client.getCertificateIdentity(securityPolicy.getProfile());
       PrivateKey privateKey =
@@ -2079,8 +2073,7 @@ public class SessionFsmFactory {
                           StatusCodes.Bad_ConfigurationError,
                           "client certificate identity is required for session signature"));
       ByteString clientCertificate = getClientCertificate(client, securityPolicy);
-      X509Certificate serverChannelCertificate =
-          CertificateUtil.decodeCertificate(endpoint.getServerCertificate().bytesOrEmpty());
+      ByteString serverChannelCertificate = resolveServerChannelCertificateBytes(endpoint);
 
       byte[] dataToSign =
           ChannelBoundSignatureData.clientSignatureData(
@@ -2088,51 +2081,32 @@ public class SessionFsmFactory {
               client.getTransport().getChannelThumbprint(),
               serverNonce,
               serverCertificate,
-              certificateBytes(serverChannelCertificate),
+              serverChannelCertificate,
               clientCertificate,
               clientNonce);
 
-      byte[] signature;
-      String algorithmUri;
-
-      if (signatureAlgorithm == SecurityAlgorithm.None) {
-        SecurityPolicyProfile profile = securityPolicy.getProfile();
-
-        signature = EccSignatureUtil.sign(profile, privateKey, ByteBuffer.wrap(dataToSign));
-        algorithmUri = null;
-      } else {
-        signature = SignatureUtil.sign(signatureAlgorithm, privateKey, ByteBuffer.wrap(dataToSign));
-        algorithmUri = signatureAlgorithm.getUri();
-      }
-
-      return new SignatureData(algorithmUri, ByteString.of(signature));
+      // ECC policies sign with ECDSA/EdDSA, RSA-DH and legacy policies with the policy's algorithm;
+      // the wire algorithm URI is populated only for legacy policies (Part 4 §7.36).
+      return ChannelBoundSignatureData.sign(securityPolicy, privateKey, dataToSign);
     }
   }
 
-  private static void verifyApplicationSignature(
-      SecurityPolicy securityPolicy,
-      X509Certificate certificate,
-      SignatureData signature,
-      byte[] dataBytes)
+  /**
+   * Resolve the {@code ServerChannelCertificate} bytes for the channel-bound session signatures:
+   * the leaf encoding of the endpoint's server certificate, or {@link ByteString#NULL_VALUE} when
+   * the endpoint advertises no certificate. Shared by {@link #buildIdentityProviderContext} and
+   * {@link #buildClientSignature} so both fill the slot identically.
+   */
+  private static ByteString resolveServerChannelCertificateBytes(EndpointDescription endpoint)
       throws UaException {
 
-    SecurityAlgorithm algorithm = securityPolicy.getAsymmetricSignatureAlgorithm();
+    ByteString serverCertificate = endpoint.getServerCertificate();
 
-    if (algorithm == SecurityAlgorithm.None) {
-      SecurityPolicyProfile profile = securityPolicy.getProfile();
-
-      EccSignatureUtil.verify(
-          profile,
-          certificate.getPublicKey(),
-          signature.getSignature().bytesOrEmpty(),
-          ByteBuffer.wrap(dataBytes));
-    } else {
-      SignatureUtil.verify(
-          SecurityAlgorithm.fromUri(signature.getAlgorithm()),
-          certificate,
-          dataBytes,
-          signature.getSignature().bytesOrEmpty());
+    if (serverCertificate == null || serverCertificate.isNullOrEmpty()) {
+      return ByteString.NULL_VALUE;
     }
+
+    return certificateBytes(CertificateUtil.decodeCertificate(serverCertificate.bytesOrEmpty()));
   }
 
   private static class SessionFaultListener implements ServiceFaultListener {

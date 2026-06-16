@@ -18,7 +18,6 @@ import static org.eclipse.milo.opcua.stack.core.util.DigestUtil.sha1;
 import com.google.common.base.Objects;
 import com.google.common.math.DoubleMath;
 import java.math.RoundingMode;
-import java.nio.ByteBuffer;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
@@ -41,11 +40,8 @@ import org.eclipse.milo.opcua.stack.core.channel.SecureChannel;
 import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.ChannelBoundSignatureData;
 import org.eclipse.milo.opcua.stack.core.security.EccEncryptedSecret;
-import org.eclipse.milo.opcua.stack.core.security.EccSignatureUtil;
 import org.eclipse.milo.opcua.stack.core.security.EccUserTokenAdditionalHeader;
-import org.eclipse.milo.opcua.stack.core.security.SecurityAlgorithm;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
-import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
@@ -73,7 +69,6 @@ import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
-import org.eclipse.milo.opcua.stack.core.util.SignatureUtil;
 import org.eclipse.milo.opcua.stack.core.util.TaskQueue;
 import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
 import org.jspecify.annotations.NonNull;
@@ -1033,8 +1028,6 @@ public class SessionManager {
       return new SignatureData(null, null);
     } else {
       try {
-        SecurityAlgorithm algorithm = securityPolicy.getAsymmetricSignatureAlgorithm();
-
         KeyPair keyPair = securityConfiguration.getKeyPair();
         ByteString clientCertificate = securityConfiguration.getClientCertificateBytes();
 
@@ -1052,20 +1045,9 @@ public class SessionManager {
                 serverNonce,
                 clientCertificate);
 
-        byte[] signature;
-        String algorithmUri;
-
-        if (algorithm == SecurityAlgorithm.None) {
-          SecurityPolicyProfile profile = securityPolicy.getProfile();
-
-          signature = EccSignatureUtil.sign(profile, keyPair.getPrivate(), ByteBuffer.wrap(data));
-          algorithmUri = null;
-        } else {
-          signature = SignatureUtil.sign(algorithm, keyPair.getPrivate(), ByteBuffer.wrap(data));
-          algorithmUri = algorithm.getUri();
-        }
-
-        return new SignatureData(algorithmUri, ByteString.of(signature));
+        // ECC policies sign with ECDSA/EdDSA, RSA-DH and legacy policies with the policy's
+        // algorithm; the wire algorithm URI is populated only for legacy policies (Part 4 §7.36).
+        return ChannelBoundSignatureData.sign(securityPolicy, keyPair.getPrivate(), data);
       } catch (UaRuntimeException e) {
         throw new UaException(StatusCodes.Bad_SecurityChecksFailed);
       }
@@ -1079,22 +1061,8 @@ public class SessionManager {
       byte[] dataBytes)
       throws UaException {
 
-    SecurityAlgorithm algorithm = securityPolicy.getAsymmetricSignatureAlgorithm();
-
-    if (algorithm == SecurityAlgorithm.None) {
-      SecurityPolicyProfile profile = securityPolicy.getProfile();
-
-      EccSignatureUtil.verify(
-          profile,
-          certificate.getPublicKey(),
-          signature.getSignature().bytesOrEmpty(),
-          ByteBuffer.wrap(dataBytes));
-    } else {
-      SignatureUtil.verify(
-          SecurityAlgorithm.fromUri(signature.getAlgorithm()),
-          certificate,
-          dataBytes,
-          signature.getSignature().bytesOrEmpty());
-    }
+    // ECC policies verify with ECDSA/EdDSA, RSA-DH and legacy policies with the policy's algorithm;
+    // for legacy policies the algorithm is read from the wire URI (Part 4 §7.36).
+    ChannelBoundSignatureData.verify(securityPolicy, certificate, dataBytes, signature);
   }
 }
