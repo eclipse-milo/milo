@@ -11,8 +11,10 @@
 package org.eclipse.milo.opcua.stack.core.security;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -24,6 +26,7 @@ import java.security.cert.X509Certificate;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.types.structured.SignatureData;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
@@ -196,6 +199,170 @@ class ChannelBoundSignatureDataTest {
                     bytes(0x05)));
 
     assertEquals(StatusCodes.Bad_SecurityChecksFailed, exception.getStatusCode().getValue());
+  }
+
+  // ActivateSession user-token (X509) signatures use the client-signature channel binding plus an
+  // extra HASH(ClientCertificate), per OPC UA Part 4 §6.1.8 Table 101. This ties the user-token
+  // signature to the application certificate that created the session.
+  @Test
+  void enhancedUserTokenSignatureDataInsertsClientCertificateHash() throws Exception {
+    SecurityPolicyProfile profile = SecurityPolicy.RSA_DH_AesGcm.getProfile();
+    ByteString channelThumbprint = bytes(0x01, 0x02);
+    ByteString serverNonce = bytes(0x03);
+    ByteString serverCertificate = bytes(0x04);
+    ByteString serverChannelCertificate = bytes(0x05);
+    ByteString clientCertificate = bytes(0x08);
+    ByteString clientChannelCertificate = bytes(0x06);
+    ByteString clientNonce = bytes(0x07);
+
+    byte[] data =
+        ChannelBoundSignatureData.userTokenSignatureData(
+            profile,
+            true,
+            channelThumbprint,
+            serverNonce,
+            serverCertificate,
+            serverChannelCertificate,
+            clientCertificate,
+            clientChannelCertificate,
+            clientNonce);
+
+    assertArrayEquals(
+        Bytes.concat(
+            channelThumbprint.bytesOrEmpty(),
+            serverNonce.bytesOrEmpty(),
+            sha256(serverCertificate),
+            sha256(serverChannelCertificate),
+            sha256(clientCertificate),
+            sha256(clientChannelCertificate),
+            clientNonce.bytesOrEmpty()),
+        data);
+  }
+
+  // When an enhanced user-token policy is used over an unsecured (SecurityMode None) channel there
+  // is no channel thumbprint or channel certificate to bind, so Table 101 uses a reduced layout.
+  @Test
+  void unsecuredChannelUserTokenSignatureDataUsesReducedLayout() throws Exception {
+    SecurityPolicyProfile profile = SecurityPolicy.RSA_DH_AesGcm.getProfile();
+    ByteString serverNonce = bytes(0x03);
+    ByteString serverCertificate = bytes(0x04);
+    ByteString clientNonce = bytes(0x07);
+
+    byte[] data =
+        ChannelBoundSignatureData.userTokenSignatureData(
+            profile,
+            false,
+            null,
+            serverNonce,
+            serverCertificate,
+            bytes(0x7f),
+            bytes(0x7f),
+            bytes(0x7f),
+            clientNonce);
+
+    assertArrayEquals(
+        Bytes.concat(
+            serverNonce.bytesOrEmpty(), sha256(serverCertificate), clientNonce.bytesOrEmpty()),
+        data);
+  }
+
+  // Legacy user-token policies keep the historical ServerCertificate || ServerNonce layout
+  // regardless of the secured-channel flag, which only the enhancement layouts consume.
+  @Test
+  void legacyUserTokenSignatureDataKeepsServerCertificateAndNonce() throws Exception {
+    SecurityPolicyProfile profile = SecurityPolicy.Basic256Sha256.getProfile();
+
+    assertArrayEquals(
+        new byte[] {0x04, 0x05, 0x03},
+        ChannelBoundSignatureData.userTokenSignatureData(
+            profile,
+            true,
+            bytes(0x01),
+            bytes(0x03),
+            bytes(0x04, 0x05),
+            bytes(0x7f),
+            bytes(0x7f),
+            bytes(0x7f),
+            bytes(0x7f)));
+  }
+
+  // An enhanced (ECC/RSA-DH) user-token policy binds to the SecureChannel or uses the reduced
+  // SecurityMode-None layout; a legacy secured channel supplies neither, so the combination is
+  // rejected up front rather than failing deep in the byte builder (Part 4 §6.1.8 Table 101).
+  @Test
+  void enhancedUserTokenOverLegacySecuredChannelIsRejected() {
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                ChannelBoundSignatureData.checkUserTokenChannelCompatibility(
+                    SecurityPolicy.ECC_nistP256_AesGcm.getProfile(),
+                    SecurityPolicy.Basic256Sha256));
+
+    assertEquals(StatusCodes.Bad_IdentityTokenInvalid, exception.getStatusCode().getValue());
+  }
+
+  // An enhanced user-token policy is allowed over an enhanced channel (full layout) and over an
+  // unsecured None channel (reduced layout); legacy user-token policies impose no constraint.
+  @Test
+  void compatibleUserTokenChannelCombinationsAreAllowed() {
+    assertDoesNotThrow(
+        () -> {
+          ChannelBoundSignatureData.checkUserTokenChannelCompatibility(
+              SecurityPolicy.ECC_nistP256_AesGcm.getProfile(), SecurityPolicy.ECC_nistP256_AesGcm);
+          ChannelBoundSignatureData.checkUserTokenChannelCompatibility(
+              SecurityPolicy.ECC_nistP256_AesGcm.getProfile(), SecurityPolicy.None);
+          ChannelBoundSignatureData.checkUserTokenChannelCompatibility(
+              SecurityPolicy.Basic256Sha256.getProfile(), SecurityPolicy.Basic256Sha256);
+          ChannelBoundSignatureData.checkUserTokenChannelCompatibility(
+              SecurityPolicy.Basic256Sha256.getProfile(), SecurityPolicy.None);
+        });
+  }
+
+  // Part 4 §7.36: legacy policies carry the algorithm URI on the wire and read it back to verify;
+  // SecureChannel-enhancement policies leave it empty and imply it from the policy.
+  @Test
+  void wireAndVerifyAlgorithmFollowLegacyVsEnhancedUriRule() throws Exception {
+    SecurityPolicy legacy = SecurityPolicy.Basic256Sha256;
+    SecurityAlgorithm legacyAlgorithm = legacy.getAsymmetricSignatureAlgorithm();
+    assertEquals(
+        legacyAlgorithm.getUri(),
+        ChannelBoundSignatureData.wireSignatureAlgorithm(legacy, legacyAlgorithm));
+    assertEquals(
+        legacyAlgorithm,
+        ChannelBoundSignatureData.verifySignatureAlgorithm(
+            legacy, new SignatureData(legacyAlgorithm.getUri(), ByteString.NULL_VALUE)));
+
+    SecurityPolicy enhanced = SecurityPolicy.RSA_DH_AesGcm;
+    SecurityAlgorithm enhancedAlgorithm = enhanced.getAsymmetricSignatureAlgorithm();
+    assertNull(ChannelBoundSignatureData.wireSignatureAlgorithm(enhanced, enhancedAlgorithm));
+    assertEquals(
+        enhancedAlgorithm,
+        ChannelBoundSignatureData.verifySignatureAlgorithm(
+            enhanced, new SignatureData(null, ByteString.NULL_VALUE)));
+  }
+
+  // sign()/verify() round-trip for a legacy policy: the wire URI is populated, verification works
+  // against the signed bytes, and tampered data fails.
+  @Test
+  void signAndVerifyRoundTripLegacyPolicyCarriesWireUri() throws Exception {
+    SecurityPolicy policy = SecurityPolicy.Basic256Sha256;
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    X509Certificate certificate =
+        new SelfSignedCertificateBuilder(keyPair)
+            .setCommonName("sign-verify")
+            .setApplicationUri("urn:eclipse:milo:test:sign-verify")
+            .build();
+    byte[] data = {0x01, 0x02, 0x03, 0x04};
+
+    SignatureData signature = ChannelBoundSignatureData.sign(policy, keyPair.getPrivate(), data);
+
+    assertEquals(policy.getAsymmetricSignatureAlgorithm().getUri(), signature.getAlgorithm());
+    assertDoesNotThrow(
+        () -> ChannelBoundSignatureData.verify(policy, certificate, data, signature));
+    assertThrows(
+        UaException.class,
+        () -> ChannelBoundSignatureData.verify(policy, certificate, new byte[] {0x09}, signature));
   }
 
   private static ByteString bytes(int... values) {
