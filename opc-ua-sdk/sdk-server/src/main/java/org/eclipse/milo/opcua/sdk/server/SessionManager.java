@@ -716,45 +716,66 @@ public class SessionManager {
               decodeIdentityToken(
                   request.getUserIdentityToken(), session.getEndpoint().getUserIdentityTokens());
 
-          Identity identity =
-              validateIdentityToken(session, identityToken, request.getUserTokenSignature());
+          /*
+           * The user-token signature for enhanced (ECC/RSA-DH) policies is bound to the SecureChannel
+           * carrying this request, and the IdentityValidator reconstructs those channel-bound inputs
+           * from the Session's SecurityConfiguration and Endpoint. Make the candidate channel context
+           * current before validating the identity token and roll it back if activation does not
+           * complete, so a rejected reactivation leaves the Session bound to its existing channel.
+           */
+          EndpointDescription previousEndpoint = session.getEndpoint();
+          session.setEndpoint(endpoint);
+          session.setSecurityConfiguration(newSecurityConfiguration);
 
-          boolean sameIdentity = identity.equalTo(session.getIdentity());
+          boolean activated = false;
 
-          boolean sameCertificate =
-              Objects.equal(
-                  clientCertificateBytes, securityConfiguration.getClientCertificateBytes());
+          try {
+            Identity identity =
+                validateIdentityToken(session, identityToken, request.getUserTokenSignature());
 
-          if (sameIdentity && sameCertificate) {
-            session.setEndpoint(endpoint);
+            boolean sameIdentity = identity.equalTo(session.getIdentity());
 
-            session.setSecureChannelId(secureChannelId);
-            session.setSecurityConfiguration(newSecurityConfiguration);
+            // Compare against the original Session's client certificate (the prior configuration
+            // captured above), confirming the same client is reactivating.
+            boolean sameCertificate =
+                Objects.equal(
+                    clientCertificateBytes, securityConfiguration.getClientCertificateBytes());
 
-            logger.debug(
-                "Session id={} is now associated with secureChannelId={}",
-                session.getSessionId(),
-                secureChannelId);
+            if (sameIdentity && sameCertificate) {
+              session.setSecureChannelId(secureChannelId);
 
-            StatusCode[] results = new StatusCode[clientSoftwareCertificates.length];
-            Arrays.fill(results, StatusCode.GOOD);
+              logger.debug(
+                  "Session id={} is now associated with secureChannelId={}",
+                  session.getSessionId(),
+                  secureChannelId);
 
-            ByteString serverNonce = NonceUtil.generateNonce(32);
+              StatusCode[] results = new StatusCode[clientSoftwareCertificates.length];
+              Arrays.fill(results, StatusCode.GOOD);
 
-            session.setClientAddress(context.clientAddress());
-            session.setLastNonce(serverNonce);
-            session.setLocaleIds(request.getLocaleIds());
+              ByteString serverNonce = NonceUtil.generateNonce(32);
 
-            ExtensionObject additionalHeader =
-                activateSessionAdditionalHeader(request, newSecurityConfiguration, session);
+              session.setClientAddress(context.clientAddress());
+              session.setLastNonce(serverNonce);
+              session.setLocaleIds(request.getLocaleIds());
 
-            return new ActivateSessionResponse(
-                createResponseHeader(request, StatusCode.GOOD, additionalHeader),
-                serverNonce,
-                results,
-                new DiagnosticInfo[0]);
-          } else {
-            throw new UaException(StatusCodes.Bad_SecurityChecksFailed);
+              ExtensionObject additionalHeader =
+                  activateSessionAdditionalHeader(request, newSecurityConfiguration, session);
+
+              activated = true;
+
+              return new ActivateSessionResponse(
+                  createResponseHeader(request, StatusCode.GOOD, additionalHeader),
+                  serverNonce,
+                  results,
+                  new DiagnosticInfo[0]);
+            } else {
+              throw new UaException(StatusCodes.Bad_SecurityChecksFailed);
+            }
+          } finally {
+            if (!activated) {
+              session.setEndpoint(previousEndpoint);
+              session.setSecurityConfiguration(securityConfiguration);
+            }
           }
         }
       }

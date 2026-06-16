@@ -53,6 +53,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.client.*;
+import org.eclipse.milo.opcua.sdk.client.identity.ChannelSignatureInputs;
 import org.eclipse.milo.opcua.sdk.client.identity.IdentityProvider;
 import org.eclipse.milo.opcua.sdk.client.identity.IdentityProviderContext;
 import org.eclipse.milo.opcua.sdk.client.identity.SignedIdentityToken;
@@ -1537,7 +1538,9 @@ public class SessionFsmFactory {
       EndpointDescription endpoint,
       ByteString serverNonce,
       SecurityPolicy userTokenSecurityPolicy,
-      ByteString receiverEccPublicKey)
+      ByteString receiverEccPublicKey,
+      ByteString serverCertificate,
+      ByteString clientNonce)
       throws UaException {
 
     SecurityPolicy endpointSecurityPolicy = SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
@@ -1569,13 +1572,27 @@ public class SessionFsmFactory {
                         .map(certificate -> new X509Certificate[] {certificate}))
             .orElse(null);
 
+    // Resolve the SecureChannel-bound signature inputs the same way buildClientSignature does, so a
+    // channel-bound user-token signature (enhanced policies) reconstructs identically on the
+    // server.
+    ByteString serverChannelCertificate = resolveServerChannelCertificateBytes(endpoint);
+
+    ChannelSignatureInputs channelSignatureInputs =
+        new ChannelSignatureInputs(
+            client.getTransport().getChannelThumbprint(),
+            clientNonce,
+            serverCertificate,
+            serverChannelCertificate,
+            getClientCertificate(client, endpointSecurityPolicy));
+
     return new IdentityProviderContext(
         endpoint,
         serverNonce,
         userTokenSecurityPolicy,
         receiverEccPublicKey,
         keyPair,
-        certificateChain);
+        certificateChain,
+        channelSignatureInputs);
   }
 
   @SuppressWarnings("Duplicates")
@@ -1603,7 +1620,9 @@ public class SessionFsmFactory {
                       endpoint,
                       csrNonce,
                       userTokenSecurityPolicy.orElse(null),
-                      receiverEccPublicKey.orElse(null)));
+                      receiverEccPublicKey.orElse(null),
+                      csr.getServerCertificate(),
+                      clientNonce));
 
       UserIdentityToken userIdentityToken = signedIdentityToken.getToken();
       SignatureData userTokenSignature = signedIdentityToken.getSignature();
@@ -1691,41 +1710,40 @@ public class SessionFsmFactory {
       Optional<SecurityPolicy> userTokenSecurityPolicy =
           client.getConfig().getIdentityProvider().getEccUserTokenSecurityPolicy(endpoint);
 
-      SignedIdentityToken signedIdentityToken =
-          client
-              .getConfig()
-              .getIdentityProvider()
-              .getIdentityToken(
-                  buildIdentityProviderContext(
-                      client,
-                      endpoint,
-                      serverNonce,
-                      userTokenSecurityPolicy.orElse(null),
-                      session.getUserTokenReceiverEccPublicKey().orElse(null)));
-
-      UserIdentityToken userIdentityToken = signedIdentityToken.getToken();
-      SignatureData userTokenSignature = signedIdentityToken.getSignature();
-
-      // Reactivation may have to await an in-progress reconnect, so build the request (and
-      // therefore the channel-bound client signature) only once the new channel is ready. Reading
-      // getChannelThumbprint() before the handshake completes would sign over the dead channel's
-      // thumbprint and be rejected with Bad_ApplicationSignatureInvalid.
+      // Reactivation may have to await an in-progress reconnection, so build the request (and
+      // therefore the channel-bound client and user-token signatures) only once the new channel is
+      // ready. Reading getChannelThumbprint() before the handshake completes would sign over the
+      // dead channel's thumbprint and be rejected. The user-token signature is built here too
+      // because enhanced (ECC or RSA-DH) policies bind it to the same channel thumbprint.
       Callable<UaRequestMessageType> requestSupplier =
-          () ->
-              new ActivateSessionRequest(
-                  withAdditionalHeader(
-                      client.newRequestHeader(session.getAuthenticationToken()),
-                      buildActivateSessionAdditionalHeader(
-                          client.getStaticEncodingContext(), userTokenSecurityPolicy)),
-                  buildClientSignature(
-                      client,
-                      session.getServerCertificate(),
-                      serverNonce,
-                      session.getClientNonce()),
-                  new SignedSoftwareCertificate[0],
-                  client.getConfig().getSessionLocaleIds(),
-                  ExtensionObject.encode(client.getStaticEncodingContext(), userIdentityToken),
-                  userTokenSignature);
+          () -> {
+            SignedIdentityToken signedIdentityToken =
+                client
+                    .getConfig()
+                    .getIdentityProvider()
+                    .getIdentityToken(
+                        buildIdentityProviderContext(
+                            client,
+                            endpoint,
+                            serverNonce,
+                            userTokenSecurityPolicy.orElse(null),
+                            session.getUserTokenReceiverEccPublicKey().orElse(null),
+                            session.getServerCertificate(),
+                            session.getClientNonce()));
+
+            return new ActivateSessionRequest(
+                withAdditionalHeader(
+                    client.newRequestHeader(session.getAuthenticationToken()),
+                    buildActivateSessionAdditionalHeader(
+                        client.getStaticEncodingContext(), userTokenSecurityPolicy)),
+                buildClientSignature(
+                    client, session.getServerCertificate(), serverNonce, session.getClientNonce()),
+                new SignedSoftwareCertificate[0],
+                client.getConfig().getSessionLocaleIds(),
+                ExtensionObject.encode(
+                    client.getStaticEncodingContext(), signedIdentityToken.getToken()),
+                signedIdentityToken.getSignature());
+          };
 
       try (MDCCloseable ignored =
           MDC.putCloseable("instance-id", ctx.getUserContext().toString())) {
@@ -2006,19 +2024,16 @@ public class SessionFsmFactory {
   private static ByteString getClientCertificate(OpcUaClient client, SecurityPolicy securityPolicy)
       throws UaException {
 
-    return client
-        .getCertificateIdentity(securityPolicy.getProfile())
-        .map(CertificateIdentity::certificate)
-        .or(() -> client.getConfig().getCertificate())
-        .map(
-            c -> {
-              try {
-                return ByteString.of(c.getEncoded());
-              } catch (CertificateEncodingException e) {
-                return ByteString.NULL_VALUE;
-              }
-            })
-        .orElse(ByteString.NULL_VALUE);
+    Optional<X509Certificate> certificate =
+        client
+            .getCertificateIdentity(securityPolicy.getProfile())
+            .map(CertificateIdentity::certificate)
+            .or(() -> client.getConfig().getCertificate());
+
+    // A genuinely absent certificate yields NULL_VALUE; an encoding failure on a present
+    // certificate is surfaced (like certificateBytes) rather than being swallowed into a silently
+    // wrong signature.
+    return certificate.isPresent() ? certificateBytes(certificate.get()) : ByteString.NULL_VALUE;
   }
 
   private static ByteString certificateBytes(X509Certificate certificate) throws UaException {

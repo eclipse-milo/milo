@@ -12,7 +12,6 @@ package org.eclipse.milo.opcua.sdk.client.identity;
 
 import static java.util.Objects.requireNonNullElse;
 
-import java.nio.ByteBuffer;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -23,7 +22,9 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.security.ChannelBoundSignatureData;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
@@ -32,7 +33,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.core.types.structured.X509IdentityToken;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
-import org.eclipse.milo.opcua.stack.core.util.SignatureUtil;
+import org.jspecify.annotations.Nullable;
 
 /**
  * An {@link IdentityProvider} that authenticates with a certificate user-token policy.
@@ -116,7 +117,26 @@ public class X509IdentityProvider implements IdentityProvider {
   }
 
   @Override
+  public SignedIdentityToken getIdentityToken(IdentityProviderContext context) throws Exception {
+    return buildSignedIdentityToken(
+        context.getEndpoint(),
+        context.getServerNonce(),
+        context.getChannelSignatureInputs().orElse(null));
+  }
+
+  @Override
   public SignedIdentityToken getIdentityToken(EndpointDescription endpoint, ByteString serverNonce)
+      throws Exception {
+
+    // This legacy entry point has no SecureChannel-bound inputs; enhanced (ECC or RSA-DH)
+    // user-token policies require the IdentityProviderContext overload, which the SDK uses.
+    return buildSignedIdentityToken(endpoint, serverNonce, null);
+  }
+
+  private SignedIdentityToken buildSignedIdentityToken(
+      EndpointDescription endpoint,
+      ByteString serverNonce,
+      @Nullable ChannelSignatureInputs channelSignatureInputs)
       throws Exception {
 
     UserTokenPolicy tokenPolicy = selectTokenPolicy(endpoint);
@@ -133,26 +153,72 @@ public class X509IdentityProvider implements IdentityProvider {
     } else {
       NonceUtil.validateNonce(serverNonce);
 
-      List<X509Certificate> serverCertificates =
-          CertificateUtil.decodeCertificates(endpoint.getServerCertificate().bytesOrEmpty());
-      byte[] serverCertificateBytes = serverCertificates.get(0).getEncoded();
+      byte[] dataToSign =
+          userTokenSignatureData(endpoint, securityPolicy, serverNonce, channelSignatureInputs);
 
-      byte[] serverNonceBytes = serverNonce.bytes();
-      if (serverNonceBytes == null) serverNonceBytes = new byte[0];
-
-      byte[] signature =
-          SignatureUtil.sign(
-              securityPolicy.getAsymmetricSignatureAlgorithm(),
-              privateKeySupplier.get(),
-              ByteBuffer.wrap(serverCertificateBytes),
-              ByteBuffer.wrap(serverNonceBytes));
-
+      // ECC policies sign with ECDSA/EdDSA, RSA-DH and legacy policies with the policy's algorithm;
+      // the wire algorithm URI is populated only for legacy policies (Part 4 §7.36).
       signatureData =
-          new SignatureData(
-              securityPolicy.getAsymmetricSignatureAlgorithm().getUri(), ByteString.of(signature));
+          ChannelBoundSignatureData.sign(securityPolicy, privateKeySupplier.get(), dataToSign);
     }
 
     return new SignedIdentityToken(token, signatureData);
+  }
+
+  /**
+   * Build the bytes the user certificate signs for the ActivateSession user-token signature.
+   *
+   * <p>Legacy policies sign {@code leaf(ServerCertificate) | ServerNonce}. Enhanced policies sign
+   * the channel-bound layout (Part 4 §6.1.8 Table 101) and require the SDK-resolved {@code inputs}.
+   */
+  private static byte[] userTokenSignatureData(
+      EndpointDescription endpoint,
+      SecurityPolicy securityPolicy,
+      ByteString serverNonce,
+      @Nullable ChannelSignatureInputs inputs)
+      throws Exception {
+
+    SecurityPolicyProfile profile = securityPolicy.getProfile();
+
+    if (!profile.secureChannelEnhancements()) {
+      List<X509Certificate> serverCertificates =
+          CertificateUtil.decodeCertificates(endpoint.getServerCertificate().bytesOrEmpty());
+      ByteString serverCertificate = ByteString.of(serverCertificates.get(0).getEncoded());
+
+      return ChannelBoundSignatureData.legacyUserTokenSignatureData(serverCertificate, serverNonce);
+    }
+
+    if (inputs == null) {
+      throw new UaException(
+          StatusCodes.Bad_SecurityChecksFailed,
+          "channel-bound user-token signature requires SecureChannel inputs; "
+              + "use getIdentityToken(IdentityProviderContext)");
+    }
+
+    // An enhanced user-token policy binds to the SecureChannel (full layout) or, on an unsecured
+    // channel, uses the reduced SecurityMode-None layout; a legacy secured channel supports neither
+    // and is rejected cleanly (Part 4 §6.1.8 Table 101).
+    SecurityPolicy channelPolicy = SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
+    ChannelBoundSignatureData.checkUserTokenChannelCompatibility(profile, channelPolicy);
+
+    // Select the layout from whether the channel actually binds (a thumbprint exists), keeping the
+    // client and server discriminators on the same physical signal.
+    boolean secureChannelSecured = !inputs.channelThumbprint().isNullOrEmpty();
+    // Milo uses one application certificate for both the CreateSession ClientCertificate and the
+    // channel ClientChannelCertificate, so the same bytes fill both Table 101 slots. The server
+    // collapses them identically (SecurityConfiguration.getClientChannelCertificateBytes()).
+    ByteString clientCertificate = inputs.clientCertificate();
+
+    return ChannelBoundSignatureData.userTokenSignatureData(
+        profile,
+        secureChannelSecured,
+        inputs.channelThumbprint(),
+        serverNonce,
+        inputs.serverCertificate(),
+        inputs.serverChannelCertificate(),
+        clientCertificate,
+        clientCertificate,
+        inputs.clientNonce());
   }
 
   private static UserTokenPolicy selectTokenPolicy(EndpointDescription endpoint) throws Exception {

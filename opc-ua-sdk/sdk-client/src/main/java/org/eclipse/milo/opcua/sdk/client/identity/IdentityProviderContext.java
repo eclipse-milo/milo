@@ -38,6 +38,7 @@ public final class IdentityProviderContext {
   private final @Nullable ByteString receiverEccPublicKey;
   private final @Nullable KeyPair clientApplicationKeyPair;
   private final X509Certificate @Nullable [] clientCertificateChain;
+  private final @Nullable ChannelSignatureInputs channelSignatureInputs;
 
   /**
    * Create a context for providers that only need the endpoint and server nonce.
@@ -101,6 +102,42 @@ public final class IdentityProviderContext {
       @Nullable KeyPair clientApplicationKeyPair,
       X509Certificate @Nullable [] clientCertificateChain) {
 
+    this(
+        endpoint,
+        serverNonce,
+        userTokenSecurityPolicy,
+        receiverEccPublicKey,
+        clientApplicationKeyPair,
+        clientCertificateChain,
+        null);
+  }
+
+  /**
+   * Create a context that additionally carries the SecureChannel-bound inputs needed to build a
+   * channel-bound user-token signature for an enhanced (ECC or RSA-DH) user-token policy.
+   *
+   * @param endpoint the endpoint being activated.
+   * @param serverNonce the server nonce returned by CreateSession or the latest ActivateSession.
+   * @param userTokenSecurityPolicy the selected user-token security policy, or {@code null}.
+   * @param receiverEccPublicKey the server session public key returned for enhanced username-token
+   *     encryption, or {@code null}. The parameter name follows the existing public API and OPC UA
+   *     structure naming; RSA-DH profiles use the same field.
+   * @param clientApplicationKeyPair the client application key pair selected for the token policy,
+   *     or {@code null}.
+   * @param clientCertificateChain the client application certificate chain selected for the token
+   *     policy, or {@code null}.
+   * @param channelSignatureInputs the SecureChannel-bound signature inputs, or {@code null} when
+   *     they are unavailable (for example, a legacy provider path).
+   */
+  public IdentityProviderContext(
+      EndpointDescription endpoint,
+      ByteString serverNonce,
+      @Nullable SecurityPolicy userTokenSecurityPolicy,
+      @Nullable ByteString receiverEccPublicKey,
+      @Nullable KeyPair clientApplicationKeyPair,
+      X509Certificate @Nullable [] clientCertificateChain,
+      @Nullable ChannelSignatureInputs channelSignatureInputs) {
+
     this.endpoint = requireNonNull(endpoint, "endpoint");
     this.serverNonce = requireNonNull(serverNonce, "serverNonce");
     this.userTokenSecurityPolicy = userTokenSecurityPolicy;
@@ -110,6 +147,7 @@ public final class IdentityProviderContext {
         clientCertificateChain != null
             ? Arrays.copyOf(clientCertificateChain, clientCertificateChain.length)
             : null;
+    this.channelSignatureInputs = channelSignatureInputs;
   }
 
   public EndpointDescription getEndpoint() {
@@ -163,5 +201,14 @@ public final class IdentityProviderContext {
   public Optional<X509Certificate[]> getClientCertificateChain() {
     return Optional.ofNullable(clientCertificateChain)
         .map(chain -> Arrays.copyOf(chain, chain.length));
+  }
+
+  /**
+   * Get the SecureChannel-bound signature inputs for building a channel-bound user-token signature.
+   *
+   * @return the channel-bound signature inputs, if the SDK resolved them for this activation.
+   */
+  public Optional<ChannelSignatureInputs> getChannelSignatureInputs() {
+    return Optional.ofNullable(channelSignatureInputs);
   }
 }

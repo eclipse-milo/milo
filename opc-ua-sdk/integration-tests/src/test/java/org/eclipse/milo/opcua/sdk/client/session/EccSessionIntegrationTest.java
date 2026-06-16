@@ -42,6 +42,7 @@ import org.eclipse.milo.opcua.sdk.client.UaSession;
 import org.eclipse.milo.opcua.sdk.client.identity.AnonymousProvider;
 import org.eclipse.milo.opcua.sdk.client.identity.IdentityProvider;
 import org.eclipse.milo.opcua.sdk.client.identity.UsernameProvider;
+import org.eclipse.milo.opcua.sdk.client.identity.X509IdentityProvider;
 import org.eclipse.milo.opcua.sdk.client.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.sdk.server.EndpointCertificateConfig;
 import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
@@ -50,6 +51,7 @@ import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
 import org.eclipse.milo.opcua.sdk.server.identity.AnonymousIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.CompositeValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.UsernameIdentityValidator;
+import org.eclipse.milo.opcua.sdk.server.identity.X509IdentityValidator;
 import org.eclipse.milo.opcua.sdk.test.DelegatingSessionServiceSet;
 import org.eclipse.milo.opcua.sdk.test.TestNamespace;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
@@ -206,6 +208,70 @@ class EccSessionIntegrationTest {
     }
   }
 
+  // X509 (Certificate) activation proves the channel-bound user-token signature path for enhanced
+  // policies: the user certificate signs the Part 4 §6.1.8 Table 101 layout, RSA-DH leaves the
+  // SignatureData algorithm URI empty, and ECC user keys sign via ECDSA/EdDSA.
+  @ParameterizedTest
+  @MethodSource("currentEnhancedPolicies")
+  void activatesX509SessionAndReadsWrites(SecurityPolicy securityPolicy, NodeId certificateTypeId)
+      throws Exception {
+
+    assertX509SessionReadsWrites(
+        securityPolicy, certificateTypeId, MessageSecurityMode.SignAndEncrypt);
+  }
+
+  // X509 activation over ECC Sign proves the channel-bound user-token signature is independent of
+  // symmetric payload encryption.
+  @ParameterizedTest
+  @MethodSource("currentEccPolicies")
+  void activatesX509SessionAndReadsWritesWithEccSign(
+      SecurityPolicy securityPolicy, NodeId certificateTypeId) throws Exception {
+
+    assertX509SessionReadsWrites(securityPolicy, certificateTypeId, MessageSecurityMode.Sign);
+  }
+
+  // X509 activation over a legacy (RSA) channel exercises the client leaf-extraction branch and the
+  // server legacy candidate loop, which the enhanced-only matrix never reaches.
+  @Test
+  void activatesLegacyX509SessionAndReadsWrites() throws Exception {
+    assertX509SessionReadsWrites(
+        SecurityPolicy.Basic256Sha256,
+        NodeIds.RsaSha256ApplicationCertificateType,
+        MessageSecurityMode.SignAndEncrypt);
+  }
+
+  private static void assertX509SessionReadsWrites(
+      SecurityPolicy securityPolicy, NodeId certificateTypeId, MessageSecurityMode securityMode)
+      throws Exception {
+
+    try (RunningServer running =
+        startSecureServer(securityPolicy, certificateTypeId, securityMode, b -> {})) {
+      CertificateManager clientCertificateManager =
+          certificateManager(certificate(certificateTypeId, "client", CLIENT_URI));
+
+      // The user identity certificate is independent of the application certificate, but uses the
+      // same key type as the user-token policy so ECC policies sign with a matching EC key.
+      CertificateMaterial identity = certificate(certificateTypeId, "x509-user", CLIENT_URI);
+      X509IdentityProvider identityProvider =
+          new X509IdentityProvider(identity.certificateChain()[0], identity.keyPair().getPrivate());
+
+      OpcUaClient client =
+          connectClient(
+              running,
+              securityPolicy,
+              securityMode,
+              identityProvider,
+              clientCertificateManager,
+              b -> {});
+
+      try {
+        readWriteTestNode(client, running.namespaceIndex());
+      } finally {
+        disconnectQuietly(client);
+      }
+    }
+  }
+
   // Renewal is profile-sensitive because nonces, sequence numbers, and AEAD keys are all
   // profile-specific. The lifetime is short enough to force renewal in the test, but still leaves
   // margin for RSA-DH finite-field key generation before the server lifetime timer closes the
@@ -326,6 +392,87 @@ class EccSessionIntegrationTest {
             sessionActive.await(10, TimeUnit.SECONDS),
             "session did not reactivate after channel drop");
         readWriteTestNode(client, running.namespaceIndex());
+      } finally {
+        disconnectQuietly(client);
+      }
+    }
+  }
+
+  // Reactivation must rebind the channel-bound user-token signature to the NEW channel thumbprint
+  // and reassociate the SAME Session rather than silently falling back to a fresh CreateSession.
+  // The token signature is built inside the deferred request supplier, so it signs over the
+  // post-reconnect channel; if the server reconstructed it over the stale channel configuration,
+  // the reactivation would be rejected and the client would create a brand-new session (new id).
+  @ParameterizedTest
+  @MethodSource("currentEnhancedPolicies")
+  void reactivatesX509SessionOnNewSecureChannel(
+      SecurityPolicy securityPolicy, NodeId certificateTypeId) throws Exception {
+
+    assertX509SessionReactivatesOnNewSecureChannel(
+        securityPolicy, certificateTypeId, MessageSecurityMode.SignAndEncrypt);
+  }
+
+  // Reconnection over ECC Sign must reassociate the same X509 Session on the new signed-only
+  // channel.
+  @ParameterizedTest
+  @MethodSource("currentEccPolicies")
+  void reactivatesX509SessionOnNewSecureChannelOverEccSign(
+      SecurityPolicy securityPolicy, NodeId certificateTypeId) throws Exception {
+
+    assertX509SessionReactivatesOnNewSecureChannel(
+        securityPolicy, certificateTypeId, MessageSecurityMode.Sign);
+  }
+
+  private static void assertX509SessionReactivatesOnNewSecureChannel(
+      SecurityPolicy securityPolicy, NodeId certificateTypeId, MessageSecurityMode securityMode)
+      throws Exception {
+
+    CountDownLatch sessionActive = new CountDownLatch(2);
+
+    try (RunningServer running =
+        startSecureServer(securityPolicy, certificateTypeId, securityMode, b -> {})) {
+      CertificateManager clientCertificateManager =
+          certificateManager(certificate(certificateTypeId, "client", CLIENT_URI));
+
+      CertificateMaterial identity = certificate(certificateTypeId, "x509-user", CLIENT_URI);
+      OpcUaClient client =
+          createClient(
+              running,
+              securityPolicy,
+              securityMode,
+              new X509IdentityProvider(
+                  identity.certificateChain()[0], identity.keyPair().getPrivate()),
+              clientCertificateManager,
+              b -> {},
+              b -> {});
+      client.addSessionActivityListener(
+          new SessionActivityListener() {
+            @Override
+            public void onSessionActive(UaSession session) {
+              sessionActive.countDown();
+            }
+          });
+
+      try {
+        client.connect();
+
+        // Capture the Session id before the channel drop; a true reassociation keeps it stable,
+        // whereas a fall-back to a fresh CreateSession would change it. This assertion is the
+        // regression guard for the reactivation user-token verification using the new channel.
+        NodeId initialSessionId = client.getSession().getSessionId();
+
+        closeActiveTcpChannel(client);
+
+        assertTrue(
+            sessionActive.await(10, TimeUnit.SECONDS),
+            "session did not reactivate after channel drop");
+        readWriteTestNode(client, running.namespaceIndex());
+
+        assertEquals(
+            initialSessionId,
+            client.getSession().getSessionId(),
+            "expected reactivation to reuse the same Session, but the client fell back to a new"
+                + " CreateSession");
       } finally {
         disconnectQuietly(client);
       }
@@ -507,7 +654,7 @@ class EccSessionIntegrationTest {
             certificateTypeId,
             MessageSecurityMode.SignAndEncrypt,
             b -> {},
-            server -> registerTamperedClientSignature(server))) {
+            EccSessionIntegrationTest::registerTamperedClientSignature)) {
 
       CertificateManager clientCertificateManager =
           certificateManager(certificate(certificateTypeId, "client", CLIENT_URI));
@@ -532,6 +679,105 @@ class EccSessionIntegrationTest {
     }
   }
 
+  // The user-token (X509) signature path must reject a tampered signature too. Because the suite
+  // uses a trust-all X509 validator, a regression that stopped verifying the user-token signature
+  // would otherwise go unnoticed. A flipped signature byte must surface Bad_IdentityTokenInvalid.
+  @Test
+  void serverRejectsTamperedUserTokenSignatureOnEnhancedChannel() throws Exception {
+    assertServerRejectsTamperedUserTokenSignature(
+        SecurityPolicy.ECC_nistP256_AesGcm, NodeIds.EccNistP256ApplicationCertificateType);
+  }
+
+  // The legacy RSA user-token signature flows through the same verification gate, so it must also
+  // reject a tampered signature; this guards the historical RSA path the enhanced matrix skips.
+  @Test
+  void serverRejectsTamperedUserTokenSignatureOnLegacyChannel() throws Exception {
+    assertServerRejectsTamperedUserTokenSignature(
+        SecurityPolicy.Basic256Sha256, NodeIds.RsaSha256ApplicationCertificateType);
+  }
+
+  private static void assertServerRejectsTamperedUserTokenSignature(
+      SecurityPolicy securityPolicy, NodeId certificateTypeId) throws Exception {
+
+    try (RunningServer running =
+        startSecureServer(
+            securityPolicy,
+            certificateTypeId,
+            MessageSecurityMode.SignAndEncrypt,
+            b -> {},
+            EccSessionIntegrationTest::registerTamperedUserTokenSignature)) {
+
+      CertificateManager clientCertificateManager =
+          certificateManager(certificate(certificateTypeId, "client", CLIENT_URI));
+
+      CertificateMaterial identity = certificate(certificateTypeId, "x509-user", CLIENT_URI);
+      OpcUaClient client =
+          createClient(
+              running,
+              securityPolicy,
+              MessageSecurityMode.SignAndEncrypt,
+              new X509IdentityProvider(
+                  identity.certificateChain()[0], identity.keyPair().getPrivate()),
+              clientCertificateManager,
+              b -> {},
+              b -> {});
+
+      try {
+        UaException exception = assertThrows(UaException.class, client::connect);
+
+        assertEquals(StatusCodes.Bad_IdentityTokenInvalid, exception.getStatusCode().getValue());
+      } finally {
+        disconnectQuietly(client);
+      }
+    }
+  }
+
+  // An enhanced (ECC/RSA-DH) certificate user-token policy advertised over a legacy secured channel
+  // is unsupported: there is no channel thumbprint or channel certificate to bind, and Table 101
+  // defines no reduced layout for it. The client must reject it cleanly rather than failing deep in
+  // the signature byte builder (Part 4 §6.1.8 Table 101).
+  @Test
+  void rejectsEnhancedX509TokenOverLegacyChannel() throws Exception {
+    SecurityPolicy channelPolicy = SecurityPolicy.Basic256Sha256;
+    NodeId channelCertificateType = NodeIds.RsaSha256ApplicationCertificateType;
+    SecurityPolicy tokenPolicy = SecurityPolicy.ECC_nistP256_AesGcm;
+
+    try (RunningServer running =
+        startSecureServer(
+            channelPolicy,
+            channelCertificateType,
+            MessageSecurityMode.SignAndEncrypt,
+            certificatePolicy(tokenPolicy),
+            b -> {},
+            server -> {})) {
+
+      CertificateManager clientCertificateManager =
+          certificateManager(certificate(channelCertificateType, "client", CLIENT_URI));
+
+      // The user identity certificate matches the enhanced token policy's key type.
+      CertificateMaterial identity =
+          certificate(NodeIds.EccNistP256ApplicationCertificateType, "x509-user", CLIENT_URI);
+      OpcUaClient client =
+          createClient(
+              running,
+              channelPolicy,
+              MessageSecurityMode.SignAndEncrypt,
+              new X509IdentityProvider(
+                  identity.certificateChain()[0], identity.keyPair().getPrivate()),
+              clientCertificateManager,
+              b -> {},
+              b -> {});
+
+      try {
+        UaException exception = assertThrows(UaException.class, client::connect);
+
+        assertEquals(StatusCodes.Bad_IdentityTokenInvalid, exception.getStatusCode().getValue());
+      } finally {
+        disconnectQuietly(client);
+      }
+    }
+  }
+
   // The client side of the binding is symmetric: a CreateSession serverSignature that does not
   // verify against the enhanced data layout (here, the same bytes with one flipped) must fail the
   // session FSM rather than letting the client trust a substituted server identity.
@@ -546,7 +792,7 @@ class EccSessionIntegrationTest {
             certificateTypeId,
             MessageSecurityMode.SignAndEncrypt,
             b -> {},
-            server -> registerTamperedServerSignature(server))) {
+            EccSessionIntegrationTest::registerTamperedServerSignature)) {
 
       CertificateManager clientCertificateManager =
           certificateManager(certificate(certificateTypeId, "client", CLIENT_URI));
@@ -585,6 +831,31 @@ class EccSessionIntegrationTest {
                     request.getLocaleIds(),
                     request.getUserIdentityToken(),
                     request.getUserTokenSignature());
+
+            return super.onActivateSession(context, tampered);
+          }
+        };
+
+    for (EndpointConfig endpoint : server.getConfig().getEndpoints()) {
+      server.addServiceSet(endpoint.getPath(), tamperingServiceSet);
+    }
+  }
+
+  private static void registerTamperedUserTokenSignature(OpcUaServer server) {
+    var tamperingServiceSet =
+        new DelegatingSessionServiceSet(server) {
+          @Override
+          public ActivateSessionResponse onActivateSession(
+              ServiceRequestContext context, ActivateSessionRequest request) throws UaException {
+
+            ActivateSessionRequest tampered =
+                new ActivateSessionRequest(
+                    request.getRequestHeader(),
+                    request.getClientSignature(),
+                    request.getClientSoftwareCertificates(),
+                    request.getLocaleIds(),
+                    request.getUserIdentityToken(),
+                    tamper(request.getUserTokenSignature()));
 
             return super.onActivateSession(context, tampered);
           }
@@ -803,6 +1074,24 @@ class EccSessionIntegrationTest {
       java.util.function.Consumer<OpcUaServer> configureServer)
       throws Exception {
 
+    return startSecureServer(
+        securityPolicy,
+        certificateTypeId,
+        securityMode,
+        certificatePolicy(securityPolicy),
+        configureTransport,
+        configureServer);
+  }
+
+  private static RunningServer startSecureServer(
+      SecurityPolicy securityPolicy,
+      NodeId certificateTypeId,
+      MessageSecurityMode securityMode,
+      UserTokenPolicy certificateTokenPolicy,
+      java.util.function.Consumer<OpcTcpServerTransportConfigBuilder> configureTransport,
+      java.util.function.Consumer<OpcUaServer> configureServer)
+      throws Exception {
+
     int port = freePort();
     CertificateMaterial serverCertificate = certificate(certificateTypeId, "server", SERVER_URI);
     CertificateManager certificateManager = certificateManager(serverCertificate);
@@ -819,7 +1108,8 @@ class EccSessionIntegrationTest {
             .setSecurityPolicy(securityPolicy)
             .setSecurityMode(securityMode)
             .setTransportProfile(TransportProfile.TCP_UASC_UABINARY)
-            .addTokenPolicies(anonymousPolicy(), usernamePolicy(securityPolicy))
+            .addTokenPolicies(
+                anonymousPolicy(), usernamePolicy(securityPolicy), certificateTokenPolicy)
             .build();
     EndpointConfig discoveryEndpoint =
         EndpointConfig.newBuilder()
@@ -892,7 +1182,11 @@ class EccSessionIntegrationTest {
                     new UsernameIdentityValidator(
                         auth ->
                             USERNAME.equals(auth.getUsername())
-                                && PASSWORD.equals(auth.getPassword()))))
+                                && PASSWORD.equals(auth.getPassword())),
+                    // Trust any client identity certificate: this suite exercises the user-token
+                    // signature handshake, not the trust decision (covered by
+                    // X509IdentityProviderTest).
+                    new X509IdentityValidator(certificate -> true)))
             .build();
 
     OpcTcpServerTransportConfigBuilder transportBuilder = OpcTcpServerTransportConfig.newBuilder();
@@ -989,6 +1283,11 @@ class EccSessionIntegrationTest {
   private static UserTokenPolicy usernamePolicy(SecurityPolicy securityPolicy) {
     return new UserTokenPolicy(
         "username", UserTokenType.UserName, null, null, securityPolicy.getUri());
+  }
+
+  private static UserTokenPolicy certificatePolicy(SecurityPolicy securityPolicy) {
+    return new UserTokenPolicy(
+        "certificate", UserTokenType.Certificate, null, null, securityPolicy.getUri());
   }
 
   private static SelfSignedCertificateBuilder certificateBuilder(
