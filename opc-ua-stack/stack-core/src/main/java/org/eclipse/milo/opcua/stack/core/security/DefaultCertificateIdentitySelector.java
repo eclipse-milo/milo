@@ -37,8 +37,9 @@ import org.slf4j.LoggerFactory;
  * certificate when it is present in the manager, an exact certificate type request, the type
  * preferred by the security policy profile, and finally stable certificate group/type ordering.
  *
- * <p>An identity that is excluded for incompatibility is logged at {@code WARN} with the reason, so
- * a dropped identity — especially an explicitly configured certificate — is never silently lost.
+ * <p>An explicitly configured certificate that is excluded for incompatibility is logged at {@code
+ * WARN} with the reason, so it is never silently lost. A routine non-match among the other
+ * candidate identities is an expected part of successful selection and is logged at {@code DEBUG}.
  */
 @NullMarked
 public final class DefaultCertificateIdentitySelector implements CertificateIdentitySelector {
@@ -88,7 +89,7 @@ public final class DefaultCertificateIdentitySelector implements CertificateIden
               context.securityPolicyProfile().securityPolicy().getUri(),
               e.getMessage());
         } else {
-          LOGGER.warn(
+          LOGGER.debug(
               "Certificate identity is not compatible with security policy {}: {}",
               context.securityPolicyProfile().securityPolicy().getUri(),
               e.getMessage());
