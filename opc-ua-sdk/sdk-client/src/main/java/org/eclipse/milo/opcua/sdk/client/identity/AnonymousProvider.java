@@ -46,7 +46,7 @@ public class AnonymousProvider implements IdentityProvider {
   }
 
   @Override
-  public Optional<SecurityPolicy> getEccUserTokenSecurityPolicy(EndpointDescription endpoint)
+  public Optional<SecurityPolicy> getEnhancedUserTokenSecurityPolicy(EndpointDescription endpoint)
       throws Exception {
 
     getUserTokenSecurityPolicy(endpoint);

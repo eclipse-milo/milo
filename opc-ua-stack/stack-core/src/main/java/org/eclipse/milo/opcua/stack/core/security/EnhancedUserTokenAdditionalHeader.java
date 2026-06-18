@@ -49,11 +49,12 @@ import org.slf4j.LoggerFactory;
  * {@code EccEncryptedSecret} definition. RSA-DH profiles still use them because they reuse the same
  * additional-header negotiation wrapper.
  */
-public final class EccUserTokenAdditionalHeader {
+public final class EnhancedUserTokenAdditionalHeader {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(EccUserTokenAdditionalHeader.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(EnhancedUserTokenAdditionalHeader.class);
 
-  private EccUserTokenAdditionalHeader() {}
+  private EnhancedUserTokenAdditionalHeader() {}
 
   /**
    * The result of inspecting a CreateSession/ActivateSession request AdditionalHeader for an
@@ -118,7 +119,7 @@ public final class EccUserTokenAdditionalHeader {
         .filter(t -> t.getTokenType() == UserTokenType.UserName)
         .map(t -> resolveUserTokenSecurityPolicy(endpoint, t))
         .flatMap(Optional::stream)
-        .filter(p -> isSupportedEccProfile(p.getProfile()))
+        .filter(p -> p.getProfile().usesEnhancedUserTokenSecret())
         .findFirst();
   }
 
@@ -169,22 +170,6 @@ public final class EccUserTokenAdditionalHeader {
     }
 
     return SecurityPolicy.fromUriSafe(securityPolicyUri);
-  }
-
-  /**
-   * Return whether {@code profile} is supported by the current enhanced token-secret helper.
-   *
-   * <p>The method name follows the {@code EccEncryptedSecret} terminology used by OPC UA. It
-   * returns {@code true} for both ECC profiles and RSA-DH profiles that use the same
-   * additional-header negotiation and token-secret payload structure.
-   *
-   * @param profile a security policy profile.
-   * @return {@code true} for user-token profiles supported by {@link EccEncryptedSecret}.
-   */
-  public static boolean isSupportedEccProfile(SecurityPolicyProfile profile) {
-    requireNonNull(profile, "profile");
-
-    return profile.usesEphemeralKeyAgreement() && profile.usesAeadChunkProtection();
   }
 
   /**
@@ -253,7 +238,8 @@ public final class EccUserTokenAdditionalHeader {
     }
 
     Optional<SecurityPolicy> securityPolicy = SecurityPolicy.fromUriSafe(securityPolicyUri);
-    if (securityPolicy.isEmpty() || !isSupportedEccProfile(securityPolicy.get().getProfile())) {
+    if (securityPolicy.isEmpty()
+        || !securityPolicy.get().getProfile().usesEnhancedUserTokenSecret()) {
       return new NegotiationRequest.Unsupported(securityPolicyUri);
     }
 
@@ -464,7 +450,7 @@ public final class EccUserTokenAdditionalHeader {
   private static void requireEnhancedPolicy(SecurityPolicy securityPolicy) throws UaException {
     requireNonNull(securityPolicy, "securityPolicy");
 
-    if (!isSupportedEccProfile(securityPolicy.getProfile())) {
+    if (!securityPolicy.getProfile().usesEnhancedUserTokenSecret()) {
       throw new UaException(
           StatusCodes.Bad_SecurityPolicyRejected,
           "security policy does not support enhanced user-token negotiation: "

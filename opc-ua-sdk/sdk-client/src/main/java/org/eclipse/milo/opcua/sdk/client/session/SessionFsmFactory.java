@@ -65,7 +65,7 @@ import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.ChannelBoundSignatureData;
 import org.eclipse.milo.opcua.stack.core.security.EccEncryptedSecret;
-import org.eclipse.milo.opcua.stack.core.security.EccUserTokenAdditionalHeader;
+import org.eclipse.milo.opcua.stack.core.security.EnhancedUserTokenAdditionalHeader;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
 import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
@@ -1283,12 +1283,11 @@ public class SessionFsmFactory {
       EncodingContext context, Optional<SecurityPolicy> userTokenSecurityPolicy) throws Exception {
 
     if (userTokenSecurityPolicy.isEmpty()
-        || !EccUserTokenAdditionalHeader.isSupportedEccProfile(
-            userTokenSecurityPolicy.get().getProfile())) {
+        || !userTokenSecurityPolicy.get().getProfile().usesEnhancedUserTokenSecret()) {
       return null;
     }
 
-    return EccUserTokenAdditionalHeader.createRequest(context, userTokenSecurityPolicy.get());
+    return EnhancedUserTokenAdditionalHeader.createRequest(context, userTokenSecurityPolicy.get());
   }
 
   private static RequestHeader withAdditionalHeader(
@@ -1386,14 +1385,14 @@ public class SessionFsmFactory {
         && Objects.equals(endpoint1.getSecurityLevel(), endpoint2.getSecurityLevel());
   }
 
-  static Optional<ByteString> verifyCreateSessionEccUserTokenKey(
+  static Optional<ByteString> verifyCreateSessionEnhancedUserTokenKey(
       OpcUaClient client,
       EndpointDescription endpoint,
       CreateSessionResponse response,
       SecurityPolicy userTokenSecurityPolicy)
       throws Exception {
 
-    return verifyCreateSessionEccUserTokenKey(
+    return verifyCreateSessionEnhancedUserTokenKey(
         client.getStaticEncodingContext(),
         client.getConfig().getCertificateValidator(),
         endpoint,
@@ -1401,7 +1400,7 @@ public class SessionFsmFactory {
         userTokenSecurityPolicy);
   }
 
-  static Optional<ByteString> verifyCreateSessionEccUserTokenKey(
+  static Optional<ByteString> verifyCreateSessionEnhancedUserTokenKey(
       EncodingContext encodingContext,
       CertificateValidator certificateValidator,
       EndpointDescription endpoint,
@@ -1410,8 +1409,7 @@ public class SessionFsmFactory {
       throws Exception {
 
     if (userTokenSecurityPolicy == null
-        || !EccUserTokenAdditionalHeader.isSupportedEccProfile(
-            userTokenSecurityPolicy.getProfile())) {
+        || !userTokenSecurityPolicy.getProfile().usesEnhancedUserTokenSecret()) {
       return Optional.empty();
     }
 
@@ -1429,7 +1427,7 @@ public class SessionFsmFactory {
     }
 
     EphemeralKeyType ephemeralKey =
-        EccUserTokenAdditionalHeader.decodeResponse(
+        EnhancedUserTokenAdditionalHeader.decodeResponse(
                 encodingContext,
                 response.getResponseHeader().getAdditionalHeader(),
                 userTokenSecurityPolicy)
@@ -1493,7 +1491,7 @@ public class SessionFsmFactory {
    * @return the refreshed receiver public key, or empty when the server returned no fresh key.
    * @throws Exception if the header is malformed or the key signature fails verification.
    */
-  static Optional<ByteString> verifyActivateSessionEccUserTokenKey(
+  static Optional<ByteString> verifyActivateSessionEnhancedUserTokenKey(
       EncodingContext encodingContext,
       EndpointDescription endpoint,
       ActivateSessionResponse response,
@@ -1501,13 +1499,12 @@ public class SessionFsmFactory {
       throws Exception {
 
     if (userTokenSecurityPolicy == null
-        || !EccUserTokenAdditionalHeader.isSupportedEccProfile(
-            userTokenSecurityPolicy.getProfile())) {
+        || !userTokenSecurityPolicy.getProfile().usesEnhancedUserTokenSecret()) {
       return Optional.empty();
     }
 
     Optional<EphemeralKeyType> ephemeralKey =
-        EccUserTokenAdditionalHeader.decodeResponse(
+        EnhancedUserTokenAdditionalHeader.decodeResponse(
             encodingContext,
             response.getResponseHeader().getAdditionalHeader(),
             userTokenSecurityPolicy);
@@ -1538,7 +1535,7 @@ public class SessionFsmFactory {
       EndpointDescription endpoint,
       ByteString serverNonce,
       SecurityPolicy userTokenSecurityPolicy,
-      ByteString receiverEccPublicKey,
+      ByteString receiverEphemeralPublicKey,
       ByteString serverCertificate,
       ByteString clientNonce)
       throws UaException {
@@ -1589,7 +1586,7 @@ public class SessionFsmFactory {
         endpoint,
         serverNonce,
         userTokenSecurityPolicy,
-        receiverEccPublicKey,
+        receiverEphemeralPublicKey,
         keyPair,
         certificateChain,
         channelSignatureInputs);
@@ -1605,9 +1602,9 @@ public class SessionFsmFactory {
 
       ByteString csrNonce = csr.getServerNonce();
       Optional<SecurityPolicy> userTokenSecurityPolicy =
-          client.getConfig().getIdentityProvider().getEccUserTokenSecurityPolicy(endpoint);
-      Optional<ByteString> receiverEccPublicKey =
-          verifyCreateSessionEccUserTokenKey(
+          client.getConfig().getIdentityProvider().getEnhancedUserTokenSecurityPolicy(endpoint);
+      Optional<ByteString> receiverEphemeralPublicKey =
+          verifyCreateSessionEnhancedUserTokenKey(
               client, endpoint, csr, userTokenSecurityPolicy.orElse(null));
 
       SignedIdentityToken signedIdentityToken =
@@ -1620,7 +1617,7 @@ public class SessionFsmFactory {
                       endpoint,
                       csrNonce,
                       userTokenSecurityPolicy.orElse(null),
-                      receiverEccPublicKey.orElse(null),
+                      receiverEphemeralPublicKey.orElse(null),
                       csr.getServerCertificate(),
                       clientNonce));
 
@@ -1674,14 +1671,14 @@ public class SessionFsmFactory {
                   // Prefer the single-use key the server rotated in this response; fall back to the
                   // CreateSession key when the server did not return a fresh one.
                   Optional<ByteString> refreshedKey =
-                      verifyActivateSessionEccUserTokenKey(
+                      verifyActivateSessionEnhancedUserTokenKey(
                           client.getStaticEncodingContext(),
                           endpoint,
                           asr,
                           userTokenSecurityPolicy.orElse(null));
                   refreshedKey
-                      .or(() -> receiverEccPublicKey)
-                      .ifPresent(session::setUserTokenReceiverEccPublicKey);
+                      .or(() -> receiverEphemeralPublicKey)
+                      .ifPresent(session::setUserTokenReceiverEphemeralPublicKey);
 
                   return completedFuture(session);
                 } catch (Exception ex) {
@@ -1708,7 +1705,7 @@ public class SessionFsmFactory {
 
       ByteString serverNonce = session.getServerNonce();
       Optional<SecurityPolicy> userTokenSecurityPolicy =
-          client.getConfig().getIdentityProvider().getEccUserTokenSecurityPolicy(endpoint);
+          client.getConfig().getIdentityProvider().getEnhancedUserTokenSecurityPolicy(endpoint);
 
       // Reactivation may have to await an in-progress reconnection, so build the request (and
       // therefore the channel-bound client and user-token signatures) only once the new channel is
@@ -1727,7 +1724,7 @@ public class SessionFsmFactory {
                             endpoint,
                             serverNonce,
                             userTokenSecurityPolicy.orElse(null),
-                            session.getUserTokenReceiverEccPublicKey().orElse(null),
+                            session.getUserTokenReceiverEphemeralPublicKey().orElse(null),
                             session.getServerCertificate(),
                             session.getClientNonce()));
 
@@ -1762,12 +1759,12 @@ public class SessionFsmFactory {
 
                   // Adopt the single-use key the server rotated for the next reactivation; keep the
                   // existing key when the server returned no fresh one.
-                  verifyActivateSessionEccUserTokenKey(
+                  verifyActivateSessionEnhancedUserTokenKey(
                           client.getStaticEncodingContext(),
                           endpoint,
                           asr,
                           userTokenSecurityPolicy.orElse(null))
-                      .ifPresent(session::setUserTokenReceiverEccPublicKey);
+                      .ifPresent(session::setUserTokenReceiverEphemeralPublicKey);
 
                   return completedFuture(session);
                 } catch (Exception ex) {

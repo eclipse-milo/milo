@@ -102,7 +102,7 @@
  * Transport handlers should go through SecureChannel strategies rather than calling those helpers
  * directly unless they are implementing a new strategy boundary.
  *
- * <p>{@link org.eclipse.milo.opcua.stack.core.security.EccUserTokenAdditionalHeader} owns the
+ * <p>{@link org.eclipse.milo.opcua.stack.core.security.EnhancedUserTokenAdditionalHeader} owns the
  * generated {@code AdditionalParametersType}/{@code EphemeralKeyType} negotiation wrapper used by
  * SDK CreateSession/ActivateSession code before the opaque token secret is produced.
  *

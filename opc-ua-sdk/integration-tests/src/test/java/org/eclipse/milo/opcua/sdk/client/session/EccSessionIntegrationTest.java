@@ -64,7 +64,7 @@ import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.EccEncryptedSecret;
-import org.eclipse.milo.opcua.stack.core.security.EccUserTokenAdditionalHeader;
+import org.eclipse.milo.opcua.stack.core.security.EnhancedUserTokenAdditionalHeader;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.TrustListManager;
@@ -553,7 +553,7 @@ class EccSessionIntegrationTest {
 
             ActivateSessionResponse response = super.onActivateSession(context, request);
 
-            EccUserTokenAdditionalHeader.decodeResponse(
+            EnhancedUserTokenAdditionalHeader.decodeResponse(
                     server.getStaticEncodingContext(),
                     response.getResponseHeader().getAdditionalHeader(),
                     tokenPolicy)

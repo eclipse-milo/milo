@@ -54,7 +54,7 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>The helper produces the opaque {@link ByteString} stored in username and issued-token identity
  * tokens when an enhanced ECC or RSA-DH user-token security policy protects the token secret. The
- * flow spans two services: CreateSession uses {@link EccUserTokenAdditionalHeader} to ask the
+ * flow spans two services: CreateSession uses {@link EnhancedUserTokenAdditionalHeader} to ask the
  * receiver for a signed session ephemeral public key, then ActivateSession sends the encrypted
  * password or issued-token secret in this structure.
  *
@@ -1029,7 +1029,7 @@ public final class EccEncryptedSecret {
       throws UaException {
     requireNonNull(profile, "profile");
 
-    if (!profile.usesEphemeralKeyAgreement() || !profile.usesAeadChunkProtection()) {
+    if (!profile.usesEnhancedUserTokenSecret()) {
       throw unsupported(profile, "enhanced token-secret profile");
     }
   }

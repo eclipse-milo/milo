@@ -29,7 +29,7 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.EccEncryptedSecret;
-import org.eclipse.milo.opcua.stack.core.security.EccUserTokenAdditionalHeader;
+import org.eclipse.milo.opcua.stack.core.security.EnhancedUserTokenAdditionalHeader;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -302,9 +302,9 @@ class SessionEndpointValidationTest {
             new UsernameProvider("user", "password"), DefaultEncodingContext.INSTANCE, endpoint);
 
     assertEquals(
-        new EccUserTokenAdditionalHeader.NegotiationRequest.Supported(
+        new EnhancedUserTokenAdditionalHeader.NegotiationRequest.Supported(
             SecurityPolicy.ECC_nistP256_AesGcm),
-        EccUserTokenAdditionalHeader.decodeRequest(
+        EnhancedUserTokenAdditionalHeader.decodeRequest(
             DefaultEncodingContext.INSTANCE, additionalHeader));
   }
 
@@ -340,7 +340,7 @@ class SessionEndpointValidationTest {
   // None endpoints that use enhanced username tokens still need a concrete certificate anchor
   // before the client encrypts the password.
   @Test
-  void verifyCreateSessionEccUserTokenKeyRejectsMissingCertificate() {
+  void verifyCreateSessionEnhancedUserTokenKeyRejectsMissingCertificate() {
     EndpointDescription endpoint =
         endpoint(
             "urn:app",
@@ -362,7 +362,7 @@ class SessionEndpointValidationTest {
         assertThrows(
             UaException.class,
             () ->
-                SessionFsmFactory.verifyCreateSessionEccUserTokenKey(
+                SessionFsmFactory.verifyCreateSessionEnhancedUserTokenKey(
                     DefaultEncodingContext.INSTANCE,
                     new CertificateValidator.InsecureCertificateValidator(),
                     endpoint,
@@ -375,7 +375,8 @@ class SessionEndpointValidationTest {
   // A signed receiver key must be anchored to the certificate from the selected endpoint, not a
   // different certificate supplied in CreateSession.
   @Test
-  void verifyCreateSessionEccUserTokenKeyRejectsResponseCertificateMismatch() throws Exception {
+  void verifyCreateSessionEnhancedUserTokenKeyRejectsResponseCertificateMismatch()
+      throws Exception {
     X509Certificate endpointCertificate = eccCertificate("endpoint");
     X509Certificate responseCertificate = eccCertificate("response");
     EndpointDescription endpoint =
@@ -396,7 +397,7 @@ class SessionEndpointValidationTest {
             TRANSPORT_OPC_TCP,
             (short) 1);
     ExtensionObject additionalHeader =
-        EccUserTokenAdditionalHeader.createResponse(
+        EnhancedUserTokenAdditionalHeader.createResponse(
             DefaultEncodingContext.INSTANCE,
             SecurityPolicy.ECC_nistP256_AesGcm,
             new EphemeralKeyType(ByteString.of(new byte[64]), ByteString.of(new byte[64])));
@@ -405,7 +406,7 @@ class SessionEndpointValidationTest {
         assertThrows(
             UaException.class,
             () ->
-                SessionFsmFactory.verifyCreateSessionEccUserTokenKey(
+                SessionFsmFactory.verifyCreateSessionEnhancedUserTokenKey(
                     DefaultEncodingContext.INSTANCE,
                     new CertificateValidator.InsecureCertificateValidator(),
                     endpoint,
@@ -420,7 +421,7 @@ class SessionEndpointValidationTest {
   // a fresh signed key the client must adopt for the next activation. A key signed by the endpoint
   // certificate must verify and yield its public key so reactivation uses the most recent key.
   @Test
-  void verifyActivateSessionEccUserTokenKeyAdoptsRotatedKey() throws Exception {
+  void verifyActivateSessionEnhancedUserTokenKeyAdoptsRotatedKey() throws Exception {
     SecurityPolicy tokenPolicy = SecurityPolicy.ECC_nistP256_AesGcm;
     KeyPair endpointKeyPair = SelfSignedCertificateGenerator.generateNistP256KeyPair();
     X509Certificate endpointCertificate = eccCertificate("endpoint", endpointKeyPair);
@@ -445,11 +446,11 @@ class SessionEndpointValidationTest {
         EccEncryptedSecret.createEphemeralKey(
             tokenPolicy.getProfile(), endpointKeyPair, rotatedEphemeralKeyPair);
     ExtensionObject additionalHeader =
-        EccUserTokenAdditionalHeader.createResponse(
+        EnhancedUserTokenAdditionalHeader.createResponse(
             DefaultEncodingContext.INSTANCE, tokenPolicy, rotatedKey);
 
     ByteString adopted =
-        SessionFsmFactory.verifyActivateSessionEccUserTokenKey(
+        SessionFsmFactory.verifyActivateSessionEnhancedUserTokenKey(
                 DefaultEncodingContext.INSTANCE,
                 endpoint,
                 activateSessionResponse(additionalHeader),
@@ -462,7 +463,7 @@ class SessionEndpointValidationTest {
   // When a server returns no fresh key, the client must keep the most recent key rather than fail;
   // the helper signals this by returning empty so the caller falls back.
   @Test
-  void verifyActivateSessionEccUserTokenKeyReturnsEmptyWhenNoKeyRotated() throws Exception {
+  void verifyActivateSessionEnhancedUserTokenKeyReturnsEmptyWhenNoKeyRotated() throws Exception {
     SecurityPolicy tokenPolicy = SecurityPolicy.ECC_nistP256_AesGcm;
     X509Certificate endpointCertificate =
         eccCertificate("endpoint", SelfSignedCertificateGenerator.generateNistP256KeyPair());
@@ -482,7 +483,7 @@ class SessionEndpointValidationTest {
             (short) 1);
 
     assertTrue(
-        SessionFsmFactory.verifyActivateSessionEccUserTokenKey(
+        SessionFsmFactory.verifyActivateSessionEnhancedUserTokenKey(
                 DefaultEncodingContext.INSTANCE,
                 endpoint,
                 activateSessionResponse(null),
@@ -493,7 +494,7 @@ class SessionEndpointValidationTest {
   // A rotated key signed by some other certificate must be rejected, otherwise a man-in-the-middle
   // could swap the receiver key the client encrypts the next password against.
   @Test
-  void verifyActivateSessionEccUserTokenKeyRejectsForeignSigner() throws Exception {
+  void verifyActivateSessionEnhancedUserTokenKeyRejectsForeignSigner() throws Exception {
     SecurityPolicy tokenPolicy = SecurityPolicy.ECC_nistP256_AesGcm;
     X509Certificate endpointCertificate =
         eccCertificate("endpoint", SelfSignedCertificateGenerator.generateNistP256KeyPair());
@@ -519,13 +520,13 @@ class SessionEndpointValidationTest {
         EccEncryptedSecret.createEphemeralKey(
             tokenPolicy.getProfile(), foreignKeyPair, rotatedEphemeralKeyPair);
     ExtensionObject additionalHeader =
-        EccUserTokenAdditionalHeader.createResponse(
+        EnhancedUserTokenAdditionalHeader.createResponse(
             DefaultEncodingContext.INSTANCE, tokenPolicy, foreignKey);
 
     assertThrows(
         UaException.class,
         () ->
-            SessionFsmFactory.verifyActivateSessionEccUserTokenKey(
+            SessionFsmFactory.verifyActivateSessionEnhancedUserTokenKey(
                 DefaultEncodingContext.INSTANCE,
                 endpoint,
                 activateSessionResponse(additionalHeader),

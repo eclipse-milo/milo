@@ -25,7 +25,7 @@ public class OpcUaSession extends ConcurrentHashMap<String, Object> implements U
 
   private volatile ByteString serverNonce = ByteString.NULL_VALUE;
   private volatile ByteString clientNonce = ByteString.NULL_VALUE;
-  private volatile ByteString userTokenReceiverEccPublicKey = ByteString.NULL_VALUE;
+  private volatile ByteString userTokenReceiverEphemeralPublicKey = ByteString.NULL_VALUE;
   private volatile @Nullable StatusCode lastActivateSessionServiceResult;
 
   private final NodeId authToken;
@@ -128,25 +128,26 @@ public class OpcUaSession extends ConcurrentHashMap<String, Object> implements U
    * Get the server session public key used for enhanced username-token reactivation.
    *
    * <p>The key is learned from the CreateSession additional header and reused when the session is
-   * reactivated on the same negotiated user-token policy. The method name is retained for
-   * compatibility with earlier ECC-only support; RSA-DH policies use the same stored receiver key.
+   * reactivated on the same negotiated user-token policy. Both ECC and RSA-DH policies store their
+   * ephemeral receiver key here.
    *
    * @return the receiver public key advertised by the server for enhanced username-token
    *     encryption.
    */
-  public Optional<ByteString> getUserTokenReceiverEccPublicKey() {
-    return userTokenReceiverEccPublicKey.isNotNull()
-        ? Optional.of(userTokenReceiverEccPublicKey)
+  public Optional<ByteString> getUserTokenReceiverEphemeralPublicKey() {
+    return userTokenReceiverEphemeralPublicKey.isNotNull()
+        ? Optional.of(userTokenReceiverEphemeralPublicKey)
         : Optional.empty();
   }
 
   /**
    * Store the server session public key returned during enhanced username-token negotiation.
    *
-   * @param userTokenReceiverEccPublicKey the receiver public key advertised by the server.
+   * @param userTokenReceiverEphemeralPublicKey the receiver public key advertised by the server.
    */
-  public void setUserTokenReceiverEccPublicKey(ByteString userTokenReceiverEccPublicKey) {
-    this.userTokenReceiverEccPublicKey = userTokenReceiverEccPublicKey;
+  public void setUserTokenReceiverEphemeralPublicKey(
+      ByteString userTokenReceiverEphemeralPublicKey) {
+    this.userTokenReceiverEphemeralPublicKey = userTokenReceiverEphemeralPublicKey;
   }
 
   public void setLastActivateSessionServiceResult(

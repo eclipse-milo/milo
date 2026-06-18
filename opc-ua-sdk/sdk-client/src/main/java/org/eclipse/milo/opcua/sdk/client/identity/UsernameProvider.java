@@ -35,7 +35,7 @@ import org.eclipse.milo.opcua.stack.core.channel.SecureChannel;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.EccEncryptedSecret;
-import org.eclipse.milo.opcua.stack.core.security.EccUserTokenAdditionalHeader;
+import org.eclipse.milo.opcua.stack.core.security.EnhancedUserTokenAdditionalHeader;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
@@ -47,6 +47,8 @@ import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An {@link IdentityProvider} that chooses a {@link UserTokenPolicy} with {@link
@@ -57,8 +59,16 @@ import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
  * supported enhanced ECC or RSA-DH username-token policies it uses the CreateSession
  * additional-header key material carried in {@link IdentityProviderContext} and produces an {@link
  * EccEncryptedSecret}. The supplied password bytes are cleared after token construction.
+ *
+ * <p>When an endpoint advertises more than one username {@link UserTokenPolicy}, the provider
+ * prefers one whose security policy is usable on the current SecureChannel and skips those that are
+ * not (for example an ECC or RSA-DH policy offered on a {@code None} channel), as required by OPC
+ * UA Part 4 (7.41). The {@link #enforceUserTokenSecurityPolicyRules} guards still reject the chosen
+ * policy if no usable one was advertised.
  */
 public class UsernameProvider implements IdentityProvider {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(UsernameProvider.class);
 
   private final String username;
   private final Supplier<byte[]> passwordSupplier;
@@ -102,8 +112,13 @@ public class UsernameProvider implements IdentityProvider {
    * @param password the password to authenticate with.
    * @param certificateValidator the {@link CertificateValidator} used to validate the remote
    *     certificate.
-   * @param policyChooser a function that selects a {@link UserTokenPolicy} to use. The policy list
-   *     is guaranteed to be non-null and non-empty.
+   * @param policyChooser a function that selects a {@link UserTokenPolicy} to use. The provided
+   *     list is non-null and non-empty; when the endpoint advertises more than one username policy
+   *     it is restricted to the policies usable on the current SecureChannel (per Part 4 (7.41)),
+   *     falling back to all advertised username policies only when none are usable. The list may
+   *     therefore be shorter than the advertised set, so a chooser should select by policy property
+   *     rather than by fixed index and should be deterministic, so CreateSession negotiation and a
+   *     later reactivation resolve the same policy.
    */
   public UsernameProvider(
       String username,
@@ -165,8 +180,13 @@ public class UsernameProvider implements IdentityProvider {
    *     zeroed out after being retrieved and used.
    * @param certificateValidator the {@link CertificateValidator} used to validate the remote
    *     certificate.
-   * @param policyChooser a function that selects a {@link UserTokenPolicy} to use. The policy list
-   *     is guaranteed to be non-null and non-empty.
+   * @param policyChooser a function that selects a {@link UserTokenPolicy} to use. The provided
+   *     list is non-null and non-empty; when the endpoint advertises more than one username policy
+   *     it is restricted to the policies usable on the current SecureChannel (per Part 4 (7.41)),
+   *     falling back to all advertised username policies only when none are usable. The list may
+   *     therefore be shorter than the advertised set, so a chooser should select by policy property
+   *     rather than by fixed index and should be deterministic, so CreateSession negotiation and a
+   *     later reactivation resolve the same policy.
    */
   public UsernameProvider(
       String username,
@@ -190,12 +210,12 @@ public class UsernameProvider implements IdentityProvider {
   }
 
   @Override
-  public Optional<SecurityPolicy> getEccUserTokenSecurityPolicy(EndpointDescription endpoint)
+  public Optional<SecurityPolicy> getEnhancedUserTokenSecurityPolicy(EndpointDescription endpoint)
       throws Exception {
 
     SecurityPolicy securityPolicy = getUserTokenSecurityPolicy(endpoint).orElseThrow();
 
-    if (EccUserTokenAdditionalHeader.isSupportedEccProfile(securityPolicy.getProfile())) {
+    if (securityPolicy.getProfile().usesEnhancedUserTokenSecret()) {
       return Optional.of(securityPolicy);
     } else {
       return Optional.empty();
@@ -206,10 +226,10 @@ public class UsernameProvider implements IdentityProvider {
   public ExtensionObject getCreateSessionAdditionalHeader(
       EncodingContext context, EndpointDescription endpoint) throws Exception {
 
-    Optional<SecurityPolicy> securityPolicy = getEccUserTokenSecurityPolicy(endpoint);
+    Optional<SecurityPolicy> securityPolicy = getEnhancedUserTokenSecurityPolicy(endpoint);
 
     if (securityPolicy.isPresent()) {
-      return EccUserTokenAdditionalHeader.createRequest(context, securityPolicy.get());
+      return EnhancedUserTokenAdditionalHeader.createRequest(context, securityPolicy.get());
     } else {
       return null;
     }
@@ -259,7 +279,7 @@ public class UsernameProvider implements IdentityProvider {
 
       if (securityPolicy == SecurityPolicy.None) {
         buffer.writeBytes(passwordBytes);
-      } else if (EccUserTokenAdditionalHeader.isSupportedEccProfile(securityPolicy.getProfile())) {
+      } else if (securityPolicy.getProfile().usesEnhancedUserTokenSecret()) {
 
         NonceUtil.validateNonce(serverNonce);
 
@@ -367,7 +387,45 @@ public class UsernameProvider implements IdentityProvider {
       throw new Exception("no UserTokenPolicy with UserTokenType.UserName found");
     }
 
-    return policyChooser.apply(tokenPolicies);
+    // Prefer username policies the SecureChannel can actually use (Part 4 (7.41)) and skip the
+    // rest, so a usable policy is chosen rather than failing on an unusable one the server also
+    // advertised. Fall back to the full list when none are usable, so resolveSecurityPolicy still
+    // reports the precise rejection reason for the chosen policy.
+    List<UserTokenPolicy> usableTokenPolicies =
+        tokenPolicies.stream()
+            .filter(t -> isUserTokenPolicyUsable(endpoint, t))
+            .collect(Collectors.toList());
+
+    return policyChooser.apply(usableTokenPolicies.isEmpty() ? tokenPolicies : usableTokenPolicies);
+  }
+
+  /**
+   * Return whether {@code tokenPolicy} can protect a username token on {@code endpoint} without
+   * violating the Part 4 (7.41) rules enforced by {@link #enforceUserTokenSecurityPolicyRules}.
+   *
+   * <p>Selection uses this to skip server-advertised username policies that are unusable on the
+   * current SecureChannel (for example, an ECC or RSA-DH policy offered on a {@code None} channel,
+   * or a policy whose URI this client does not support) so a usable alternative can be chosen
+   * instead. It never throws; the throwing enforcement in {@link #resolveSecurityPolicy} remains
+   * the authority when no usable policy is available.
+   *
+   * @param endpoint the endpoint being connected to.
+   * @param tokenPolicy a username token policy advertised by {@code endpoint}.
+   * @return {@code true} if the policy resolves and satisfies the Part 4 (7.41) rules.
+   */
+  private static boolean isUserTokenPolicyUsable(
+      EndpointDescription endpoint, UserTokenPolicy tokenPolicy) {
+
+    try {
+      resolveSecurityPolicy(endpoint, tokenPolicy);
+      return true;
+    } catch (UaException e) {
+      LOGGER.warn(
+          "skipping unusable username UserTokenPolicy (policyId={}): {}",
+          tokenPolicy.getPolicyId(),
+          e.getMessage());
+      return false;
+    }
   }
 
   private Optional<UserTokenPolicy> selectTokenPolicy(
@@ -381,7 +439,7 @@ public class UsernameProvider implements IdentityProvider {
             .filter(t -> t.getTokenType() == UserTokenType.UserName)
             .filter(
                 t ->
-                    EccUserTokenAdditionalHeader.resolveUserTokenSecurityPolicy(endpoint, t)
+                    EnhancedUserTokenAdditionalHeader.resolveUserTokenSecurityPolicy(endpoint, t)
                         .map(securityPolicy::equals)
                         .orElse(false))
             .collect(Collectors.toList());
@@ -394,16 +452,54 @@ public class UsernameProvider implements IdentityProvider {
   private static SecurityPolicy resolveSecurityPolicy(
       EndpointDescription endpoint, UserTokenPolicy tokenPolicy) throws UaException {
 
-    String securityPolicyUri = tokenPolicy.getSecurityPolicyUri();
+    String tokenPolicyUri = tokenPolicy.getSecurityPolicyUri();
+    boolean explicitlySpecified = tokenPolicyUri != null && !tokenPolicyUri.isEmpty();
 
+    SecurityPolicy securityPolicy;
     try {
-      if (securityPolicyUri == null || securityPolicyUri.isEmpty()) {
-        securityPolicyUri = endpoint.getSecurityPolicyUri();
-      }
-      return SecurityPolicy.fromUri(securityPolicyUri);
+      String securityPolicyUri =
+          explicitlySpecified ? tokenPolicyUri : endpoint.getSecurityPolicyUri();
+      securityPolicy = SecurityPolicy.fromUri(securityPolicyUri);
     } catch (Throwable t) {
       throw new UaException(StatusCodes.Bad_SecurityPolicyRejected, t);
     }
+
+    enforceUserTokenSecurityPolicyRules(endpoint, securityPolicy, explicitlySpecified);
+
+    return securityPolicy;
+  }
+
+  /**
+   * Enforce the client-side OPC UA Part 4 (7.41) rules for a {@link UserNameIdentityToken}: an
+   * enhanced (ECC or RSA-DH) secret may not be used on a None SecureChannel, and an explicitly
+   * specified user-token SecurityPolicy must share the SecureChannel's public-key algorithm.
+   *
+   * <p>Both rules live in {@link UserTokenSecurityPolicyRules}, shared with {@link
+   * X509IdentityProvider} (which applies only the public-key-algorithm rule, because its token is
+   * signed rather than encrypted). Because every resolution path runs through here, rejecting the
+   * None-mode enhanced case also short-circuits {@link
+   * #getEnhancedUserTokenSecurityPolicy(EndpointDescription)} and {@link
+   * #getCreateSessionAdditionalHeader(EncodingContext, EndpointDescription)} so the client never
+   * emits ephemeral-key material on a None channel. The companion RSA trusted-certificate rule from
+   * the same clause is enforced separately, in {@link #getIdentityToken(IdentityProviderContext)}.
+   *
+   * @param endpoint the endpoint whose SecurityMode and SecurityPolicy describe the SecureChannel.
+   * @param userTokenSecurityPolicy the resolved user-token security policy.
+   * @param explicitlySpecified whether the token policy named its own {@code securityPolicyUri}
+   *     rather than inheriting the endpoint's.
+   * @throws UaException with {@link StatusCodes#Bad_SecurityPolicyRejected} if either rule is
+   *     violated.
+   */
+  private static void enforceUserTokenSecurityPolicyRules(
+      EndpointDescription endpoint,
+      SecurityPolicy userTokenSecurityPolicy,
+      boolean explicitlySpecified)
+      throws UaException {
+
+    UserTokenSecurityPolicyRules.requireSecuredChannelForEnhancedSecret(
+        endpoint, userTokenSecurityPolicy);
+    UserTokenSecurityPolicyRules.requireSamePublicKeyAlgorithmAsChannel(
+        endpoint, userTokenSecurityPolicy, explicitlySpecified);
   }
 
   private ByteString encryptEnhancedPassword(
@@ -415,7 +511,7 @@ public class UsernameProvider implements IdentityProvider {
 
     ByteString receiverPublicKey =
         context
-            .getReceiverEccPublicKey()
+            .getReceiverEphemeralPublicKey()
             .orElseThrow(
                 () ->
                     new UaException(

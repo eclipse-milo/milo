@@ -12,7 +12,7 @@ package org.eclipse.milo.opcua.sdk.client.identity;
 
 import java.util.Optional;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
-import org.eclipse.milo.opcua.stack.core.security.EccUserTokenAdditionalHeader;
+import org.eclipse.milo.opcua.stack.core.security.EnhancedUserTokenAdditionalHeader;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
@@ -57,15 +57,14 @@ public interface IdentityProvider {
    * and other token types may use ECC or RSA-DH security policies without requiring the
    * username-secret ephemeral-key exchange.
    *
-   * <p>The method name is retained for source compatibility with earlier ECC-only support. RSA-DH
-   * username-token policies use the same CreateSession negotiation path.
+   * <p>Both ECC and RSA-DH username-token policies use the same CreateSession negotiation path.
    *
    * @param endpoint the {@link EndpointDescription} being connected to.
    * @return the selected enhanced username-token security policy, or empty if no username-secret
    *     ephemeral-key negotiation is required.
    * @throws Exception if the endpoint does not advertise a token policy usable by this provider.
    */
-  default Optional<SecurityPolicy> getEccUserTokenSecurityPolicy(EndpointDescription endpoint)
+  default Optional<SecurityPolicy> getEnhancedUserTokenSecurityPolicy(EndpointDescription endpoint)
       throws Exception {
 
     return Optional.empty();
@@ -82,10 +81,10 @@ public interface IdentityProvider {
   default ExtensionObject getCreateSessionAdditionalHeader(
       EncodingContext context, EndpointDescription endpoint) throws Exception {
 
-    Optional<SecurityPolicy> securityPolicy = getEccUserTokenSecurityPolicy(endpoint);
+    Optional<SecurityPolicy> securityPolicy = getEnhancedUserTokenSecurityPolicy(endpoint);
 
     if (securityPolicy.isPresent()) {
-      return EccUserTokenAdditionalHeader.createRequest(context, securityPolicy.get());
+      return EnhancedUserTokenAdditionalHeader.createRequest(context, securityPolicy.get());
     } else {
       return null;
     }

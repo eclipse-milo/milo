@@ -68,7 +68,7 @@ public class CompositeProvider implements IdentityProvider {
   }
 
   @Override
-  public Optional<SecurityPolicy> getEccUserTokenSecurityPolicy(EndpointDescription endpoint)
+  public Optional<SecurityPolicy> getEnhancedUserTokenSecurityPolicy(EndpointDescription endpoint)
       throws Exception {
 
     Iterator<IdentityProvider> iterator = providers.iterator();
@@ -77,7 +77,7 @@ public class CompositeProvider implements IdentityProvider {
       IdentityProvider provider = iterator.next();
 
       try {
-        return provider.getEccUserTokenSecurityPolicy(endpoint);
+        return provider.getEnhancedUserTokenSecurityPolicy(endpoint);
       } catch (Exception e) {
         if (!iterator.hasNext()) {
           throw e;

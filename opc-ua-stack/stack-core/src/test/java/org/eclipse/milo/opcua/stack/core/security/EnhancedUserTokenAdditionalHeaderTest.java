@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-class EccUserTokenAdditionalHeaderTest {
+class EnhancedUserTokenAdditionalHeaderTest {
 
   // The client asks for enhanced username-token key material by policy URI, not by endpoint order.
   @ParameterizedTest
@@ -55,11 +55,12 @@ class EccUserTokenAdditionalHeaderTest {
       })
   void encodesAndDecodesCreateSessionRequestPolicy(SecurityPolicy securityPolicy) throws Exception {
     ExtensionObject additionalHeader =
-        EccUserTokenAdditionalHeader.createRequest(DefaultEncodingContext.INSTANCE, securityPolicy);
+        EnhancedUserTokenAdditionalHeader.createRequest(
+            DefaultEncodingContext.INSTANCE, securityPolicy);
 
     assertEquals(
-        new EccUserTokenAdditionalHeader.NegotiationRequest.Supported(securityPolicy),
-        EccUserTokenAdditionalHeader.decodeRequest(
+        new EnhancedUserTokenAdditionalHeader.NegotiationRequest.Supported(securityPolicy),
+        EnhancedUserTokenAdditionalHeader.decodeRequest(
             DefaultEncodingContext.INSTANCE, additionalHeader));
   }
 
@@ -88,12 +89,12 @@ class EccUserTokenAdditionalHeaderTest {
         new EphemeralKeyType(ByteString.of(new byte[] {0x01}), ByteString.of(new byte[] {0x02}));
 
     ExtensionObject additionalHeader =
-        EccUserTokenAdditionalHeader.createResponse(
+        EnhancedUserTokenAdditionalHeader.createResponse(
             DefaultEncodingContext.INSTANCE, securityPolicy, ephemeralKey);
 
     assertEquals(
         ephemeralKey,
-        EccUserTokenAdditionalHeader.decodeResponse(
+        EnhancedUserTokenAdditionalHeader.decodeResponse(
                 DefaultEncodingContext.INSTANCE, additionalHeader, securityPolicy)
             .orElseThrow());
   }
@@ -106,7 +107,7 @@ class EccUserTokenAdditionalHeaderTest {
         new EphemeralKeyType(ByteString.of(new byte[] {0x01}), ByteString.of(new byte[] {0x02}));
 
     ExtensionObject additionalHeader =
-        EccUserTokenAdditionalHeader.createResponse(
+        EnhancedUserTokenAdditionalHeader.createResponse(
             DefaultEncodingContext.INSTANCE, SecurityPolicy.ECC_nistP256_AesGcm, ephemeralKey);
 
     AdditionalParametersType parameters =
@@ -135,7 +136,7 @@ class EccUserTokenAdditionalHeaderTest {
         assertThrows(
             UaException.class,
             () ->
-                EccUserTokenAdditionalHeader.decodeResponse(
+                EnhancedUserTokenAdditionalHeader.decodeResponse(
                     DefaultEncodingContext.INSTANCE,
                     additionalHeader,
                     SecurityPolicy.ECC_nistP256_AesGcm));
@@ -149,7 +150,7 @@ class EccUserTokenAdditionalHeaderTest {
   @Test
   void createResponseStatusCodeRoundTripsThroughDecodeResponse() throws Exception {
     ExtensionObject additionalHeader =
-        EccUserTokenAdditionalHeader.createResponse(
+        EnhancedUserTokenAdditionalHeader.createResponse(
             DefaultEncodingContext.INSTANCE,
             new StatusCode(StatusCodes.Bad_SecurityPolicyRejected));
 
@@ -157,7 +158,7 @@ class EccUserTokenAdditionalHeaderTest {
         assertThrows(
             UaException.class,
             () ->
-                EccUserTokenAdditionalHeader.decodeResponse(
+                EnhancedUserTokenAdditionalHeader.decodeResponse(
                     DefaultEncodingContext.INSTANCE,
                     additionalHeader,
                     SecurityPolicy.ECC_nistP256_AesGcm));
@@ -170,8 +171,8 @@ class EccUserTokenAdditionalHeaderTest {
   @Test
   void nullAdditionalHeaderDecodesAsNone() throws Exception {
     assertInstanceOf(
-        EccUserTokenAdditionalHeader.NegotiationRequest.None.class,
-        EccUserTokenAdditionalHeader.decodeRequest(DefaultEncodingContext.INSTANCE, null));
+        EnhancedUserTokenAdditionalHeader.NegotiationRequest.None.class,
+        EnhancedUserTokenAdditionalHeader.decodeRequest(DefaultEncodingContext.INSTANCE, null));
   }
 
   // Part 4 requires servers to IGNORE additional headers they do not recognize. A vendor or future
@@ -183,8 +184,8 @@ class EccUserTokenAdditionalHeaderTest {
         ExtensionObject.of(ByteString.of(new byte[] {0x01}), new NodeId(0, 999_999));
 
     assertInstanceOf(
-        EccUserTokenAdditionalHeader.NegotiationRequest.None.class,
-        EccUserTokenAdditionalHeader.decodeRequest(
+        EnhancedUserTokenAdditionalHeader.NegotiationRequest.None.class,
+        EnhancedUserTokenAdditionalHeader.decodeRequest(
             DefaultEncodingContext.INSTANCE, additionalHeader));
   }
 
@@ -199,8 +200,8 @@ class EccUserTokenAdditionalHeaderTest {
                 ByteString.of(new byte[] {0x01}), ByteString.of(new byte[] {0x02})));
 
     assertInstanceOf(
-        EccUserTokenAdditionalHeader.NegotiationRequest.None.class,
-        EccUserTokenAdditionalHeader.decodeRequest(
+        EnhancedUserTokenAdditionalHeader.NegotiationRequest.None.class,
+        EnhancedUserTokenAdditionalHeader.decodeRequest(
             DefaultEncodingContext.INSTANCE, additionalHeader));
   }
 
@@ -222,8 +223,8 @@ class EccUserTokenAdditionalHeaderTest {
                 }));
 
     assertEquals(
-        new EccUserTokenAdditionalHeader.NegotiationRequest.Unsupported(suffixlessEccUri),
-        EccUserTokenAdditionalHeader.decodeRequest(
+        new EnhancedUserTokenAdditionalHeader.NegotiationRequest.Unsupported(suffixlessEccUri),
+        EnhancedUserTokenAdditionalHeader.decodeRequest(
             DefaultEncodingContext.INSTANCE, additionalHeader));
   }
 
@@ -246,7 +247,7 @@ class EccUserTokenAdditionalHeaderTest {
         assertThrows(
             UaException.class,
             () ->
-                EccUserTokenAdditionalHeader.decodeRequest(
+                EnhancedUserTokenAdditionalHeader.decodeRequest(
                     DefaultEncodingContext.INSTANCE, additionalHeader));
 
     assertEquals(StatusCodes.Bad_DecodingError, exception.getStatusCode().getValue());

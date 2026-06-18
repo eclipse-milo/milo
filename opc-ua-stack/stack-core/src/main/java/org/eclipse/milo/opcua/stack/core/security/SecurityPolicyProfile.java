@@ -186,6 +186,22 @@ public record SecurityPolicyProfile(
   }
 
   /**
+   * Whether user tokens under this policy are protected with the enhanced secret mechanism that the
+   * ECC and RSA-DH policies share (the {@code EccEncryptedSecret} negotiated through the
+   * CreateSession additional header), rather than legacy RSA encryption.
+   *
+   * <p>This is the family-neutral gate for enhanced user-token handling: it is {@code true} for
+   * both the ECC profiles and the RSA-DH profiles, because both negotiate an ephemeral receiver key
+   * and protect service chunks with an AEAD cipher. Callers should prefer this over inspecting
+   * policy URIs or the ECC-named negotiation helpers.
+   *
+   * @return {@code true} when this profile uses the enhanced (ECC or RSA-DH) user-token secret.
+   */
+  public boolean usesEnhancedUserTokenSecret() {
+    return usesEphemeralKeyAgreement() && usesAeadChunkProtection();
+  }
+
+  /**
    * The sequence-number validation mode used for secured chunks.
    *
    * <p>SecureChannelEnhancements policies use {@link SequenceNumberMode#NON_LEGACY} validation;
@@ -221,6 +237,32 @@ public record SecurityPolicyProfile(
     };
   }
 
+  /**
+   * The public-key algorithm family used by this policy's certificates and asymmetric signatures.
+   *
+   * <p>This collapses the finer-grained {@link AuthAxis} into the RSA-vs-ECC distinction OPC UA
+   * Part 4 (7.41) calls the "PublicKey algorithm" when it requires an explicit user-token security
+   * policy to match the SecureChannel. The RSA-DH policies authenticate with RSA application
+   * certificates, so they report {@link PublicKeyAlgorithm#RSA}; every ECC policy (ECDSA, Ed25519,
+   * Ed448) reports {@link PublicKeyAlgorithm#ECC}.
+   *
+   * @return the public-key algorithm family, or {@link PublicKeyAlgorithm#NONE} for {@link
+   *     SecurityPolicy#None}.
+   */
+  public PublicKeyAlgorithm publicKeyAlgorithm() {
+    return switch (authAxis) {
+      case NONE -> PublicKeyAlgorithm.NONE;
+      case RSA_PKCS1_SHA1, RSA_PKCS1_SHA256, RSA_PSS_SHA256 -> PublicKeyAlgorithm.RSA;
+      case ECDSA_NIST_P256_SHA256,
+          ECDSA_NIST_P384_SHA384,
+          ECDSA_BRAINPOOL_P256R1_SHA256,
+          ECDSA_BRAINPOOL_P384R1_SHA384,
+          ED25519,
+          ED448 ->
+          PublicKeyAlgorithm.ECC;
+    };
+  }
+
   /** The certificate and OpenSecureChannel signature family used by a policy. */
   public enum AuthAxis {
     NONE,
@@ -233,6 +275,18 @@ public record SecurityPolicyProfile(
     ECDSA_BRAINPOOL_P384R1_SHA384,
     ED25519,
     ED448
+  }
+
+  /**
+   * The public-key algorithm family a policy's certificates and asymmetric signatures belong to.
+   *
+   * <p>OPC UA Part 4 (7.41) uses this RSA-vs-ECC distinction when it requires an explicit
+   * user-token security policy to share the SecureChannel's "PublicKey algorithm".
+   */
+  public enum PublicKeyAlgorithm {
+    NONE,
+    RSA,
+    ECC
   }
 
   /** The OpenSecureChannel secret establishment family used by a policy. */

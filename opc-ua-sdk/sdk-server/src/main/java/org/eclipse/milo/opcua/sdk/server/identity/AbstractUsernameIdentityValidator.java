@@ -20,7 +20,6 @@ import org.eclipse.milo.opcua.sdk.server.identity.Identity.UsernameIdentity;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.EccEncryptedSecret;
-import org.eclipse.milo.opcua.stack.core.security.EccUserTokenAdditionalHeader;
 import org.eclipse.milo.opcua.stack.core.security.SecurityAlgorithm;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
@@ -60,7 +59,7 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
 
     SecurityPolicy securityPolicy = getTokenSecurityPolicy(session, policy);
 
-    if (EccUserTokenAdditionalHeader.isSupportedEccProfile(securityPolicy.getProfile())) {
+    if (securityPolicy.getProfile().usesEnhancedUserTokenSecret()) {
       return validateEnhancedUsernameToken(session, token, securityPolicy, username);
     }
 
@@ -139,9 +138,9 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
 
     // UA Part 4, Table 188: for SecureChannelEnhancement policies the client sets
     // encryptionAlgorithm to null/empty and servers ignore any value. Routing to this path is
-    // already driven by the resolved token-policy profile (isSupportedEccProfile), so this field
-    // is not consulted for routing. For back-compat with older Milo clients that incorrectly sent
-    // the policy URI, a non-empty value is tolerated only when it matches the policy URI.
+    // already driven by the resolved token-policy profile (usesEnhancedUserTokenSecret), so this
+    // field is not consulted for routing. For back-compat with older Milo clients that incorrectly
+    // sent the policy URI, a non-empty value is tolerated only when it matches the policy URI.
     String algorithmUri = token.getEncryptionAlgorithm();
     if (algorithmUri != null
         && !algorithmUri.isEmpty()

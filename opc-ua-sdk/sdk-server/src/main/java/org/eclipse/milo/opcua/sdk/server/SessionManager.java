@@ -40,7 +40,7 @@ import org.eclipse.milo.opcua.stack.core.channel.SecureChannel;
 import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.ChannelBoundSignatureData;
 import org.eclipse.milo.opcua.stack.core.security.EccEncryptedSecret;
-import org.eclipse.milo.opcua.stack.core.security.EccUserTokenAdditionalHeader;
+import org.eclipse.milo.opcua.stack.core.security.EnhancedUserTokenAdditionalHeader;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
@@ -409,20 +409,20 @@ public class SessionManager {
       Session session)
       throws UaException {
 
-    EccUserTokenAdditionalHeader.NegotiationRequest negotiationRequest =
-        EccUserTokenAdditionalHeader.decodeRequest(
+    EnhancedUserTokenAdditionalHeader.NegotiationRequest negotiationRequest =
+        EnhancedUserTokenAdditionalHeader.decodeRequest(
             server.getStaticEncodingContext(), additionalHeader);
 
     if (negotiationRequest
-        instanceof EccUserTokenAdditionalHeader.NegotiationRequest.Supported supported) {
+        instanceof EnhancedUserTokenAdditionalHeader.NegotiationRequest.Supported supported) {
       return issueUserTokenEphemeralKey(supported.securityPolicy(), securityConfiguration, session);
     } else if (negotiationRequest
-        instanceof EccUserTokenAdditionalHeader.NegotiationRequest.Unsupported unsupported) {
+        instanceof EnhancedUserTokenAdditionalHeader.NegotiationRequest.Unsupported unsupported) {
       logger.debug(
           "rejecting enhanced user-token negotiation for unavailable policy: {}",
           unsupported.securityPolicyUri());
 
-      return EccUserTokenAdditionalHeader.createResponse(
+      return EnhancedUserTokenAdditionalHeader.createResponse(
           server.getStaticEncodingContext(),
           new StatusCode(StatusCodes.Bad_SecurityPolicyRejected));
     } else {
@@ -477,7 +477,7 @@ public class SessionManager {
       SecurityPolicy securityPolicy, SecurityConfiguration securityConfiguration, Session session)
       throws UaException {
 
-    if (!EccUserTokenAdditionalHeader.hasUsernameTokenSecurityPolicy(
+    if (!EnhancedUserTokenAdditionalHeader.hasUsernameTokenSecurityPolicy(
         session.getEndpoint(), securityPolicy)) {
       throw new UaException(
           StatusCodes.Bad_SecurityPolicyRejected,
@@ -497,7 +497,7 @@ public class SessionManager {
 
     session.setUserTokenEphemeralKeyPair(ephemeralKeyPair, ephemeralPublicKey);
 
-    return EccUserTokenAdditionalHeader.createResponse(
+    return EnhancedUserTokenAdditionalHeader.createResponse(
         server.getStaticEncodingContext(), securityPolicy, ephemeralKey);
   }
 

@@ -108,7 +108,7 @@ public class X509IdentityProvider implements IdentityProvider {
   }
 
   @Override
-  public Optional<SecurityPolicy> getEccUserTokenSecurityPolicy(EndpointDescription endpoint)
+  public Optional<SecurityPolicy> getEnhancedUserTokenSecurityPolicy(EndpointDescription endpoint)
       throws Exception {
 
     selectTokenPolicy(endpoint);
@@ -234,15 +234,25 @@ public class X509IdentityProvider implements IdentityProvider {
   private static SecurityPolicy resolveSecurityPolicy(
       EndpointDescription endpoint, UserTokenPolicy tokenPolicy) throws UaException {
 
-    String securityPolicyUri = tokenPolicy.getSecurityPolicyUri();
+    String tokenPolicyUri = tokenPolicy.getSecurityPolicyUri();
+    boolean explicitlySpecified = tokenPolicyUri != null && !tokenPolicyUri.isEmpty();
 
+    SecurityPolicy securityPolicy;
     try {
-      if (securityPolicyUri == null || securityPolicyUri.isEmpty()) {
-        securityPolicyUri = endpoint.getSecurityPolicyUri();
-      }
-      return SecurityPolicy.fromUri(securityPolicyUri);
+      String securityPolicyUri =
+          explicitlySpecified ? tokenPolicyUri : endpoint.getSecurityPolicyUri();
+      securityPolicy = SecurityPolicy.fromUri(securityPolicyUri);
     } catch (Throwable t) {
       throw new UaException(StatusCodes.Bad_SecurityPolicyRejected, t);
     }
+
+    // Part 4 (7.41): an explicitly specified certificate user-token policy must use the same
+    // public-key algorithm as the SecureChannel. The enhanced-secret/None rule does not apply to
+    // certificate tokens: they are signed, not encrypted, and an enhanced signature is supported on
+    // a None channel (the reduced Part 4 §6.1.8 Table 101 layout).
+    UserTokenSecurityPolicyRules.requireSamePublicKeyAlgorithmAsChannel(
+        endpoint, securityPolicy, explicitlySpecified);
+
+    return securityPolicy;
   }
 }

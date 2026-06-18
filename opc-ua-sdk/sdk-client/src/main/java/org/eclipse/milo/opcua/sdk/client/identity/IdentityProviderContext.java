@@ -35,7 +35,7 @@ public final class IdentityProviderContext {
   private final EndpointDescription endpoint;
   private final ByteString serverNonce;
   private final @Nullable SecurityPolicy userTokenSecurityPolicy;
-  private final @Nullable ByteString receiverEccPublicKey;
+  private final @Nullable ByteString receiverEphemeralPublicKey;
   private final @Nullable KeyPair clientApplicationKeyPair;
   private final X509Certificate @Nullable [] clientCertificateChain;
   private final @Nullable ChannelSignatureInputs channelSignatureInputs;
@@ -56,9 +56,8 @@ public final class IdentityProviderContext {
    *
    * @param endpoint the endpoint being activated.
    * @param serverNonce the server nonce returned by CreateSession or the latest ActivateSession.
-   * @param receiverEccPublicKey the server session public key returned for enhanced username-token
-   *     encryption, or {@code null}. The parameter name follows the existing public API and OPC UA
-   *     structure naming; RSA-DH profiles use the same field.
+   * @param receiverEphemeralPublicKey the server session public key returned for enhanced
+   *     username-token encryption, or {@code null}. Both ECC and RSA-DH profiles use this field.
    * @param clientApplicationKeyPair the client application key pair selected for the token policy,
    *     or {@code null}.
    * @param clientCertificateChain the client application certificate chain selected for the token
@@ -67,7 +66,7 @@ public final class IdentityProviderContext {
   public IdentityProviderContext(
       EndpointDescription endpoint,
       ByteString serverNonce,
-      @Nullable ByteString receiverEccPublicKey,
+      @Nullable ByteString receiverEphemeralPublicKey,
       @Nullable KeyPair clientApplicationKeyPair,
       X509Certificate @Nullable [] clientCertificateChain) {
 
@@ -75,7 +74,7 @@ public final class IdentityProviderContext {
         endpoint,
         serverNonce,
         null,
-        receiverEccPublicKey,
+        receiverEphemeralPublicKey,
         clientApplicationKeyPair,
         clientCertificateChain);
   }
@@ -86,9 +85,8 @@ public final class IdentityProviderContext {
    * @param endpoint the endpoint being activated.
    * @param serverNonce the server nonce returned by CreateSession or the latest ActivateSession.
    * @param userTokenSecurityPolicy the selected user-token security policy, or {@code null}.
-   * @param receiverEccPublicKey the server session public key returned for enhanced username-token
-   *     encryption, or {@code null}. The parameter name follows the existing public API and OPC UA
-   *     structure naming; RSA-DH profiles use the same field.
+   * @param receiverEphemeralPublicKey the server session public key returned for enhanced
+   *     username-token encryption, or {@code null}. Both ECC and RSA-DH profiles use this field.
    * @param clientApplicationKeyPair the client application key pair selected for the token policy,
    *     or {@code null}.
    * @param clientCertificateChain the client application certificate chain selected for the token
@@ -98,7 +96,7 @@ public final class IdentityProviderContext {
       EndpointDescription endpoint,
       ByteString serverNonce,
       @Nullable SecurityPolicy userTokenSecurityPolicy,
-      @Nullable ByteString receiverEccPublicKey,
+      @Nullable ByteString receiverEphemeralPublicKey,
       @Nullable KeyPair clientApplicationKeyPair,
       X509Certificate @Nullable [] clientCertificateChain) {
 
@@ -106,7 +104,7 @@ public final class IdentityProviderContext {
         endpoint,
         serverNonce,
         userTokenSecurityPolicy,
-        receiverEccPublicKey,
+        receiverEphemeralPublicKey,
         clientApplicationKeyPair,
         clientCertificateChain,
         null);
@@ -119,9 +117,8 @@ public final class IdentityProviderContext {
    * @param endpoint the endpoint being activated.
    * @param serverNonce the server nonce returned by CreateSession or the latest ActivateSession.
    * @param userTokenSecurityPolicy the selected user-token security policy, or {@code null}.
-   * @param receiverEccPublicKey the server session public key returned for enhanced username-token
-   *     encryption, or {@code null}. The parameter name follows the existing public API and OPC UA
-   *     structure naming; RSA-DH profiles use the same field.
+   * @param receiverEphemeralPublicKey the server session public key returned for enhanced
+   *     username-token encryption, or {@code null}. Both ECC and RSA-DH profiles use this field.
    * @param clientApplicationKeyPair the client application key pair selected for the token policy,
    *     or {@code null}.
    * @param clientCertificateChain the client application certificate chain selected for the token
@@ -133,7 +130,7 @@ public final class IdentityProviderContext {
       EndpointDescription endpoint,
       ByteString serverNonce,
       @Nullable SecurityPolicy userTokenSecurityPolicy,
-      @Nullable ByteString receiverEccPublicKey,
+      @Nullable ByteString receiverEphemeralPublicKey,
       @Nullable KeyPair clientApplicationKeyPair,
       X509Certificate @Nullable [] clientCertificateChain,
       @Nullable ChannelSignatureInputs channelSignatureInputs) {
@@ -141,7 +138,7 @@ public final class IdentityProviderContext {
     this.endpoint = requireNonNull(endpoint, "endpoint");
     this.serverNonce = requireNonNull(serverNonce, "serverNonce");
     this.userTokenSecurityPolicy = userTokenSecurityPolicy;
-    this.receiverEccPublicKey = receiverEccPublicKey;
+    this.receiverEphemeralPublicKey = receiverEphemeralPublicKey;
     this.clientApplicationKeyPair = clientApplicationKeyPair;
     this.clientCertificateChain =
         clientCertificateChain != null
@@ -175,13 +172,12 @@ public final class IdentityProviderContext {
   /**
    * Get the receiver public key used by enhanced username-token encryption.
    *
-   * <p>The method name is retained for source compatibility with earlier ECC-only support. RSA-DH
-   * username-token policies use the same receiver-key field.
+   * <p>Both ECC and RSA-DH username-token policies use the same receiver-key field.
    *
    * @return the server session public key returned in the CreateSession additional header.
    */
-  public Optional<ByteString> getReceiverEccPublicKey() {
-    return Optional.ofNullable(receiverEccPublicKey);
+  public Optional<ByteString> getReceiverEphemeralPublicKey() {
+    return Optional.ofNullable(receiverEphemeralPublicKey);
   }
 
   /**
