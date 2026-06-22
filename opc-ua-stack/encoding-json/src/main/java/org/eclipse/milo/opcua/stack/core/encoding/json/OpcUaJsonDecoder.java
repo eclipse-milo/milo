@@ -1132,10 +1132,18 @@ public class OpcUaJsonDecoder implements UaDecoder {
         if (field != null) {
           String nextName = nextName();
           if (!field.equals(nextName)) {
-            throw new UaSerializationException(
-                StatusCodes.Bad_DecodingError,
-                String.format("readStruct: %s != %s", field, nextName));
+            // CompactEncoding omits default-valued and NULL struct members (Part 6, §5.4.6,
+            // Table 45). Restore the peeked name and return the default (null), mirroring the
+            // other field decoders, instead of failing the whole structure.
+            this.peekedNextName = nextName;
+            return null;
           }
+        }
+
+        // VerboseEncoding represents a NULL struct member as JSON null (Part 6, §5.4.6, Table 45).
+        if (jsonReader.peek() == JsonToken.NULL) {
+          jsonReader.nextNull();
+          return null;
         }
 
         UaStructuredType value;
@@ -1176,10 +1184,18 @@ public class OpcUaJsonDecoder implements UaDecoder {
       if (field != null) {
         String nextName = nextName();
         if (!field.equals(nextName)) {
-          throw new UaSerializationException(
-              StatusCodes.Bad_DecodingError,
-              String.format("readStruct: %s != %s", field, nextName));
+          // CompactEncoding omits default-valued and NULL struct members (Part 6, §5.4.6,
+          // Table 45). Restore the peeked name and return the default (null), mirroring the
+          // other field decoders, instead of failing the whole structure.
+          this.peekedNextName = nextName;
+          return null;
         }
+      }
+
+      // VerboseEncoding represents a NULL struct member as JSON null (Part 6, §5.4.6, Table 45).
+      if (jsonReader.peek() == JsonToken.NULL) {
+        jsonReader.nextNull();
+        return null;
       }
 
       UaStructuredType value;

@@ -1109,6 +1109,54 @@ class OpcUaJsonDecoderTest {
     assertThrows(UaSerializationException.class, () -> decoder.decodeQualifiedName(null));
   }
 
+  /**
+   * Issue 1773: {@code decodeStruct(String field, ...)} throws {@code Bad_DecodingError} on a
+   * member-name mismatch, but the CompactEncoding omits default-valued (and NULL) struct members
+   * (OPC 10000-6 §5.4.6, Table 45). Like every sibling field decoder, it must instead stash the
+   * peeked name and return {@code null} so the surrounding object keeps decoding.
+   */
+  @Test
+  void decodeStruct_omittedMember_restoresNameAndReturnsNull() throws IOException {
+    var decoder = new OpcUaJsonDecoder(context, new StringReader("{\"Other\":42}"));
+    decoder.jsonReader.beginObject();
+
+    // "ConfigurationVersion" is absent; the next member is "Other".
+    assertNull(decoder.decodeStruct("ConfigurationVersion", XVType.TYPE_ID));
+    // The peeked name was restored, so the following member still decodes.
+    assertEquals(42, decoder.decodeInt32("Other"));
+    decoder.jsonReader.endObject();
+  }
+
+  /**
+   * Issue 1773: a struct member encoded as JSON {@code null} (the VerboseEncoding of NULL per OPC
+   * 10000-6 §5.4.6, Table 45) must decode to {@code null} rather than failing with "Expected
+   * BEGIN_OBJECT but was NULL".
+   */
+  @Test
+  void decodeStruct_jsonNullMember_returnsNull() throws IOException {
+    var decoder =
+        new OpcUaJsonDecoder(context, new StringReader("{\"ConfigurationVersion\":null}"));
+    decoder.jsonReader.beginObject();
+
+    assertNull(decoder.decodeStruct("ConfigurationVersion", XVType.TYPE_ID));
+    decoder.jsonReader.endObject();
+  }
+
+  /**
+   * Issue 1773: the real-world interop case. A spec-conformant Compact document legally omits the
+   * all-default {@code ConfigurationVersion} member of {@link DataSetMetaDataType}; the whole
+   * structure must still decode, with that member taking its default ({@code null}) value.
+   */
+  @Test
+  void decodeStruct_compactOmitsDefaultValuedStructMember() {
+    var decoder = new OpcUaJsonDecoder(context, "{\"Name\":\"Demo\",\"Fields\":[]}");
+
+    var decoded = (DataSetMetaDataType) decoder.decodeStruct(null, DataSetMetaDataType.TYPE_ID);
+
+    assertEquals("Demo", decoded.getName());
+    assertNull(decoded.getConfigurationVersion());
+  }
+
   private static byte[] randomBytes16() {
     var random = new Random();
     var bs = new byte[16];
