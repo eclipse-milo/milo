@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.server.events;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -363,15 +364,15 @@ public class EventContentFilter {
       case LessThan -> Operators.LESS_THAN;
       case GreaterThanOrEqual -> Operators.GREATER_THAN_OR_EQUAL;
       case LessThanOrEqual -> Operators.LESS_THAN_OR_EQUAL;
-      case Like -> Operators.UNSUPPORTED;
+      case Like -> Operators.LIKE;
       case Not -> Operators.NOT;
-      case Between -> Operators.UNSUPPORTED;
-      case InList -> Operators.UNSUPPORTED;
-      case And -> Operators.UNSUPPORTED;
-      case Or -> Operators.UNSUPPORTED;
+      case Between -> Operators.BETWEEN;
+      case InList -> Operators.IN_LIST;
+      case And -> Operators.AND;
+      case Or -> Operators.OR;
       case Cast -> Operators.CAST;
-      case BitwiseAnd -> Operators.UNSUPPORTED;
-      case BitwiseOr -> Operators.UNSUPPORTED;
+      case BitwiseAnd -> Operators.BITWISE_AND;
+      case BitwiseOr -> Operators.BITWISE_OR;
 
       // Complex FilterOperators
       case InView -> Operators.UNSUPPORTED;
@@ -491,6 +492,9 @@ public class EventContentFilter {
     private final FilterContext filterContext;
     private final ContentFilterElement[] elements;
 
+    // Indices of the elements currently being evaluated, used to detect ElementOperand cycles.
+    private final Set<Integer> evaluatingElements = new HashSet<>();
+
     DefaultOperatorContext(FilterContext filterContext, ContentFilterElement[] elements) {
       this.filterContext = filterContext;
       this.elements = elements;
@@ -516,12 +520,29 @@ public class EventContentFilter {
     public Object resolve(FilterOperand operand, BaseEventTypeNode eventNode) throws UaException {
       if (operand instanceof LiteralOperand) {
         return ((LiteralOperand) operand).getValue().value();
-      } else if (operand instanceof ElementOperand) {
-        UInteger index = ((ElementOperand) operand).getIndex();
+      } else if (operand instanceof ElementOperand elementOperand) {
+        UInteger index = elementOperand.getIndex();
 
-        ContentFilterElement element = elements[index.intValue()];
+        if (index == null || index.longValue() >= elements.length) {
+          throw new UaException(
+              StatusCodes.Bad_FilterOperandInvalid, "ElementOperand index out of range: " + index);
+        }
 
-        return evaluate(this, eventNode, element);
+        int elementIndex = index.intValue();
+
+        // Guard against self- or mutually referential ElementOperands, which would otherwise
+        // recurse until a StackOverflowError escaped the per-event handler.
+        if (!evaluatingElements.add(elementIndex)) {
+          throw new UaException(
+              StatusCodes.Bad_FilterOperandInvalid,
+              "ElementOperand cycle detected at index: " + elementIndex);
+        }
+
+        try {
+          return evaluate(this, eventNode, elements[elementIndex]);
+        } finally {
+          evaluatingElements.remove(elementIndex);
+        }
       } else if (operand instanceof AttributeOperand ao) {
         return getAttribute(filterContext, ao, eventNode);
       } else if (operand instanceof SimpleAttributeOperand sao) {

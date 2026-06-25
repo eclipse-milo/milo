@@ -42,8 +42,10 @@ public class Not implements Operator<Boolean> {
 
     Object value0 = context.resolve(op0, eventNode);
 
-    if (value0 instanceof Boolean) {
-      return !(Boolean) value0;
+    Boolean value = OperatorUtil.toBoolean(value0);
+
+    if (value != null) {
+      return !value;
     } else {
       return null;
     }
