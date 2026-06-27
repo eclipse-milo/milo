@@ -74,8 +74,40 @@ public class EventFilterWhereClauseOperatorTest extends AbstractClientServerTest
     List<OperatorCase> cases =
         List.of(
             new OperatorCase(
+                "Equals",
+                where(element(FilterOperator.Equals, eventField("Severity"), literal(ushort(2))))),
+            new OperatorCase("IsNull", where(element(FilterOperator.IsNull, literal(null)))),
+            new OperatorCase(
+                "GreaterThan",
+                where(
+                    element(
+                        FilterOperator.GreaterThan, eventField("Severity"), literal(ushort(1))))),
+            new OperatorCase(
+                "LessThan",
+                where(
+                    element(FilterOperator.LessThan, eventField("Severity"), literal(ushort(3))))),
+            new OperatorCase(
+                "GreaterThanOrEqual",
+                where(
+                    element(
+                        FilterOperator.GreaterThanOrEqual,
+                        eventField("Severity"),
+                        literal(ushort(2))))),
+            new OperatorCase(
+                "LessThanOrEqual",
+                where(
+                    element(
+                        FilterOperator.LessThanOrEqual,
+                        eventField("Severity"),
+                        literal(ushort(2))))),
+            new OperatorCase(
                 "Like",
                 where(element(FilterOperator.Like, eventField("Message"), literal("event%")))),
+            new OperatorCase(
+                "Not",
+                where(
+                    element(FilterOperator.Not, elementOperand(1)),
+                    element(FilterOperator.Equals, eventField("Severity"), literal(ushort(99))))),
             new OperatorCase(
                 "Between",
                 where(
@@ -112,6 +144,11 @@ public class EventFilterWhereClauseOperatorTest extends AbstractClientServerTest
                     element(FilterOperator.Equals, eventField("Severity"), literal(ushort(99))),
                     element(FilterOperator.Equals, eventField("Severity"), literal(ushort(2))))),
             new OperatorCase(
+                "Cast",
+                where(
+                    element(FilterOperator.Equals, elementOperand(1), literal(2)),
+                    element(FilterOperator.Cast, eventField("Severity"), literal(NodeIds.Int32)))),
+            new OperatorCase(
                 "BitwiseAnd",
                 where(
                     element(FilterOperator.Equals, elementOperand(1), literal(ushort(2))),
@@ -121,8 +158,9 @@ public class EventFilterWhereClauseOperatorTest extends AbstractClientServerTest
                 "BitwiseOr",
                 where(
                     element(FilterOperator.Equals, elementOperand(1), literal(ushort(6))),
-                    element(
-                        FilterOperator.BitwiseOr, eventField("Severity"), literal(ushort(4))))));
+                    element(FilterOperator.BitwiseOr, eventField("Severity"), literal(ushort(4))))),
+            new OperatorCase(
+                "OfType", where(element(FilterOperator.OfType, literal(NodeIds.BaseEventType)))));
 
     CountDownLatch latch = new CountDownLatch(cases.size());
     List<MonitoredCase> monitoredCases = new ArrayList<>();

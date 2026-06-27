@@ -42,15 +42,24 @@ public class EventContentFilterTest {
   public void testSupportedOperatorsDoNotReportUnsupported() throws Exception {
     ContentFilterElement[] elements =
         new ContentFilterElement[] {
+          element(FilterOperator.Equals, literal(1), literal(1)),
+          element(FilterOperator.IsNull, literal(null)),
+          element(FilterOperator.GreaterThan, literal(2), literal(1)),
+          element(FilterOperator.LessThan, literal(1), literal(2)),
+          element(FilterOperator.GreaterThanOrEqual, literal(2), literal(2)),
+          element(FilterOperator.LessThanOrEqual, literal(2), literal(2)),
           element(FilterOperator.Like, literal("event message"), literal("event%")),
+          element(FilterOperator.Not, literal(false)),
           element(
               FilterOperator.Between, literal(ushort(2)), literal(ushort(1)), literal(ushort(3))),
           element(
               FilterOperator.InList, literal(ushort(2)), literal(ushort(1)), literal(ushort(2))),
           element(FilterOperator.And, literal(true), literal(true)),
           element(FilterOperator.Or, literal(false), literal(true)),
+          element(FilterOperator.Cast, literal("2"), literal(NodeIds.Int32)),
           element(FilterOperator.BitwiseAnd, literal(ushort(2)), literal(ushort(2))),
-          element(FilterOperator.BitwiseOr, literal(ushort(2)), literal(ushort(4)))
+          element(FilterOperator.BitwiseOr, literal(ushort(2)), literal(ushort(4))),
+          element(FilterOperator.OfType, literal(NodeIds.BaseEventType))
         };
 
     EventFilterResult result = EventContentFilter.validate(filterContext(), eventFilter(elements));
