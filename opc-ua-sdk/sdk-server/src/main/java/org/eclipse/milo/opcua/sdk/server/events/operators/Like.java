@@ -10,9 +10,11 @@
 
 package org.eclipse.milo.opcua.sdk.server.events.operators;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Pattern;
 import org.eclipse.milo.opcua.sdk.server.events.FilterContext;
 import org.eclipse.milo.opcua.sdk.server.events.OperatorContext;
 import org.eclipse.milo.opcua.sdk.server.events.ValidationException;
@@ -26,12 +28,31 @@ import org.jspecify.annotations.Nullable;
 public class Like implements Operator<Boolean> {
 
   /**
-   * Upper bound on the number of distinct compiled patterns retained, so a client that sends many
+   * Upper bound on the number of distinct parsed patterns retained, so a client that sends many
    * distinct patterns cannot grow the cache without bound.
    */
   private static final int MAX_CACHED_PATTERNS = 256;
 
-  private final Map<String, Pattern> patternCache = new ConcurrentHashMap<>();
+  /**
+   * Token sentinel for a {@code %} wildcard, which matches any run of characters (including none).
+   */
+  private static final Object STAR = new Object();
+
+  /**
+   * LRU cache of parsed patterns. Parsing is comparatively cheap, but the LIKE pattern is usually a
+   * constant {@code LiteralOperand}, so caching avoids reparsing it for every event. Unlike a
+   * grow-then-stop cache, an LRU keeps caching new patterns by evicting the least-recently-used
+   * entry once full, so a workload with more than {@link #MAX_CACHED_PATTERNS} live patterns does
+   * not fall back to parsing on every event.
+   */
+  private final Map<String, Object[]> patternCache =
+      Collections.synchronizedMap(
+          new LinkedHashMap<>(16, 0.75f, true) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<String, Object[]> eldest) {
+              return size() > MAX_CACHED_PATTERNS;
+            }
+          });
 
   Like() {}
 
@@ -48,34 +69,41 @@ public class Like implements Operator<Boolean> {
 
     validate(context, operands);
 
-    String value = asString(OperatorUtil.resolve(context, eventNode, operands[0]));
-    String pattern = asString(OperatorUtil.resolve(context, eventNode, operands[1]));
+    Object lhs = OperatorUtil.resolve(context, eventNode, operands[0]);
+    Object rhs = OperatorUtil.resolve(context, eventNode, operands[1]);
 
-    if (value != null && pattern != null) {
-      try {
-        return getPattern(pattern).matcher(value).matches();
-      } catch (IllegalArgumentException e) {
-        return false;
-      }
-    } else {
+    // Three-valued logic: a null operand is indeterminate, consistent with the comparison
+    // operators.
+    if (lhs == null || rhs == null) {
+      return null;
+    }
+
+    String value = asString(lhs);
+    String pattern = asString(rhs);
+
+    // An operand that is present but not convertible to a String cannot match; FALSE rather than
+    // indeterminate, mirroring a type mismatch in the comparison operators.
+    if (value == null || pattern == null) {
+      return false;
+    }
+
+    try {
+      return matches(value, getTokens(pattern));
+    } catch (IllegalArgumentException e) {
       return false;
     }
   }
 
-  private Pattern getPattern(String pattern) {
-    Pattern compiled = patternCache.get(pattern);
+  private Object[] getTokens(String pattern) {
+    Object[] tokens = patternCache.get(pattern);
 
-    if (compiled == null) {
-      // Recompiling per event is wasteful when the LIKE pattern is constant, which is the common
-      // case (a LiteralOperand). toRegex throws for malformed patterns; that propagates to apply().
-      compiled = Pattern.compile(toRegex(pattern), Pattern.DOTALL);
-
-      if (patternCache.size() < MAX_CACHED_PATTERNS) {
-        patternCache.putIfAbsent(pattern, compiled);
-      }
+    if (tokens == null) {
+      // parse() throws IllegalArgumentException for malformed patterns; that propagates to apply().
+      tokens = parse(pattern);
+      patternCache.put(pattern, tokens);
     }
 
-    return compiled;
+    return tokens;
   }
 
   @Nullable
@@ -93,38 +121,84 @@ public class Like implements Operator<Boolean> {
     }
   }
 
-  private static String toRegex(String pattern) {
-    StringBuilder regex = new StringBuilder("^");
+  /**
+   * Matches {@code text} against a parsed LIKE {@code pattern} using the classic iterative wildcard
+   * algorithm. It runs in O(text.length * pattern.length) time with O(1) extra state, so unlike a
+   * regex translation it cannot be driven into catastrophic backtracking (ReDoS) by a
+   * client-supplied pattern such as {@code %a%a%a...}.
+   */
+  private static boolean matches(String text, Object[] tokens) {
+    int n = text.length();
+    int m = tokens.length;
+
+    int s = 0; // index into text
+    int t = 0; // index into tokens
+    int starToken = -1; // most recent STAR token index, or -1 if none seen
+    int starText = -1; // text index captured when that STAR was entered
+
+    while (s < n) {
+      if (t < m && tokens[t] instanceof CharMatcher matcher && matcher.matches(text.charAt(s))) {
+        s++;
+        t++;
+      } else if (t < m && tokens[t] == STAR) {
+        starToken = t;
+        starText = s;
+        t++;
+      } else if (starToken == -1) {
+        return false;
+      } else {
+        // Backtrack: let the most recent STAR consume one more character and retry.
+        t = starToken + 1;
+        starText++;
+        s = starText;
+      }
+    }
+
+    while (t < m && tokens[t] == STAR) {
+      t++;
+    }
+
+    return t == m;
+  }
+
+  /**
+   * Parses an OPC UA LIKE pattern (Part 4 Table 120) into a token array of {@link #STAR} markers
+   * and {@link CharMatcher}s. Throws {@link IllegalArgumentException} for malformed patterns.
+   */
+  private static Object[] parse(String pattern) {
+    List<Object> tokens = new ArrayList<>();
 
     for (int i = 0; i < pattern.length(); i++) {
       char c = pattern.charAt(i);
 
       switch (c) {
         case '%' -> {
-          // Collapse a run of consecutive '%' into a single '.*'. Adjacent unbounded quantifiers
-          // (".*.*...") are a catastrophic-backtracking (ReDoS) hazard for client-supplied
-          // patterns, and consecutive '%' are semantically identical to a single one.
-          regex.append(".*");
-          while (i + 1 < pattern.length() && pattern.charAt(i + 1) == '%') {
-            i++;
+          // Consecutive '%' are semantically identical to a single one; collapse them.
+          if (tokens.isEmpty() || tokens.get(tokens.size() - 1) != STAR) {
+            tokens.add(STAR);
           }
         }
-        case '_' -> regex.append('.');
+        case '_' -> tokens.add((CharMatcher) ch -> true);
         case '\\' -> {
           if (++i >= pattern.length()) {
             throw new IllegalArgumentException("trailing escape");
           }
-          appendLiteral(regex, pattern.charAt(i));
+          char literal = pattern.charAt(i);
+          tokens.add((CharMatcher) ch -> ch == literal);
         }
-        case '[' -> i = appendCharacterClass(pattern, i, regex);
-        default -> appendLiteral(regex, c);
+        case '[' -> i = parseCharacterClass(pattern, i, tokens);
+        default -> tokens.add((CharMatcher) ch -> ch == c);
       }
     }
 
-    return regex.append('$').toString();
+    return tokens.toArray();
   }
 
-  private static int appendCharacterClass(String pattern, int start, StringBuilder regex) {
+  /**
+   * Parses a {@code [...]} character class starting at {@code start} (the {@code '['}), appends a
+   * {@link CharMatcher} to {@code tokens}, and returns the index of the closing {@code ']'}.
+   */
+  private static int parseCharacterClass(String pattern, int start, List<Object> tokens) {
     int i = start + 1;
     boolean negated = false;
 
@@ -133,64 +207,79 @@ public class Like implements Operator<Boolean> {
       i++;
     }
 
-    StringBuilder characterClass = new StringBuilder();
+    List<char[]> ranges = new ArrayList<>();
     boolean sawContent = false;
 
-    for (; i < pattern.length(); i++) {
+    while (i < pattern.length()) {
       char c = pattern.charAt(i);
 
-      if (c == '\\') {
-        if (++i >= pattern.length()) {
-          throw new IllegalArgumentException("trailing character class escape");
-        }
-        // Part 4 Table 120 treats '\' as literal interpretation, so escaped regex class
-        // metacharacters must not become Java regex syntax.
-        appendEscapedClassLiteral(characterClass, pattern.charAt(i));
-        sawContent = true;
-      } else if (c == ']') {
+      if (c == ']') {
         if (!sawContent) {
           throw new IllegalArgumentException("empty character class");
         }
 
-        regex.append('[');
-        if (negated) {
-          regex.append('^');
-        }
-        regex.append(characterClass).append(']');
+        boolean finalNegated = negated;
+        tokens.add((CharMatcher) ch -> inRanges(ranges, ch) != finalNegated);
 
         return i;
-      } else {
-        appendClassPatternCharacter(characterClass, c);
-        sawContent = true;
       }
+
+      // Resolve the low end of a potential range, honoring '\' as a literal escape.
+      char lo;
+      if (c == '\\') {
+        if (++i >= pattern.length()) {
+          throw new IllegalArgumentException("trailing character class escape");
+        }
+        lo = pattern.charAt(i);
+      } else {
+        lo = c;
+      }
+
+      // A range is "x-y" where '-' is not the last character before ']'. A '-' adjacent to ']' is a
+      // literal '-'.
+      if (i + 2 < pattern.length()
+          && pattern.charAt(i + 1) == '-'
+          && pattern.charAt(i + 2) != ']') {
+
+        i += 2;
+        char hi;
+        if (pattern.charAt(i) == '\\') {
+          if (++i >= pattern.length()) {
+            throw new IllegalArgumentException("trailing character class escape");
+          }
+          hi = pattern.charAt(i);
+        } else {
+          hi = pattern.charAt(i);
+        }
+
+        if (hi < lo) {
+          throw new IllegalArgumentException("invalid character range: " + lo + '-' + hi);
+        }
+
+        ranges.add(new char[] {lo, hi});
+      } else {
+        ranges.add(new char[] {lo, lo});
+      }
+
+      sawContent = true;
+      i++;
     }
 
     throw new IllegalArgumentException("unclosed character class");
   }
 
-  private static void appendLiteral(StringBuilder regex, char c) {
-    if ("\\.[]{}()*+-?^$|".indexOf(c) >= 0) {
-      regex.append('\\');
+  private static boolean inRanges(List<char[]> ranges, char ch) {
+    for (char[] range : ranges) {
+      if (ch >= range[0] && ch <= range[1]) {
+        return true;
+      }
     }
 
-    regex.append(c);
+    return false;
   }
 
-  private static void appendClassPatternCharacter(StringBuilder regex, char c) {
-    // '&' must be escaped so an unescaped "&&" is not interpreted as Java's character-class
-    // intersection operator; LIKE has no such operator (matching appendEscapedClassLiteral).
-    if (c == '\\' || c == '[' || c == ']' || c == '&') {
-      regex.append('\\');
-    }
-
-    regex.append(c);
-  }
-
-  private static void appendEscapedClassLiteral(StringBuilder regex, char c) {
-    if (c == '\\' || c == '[' || c == ']' || c == '-' || c == '^' || c == '&') {
-      regex.append('\\');
-    }
-
-    regex.append(c);
+  @FunctionalInterface
+  private interface CharMatcher {
+    boolean matches(char c);
   }
 }

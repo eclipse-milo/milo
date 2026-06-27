@@ -11,10 +11,13 @@
 package org.eclipse.milo.opcua.sdk.server.events.operators;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.time.Duration;
 import org.eclipse.milo.opcua.sdk.server.events.OperatorContext;
 import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
@@ -105,6 +108,24 @@ public class LikeTest {
   public void testNonStringOperandsReturnFalse() throws Exception {
     assertFalse(like(42, "%"));
     assertFalse(like("42", 42));
+  }
+
+  @Test
+  public void testNullOperandsAreIndeterminate() throws Exception {
+    // A null operand is indeterminate (null), consistent with the comparison operators, rather than
+    // a non-match (false).
+    assertNull(like(null, "event%"));
+    assertNull(like("event message", null));
+  }
+
+  @Test
+  public void testPathologicalPatternMatchesInLinearTime() {
+    // A regex translation of this pattern (many "%" separated by literals) would backtrack
+    // catastrophically against a long non-matching input; the linear matcher returns promptly.
+    String value = "a".repeat(100_000);
+
+    assertTimeoutPreemptively(
+        Duration.ofSeconds(5), () -> assertFalse(like(value, "%a%a%a%a%a%a%a%a%a%aZ")));
   }
 
   private static Boolean like(Object value, Object pattern) throws Exception {
