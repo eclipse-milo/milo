@@ -216,4 +216,42 @@ public class EqualsTest {
     assertNotNull(result);
     assertFalse(result);
   }
+
+  @Test
+  public void testFloatArrayNaNElementsAreNotEqual() throws Exception {
+    // IEEE semantics: NaN != NaN, matching the scalar path rather than Objects.deepEquals' bitwise
+    // Float comparison. Two elements so the array is not scalarized.
+    OperatorContext context = mock(OperatorContext.class);
+    BaseEventTypeNode eventNode = mock(BaseEventTypeNode.class);
+
+    FilterOperand op0 = new LiteralOperand(new Variant(new float[] {1.0f, Float.NaN}));
+    FilterOperand op1 = new LiteralOperand(new Variant(new float[] {1.0f, Float.NaN}));
+
+    when(context.resolve(op0, eventNode)).thenReturn(new float[] {1.0f, Float.NaN});
+    when(context.resolve(op1, eventNode)).thenReturn(new float[] {1.0f, Float.NaN});
+
+    Boolean result = Operators.EQUALS.apply(context, eventNode, new FilterOperand[] {op0, op1});
+
+    assertNotNull(result);
+    assertFalse(result);
+  }
+
+  @Test
+  public void testDoubleArraySignedZeroElementsAreEqual() throws Exception {
+    // IEEE semantics: +0.0 == -0.0, matching the scalar path rather than Objects.deepEquals'
+    // bitwise Double comparison.
+    OperatorContext context = mock(OperatorContext.class);
+    BaseEventTypeNode eventNode = mock(BaseEventTypeNode.class);
+
+    FilterOperand op0 = new LiteralOperand(new Variant(new double[] {1.0, -0.0}));
+    FilterOperand op1 = new LiteralOperand(new Variant(new double[] {1.0, 0.0}));
+
+    when(context.resolve(op0, eventNode)).thenReturn(new double[] {1.0, -0.0});
+    when(context.resolve(op1, eventNode)).thenReturn(new double[] {1.0, 0.0});
+
+    Boolean result = Operators.EQUALS.apply(context, eventNode, new FilterOperand[] {op0, op1});
+
+    assertNotNull(result);
+    assertTrue(result);
+  }
 }

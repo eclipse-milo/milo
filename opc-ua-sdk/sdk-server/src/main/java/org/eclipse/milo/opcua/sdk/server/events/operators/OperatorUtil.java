@@ -28,7 +28,6 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.structured.FilterOperand;
 import org.eclipse.milo.opcua.stack.core.util.ArrayUtil;
-import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -60,7 +59,7 @@ final class OperatorUtil {
   }
 
   @Nullable
-  static BinaryOperands convertToCommonType(@NonNull Object operand0, @NonNull Object operand1) {
+  static BinaryOperands convertToCommonType(Object operand0, Object operand1) {
     // Part 4 Table 121 allows length-one arrays to be treated as scalar values.
     operand0 = toScalarIfSingleElementArray(operand0);
     operand1 = toScalarIfSingleElementArray(operand1);
@@ -108,7 +107,7 @@ final class OperatorUtil {
   }
 
   @Nullable
-  static Integer compareOrdered(@NonNull Object operand0, @NonNull Object operand1) {
+  static Integer compareOrdered(Object operand0, Object operand1) {
     BinaryOperands operands = convertToCommonType(operand0, operand1);
 
     if (operands == null) {
@@ -141,9 +140,12 @@ final class OperatorUtil {
     return equal(commonOperands.operand0(), commonOperands.operand1());
   }
 
-  private static boolean equal(@NonNull Object operand0, @NonNull Object operand1) {
-    if (operand0.getClass().isArray()) {
-      return Objects.deepEquals(operand0, operand1);
+  private static boolean equal(Object operand0, Object operand1) {
+    if (operand0.getClass().isArray() || operand1.getClass().isArray()) {
+      // Compare arrays element-by-element rather than with Objects.deepEquals, which would compare
+      // Float/Double elements by bit pattern (Float.equals/Double.equals) and contradict the IEEE
+      // equality the scalar path below implements.
+      return arraysEqual(operand0, operand1);
     } else if (operand0 instanceof Float f0 && operand1 instanceof Float f1) {
       // IEEE floating-point equality: NaN is never equal to itself and +0.0 equals -0.0, unlike
       // Float.equals/Objects.equals which compare bit patterns.
@@ -155,9 +157,35 @@ final class OperatorUtil {
     }
   }
 
+  private static boolean arraysEqual(Object operand0, Object operand1) {
+    if (!operand0.getClass().isArray() || !operand1.getClass().isArray()) {
+      return false;
+    }
+
+    int length = Array.getLength(operand0);
+    if (length != Array.getLength(operand1)) {
+      return false;
+    }
+
+    for (int i = 0; i < length; i++) {
+      Object element0 = Array.get(operand0, i);
+      Object element1 = Array.get(operand1, i);
+
+      if (element0 == null || element1 == null) {
+        if (element0 != element1) {
+          return false;
+        }
+      } else if (!equal(element0, element1)) {
+        // Recurse so nested arrays and Float/Double elements use the same IEEE equality as scalars.
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   @Nullable
-  static TernaryOperands convertToCommonType(
-      @NonNull Object operand0, @NonNull Object operand1, @NonNull Object operand2) {
+  static TernaryOperands convertToCommonType(Object operand0, Object operand1, Object operand2) {
 
     // Between uses one common type for all operands, but the same length-one array scalarization
     // from Part 4 Table 121 still applies before selecting that type.
@@ -191,8 +219,7 @@ final class OperatorUtil {
   }
 
   @Nullable
-  static Integer compareOrdered(
-      OpcUaDataType dataType, @NonNull Object operand0, @NonNull Object operand1) {
+  static Integer compareOrdered(OpcUaDataType dataType, Object operand0, Object operand1) {
 
     if (operand0 instanceof Number n0 && operand1 instanceof Number n1) {
       return switch (dataType) {
@@ -213,6 +240,10 @@ final class OperatorUtil {
     }
   }
 
+  // Intentionally not Float.compare: it orders -0.0 below +0.0, but ContentFilter ordering treats
+  // +0.0 and -0.0 as numerically equal (consistent with Equals), so the explicit comparisons below
+  // must stay. Suppress the IDE's "use Float.compare" suggestion, which would reintroduce that bug.
+  @SuppressWarnings("UseCompareMethod")
   @Nullable
   private static Integer compareFloat(float operand0, float operand1) {
     // NaN is not an ordered value for ContentFilter comparisons.
@@ -228,6 +259,11 @@ final class OperatorUtil {
     }
   }
 
+  // Intentionally not Double.compare: it orders -0.0 below +0.0, but ContentFilter ordering treats
+  // +0.0 and -0.0 as numerically equal (consistent with Equals), so the explicit comparisons below
+  // must stay. Suppress the IDE's "use Double.compare" suggestion, which would reintroduce that
+  // bug.
+  @SuppressWarnings("UseCompareMethod")
   @Nullable
   private static Integer compareDouble(double operand0, double operand1) {
     // NaN is not an ordered value for ContentFilter comparisons.
@@ -244,9 +280,7 @@ final class OperatorUtil {
   }
 
   @Nullable
-  static Object bitwise(
-      @NonNull Object operand0, @NonNull Object operand1, LongBinaryOperator operator) {
-
+  static Object bitwise(Object operand0, Object operand1, LongBinaryOperator operator) {
     operand0 = toScalarIfSingleElementArray(operand0);
     operand1 = toScalarIfSingleElementArray(operand1);
 
@@ -274,7 +308,7 @@ final class OperatorUtil {
   }
 
   @Nullable
-  static OpcUaDataType getType(@NonNull Object value) {
+  static OpcUaDataType getType(Object value) {
     if (value.getClass().isArray()) {
       return OpcUaDataType.fromBackingClass(ArrayUtil.getType(value));
     } else {
@@ -311,7 +345,7 @@ final class OperatorUtil {
   }
 
   @Nullable
-  static Object convert(@NonNull Object value, OpcUaDataType targetType) {
+  static Object convert(Object value, OpcUaDataType targetType) {
     if (value.getClass().isArray()) {
       return convertArray(value, targetType);
     } else if (getType(value) == targetType) {
@@ -322,7 +356,7 @@ final class OperatorUtil {
   }
 
   @Nullable
-  private static Object convertArray(@NonNull Object array, OpcUaDataType targetType) {
+  private static Object convertArray(Object array, OpcUaDataType targetType) {
     int[] dimensions = ArrayUtil.getDimensions(array);
 
     Object flattened = ArrayUtil.flatten(array);
@@ -365,6 +399,7 @@ final class OperatorUtil {
     return highest;
   }
 
+  @SuppressWarnings("BooleanMethodIsAlwaysInverted")
   private static boolean isIntegerType(OpcUaDataType dataType) {
     return switch (dataType) {
       case SByte, Byte, Int16, UInt16, Int32, UInt32, Int64, UInt64 -> true;

@@ -52,6 +52,22 @@ public class OrderedComparisonTest {
     assertFalse(apply(Operators.LESS_THAN, 1.0d, Double.NaN));
   }
 
+  @Test
+  public void testSignedZerosCompareEqual() throws Exception {
+    // IEEE semantics: +0.0 and -0.0 are numerically equal, so neither is strictly greater/less,
+    // and both "or equal" variants hold (unlike Float.compare/Double.compare, which order -0.0
+    // below +0.0).
+    assertFalse(apply(Operators.GREATER_THAN, 0.0f, -0.0f));
+    assertFalse(apply(Operators.LESS_THAN, -0.0f, 0.0f));
+    assertTrue(apply(Operators.GREATER_THAN_OR_EQUAL, -0.0f, 0.0f));
+    assertTrue(apply(Operators.LESS_THAN_OR_EQUAL, 0.0f, -0.0f));
+
+    assertFalse(apply(Operators.GREATER_THAN, 0.0d, -0.0d));
+    assertFalse(apply(Operators.LESS_THAN, -0.0d, 0.0d));
+    assertTrue(apply(Operators.GREATER_THAN_OR_EQUAL, -0.0d, 0.0d));
+    assertTrue(apply(Operators.LESS_THAN_OR_EQUAL, 0.0d, -0.0d));
+  }
+
   private static Boolean apply(Operator<Boolean> operator, Object lhs, Object rhs)
       throws Exception {
 
