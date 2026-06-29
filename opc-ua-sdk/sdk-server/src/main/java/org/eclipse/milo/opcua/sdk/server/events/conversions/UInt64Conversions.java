@@ -29,7 +29,7 @@ final class UInt64Conversions {
 
   @NonNull
   static Boolean uInt64ToBoolean(@NonNull ULong ul) {
-    return ul.intValue() != 0;
+    return ul.longValue() != 0L;
   }
 
   @Nullable

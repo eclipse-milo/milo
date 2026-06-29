@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.server.events.operators;
 
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ulong;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -47,6 +48,11 @@ public class CastTest {
   @Test
   public void testExplicitConversion() throws Exception {
     assertEquals("1", cast(true, NodeIds.String));
+  }
+
+  @Test
+  public void testUInt64Above32BitsCastsToBooleanTrue() throws Exception {
+    assertEquals(Boolean.TRUE, cast(ulong(0x1_0000_0000L), NodeIds.Boolean));
   }
 
   @Test
