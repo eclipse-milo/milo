@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.client;
 
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -31,6 +32,7 @@ import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.ReferenceTypes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
@@ -113,6 +115,43 @@ public class UaNodeTest extends AbstractClientServerTest {
   }
 
   @Test
+  public void readIgnoresDataEncoding() throws UaException {
+    NodeId nodeId = new NodeId(2, "TestInt32");
+
+    List<ReadValueId> readValueIds =
+        List.of(
+            new ReadValueId(
+                nodeId, AttributeId.Value.uid(), null, new QualifiedName(0, "Default Binary")),
+            new ReadValueId(nodeId, AttributeId.Value.uid(), null, new QualifiedName(0, "Modbus")),
+            new ReadValueId(
+                nodeId, AttributeId.Value.uid(), null, new QualifiedName(9999, "Default Binary")),
+            new ReadValueId(
+                nodeId,
+                AttributeId.BrowseName.uid(),
+                null,
+                new QualifiedName(0, "Default Binary")));
+
+    ReadResponse response = client.read(0.0, TimestampsToReturn.Both, readValueIds);
+    DataValue[] results = requireNonNull(response.getResults());
+
+    assertEquals(4, results.length);
+
+    Object expectedValue = results[0].value().value();
+
+    for (int i = 0; i < 3; i++) {
+      assertTrue(results[i].statusCode().isGood());
+      assertEquals(expectedValue, results[i].value().value());
+      assertNotNull(results[i].sourceTime());
+      assertNotNull(results[i].serverTime());
+    }
+
+    assertTrue(results[3].statusCode().isGood());
+    assertEquals(new QualifiedName(2, "TestInt32"), results[3].value().value());
+    assertEquals(DateTime.NULL_VALUE, results[3].sourceTime());
+    assertNotNull(results[3].serverTime());
+  }
+
+  @Test
   public void readBaseNodeAttributes() throws ExecutionException, InterruptedException {
     NodeId nodeId = new NodeId(2, "TestInt32");
 
@@ -123,7 +162,8 @@ public class UaNodeTest extends AbstractClientServerTest {
 
     ReadResponse response = client.readAsync(0.0, TimestampsToReturn.Both, readValueIds).get();
 
-    Arrays.stream(response.getResults()).forEach(v -> LOGGER.debug("{}", v.value().value()));
+    DataValue[] results = requireNonNull(response.getResults());
+    Arrays.stream(results).forEach(v -> LOGGER.debug("{}", v.value().value()));
   }
 
   @Test

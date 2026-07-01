@@ -19,10 +19,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.LinkedList;
 import java.util.List;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
+import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MonitoringMode;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,6 +57,35 @@ public class OpcUaMonitoredItemTest extends AbstractClientServerTest {
     assertTrue(created.get(0).serviceResult().isGood());
     assertTrue(created.get(0).operationResult().orElseThrow().isGood());
     assertEquals(OpcUaMonitoredItem.SyncState.SYNCHRONIZED, monitoredItem.getSyncState());
+  }
+
+  @Test
+  void createMonitoredItemsIgnoresDataEncoding() {
+    NodeId nodeId = new NodeId(2, "TestInt32");
+
+    var valueItem =
+        new OpcUaMonitoredItem(
+            new ReadValueId(
+                nodeId, AttributeId.Value.uid(), null, new QualifiedName(9999, "Default Binary")));
+    var browseNameItem =
+        new OpcUaMonitoredItem(
+            new ReadValueId(
+                nodeId,
+                AttributeId.BrowseName.uid(),
+                null,
+                new QualifiedName(0, "Default Binary")));
+
+    subscription.addMonitoredItem(valueItem);
+    subscription.addMonitoredItem(browseNameItem);
+    List<MonitoredItemServiceOperationResult> created = subscription.createMonitoredItems();
+
+    assertEquals(2, created.size());
+    assertTrue(created.get(0).serviceResult().isGood());
+    assertTrue(created.get(0).operationResult().orElseThrow().isGood());
+    assertEquals(OpcUaMonitoredItem.SyncState.SYNCHRONIZED, valueItem.getSyncState());
+    assertTrue(created.get(1).serviceResult().isGood());
+    assertTrue(created.get(1).operationResult().orElseThrow().isGood());
+    assertEquals(OpcUaMonitoredItem.SyncState.SYNCHRONIZED, browseNameItem.getSyncState());
   }
 
   @Test
