@@ -20,6 +20,7 @@ import io.netty.util.ByteProcessor;
 import java.lang.reflect.Array;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -421,6 +422,18 @@ public class OpcUaBinaryDecoder implements UaDecoder {
             int[] dimensions = dimensionsEncoded ? decodeDimensions() : new int[] {length};
 
             Object value;
+            if (dimensionsEncoded && dimensions.length > 0) {
+              int dimensionsLength = calculateMatrixLength(dimensions);
+              if (dimensionsLength != length) {
+                throw new UaSerializationException(
+                    StatusCodes.Bad_DecodingError,
+                    String.format(
+                        "matrix dimensions do not match array length (dimensionsLength=%s,"
+                            + " arrayLength=%s)",
+                        dimensionsLength, length));
+              }
+            }
+
             if (dimensions.length > 1) {
               value = new Matrix(flatArray, dimensions, OpcUaDataType.fromTypeId(typeId));
             } else {
@@ -483,6 +496,8 @@ public class OpcUaBinaryDecoder implements UaDecoder {
     if (length == -1) {
       return new int[0];
     } else {
+      checkArrayLength(length);
+
       int[] is = new int[length];
       for (int i = 0; i < length; i++) {
         is[i] = decodeInt32();
@@ -1185,6 +1200,12 @@ public class OpcUaBinaryDecoder implements UaDecoder {
   }
 
   private void checkArrayLength(int length) throws UaSerializationException {
+    if (length < 0) {
+      throw new UaSerializationException(
+          StatusCodes.Bad_DecodingError,
+          String.format("array length must not be negative (length=%s)", length));
+    }
+
     if (length > context.getEncodingLimits().getMaxMessageSize()) {
       throw new UaSerializationException(
           StatusCodes.Bad_EncodingLimitsExceeded,
@@ -1192,6 +1213,38 @@ public class OpcUaBinaryDecoder implements UaDecoder {
               "array length exceeds max message size (length=%s, max=%s)",
               length, context.getEncodingLimits().getMaxMessageSize()));
     }
+  }
+
+  private int calculateMatrixLength(int[] dimensions) throws UaSerializationException {
+    int length = 1;
+
+    for (int dimension : dimensions) {
+      if (dimension < 0) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_DecodingError,
+            String.format("matrix dimension must not be negative (dimension=%s)", dimension));
+      }
+
+      checkArrayLength(dimension);
+
+      if (length == 0 || dimension == 0) {
+        length = 0;
+      } else {
+        try {
+          length = Math.multiplyExact(length, dimension);
+        } catch (ArithmeticException e) {
+          throw new UaSerializationException(
+              StatusCodes.Bad_EncodingLimitsExceeded,
+              String.format(
+                  "matrix length exceeds Integer.MAX_VALUE (dimensions=%s)",
+                  Arrays.toString(dimensions)));
+        }
+      }
+    }
+
+    checkArrayLength(length);
+
+    return length;
   }
 
   private <T> T[] decodeArray(String field, Function<String, T> decoder, Class<T> clazz)
@@ -1220,16 +1273,7 @@ public class OpcUaBinaryDecoder implements UaDecoder {
     int[] dimensions = decodeMatrixDimensions();
     if (dimensions == null) return null;
 
-    int length = 1;
-    for (int d : dimensions) {
-      checkArrayLength(d);
-      if (d > 0) {
-        length *= d;
-      } else {
-        length = 0;
-      }
-    }
-    checkArrayLength(length);
+    int length = calculateMatrixLength(dimensions);
 
     // TODO speed this up by switching on BuiltinDataType instead of using reflection
     Class<?> backingClass = dataType.getBackingClass();
@@ -1255,16 +1299,7 @@ public class OpcUaBinaryDecoder implements UaDecoder {
     int[] dimensions = decodeMatrixDimensions();
     if (dimensions == null) return null;
 
-    int length = 1;
-    for (int d : dimensions) {
-      checkArrayLength(d);
-      if (d > 0) {
-        length *= d;
-      } else {
-        length = 0;
-      }
-    }
-    checkArrayLength(length);
+    int length = calculateMatrixLength(dimensions);
 
     DataTypeCodec codec = context.getDataTypeManager().getCodec(dataTypeId);
 
