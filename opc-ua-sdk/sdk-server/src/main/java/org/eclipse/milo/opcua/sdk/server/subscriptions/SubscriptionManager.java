@@ -636,20 +636,9 @@ public class SubscriptionManager {
       AttributesResponse attributeResponse)
       throws UaException {
 
-    QualifiedName dataEncoding = request.getItemToMonitor().getDataEncoding();
     AttributeId attributeId =
         AttributeId.from(request.getItemToMonitor().getAttributeId())
             .orElseThrow(() -> new UaException(StatusCodes.Bad_AttributeIdInvalid));
-
-    if (dataEncoding.isNotNull()) {
-      if (attributeId != AttributeId.Value) {
-        throw new UaException(StatusCodes.Bad_DataEncodingInvalid);
-      }
-
-      if (!server.getEncodingManager().hasEncoding(dataEncoding)) {
-        throw new UaException(StatusCodes.Bad_DataEncodingUnsupported);
-      }
-    }
 
     if (attributeResponse instanceof NegativeResponse negativeResponse) {
       throw new UaException(negativeResponse.statusCode());
