@@ -18,6 +18,8 @@ import static org.mockito.Mockito.when;
 
 import org.eclipse.milo.opcua.sdk.server.events.OperatorContext;
 import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.structured.FilterOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.LiteralOperand;
@@ -63,6 +65,11 @@ public class InListTest {
   @Test
   public void testMoreThanTwoListOperands() throws Exception {
     assertTrue(inList(4, 1, 2, 3, 4, 5));
+  }
+
+  @Test
+  public void testNodeIdMatchesExpandedNodeIdCandidate() throws Exception {
+    assertTrue(inList(NodeIds.ExclusiveLimitAlarmType, ExpandedNodeId.parse("i=9341")));
   }
 
   private static Boolean inList(Object value, Object... candidates) throws Exception {
