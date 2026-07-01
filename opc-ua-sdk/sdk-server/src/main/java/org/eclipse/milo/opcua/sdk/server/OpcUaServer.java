@@ -30,6 +30,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.ObjectTypeTree;
@@ -155,6 +156,15 @@ public class OpcUaServer extends AbstractServiceHandler {
   private final AtomicLong secureChannelTokenIds = new AtomicLong();
 
   private final Map<TransportProfile, OpcServerTransport> transports = new ConcurrentHashMap<>();
+
+  /**
+   * Shared shutdown result for the terminal server shutdown.
+   *
+   * <p>Shutdown tears down diagnostics and namespace state that cannot be safely torn down twice,
+   * so concurrent callers must observe the same operation instead of each running teardown logic.
+   */
+  private final AtomicReference<CompletableFuture<OpcUaServer>> shutdownFuture =
+      new AtomicReference<>();
 
   private final EventBus eventBus = new EventBus("server");
   private final EventFactory eventFactory = new EventFactory(this);
@@ -323,7 +333,48 @@ public class OpcUaServer extends AbstractServiceHandler {
     }
   }
 
+  /**
+   * Stop accepting new sessions and tear down the server runtime.
+   *
+   * <p>This method is the synchronization point for server shutdown. The first caller performs the
+   * shutdown sequence: reject new sessions, unbind transports, drain session listener work, close
+   * sessions, then shut down namespaces, diagnostics, events, and subscriptions. Concurrent callers
+   * receive the same {@link CompletableFuture} so namespace and diagnostics lifecycle code is only
+   * run once.
+   *
+   * <p>If shutdown is requested from a session listener callback, the shutdown path avoids waiting
+   * on the callback that is currently executing. When another caller is already waiting for
+   * listener quiescence, this method returns a completed future for that callback and the outer
+   * shutdown caller continues the real teardown after the callback returns.
+   *
+   * @return a future completed when the server shutdown sequence has finished.
+   */
   public CompletableFuture<OpcUaServer> shutdown() {
+    sessionManager.beginShutdown();
+
+    CompletableFuture<OpcUaServer> newShutdownFuture = new CompletableFuture<>();
+    if (!shutdownFuture.compareAndSet(null, newShutdownFuture)) {
+      CompletableFuture<OpcUaServer> existingShutdownFuture = shutdownFuture.get();
+      if (sessionManager.isSessionListenerCallback() && !existingShutdownFuture.isDone()) {
+        // The active shutdown is waiting for this callback to return; joining it here would
+        // deadlock the listener queue.
+        return CompletableFuture.completedFuture(this);
+      } else {
+        return existingShutdownFuture;
+      }
+    }
+
+    try {
+      shutdownInternal();
+      newShutdownFuture.complete(this);
+    } catch (Exception e) {
+      newShutdownFuture.completeExceptionally(e);
+    }
+
+    return newShutdownFuture;
+  }
+
+  private void shutdownInternal() {
     transports
         .values()
         .forEach(
@@ -336,14 +387,14 @@ public class OpcUaServer extends AbstractServiceHandler {
             });
     transports.clear();
 
+    sessionManager.shutdown();
+
     serverNamespace.shutdown();
     opcUaNamespace.shutdown();
 
     eventFactory.shutdown();
 
     subscriptions.values().forEach(Subscription::deleteSubscription);
-
-    return CompletableFuture.completedFuture(this);
   }
 
   public OpcUaServerConfig getConfig() {

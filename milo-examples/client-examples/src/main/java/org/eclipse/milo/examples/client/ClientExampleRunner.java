@@ -152,8 +152,6 @@ public class ClientExampleRunner {
             try {
               client.disconnectAsync().get();
               if (serverRequired && exampleServer != null) {
-                // let the session listener callbacks run
-                Thread.sleep(500);
                 exampleServer.shutdown().get();
               }
               Stack.releaseSharedResources();
