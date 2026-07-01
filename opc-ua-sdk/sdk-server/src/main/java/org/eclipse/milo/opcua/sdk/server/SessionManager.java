@@ -811,7 +811,7 @@ public class SessionManager {
 
     if (session != null) {
       if (session.getSecureChannelId() != secureChannelId) {
-        throw new UaException(StatusCodes.Bad_SecureChannelIdInvalid);
+        throw new UaException(StatusCodes.Bad_SessionIdInvalid);
       } else {
         activeSessions.remove(authToken);
         session.close(request.getDeleteSubscriptions());
@@ -823,7 +823,7 @@ public class SessionManager {
       if (session == null) {
         throw new UaException(StatusCodes.Bad_SessionIdInvalid);
       } else if (session.getSecureChannelId() != secureChannelId) {
-        throw new UaException(StatusCodes.Bad_SecureChannelIdInvalid);
+        throw new UaException(StatusCodes.Bad_SessionIdInvalid);
       } else {
         createdSessions.remove(authToken);
         session.close(request.getDeleteSubscriptions());
