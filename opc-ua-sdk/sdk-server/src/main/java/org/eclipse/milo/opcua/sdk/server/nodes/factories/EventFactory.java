@@ -71,17 +71,22 @@ public class EventFactory extends AbstractLifecycle {
    * @throws UaException if an error occurs creating the Event instance.
    */
   public BaseEventTypeNode createEvent(NodeId nodeId, NodeId typeDefinitionId) throws UaException {
-    return (BaseEventTypeNode)
-        nodeFactory.createNode(
-            nodeId,
-            typeDefinitionId,
-            new NodeFactory.InstantiationCallback() {
-              @Override
-              public boolean includeOptionalNode(
-                  NodeId typeDefinitionId, QualifiedName browseName) {
-                return true;
-              }
-            });
+    BaseEventTypeNode eventNode =
+        (BaseEventTypeNode)
+            nodeFactory.createNode(
+                nodeId,
+                typeDefinitionId,
+                new NodeFactory.InstantiationCallback() {
+                  @Override
+                  public boolean includeOptionalNode(
+                      NodeId typeDefinitionId, QualifiedName browseName) {
+                    return true;
+                  }
+                });
+
+    eventNode.setEventType(typeDefinitionId);
+
+    return eventNode;
   }
 
   private static class EventNodeContext implements UaNodeContext {
