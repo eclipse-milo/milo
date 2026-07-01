@@ -54,6 +54,7 @@ import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultDiscoveryServic
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultMethodServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultMonitoredItemServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultNodeManagementServiceSet;
+import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultQueryServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultSessionServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultSubscriptionServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultViewServiceSet;
@@ -253,6 +254,7 @@ public class OpcUaServer extends AbstractServiceHandler {
             addServiceSet(path, new DefaultMethodServiceSet(OpcUaServer.this));
             addServiceSet(path, new DefaultMonitoredItemServiceSet(OpcUaServer.this));
             addServiceSet(path, new DefaultNodeManagementServiceSet(OpcUaServer.this));
+            addServiceSet(path, new DefaultQueryServiceSet());
             addServiceSet(path, new DefaultSessionServiceSet(OpcUaServer.this));
             addServiceSet(path, new DefaultSubscriptionServiceSet(OpcUaServer.this));
             addServiceSet(path, new DefaultViewServiceSet(OpcUaServer.this));
