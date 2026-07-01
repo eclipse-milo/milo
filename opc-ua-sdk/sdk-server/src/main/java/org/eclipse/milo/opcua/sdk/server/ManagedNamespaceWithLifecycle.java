@@ -10,9 +10,18 @@
 
 package org.eclipse.milo.opcua.sdk.server;
 
+/**
+ * A {@link ManagedNamespace} whose address-space and node-manager registration is lifecycle-bound.
+ *
+ * <p>Subclasses can add their own lifecycle work with {@link #getLifecycleManager()}. Shutdown runs
+ * in reverse registration order, so namespace children shut down before this base class unregisters
+ * the namespace and its {@link UaNodeManager} from the server.
+ */
 public abstract class ManagedNamespaceWithLifecycle extends ManagedNamespace implements Lifecycle {
 
-  private final LifecycleManager lifecycleManager = new LifecycleManager();
+  /** Keeps child lifecycle shutdown ahead of base namespace unregistration. */
+  private final LifecycleManager lifecycleManager =
+      new LifecycleManager(LifecycleManager.ShutdownOrder.INVERSE);
 
   public ManagedNamespaceWithLifecycle(OpcUaServer server, String namespaceUri) {
     super(server, namespaceUri);
