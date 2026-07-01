@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -18,9 +18,9 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.structured.FilterOperand;
 import org.jspecify.annotations.Nullable;
 
-public class Equals implements Operator<Boolean> {
+public class BitwiseOr implements Operator<Object> {
 
-  Equals() {}
+  BitwiseOr() {}
 
   @Override
   public void validate(FilterContext context, FilterOperand[] operands) throws ValidationException {
@@ -29,15 +29,19 @@ public class Equals implements Operator<Boolean> {
 
   @Nullable
   @Override
-  public Boolean apply(
+  public Object apply(
       OperatorContext context, BaseEventTypeNode eventNode, FilterOperand[] operands)
       throws UaException {
 
     validate(context, operands);
 
-    Object value0 = context.resolve(operands[0], eventNode);
-    Object value1 = context.resolve(operands[1], eventNode);
+    Object lhs = OperatorUtil.resolve(context, eventNode, operands[0]);
+    Object rhs = OperatorUtil.resolve(context, eventNode, operands[1]);
 
-    return OperatorUtil.equalValues(value0, value1);
+    if (lhs == null || rhs == null) {
+      return null;
+    }
+
+    return OperatorUtil.bitwise(lhs, rhs, (a, b) -> a | b);
   }
 }

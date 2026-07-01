@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -18,9 +18,9 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.structured.FilterOperand;
 import org.jspecify.annotations.Nullable;
 
-public class Equals implements Operator<Boolean> {
+public class InList implements Operator<Boolean> {
 
-  Equals() {}
+  InList() {}
 
   @Override
   public void validate(FilterContext context, FilterOperand[] operands) throws ValidationException {
@@ -35,9 +35,24 @@ public class Equals implements Operator<Boolean> {
 
     validate(context, operands);
 
-    Object value0 = context.resolve(operands[0], eventNode);
-    Object value1 = context.resolve(operands[1], eventNode);
+    // Part 4 Table 118 defines InList as repeated Equals evaluation. Treat those results like an
+    // OR chain: TRUE wins immediately, while NULL must be preserved if no comparison is TRUE.
+    // Resolve the tested value once rather than re-resolving it for every candidate.
+    Object value = OperatorUtil.resolve(context, eventNode, operands[0]);
 
-    return OperatorUtil.equalValues(value0, value1);
+    boolean sawNull = false;
+
+    for (int i = 1; i < operands.length; i++) {
+      Object candidate = OperatorUtil.resolve(context, eventNode, operands[i]);
+      Boolean result = OperatorUtil.equalValues(value, candidate);
+
+      if (Boolean.TRUE.equals(result)) {
+        return true;
+      } else if (result == null) {
+        sawNull = true;
+      }
+    }
+
+    return sawNull ? null : false;
   }
 }
