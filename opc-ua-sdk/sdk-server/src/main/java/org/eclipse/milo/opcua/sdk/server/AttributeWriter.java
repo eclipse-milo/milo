@@ -15,13 +15,11 @@ import java.util.Optional;
 import java.util.Set;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.core.NumericRange;
-import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.ValueRanks;
 import org.eclipse.milo.opcua.sdk.core.WriteMask;
-import org.eclipse.milo.opcua.sdk.core.nodes.DataTypeNode;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableTypeNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
+import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaServerNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableTypeNode;
@@ -219,32 +217,57 @@ public class AttributeWriter {
 
     Class<?> valueClass = o.getClass().isArray() ? ArrayUtil.getType(o) : o.getClass();
 
-    Class<?> expectedClass = getExpectedClass(server, dataType, valueClass);
+    DataTypeTree dataTypeTree = server.getDataTypeTree();
 
-    if (expectedClass != null) {
-      LOGGER.debug(
-          "dataTypeId={}, valueClass={}, expectedClass={}",
-          dataType,
-          valueClass.getSimpleName(),
-          expectedClass.getSimpleName());
+    if (!dataTypeTree.containsType(dataType)) {
+      dataTypeTree = server.updateDataTypeTree();
 
-      if (!expectedClass.isAssignableFrom(valueClass)) {
-        // Writing a ByteString to a UByte[] is explicitly allowed by the spec.
-        if (o instanceof ByteString byteString && expectedClass == UByte.class) {
-          return new DataValue(
-              new Variant(byteString.uBytes()),
-              value.statusCode(),
-              value.sourceTime(),
-              value.serverTime());
-        } else if (expectedClass == Variant.class) {
-          // Allow writing anything to a Variant
-          return value;
-        } else {
-          throw new UaException(StatusCodes.Bad_TypeMismatch);
-        }
+      if (!dataTypeTree.containsType(dataType)) {
+        throw new UaException(StatusCodes.Bad_TypeMismatch);
       }
-    } else {
+    }
+
+    Class<?> expectedClass = dataTypeTree.getBackingClass(dataType);
+    Optional<OpcUaDataType> valueDataType = variant.getDataType();
+
+    // Part 4, 5.11.4.2: a written value must be the same type or a subtype of the
+    // Attribute's DataType; for Value, that DataType is defined by the DataType Attribute.
+    if (valueDataType.isEmpty() && expectedClass != Variant.class) {
       throw new UaException(StatusCodes.Bad_TypeMismatch);
+    }
+
+    if (expectedClass == Object.class && !dataType.equals(NodeIds.BaseDataType)) {
+      NodeId valueDataTypeId = valueDataType.map(OpcUaDataType::getNodeId).orElse(null);
+
+      if (!valueDataTypeId.equals(dataType)
+          && !dataTypeTree.isSubtypeOf(valueDataTypeId, dataType)) {
+
+        throw new UaException(StatusCodes.Bad_TypeMismatch);
+      }
+    }
+
+    LOGGER.debug(
+        "dataTypeId={}, valueClass={}, expectedClass={}, assignable={}",
+        dataType,
+        valueClass.getSimpleName(),
+        expectedClass.getSimpleName(),
+        dataTypeTree.isAssignable(dataType, valueClass));
+
+    if (!dataTypeTree.isAssignable(dataType, valueClass)) {
+      // Part 4, 5.11.4.2 and Part 6, 5.1.5: ByteString is structurally equivalent
+      // to a one-dimensional Byte array and must be accepted when Byte[] is expected.
+      if (o instanceof ByteString byteString && expectedClass == UByte.class) {
+        return new DataValue(
+            new Variant(byteString.uBytes()),
+            value.statusCode(),
+            value.sourceTime(),
+            value.serverTime());
+      } else if (expectedClass == Variant.class) {
+        // Allow writing anything to a Variant
+        return value;
+      } else {
+        throw new UaException(StatusCodes.Bad_TypeMismatch);
+      }
     }
 
     return value;
@@ -327,113 +350,5 @@ public class AttributeWriter {
         }
         break;
     }
-  }
-
-  private static Class<?> getExpectedClass(
-      OpcUaServer server, NodeId dataTypeId, Class<?> valueClass) throws UaException {
-
-    if (OpcUaDataType.isBuiltin(dataTypeId)) {
-      return OpcUaDataType.getBackingClass(dataTypeId);
-    } else if (subtypeOf(server, dataTypeId, NodeIds.Structure)) {
-      return ExtensionObject.class;
-    } else if (subtypeOf(server, dataTypeId, NodeIds.Enumeration)) {
-      return Integer.class;
-    } else {
-      NodeId superBuiltInType = findConcreteBuiltInSuperTypeId(server, dataTypeId);
-
-      if (superBuiltInType != null) {
-        // One of dataTypeId's supertypes is a concrete built-in
-        // type; expect the same Class<?> as that built-in type.
-        return OpcUaDataType.getBackingClass(superBuiltInType);
-      } else {
-        int valueDataTypeId = OpcUaDataType.getBuiltinTypeId(valueClass);
-
-        if (valueDataTypeId > -1) {
-          // The value they sent us maps to a built-in type.
-          // If dataTypeId is a subtype of that built-in type,
-          // the expected class is the class of the value they sent.
-          NodeId builtInTypeId = new NodeId(0, valueDataTypeId);
-
-          if (dataTypeId.equals(builtInTypeId) || subtypeOf(server, builtInTypeId, dataTypeId)) {
-
-            return valueClass;
-          } else {
-            throw new UaException(StatusCodes.Bad_TypeMismatch);
-          }
-        } else {
-          throw new UaException(StatusCodes.Bad_TypeMismatch);
-        }
-      }
-    }
-  }
-
-  /**
-   * @return {@code true} if {@code dataTypeId} is a subtype of {@code potentialSuperTypeId}.
-   */
-  private static boolean subtypeOf(
-      OpcUaServer server, NodeId dataTypeId, NodeId potentialSuperTypeId) {
-    UaNode dataTypeNode = server.getAddressSpaceManager().getManagedNode(dataTypeId).orElse(null);
-
-    if (dataTypeNode != null) {
-      NodeId superTypeId = getSuperTypeId(server, dataTypeId);
-
-      if (superTypeId != null) {
-        return superTypeId.equals(potentialSuperTypeId)
-            || subtypeOf(server, superTypeId, potentialSuperTypeId);
-      } else {
-        return false;
-      }
-    } else {
-      return false;
-    }
-  }
-
-  /**
-   * Find the first concrete built-in supertype for {@code dataTypeId}, if one exists.
-   *
-   * @return the first concrete built-in supertype for {@code dataTypeId}, if one exists.
-   */
-  @Nullable
-  private static NodeId findConcreteBuiltInSuperTypeId(OpcUaServer server, NodeId dataTypeId) {
-    if (OpcUaDataType.isBuiltin(dataTypeId) && isConcrete(server, dataTypeId)) {
-      return dataTypeId;
-    } else {
-      NodeId superTypeId = getSuperTypeId(server, dataTypeId);
-
-      if (superTypeId != null) {
-        return findConcreteBuiltInSuperTypeId(server, superTypeId);
-      } else {
-        return null;
-      }
-    }
-  }
-
-  @Nullable
-  private static NodeId getSuperTypeId(OpcUaServer server, NodeId dataTypeId) {
-    UaNode dataTypeNode = server.getAddressSpaceManager().getManagedNode(dataTypeId).orElse(null);
-
-    if (dataTypeNode != null) {
-      return dataTypeNode.getReferences().stream()
-          .filter(Reference.SUBTYPE_OF)
-          .flatMap(r -> r.getTargetNodeId().toNodeId(server.getNamespaceTable()).stream())
-          .findFirst()
-          .orElse(null);
-    } else {
-      return null;
-    }
-  }
-
-  private static boolean isAbstract(OpcUaServer server, NodeId dataTypeId) {
-    UaNode node = server.getAddressSpaceManager().getManagedNode(dataTypeId).orElse(null);
-
-    if (node instanceof DataTypeNode) {
-      return ((DataTypeNode) node).getIsAbstract();
-    } else {
-      return false;
-    }
-  }
-
-  private static boolean isConcrete(OpcUaServer server, NodeId dataTypeId) {
-    return !isAbstract(server, dataTypeId);
   }
 }
