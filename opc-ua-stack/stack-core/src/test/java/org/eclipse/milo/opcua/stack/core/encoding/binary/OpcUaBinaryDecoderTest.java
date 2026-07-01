@@ -10,12 +10,18 @@
 
 package org.eclipse.milo.opcua.stack.core.encoding.binary;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import java.lang.reflect.Array;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.junit.jupiter.api.Test;
 
 public class OpcUaBinaryDecoderTest {
@@ -71,6 +77,163 @@ public class OpcUaBinaryDecoderTest {
       buffer.writeByte(1);
     }
     buffer.writeByte(0);
+
+    assertThrows(
+        UaSerializationException.class,
+        () ->
+            new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE)
+                .setBuffer(buffer)
+                .decodeVariant());
+  }
+
+  @Test
+  void decodeMatrixRejectsNegativeDimensionCount() {
+    ByteBuf buffer = Unpooled.buffer();
+    buffer.writeIntLE(-2);
+
+    assertThrows(
+        UaSerializationException.class,
+        () ->
+            new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE)
+                .setBuffer(buffer)
+                .decodeMatrix(null, OpcUaDataType.Int32));
+  }
+
+  @Test
+  void decodeMatrixRejectsNegativeDimensions() {
+    ByteBuf buffer = Unpooled.buffer();
+    buffer.writeIntLE(2);
+    buffer.writeIntLE(1);
+    buffer.writeIntLE(-1);
+
+    assertThrows(
+        UaSerializationException.class,
+        () ->
+            new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE)
+                .setBuffer(buffer)
+                .decodeMatrix(null, OpcUaDataType.Int32));
+  }
+
+  @Test
+  void decodeMatrixAllowsZeroDimensions() {
+    ByteBuf buffer = Unpooled.buffer();
+    buffer.writeIntLE(2);
+    buffer.writeIntLE(0);
+    buffer.writeIntLE(2);
+
+    Matrix matrix =
+        new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE)
+            .setBuffer(buffer)
+            .decodeMatrix(null, OpcUaDataType.Int32);
+
+    assertArrayEquals(new int[] {0, 2}, matrix.getDimensions());
+    assertEquals(0, Array.getLength(matrix.getElements()));
+  }
+
+  @Test
+  void decodeMatrixRejectsDimensionOverflow() {
+    ByteBuf buffer = Unpooled.buffer();
+    buffer.writeIntLE(2);
+    buffer.writeIntLE(46341);
+    buffer.writeIntLE(46341);
+
+    assertThrows(
+        UaSerializationException.class,
+        () ->
+            new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE)
+                .setBuffer(buffer)
+                .decodeMatrix(null, OpcUaDataType.Int32));
+  }
+
+  @Test
+  void decodeVariantRejectsNegativeMatrixDimensionCount() {
+    ByteBuf buffer = Unpooled.buffer();
+    buffer.writeByte(OpcUaDataType.Int32.getTypeId() | 0xC0);
+    buffer.writeIntLE(0);
+    buffer.writeIntLE(-2);
+
+    assertThrows(
+        UaSerializationException.class,
+        () ->
+            new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE)
+                .setBuffer(buffer)
+                .decodeVariant());
+  }
+
+  @Test
+  void decodeVariantRejectsNegativeOneDimensionalArrayDimension() {
+    ByteBuf buffer = Unpooled.buffer();
+    buffer.writeByte(OpcUaDataType.Int32.getTypeId() | 0xC0);
+    buffer.writeIntLE(0);
+    buffer.writeIntLE(1);
+    buffer.writeIntLE(-1);
+
+    assertThrows(
+        UaSerializationException.class,
+        () ->
+            new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE)
+                .setBuffer(buffer)
+                .decodeVariant());
+  }
+
+  @Test
+  void decodeVariantRejectsMismatchedOneDimensionalArrayDimension() {
+    ByteBuf buffer = Unpooled.buffer();
+    buffer.writeByte(OpcUaDataType.Int32.getTypeId() | 0xC0);
+    buffer.writeIntLE(1);
+    buffer.writeIntLE(1);
+    buffer.writeIntLE(1);
+    buffer.writeIntLE(2);
+
+    assertThrows(
+        UaSerializationException.class,
+        () ->
+            new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE)
+                .setBuffer(buffer)
+                .decodeVariant());
+  }
+
+  @Test
+  void decodeVariantAllowsMatchingOneDimensionalArrayDimension() {
+    ByteBuf buffer = Unpooled.buffer();
+    buffer.writeByte(OpcUaDataType.Int32.getTypeId() | 0xC0);
+    buffer.writeIntLE(1);
+    buffer.writeIntLE(1);
+    buffer.writeIntLE(1);
+    buffer.writeIntLE(1);
+
+    Variant variant =
+        new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE).setBuffer(buffer).decodeVariant();
+
+    assertArrayEquals(new Integer[] {1}, (Integer[]) variant.value());
+  }
+
+  @Test
+  void decodeVariantRejectsMatrixDimensionOverflow() {
+    ByteBuf buffer = Unpooled.buffer();
+    buffer.writeByte(OpcUaDataType.Int32.getTypeId() | 0xC0);
+    buffer.writeIntLE(0);
+    buffer.writeIntLE(2);
+    buffer.writeIntLE(46341);
+    buffer.writeIntLE(46341);
+
+    assertThrows(
+        UaSerializationException.class,
+        () ->
+            new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE)
+                .setBuffer(buffer)
+                .decodeVariant());
+  }
+
+  @Test
+  void decodeVariantRejectsMismatchedMatrixDimensions() {
+    ByteBuf buffer = Unpooled.buffer();
+    buffer.writeByte(OpcUaDataType.Int32.getTypeId() | 0xC0);
+    buffer.writeIntLE(1);
+    buffer.writeIntLE(1);
+    buffer.writeIntLE(2);
+    buffer.writeIntLE(2);
+    buffer.writeIntLE(2);
 
     assertThrows(
         UaSerializationException.class,
