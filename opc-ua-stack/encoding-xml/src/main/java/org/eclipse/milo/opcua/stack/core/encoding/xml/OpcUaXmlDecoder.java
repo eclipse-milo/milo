@@ -1352,7 +1352,10 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
           }
 
           return struct;
-        });
+        },
+        expectedType,
+        OpcUaDataType.ExtensionObject,
+        dataTypeId.expanded());
   }
 
   @Override

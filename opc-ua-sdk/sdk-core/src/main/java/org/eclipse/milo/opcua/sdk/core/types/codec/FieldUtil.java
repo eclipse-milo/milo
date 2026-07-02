@@ -207,7 +207,11 @@ class FieldUtil {
       } else if (fieldHint instanceof FieldHint.Enum hint) {
         Matrix matrix = decoder.decodeEnumMatrix(fieldName);
 
-        return matrix.transform(v -> new DynamicEnumType(hint.dataType, (Integer) v));
+        return matrix.transform(
+            v -> new DynamicEnumType(hint.dataType, (Integer) v),
+            DynamicEnumType.class,
+            OpcUaDataType.Int32,
+            hint.dataType.getNodeId().expanded());
       } else if (fieldHint instanceof FieldHint.Struct) {
         if (dataTypeId.equals(NodeIds.Structure) || fieldAllowsSubtyping(definition, field)) {
           Matrix matrix = decoder.decodeMatrix(fieldName, OpcUaDataType.ExtensionObject);
@@ -216,7 +220,10 @@ class FieldUtil {
               o -> {
                 ExtensionObject xo = (ExtensionObject) o;
                 return xo.decode(decoder.getEncodingContext());
-              });
+              },
+              UaStructuredType.class,
+              OpcUaDataType.ExtensionObject,
+              dataTypeId.expanded());
         } else {
           return decoder.decodeStructMatrix(fieldName, dataTypeId);
         }
@@ -310,7 +317,9 @@ class FieldUtil {
 
           Matrix xoMatrix =
               matrix.transform(
-                  o -> ExtensionObject.encode(encoder.getEncodingContext(), (UaStructuredType) o));
+                  o -> ExtensionObject.encode(encoder.getEncodingContext(), (UaStructuredType) o),
+                  ExtensionObject.class,
+                  OpcUaDataType.ExtensionObject);
 
           encoder.encodeMatrix(fieldName, xoMatrix);
         } else {
@@ -325,7 +334,9 @@ class FieldUtil {
                   o -> {
                     DynamicStructType structValue = (DynamicStructType) o;
                     return ExtensionObject.encode(encoder.getEncodingContext(), structValue);
-                  });
+                  },
+                  ExtensionObject.class,
+                  OpcUaDataType.ExtensionObject);
 
           encoder.encodeMatrix(fieldName, xoMatrix);
         } else {
