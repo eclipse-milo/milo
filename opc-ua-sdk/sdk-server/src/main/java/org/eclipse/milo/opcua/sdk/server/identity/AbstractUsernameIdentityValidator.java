@@ -89,6 +89,10 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
     if (algorithm != SecurityAlgorithm.None) {
       byte[] plainTextBytes = decryptTokenData(session, algorithm, tokenBytes);
 
+      if (plainTextBytes.length < Integer.BYTES) {
+        throw new UaException(StatusCodes.Bad_IdentityTokenRejected, "invalid token data");
+      }
+
       // @formatter:off
       long length =
           ((plainTextBytes[3] & 0xFFL) << 24)

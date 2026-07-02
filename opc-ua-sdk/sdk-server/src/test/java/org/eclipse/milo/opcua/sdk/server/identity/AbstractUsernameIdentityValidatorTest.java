@@ -32,6 +32,7 @@ import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.EccEncryptedSecret;
+import org.eclipse.milo.opcua.stack.core.security.SecurityAlgorithm;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
@@ -354,6 +355,35 @@ class AbstractUsernameIdentityValidatorTest {
     assertEquals("user", ((Identity.UsernameIdentity) identity).getUsername());
   }
 
+  // Malformed RSA ciphertext can decrypt to zero plaintext blocks; token validation must fail with
+  // a controlled service error before reading the four-byte length prefix.
+  @Test
+  void rejectsZeroLengthLegacyPlaintext() {
+    assertMalformedLegacyPlaintextRejected(new byte[0]);
+  }
+
+  // A partial length prefix is equally malformed and must not reach unchecked byte indexing.
+  @Test
+  void rejectsTooShortLegacyPlaintext() {
+    assertMalformedLegacyPlaintextRejected(new byte[] {0x01, 0x02, 0x03});
+  }
+
+  // The new length guard still allows well-formed legacy username plaintext to authenticate.
+  @Test
+  void acceptsValidLegacyPlaintext() throws Exception {
+    FixedPlaintextUsernameValidator validator =
+        new FixedPlaintextUsernameValidator("password", legacyPlaintext("password", SERVER_NONCE));
+
+    Identity identity =
+        validator.validateIdentityToken(
+            legacyEncryptedSession(),
+            legacyEncryptedToken(),
+            policy(SecurityPolicy.Basic256Sha256),
+            new SignatureData(null, null));
+
+    assertEquals("user", ((Identity.UsernameIdentity) identity).getUsername());
+  }
+
   private static TokenFixture tokenFixture(SecurityPolicyProfile profile) throws Exception {
     return tokenFixture(profile, "password");
   }
@@ -441,6 +471,67 @@ class AbstractUsernameIdentityValidatorTest {
     return session;
   }
 
+  private static Session legacyEncryptedSession() {
+    Session session = mock(Session.class);
+    OpcUaServer server = mock(OpcUaServer.class);
+    OpcUaServerConfig config = mock(OpcUaServerConfig.class);
+    when(config.getLimits()).thenReturn(new OpcUaServerConfigLimits() {});
+    when(server.getConfig()).thenReturn(config);
+    when(session.getServer()).thenReturn(server);
+    when(session.getLastNonce()).thenReturn(SERVER_NONCE);
+    when(session.getSecurityConfiguration())
+        .thenReturn(
+            new SecurityConfiguration(
+                SecurityPolicy.Basic256Sha256,
+                MessageSecurityMode.SignAndEncrypt,
+                null,
+                null,
+                null,
+                null,
+                null));
+
+    return session;
+  }
+
+  private static void assertMalformedLegacyPlaintextRejected(byte[] plaintext) {
+    FixedPlaintextUsernameValidator validator =
+        new FixedPlaintextUsernameValidator("password", plaintext);
+
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                validator.validateIdentityToken(
+                    legacyEncryptedSession(),
+                    legacyEncryptedToken(),
+                    policy(SecurityPolicy.Basic256Sha256),
+                    new SignatureData(null, null)));
+
+    assertEquals(StatusCodes.Bad_IdentityTokenRejected, exception.getStatusCode().getValue());
+  }
+
+  private static UserNameIdentityToken legacyEncryptedToken() {
+    return new UserNameIdentityToken(
+        "username", "user", ByteString.of(new byte[] {0x01}), null);
+  }
+
+  private static byte[] legacyPlaintext(String password, ByteString nonce) {
+    byte[] passwordBytes = password.getBytes(StandardCharsets.UTF_8);
+    byte[] nonceBytes = nonce.bytesOrEmpty();
+    int length = passwordBytes.length + nonceBytes.length;
+    byte[] plainText = new byte[Integer.BYTES + length];
+
+    plainText[0] = (byte) length;
+    plainText[1] = (byte) (length >>> 8);
+    plainText[2] = (byte) (length >>> 16);
+    plainText[3] = (byte) (length >>> 24);
+    System.arraycopy(passwordBytes, 0, plainText, Integer.BYTES, passwordBytes.length);
+    System.arraycopy(
+        nonceBytes, 0, plainText, Integer.BYTES + passwordBytes.length, nonceBytes.length);
+
+    return plainText;
+  }
+
   private static MutableSessionKey mutableSessionKey(TokenFixture fixture) {
     return new MutableSessionKey(
         new AtomicReference<>(fixture.receiverEphemeralKeyPair()),
@@ -503,7 +594,7 @@ class AbstractUsernameIdentityValidatorTest {
     };
   }
 
-  private static final class TestUsernameValidator extends AbstractUsernameIdentityValidator {
+  private static class TestUsernameValidator extends AbstractUsernameIdentityValidator {
 
     private final String expectedPassword;
 
@@ -516,6 +607,23 @@ class AbstractUsernameIdentityValidatorTest {
         Session session, String username, String password) {
 
       return expectedPassword.equals(password) ? new DefaultUsernameIdentity(username) : null;
+    }
+  }
+
+  private static final class FixedPlaintextUsernameValidator extends TestUsernameValidator {
+
+    private final byte[] plaintext;
+
+    private FixedPlaintextUsernameValidator(String expectedPassword, byte[] plaintext) {
+      super(expectedPassword);
+      this.plaintext = plaintext;
+    }
+
+    @Override
+    protected byte[] decryptTokenData(
+        Session session, SecurityAlgorithm algorithm, byte[] dataBytes) {
+
+      return plaintext;
     }
   }
 
