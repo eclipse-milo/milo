@@ -20,14 +20,21 @@ import org.eclipse.milo.opcua.sdk.core.WriteMask;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableTypeNode;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaServerNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableTypeNode;
 import org.eclipse.milo.opcua.stack.core.*;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.*;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
+import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.DataTypeDefinition;
+import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.util.ArrayUtil;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -189,11 +196,155 @@ public class AttributeWriter {
       }
     }
 
+    Object attributeValue = value;
+    if (attributeId != AttributeId.Value) {
+      try {
+        attributeValue =
+            convertAttributeValue(node.getNodeContext(), attributeId, value.value().value());
+      } catch (UaException e) {
+        return e.getStatusCode();
+      }
+    }
+
     try {
-      node.writeAttribute(context, attributeId, value);
+      node.writeAttribute(context, attributeId, attributeValue);
       return StatusCode.GOOD;
     } catch (UaException e) {
       return e.getStatusCode();
+    } catch (UaRuntimeException e) {
+      return e.getStatusCode();
+    } catch (ClassCastException e) {
+      return new StatusCode(StatusCodes.Bad_TypeMismatch);
+    }
+  }
+
+  private static Object convertAttributeValue(
+      UaNodeContext nodeContext, AttributeId attributeId, @Nullable Object value)
+      throws UaException {
+    if (value == null) {
+      throw new UaException(StatusCodes.Bad_TypeMismatch);
+    }
+
+    return switch (attributeId) {
+      case NodeClass -> convertNodeClass(value);
+      case AccessRestrictions -> convertAccessRestrictions(value);
+      case AccessLevelEx -> convertAccessLevelEx(value);
+      case DataTypeDefinition -> convertDataTypeDefinition(nodeContext, value);
+      case RolePermissions, UserRolePermissions -> convertRolePermissions(nodeContext, value);
+      default -> validateAttributeValue(attributeId, value);
+    };
+  }
+
+  private static Object validateAttributeValue(AttributeId attributeId, Object value)
+      throws UaException {
+
+    Class<?> valueType = getAttributeValueType(attributeId);
+    if (valueType.isInstance(value)) {
+      return value;
+    } else {
+      throw new UaException(StatusCodes.Bad_TypeMismatch);
+    }
+  }
+
+  private static Class<?> getAttributeValueType(AttributeId attributeId) {
+    return switch (attributeId) {
+      case NodeId, DataType -> NodeId.class;
+      case NodeClass -> NodeClass.class;
+      case BrowseName -> QualifiedName.class;
+      case DisplayName, Description, InverseName -> LocalizedText.class;
+      case WriteMask, UserWriteMask -> UInteger.class;
+      case IsAbstract, Symmetric, ContainsNoLoops, Historizing, Executable, UserExecutable ->
+          Boolean.class;
+      case EventNotifier, AccessLevel, UserAccessLevel -> UByte.class;
+      case Value -> DataValue.class;
+      case ValueRank -> Integer.class;
+      case ArrayDimensions -> UInteger[].class;
+      case MinimumSamplingInterval -> Double.class;
+      case DataTypeDefinition -> DataTypeDefinition.class;
+      case RolePermissions, UserRolePermissions -> RolePermissionType[].class;
+      case AccessRestrictions -> AccessRestrictionType.class;
+      case AccessLevelEx -> AccessLevelExType.class;
+    };
+  }
+
+  private static NodeClass convertNodeClass(Object value) throws UaException {
+    if (value instanceof NodeClass nodeClass) {
+      return nodeClass;
+    } else if (value instanceof Integer i) {
+      NodeClass nodeClass = NodeClass.from(i);
+      if (nodeClass != null) {
+        return nodeClass;
+      }
+    }
+
+    throw new UaException(StatusCodes.Bad_TypeMismatch);
+  }
+
+  private static AccessRestrictionType convertAccessRestrictions(Object value) throws UaException {
+    if (value instanceof AccessRestrictionType accessRestrictionType) {
+      return accessRestrictionType;
+    } else if (value instanceof UShort uShort) {
+      return new AccessRestrictionType(uShort);
+    }
+
+    throw new UaException(StatusCodes.Bad_TypeMismatch);
+  }
+
+  private static AccessLevelExType convertAccessLevelEx(Object value) throws UaException {
+    if (value instanceof AccessLevelExType accessLevelExType) {
+      return accessLevelExType;
+    } else if (value instanceof UInteger uInteger) {
+      return new AccessLevelExType(uInteger);
+    }
+
+    throw new UaException(StatusCodes.Bad_TypeMismatch);
+  }
+
+  private static DataTypeDefinition convertDataTypeDefinition(
+      UaNodeContext nodeContext, Object value) throws UaException {
+
+    if (value instanceof DataTypeDefinition dataTypeDefinition) {
+      return dataTypeDefinition;
+    } else if (value instanceof ExtensionObject extensionObject) {
+      UaStructuredType decoded = decodeExtensionObject(nodeContext, extensionObject);
+      if (decoded instanceof DataTypeDefinition dataTypeDefinition) {
+        return dataTypeDefinition;
+      }
+    }
+
+    throw new UaException(StatusCodes.Bad_TypeMismatch);
+  }
+
+  private static RolePermissionType[] convertRolePermissions(
+      UaNodeContext nodeContext, Object value) throws UaException {
+
+    if (value instanceof RolePermissionType[] rolePermissions) {
+      return rolePermissions;
+    } else if (value instanceof ExtensionObject[] extensionObjects) {
+      RolePermissionType[] rolePermissions = new RolePermissionType[extensionObjects.length];
+
+      for (int i = 0; i < extensionObjects.length; i++) {
+        UaStructuredType decoded = decodeExtensionObject(nodeContext, extensionObjects[i]);
+        if (decoded instanceof RolePermissionType rolePermission) {
+          rolePermissions[i] = rolePermission;
+        } else {
+          throw new UaException(StatusCodes.Bad_TypeMismatch);
+        }
+      }
+
+      return rolePermissions;
+    }
+
+    throw new UaException(StatusCodes.Bad_TypeMismatch);
+  }
+
+  private static UaStructuredType decodeExtensionObject(
+      UaNodeContext nodeContext, ExtensionObject extensionObject) throws UaException {
+
+    try {
+      return extensionObject.decode(nodeContext.getServer().getStaticEncodingContext());
+    } catch (UaSerializationException e) {
+      throw new UaException(StatusCodes.Bad_TypeMismatch, e);
     }
   }
 
