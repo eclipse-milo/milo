@@ -14,11 +14,13 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ulong;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.core.Reference;
@@ -43,6 +45,8 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
+import org.eclipse.milo.opcua.stack.core.types.structured.WriteValue;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -332,6 +336,96 @@ public class AttributeWriterTest extends AbstractClientServerTest {
     assertEquals(new StatusCode(StatusCodes.Bad_NotWritable), fail);
   }
 
+  @Test
+  void writeNonValueAttributeUnwrapsDataValue() throws Exception {
+    LocalizedText displayName = LocalizedText.english("UpdatedDisplayName");
+
+    StatusCode statusCode =
+        client
+            .writeAsync(
+                List.of(
+                    new WriteValue(
+                        new NodeId(2, "WritableDisplayName"),
+                        AttributeId.DisplayName.uid(),
+                        null,
+                        DataValue.valueOnly(new Variant(displayName)))))
+            .get(5, TimeUnit.SECONDS)
+            .getResults()[0];
+
+    assertEquals(StatusCode.GOOD, statusCode);
+    assertEquals(
+        displayName,
+        getManagedNode("WritableDisplayName")
+            .getAttribute(AccessContext.INTERNAL, AttributeId.DisplayName));
+  }
+
+  @Test
+  void rejectNonValueAttributeTypeMismatch() throws Exception {
+    StatusCode statusCode =
+        client
+            .writeAsync(
+                List.of(
+                    new WriteValue(
+                        new NodeId(2, "WritableDisplayName"),
+                        AttributeId.DisplayName.uid(),
+                        null,
+                        DataValue.valueOnly(new Variant("not a LocalizedText")))))
+            .get(5, TimeUnit.SECONDS)
+            .getResults()[0];
+
+    assertEquals(new StatusCode(StatusCodes.Bad_TypeMismatch), statusCode);
+  }
+
+  @Test
+  void writeNonValueArrayAttributeUnwrapsDataValue() throws Exception {
+    UInteger[] arrayDimensions = new UInteger[] {uint(3)};
+
+    StatusCode statusCode =
+        client
+            .writeAsync(
+                List.of(
+                    new WriteValue(
+                        new NodeId(2, "WritableArrayDimensions"),
+                        AttributeId.ArrayDimensions.uid(),
+                        null,
+                        DataValue.valueOnly(new Variant(arrayDimensions)))))
+            .get(5, TimeUnit.SECONDS)
+            .getResults()[0];
+
+    assertEquals(StatusCode.GOOD, statusCode);
+    assertArrayEquals(
+        arrayDimensions,
+        (UInteger[])
+            getManagedNode("WritableArrayDimensions")
+                .getAttribute(AccessContext.INTERNAL, AttributeId.ArrayDimensions));
+  }
+
+  @Test
+  void writeNonValueOptionSetAttributeConvertsBackingType() throws Exception {
+    UInteger accessLevelEx = uint(3);
+
+    StatusCode statusCode =
+        client
+            .writeAsync(
+                List.of(
+                    new WriteValue(
+                        new NodeId(2, "WritableAccessLevelEx"),
+                        AttributeId.AccessLevelEx.uid(),
+                        null,
+                        DataValue.valueOnly(new Variant(accessLevelEx)))))
+            .get(5, TimeUnit.SECONDS)
+            .getResults()[0];
+
+    assertEquals(StatusCode.GOOD, statusCode);
+
+    AccessLevelExType value =
+        (AccessLevelExType)
+            getManagedNode("WritableAccessLevelEx")
+                .getAttribute(AccessContext.INTERNAL, AttributeId.AccessLevelEx);
+
+    assertEquals(accessLevelEx, value.getValue());
+  }
+
   @BeforeAll
   void configure() {
     testNamespace.configure(
@@ -401,6 +495,47 @@ public class AttributeWriterTest extends AbstractClientServerTest {
                 b.setDataType(NodeIds.Int32);
                 b.setAccessLevel(AccessLevel.READ_WRITE);
                 b.setUserAccessLevel(AccessLevel.READ_WRITE);
+                return b.buildAndAdd();
+              });
+
+          UaVariableNode.build(
+              context,
+              b -> {
+                b.setNodeId(new NodeId(2, "WritableDisplayName"));
+                b.setBrowseName(new QualifiedName(2, "WritableDisplayName"));
+                b.setDisplayName(LocalizedText.english("WritableDisplayName"));
+                b.setDataType(NodeIds.Int32);
+                b.setWriteMask(UInteger.valueOf(WriteMask.DisplayName.getValue()));
+                b.setUserWriteMask(UInteger.valueOf(WriteMask.DisplayName.getValue()));
+                return b.buildAndAdd();
+              });
+
+          UaVariableNode.build(
+              context,
+              b -> {
+                b.setNodeId(new NodeId(2, "WritableArrayDimensions"));
+                b.setBrowseName(new QualifiedName(2, "WritableArrayDimensions"));
+                b.setDisplayName(LocalizedText.english("WritableArrayDimensions"));
+                b.setDataType(NodeIds.Int32);
+                b.setValueRank(ValueRanks.OneDimension);
+                b.setArrayDimensions(new UInteger[] {UInteger.valueOf(0)});
+                b.setWriteMask(UInteger.valueOf(WriteMask.ArrayDimensions.getValue()));
+                b.setUserWriteMask(UInteger.valueOf(WriteMask.ArrayDimensions.getValue()));
+                return b.buildAndAdd();
+              });
+
+          UaVariableNode.build(
+              context,
+              b -> {
+                b.setNodeId(new NodeId(2, "WritableAccessLevelEx"));
+                b.setBrowseName(new QualifiedName(2, "WritableAccessLevelEx"));
+                b.setDisplayName(LocalizedText.english("WritableAccessLevelEx"));
+                b.setDataType(NodeIds.Int32);
+                b.setAccessLevel(AccessLevel.READ_WRITE);
+                b.setUserAccessLevel(AccessLevel.READ_WRITE);
+                b.setAccessLevelEx(new AccessLevelExType(uint(0)));
+                b.setWriteMask(UInteger.valueOf(WriteMask.AccessLevelEx.getValue()));
+                b.setUserWriteMask(UInteger.valueOf(WriteMask.AccessLevelEx.getValue()));
                 return b.buildAndAdd();
               });
 
