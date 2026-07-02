@@ -22,6 +22,7 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.EccEncryptedSecret;
 import org.eclipse.milo.opcua.stack.core.security.SecurityAlgorithm;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+import org.eclipse.milo.opcua.stack.core.security.UserTokenSecurityPolicyRules;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SignatureData;
@@ -206,12 +207,25 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
       throws UaException {
 
     String securityPolicyUri = policy.getSecurityPolicyUri();
+    boolean explicitlySpecified = securityPolicyUri != null && !securityPolicyUri.isEmpty();
+
+    SecurityPolicy securityPolicy;
 
     if (securityPolicyUri == null || securityPolicyUri.isEmpty()) {
-      return session.getSecurityConfiguration().getSecurityPolicy();
+      securityPolicy = session.getSecurityConfiguration().getSecurityPolicy();
     } else {
-      return SecurityPolicy.fromUri(securityPolicyUri);
+      securityPolicy = SecurityPolicy.fromUri(securityPolicyUri);
     }
+
+    UserTokenSecurityPolicyRules.requireSecuredChannelForEnhancedSecret(
+        session.getSecurityConfiguration().getSecurityMode(), securityPolicy);
+    UserTokenSecurityPolicyRules.requireSamePublicKeyAlgorithmAsChannel(
+        session.getSecurityConfiguration().getSecurityMode(),
+        session.getSecurityConfiguration().getSecurityPolicy(),
+        securityPolicy,
+        explicitlySpecified);
+
+    return securityPolicy;
   }
 
   private UsernameIdentity authenticateUsernameOrThrow(

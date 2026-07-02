@@ -186,6 +186,64 @@ class AbstractUsernameIdentityValidatorTest {
     assertEquals(StatusCodes.Bad_UserAccessDenied, exception.getStatusCode().getValue());
   }
 
+  // Part 4 (7.41): enhanced username secrets require a secured channel because a None channel
+  // cannot negotiate the receiver key material needed to protect the password.
+  @Test
+  void rejectsEnhancedUsernameTokenPolicyOnNoneChannel() throws Exception {
+    SecurityPolicyProfile profile = SecurityPolicy.ECC_nistP256_AesGcm.getProfile();
+    TokenFixture fixture = tokenFixture(profile);
+    Session session = session(fixture, SERVER_NONCE);
+    when(session.getSecurityConfiguration())
+        .thenReturn(
+            new SecurityConfiguration(
+                SecurityPolicy.None, MessageSecurityMode.None, null, null, null, null, null));
+    TestUsernameValidator validator = new TestUsernameValidator("password");
+
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                validator.validateIdentityToken(
+                    session,
+                    fixture.token(),
+                    policy(profile.securityPolicy()),
+                    new SignatureData(null, null)));
+
+    assertEquals(StatusCodes.Bad_SecurityPolicyRejected, exception.getStatusCode().getValue());
+  }
+
+  // Part 4 (7.41): an explicit username-token policy must use the same public-key family as the
+  // SecureChannel; a mismatched server configuration is rejected before decryption is attempted.
+  @Test
+  void rejectsExplicitCrossFamilyUsernameTokenPolicy() throws Exception {
+    Session session = mock(Session.class);
+    when(session.getLastNonce()).thenReturn(SERVER_NONCE);
+    when(session.getSecurityConfiguration())
+        .thenReturn(
+            new SecurityConfiguration(
+                SecurityPolicy.ECC_nistP256_AesGcm,
+                MessageSecurityMode.SignAndEncrypt,
+                null,
+                null,
+                null,
+                null,
+                null));
+    TestUsernameValidator validator = new TestUsernameValidator("password");
+
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                validator.validateIdentityToken(
+                    session,
+                    new UserNameIdentityToken(
+                        "username", "user", ByteString.of(new byte[] {0x01}), null),
+                    policy(SecurityPolicy.Basic256Sha256),
+                    new SignatureData(null, null)));
+
+    assertEquals(StatusCodes.Bad_SecurityPolicyRejected, exception.getStatusCode().getValue());
+  }
+
   // Enhanced username-token secrets must respect the same configured password limit as the legacy
   // RSA username-token path after decryption succeeds.
   @Test

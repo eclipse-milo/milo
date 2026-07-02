@@ -117,7 +117,7 @@ public final class EnhancedUserTokenAdditionalHeader {
 
     return Stream.of(tokenPolicies)
         .filter(t -> t.getTokenType() == UserTokenType.UserName)
-        .map(t -> resolveUserTokenSecurityPolicy(endpoint, t))
+        .map(t -> compatibleUsernameTokenSecurityPolicy(endpoint, t))
         .flatMap(Optional::stream)
         .filter(p -> p.getProfile().usesEnhancedUserTokenSecret())
         .findFirst();
@@ -142,7 +142,7 @@ public final class EnhancedUserTokenAdditionalHeader {
 
     return Stream.of(tokenPolicies)
         .filter(t -> t.getTokenType() == UserTokenType.UserName)
-        .map(t -> resolveUserTokenSecurityPolicy(endpoint, t))
+        .map(t -> compatibleUsernameTokenSecurityPolicy(endpoint, t))
         .flatMap(Optional::stream)
         .anyMatch(securityPolicy::equals);
   }
@@ -170,6 +170,36 @@ public final class EnhancedUserTokenAdditionalHeader {
     }
 
     return SecurityPolicy.fromUriSafe(securityPolicyUri);
+  }
+
+  private static Optional<SecurityPolicy> compatibleUsernameTokenSecurityPolicy(
+      EndpointDescription endpoint, UserTokenPolicy tokenPolicy) {
+
+    Optional<SecurityPolicy> securityPolicy =
+        resolveUserTokenSecurityPolicy(endpoint, tokenPolicy);
+
+    if (securityPolicy.isEmpty()) {
+      return Optional.empty();
+    }
+
+    String tokenPolicyUri = tokenPolicy.getSecurityPolicyUri();
+    boolean explicitlySpecified = tokenPolicyUri != null && !tokenPolicyUri.isEmpty();
+
+    try {
+      UserTokenSecurityPolicyRules.requireSecuredChannelForEnhancedSecret(
+          endpoint, securityPolicy.get());
+      UserTokenSecurityPolicyRules.requireSamePublicKeyAlgorithmAsChannel(
+          endpoint, securityPolicy.get(), explicitlySpecified);
+
+      return securityPolicy;
+    } catch (UaException e) {
+      LOGGER.debug(
+          "skipping incompatible username UserTokenPolicy (policyId={}): {}",
+          tokenPolicy.getPolicyId(),
+          e.getMessage());
+
+      return Optional.empty();
+    }
   }
 
   /**

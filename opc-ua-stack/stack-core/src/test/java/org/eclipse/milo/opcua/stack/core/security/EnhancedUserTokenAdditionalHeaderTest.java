@@ -11,10 +11,13 @@
 package org.eclipse.milo.opcua.stack.core.security;
 
 import static java.util.Objects.requireNonNull;
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.Optional;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
@@ -24,9 +27,15 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AdditionalParametersType;
+import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.EphemeralKeyType;
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
+import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -189,6 +198,42 @@ class EnhancedUserTokenAdditionalHeaderTest {
             DefaultEncodingContext.INSTANCE, additionalHeader));
   }
 
+  // The server must not issue enhanced username receiver keys for an endpoint whose SecureChannel
+  // cannot carry that token policy; otherwise ActivateSession can reach an incompatible policy.
+  @Test
+  void enhancedNegotiationSkipsUsernamePolicyOnNoneChannel() {
+    EndpointDescription endpoint =
+        endpoint(
+            SecurityPolicy.None,
+            MessageSecurityMode.None,
+            usernamePolicy(SecurityPolicy.ECC_nistP256_AesGcm));
+
+    assertEquals(
+        Optional.empty(),
+        EnhancedUserTokenAdditionalHeader.selectNegotiatedSecurityPolicy(endpoint));
+    assertFalse(
+        EnhancedUserTokenAdditionalHeader.hasUsernameTokenSecurityPolicy(
+            endpoint, SecurityPolicy.ECC_nistP256_AesGcm));
+  }
+
+  // The same compatibility check applies before issuing a receiver key for an explicit policy whose
+  // public-key family differs from the SecureChannel.
+  @Test
+  void enhancedNegotiationSkipsCrossFamilyUsernamePolicy() {
+    EndpointDescription endpoint =
+        endpoint(
+            SecurityPolicy.Basic256Sha256,
+            MessageSecurityMode.SignAndEncrypt,
+            usernamePolicy(SecurityPolicy.ECC_nistP256_AesGcm));
+
+    assertEquals(
+        Optional.empty(),
+        EnhancedUserTokenAdditionalHeader.selectNegotiatedSecurityPolicy(endpoint));
+    assertFalse(
+        EnhancedUserTokenAdditionalHeader.hasUsernameTokenSecurityPolicy(
+            endpoint, SecurityPolicy.ECC_nistP256_AesGcm));
+  }
+
   // A header that decodes to some other structure is still not a negotiation request and must be
   // ignored rather than faulted.
   @Test
@@ -251,5 +296,34 @@ class EnhancedUserTokenAdditionalHeaderTest {
                     DefaultEncodingContext.INSTANCE, additionalHeader));
 
     assertEquals(StatusCodes.Bad_DecodingError, exception.getStatusCode().getValue());
+  }
+
+  private static EndpointDescription endpoint(
+      SecurityPolicy channelPolicy, MessageSecurityMode securityMode, UserTokenPolicy tokenPolicy) {
+
+    ApplicationDescription server =
+        new ApplicationDescription(
+            "urn:eclipse:milo:test:server",
+            "urn:eclipse:milo:test",
+            null,
+            ApplicationType.Server,
+            null,
+            null,
+            null);
+
+    return new EndpointDescription(
+        "opc.tcp://localhost:12686/milo",
+        server,
+        ByteString.NULL_VALUE,
+        securityMode,
+        channelPolicy.getUri(),
+        new UserTokenPolicy[] {tokenPolicy},
+        "http://opcfoundation.org/UA-Profile/Transport/uatcp-uasc-uabinary",
+        ubyte(0));
+  }
+
+  private static UserTokenPolicy usernamePolicy(SecurityPolicy securityPolicy) {
+    return new UserTokenPolicy(
+        "username", UserTokenType.UserName, null, null, securityPolicy.getUri());
   }
 }
