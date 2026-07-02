@@ -1317,7 +1317,7 @@ public class OpcUaBinaryDecoder implements UaDecoder {
       Array.set(flatArray, i, value);
     }
 
-    return new Matrix(flatArray, dimensions, OpcUaDataType.ExtensionObject);
+    return new Matrix(flatArray, dimensions, OpcUaDataType.ExtensionObject, dataTypeId.expanded());
   }
 
   @Override

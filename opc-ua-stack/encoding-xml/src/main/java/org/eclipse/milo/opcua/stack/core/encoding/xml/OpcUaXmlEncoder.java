@@ -751,12 +751,19 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
         switch (typeHint) {
           case BUILTIN -> encodeMatrix("Matrix", matrix);
           case ENUM -> {
-            Matrix transformed = matrix.transform(e -> ((UaEnumeratedType) e).getValue());
+            Matrix transformed =
+                matrix.transform(
+                    e -> ((UaEnumeratedType) e).getValue(), Integer.class, OpcUaDataType.Int32);
             encodeMatrix("Matrix", transformed);
           }
           case STRUCT -> encodeStructMatrix("Matrix", matrix, matrix.getDataTypeId().orElseThrow());
           case OPTION_SET -> {
-            Matrix transformed = matrix.transform(os -> ((OptionSetUInteger<?>) os).getValue());
+            OpcUaDataType optionSetDataType = matrix.getDataType().orElseThrow();
+            Matrix transformed =
+                matrix.transform(
+                    os -> ((OptionSetUInteger<?>) os).getValue(),
+                    optionSetDataType.getBackingClass(),
+                    optionSetDataType);
             encodeMatrix("Matrix", transformed);
           }
         }
@@ -1933,7 +1940,9 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
             e -> {
               UaStructuredType struct = (UaStructuredType) e;
               return ExtensionObject.encode(context, struct, OpcUaDefaultXmlEncoding.getInstance());
-            });
+            },
+            ExtensionObject.class,
+            OpcUaDataType.ExtensionObject);
 
     encodeMatrix(field, transformed);
   }

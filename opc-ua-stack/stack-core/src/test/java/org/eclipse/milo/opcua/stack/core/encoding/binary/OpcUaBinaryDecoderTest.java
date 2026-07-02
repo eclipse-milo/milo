@@ -22,6 +22,7 @@ import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
 import org.junit.jupiter.api.Test;
 
 public class OpcUaBinaryDecoderTest {
@@ -128,6 +129,26 @@ public class OpcUaBinaryDecoderTest {
 
     assertArrayEquals(new int[] {0, 2}, matrix.getDimensions());
     assertEquals(0, Array.getLength(matrix.getElements()));
+  }
+
+  @Test
+  void decodeStructMatrixAllowsZeroDimensions() throws Exception {
+    ByteBuf buffer = Unpooled.buffer();
+    buffer.writeIntLE(2);
+    buffer.writeIntLE(0);
+    buffer.writeIntLE(2);
+
+    Matrix matrix =
+        new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE)
+            .setBuffer(buffer)
+            .decodeStructMatrix(
+                null,
+                XVType.TYPE_ID.toNodeIdOrThrow(
+                    DefaultEncodingContext.INSTANCE.getNamespaceTable()));
+
+    assertArrayEquals(new int[] {0, 2}, matrix.getDimensions());
+    assertEquals(0, Array.getLength(matrix.getElements()));
+    assertEquals(XVType.TYPE_ID, matrix.getDataTypeId().orElseThrow());
   }
 
   @Test

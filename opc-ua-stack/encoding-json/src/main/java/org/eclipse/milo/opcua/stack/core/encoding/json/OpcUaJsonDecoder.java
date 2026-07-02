@@ -1590,7 +1590,8 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
           validateMatrixDimensions(flatArray, dimensions);
 
-          return new Matrix(flatArray, dimensions, OpcUaDataType.ExtensionObject);
+          return new Matrix(
+              flatArray, dimensions, OpcUaDataType.ExtensionObject, dataTypeId.expanded());
         } finally {
           jsonReader.endObject();
         }
