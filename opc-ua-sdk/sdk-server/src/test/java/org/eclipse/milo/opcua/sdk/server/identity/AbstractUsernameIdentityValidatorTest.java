@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.sdk.server.identity;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -21,6 +22,7 @@ import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
@@ -140,6 +142,58 @@ class AbstractUsernameIdentityValidatorTest {
                 fixture.token(),
                 policy(profile.securityPolicy()),
                 new SignatureData(null, null)));
+  }
+
+  // Part 6 6.8.2 makes the receiver key single-use: once a token consumes it, a replay without
+  // rotation must fail because the session no longer retains that key material.
+  @Test
+  void rejectsStaleEnhancedSessionKeyAfterSuccessfulValidation() throws Exception {
+    SecurityPolicyProfile profile = SecurityPolicy.ECC_nistP256_AesGcm.getProfile();
+    TokenFixture fixture = tokenFixture(profile);
+    MutableSessionKey mutableKey = mutableSessionKey(fixture);
+    Session session = session(fixture, SERVER_NONCE, mutableKey);
+    TestUsernameValidator validator = new TestUsernameValidator("password");
+
+    validator.validateIdentityToken(
+        session, fixture.token(), policy(profile.securityPolicy()), new SignatureData(null, null));
+
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                validator.validateIdentityToken(
+                    session,
+                    fixture.token(),
+                    policy(profile.securityPolicy()),
+                    new SignatureData(null, null)));
+
+    assertEquals(StatusCodes.Bad_IdentityTokenInvalid, exception.getStatusCode().getValue());
+  }
+
+  // Normal ActivateSession rotation remains valid: after the consumed key is cleared, installing a
+  // fresh receiver key lets the next enhanced username token authenticate.
+  @Test
+  void acceptsFreshEnhancedSessionKeyAfterSuccessfulValidation() throws Exception {
+    SecurityPolicyProfile profile = SecurityPolicy.ECC_nistP256_AesGcm.getProfile();
+    ApplicationIdentity clientIdentity = applicationIdentity(profile);
+    TokenFixture first = tokenFixture(profile, "password", clientIdentity);
+    TokenFixture rotated = tokenFixture(profile, "password", clientIdentity);
+    MutableSessionKey mutableKey = mutableSessionKey(first);
+    Session session = session(first, SERVER_NONCE, mutableKey);
+    TestUsernameValidator validator = new TestUsernameValidator("password");
+
+    validator.validateIdentityToken(
+        session, first.token(), policy(profile.securityPolicy()), new SignatureData(null, null));
+    mutableKey.set(rotated);
+
+    Identity identity =
+        validator.validateIdentityToken(
+            session,
+            rotated.token(),
+            policy(profile.securityPolicy()),
+            new SignatureData(null, null));
+
+    assertEquals("user", ((Identity.UsernameIdentity) identity).getUsername());
   }
 
   // Malformed enhanced token-secret bytes should fail token validation, not reach authentication.
@@ -307,6 +361,14 @@ class AbstractUsernameIdentityValidatorTest {
   private static TokenFixture tokenFixture(SecurityPolicyProfile profile, String password)
       throws Exception {
     ApplicationIdentity clientIdentity = applicationIdentity(profile);
+
+    return tokenFixture(profile, password, clientIdentity);
+  }
+
+  private static TokenFixture tokenFixture(
+      SecurityPolicyProfile profile, String password, ApplicationIdentity clientIdentity)
+      throws Exception {
+
     KeyPair receiverEphemeralKeyPair = EccEncryptedSecret.generateEphemeralKeyPair(profile);
     ByteString receiverPublicKey =
         EccEncryptedSecret.encodeEphemeralPublicKey(profile, receiverEphemeralKeyPair.getPublic());
@@ -360,6 +422,29 @@ class AbstractUsernameIdentityValidatorTest {
                 List.of(fixture.clientCertificate())));
 
     return session;
+  }
+
+  private static Session session(
+      TokenFixture fixture, ByteString lastNonce, MutableSessionKey mutableKey) {
+
+    Session session = session(fixture, lastNonce);
+    when(session.getUserTokenEphemeralKeyPair()).thenAnswer(ignored -> mutableKey.keyPair());
+    when(session.getUserTokenEphemeralPublicKey()).thenAnswer(ignored -> mutableKey.publicKey());
+    doAnswer(
+            ignored -> {
+              mutableKey.clear();
+              return null;
+            })
+        .when(session)
+        .clearUserTokenEphemeralKeyPair();
+
+    return session;
+  }
+
+  private static MutableSessionKey mutableSessionKey(TokenFixture fixture) {
+    return new MutableSessionKey(
+        new AtomicReference<>(fixture.receiverEphemeralKeyPair()),
+        new AtomicReference<>(fixture.receiverPublicKey()));
   }
 
   private static UserTokenPolicy policy(SecurityPolicy securityPolicy) {
@@ -435,6 +520,36 @@ class AbstractUsernameIdentityValidatorTest {
   }
 
   private record ApplicationIdentity(KeyPair keyPair, X509Certificate certificate) {}
+
+  private static final class MutableSessionKey {
+
+    private final AtomicReference<KeyPair> keyPair;
+    private final AtomicReference<ByteString> publicKey;
+
+    private MutableSessionKey(
+        AtomicReference<KeyPair> keyPair, AtomicReference<ByteString> publicKey) {
+      this.keyPair = keyPair;
+      this.publicKey = publicKey;
+    }
+
+    private Optional<KeyPair> keyPair() {
+      return Optional.ofNullable(keyPair.get());
+    }
+
+    private Optional<ByteString> publicKey() {
+      return Optional.ofNullable(publicKey.get());
+    }
+
+    private void set(TokenFixture fixture) {
+      keyPair.set(fixture.receiverEphemeralKeyPair());
+      publicKey.set(fixture.receiverPublicKey());
+    }
+
+    private void clear() {
+      keyPair.set(null);
+      publicKey.set(null);
+    }
+  }
 
   private record TokenFixture(
       X509Certificate clientCertificate,

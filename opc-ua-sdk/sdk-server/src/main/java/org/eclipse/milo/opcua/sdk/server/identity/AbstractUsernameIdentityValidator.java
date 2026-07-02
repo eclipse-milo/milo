@@ -190,6 +190,8 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
       } else {
         throw e;
       }
+    } finally {
+      session.clearUserTokenEphemeralKeyPair();
     }
 
     if (passwordBytes.length()

@@ -360,6 +360,12 @@ public class Session {
     this.userTokenEphemeralPublicKey = userTokenEphemeralPublicKey;
   }
 
+  /** Clear the enhanced username-token key pair after it has been consumed by ActivateSession. */
+  public void clearUserTokenEphemeralKeyPair() {
+    userTokenEphemeralKeyPair = null;
+    userTokenEphemeralPublicKey = ByteString.NULL_VALUE;
+  }
+
   private void checkTimeout() {
     long elapsed = Math.abs(System.nanoTime() - lastActivityNanos);
 
