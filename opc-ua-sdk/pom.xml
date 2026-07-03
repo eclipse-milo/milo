@@ -35,6 +35,7 @@
     <module>sdk-pubsub</module>
     <module>sdk-pubsub-server</module>
     <module>sdk-pubsub-mqtt</module>
+    <module>sdk-pubsub-sks</module>
     <module>sdk-server</module>
     <module>integration-tests</module>
   </modules>
