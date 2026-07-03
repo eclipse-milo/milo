@@ -40,19 +40,24 @@ import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.KeyPair;
+import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import org.eclipse.milo.opcua.sdk.client.DiscoveryClient;
 import org.eclipse.milo.opcua.sdk.pubsub.DataSetFieldValue;
 import org.eclipse.milo.opcua.sdk.pubsub.DataSetSnapshot;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubBindings;
@@ -71,6 +76,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.FieldDefinition;
 import org.eclipse.milo.opcua.sdk.pubsub.config.JsonDataSetReaderSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.JsonDataSetWriterSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.JsonWriterGroupSettings;
+import org.eclipse.milo.opcua.sdk.pubsub.config.MessageSecurityConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.MetadataPolicy;
 import org.eclipse.milo.opcua.sdk.pubsub.config.MqttConnectionConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfig;
@@ -78,31 +84,53 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConnectionConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
 import org.eclipse.milo.opcua.sdk.pubsub.config.ReaderGroupConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.SecurityGroupConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.SecurityGroupRef;
 import org.eclipse.milo.opcua.sdk.pubsub.config.UadpDataSetReaderSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.UadpDataSetWriterSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.UadpWriterGroupSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.UdpDatagramAddress;
 import org.eclipse.milo.opcua.sdk.pubsub.config.WriterGroupConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.WriterGroupMessageSettings;
+import org.eclipse.milo.opcua.sdk.pubsub.security.InMemoryKeyCredentialStore;
+import org.eclipse.milo.opcua.sdk.pubsub.security.PubSubSecurityPolicy;
+import org.eclipse.milo.opcua.sdk.pubsub.security.SecurityKeyMaterial;
+import org.eclipse.milo.opcua.sdk.pubsub.security.SecurityKeySet;
+import org.eclipse.milo.opcua.sdk.pubsub.security.StaticSecurityKeyProvider;
+import org.eclipse.milo.opcua.sdk.pubsub.sks.SksSecurityKeyProvider;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.BrokerTopics;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodeContext;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedDataSetMessage;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedField;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedMetaData;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedNetworkMessage;
+import org.eclipse.milo.opcua.sdk.pubsub.uadp.ReceivedSecurity;
+import org.eclipse.milo.opcua.sdk.pubsub.uadp.SecurityContextResolver;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.UadpMessageMapping;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
+import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrokerTransportQualityOfService;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
+import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldContentMask;
+import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.FieldMetaData;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpDataSetMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpNetworkMessageContentMask;
+import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
+import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
+import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -157,6 +185,20 @@ import org.jspecify.annotations.Nullable;
  *   <li>{@code raw} — hexdumps each datagram, attempts a UADP decode, and saves every packet under
  *       /tmp/pubsub-capture as a golden interop fixture.
  * </ul>
+ *
+ * <p>All three UDP modes additionally accept the secured-UDP options ({@code --security-mode},
+ * {@code --security-policy}, {@code --static-keys}, {@code --static-keys-hex}) for Part 14 UADP
+ * message security with pre-shared static keys (K2 subset: {@code Sign}/{@code SignAndEncrypt}
+ * {@code x} PubSub-Aes128-CTR/PubSub-Aes256-CTR). {@code publish}/{@code subscribe} wire a {@link
+ * StaticSecurityKeyProvider} and a SecurityGroup into the engine config, or — with {@code --sks
+ * <opc.tcp url> --security-group <id> [--sks-user u:p]} instead of the static-key flags — pull
+ * rotating keys from a live Security Key Service via {@link SksSecurityKeyProvider} ({@code
+ * GetSecurityKeys} over an ephemeral SignAndEncrypt session per fetch). {@code raw} verifies and
+ * decrypts each received datagram with the static key and prints the outcome per packet. With none
+ * of these flags present every mode assembles the same configuration and emits/accepts the same
+ * bytes as before; the one observable console difference is that {@code raw} now prints a
+ * per-packet {@code security: ... outcome=NO_RESOLVER} line for secured datagrams it previously
+ * skipped with only the header output.
  *
  * <p>MQTT modes take {@code <brokerUri>} (e.g. {@code mqtt://localhost:1883}, {@code mqtts://} for
  * TLS):
@@ -217,6 +259,23 @@ public final class PubSubInteropTool {
   private static final Gson PRETTY_GSON =
       new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().serializeNulls().create();
 
+  /**
+   * The SecurityGroup name/ref used by the static-key secured UDP modes. Local to this tool's
+   * config: static keys are pre-shared, so the peer never sees (or needs) this name. The {@code
+   * --sks} modes instead name their SecurityGroup after {@code --security-group}, which IS
+   * peer-visible (it is the SecurityGroupId requested from the SKS).
+   */
+  private static final String SECURITY_GROUP = "sg-interop";
+
+  private static final SecurityGroupRef SECURITY_GROUP_REF = new SecurityGroupRef(SECURITY_GROUP);
+
+  /** The ApplicationUri of the tool's ephemeral self-signed certificate for {@code --sks}. */
+  private static final String SKS_CLIENT_APPLICATION_URI = "urn:eclipse:milo:pubsub:interop-tool";
+
+  /** Where the {@code --sks} client certificate is written so the SKS operator can trust it. */
+  private static final Path SKS_CLIENT_CERTIFICATE_FILE =
+      Path.of("/tmp/milo-interop-sks-client.der");
+
   private static final String USAGE =
       """
       usage: PubSubInteropTool <mode> ...
@@ -225,7 +284,7 @@ public final class PubSubInteropTool {
 
         subscribe <address> <port> [--interface <name>] [--publisher-id <type:value>]
                   [--writer-group-id <n>] [--data-set-writer-id <n>]
-                  [--receive-timeout <ms>]
+                  [--receive-timeout <ms>] [secured-UDP options]
             Run a PubSubService DataSetReader and print every received DataSet,
             metadata announcement, and state change, plus a diagnostics dump every
             10 seconds. All filters are wildcards unless specified (id 0 = wildcard).
@@ -236,13 +295,16 @@ public final class PubSubInteropTool {
             window do not. UDP is connectionless, so this is the only
             publisher-liveness signal; 0 (the default) disables the watchdog.
 
-        raw <address> <port> [--interface <name>]
+        raw <address> <port> [--interface <name>] [secured-UDP options]
             No engine: receive raw datagrams, hexdump each packet, attempt a UADP
-            decode, and save every packet to /tmp/pubsub-capture/.
+            decode, and save every packet to /tmp/pubsub-capture/. With static-key
+            options present, each secured datagram is verified (and, for
+            SignAndEncrypt, decrypted) with the static key and the per-packet
+            security outcome is printed.
 
         publish <address> <port> [--interface <name>] [--publisher-id <type:value>]
                 [--writer-group-id <n>] [--data-set-writer-id <n>]
-                [--interval-ms <n>] [--datavalue]
+                [--interval-ms <n>] [--datavalue] [secured-UDP options]
             Publish the "MiloInterop" dataset: Ramp (Double sawtooth 0..100),
             Counter (Int32), Message (String "milo-<counter>"), Toggle (Boolean).
             Defaults: publisher-id uint16:62541, writer-group-id 100,
@@ -251,6 +313,48 @@ public final class PubSubInteropTool {
             SourceTimestamp.
 
         <address> is treated as multicast if it is a multicast IP, unicast otherwise.
+
+      secured-UDP options (subscribe, publish, raw; Part 14 UADP message security.
+      Static keys: SecurityTokenId pinned to 1, no rotation. --sks: rotating keys
+      pulled from a live Security Key Service; publish and subscribe only):
+
+        --security-mode sign|sign-encrypt
+            The MessageSecurityMode of the writer/reader group. REQUIRED with any
+            other secured option in publish and subscribe. Optional in raw, where
+            the wire's SecurityFlags decide processing: if given it is only an
+            expectation and a per-packet mismatch is flagged. Note stricter peers
+            (open62541) must be configured with EXACTLY the mode published.
+        --security-policy aes128-ctr|aes256-ctr
+            The PubSub SecurityPolicy. Optional: with static keys it is inferred
+            from the key data length (52 bytes -> aes128-ctr, 68 bytes ->
+            aes256-ctr) and must agree with the key material when given. With
+            --sks it constrains the policy the SKS must serve (mismatch fails the
+            fetch, no downgrade); without it any supported served policy is
+            accepted.
+        --static-keys <dir>
+            Load the key from an S2OPC/OPC Labs key-part directory containing
+            signingKey.key (32 B), encryptKey.key (16|32 B), and keyNonce.key
+            (4 B), each holding raw key bytes.
+        --static-keys-hex <hex>
+            The key data inline as hex: SigningKey||EncryptingKey||KeyNonce
+            (Part 14 Table 155), exactly 52 or 68 bytes (104 or 136 hex chars) --
+            the same value OPC Labs tooling takes as static:?key=<hex>.
+            Exactly one of --static-keys/--static-keys-hex is required when any
+            secured option is present, unless --sks is used instead.
+        --sks <opc.tcp url>
+            Pull keys from the Security Key Service at this URL (GetSecurityKeys
+            over an ephemeral SignAndEncrypt session per fetch, refreshed at the
+            SKS's KeyLifetime/2 cadence). Requires --security-mode and
+            --security-group; mutually exclusive with the static-key flags.
+            The tool generates an ephemeral self-signed certificate and writes it
+            to /tmp/milo-interop-sks-client.der -- add it to the SKS trust list.
+            The SKS certificate is NOT validated (interop harness only; never
+            copy this wiring into an application).
+        --security-group <id>
+            The SecurityGroupId requested from the SKS, e.g. the open62541
+            central-SKS example's "DemoSecurityGroup". Required with --sks.
+        --sks-user <user>:<password>
+            Username identity for the SKS session; default anonymous.
 
       MQTT modes: <mode> <brokerUri> [options]
         <brokerUri> e.g. mqtt://localhost:1883 (mqtts:// for TLS). All MQTT modes
@@ -302,6 +406,11 @@ public final class PubSubInteropTool {
       examples:
         subscribe 224.0.2.14 4840
         publish 127.0.0.1 4840 --interval-ms 500 --datavalue
+        publish 239.0.0.1 4840 --security-mode sign-encrypt --static-keys-hex <52B|68B hex>
+        subscribe 239.0.0.1 4840 --security-mode sign --static-keys /path/to/keydir
+        raw 239.0.0.1 4840 --static-keys /path/to/keydir
+        subscribe 224.0.0.22 4840 --security-mode sign-encrypt
+            --sks opc.tcp://localhost:4840 --security-group DemoSecurityGroup
         mqtt-publish mqtt://localhost:1883 --metadata-interval 5000
         mqtt-publish mqtt://localhost:1883 --mapping uadp --qos 1
         mqtt-subscribe mqtt://localhost:1883 --topic opcua/json/data/62541/MiloInterop
@@ -328,8 +437,24 @@ public final class PubSubInteropTool {
                       "--publisher-id",
                       "--writer-group-id",
                       "--data-set-writer-id",
-                      "--receive-timeout")));
-      case "raw" -> runRaw(parseArgs(args, Set.of("--interface")));
+                      "--receive-timeout",
+                      "--security-mode",
+                      "--security-policy",
+                      "--static-keys",
+                      "--static-keys-hex",
+                      "--sks",
+                      "--security-group",
+                      "--sks-user")));
+      case "raw" ->
+          runRaw(
+              parseArgs(
+                  args,
+                  Set.of(
+                      "--interface",
+                      "--security-mode",
+                      "--security-policy",
+                      "--static-keys",
+                      "--static-keys-hex")));
       case "publish" ->
           runPublish(
               parseArgs(
@@ -340,7 +465,14 @@ public final class PubSubInteropTool {
                       "--writer-group-id",
                       "--data-set-writer-id",
                       "--interval-ms",
-                      "--datavalue")));
+                      "--datavalue",
+                      "--security-mode",
+                      "--security-policy",
+                      "--static-keys",
+                      "--static-keys-hex",
+                      "--sks",
+                      "--security-group",
+                      "--sks-user")));
       case "mqtt-publish" ->
           runMqttPublish(
               parseMqttArgs(
@@ -386,6 +518,8 @@ public final class PubSubInteropTool {
 
   private static void runSubscribe(Args args) throws Exception {
     UdpDatagramAddress address = datagramAddress(args);
+    SksSettings sks = resolveSks(args);
+    SecuritySettings security = resolveSecurity(args, true);
 
     // Wildcard filters by default; ACCEPT_DISCOVERED with no configured metadata, so the engine
     // names fields "Field_<i>" until a metadata announcement is received.
@@ -404,17 +538,51 @@ public final class PubSubInteropTool {
       reader.messageReceiveTimeout(Duration.ofMillis(args.receiveTimeoutMs));
     }
 
+    ReaderGroupConfig.Builder readerGroup =
+        ReaderGroupConfig.builder("group").dataSetReader(reader.build());
+    PubSubConfig.Builder configBuilder = PubSubConfig.builder();
+
+    if (security != null) {
+      // K7 receive gate: messages below the configured mode are dropped and counted; messages
+      // above it are processed because this group's SecurityGroup can supply the keys.
+      readerGroup.messageSecurity(messageSecurity(security));
+      configBuilder.securityGroup(securityGroup(security));
+    }
+    SksSecurityKeyProvider sksProvider = null;
+    if (sks != null) {
+      readerGroup.messageSecurity(sksMessageSecurity(sks));
+      configBuilder.securityGroup(sksSecurityGroup(sks));
+      sksProvider = sksProvider(sks);
+      closeOnShutdown(sksProvider);
+    }
+
     PubSubConfig config =
-        PubSubConfig.builder()
+        configBuilder
             .connection(
                 PubSubConnectionConfig.udp("conn")
                     .address(address)
-                    .readerGroup(
-                        ReaderGroupConfig.builder("group").dataSetReader(reader.build()).build())
+                    .readerGroup(readerGroup.build())
                     .build())
             .build();
 
-    PubSubService service = PubSubService.create(config);
+    PubSubService service;
+    if (security != null) {
+      service =
+          PubSubService.create(
+              config,
+              PubSubBindings.builder()
+                  .securityKeys(SECURITY_GROUP_REF, security.provider())
+                  .build());
+    } else if (sksProvider != null) {
+      service =
+          PubSubService.create(
+              config,
+              PubSubBindings.builder()
+                  .securityKeys(new SecurityGroupRef(sks.securityGroupId()), sksProvider)
+                  .build());
+    } else {
+      service = PubSubService.create(config);
+    }
 
     addDataSetLogging(service);
     addMetaDataLogging(service);
@@ -424,6 +592,8 @@ public final class PubSubInteropTool {
     log(
         "subscribing on %s: receiveTimeout=%s",
         address, args.receiveTimeoutMs > 0 ? args.receiveTimeoutMs + " ms" : "disabled");
+    logSecurity(security);
+    logSks(sks);
     service.startup().get();
     log("service started; Ctrl-C to exit");
 
@@ -439,18 +609,36 @@ public final class PubSubInteropTool {
 
     log("---- diagnostics (%d components) ----", snapshot.size());
     snapshot.forEach(
-        (path, d) ->
+        (path, d) -> {
+          log(
+              "  %s nmSent=%d nmRecv=%d dsmSent=%d dsmRecv=%d decodeErrors=%d sourceErrors=%d"
+                  + " lastError=%s",
+              path,
+              d.networkMessagesSent(),
+              d.networkMessagesReceived(),
+              d.dataSetMessagesSent(),
+              d.dataSetMessagesReceived(),
+              d.decodeErrors(),
+              d.sourceErrors(),
+              d.lastError() == null ? "-" : formatStatus(d.lastError()));
+
+          // security drop counters, printed only when at least one has ticked
+          if (d.encryptionErrors() != 0
+              || d.decryptionErrors() != 0
+              || d.invalidSignatureMessages() != 0
+              || d.unknownTokenMessages() != 0
+              || d.staleKeyMessages() != 0) {
             log(
-                "  %s nmSent=%d nmRecv=%d dsmSent=%d dsmRecv=%d decodeErrors=%d sourceErrors=%d"
-                    + " lastError=%s",
+                "  %s encryptionErrors=%d decryptionErrors=%d invalidSignature=%d unknownToken=%d"
+                    + " staleKey=%d",
                 path,
-                d.networkMessagesSent(),
-                d.networkMessagesReceived(),
-                d.dataSetMessagesSent(),
-                d.dataSetMessagesReceived(),
-                d.decodeErrors(),
-                d.sourceErrors(),
-                d.lastError() == null ? "-" : formatStatus(d.lastError())));
+                d.encryptionErrors(),
+                d.decryptionErrors(),
+                d.invalidSignatureMessages(),
+                d.unknownTokenMessages(),
+                d.staleKeyMessages());
+          }
+        });
   }
 
   // endregion
@@ -460,11 +648,21 @@ public final class PubSubInteropTool {
   private static void runRaw(Args args) throws Exception {
     InetAddress inetAddress = InetAddress.getByName(args.address);
     boolean multicast = inetAddress.isMulticastAddress();
+    SecuritySettings security = resolveSecurity(args, false);
 
     Files.createDirectories(CAPTURE_DIR);
 
     var mapping = new UadpMessageMapping();
-    DecodeContext decodeContext = DecodeContext.of(DefaultEncodingContext.INSTANCE);
+
+    // With static keys present, a resolver that returns the same key material for every request
+    // (any token id, any stream) so each secured datagram is verified/decrypted and its outcome
+    // printed; without keys secured datagrams decode header-only with outcome NO_RESOLVER.
+    SecurityContextResolver resolver = null;
+    if (security != null) {
+      SecurityKeyMaterial keys = SecurityKeyMaterial.split(security.policy(), security.keyData());
+      resolver = request -> new SecurityContextResolver.Resolution.Keys(keys);
+    }
+    DecodeContext decodeContext = DecodeContext.of(DefaultEncodingContext.INSTANCE, resolver);
 
     try (var socket = new MulticastSocket(null)) {
       socket.setReuseAddress(true);
@@ -483,6 +681,7 @@ public final class PubSubInteropTool {
       log(
           "listening on port %d (%s %s); saving packets to %s; Ctrl-C to exit",
           args.port, multicast ? "multicast" : "unicast", args.address, CAPTURE_DIR);
+      logSecurity(security);
 
       byte[] buffer = new byte[65535];
       int packetCount = 0;
@@ -496,7 +695,7 @@ public final class PubSubInteropTool {
 
         log("packet #%d: %d bytes from %s", packetCount, data.length, packet.getSocketAddress());
         hexDump(data);
-        decodeAndPrint(mapping, decodeContext, data);
+        decodeAndPrint(mapping, decodeContext, data, security);
 
         Path file =
             CAPTURE_DIR.resolve(
@@ -533,7 +732,10 @@ public final class PubSubInteropTool {
   }
 
   private static void decodeAndPrint(
-      UadpMessageMapping mapping, DecodeContext decodeContext, byte[] data) {
+      UadpMessageMapping mapping,
+      DecodeContext decodeContext,
+      byte[] data,
+      @Nullable SecuritySettings security) {
 
     DecodedNetworkMessage decoded;
     try {
@@ -563,6 +765,24 @@ public final class PubSubInteropTool {
 
     if (failure != null) {
       log("  failure: status=%s %s", formatStatus(failure.statusCode()), failure.message());
+    }
+
+    // Per-packet security outcome: security() is null when the wire message carried mode None;
+    // any outcome other than VERIFIED is a header-only skip (no payload was parsed).
+    ReceivedSecurity received = decoded.security();
+    MessageSecurityMode expectedMode = security != null ? security.mode() : null;
+    if (received != null) {
+      String expectation =
+          expectedMode != null && expectedMode != received.mode()
+              ? " (MISMATCH: expected " + expectedMode + ")"
+              : "";
+      log(
+          "  security: mode=%s tokenId=%s outcome=%s%s",
+          received.mode(), received.securityTokenId(), received.outcome(), expectation);
+    } else if (security != null) {
+      log(
+          "  security: mode=None on the wire (message is unsecured)%s",
+          expectedMode != null ? " (MISMATCH: expected " + expectedMode + ")" : "");
     }
 
     for (DecodedDataSetMessage message : decoded.messages()) {
@@ -608,6 +828,8 @@ public final class PubSubInteropTool {
 
   private static void runPublish(Args args) throws Exception {
     UdpDatagramAddress address = datagramAddress(args);
+    SksSettings sks = resolveSks(args);
+    SecuritySettings security = resolveSecurity(args, true);
 
     PublisherId publisherId =
         args.publisherId != null ? args.publisherId : PublisherId.uint16(ushort(62541));
@@ -649,38 +871,56 @@ public final class PubSubInteropTool {
                 DataSetFieldContentMask.Field.SourceTimestamp)
             : DataSetFieldContentMask.of();
 
+    WriterGroupConfig.Builder writerGroup =
+        WriterGroupConfig.builder("group")
+            .writerGroupId(ushort(writerGroupId))
+            .publishingInterval(Duration.ofMillis(args.intervalMs))
+            .messageSettings(groupSettings)
+            .dataSetWriter(
+                DataSetWriterConfig.builder("writer")
+                    .dataSet(dataSet.ref())
+                    .dataSetWriterId(ushort(dataSetWriterId))
+                    .fieldContentMask(fieldContentMask)
+                    .settings(writerSettings)
+                    .build());
+
+    PubSubConfig.Builder configBuilder = PubSubConfig.builder().publishedDataSet(dataSet);
+
+    if (security != null) {
+      writerGroup.messageSecurity(messageSecurity(security));
+      configBuilder.securityGroup(securityGroup(security));
+    }
+    SksSecurityKeyProvider sksProvider = null;
+    if (sks != null) {
+      writerGroup.messageSecurity(sksMessageSecurity(sks));
+      configBuilder.securityGroup(sksSecurityGroup(sks));
+      sksProvider = sksProvider(sks);
+      closeOnShutdown(sksProvider);
+    }
+
     PubSubConfig config =
-        PubSubConfig.builder()
-            .publishedDataSet(dataSet)
+        configBuilder
             .connection(
                 PubSubConnectionConfig.udp("conn")
                     .publisherId(publisherId)
                     .address(address)
-                    .writerGroup(
-                        WriterGroupConfig.builder("group")
-                            .writerGroupId(ushort(writerGroupId))
-                            .publishingInterval(Duration.ofMillis(args.intervalMs))
-                            .messageSettings(groupSettings)
-                            .dataSetWriter(
-                                DataSetWriterConfig.builder("writer")
-                                    .dataSet(dataSet.ref())
-                                    .dataSetWriterId(ushort(dataSetWriterId))
-                                    .fieldContentMask(fieldContentMask)
-                                    .settings(writerSettings)
-                                    .build())
-                            .build())
+                    .writerGroup(writerGroup.build())
                     .build())
             .build();
 
     var counter = new AtomicLong();
     boolean asDataValue = args.dataValue;
 
-    PubSubService service =
-        PubSubService.create(
-            config,
-            PubSubBindings.builder()
-                .source(dataSet.ref(), miloInteropSource(counter, asDataValue))
-                .build());
+    PubSubBindings.Builder bindings =
+        PubSubBindings.builder().source(dataSet.ref(), miloInteropSource(counter, asDataValue));
+    if (security != null) {
+      bindings.securityKeys(SECURITY_GROUP_REF, security.provider());
+    }
+    if (sksProvider != null) {
+      bindings.securityKeys(new SecurityGroupRef(sks.securityGroupId()), sksProvider);
+    }
+
+    PubSubService service = PubSubService.create(config, bindings.build());
 
     addStateAndDiagnosticsLogging(service);
     closeOnShutdown(service);
@@ -694,6 +934,8 @@ public final class PubSubInteropTool {
         dataSetWriterId,
         args.intervalMs,
         asDataValue ? "DataValue (StatusCode|SourceTimestamp)" : "Variant");
+    logSecurity(security);
+    logSks(sks);
     service.startup().get();
     log("service started; Ctrl-C to exit");
 
@@ -1034,6 +1276,316 @@ public final class PubSubInteropTool {
 
   // endregion
 
+  // region message security
+
+  /**
+   * The resolved secured-UDP settings: the security mode ({@code null} only in raw mode, where the
+   * wire's SecurityFlags decide processing and the mode is just an expectation), the policy, the
+   * pinned static key data (Table 155 {@code SigningKey || EncryptingKey || KeyNonce}), the
+   * provider serving it under SecurityTokenId 1, and a human-readable key source for logging.
+   */
+  private record SecuritySettings(
+      @Nullable MessageSecurityMode mode,
+      PubSubSecurityPolicy policy,
+      ByteString keyData,
+      StaticSecurityKeyProvider provider,
+      String keySource) {}
+
+  /**
+   * Resolve the static-key secured-UDP options to a {@link SecuritySettings}, or {@code null} when
+   * none of them were given (the assembled config and wire behavior are then identical to the
+   * pre-security tool) or when {@code --sks} owns the run (see {@link #resolveSks}, which validated
+   * the flag combination already).
+   *
+   * @param modeRequired whether {@code --security-mode} is required (publish/subscribe configure a
+   *     group with it; raw only uses it as a per-packet expectation).
+   */
+  private static @Nullable SecuritySettings resolveSecurity(Args args, boolean modeRequired) {
+    if (args.sksUrl != null) {
+      return null;
+    }
+    boolean anyPresent =
+        args.securityMode != null
+            || args.securityPolicy != null
+            || args.staticKeysDir != null
+            || args.staticKeysHex != null;
+    if (!anyPresent) {
+      return null;
+    }
+
+    if (args.staticKeysDir != null && args.staticKeysHex != null) {
+      throw usageError("--static-keys and --static-keys-hex are mutually exclusive");
+    }
+    if (args.staticKeysDir == null && args.staticKeysHex == null) {
+      throw usageError(
+          "secured-UDP options require key material: pass --static-keys <dir> or"
+              + " --static-keys-hex <52|68B hex>");
+    }
+    if (modeRequired && args.securityMode == null) {
+      throw usageError("secured publish/subscribe requires --security-mode sign|sign-encrypt");
+    }
+
+    try {
+      StaticSecurityKeyProvider provider;
+      String keySource;
+      if (args.staticKeysDir != null) {
+        provider = StaticSecurityKeyProvider.loadS2OpcDirectory(Path.of(args.staticKeysDir));
+        keySource = "s2opc-dir:" + args.staticKeysDir;
+      } else {
+        byte[] keyBytes;
+        try {
+          keyBytes = HexFormat.of().parseHex(args.staticKeysHex);
+        } catch (IllegalArgumentException e) {
+          throw usageError("invalid --static-keys-hex, expected hex bytes: " + e.getMessage());
+        }
+        PubSubSecurityPolicy policy =
+            args.securityPolicy != null
+                ? args.securityPolicy
+                : PubSubSecurityPolicy.fromKeyDataLength(keyBytes.length)
+                    .orElseThrow(
+                        () ->
+                            usageError(
+                                "invalid --static-keys-hex, expected 52 or 68 bytes of key data,"
+                                    + " got "
+                                    + keyBytes.length));
+        provider = StaticSecurityKeyProvider.of(policy, ByteString.of(keyBytes));
+        keySource = "inline-hex";
+      }
+
+      // The provider is authoritative for policy and key data (a directory infers the policy
+      // from encryptKey.key's length); extract both for logging and the raw-mode resolver.
+      SecurityKeySet keySet = provider.getKeys(SECURITY_GROUP, uint(1), uint(1)).join();
+      PubSubSecurityPolicy policy =
+          PubSubSecurityPolicy.fromUri(keySet.securityPolicyUri()).orElseThrow();
+      ByteString keyData = keySet.keys().get(0);
+
+      if (args.securityPolicy != null && args.securityPolicy != policy) {
+        throw usageError(
+            "--security-policy %s does not match the key material (%d-byte key data is %s)"
+                .formatted(args.securityPolicy, keyData.length(), policy));
+      }
+
+      return new SecuritySettings(args.securityMode, policy, keyData, provider, keySource);
+    } catch (UaException e) {
+      throw usageError("invalid static keys: " + e.getMessage());
+    }
+  }
+
+  /** The SecurityGroup carrying the policy URI; referenced by the secured writer/reader group. */
+  private static SecurityGroupConfig securityGroup(SecuritySettings security) {
+    return SecurityGroupConfig.builder(SECURITY_GROUP)
+        .securityPolicyUri(security.policy().getUri())
+        .build();
+  }
+
+  private static MessageSecurityConfig messageSecurity(SecuritySettings security) {
+    return MessageSecurityConfig.builder()
+        .mode(security.mode())
+        .securityGroup(SECURITY_GROUP_REF)
+        .build();
+  }
+
+  /** Print the effective security parameters at startup; silent when security is off. */
+  private static void logSecurity(@Nullable SecuritySettings security) {
+    if (security == null) {
+      return;
+    }
+    log(
+        "security: mode=%s policy=%s (%s) keys=%s keyData=%dB"
+            + " (signing=%dB encrypting=%dB keyNonce=%dB) tokenId=1 (static, no rotation)"
+            + " messageNonce=%dB signature=HMAC-SHA256(%dB)",
+        security.mode() != null ? security.mode() : "from wire (raw mode)",
+        security.policy(),
+        security.policy().getUri(),
+        security.keySource(),
+        security.keyData().length(),
+        security.policy().getSigningKeyLength(),
+        security.policy().getEncryptingKeyLength(),
+        security.policy().getKeyNonceLength(),
+        security.policy().getMessageNonceLength(),
+        security.policy().getSignatureLength());
+  }
+
+  // endregion
+
+  // region SKS pull (--sks; runbook rows R5/R6)
+
+  /**
+   * The resolved {@code --sks} options: keys are pulled from a live Security Key Service instead of
+   * pre-shared, so there is no local key material — only the SKS URL, the SecurityGroupId to
+   * request, an optional policy constraint (K8: a served-policy mismatch fails the fetch, no
+   * downgrade; {@code null} accepts any supported policy), and an optional username identity.
+   */
+  private record SksSettings(
+      MessageSecurityMode mode,
+      @Nullable PubSubSecurityPolicy policy,
+      String url,
+      String securityGroupId,
+      @Nullable String username,
+      @Nullable String password) {}
+
+  /**
+   * Resolve the {@code --sks} options to a {@link SksSettings}, or {@code null} when {@code --sks}
+   * was not given. Validates the flag combination: {@code --sks} requires {@code --security-mode}
+   * and {@code --security-group} and excludes the static-key flags.
+   */
+  private static @Nullable SksSettings resolveSks(Args args) {
+    if (args.sksUrl == null) {
+      if (args.securityGroup != null || args.sksUser != null) {
+        throw usageError("--security-group and --sks-user require --sks <opc.tcp url>");
+      }
+      return null;
+    }
+    if (args.staticKeysDir != null || args.staticKeysHex != null) {
+      throw usageError("--sks and --static-keys/--static-keys-hex are mutually exclusive");
+    }
+    if (args.securityMode == null) {
+      throw usageError("--sks requires --security-mode sign|sign-encrypt");
+    }
+    if (args.securityGroup == null) {
+      throw usageError("--sks requires --security-group <id> (the SecurityGroupId at the SKS)");
+    }
+
+    String username = null;
+    String password = null;
+    if (args.sksUser != null) {
+      int separator = args.sksUser.indexOf(':');
+      if (separator <= 0 || separator == args.sksUser.length() - 1) {
+        throw usageError("invalid --sks-user, expected <user>:<password>: " + args.sksUser);
+      }
+      username = args.sksUser.substring(0, separator);
+      password = args.sksUser.substring(separator + 1);
+    }
+
+    return new SksSettings(
+        args.securityMode,
+        args.securityPolicy,
+        args.sksUrl,
+        args.securityGroup,
+        username,
+        password);
+  }
+
+  /**
+   * Build the {@link SksSecurityKeyProvider} for {@code --sks}: discover the SKS ApplicationUri
+   * with GetEndpoints at the given URL (the Part 14 Table 40 identity record the provider resolves
+   * is keyed by it), generate an ephemeral self-signed client certificate (written to {@link
+   * #SKS_CLIENT_CERTIFICATE_FILE} so the operator can trust it at the SKS), and skip validation of
+   * the SKS certificate — acceptable in an interop harness, never in an application.
+   */
+  private static SksSecurityKeyProvider sksProvider(SksSettings sks) throws Exception {
+    log("sks: discovering endpoints at %s", sks.url());
+    List<EndpointDescription> endpoints =
+        DiscoveryClient.getEndpoints(sks.url()).get(30, TimeUnit.SECONDS);
+    String sksApplicationUri =
+        endpoints.stream()
+            .map(EndpointDescription::getServer)
+            .filter(Objects::nonNull)
+            .map(ApplicationDescription::getApplicationUri)
+            .filter(uri -> uri != null && !uri.isEmpty())
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    usageError(
+                        "GetEndpoints at " + sks.url() + " returned no server ApplicationUri"));
+    log("sks: SKS ApplicationUri is %s", sksApplicationUri);
+
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    X509Certificate certificate =
+        new SelfSignedCertificateBuilder(keyPair)
+            .setCommonName("Milo PubSub Interop Tool")
+            .setApplicationUri(SKS_CLIENT_APPLICATION_URI)
+            .build();
+    Files.write(SKS_CLIENT_CERTIFICATE_FILE, certificate.getEncoded());
+    log(
+        "sks: ephemeral client certificate written to %s -- the SKS must trust it",
+        SKS_CLIENT_CERTIFICATE_FILE);
+    log("sks: the SKS certificate is NOT validated (interop tool only)");
+
+    SksSecurityKeyProvider.Builder builder =
+        SksSecurityKeyProvider.builder()
+            .keyPair(keyPair)
+            .certificate(certificate)
+            .applicationUri(SKS_CLIENT_APPLICATION_URI)
+            .certificateValidator(new CertificateValidator.InsecureCertificateValidator());
+
+    UserTokenPolicy[] userTokens = null;
+    if (sks.username() != null) {
+      userTokens =
+          new UserTokenPolicy[] {
+            new UserTokenPolicy("username", UserTokenType.UserName, null, null, null)
+          };
+      var credentials = new InMemoryKeyCredentialStore();
+      credentials.put(sksApplicationUri, sks.username(), sks.password().toCharArray());
+      builder.keyCredentialStore(credentials);
+    }
+
+    // The Table 40 identity record: ApplicationUri + the --sks URL as the discovery target.
+    builder.keyService(
+        new EndpointDescription(
+            null,
+            new ApplicationDescription(
+                sksApplicationUri,
+                null,
+                LocalizedText.NULL_VALUE,
+                ApplicationType.Server,
+                null,
+                null,
+                new String[] {sks.url()}),
+            ByteString.NULL_VALUE,
+            MessageSecurityMode.SignAndEncrypt,
+            null,
+            userTokens,
+            null,
+            ubyte(0)));
+
+    return builder.build();
+  }
+
+  /**
+   * The client-side SecurityGroup for {@code --sks}, named by the SecurityGroupId requested from
+   * the SKS. The policy URI is set only when {@code --security-policy} was given (K8 constraint);
+   * the window counts size the key manager's requested and retained keys.
+   */
+  private static SecurityGroupConfig sksSecurityGroup(SksSettings sks) {
+    SecurityGroupConfig.Builder group =
+        SecurityGroupConfig.builder(sks.securityGroupId())
+            .maxFutureKeyCount(uint(3))
+            .maxPastKeyCount(uint(1));
+    if (sks.policy() != null) {
+      group.securityPolicyUri(sks.policy().getUri());
+    }
+    return group.build();
+  }
+
+  private static MessageSecurityConfig sksMessageSecurity(SksSettings sks) {
+    return MessageSecurityConfig.builder()
+        .mode(sks.mode())
+        .securityGroup(new SecurityGroupRef(sks.securityGroupId()))
+        .build();
+  }
+
+  /** Print the effective SKS parameters at startup; silent when {@code --sks} is off. */
+  private static void logSks(@Nullable SksSettings sks) {
+    if (sks == null) {
+      return;
+    }
+    log(
+        "security: mode=%s keys=SKS pull from %s securityGroupId=%s policy=%s identity=%s"
+            + " (rotating; fetch at startup, refresh at KeyLifetime/2)",
+        sks.mode(),
+        sks.url(),
+        sks.securityGroupId(),
+        sks.policy() != null ? sks.policy().getUri() : "as served by the SKS",
+        sks.username() != null ? "username '" + sks.username() + "'" : "anonymous");
+  }
+
+  private static void closeOnShutdown(SksSecurityKeyProvider provider) {
+    Runtime.getRuntime().addShutdownHook(new Thread(provider::close));
+  }
+
+  // endregion
+
   // region shared fixtures and listeners
 
   /** The "MiloInterop" dataset with stable dataSetFieldIds so captures stay reproducible. */
@@ -1238,6 +1790,13 @@ public final class PubSubInteropTool {
         case "--data-set-writer-id" -> parsed.dataSetWriterId = parseInt(option, value);
         case "--interval-ms" -> parsed.intervalMs = parseInt(option, value);
         case "--receive-timeout" -> parsed.receiveTimeoutMs = parseInt(option, value);
+        case "--security-mode" -> parsed.securityMode = parseSecurityMode(value);
+        case "--security-policy" -> parsed.securityPolicy = parseSecurityPolicy(value);
+        case "--static-keys" -> parsed.staticKeysDir = value;
+        case "--static-keys-hex" -> parsed.staticKeysHex = value;
+        case "--sks" -> parsed.sksUrl = value;
+        case "--security-group" -> parsed.securityGroup = value;
+        case "--sks-user" -> parsed.sksUser = value;
         default -> throw usageError("unknown option: " + option);
       }
       i += 2;
@@ -1317,6 +1876,23 @@ public final class PubSubInteropTool {
     return switch (value) {
       case "json", "uadp" -> value;
       default -> throw usageError("invalid --mapping, expected json|uadp: " + value);
+    };
+  }
+
+  private static MessageSecurityMode parseSecurityMode(String value) {
+    return switch (value) {
+      case "sign" -> MessageSecurityMode.Sign;
+      case "sign-encrypt" -> MessageSecurityMode.SignAndEncrypt;
+      default -> throw usageError("invalid --security-mode, expected sign|sign-encrypt: " + value);
+    };
+  }
+
+  private static PubSubSecurityPolicy parseSecurityPolicy(String value) {
+    return switch (value) {
+      case "aes128-ctr" -> PubSubSecurityPolicy.PubSubAes128Ctr;
+      case "aes256-ctr" -> PubSubSecurityPolicy.PubSubAes256Ctr;
+      default ->
+          throw usageError("invalid --security-policy, expected aes128-ctr|aes256-ctr: " + value);
     };
   }
 
@@ -1411,6 +1987,17 @@ public final class PubSubInteropTool {
     boolean dataValue;
     int receiveTimeoutMs =
         0; // subscribe modes: 0 = MessageReceiveTimeout disabled (engine default)
+
+    // secured UDP modes (subscribe, publish, raw); all null = security off
+    MessageSecurityMode securityMode;
+    PubSubSecurityPolicy securityPolicy;
+    String staticKeysDir;
+    String staticKeysHex;
+
+    // SKS pull (subscribe, publish); sksUrl null = static keys or security off
+    String sksUrl;
+    String securityGroup;
+    String sksUser;
 
     // MQTT modes
     String brokerUri;
