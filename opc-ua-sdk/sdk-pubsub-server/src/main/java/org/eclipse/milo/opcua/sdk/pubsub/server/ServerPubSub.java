@@ -96,9 +96,12 @@ public final class ServerPubSub implements AutoCloseable {
   private final ConcurrentMap<String, AtomicLong> writeErrorCounters = new ConcurrentHashMap<>();
   private final AtomicBoolean fragmentStarted = new AtomicBoolean(false);
   private final AtomicBoolean fragmentStopped = new AtomicBoolean(false);
+  private final AtomicBoolean sksFaceStarted = new AtomicBoolean(false);
+  private final AtomicBoolean sksFaceStopped = new AtomicBoolean(false);
 
   private final PubSubService service;
   private final @Nullable PubSubInfoModelFragment fragment;
+  private final @Nullable SksServerFace sksServerFace;
 
   /** The automatic TargetVariables writers, keyed by reader path; deactivated at shutdown. */
   private final Map<String, TargetVariablesWriter> writers;
@@ -135,6 +138,9 @@ public final class ServerPubSub implements AutoCloseable {
         options.isExposeInformationModel()
             ? new PubSubInfoModelFragment(server, config, service, options)
             : null;
+
+    this.sksServerFace =
+        options.isSecurityKeyServerEnabled() ? new SksServerFace(server, config, options) : null;
   }
 
   /**
@@ -168,8 +174,9 @@ public final class ServerPubSub implements AutoCloseable {
    *     not supported in this version.
    * @throws PubSubConfigValidationException if a {@link NodeFieldAddress} in the effective
    *     configuration cannot be resolved against the server's {@link NamespaceTable}, a
-   *     TargetVariables index range cannot be parsed, or a stored configuration does not map to a
-   *     valid config.
+   *     TargetVariables index range cannot be parsed, a stored configuration does not map to a
+   *     valid config, or the enabled Security Key Service face rejects a SecurityGroup (an
+   *     unsupported SecurityPolicy URI or a duplicate SecurityGroupId).
    */
   public static ServerPubSub attach(
       OpcUaServer server, PubSubConfig config, ServerPubSubOptions options) {
@@ -236,6 +243,10 @@ public final class ServerPubSub implements AutoCloseable {
       }
     }
 
+    if (sksServerFace != null && sksFaceStarted.compareAndSet(false, true)) {
+      sksServerFace.startup();
+    }
+
     return service.startup().thenApply(s -> this);
   }
 
@@ -261,12 +272,21 @@ public final class ServerPubSub implements AutoCloseable {
               // from racing a subsequent server or namespace teardown
               writers.values().forEach(TargetVariablesWriter::deactivate);
               shutdownFragment();
+              shutdownSksServerFace();
             });
   }
 
   private void shutdownFragment() {
     if (fragment != null && fragmentStarted.get() && fragmentStopped.compareAndSet(false, true)) {
       fragment.shutdown();
+    }
+  }
+
+  private void shutdownSksServerFace() {
+    if (sksServerFace != null
+        && sksFaceStarted.get()
+        && sksFaceStopped.compareAndSet(false, true)) {
+      sksServerFace.shutdown();
     }
   }
 

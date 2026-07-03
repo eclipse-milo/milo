@@ -29,6 +29,8 @@ public final class ServerPubSubOptions {
   private final @Nullable PubSubConfigurationStore configurationStore;
   private final boolean diagnosticsEnabled;
   private final PubSubBindings bindings;
+  private final boolean securityKeyServerEnabled;
+  private final @Nullable PubSubMethodAuthorizer methodAuthorizer;
 
   private ServerPubSubOptions(Builder builder) {
     this.exposeInformationModel = builder.exposeInformationModel;
@@ -36,6 +38,8 @@ public final class ServerPubSubOptions {
     this.configurationStore = builder.configurationStore;
     this.diagnosticsEnabled = builder.diagnosticsEnabled;
     this.bindings = builder.bindings;
+    this.securityKeyServerEnabled = builder.securityKeyServerEnabled;
+    this.methodAuthorizer = builder.methodAuthorizer;
   }
 
   /**
@@ -87,6 +91,27 @@ public final class ServerPubSubOptions {
   }
 
   /**
+   * Get whether the opt-in Security Key Service server face is enabled: a {@code GetSecurityKeys}
+   * handler attached to the ns0 method node ({@code i=15215}) that generates and rotates keys for
+   * the configured SecurityGroups and advertises {@code SupportSecurityKeyServer=true}.
+   *
+   * @return {@code true} if the SKS server face is enabled; defaults to {@code false}.
+   */
+  public boolean isSecurityKeyServerEnabled() {
+    return securityKeyServerEnabled;
+  }
+
+  /**
+   * Get the authorizer consulted by the PubSub-related ns0 Method handlers.
+   *
+   * @return the configured {@link PubSubMethodAuthorizer}, or {@code null} if the default posture
+   *     applies.
+   */
+  public @Nullable PubSubMethodAuthorizer getMethodAuthorizer() {
+    return methodAuthorizer;
+  }
+
+  /**
    * Create a {@link Builder} pre-populated with the values of these options.
    *
    * @return a new {@link Builder}.
@@ -98,6 +123,8 @@ public final class ServerPubSubOptions {
     builder.configurationStore = configurationStore;
     builder.diagnosticsEnabled = diagnosticsEnabled;
     builder.bindings = bindings;
+    builder.securityKeyServerEnabled = securityKeyServerEnabled;
+    builder.methodAuthorizer = methodAuthorizer;
     return builder;
   }
 
@@ -113,7 +140,9 @@ public final class ServerPubSubOptions {
         && allowRemoteConfiguration == that.allowRemoteConfiguration
         && Objects.equals(configurationStore, that.configurationStore)
         && diagnosticsEnabled == that.diagnosticsEnabled
-        && bindings.equals(that.bindings);
+        && bindings.equals(that.bindings)
+        && securityKeyServerEnabled == that.securityKeyServerEnabled
+        && Objects.equals(methodAuthorizer, that.methodAuthorizer);
   }
 
   @Override
@@ -123,7 +152,9 @@ public final class ServerPubSubOptions {
         allowRemoteConfiguration,
         configurationStore,
         diagnosticsEnabled,
-        bindings);
+        bindings,
+        securityKeyServerEnabled,
+        methodAuthorizer);
   }
 
   /**
@@ -143,6 +174,8 @@ public final class ServerPubSubOptions {
     private @Nullable PubSubConfigurationStore configurationStore;
     private boolean diagnosticsEnabled = false;
     private PubSubBindings bindings = PubSubBindings.builder().build();
+    private boolean securityKeyServerEnabled = false;
+    private @Nullable PubSubMethodAuthorizer methodAuthorizer;
 
     private Builder() {}
 
@@ -208,6 +241,40 @@ public final class ServerPubSubOptions {
      */
     public Builder bindings(PubSubBindings bindings) {
       this.bindings = bindings;
+      return this;
+    }
+
+    /**
+     * Set whether the opt-in Security Key Service server face is enabled.
+     *
+     * <p>When enabled, {@link ServerPubSub} attaches a {@code GetSecurityKeys} handler to the ns0
+     * method node ({@code i=15215}) at startup, generates and rotates keys for the SecurityGroups
+     * of the attach-time configuration, and advertises {@code SupportSecurityKeyPull=true}, {@code
+     * SupportSecurityKeyPush=false}, and {@code SupportSecurityKeyServer=true}. The face works
+     * independently of {@link #exposeInformationModel(boolean)}.
+     *
+     * <p>The served SecurityGroups reflect the attach-time configuration: reconfiguring via {@code
+     * ServerPubSub.runtime()} does not rebuild the key store.
+     *
+     * @param value {@code true} to enable the SKS server face.
+     * @return this {@link Builder}.
+     */
+    public Builder securityKeyServerEnabled(boolean value) {
+      this.securityKeyServerEnabled = value;
+      return this;
+    }
+
+    /**
+     * Set the authorizer consulted by the PubSub-related ns0 Method handlers.
+     *
+     * <p>When none is configured, the default posture described on {@link PubSubMethodAuthorizer}
+     * applies.
+     *
+     * @param methodAuthorizer the {@link PubSubMethodAuthorizer} to consult.
+     * @return this {@link Builder}.
+     */
+    public Builder methodAuthorizer(PubSubMethodAuthorizer methodAuthorizer) {
+      this.methodAuthorizer = methodAuthorizer;
       return this;
     }
 
