@@ -290,7 +290,8 @@ class ReaderOperationalGateTest {
                     ushort(1),
                     ushort(0),
                     null,
-                    List.of(draft)));
+                    List.of(draft),
+                    null));
 
     ByteBuf data = encoded.get(0).data();
     try {

@@ -13,10 +13,14 @@ package org.eclipse.milo.opcua.sdk.pubsub.uadp;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import java.util.ArrayList;
 import java.util.List;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
+import org.eclipse.milo.opcua.sdk.pubsub.security.SecurityKeyMaterial;
+import org.eclipse.milo.opcua.sdk.pubsub.security.UadpMessageSecurity;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryDecoder;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
@@ -25,6 +29,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
 import org.jspecify.annotations.Nullable;
@@ -42,10 +47,16 @@ import org.slf4j.LoggerFactory;
  * <p>Failures that end decoding early are surfaced via {@link DecodedNetworkMessage#failure()}
  * rather than thrown: truncated or malformed input that raises an exception mid-decode, any
  * explicit length field exceeding the remaining bytes (a DataSetMessage Sizes entry, the
- * PromotedFields Size, the SecurityHeader NonceLength, a discovery probe's DataSetWriterIds count —
- * the truncation signatures), and chunked NetworkMessages, including chunked discovery messages
- * ({@code Bad_NotSupported}). Input that is merely tolerated and skipped — a non-UADP version
- * nibble, reserved flag or type values, unsupported discovery content — reports no failure.
+ * PromotedFields Size, the SecurityHeader NonceLength, the ChunkData length, a secured message
+ * shorter than its promised SecurityFooter and Signature, a discovery probe's DataSetWriterIds
+ * count — the truncation signatures), and chunked NetworkMessages on surfaces that do not
+ * reassemble them ({@code Bad_NotSupported}: the legacy decode surface, and chunked discovery
+ * messages everywhere). Input that is merely tolerated and skipped — a non-UADP version nibble,
+ * reserved flag or type values, unsupported discovery content, a security outcome other than {@link
+ * SecurityOutcome#VERIFIED} — reports no failure; the one overlap is a secured message too short
+ * for its trailing SecurityFooter and Signature, a truncation signature that reports {@code
+ * Bad_DecodingError} and, because no truncation can verify, also records {@link
+ * SecurityOutcome#INVALID_SIGNATURE}.
  *
  * <p>Scope and limitations:
  *
@@ -61,10 +72,25 @@ import org.slf4j.LoggerFactory;
  *       non-Bad announcements into {@link DecodedMetaData} and drops probes and Bad-status
  *       announcements. FindApplications probes, other probe InformationTypes, and other
  *       announcement types are tolerated and skipped.
- *   <li>Only security mode None is supported: a SecurityHeader with any SecurityFlags bit set
- *       causes the payload to be skipped.
- *   <li>Chunked NetworkMessages are not reassembled: their payloads are skipped with a {@code
- *       Bad_NotSupported} failure. ActionHeaders are detected and their payloads skipped. A
+ *   <li>Message security (Part 14 §7.2.4.4.3) is processed when the {@link DecodeContext} carries a
+ *       {@link SecurityContextResolver}: the trailing HMAC is verified BEFORE any payload byte is
+ *       parsed, then — for SignAndEncrypt — a COPY of the payload region is decrypted (the shared
+ *       transport buffer is never mutated) and parsed. Either sign-only SecurityHeader form is
+ *       accepted (NonceLength is self-describing), a flagged SecurityFooter is skipped, and
+ *       reserved SecurityFlags bits cause the whole message to be skipped like other reserved flag
+ *       values. Any non-{@link SecurityOutcome#VERIFIED} outcome — no resolver, resolver refusal,
+ *       signature mismatch, decrypt failure — yields a tolerated, header-only result whose {@link
+ *       DecodedNetworkMessage#security()} reports the outcome; these are skips, not failures,
+ *       except that truncation below the promised SecurityFooter and Signature also reports a
+ *       {@code Bad_DecodingError} failure (a truncation signature, like the other explicit length
+ *       overruns).
+ *   <li>Chunk NetworkMessages (§7.2.4.4.4) are parsed AFTER verification/decryption — the Table 159
+ *       chunk fields live inside the encrypted region — and surfaced as {@link
+ *       DecodedNetworkMessage#chunk()} on the {@link #decodeMessage(DecodeContext, ByteBuf)}
+ *       surface; reassembly happens downstream, per connection. The legacy {@link
+ *       #decode(DecodeContext, ByteBuf)} surface keeps skipping chunked payloads with a {@code
+ *       Bad_NotSupported} failure (legacy callers cannot reassemble), as do chunked discovery
+ *       messages on both surfaces. ActionHeaders are detected and their payloads skipped. A
  *       PromotedFields block is skipped via its Size field and the payload after it is decoded
  *       normally.
  *   <li>If the PayloadHeader is absent the payload is assumed to contain a single DataSetMessage.
@@ -106,12 +132,26 @@ final class UadpNetworkMessageDecoder {
   private @Nullable UShort sequenceNumber;
   private @Nullable DateTime timestamp;
 
+  private @Nullable ReceivedSecurity security;
+  private @Nullable DecodedChunk decodedChunk;
+  private @Nullable UShort chunkDataSetWriterId;
+
   private final EncodingContext encodingContext;
+  private final @Nullable SecurityContextResolver resolver;
+
+  /**
+   * Whether this decode runs on the legacy {@link #decode(DecodeContext, ByteBuf)} surface, which
+   * keeps the historic detect-and-drop behavior for chunked NetworkMessages.
+   */
+  private final boolean legacySurface;
+
   private final ByteBuf buffer;
   private final OpcUaBinaryDecoder decoder;
 
-  private UadpNetworkMessageDecoder(EncodingContext encodingContext, ByteBuf buffer) {
-    this.encodingContext = encodingContext;
+  private UadpNetworkMessageDecoder(DecodeContext context, ByteBuf buffer, boolean legacySurface) {
+    this.encodingContext = context.encodingContext();
+    this.resolver = context.securityResolver();
+    this.legacySurface = legacySurface;
     this.buffer = buffer;
 
     decoder = new OpcUaBinaryDecoder(encodingContext).setBuffer(buffer);
@@ -123,7 +163,9 @@ final class UadpNetworkMessageDecoder {
    * <p>Discovery content is folded into the data-plane result the way it always was: a
    * DataSetMetaData announcement with a non-Bad status becomes a {@link DecodedMetaData} entry,
    * while probes and Bad-status announcements yield a header-only result. Use {@link
-   * #decodeMessage(DecodeContext, ByteBuf)} to surface them.
+   * #decodeMessage(DecodeContext, ByteBuf)} to surface them. Chunked NetworkMessages keep the
+   * historic detect-and-drop behavior on this surface: a {@code Bad_NotSupported} failure and no
+   * {@link DecodedNetworkMessage#chunk()} component.
    *
    * @param context the decode context.
    * @param buffer the buffer containing the received NetworkMessage; the caller retains ownership.
@@ -131,7 +173,7 @@ final class UadpNetworkMessageDecoder {
    *     unsupported.
    */
   static DecodedNetworkMessage decode(DecodeContext context, ByteBuf buffer) {
-    var decoder = new UadpNetworkMessageDecoder(context.encodingContext(), buffer);
+    var decoder = new UadpNetworkMessageDecoder(context, buffer, true);
 
     try {
       decoder.decodeNetworkMessage();
@@ -154,7 +196,7 @@ final class UadpNetworkMessageDecoder {
    *     unsupported, or discovery content that is tolerated but not surfaced.
    */
   static UadpDecodedMessage decodeMessage(DecodeContext context, ByteBuf buffer) {
-    var decoder = new UadpNetworkMessageDecoder(context.encodingContext(), buffer);
+    var decoder = new UadpNetworkMessageDecoder(context, buffer, false);
 
     try {
       decoder.decodeNetworkMessage();
@@ -164,6 +206,61 @@ final class UadpNetworkMessageDecoder {
     }
 
     return decoder.result();
+  }
+
+  /**
+   * Decode one reassembled chunk payload — a single DataSetMessage (header and body) — into a
+   * {@link DecodedNetworkMessage} inheriting the completing chunk's header values.
+   *
+   * <p>The result's {@code sequenceNumber} is {@code null}: every chunk NetworkMessage already
+   * consumed its own NetworkMessage sequence number through the per-reader recency windows when it
+   * was dispatched, and re-observing the completing chunk's number would wrongly classify the
+   * reassembled message as a duplicate. The reassembled DataSetMessage's own sequence number drives
+   * the DataSetMessage window normally. The chunk header's {@code security} is inherited (every
+   * chunk was individually verified); {@code chunk} is {@code null}.
+   *
+   * @param context the decode context.
+   * @param chunkHeader the completing chunk's NetworkMessage, for the inherited header values.
+   * @param dataSetWriterId the DataSetWriterId of the chunked stream, or {@code null} if the chunk
+   *     NetworkMessages carried no PayloadHeader.
+   * @param payload the reassembled payload; the caller retains ownership.
+   * @return the decoded NetworkMessage; tolerant like the other surfaces — a malformed payload
+   *     yields an empty result with a {@code Bad_DecodingError} failure.
+   */
+  static DecodedNetworkMessage decodeReassembled(
+      DecodeContext context,
+      DecodedNetworkMessage chunkHeader,
+      @Nullable UShort dataSetWriterId,
+      ByteBuf payload) {
+
+    List<DecodedDataSetMessage> messages = new ArrayList<>(1);
+    DecodedNetworkMessage.Failure failure = null;
+
+    OpcUaBinaryDecoder decoder =
+        new OpcUaBinaryDecoder(context.encodingContext()).setBuffer(payload);
+    try {
+      messages.add(decodeDataSetMessage(decoder, payload, dataSetWriterId));
+    } catch (Exception e) {
+      LOGGER.debug("failed to decode reassembled DataSetMessage: {}", e.getMessage(), e);
+      failure =
+          new DecodedNetworkMessage.Failure(
+              new StatusCode(StatusCodes.Bad_DecodingError),
+              "failed to decode reassembled DataSetMessage: " + e.getMessage(),
+              e);
+    }
+
+    return DecodedNetworkMessage.of(
+        chunkHeader.publisherId(),
+        chunkHeader.writerGroupId(),
+        chunkHeader.groupVersion(),
+        chunkHeader.networkMessageNumber(),
+        null,
+        chunkHeader.timestamp(),
+        messages,
+        List.of(),
+        failure,
+        chunkHeader.security(),
+        null);
   }
 
   /** Record the exception that ended decoding, unless a failure was already recorded. */
@@ -212,7 +309,9 @@ final class UadpNetworkMessageDecoder {
         timestamp,
         messages,
         metaData,
-        failure);
+        failure,
+        security,
+        decodedChunk);
   }
 
   private void decodeNetworkMessage() {
@@ -289,8 +388,8 @@ final class UadpNetworkMessageDecoder {
 
     if (payloadHeaderEnabled) {
       if (chunk) {
-        // Chunked NetworkMessage payload header: a single DataSetWriterId, no Count.
-        decoder.decodeUInt16();
+        // Chunked NetworkMessage payload header: a single DataSetWriterId, no Count (Table 158).
+        chunkDataSetWriterId = decoder.decodeUInt16();
       } else if (messageType == TYPE_DATA) {
         int count = buffer.readUnsignedByte();
 
@@ -331,8 +430,13 @@ final class UadpNetworkMessageDecoder {
       buffer.skipBytes(size);
     }
 
-    if (securityEnabled && !decodeSecurityHeader()) {
-      return;
+    SecurityHeader securityHeader = null;
+    if (securityEnabled) {
+      securityHeader = decodeSecurityHeader();
+      if (securityHeader == null) {
+        // reserved SecurityFlags bits (tolerated skip) or a truncation failure; both end decoding
+        return;
+      }
     }
 
     if (actionHeaderEnabled) {
@@ -340,24 +444,47 @@ final class UadpNetworkMessageDecoder {
       return;
     }
 
+    // The payload window: for unsecured messages it is the shared buffer/decoder (the payload is
+    // the rest of the buffer, as always); for secured messages it is bounded away from the
+    // SecurityFooter and Signature — and, for SignAndEncrypt, a decoder-local decrypted copy.
+    OpcUaBinaryDecoder payloadDecoder = decoder;
+    ByteBuf payloadBuffer = buffer;
+
+    if (securityHeader != null && (securityHeader.securityFlags() & 0x03) != 0) {
+      ByteBuf securedPayload = processSecuredPayload(securityHeader, dataSetWriterIds);
+      if (securedPayload == null) {
+        // header-only skip; the outcome is recorded in `security`
+        return;
+      }
+      payloadBuffer = securedPayload;
+      payloadDecoder = new OpcUaBinaryDecoder(encodingContext).setBuffer(payloadBuffer);
+    }
+
     if (chunk) {
-      // Reassembly of Chunk NetworkMessages (Part 14 §7.2.4.4.4) is not implemented; surface the
-      // skip as a failure so subscribers can observe chunked traffic instead of silent loss.
-      LOGGER.debug("chunked NetworkMessage is not supported; skipping payload");
-      failure =
-          new DecodedNetworkMessage.Failure(
-              new StatusCode(StatusCodes.Bad_NotSupported),
-              "chunked NetworkMessage is not supported",
-              null);
+      if (legacySurface || messageType != TYPE_DATA) {
+        // Legacy surface callers cannot reassemble; chunked discovery messages are not
+        // reassembled at all. Surface the skip as a failure so subscribers can observe chunked
+        // traffic instead of silent loss.
+        LOGGER.debug("chunked NetworkMessage is not supported; skipping payload");
+        failure =
+            new DecodedNetworkMessage.Failure(
+                new StatusCode(StatusCodes.Bad_NotSupported),
+                "chunked NetworkMessage is not supported",
+                null);
+        return;
+      }
+
+      // The Table 159 chunk fields live inside the (now decrypted) payload region.
+      decodeChunkPayload(payloadDecoder, payloadBuffer);
       return;
     }
 
     if (messageType == TYPE_DISCOVERY_ANNOUNCEMENT) {
-      decodeDiscoveryAnnouncement();
+      decodeDiscoveryAnnouncement(payloadDecoder, payloadBuffer);
     } else if (messageType == TYPE_DISCOVERY_PROBE) {
-      decodeDiscoveryProbe();
+      decodeDiscoveryProbe(payloadDecoder, payloadBuffer);
     } else {
-      decodeDataPayload(payloadHeaderEnabled, dataSetWriterIds);
+      decodeDataPayload(payloadDecoder, payloadBuffer, payloadHeaderEnabled, dataSetWriterIds);
     }
   }
 
@@ -385,24 +512,38 @@ final class UadpNetworkMessageDecoder {
   }
 
   /**
+   * The parsed SecurityHeader (Part 14 Table 154).
+   *
+   * @param securityFlags the SecurityFlags byte: bit 0 signed, bit 1 encrypted, bit 2 footer, bit 3
+   *     force key reset.
+   * @param securityTokenId the SecurityTokenId; 0 in the mode-None form.
+   * @param messageNonce the MessageNonce, {@code NonceLength} bytes; the length is self-describing,
+   *     so either sign-only form (8 or 0 bytes) is accepted.
+   * @param securityFooterSize the SecurityFooterSize, or 0 when bit 2 is clear (the field is then
+   *     absent).
+   */
+  private record SecurityHeader(
+      int securityFlags, UInteger securityTokenId, byte[] messageNonce, int securityFooterSize) {}
+
+  /**
    * Decode the SecurityHeader.
    *
-   * @return {@code true} if the payload that follows can be processed, i.e. the SecurityFlags
-   *     indicate security mode None.
+   * @return the parsed header, or {@code null} if decoding of this NetworkMessage must end:
+   *     reserved SecurityFlags bits are set (a tolerated skip, like other reserved flag values;
+   *     Table 154: "the receiver shall skip messages where the reserved bits are not false") or the
+   *     header is a truncation signature (recorded as a failure).
    */
-  private boolean decodeSecurityHeader() {
+  private @Nullable SecurityHeader decodeSecurityHeader() {
     int securityFlags = buffer.readUnsignedByte();
 
-    if (securityFlags != 0) {
-      // Signed and/or encrypted payloads, SecurityFooter, key reset, and reserved bits are
-      // all unsupported; only security mode None is processed.
+    if ((securityFlags & 0xF0) != 0) {
       LOGGER.debug(
-          "unsupported SecurityFlags: 0x{}; skipping payload", Integer.toHexString(securityFlags));
-      return false;
+          "reserved SecurityFlags bits set: 0x{}; skipping message",
+          Integer.toHexString(securityFlags));
+      return null;
     }
 
-    // SecurityTokenId
-    decoder.decodeUInt32();
+    UInteger securityTokenId = decoder.decodeUInt32();
 
     int nonceLength = buffer.readUnsignedByte();
     if (nonceLength > buffer.readableBytes()) {
@@ -413,17 +554,178 @@ final class UadpNetworkMessageDecoder {
               new StatusCode(StatusCodes.Bad_DecodingError),
               "SecurityHeader NonceLength exceeds remaining bytes: " + nonceLength,
               null);
-      return false;
+      return null;
     }
-    buffer.skipBytes(nonceLength);
+    byte[] messageNonce = new byte[nonceLength];
+    buffer.readBytes(messageNonce);
 
-    // SecurityFooterSize is only present when the SecurityFooter flag is set, which was
-    // rejected above.
+    int securityFooterSize = 0;
+    if ((securityFlags & 0x04) != 0) {
+      // SecurityFooterSize is present iff bit 2 is set; the footer itself sits between the
+      // payload and the signature and is skipped via the payload window boundary math.
+      securityFooterSize = decoder.decodeUInt16().intValue();
+    }
 
-    return true;
+    return new SecurityHeader(securityFlags, securityTokenId, messageNonce, securityFooterSize);
   }
 
-  private void decodeDiscoveryAnnouncement() {
+  /**
+   * Process the message security of a signed (and possibly encrypted) NetworkMessage: resolve key
+   * material, verify the trailing signature BEFORE any payload byte is parsed (§7.2.4.4.3.2: "shall
+   * verify the signature before processing the payload"), and build the bounded payload window —
+   * for SignAndEncrypt, a decrypted COPY of the payload region, because the transport buffer is
+   * shared across mappings and must never be mutated.
+   *
+   * @param header the parsed SecurityHeader; at least SecurityFlags bit 0 or 1 is set.
+   * @param dataSetWriterIds the plaintext PayloadHeader DataSetWriterIds, or {@code null}.
+   * @return the payload window to parse, or {@code null} for a header-only skip; {@link #security}
+   *     is set to the observed {@link ReceivedSecurity} either way.
+   */
+  private @Nullable ByteBuf processSecuredPayload(
+      SecurityHeader header, @Nullable List<UShort> dataSetWriterIds) {
+
+    boolean encrypted = (header.securityFlags() & 0x02) != 0;
+    MessageSecurityMode mode =
+        encrypted ? MessageSecurityMode.SignAndEncrypt : MessageSecurityMode.Sign;
+
+    if (resolver == null) {
+      security = new ReceivedSecurity(mode, header.securityTokenId(), SecurityOutcome.NO_RESOLVER);
+      return null;
+    }
+
+    List<UShort> requestWriterIds;
+    if (chunkDataSetWriterId != null) {
+      requestWriterIds = List.of(chunkDataSetWriterId);
+    } else if (dataSetWriterIds != null) {
+      requestWriterIds = dataSetWriterIds;
+    } else {
+      requestWriterIds = List.of();
+    }
+
+    var request =
+        new SecurityContextResolver.ResolveRequest(
+            publisherId,
+            writerGroupId,
+            requestWriterIds,
+            mode,
+            header.securityTokenId(),
+            (header.securityFlags() & 0x08) != 0);
+
+    SecurityContextResolver.Resolution resolution = resolver.resolve(request);
+
+    if (resolution instanceof SecurityContextResolver.Resolution.Refused refused) {
+      security = new ReceivedSecurity(mode, header.securityTokenId(), refused.reason());
+      return null;
+    }
+
+    SecurityKeyMaterial keys = ((SecurityContextResolver.Resolution.Keys) resolution).keys();
+
+    int signatureSize = keys.getPolicy().getSignatureLength();
+    int payloadEnd = buffer.writerIndex() - signatureSize - header.securityFooterSize();
+
+    if (payloadEnd < buffer.readerIndex()) {
+      // fewer bytes remain than the SecurityFooter and Signature the header promises: a
+      // truncation signature, surfaced as a Bad_DecodingError failure like the other explicit
+      // length overruns — and, because no truncation can verify, also an INVALID_SIGNATURE
+      // security drop
+      LOGGER.debug("secured NetworkMessage too short for SecurityFooter and Signature");
+      failure =
+          new DecodedNetworkMessage.Failure(
+              new StatusCode(StatusCodes.Bad_DecodingError),
+              "secured NetworkMessage too short for SecurityFooter and Signature",
+              null);
+      security =
+          new ReceivedSecurity(mode, header.securityTokenId(), SecurityOutcome.INVALID_SIGNATURE);
+      return null;
+    }
+
+    byte[] signature = new byte[signatureSize];
+    buffer.getBytes(buffer.writerIndex() - signatureSize, signature);
+
+    try {
+      // constant-time comparison inside; the signed region is the entire NetworkMessage
+      // (including the SecurityFooter) up to, but not including, the signature
+      if (!UadpMessageSecurity.verify(
+          keys, signature, buffer.nioBuffer(0, buffer.writerIndex() - signatureSize))) {
+
+        LOGGER.debug("NetworkMessage signature verification failed");
+        security =
+            new ReceivedSecurity(mode, header.securityTokenId(), SecurityOutcome.INVALID_SIGNATURE);
+        return null;
+      }
+    } catch (UaException e) {
+      LOGGER.debug("NetworkMessage signature verification failed: {}", e.getMessage(), e);
+      security =
+          new ReceivedSecurity(mode, header.securityTokenId(), SecurityOutcome.INVALID_SIGNATURE);
+      return null;
+    }
+
+    ByteBuf payload;
+    if (encrypted) {
+      if (header.messageNonce().length != keys.getPolicy().getMessageNonceLength()) {
+        LOGGER.debug(
+            "encrypted NetworkMessage with unusable NonceLength: {}", header.messageNonce().length);
+        security =
+            new ReceivedSecurity(mode, header.securityTokenId(), SecurityOutcome.DECRYPT_FAILED);
+        return null;
+      }
+
+      // Decrypt a COPY: the underlying buffer is shared with every other mapping of the
+      // connection (and with the dispatcher's accounting), so in-place decryption is forbidden.
+      byte[] copy = new byte[payloadEnd - buffer.readerIndex()];
+      buffer.getBytes(buffer.readerIndex(), copy);
+      payload = Unpooled.wrappedBuffer(copy);
+
+      try {
+        UadpMessageSecurity.ctrTransform(keys, header.messageNonce(), payload);
+      } catch (UaException e) {
+        LOGGER.debug("NetworkMessage payload decryption failed: {}", e.getMessage(), e);
+        security =
+            new ReceivedSecurity(mode, header.securityTokenId(), SecurityOutcome.DECRYPT_FAILED);
+        return null;
+      }
+    } else {
+      // sign-only: bound the window so the SecurityFooter and Signature are never parsed as
+      // payload (the no-PayloadHeader path and the key-frame heartbeat check both consume
+      // "the rest of the buffer")
+      payload = buffer.readSlice(payloadEnd - buffer.readerIndex());
+    }
+
+    security = new ReceivedSecurity(mode, header.securityTokenId(), SecurityOutcome.VERIFIED);
+    return payload;
+  }
+
+  /**
+   * Decode the chunk payload (Part 14 §7.2.4.4.4, Table 159) into {@link #decodedChunk}. The chunk
+   * bytes are copied out of the payload window, which does not survive this decode call.
+   */
+  private void decodeChunkPayload(OpcUaBinaryDecoder decoder, ByteBuf buffer) {
+    UShort messageSequenceNumber = decoder.decodeUInt16();
+    UInteger chunkOffset = decoder.decodeUInt32();
+    UInteger totalSize = decoder.decodeUInt32();
+
+    // ChunkData is a ByteString: Int32 length + bytes; -1 encodes null
+    int length = decoder.decodeInt32();
+    if (length > buffer.readableBytes()) {
+      // a truncation signature: the ChunkData length promised more bytes than arrived
+      LOGGER.debug("ChunkData length exceeds remaining bytes: {}", length);
+      failure =
+          new DecodedNetworkMessage.Failure(
+              new StatusCode(StatusCodes.Bad_DecodingError),
+              "ChunkData length exceeds remaining bytes: " + length,
+              null);
+      return;
+    }
+
+    byte[] chunkData = new byte[Math.max(length, 0)];
+    buffer.readBytes(chunkData);
+
+    decodedChunk =
+        new DecodedChunk(
+            chunkDataSetWriterId, messageSequenceNumber, chunkOffset, totalSize, chunkData);
+  }
+
+  private void decodeDiscoveryAnnouncement(OpcUaBinaryDecoder decoder, ByteBuf buffer) {
     int announcementType = buffer.readUnsignedByte();
 
     // Per-PublisherId announcement SequenceNumber, independent of the data-plane counters.
@@ -454,7 +756,7 @@ final class UadpNetworkMessageDecoder {
             publisherId, announcementSequenceNumber, dataSetWriterId, dataSetMetaData, status);
   }
 
-  private void decodeDiscoveryProbe() {
+  private void decodeDiscoveryProbe(OpcUaBinaryDecoder decoder, ByteBuf buffer) {
     int probeType = buffer.readUnsignedByte();
 
     if (probeType != UadpDiscoveryProbe.PROBE_TYPE_PUBLISHER_INFORMATION) {
@@ -502,10 +804,15 @@ final class UadpNetworkMessageDecoder {
   }
 
   private void decodeDataPayload(
-      boolean payloadHeaderEnabled, @Nullable List<UShort> dataSetWriterIds) {
+      OpcUaBinaryDecoder decoder,
+      ByteBuf buffer,
+      boolean payloadHeaderEnabled,
+      @Nullable List<UShort> dataSetWriterIds) {
 
     // Without a PayloadHeader the number and sizes of DataSetMessages can only come from
-    // reader configuration; assume a single DataSetMessage spanning the rest of the buffer.
+    // reader configuration; assume a single DataSetMessage spanning the rest of the buffer
+    // (the payload window: secured messages are bounded away from the trailing footer and
+    // signature bytes by the caller).
     int count = dataSetWriterIds != null ? dataSetWriterIds.size() : 1;
 
     int[] sizes = null;

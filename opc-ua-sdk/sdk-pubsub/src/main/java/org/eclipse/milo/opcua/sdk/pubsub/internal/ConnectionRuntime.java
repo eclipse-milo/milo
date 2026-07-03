@@ -64,6 +64,12 @@ final class ConnectionRuntime extends AbstractComponentRuntime {
    */
   private final ExecutionQueue dispatchQueue;
 
+  /**
+   * Reassembles chunked NetworkMessages received on this connection; confined to the {@link
+   * #dispatchQueue} like all subscriber dispatch state.
+   */
+  private final ChunkReassembler chunkReassembler = new ChunkReassembler();
+
   private volatile List<WriterGroupRuntime> writerGroups;
   private volatile List<ReaderGroupRuntime> readerGroups;
   private volatile Map<String, MessageMappingProvider> subscriberMappings = Map.of();
@@ -144,6 +150,11 @@ final class ConnectionRuntime extends AbstractComponentRuntime {
   /** The discovery runtime of this connection, or null when it is not a UDP connection. */
   @Nullable DiscoveryRuntime discoveryRuntime() {
     return discoveryRuntime;
+  }
+
+  /** The chunk reassembler of this connection; use only from the dispatch queue. */
+  ChunkReassembler chunkReassembler() {
+    return chunkReassembler;
   }
 
   /** The metadata publisher of this connection, or null when it is not a broker connection. */

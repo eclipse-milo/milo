@@ -115,6 +115,73 @@ final class DiagnosticsCollector implements PubSubDiagnostics {
     error(path, statusCode, message, error);
   }
 
+  /**
+   * Record a publish cycle of a secured WriterGroup skipped because no usable key material was
+   * available. A quiet tick: the caller emits the accompanying {@link #error} event only on the
+   * first skip after a successful cycle (edge-triggered) — a dead key source at a 10 ms publishing
+   * interval must not emit 100 events per second.
+   */
+  void encryptionError(String path) {
+    Counters counters = countersByPath.get(path);
+    if (counters != null) {
+      counters.encryptionErrors.increment();
+    }
+  }
+
+  /**
+   * Record a received secured NetworkMessage whose payload failed to decrypt after its signature
+   * verified. An error-class counter, mirroring {@link #decodeError}: tick plus {@code lastError}
+   * plus a diagnostics event.
+   */
+  void decryptionError(
+      String path, StatusCode statusCode, String message, @Nullable Throwable error) {
+
+    Counters counters = countersByPath.get(path);
+    if (counters != null) {
+      counters.decryptionErrors.increment();
+    }
+    error(path, statusCode, message, error);
+  }
+
+  /**
+   * Record a received secured NetworkMessage whose signature did not verify. Sets {@code lastError}
+   * but emits NO event (attack traffic must not become event-queue pressure; the {@link
+   * #listenerError} lastError-without-event precedent); the dispatcher logs a rate-limited WARN
+   * instead.
+   */
+  void invalidSignatureMessage(String path) {
+    Counters counters = countersByPath.get(path);
+    if (counters != null) {
+      counters.invalidSignatureMessages.increment();
+      counters.lastError = new StatusCode(StatusCodes.Bad_SecurityChecksFailed);
+    }
+  }
+
+  /**
+   * Record a received secured NetworkMessage dropped because its SecurityTokenId is outside the
+   * receiver's token window. A normal-operation counter (the single-flight key refresh is the
+   * corrective action): no {@code lastError} and no diagnostics event.
+   */
+  void unknownTokenMessage(String path) {
+    Counters counters = countersByPath.get(path);
+    if (counters != null) {
+      counters.unknownTokenMessages.increment();
+    }
+  }
+
+  /**
+   * Record a received NetworkMessage dropped for want of usable keys (no or expired key window) or
+   * by the receive-mode gate (received security mode below the configured mode, or a secured
+   * message to a mode-None group). A normal-operation counter: no {@code lastError} and no
+   * diagnostics event.
+   */
+  void staleKeyMessage(String path) {
+    Counters counters = countersByPath.get(path);
+    if (counters != null) {
+      counters.staleKeyMessages.increment();
+    }
+  }
+
   /** Record a {@code PublishedDataSetSource} read failure. */
   void sourceError(String path, StatusCode statusCode, String message, @Nullable Throwable error) {
     Counters counters = countersByPath.get(path);
@@ -161,6 +228,11 @@ final class DiagnosticsCollector implements PubSubDiagnostics {
     final LongAdder sourceErrors = new LongAdder();
     final LongAdder staleSequenceMessages = new LongAdder();
     final LongAdder invalidSequenceMessages = new LongAdder();
+    final LongAdder encryptionErrors = new LongAdder();
+    final LongAdder decryptionErrors = new LongAdder();
+    final LongAdder invalidSignatureMessages = new LongAdder();
+    final LongAdder unknownTokenMessages = new LongAdder();
+    final LongAdder staleKeyMessages = new LongAdder();
 
     volatile @Nullable StatusCode lastError;
 
@@ -181,6 +253,11 @@ final class DiagnosticsCollector implements PubSubDiagnostics {
           sourceErrors.sum(),
           staleSequenceMessages.sum(),
           invalidSequenceMessages.sum(),
+          encryptionErrors.sum(),
+          decryptionErrors.sum(),
+          invalidSignatureMessages.sum(),
+          unknownTokenMessages.sum(),
+          staleKeyMessages.sum(),
           lastError);
     }
   }

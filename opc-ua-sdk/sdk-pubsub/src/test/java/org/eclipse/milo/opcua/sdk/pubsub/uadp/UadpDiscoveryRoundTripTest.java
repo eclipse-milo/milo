@@ -257,7 +257,7 @@ class UadpDiscoveryRoundTripTest {
   private UadpDecodedMessage decodeMessage(byte[] message) {
     ByteBuf buffer = Unpooled.wrappedBuffer(message);
     try {
-      return new UadpMessageMapping().decodeMessage(new DecodeContext(encodingContext), buffer);
+      return new UadpMessageMapping().decodeMessage(DecodeContext.of(encodingContext), buffer);
     } finally {
       buffer.release();
     }
@@ -266,7 +266,7 @@ class UadpDiscoveryRoundTripTest {
   private DecodedNetworkMessage decodeLegacy(byte[] message) {
     ByteBuf buffer = Unpooled.wrappedBuffer(message);
     try {
-      return new UadpMessageMapping().decode(new DecodeContext(encodingContext), buffer);
+      return new UadpMessageMapping().decode(DecodeContext.of(encodingContext), buffer);
     } finally {
       buffer.release();
     }

@@ -21,6 +21,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The built-in {@link MessageMappingProvider} for the UADP message mapping (OPC UA Part 14 §7.2.4),
@@ -35,19 +36,25 @@ import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
  * emitted, and each writer's {@link UadpDataSetWriterSettings} and {@link DataSetFieldContentMask}
  * decide the DataSetMessage header fields and the field representation (Variant or DataValue). The
  * Sizes array is emitted iff the PayloadHeader is enabled and there is more than one
- * DataSetMessage. Out of scope and rejected with {@code Bad_NotSupported}: Event message emission,
- * the RawData field encoding, PromotedFields emission, and any message security mode other than
- * None.
+ * DataSetMessage. Message security (Sign or SignAndEncrypt) is applied when the {@link
+ * EncodeContext} carries a {@link MessageSecurityContext}; a null context is mode None and produces
+ * the historic wire bytes unchanged. Out of scope and rejected with {@code Bad_NotSupported}: Event
+ * message emission, the RawData field encoding, PromotedFields emission, and chunk emission.
  *
  * <p><b>Decoding</b> is tolerant and never throws on malformed or unsupported input: whatever was
  * decoded successfully is returned, possibly an empty {@link DecodedNetworkMessage}. Data Key
  * Frame, Data Delta Frame, Event, and Keep Alive DataSetMessages and discovery DataSetMetaData
  * announcements are decoded; DataSetMessages that cannot be decoded (RawData field encoding,
  * reserved types, the valid bit clear on the wire) are returned with {@code valid == false} and no
- * fields. NetworkMessages that are chunked, carry an ActionHeader, or indicate any security other
- * than None have their payloads skipped. Truncated or malformed input and chunked NetworkMessages
- * additionally report a {@link DecodedNetworkMessage#failure()} alongside whatever was decoded
- * before the failure point.
+ * fields. Secured NetworkMessages are verified — and, for SignAndEncrypt, decrypted — when the
+ * {@link DecodeContext} carries a {@link SecurityContextResolver}; any other security outcome is a
+ * tolerated header-only skip reported via {@link DecodedNetworkMessage#security()}. NetworkMessages
+ * that carry an ActionHeader have their payloads skipped. Chunk NetworkMessages are surfaced as
+ * {@link DecodedNetworkMessage#chunk()} by {@link #decodeMessage(DecodeContext, ByteBuf)} and
+ * reassembled by the engine (see {@link #decodeReassembled(DecodeContext, DecodedNetworkMessage,
+ * UShort, ByteBuf)}); the legacy {@link #decode(DecodeContext, ByteBuf)} surface keeps skipping
+ * them with a {@code Bad_NotSupported} failure. Truncated or malformed input additionally reports a
+ * {@link DecodedNetworkMessage#failure()} alongside whatever was decoded before the failure point.
  *
  * <p><b>Discovery</b> (OPC UA Part 14 §7.2.4.6) is UADP-internal and not part of the {@link
  * MessageMappingProvider} SPI. {@link #decodeMessage(DecodeContext, ByteBuf)} surfaces
@@ -151,6 +158,40 @@ public final class UadpMessageMapping implements MessageMappingProvider {
    */
   public UadpDecodedMessage decodeMessage(DecodeContext context, ByteBuf payload) {
     return UadpNetworkMessageDecoder.decodeMessage(context, payload);
+  }
+
+  /**
+   * Decode one reassembled chunk payload — a single DataSetMessage (header and body), put back
+   * together from the {@link DecodedNetworkMessage#chunk()} pieces of a chunked stream — into a
+   * {@link DecodedNetworkMessage} that inherits the completing chunk's header values.
+   *
+   * <p>The result's {@code sequenceNumber} is {@code null}: each chunk NetworkMessage already
+   * carried its own NetworkMessage sequence number through the per-reader recency windows when it
+   * was dispatched, so the reassembled message must not observe one again. Its {@code security} is
+   * the completing chunk's (every chunk is secured and verified individually); {@code chunk} is
+   * {@code null}.
+   *
+   * <p>Like the other decode surfaces this never throws: a malformed reassembled payload yields an
+   * empty result with a {@code Bad_DecodingError} {@link DecodedNetworkMessage#failure()}.
+   *
+   * <p>The payload buffer is only valid for the duration of the call; the caller retains ownership
+   * and releases it afterwards.
+   *
+   * @param context the decode context.
+   * @param chunkHeader the completing chunk's NetworkMessage, for the inherited header values.
+   * @param dataSetWriterId the DataSetWriterId of the chunked stream, or {@code null} if the chunk
+   *     NetworkMessages carried no PayloadHeader.
+   * @param payload the buffer containing the reassembled payload.
+   * @return the decoded NetworkMessage.
+   */
+  public DecodedNetworkMessage decodeReassembled(
+      DecodeContext context,
+      DecodedNetworkMessage chunkHeader,
+      @Nullable UShort dataSetWriterId,
+      ByteBuf payload) {
+
+    return UadpNetworkMessageDecoder.decodeReassembled(
+        context, chunkHeader, dataSetWriterId, payload);
   }
 
   /**

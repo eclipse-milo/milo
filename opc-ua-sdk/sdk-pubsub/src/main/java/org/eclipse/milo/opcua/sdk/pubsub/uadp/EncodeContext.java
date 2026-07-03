@@ -35,6 +35,9 @@ import org.jspecify.annotations.Nullable;
  * @param networkMessageSequenceNumber the NetworkMessage SequenceNumber header value.
  * @param timestamp the NetworkMessage timestamp, or {@code null} if not included.
  * @param messages the draft DataSetMessages to include, in payload order.
+ * @param security the message security material resolved for this publish cycle, or {@code null}
+ *     for security mode None (today's wire format, bit for bit). Only the UADP mapping consumes it;
+ *     the JSON mapping has no message security.
  * @apiNote Create instances via {@link #of(EncodingContext, PublisherId, WriterGroupConfig,
  *     UInteger, UShort, UShort, DateTime, List)} rather than the canonical constructor; the factory
  *     methods are stable while the canonical constructor is not.
@@ -47,7 +50,8 @@ public record EncodeContext(
     UShort networkMessageNumber,
     UShort networkMessageSequenceNumber,
     @Nullable DateTime timestamp,
-    List<DataSetMessageDraft> messages) {
+    List<DataSetMessageDraft> messages,
+    @Nullable MessageSecurityContext security) {
 
   /**
    * Create a new {@link EncodeContext}.
@@ -60,13 +64,15 @@ public record EncodeContext(
    * @param networkMessageSequenceNumber the NetworkMessage SequenceNumber header value.
    * @param timestamp the NetworkMessage timestamp, or {@code null} if not included.
    * @param messages the draft DataSetMessages to include, in payload order.
+   * @param security the message security material resolved for this publish cycle, or {@code null}
+   *     for security mode None.
    */
   public EncodeContext {
     messages = List.copyOf(messages);
   }
 
   /**
-   * Create an {@link EncodeContext}.
+   * Create an {@link EncodeContext} without message security (mode None).
    *
    * @param encodingContext the {@link EncodingContext} used to encode field values.
    * @param publisherId the publisher id of the connection.
@@ -88,6 +94,44 @@ public record EncodeContext(
       @Nullable DateTime timestamp,
       List<DataSetMessageDraft> messages) {
 
+    return of(
+        encodingContext,
+        publisherId,
+        writerGroup,
+        groupVersion,
+        networkMessageNumber,
+        networkMessageSequenceNumber,
+        timestamp,
+        messages,
+        null);
+  }
+
+  /**
+   * Create an {@link EncodeContext}.
+   *
+   * @param encodingContext the {@link EncodingContext} used to encode field values.
+   * @param publisherId the publisher id of the connection.
+   * @param writerGroup the config of the WriterGroup being published.
+   * @param groupVersion the GroupVersion header value, derived at component start.
+   * @param networkMessageNumber the NetworkMessageNumber header value.
+   * @param networkMessageSequenceNumber the NetworkMessage SequenceNumber header value.
+   * @param timestamp the NetworkMessage timestamp, or {@code null} if not included.
+   * @param messages the draft DataSetMessages to include, in payload order.
+   * @param security the message security material resolved for this publish cycle, or {@code null}
+   *     for security mode None.
+   * @return a new {@link EncodeContext}.
+   */
+  public static EncodeContext of(
+      EncodingContext encodingContext,
+      PublisherId publisherId,
+      WriterGroupConfig writerGroup,
+      UInteger groupVersion,
+      UShort networkMessageNumber,
+      UShort networkMessageSequenceNumber,
+      @Nullable DateTime timestamp,
+      List<DataSetMessageDraft> messages,
+      @Nullable MessageSecurityContext security) {
+
     return new EncodeContext(
         encodingContext,
         publisherId,
@@ -96,6 +140,7 @@ public record EncodeContext(
         networkMessageNumber,
         networkMessageSequenceNumber,
         timestamp,
-        messages);
+        messages,
+        security);
   }
 }

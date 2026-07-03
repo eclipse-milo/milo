@@ -18,11 +18,12 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Message security configuration for a writer or reader group: the security mode, an optional
- * {@link SecurityGroupRef}, and the key service parameters used to obtain key material.
+ * Message security configuration for a writer group, reader group, or dataset-reader override: the
+ * security mode, an optional {@link SecurityGroupRef}, and the key service parameters used to
+ * obtain key material.
  *
- * <p>Message security is configuration-only in v1; the runtime rejects enabled groups configured
- * with any mode other than {@link MessageSecurityMode#None}.
+ * <p>Message security is validated at startup/reconfigure: enabled groups configured with a secured
+ * mode are rejected unless the runtime can protect them.
  */
 public final class MessageSecurityConfig {
 

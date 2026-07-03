@@ -931,7 +931,8 @@ class UadpGoldenVectorTest {
         NETWORK_MESSAGE_NUMBER,
         NETWORK_MESSAGE_SEQUENCE,
         timestamp,
-        List.of(drafts));
+        List.of(drafts),
+        null);
   }
 
   private byte[] encodeToBytes(EncodeContext context) throws UaException {
@@ -947,7 +948,7 @@ class UadpGoldenVectorTest {
   private DecodedNetworkMessage decode(byte[] message) {
     ByteBuf buffer = Unpooled.wrappedBuffer(message);
     try {
-      return new UadpMessageMapping().decode(new DecodeContext(encodingContext), buffer);
+      return new UadpMessageMapping().decode(DecodeContext.of(encodingContext), buffer);
     } finally {
       buffer.release();
     }

@@ -82,10 +82,10 @@ import org.junit.jupiter.api.Test;
  * responder's announcements are captured on both the discovery multicast group and the connection's
  * data address.
  *
- * <p>Network safety: a unique organization-local multicast group (239.255.72.1) on a unique
- * non-4840 port per test, joined on the loopback interface only; the data address is unicast
- * 127.0.0.1 with an ephemeral port. The connection's discoveryAddress is always configured
- * explicitly so the engine never falls back to the 224.0.2.14:4840 default.
+ * <p>Network safety: a unique organization-local multicast group (239.255.72.1) on a
+ * kernel-assigned ephemeral (non-4840) port per test, joined on the loopback interface only; the
+ * data address is unicast 127.0.0.1 with an ephemeral port. The connection's discoveryAddress is
+ * always configured explicitly so the engine never falls back to the 224.0.2.14:4840 default.
  */
 class DiscoveryResponderTest {
 
@@ -140,19 +140,27 @@ class DiscoveryResponderTest {
     final DatagramChannel channel;
     final InetSocketAddress groupAddress;
 
-    RawDiscoverySocket(int port) throws IOException {
+    RawDiscoverySocket() throws IOException {
       NetworkInterface ni = loopbackInterface();
       InetAddress group = InetAddress.getByName(DISCOVERY_GROUP);
 
       channel = DatagramChannel.open(StandardProtocolFamily.INET);
       channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-      channel.bind(new InetSocketAddress(port));
+      // bind to a kernel-assigned ephemeral port: a probe-close-rebind pattern here is a race
+      // (the port can be taken by another process between the probe and the rebind)
+      channel.bind(new InetSocketAddress(0));
       channel.join(group, ni);
       channel.setOption(StandardSocketOptions.IP_MULTICAST_IF, ni);
       channel.configureBlocking(false);
 
+      int port = ((InetSocketAddress) channel.getLocalAddress()).getPort();
       groupAddress = new InetSocketAddress(group, port);
       sockets.add(this);
+    }
+
+    /** The discovery port this socket is bound to; the engine joins it via SO_REUSEADDR. */
+    int port() {
+      return groupAddress.getPort();
     }
 
     void send(byte[] datagram) throws IOException {
@@ -181,11 +189,16 @@ class DiscoveryResponderTest {
 
     final DatagramChannel channel;
 
-    RawDataSocket(int port) throws IOException {
+    RawDataSocket() throws IOException {
       channel = DatagramChannel.open(StandardProtocolFamily.INET);
-      channel.bind(new InetSocketAddress(LOOPBACK, port));
+      channel.bind(new InetSocketAddress(InetAddress.getByName(LOOPBACK), 0));
       channel.configureBlocking(false);
       sockets.add(this);
+    }
+
+    /** The unicast data port this socket is bound to. */
+    int port() throws IOException {
+      return ((InetSocketAddress) channel.getLocalAddress()).getPort();
     }
 
     byte @Nullable [] poll() throws IOException {
@@ -388,13 +401,11 @@ class DiscoveryResponderTest {
 
   @Test
   void metaDataProbeIsAnsweredOnBothDiscoveryAndDataAddress() throws Exception {
-    int dataPort = freeUdpPort();
-    int discoveryPort = freeUdpPort();
+    var dataCapture = new RawDataSocket();
+    var discovery = new RawDiscoverySocket();
 
-    var dataCapture = new RawDataSocket(dataPort);
-    var discovery = new RawDiscoverySocket(discoveryPort);
-
-    startPublisher(publisherConfig(dataPort, discoveryPort, dataSetResp(9, "temperature")));
+    startPublisher(
+        publisherConfig(dataCapture.port(), discovery.port(), dataSetResp(9, "temperature")));
 
     discovery.send(encodeProbe(PUBLISHER_ID, List.of(ushort(1))));
 
@@ -431,11 +442,10 @@ class DiscoveryResponderTest {
   @Test
   void probeForMultipleWritersYieldsOneAnnouncementPerWriterId() throws Exception {
     int dataPort = freeUdpPort();
-    int discoveryPort = freeUdpPort();
 
-    var discovery = new RawDiscoverySocket(discoveryPort);
+    var discovery = new RawDiscoverySocket();
 
-    startPublisher(publisherConfig(dataPort, discoveryPort, dataSetResp(9, "temperature")));
+    startPublisher(publisherConfig(dataPort, discovery.port(), dataSetResp(9, "temperature")));
 
     // Table 180: one announcement NetworkMessage per requested DataSetWriterId
     discovery.send(encodeProbe(PUBLISHER_ID, List.of(ushort(1), ushort(2))));
@@ -467,11 +477,10 @@ class DiscoveryResponderTest {
   @Test
   void unknownWriterIdIsDeniedWithBadNotFoundAndEmptyMetaData() throws Exception {
     int dataPort = freeUdpPort();
-    int discoveryPort = freeUdpPort();
 
-    var discovery = new RawDiscoverySocket(discoveryPort);
+    var discovery = new RawDiscoverySocket();
 
-    startPublisher(publisherConfig(dataPort, discoveryPort, dataSetResp(9, "temperature")));
+    startPublisher(publisherConfig(dataPort, discovery.port(), dataSetResp(9, "temperature")));
 
     discovery.send(encodeProbe(PUBLISHER_ID, List.of(ushort(42))));
 
@@ -492,11 +501,10 @@ class DiscoveryResponderTest {
   @Test
   void probeTargetingForeignPublisherIdIsIgnored() throws Exception {
     int dataPort = freeUdpPort();
-    int discoveryPort = freeUdpPort();
 
-    var discovery = new RawDiscoverySocket(discoveryPort);
+    var discovery = new RawDiscoverySocket();
 
-    startPublisher(publisherConfig(dataPort, discoveryPort, dataSetResp(9, "temperature")));
+    startPublisher(publisherConfig(dataPort, discovery.port(), dataSetResp(9, "temperature")));
 
     // the PublisherId in a probe identifies the probed Publisher; a foreign id is not ours
     discovery.send(encodeProbe(PublisherId.uint16(ushort(60000)), List.of(ushort(1))));
@@ -507,11 +515,10 @@ class DiscoveryResponderTest {
   @Test
   void emptyDataSetWriterIdListIsNoOp() throws Exception {
     int dataPort = freeUdpPort();
-    int discoveryPort = freeUdpPort();
 
-    var discovery = new RawDiscoverySocket(discoveryPort);
+    var discovery = new RawDiscoverySocket();
 
-    startPublisher(publisherConfig(dataPort, discoveryPort, dataSetResp(9, "temperature")));
+    startPublisher(publisherConfig(dataPort, discovery.port(), dataSetResp(9, "temperature")));
 
     discovery.send(encodeProbe(PUBLISHER_ID, List.of()));
 
@@ -525,11 +532,10 @@ class DiscoveryResponderTest {
   @Test
   void repeatProbeWithinSuppressionWindowIsUnanswered() throws Exception {
     int dataPort = freeUdpPort();
-    int discoveryPort = freeUdpPort();
 
-    var discovery = new RawDiscoverySocket(discoveryPort);
+    var discovery = new RawDiscoverySocket();
 
-    startPublisher(publisherConfig(dataPort, discoveryPort, dataSetResp(9, "temperature")));
+    startPublisher(publisherConfig(dataPort, discovery.port(), dataSetResp(9, "temperature")));
 
     byte[] probe = encodeProbe(PUBLISHER_ID, List.of(ushort(1)));
 
@@ -562,9 +568,9 @@ class DiscoveryResponderTest {
   @Test
   void reconfigureWithChangedDataSetAnnouncesChangedWriterOnce() throws Exception {
     int dataPort = freeUdpPort();
-    int discoveryPort = freeUdpPort();
 
-    var discovery = new RawDiscoverySocket(discoveryPort);
+    var discovery = new RawDiscoverySocket();
+    int discoveryPort = discovery.port();
 
     PubSubService publisher =
         startPublisher(publisherConfig(dataPort, discoveryPort, dataSetResp(9, "temperature")));
@@ -601,9 +607,9 @@ class DiscoveryResponderTest {
   @Test
   void connectionRestartingReconfigureWithChangedDataSetStillAnnounces() throws Exception {
     int dataPort = freeUdpPort();
-    int discoveryPort = freeUdpPort();
 
-    var discovery = new RawDiscoverySocket(discoveryPort);
+    var discovery = new RawDiscoverySocket();
+    int discoveryPort = discovery.port();
 
     PubSubService publisher =
         startPublisher(publisherConfig(dataPort, discoveryPort, dataSetResp(9, "temperature")));

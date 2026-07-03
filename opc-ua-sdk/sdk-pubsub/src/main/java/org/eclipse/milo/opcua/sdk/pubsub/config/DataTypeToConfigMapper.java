@@ -81,6 +81,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.PublishedVariableDataT
 import org.eclipse.milo.opcua.stack.core.types.structured.ReaderGroupDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReaderGroupMessageDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReaderGroupTransportDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SecurityGroupDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.StandaloneSubscribedDataSetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.StandaloneSubscribedDataSetRefDataType;
@@ -139,6 +140,10 @@ final class DataTypeToConfigMapper {
       SecurityGroupConfig config = mapSecurityGroup(securityGroup);
       securityGroups.add(config);
       builder.securityGroup(config);
+    }
+
+    for (EndpointDescription keyService : nonNullElements(value.getDefaultSecurityKeyServices())) {
+      builder.defaultSecurityKeyService(keyService);
     }
 
     for (PublishedDataSetDataType publishedDataSet :
@@ -597,6 +602,13 @@ final class DataTypeToConfigMapper {
       builder.dataSetWriterId(reader.getDataSetWriterId());
     }
 
+    MessageSecurityConfig messageSecurity =
+        readerMessageSecurity(
+            reader.getSecurityMode(), reader.getSecurityGroupId(), reader.getSecurityKeyServices());
+    if (messageSecurity != null) {
+      builder.messageSecurity(messageSecurity);
+    }
+
     DataSetMetaDataType metaData = reader.getDataSetMetaData();
     if (metaData != null && !isEmptyMetaData(metaData)) {
       builder.dataSetMetaData(mapMetaData(metaData, name, path));
@@ -922,6 +934,7 @@ final class DataTypeToConfigMapper {
     if (!nullOrEmpty(securityGroup.getSecurityGroupId())) {
       builder.securityGroupId(securityGroup.getSecurityGroupId());
     }
+    builder.securityGroupFolder(nonNullElements(securityGroup.getSecurityGroupFolder()));
     if (securityGroup.getSecurityPolicyUri() != null) {
       builder.securityPolicyUri(securityGroup.getSecurityPolicyUri());
     }
@@ -933,6 +946,9 @@ final class DataTypeToConfigMapper {
     }
     if (securityGroup.getMaxPastKeyCount() != null) {
       builder.maxPastKeyCount(securityGroup.getMaxPastKeyCount());
+    }
+    for (RolePermissionType rolePermission : nonNullElements(securityGroup.getRolePermissions())) {
+      builder.rolePermission(rolePermission);
     }
 
     fromKeyValuePairs(securityGroup.getGroupProperties()).forEach(builder::property);
@@ -974,11 +990,13 @@ final class DataTypeToConfigMapper {
   private @Nullable MessageSecurityConfig messageSecurity(
       @Nullable MessageSecurityMode mode,
       @Nullable String securityGroupId,
-      EndpointDescription @Nullable [] keyServices) {
+      @Nullable EndpointDescription @Nullable [] keyServices) {
+
+    List<EndpointDescription> services = nonNullElements(keyServices);
 
     boolean modeAbsent = mode == null || mode == MessageSecurityMode.None;
     boolean groupAbsent = nullOrEmpty(securityGroupId);
-    boolean servicesAbsent = keyServices == null || keyServices.length == 0;
+    boolean servicesAbsent = services.isEmpty();
 
     if (modeAbsent && groupAbsent && servicesAbsent) {
       return null;
@@ -992,7 +1010,43 @@ final class DataTypeToConfigMapper {
       builder.securityGroup(resolveSecurityGroupRef(securityGroupId));
     }
     if (!servicesAbsent) {
-      builder.keyServices(Arrays.stream(keyServices).toList());
+      builder.keyServices(services);
+    }
+    return builder.build();
+  }
+
+  /**
+   * Build a {@link MessageSecurityConfig} from reader-level security override fields.
+   *
+   * <p>Deliberately separate from the group-level {@link #messageSecurity} helper: at the reader,
+   * mode {@code None} is a legal <em>active</em> override, and the spec's no-override sentinel is
+   * {@code Invalid} (Part 14 §6.2.9.9). The override maps to absent iff the mode is null or {@code
+   * Invalid}, or the shape is the legacy all-default {@code None}/null/null emitted by earlier Milo
+   * versions.
+   */
+  private @Nullable MessageSecurityConfig readerMessageSecurity(
+      @Nullable MessageSecurityMode mode,
+      @Nullable String securityGroupId,
+      @Nullable EndpointDescription @Nullable [] keyServices) {
+
+    List<EndpointDescription> services = nonNullElements(keyServices);
+
+    boolean groupAbsent = nullOrEmpty(securityGroupId);
+    boolean servicesAbsent = services.isEmpty();
+
+    if (mode == null
+        || mode == MessageSecurityMode.Invalid
+        || (mode == MessageSecurityMode.None && groupAbsent && servicesAbsent)) {
+      return null;
+    }
+
+    MessageSecurityConfig.Builder builder = MessageSecurityConfig.builder();
+    builder.mode(mode);
+    if (!groupAbsent) {
+      builder.securityGroup(resolveSecurityGroupRef(securityGroupId));
+    }
+    if (!servicesAbsent) {
+      builder.keyServices(services);
     }
     return builder.build();
   }

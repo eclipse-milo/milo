@@ -129,6 +129,11 @@ public final class WriterGroupConfig {
    * behavior for mappings without chunking support). On OPC UA UDP connections values above 65535
    * are rejected at startup and reconfiguration (§7.3.2.1).
    *
+   * <p>Enabling UADP message security ({@link #getMessageSecurity()} with mode Sign or
+   * SignAndEncrypt) adds 46-47 bytes of overhead to every NetworkMessage (14-byte SecurityHeader +
+   * 32-byte signature, +1 if ExtendedFlags1 was previously absent); the limit is checked against
+   * the final secured size, so account for this overhead when sizing.
+   *
    * @return the maximum NetworkMessage size in bytes; 0 means no enforced limit.
    */
   public UInteger getMaxNetworkMessageSize() {
@@ -358,7 +363,9 @@ public final class WriterGroupConfig {
      * Set the maximum size of NetworkMessages produced by this group. When non-zero, encoded
      * NetworkMessages exceeding this size are skipped instead of sent and recorded as group errors
      * with {@code Bad_EncodingLimitsExceeded}; see {@link
-     * WriterGroupConfig#getMaxNetworkMessageSize()}.
+     * WriterGroupConfig#getMaxNetworkMessageSize()}. UADP message security (mode Sign or
+     * SignAndEncrypt) adds 46-47 bytes of overhead to every NetworkMessage, and the limit is
+     * checked against the final secured size.
      *
      * @param maxNetworkMessageSize the maximum NetworkMessage size in bytes; defaults to 0 (no
      *     enforced limit).

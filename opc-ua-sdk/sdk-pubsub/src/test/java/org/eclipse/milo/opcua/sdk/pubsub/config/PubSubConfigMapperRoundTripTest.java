@@ -14,6 +14,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ulong;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -60,11 +61,13 @@ import org.eclipse.milo.opcua.stack.core.types.structured.JsonDataSetMessageCont
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonNetworkMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
 import org.eclipse.milo.opcua.stack.core.types.structured.NetworkAddressUrlDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.PermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfiguration2DataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConnectionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataItemsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataSetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedVariableDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SecurityGroupDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.StandaloneSubscribedDataSetRefDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.TargetVariablesDataType;
@@ -91,6 +94,10 @@ class PubSubConfigMapperRoundTripTest {
       "http://opcfoundation.org/UA-Profile/Transport/pubsub-mqtt-json";
 
   private static final QualifiedName MILO_SOURCE_KEY = new QualifiedName(0, "MiloSourceKey");
+
+  private static final RolePermissionType ROLE_PERMISSION =
+      new RolePermissionType(
+          NodeIds.WellKnownRole_SecurityAdmin, PermissionType.of(PermissionType.Field.Call));
 
   private static final UUID FIELD_TEMP_ID = new UUID(0xA1L, 1L);
   private static final UUID FIELD_COUNT_ID = new UUID(0xA1L, 2L);
@@ -138,8 +145,17 @@ class PubSubConfigMapperRoundTripTest {
   }
 
   private static EndpointDescription keyServiceEndpoint() {
+    return keyServiceEndpoint("opc.tcp://sks.example:4840");
+  }
+
+  /** A distinct endpoint for the config-level defaultSecurityKeyServices slot. */
+  private static EndpointDescription defaultKeyServiceEndpoint() {
+    return keyServiceEndpoint("opc.tcp://sks-default.example:4840");
+  }
+
+  private static EndpointDescription keyServiceEndpoint(String url) {
     return new EndpointDescription(
-        "opc.tcp://sks.example:4840",
+        url,
         new ApplicationDescription(
             "urn:sks",
             "urn:sks:product",
@@ -159,10 +175,12 @@ class PubSubConfigMapperRoundTripTest {
   private static SecurityGroupConfig securityGroup() {
     return SecurityGroupConfig.builder("sg-1")
         .securityGroupId("SG-001")
+        .securityGroupFolder(List.of("Folder", "SubFolder"))
         .securityPolicyUri("http://opcfoundation.org/UA/SecurityPolicy#Aes128_Sha256_RsaOaep")
         .keyLifeTime(Duration.ofMinutes(30))
         .maxFutureKeyCount(uint(2))
         .maxPastKeyCount(uint(3))
+        .rolePermission(ROLE_PERMISSION)
         .property(new QualifiedName(1, "sgProp"), Variant.ofString("sgVal"))
         .build();
   }
@@ -302,6 +320,13 @@ class PubSubConfigMapperRoundTripTest {
                     .writerGroupId(ushort(1))
                     .dataSetWriterId(ushort(11))
                     .dataSetMetaData(readerMetaData())
+                    // Reader-level override: replaces the reader group's security for this reader.
+                    .messageSecurity(
+                        MessageSecurityConfig.builder()
+                            .mode(MessageSecurityMode.Sign)
+                            .securityGroup(sg.ref())
+                            .keyServices(List.of(keyServiceEndpoint()))
+                            .build())
                     .messageReceiveTimeout(Duration.ofSeconds(5))
                     .keyFrameCount(uint(10))
                     .settings(
@@ -349,6 +374,13 @@ class PubSubConfigMapperRoundTripTest {
                 DataSetReaderConfig.builder("dsr-sds")
                     .publisherId(PublisherId.uint32(uint(777)))
                     .subscribedDataSet(new StandaloneSubscribedDataSetRef("sds-1"))
+                    // Explicit override to None: an active override to unsecured operation, kept
+                    // distinct from "no override" by its security group reference.
+                    .messageSecurity(
+                        MessageSecurityConfig.builder()
+                            .mode(MessageSecurityMode.None)
+                            .securityGroup(sg.ref())
+                            .build())
                     .build())
             .build();
 
@@ -472,9 +504,11 @@ class PubSubConfigMapperRoundTripTest {
   /**
    * A maximal authored config that is a fixed point of the round trip: UDP and MQTT connections,
    * UADP and JSON settings, all five PublisherId types, message security with a security group
-   * reference, broker transports at all three levels, node and key field addresses, promoted
-   * fields, standalone subscribed datasets, target variables, properties at every level, and raw
-   * escape hatches built from namespace 0 types.
+   * reference, reader-level security overrides (including an explicit override to None), a security
+   * group with a folder path and role permissions, config-level default Security Key Services,
+   * broker transports at all three levels, node and key field addresses, promoted fields,
+   * standalone subscribed datasets, target variables, properties at every level, and raw escape
+   * hatches built from namespace 0 types.
    */
   private static PubSubConfig maximalConfig() {
     SecurityGroupConfig sg = securityGroup();
@@ -487,6 +521,7 @@ class PubSubConfigMapperRoundTripTest {
         .standaloneSubscribedDataSet(standalone1())
         .standaloneSubscribedDataSet(standalone2())
         .securityGroup(sg)
+        .defaultSecurityKeyService(defaultKeyServiceEndpoint())
         .property(new QualifiedName(1, "cfgProp"), Variant.ofString("cfgVal"))
         .build();
   }
@@ -504,6 +539,7 @@ class PubSubConfigMapperRoundTripTest {
     PubSubConfig roundTripped = PubSubConfig.fromDataType(dataType, table);
 
     assertEquals(config.securityGroups(), roundTripped.securityGroups());
+    assertEquals(config.defaultSecurityKeyServices(), roundTripped.defaultSecurityKeyServices());
     assertEquals(config.publishedDataSets(), roundTripped.publishedDataSets());
     assertEquals(
         config.standaloneSubscribedDataSets(), roundTripped.standaloneSubscribedDataSets());
@@ -888,6 +924,91 @@ class PubSubConfigMapperRoundTripTest {
     assertEquals(
         "http://opcfoundation.org/UA/SecurityPolicy#Aes128_Sha256_RsaOaep",
         sg.getSecurityPolicyUri());
+    assertArrayEquals(new String[] {"Folder", "SubFolder"}, sg.getSecurityGroupFolder());
+    assertArrayEquals(new RolePermissionType[] {ROLE_PERMISSION}, sg.getRolePermissions());
+
+    assertArrayEquals(
+        new EndpointDescription[] {defaultKeyServiceEndpoint()},
+        dataType.getDefaultSecurityKeyServices());
+  }
+
+  @Test
+  void readerSecurityOverrideWireForm() {
+    PubSubConfiguration2DataType dataType = maximalConfig().toDataType(namespaceTable());
+
+    DataSetReaderDataType[] udpReaders =
+        dataType.getConnections()[0].getReaderGroups()[0].getDataSetReaders();
+
+    // dsr-1 has an active override; the ref name resolves to the wire SecurityGroupId.
+    assertEquals(MessageSecurityMode.Sign, udpReaders[0].getSecurityMode());
+    assertEquals("SG-001", udpReaders[0].getSecurityGroupId());
+    assertArrayEquals(
+        new EndpointDescription[] {keyServiceEndpoint()}, udpReaders[0].getSecurityKeyServices());
+
+    // dsr-sds is an explicit override to None; the group reference keeps it an active override.
+    assertEquals(MessageSecurityMode.None, udpReaders[1].getSecurityMode());
+    assertEquals("SG-001", udpReaders[1].getSecurityGroupId());
+    assertNull(udpReaders[1].getSecurityKeyServices());
+
+    // dsr-json has no override: the Part 14 §6.2.9.9 sentinel is Invalid/null/null.
+    DataSetReaderDataType jsonReader =
+        dataType.getConnections()[1].getReaderGroups()[0].getDataSetReaders()[0];
+    assertEquals(MessageSecurityMode.Invalid, jsonReader.getSecurityMode());
+    assertNull(jsonReader.getSecurityGroupId());
+    assertNull(jsonReader.getSecurityKeyServices());
+  }
+
+  @Test
+  void readerOverrideToNoneSurvivesRoundTrip() {
+    NamespaceTable table = namespaceTable();
+    PubSubConfig config = maximalConfig();
+
+    PubSubConfig roundTripped = PubSubConfig.fromDataType(config.toDataType(table), table);
+
+    DataSetReaderConfig reader =
+        roundTripped
+            .connection("udp-conn")
+            .orElseThrow()
+            .readerGroups()
+            .get(0)
+            .getDataSetReaders()
+            .get(1);
+
+    MessageSecurityConfig security = reader.getMessageSecurity();
+    assertNotNull(security);
+    assertEquals(MessageSecurityMode.None, security.getMode());
+    assertEquals(new SecurityGroupRef("sg-1"), security.getSecurityGroup());
+    assertTrue(security.getKeyServices().isEmpty());
+  }
+
+  @Test
+  void emptySecurityCollectionsEmitNull() {
+    PubSubConfig config =
+        PubSubConfig.builder()
+            .connection(
+                PubSubConnectionConfig.udp("c")
+                    .address(UdpDatagramAddress.unicast("127.0.0.1", 4840))
+                    .readerGroup(
+                        ReaderGroupConfig.builder("rg")
+                            .dataSetReader(DataSetReaderConfig.builder("r").build())
+                            .build())
+                    .build())
+            .securityGroup(SecurityGroupConfig.builder("sg").build())
+            .build();
+
+    PubSubConfiguration2DataType dataType = config.toDataType(namespaceTable());
+
+    // Empty collections are emitted as null arrays, not empty arrays.
+    assertNull(dataType.getDefaultSecurityKeyServices());
+
+    SecurityGroupDataType sg = dataType.getSecurityGroups()[0];
+    assertNull(sg.getSecurityGroupFolder());
+    assertNull(sg.getRolePermissions());
+
+    DataSetReaderDataType reader =
+        dataType.getConnections()[0].getReaderGroups()[0].getDataSetReaders()[0];
+    assertNull(reader.getSecurityGroupId());
+    assertNull(reader.getSecurityKeyServices());
   }
 
   // endregion

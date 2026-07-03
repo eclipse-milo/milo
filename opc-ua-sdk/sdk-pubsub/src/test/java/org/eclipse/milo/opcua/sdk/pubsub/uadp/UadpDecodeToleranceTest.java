@@ -267,9 +267,12 @@ class UadpDecodeToleranceTest {
 
   // region security
 
-  /** Non-zero SecurityFlags: the payload is skipped but the header is still decoded. */
+  /**
+   * A signed message decoded without a {@link SecurityContextResolver}: the payload is skipped
+   * (outcome {@code NO_RESOLVER}, a tolerated skip, not a failure) but the header is still decoded.
+   */
   @Test
-  void nonZeroSecurityFlagsSkipPayloadButKeepHeader() {
+  void signedMessageWithoutResolverSkipsPayloadButKeepsHeader() {
     byte[] message =
         bytes(
             0xB1, // byte 0: version 1 | PublisherId 0x10 | GroupHeader 0x20 | ExtendedFlags1 0x80
@@ -277,7 +280,10 @@ class UadpDecodeToleranceTest {
             0x07, // PublisherId: Byte = 7
             0x01, // GroupFlags: WriterGroupId
             0x39, 0x05, // WriterGroupId = 1337
-            0x01, // SecurityFlags: NetworkMessage signed; unsupported -> skip payload
+            0x01, // SecurityFlags: NetworkMessage signed
+            0x2A, 0x00, 0x00, 0x00, // SecurityTokenId = 42
+            0x08, // NonceLength = 8
+            0xA1, 0xA2, 0xA3, 0xA4, 0x01, 0x00, 0x00, 0x00, // MessageNonce
             0x01, 0x01, 0x00, 0x06, 0x2A, 0x00, 0x00, 0x00); // (would-be payload, not decoded)
 
     DecodedNetworkMessage decoded = decode(message);
@@ -286,6 +292,56 @@ class UadpDecodeToleranceTest {
     assertEquals(ushort(1337), decoded.writerGroupId());
     assertTrue(decoded.messages().isEmpty());
     assertTrue(decoded.metaData().isEmpty());
+    assertNull(decoded.failure());
+
+    assertNotNull(decoded.security());
+    assertEquals(SecurityOutcome.NO_RESOLVER, decoded.security().outcome());
+    assertEquals(uint(42), decoded.security().securityTokenId());
+  }
+
+  /** A SecurityHeader truncated inside the SecurityTokenId ends decoding without an exception. */
+  @Test
+  void truncatedSecurityHeaderSurfacesFailure() {
+    byte[] message =
+        bytes(
+            0x91, // byte 0: version 1 | PublisherId | ExtendedFlags1
+            0x10, // ExtendedFlags1: SecurityHeader
+            0x07, // PublisherId: Byte = 7
+            0x01, // SecurityFlags: NetworkMessage signed
+            0x2A, 0x00); // SecurityTokenId cut short; buffer ends here
+
+    DecodedNetworkMessage decoded = decode(message);
+
+    assertEquals(PublisherId.ubyte(ubyte(7)), decoded.publisherId());
+    assertTrue(decoded.messages().isEmpty());
+
+    assertNotNull(decoded.failure());
+    assertEquals(StatusCodes.Bad_DecodingError, decoded.failure().statusCode().value());
+  }
+
+  /**
+   * Reserved SecurityFlags bits (4-7) set: the whole message is skipped — a tolerated skip like
+   * other reserved flag values, with no failure and no security record (Part 14 Table 154: "the
+   * receiver shall skip messages where the reserved bits are not false").
+   */
+  @Test
+  void reservedSecurityFlagsBitsSkipMessage() {
+    byte[] message =
+        bytes(
+            0x91, // byte 0: version 1 | PublisherId | ExtendedFlags1
+            0x10, // ExtendedFlags1: SecurityHeader
+            0x07, // PublisherId: Byte = 7
+            0x11, // SecurityFlags: signed | reserved bit 4
+            0x2A, 0x00, 0x00, 0x00, // SecurityTokenId = 42
+            0x00, // NonceLength = 0
+            0x01, 0x01, 0x00, 0x06, 0x2A, 0x00, 0x00, 0x00); // (would-be payload, not decoded)
+
+    DecodedNetworkMessage decoded = decode(message);
+
+    assertEquals(PublisherId.ubyte(ubyte(7)), decoded.publisherId());
+    assertTrue(decoded.messages().isEmpty());
+    assertNull(decoded.failure());
+    assertNull(decoded.security());
   }
 
   /** SecurityFlags == 0 (mode None): the SecurityHeader is consumed and decoding continues. */
@@ -340,7 +396,11 @@ class UadpDecodeToleranceTest {
 
   // region chunk / promoted fields / action header
 
-  /** The chunk flag (ExtendedFlags2 bit 0) causes the payload to be skipped. */
+  /**
+   * The chunk flag (ExtendedFlags2 bit 0) causes the payload to be skipped on the legacy {@code
+   * decode} surface used by this test class; only the discovery-aware {@code decodeMessage} surface
+   * parses chunk payloads.
+   */
   @Test
   void chunkedNetworkMessageIsSkipped() {
     byte[] message =
@@ -355,14 +415,14 @@ class UadpDecodeToleranceTest {
     assertTrue(decoded.messages().isEmpty());
     assertTrue(decoded.metaData().isEmpty());
 
-    // The skip is no longer silent: chunk reassembly is unsupported, surfaced as a failure.
+    // The skip is not silent: the legacy surface cannot reassemble, surfaced as a failure.
     assertNotNull(decoded.failure());
     assertEquals(StatusCodes.Bad_NotSupported, decoded.failure().statusCode().value());
   }
 
   /**
    * A chunked NetworkMessage with PayloadHeader: the header is the single-DataSetWriterId form
-   * (Table 158, no Count byte); the payload is still skipped.
+   * (Table 158, no Count byte); the payload is still skipped on the legacy surface.
    */
   @Test
   void chunkedNetworkMessageWithPayloadHeaderIsSkipped() {
@@ -747,7 +807,8 @@ class UadpDecodeToleranceTest {
             null,
             List.of(
                 keyFrame(writer1, 1, goodValue(Variant.ofInt32(42))),
-                keyFrame(writer2, 2, goodValue(Variant.ofInt32(43)))));
+                keyFrame(writer2, 2, goodValue(Variant.ofInt32(43)))),
+            null);
 
     DecodedNetworkMessage decoded = decode(encodeToBytes(context));
 
@@ -816,7 +877,8 @@ class UadpDecodeToleranceTest {
             ushort(1),
             ushort(2),
             new DateTime(3_000L),
-            List.of(draft1, draft2));
+            List.of(draft1, draft2),
+            null);
 
     return encodeToBytes(context);
   }
@@ -896,7 +958,7 @@ class UadpDecodeToleranceTest {
   private DecodedNetworkMessage decode(byte[] message) {
     ByteBuf buffer = Unpooled.wrappedBuffer(message);
     try {
-      return new UadpMessageMapping().decode(new DecodeContext(encodingContext), buffer);
+      return new UadpMessageMapping().decode(DecodeContext.of(encodingContext), buffer);
     } finally {
       buffer.release();
     }

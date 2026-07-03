@@ -13,20 +13,26 @@ package org.eclipse.milo.opcua.sdk.pubsub.internal;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.sdk.pubsub.DataSetFieldValue;
 import org.eclipse.milo.opcua.sdk.pubsub.DataSetReceivedEvent;
 import org.eclipse.milo.opcua.sdk.pubsub.MetaDataReceivedEvent;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetMetaDataConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetReaderConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.MessageSecurityConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.MetadataPolicy;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
+import org.eclipse.milo.opcua.sdk.pubsub.config.SecurityGroupRef;
 import org.eclipse.milo.opcua.sdk.pubsub.config.UadpDataSetReaderSettings;
+import org.eclipse.milo.opcua.sdk.pubsub.security.SecurityKeyMaterial;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DataSetMessageKind;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodeContext;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedDataSetMessage;
@@ -34,6 +40,9 @@ import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedField;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedMetaData;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedNetworkMessage;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.MessageMappingProvider;
+import org.eclipse.milo.opcua.sdk.pubsub.uadp.ReceivedSecurity;
+import org.eclipse.milo.opcua.sdk.pubsub.uadp.SecurityContextResolver;
+import org.eclipse.milo.opcua.sdk.pubsub.uadp.SecurityOutcome;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.UadpDecodedMessage;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.UadpDiscoveryProbe;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.UadpMessageMapping;
@@ -43,9 +52,12 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
 import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Subscriber-side dispatch: decodes received datagrams and routes the decoded DataSetMessages to
@@ -92,11 +104,34 @@ import org.jspecify.annotations.Nullable;
  * they refresh the stream's §7.2.3 record-discard clock (a keep-alive is a received message), and
  * they always reset the receive timeout — while the NetworkMessage that carries them is an ordinary
  * NetworkMessage whose sequence number advances the NetworkMessage window normally.
+ *
+ * <p>For secured NetworkMessages the §7.2.3 windows run downstream of the codec's
+ * verify-before-parse order: the decoder verifies the signature (and decrypts) before it surfaces
+ * any content, so every sequence number observed here is post-verification — the recency window is
+ * a genuine anti-replay control within a key's lifetime (no additional nonce monotonicity check is
+ * applied). Chunk NetworkMessages observe the windows like any other NetworkMessage (each chunk
+ * consumes a NetworkMessage sequence number); their reassembled payload re-enters decode with no
+ * NetworkMessage sequence number and only its DataSetMessage sequence number drives the
+ * DataSetMessage window.
+ *
+ * <p>The dispatcher supplies the codec's {@code SecurityContextResolver} (keys are resolved by
+ * plaintext wire identity, BEFORE group matching, because decode runs once per (connection,
+ * mapping)), enforces the §7.2.4.3 receive-mode gate per (group, NetworkMessage), and maps security
+ * outcomes to the security drop counters — quiet counters, never {@code decodeErrors}, never
+ * per-message events (see {@code PubSubDiagnostics.ComponentDiagnostics}).
  */
 final class ReaderDispatcher {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(ReaderDispatcher.class);
+
   /** dataSetFieldId used when no metadata names a decoded field. */
   private static final UUID NULL_FIELD_ID = new UUID(0L, 0L);
+
+  /** Floor between invalid-signature WARN logs: forged traffic must not flood the log. */
+  private static final long INVALID_SIGNATURE_WARN_INTERVAL_NANOS = TimeUnit.SECONDS.toNanos(10);
+
+  private final AtomicLong lastInvalidSignatureWarnNanos =
+      new AtomicLong(System.nanoTime() - INVALID_SIGNATURE_WARN_INTERVAL_NANOS);
 
   private final PubSubServiceImpl service;
 
@@ -123,6 +158,11 @@ final class ReaderDispatcher {
 
     Map<String, MessageMappingProvider> mappings = connection.subscriberMappings();
 
+    // one resolver per dispatch: the decoder consults it for secured messages (verify/decrypt
+    // keys resolved by wire identity, BEFORE group matching); the group it routed to is taken
+    // back after each decode so security drops are attributed to the same group
+    var securityResolver = new SecurityResolver(service, connection);
+
     // decode failures are deferred: on mixed-mapping connections every message is offered to
     // every mapping, so a mapping's failure only counts when no OTHER mapping decoded content
     // from the buffer; a mapping's own partial content never suppresses its own failure
@@ -135,13 +175,14 @@ final class ReaderDispatcher {
 
       UadpDecodedMessage decoded;
       try {
-        DecodeContext context = DecodeContext.of(service.getEncodingContext());
+        DecodeContext context = DecodeContext.of(service.getEncodingContext(), securityResolver);
         if (provider instanceof UadpMessageMapping uadpMapping) {
           decoded = uadpMapping.decodeMessage(context, buffer.slice());
         } else {
           decoded = provider.decode(context, buffer.slice());
         }
       } catch (Exception e) {
+        securityResolver.takeResolvedGroup();
         if (failures == null) {
           failures = new ArrayList<>(1);
         }
@@ -154,6 +195,9 @@ final class ReaderDispatcher {
                 e));
         continue;
       }
+
+      // taken (and cleared) per decode so a stale routing can never bleed into the next mapping
+      ReaderGroupRuntime securityGroup = securityResolver.takeResolvedGroup();
 
       DecodedNetworkMessage.Failure failure =
           decoded instanceof DecodedNetworkMessage networkMessage ? networkMessage.failure() : null;
@@ -182,7 +226,48 @@ final class ReaderDispatcher {
       }
 
       if (decoded instanceof DecodedNetworkMessage networkMessage) {
-        handleDecoded(connection, mappingName, networkMessage, oversizeGroups);
+        handleDecoded(connection, mappingName, networkMessage, oversizeGroups, securityGroup);
+
+        // Chunk NetworkMessages: the normal handleDecoded pass above lets the per-reader
+        // NetworkMessage windows observe the chunk NM (its empty messages list delivers
+        // nothing); reassembly is connection-level and runs ONCE, not per reader. Only the
+        // built-in UADP mapping produces and reassembles chunks. When a chunk completes its
+        // payload, the reassembled DataSetMessage re-enters decode with sequenceNumber == null
+        // (the chunk NMs already consumed theirs) and routes through handleDecoded again.
+        if (networkMessage.chunk() != null && provider instanceof UadpMessageMapping uadpMapping) {
+          ChunkReassembler.ReassembledMessage reassembled =
+              connection.chunkReassembler().accept(networkMessage, System.nanoTime());
+
+          if (reassembled != null) {
+            ByteBuf payload = Unpooled.wrappedBuffer(reassembled.payload());
+            try {
+              DecodedNetworkMessage decodedReassembled =
+                  uadpMapping.decodeReassembled(
+                      DecodeContext.of(service.getEncodingContext()),
+                      reassembled.header(),
+                      reassembled.dataSetWriterId(),
+                      payload);
+
+              DecodedNetworkMessage.Failure reassembledFailure = decodedReassembled.failure();
+              if (reassembledFailure != null) {
+                if (failures == null) {
+                  failures = new ArrayList<>(1);
+                }
+                failures.add(
+                    new DecodeFailure(
+                        mappingName,
+                        reassembledFailure.statusCode(),
+                        "failed to decode NetworkMessage: " + reassembledFailure.message(),
+                        reassembledFailure.cause()));
+              }
+
+              // the reassembled message inherits the (VERIFIED) chunk security; no re-resolution
+              handleDecoded(connection, mappingName, decodedReassembled, oversizeGroups, null);
+            } finally {
+              payload.release();
+            }
+          }
+        }
       } else if (decoded instanceof UadpDiscoveryProbe probe) {
         DiscoveryRuntime discovery = connection.discoveryRuntime();
         if (discovery != null) {
@@ -242,7 +327,11 @@ final class ReaderDispatcher {
    */
   private static boolean decodedContent(UadpDecodedMessage decoded) {
     if (decoded instanceof DecodedNetworkMessage networkMessage) {
-      return !networkMessage.messages().isEmpty() || !networkMessage.metaData().isEmpty();
+      // a chunk is decoded content: without it a chunk NetworkMessage would let a sibling
+      // mapping's genuine failure on the same bytes tick decodeErrors
+      return !networkMessage.messages().isEmpty()
+          || !networkMessage.metaData().isEmpty()
+          || networkMessage.chunk() != null;
     }
     // a discovery probe or metadata announcement is decoded content by definition
     return true;
@@ -284,10 +373,39 @@ final class ReaderDispatcher {
       ConnectionRuntime connection,
       String mappingName,
       DecodedNetworkMessage decoded,
-      Set<ReaderGroupRuntime> oversizeGroups) {
+      Set<ReaderGroupRuntime> oversizeGroups,
+      @Nullable ReaderGroupRuntime securityResolvedGroup) {
+
+    ReceivedSecurity security = decoded.security();
+    if (security != null && security.outcome() != SecurityOutcome.VERIFIED) {
+      // a header-only security skip: nothing was decoded, so nothing can be delivered — count
+      // the drop against the group whose keys were (or would have been) used and stop here.
+      // These are security drops, never decodeErrors.
+      countSecuritySkip(security, securityResolvedGroup);
+      return;
+    }
+
+    // the received mode input to the §7.2.4.3 receive-mode gate: null security IS received None
+    MessageSecurityMode receivedMode =
+        security != null ? security.mode() : MessageSecurityMode.None;
 
     for (ReaderGroupRuntime group : connection.readerGroupRuntimes()) {
       if (oversizeGroups.contains(group)) {
+        continue;
+      }
+
+      // §7.2.4.3 / K7 receive-mode gate, per (group, NetworkMessage): a received mode below the
+      // group's configured mode is dropped (SHALL), a secured message to a mode-None group is
+      // dropped (its keys never resolve anyway), and a received mode above the configured mode
+      // is processed (MAY — the keys come from the same window). Dropped messages tick
+      // staleKeyMessages once per group, but only when the message would otherwise have matched
+      // one of the group's readers — unrelated traffic is not counted. Discovery/metadata
+      // announcements travel as separate mode-None messages (K10) through handleAnnouncement,
+      // which this gate deliberately does not cover.
+      if (!receiveModeAccepts(group.config().getMessageSecurity(), receivedMode)) {
+        if (anyReaderMatches(group, mappingName, decoded)) {
+          service.getDiagnostics().staleKeyMessage(group.path());
+        }
         continue;
       }
 
@@ -634,6 +752,264 @@ final class ReaderDispatcher {
       service.getDiagnostics().invalidSequenceMessage(reader.path());
     }
   }
+
+  // region message security
+
+  /**
+   * The §7.2.4.3 / K7 receive-mode gate: whether a group configured with {@code security} accepts a
+   * NetworkMessage received with {@code receivedMode}.
+   *
+   * <ul>
+   *   <li>configured None (or Invalid, or no config — D1): accept only received None. The K7 MAY
+   *       (process higher) is not exercised: keys are only ever resolved for secured groups, so a
+   *       secured message can never be processed by a mode-None group.
+   *   <li>configured Sign: drop received None (SHALL); accept Sign and SignAndEncrypt (the MAY —
+   *       the keys come from the same token window).
+   *   <li>configured SignAndEncrypt: accept only received SignAndEncrypt (SHALL drop below).
+   * </ul>
+   */
+  static boolean receiveModeAccepts(
+      @Nullable MessageSecurityConfig security, MessageSecurityMode receivedMode) {
+
+    MessageSecurityMode configured =
+        security != null ? security.getMode() : MessageSecurityMode.None;
+
+    boolean configuredSecured =
+        configured == MessageSecurityMode.Sign || configured == MessageSecurityMode.SignAndEncrypt;
+
+    if (!configuredSecured) {
+      return receivedMode == MessageSecurityMode.None;
+    }
+
+    return modeRank(receivedMode) >= modeRank(configured);
+  }
+
+  /** The §7.2.4.3 numeric mode order; group-level Invalid ranks like None (D1). */
+  private static int modeRank(MessageSecurityMode mode) {
+    return switch (mode) {
+      case Invalid, None -> 1;
+      case Sign -> 2;
+      case SignAndEncrypt -> 3;
+    };
+  }
+
+  /**
+   * Count one header-only security skip against the reader group whose keys were used (or would
+   * have been used): the group the resolver routed to by the C7/S7 declaration-order rule over the
+   * plaintext wire identity (PublisherId, WriterGroupId, DataSetWriterIds). Secured traffic the
+   * resolver refused to route counts nothing (no local group covers it — it is not ours), and no
+   * looser re-match is attempted here: matching without the DataSetWriterId dimension would
+   * attribute traffic to a group whose readers filter a different writer. One tick per
+   * NetworkMessage; security drops never tick {@code decodeErrors}.
+   */
+  private void countSecuritySkip(
+      ReceivedSecurity security, @Nullable ReaderGroupRuntime resolvedGroup) {
+
+    ReaderGroupRuntime group = resolvedGroup;
+    if (group == null) {
+      return;
+    }
+
+    switch (security.outcome()) {
+      case UNKNOWN_TOKEN -> service.getDiagnostics().unknownTokenMessage(group.path());
+
+      case NO_KEYS -> service.getDiagnostics().staleKeyMessage(group.path());
+
+      case INVALID_SIGNATURE -> {
+        service.getDiagnostics().invalidSignatureMessage(group.path());
+        warnInvalidSignature(group, security);
+      }
+
+      case DECRYPT_FAILED ->
+          service
+              .getDiagnostics()
+              .decryptionError(
+                  group.path(),
+                  new StatusCode(StatusCodes.Bad_SecurityChecksFailed),
+                  "NetworkMessage payload decryption failed (token %s)"
+                      .formatted(security.securityTokenId()),
+                  null);
+
+      case NO_RESOLVER, VERIFIED -> {
+        // NO_RESOLVER cannot occur: dispatch always supplies a resolver; VERIFIED never routes
+        // here
+      }
+    }
+  }
+
+  /** Rate-limited WARN for invalid signatures; the counter carries the per-message signal. */
+  private void warnInvalidSignature(ReaderGroupRuntime group, ReceivedSecurity security) {
+    long now = System.nanoTime();
+    long last = lastInvalidSignatureWarnNanos.get();
+    if (now - last >= INVALID_SIGNATURE_WARN_INTERVAL_NANOS
+        && lastInvalidSignatureWarnNanos.compareAndSet(last, now)) {
+      LOGGER.warn(
+          "NetworkMessage signature verification failed (reader group '{}', token {});"
+              + " counted in invalidSignatureMessages",
+          group.path(),
+          security.securityTokenId());
+    }
+  }
+
+  /**
+   * Whether the decoded NetworkMessage would have matched at least one receiving reader of {@code
+   * group}: the condition for a receive-mode-gate drop to be counted against the group.
+   */
+  private static boolean anyReaderMatches(
+      ReaderGroupRuntime group, String mappingName, DecodedNetworkMessage decoded) {
+
+    for (DataSetReaderRuntime reader : group.readerRuntimes()) {
+      if (!reader.mappingName().equals(mappingName)) {
+        continue;
+      }
+      if (isNotReceiving(reader.state())) {
+        continue;
+      }
+      if (matchesNetworkMessage(reader.config(), decoded)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * The first secured reader group, in declaration order, whose readers match the plaintext wire
+   * identity (C7/S7): the SecurityHeader does not name the SecurityGroup — "The relation to the
+   * SecurityGroup is done through DataSetWriterIds contained in the NetworkMessage" (Part 14 Table
+   * 154) — so secured groups are routed by (PublisherId, WriterGroupId, DataSetWriterIds).
+   * Disabled/Paused groups are skipped; the group's key window (or its absence) decides the rest.
+   */
+  static @Nullable ReaderGroupRuntime firstMatchingSecuredGroup(
+      ConnectionRuntime connection,
+      @Nullable PublisherId publisherId,
+      @Nullable UShort writerGroupId,
+      List<UShort> dataSetWriterIds) {
+
+    for (ReaderGroupRuntime group : connection.readerGroupRuntimes()) {
+      MessageSecurityConfig security = group.config().getMessageSecurity();
+      if (!PubSubServiceImpl.isSecured(security) || security.getSecurityGroup() == null) {
+        continue;
+      }
+      if (isNotReceiving(group.state())) {
+        continue;
+      }
+      for (DataSetReaderRuntime reader : group.readerRuntimes()) {
+        if (readerMatchesWire(reader.config(), publisherId, writerGroupId, dataSetWriterIds)) {
+          return group;
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * The pre-decode variant of {@link #matchesNetworkMessage}: matches a reader's identity filters
+   * against the plaintext header values available BEFORE the (secured) payload is processed. Absent
+   * wire values are wildcards, like everywhere else in the matching chain.
+   */
+  private static boolean readerMatchesWire(
+      DataSetReaderConfig config,
+      @Nullable PublisherId publisherId,
+      @Nullable UShort writerGroupId,
+      List<UShort> dataSetWriterIds) {
+
+    if (!publisherIdMatches(config, publisherId)) {
+      return false;
+    }
+
+    UShort writerGroupIdFilter = config.getWriterGroupId();
+    if (writerGroupIdFilter != null && writerGroupIdFilter.intValue() != 0) {
+      if (writerGroupId != null && !writerGroupIdFilter.equals(writerGroupId)) {
+        return false;
+      }
+    }
+
+    if (!dataSetWriterIds.isEmpty()) {
+      for (UShort dataSetWriterId : dataSetWriterIds) {
+        if (dataSetWriterIdMatches(config, dataSetWriterId)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * The engine-side {@link SecurityContextResolver}: routes a received secured NetworkMessage to
+   * the first matching secured reader group (declaration order) and selects the key for the
+   * requested token from the {@link SecurityKeyManager}'s window. One instance per dispatch call,
+   * confined to the connection dispatch thread; it records the group it routed to so the dispatcher
+   * attributes security drops to the same group.
+   *
+   * <p>Side effects hop to the scheduler inside the manager: an unknown token triggers the
+   * single-flight refresh, force-key-reset (SecurityFlags bit 3) triggers a proactive refetch.
+   * Never blocks, never throws for a normal miss.
+   */
+  private static final class SecurityResolver implements SecurityContextResolver {
+
+    private final PubSubServiceImpl service;
+    private final ConnectionRuntime connection;
+
+    private @Nullable ReaderGroupRuntime resolvedGroup;
+
+    private SecurityResolver(PubSubServiceImpl service, ConnectionRuntime connection) {
+      this.service = service;
+      this.connection = connection;
+    }
+
+    @Override
+    public Resolution resolve(ResolveRequest request) {
+      ReaderGroupRuntime group =
+          firstMatchingSecuredGroup(
+              connection,
+              request.publisherId(),
+              request.writerGroupId(),
+              request.dataSetWriterIds());
+      resolvedGroup = group;
+
+      if (group == null) {
+        return new Resolution.Refused(SecurityOutcome.NO_KEYS);
+      }
+
+      MessageSecurityConfig security = group.config().getMessageSecurity();
+      SecurityGroupRef ref = security != null ? security.getSecurityGroup() : null;
+      if (ref == null) {
+        // unreachable: firstMatchingSecuredGroup requires a SecurityGroup reference
+        return new Resolution.Refused(SecurityOutcome.NO_KEYS);
+      }
+
+      SecurityKeyManager manager = service.getSecurityKeyManager();
+
+      if (request.forceKeyReset()) {
+        manager.onForceKeyReset(ref);
+      }
+
+      SecurityKeyManager.SubscriberKeyWindow window = manager.subscriberKeyWindow(ref);
+      if (window == null) {
+        // no keys (never fetched, or expired past 2×KeyLifetime and wiped): stale-key drop
+        return new Resolution.Refused(SecurityOutcome.NO_KEYS);
+      }
+
+      SecurityKeyMaterial keys = window.keyFor(request.securityTokenId().longValue());
+      if (keys == null) {
+        manager.onUnknownToken(ref, request.securityTokenId().longValue());
+        return new Resolution.Refused(SecurityOutcome.UNKNOWN_TOKEN);
+      }
+
+      return new Resolution.Keys(keys);
+    }
+
+    /** The group the last {@link #resolve} routed to; cleared by this call. */
+    @Nullable ReaderGroupRuntime takeResolvedGroup() {
+      ReaderGroupRuntime group = resolvedGroup;
+      resolvedGroup = null;
+      return group;
+    }
+  }
+
+  // endregion
 
   private void handleMetaData(
       ConnectionRuntime connection, DataSetReaderRuntime reader, DecodedMetaData metaData) {

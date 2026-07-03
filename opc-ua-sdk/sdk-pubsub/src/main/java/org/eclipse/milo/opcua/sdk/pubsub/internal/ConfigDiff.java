@@ -20,6 +20,7 @@ import java.util.Set;
 import java.util.function.Function;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetReaderConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetWriterConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.MessageSecurityConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.MqttConnectionConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConnectionConfig;
@@ -39,7 +40,9 @@ import org.jspecify.annotations.Nullable;
  * single CHANGED entry is emitted for it and its subtree is not descended into; otherwise the diff
  * recurses to group and then writer/reader granularity, relying on the config types'
  * equals/hashCode. Changes to PublishedDataSets and standalone SubscribedDataSets are translated
- * into CHANGED entries for the writers/readers that reference them.
+ * into CHANGED entries for the writers/readers that reference them; changes to SecurityGroups are
+ * translated into CHANGED entries for the secured writer/reader groups that reference them, so
+ * their key lifecycle state is rebuilt from the new parameters.
  *
  * <p>Exception: on broker (non-UDP) connections any reader-side change escalates to a
  * connection-level CHANGED, because broker subscriber channels derive their subscription set from
@@ -61,7 +64,10 @@ final class ConfigDiff {
     READER_GROUP,
     DATA_SET_WRITER,
     DATA_SET_READER,
-    /** PublishedDataSets, standalone SubscribedDataSets, SecurityGroups: reported only. */
+    /**
+     * PublishedDataSets, standalone SubscribedDataSets, SecurityGroups: reported at this level;
+     * restarts of referencing components are induced as separate entries.
+     */
     OTHER
   }
 
@@ -99,10 +105,11 @@ final class ConfigDiff {
                 StandaloneSubscribedDataSetConfig::getName),
             changes);
 
-    diffOther(
-        byName(oldConfig.securityGroups(), SecurityGroupConfig::getName),
-        byName(newConfig.securityGroups(), SecurityGroupConfig::getName),
-        changes);
+    Set<String> changedSecurityGroups =
+        diffOther(
+            byName(oldConfig.securityGroups(), SecurityGroupConfig::getName),
+            byName(newConfig.securityGroups(), SecurityGroupConfig::getName),
+            changes);
 
     Map<String, PubSubConnectionConfig> oldConnections =
         byName(oldConfig.connections(), PubSubConnectionConfig::name);
@@ -140,6 +147,7 @@ final class ConfigDiff {
 
     addDataSetInducedChanges(newConfig, changedDataSets, changes);
     addStandaloneInducedChanges(newConfig, changedStandalone, changes);
+    addSecurityGroupInducedChanges(newConfig, changedSecurityGroups, changes);
 
     boolean rootEnabledChanged = oldConfig.isEnabled() != newConfig.isEnabled();
 
@@ -341,6 +349,62 @@ final class ConfigDiff {
         }
       }
     }
+  }
+
+  /**
+   * Secured writer/reader groups referencing a changed SecurityGroup must be restarted: the key
+   * lifecycle state is built from the SecurityGroup config at group activation (securityGroupId,
+   * keyLifeTime, policy URI, key counts), so a change must detach and re-attach every referencing
+   * group or their live key states would go stale. A REMOVED SecurityGroup cannot still be
+   * referenced (the config builder validates every reference), so only CHANGED entries induce
+   * restarts.
+   */
+  private static void addSecurityGroupInducedChanges(
+      PubSubConfig newConfig, Set<String> changedSecurityGroups, List<Change> changes) {
+
+    if (changedSecurityGroups.isEmpty()) {
+      return;
+    }
+
+    for (PubSubConnectionConfig connection : newConfig.connections()) {
+      for (WriterGroupConfig group : connection.writerGroups()) {
+        if (referencesChangedSecurityGroup(group.getMessageSecurity(), changedSecurityGroups)) {
+          String path = connection.name() + "/" + group.getName();
+          addIfNotCovered(
+              changes,
+              new Change(
+                  Kind.CHANGED,
+                  Level.WRITER_GROUP,
+                  path,
+                  connection.name(),
+                  group.getName(),
+                  null));
+        }
+      }
+      for (ReaderGroupConfig group : connection.readerGroups()) {
+        if (referencesChangedSecurityGroup(group.getMessageSecurity(), changedSecurityGroups)) {
+          String path = connection.name() + "/" + group.getName();
+          addIfNotCovered(
+              changes,
+              new Change(
+                  Kind.CHANGED,
+                  Level.READER_GROUP,
+                  path,
+                  connection.name(),
+                  group.getName(),
+                  null));
+        }
+      }
+    }
+  }
+
+  private static boolean referencesChangedSecurityGroup(
+      @Nullable MessageSecurityConfig security, Set<String> changedSecurityGroups) {
+
+    return PubSubServiceImpl.isSecured(security)
+        && security != null
+        && security.getSecurityGroup() != null
+        && changedSecurityGroups.contains(security.getSecurityGroup().name());
   }
 
   /** Add a change unless it (or an ancestor in the connection tree) is already present. */

@@ -24,18 +24,25 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
 import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.DataSetOrderingType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
+import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldContentMask;
+import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.PermissionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpDataSetMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpNetworkMessageContentMask;
 import org.junit.jupiter.api.Nested;
@@ -43,8 +50,31 @@ import org.junit.jupiter.api.Test;
 
 class ConfigBuilderTest {
 
+  private static final RolePermissionType ROLE_PERMISSION =
+      new RolePermissionType(
+          NodeIds.WellKnownRole_SecurityAdmin, PermissionType.of(PermissionType.Field.Call));
+
   private static ExtensionObject extensionObject(int id) {
     return ExtensionObject.of(ByteString.of(new byte[] {(byte) id}), new NodeId(0, id));
+  }
+
+  private static EndpointDescription keyServiceEndpoint(String url) {
+    return new EndpointDescription(
+        url,
+        new ApplicationDescription(
+            "urn:sks",
+            "urn:sks:product",
+            LocalizedText.english("SKS"),
+            ApplicationType.Server,
+            null,
+            null,
+            null),
+        ByteString.NULL_VALUE,
+        MessageSecurityMode.SignAndEncrypt,
+        "http://opcfoundation.org/UA/SecurityPolicy#Basic256Sha256",
+        null,
+        null,
+        ubyte(0));
   }
 
   private static DataSetWriterConfig writer(String name, int writerId, String dataSetName) {
@@ -423,6 +453,8 @@ class ConfigBuilderTest {
       assertNull(reader.getDataSetMetaData());
       assertEquals(MetadataPolicy.REQUIRE_CONFIGURED, reader.getMetadataPolicy());
       assertNull(reader.getSubscribedDataSet());
+      // No override: the reader inherits message security from its reader group.
+      assertNull(reader.getMessageSecurity());
       assertEquals(Duration.ZERO, reader.getMessageReceiveTimeout());
       assertEquals(uint(0), reader.getKeyFrameCount());
       assertEquals(UadpDataSetReaderSettings.builder().build(), reader.getSettings());
@@ -435,6 +467,23 @@ class ConfigBuilderTest {
       assertTrue(group.isEnabled());
       assertEquals(uint(0), group.getMaxNetworkMessageSize());
       assertNull(group.getMessageSecurity());
+    }
+
+    @Test
+    void securityGroupDefaults() {
+      SecurityGroupConfig group = SecurityGroupConfig.builder("sg").build();
+
+      assertEquals("sg", group.getName());
+      // securityGroupId defaults to the name when not explicitly configured
+      assertEquals("sg", group.getSecurityGroupId());
+      assertTrue(group.getSecurityGroupFolder().isEmpty());
+      assertNull(group.getSecurityPolicyUri());
+      assertEquals(Duration.ofHours(1), group.getKeyLifeTime());
+      assertEquals(uint(0), group.getMaxFutureKeyCount());
+      assertEquals(uint(0), group.getMaxPastKeyCount());
+      assertTrue(group.getKeyServices().isEmpty());
+      assertTrue(group.getRolePermissions().isEmpty());
+      assertTrue(group.getProperties().isEmpty());
     }
 
     @Test
@@ -587,6 +636,7 @@ class ConfigBuilderTest {
       assertTrue(config.publishedDataSets().isEmpty());
       assertTrue(config.standaloneSubscribedDataSets().isEmpty());
       assertTrue(config.securityGroups().isEmpty());
+      assertTrue(config.defaultSecurityKeyServices().isEmpty());
       assertTrue(config.properties().isEmpty());
     }
   }
@@ -616,6 +666,12 @@ class ConfigBuilderTest {
               .subscribedDataSet(targetVariables())
               .settings(UadpDataSetReaderSettings.builder().groupVersion(uint(9)).build())
               .brokerTransport(BrokerTransportSettings.builder().queueName("q").build())
+              .messageSecurity(
+                  MessageSecurityConfig.builder()
+                      .mode(MessageSecurityMode.Sign)
+                      .securityGroup(new SecurityGroupRef("sg"))
+                      .keyServices(List.of(keyServiceEndpoint("opc.tcp://sks.example:4840")))
+                      .build())
               .messageReceiveTimeout(Duration.ofSeconds(2))
               .keyFrameCount(uint(4))
               .rawTransportSettings(extensionObject(5))
@@ -679,6 +735,7 @@ class ConfigBuilderTest {
                       .subscribedDataSet(targetVariables())
                       .build())
               .securityGroup(SecurityGroupConfig.builder("sg").build())
+              .defaultSecurityKeyService(keyServiceEndpoint("opc.tcp://sks-default.example:4840"))
               .property(new QualifiedName(1, "gp"), Variant.ofString("global"))
               .build();
 
@@ -686,6 +743,27 @@ class ConfigBuilderTest {
 
       assertEquals(config, copy);
       assertEquals(config.hashCode(), copy.hashCode());
+    }
+
+    @Test
+    void securityGroupToBuilderRoundTrip() {
+      SecurityGroupConfig group =
+          SecurityGroupConfig.builder("sg")
+              .securityGroupId("SG-1")
+              .securityGroupFolder(List.of("Folder", "SubFolder"))
+              .securityPolicyUri("http://opcfoundation.org/UA/SecurityPolicy#PubSub-Aes256-CTR")
+              .keyLifeTime(Duration.ofMinutes(10))
+              .maxFutureKeyCount(uint(2))
+              .maxPastKeyCount(uint(3))
+              .keyService(keyServiceEndpoint("opc.tcp://sks.example:4840"))
+              .rolePermission(ROLE_PERMISSION)
+              .property(new QualifiedName(1, "sp"), Variant.ofString("v"))
+              .build();
+
+      SecurityGroupConfig copy = group.toBuilder().build();
+
+      assertEquals(group, copy);
+      assertEquals(group.hashCode(), copy.hashCode());
     }
 
     @Test
@@ -780,6 +858,51 @@ class ConfigBuilderTest {
           fullWriterGroupBuilder("wg")
               .property(new QualifiedName(1, "p2"), Variant.ofInt32(43))
               .build());
+    }
+
+    @Test
+    void securityGroupInequalityOnFolderAndRolePermissions() {
+      SecurityGroupConfig base = SecurityGroupConfig.builder("sg").build();
+
+      // securityGroupFolder
+      assertNotEquals(
+          base, SecurityGroupConfig.builder("sg").securityGroupFolder(List.of("Folder")).build());
+      // rolePermissions
+      assertNotEquals(
+          base, SecurityGroupConfig.builder("sg").rolePermission(ROLE_PERMISSION).build());
+    }
+
+    @Test
+    void dataSetReaderInequalityOnMessageSecurityOverride() {
+      DataSetReaderConfig base = DataSetReaderConfig.builder("r").build();
+
+      // Presence of the override object is significant, even for an all-default (None) override.
+      DataSetReaderConfig overrideToNone =
+          DataSetReaderConfig.builder("r")
+              .messageSecurity(MessageSecurityConfig.builder().build())
+              .build();
+      assertNotEquals(base, overrideToNone);
+
+      DataSetReaderConfig overrideToSign =
+          DataSetReaderConfig.builder("r")
+              .messageSecurity(
+                  MessageSecurityConfig.builder()
+                      .mode(MessageSecurityMode.Sign)
+                      .securityGroup(new SecurityGroupRef("sg"))
+                      .build())
+              .build();
+      assertNotEquals(overrideToNone, overrideToSign);
+    }
+
+    @Test
+    void pubSubConfigInequalityOnDefaultSecurityKeyServices() {
+      PubSubConfig base = PubSubConfig.builder().build();
+      PubSubConfig withDefaults =
+          PubSubConfig.builder()
+              .defaultSecurityKeyService(keyServiceEndpoint("opc.tcp://sks.example:4840"))
+              .build();
+
+      assertNotEquals(base, withDefaults);
     }
 
     @Test

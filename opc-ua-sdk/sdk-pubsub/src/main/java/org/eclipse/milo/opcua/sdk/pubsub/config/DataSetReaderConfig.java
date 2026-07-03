@@ -43,6 +43,7 @@ public final class DataSetReaderConfig {
   private final @Nullable SubscribedDataSetSpec subscribedDataSet;
   private final DataSetReaderMessageSettings settings;
   private final @Nullable BrokerTransportSettings brokerTransport;
+  private final @Nullable MessageSecurityConfig messageSecurity;
   private final Duration messageReceiveTimeout;
   private final UInteger keyFrameCount;
   private final @Nullable ExtensionObject rawTransportSettings;
@@ -60,6 +61,7 @@ public final class DataSetReaderConfig {
     this.subscribedDataSet = builder.subscribedDataSet;
     this.settings = builder.settings;
     this.brokerTransport = builder.brokerTransport;
+    this.messageSecurity = builder.messageSecurity;
     this.messageReceiveTimeout = builder.messageReceiveTimeout;
     this.keyFrameCount = builder.keyFrameCount;
     this.rawTransportSettings = builder.rawTransportSettings;
@@ -161,6 +163,26 @@ public final class DataSetReaderConfig {
   }
 
   /**
+   * Get the message security override of this reader.
+   *
+   * <p>Presence of the object means the override is active and replaces the reader group's security
+   * settings for this reader (Part 14 §6.2.9.9–6.2.9.11); {@code null} means no override — the
+   * reader inherits from its group. An override with mode {@code None} is a legal active override
+   * to unsecured operation.
+   *
+   * <p>The Phase 4 runtime resolves message security at the group level only: this override is
+   * configuration-complete (it round-trips through the Part 14 model and its {@link
+   * SecurityGroupRef} is validated), but it is not consumed by the runtime's key management or
+   * message routing.
+   *
+   * @return the {@link MessageSecurityConfig} override, or {@code null} to inherit from the reader
+   *     group.
+   */
+  public @Nullable MessageSecurityConfig getMessageSecurity() {
+    return messageSecurity;
+  }
+
+  /**
    * Get the maximum acceptable gap between accepted DataSetMessages before the reader transitions
    * to the Error state; it returns to Operational on the next accepted message. Keep-alives reset
    * the timeout; messages dropped before delivery — invalid, metadata-version mismatched, or
@@ -226,6 +248,7 @@ public final class DataSetReaderConfig {
     builder.subscribedDataSet = subscribedDataSet;
     builder.settings = settings;
     builder.brokerTransport = brokerTransport;
+    builder.messageSecurity = messageSecurity;
     builder.messageReceiveTimeout = messageReceiveTimeout;
     builder.keyFrameCount = keyFrameCount;
     builder.rawTransportSettings = rawTransportSettings;
@@ -252,6 +275,7 @@ public final class DataSetReaderConfig {
         && Objects.equals(subscribedDataSet, that.subscribedDataSet)
         && settings.equals(that.settings)
         && Objects.equals(brokerTransport, that.brokerTransport)
+        && Objects.equals(messageSecurity, that.messageSecurity)
         && messageReceiveTimeout.equals(that.messageReceiveTimeout)
         && keyFrameCount.equals(that.keyFrameCount)
         && Objects.equals(rawTransportSettings, that.rawTransportSettings)
@@ -272,6 +296,7 @@ public final class DataSetReaderConfig {
         subscribedDataSet,
         settings,
         brokerTransport,
+        messageSecurity,
         messageReceiveTimeout,
         keyFrameCount,
         rawTransportSettings,
@@ -302,6 +327,7 @@ public final class DataSetReaderConfig {
     private @Nullable SubscribedDataSetSpec subscribedDataSet;
     private DataSetReaderMessageSettings settings = UadpDataSetReaderSettings.builder().build();
     private @Nullable BrokerTransportSettings brokerTransport;
+    private @Nullable MessageSecurityConfig messageSecurity;
     private Duration messageReceiveTimeout = Duration.ZERO;
     private UInteger keyFrameCount = uint(0);
     private @Nullable ExtensionObject rawTransportSettings;
@@ -411,6 +437,19 @@ public final class DataSetReaderConfig {
      */
     public Builder brokerTransport(BrokerTransportSettings settings) {
       this.brokerTransport = settings;
+      return this;
+    }
+
+    /**
+     * Set the message security override of this reader, replacing the reader group's security
+     * settings for this reader; unset (the default) inherits from the group. An override with mode
+     * {@code None} is a legal active override to unsecured operation.
+     *
+     * @param security the {@link MessageSecurityConfig} override.
+     * @return this {@link Builder}.
+     */
+    public Builder messageSecurity(MessageSecurityConfig security) {
+      this.messageSecurity = security;
       return this;
     }
 

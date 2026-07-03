@@ -92,6 +92,11 @@ import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfiguration2Da
  *       (no name, no fields, zero class id, version 0.0), which maps back to "absent".
  *   <li>Null boxed scalars, enums, and option set masks in hand-built datatypes are normalized to
  *       their config defaults (0, {@code Undefined}, {@code NotSpecified}, empty mask, enabled).
+ *   <li>Reader-level all-default security — {@code securityMode} {@code Invalid} (the Part 14
+ *       §6.2.9.9 no-override sentinel), or the legacy {@code None} with no group id and no key
+ *       services emitted by earlier Milo versions — maps to an absent reader override; an absent
+ *       override is emitted as {@code Invalid}/null/null. A {@code None} override <em>with</em> a
+ *       group id or key services survives as an active override.
  * </ul>
  *
  * <h3>Documented losses</h3>
@@ -122,12 +127,10 @@ import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfiguration2Da
  * {@code fromDataType}):
  *
  * <ul>
- *   <li>Top level: {@code dataSetClasses}, {@code defaultSecurityKeyServices}, {@code
- *       pubSubKeyPushTargets}, {@code configurationVersion} (emitted as 0).
+ *   <li>Top level: {@code dataSetClasses}, {@code pubSubKeyPushTargets}, {@code
+ *       configurationVersion} (emitted as 0).
  *   <li>Writer group: {@code localeIds}, {@code headerLayoutUri}.
- *   <li>Dataset reader: {@code dataSetFieldContentMask}, {@code headerLayoutUri}, and the
- *       reader-level {@code securityMode} / {@code securityGroupId} / {@code securityKeyServices}
- *       (emitted as None/null; v1 readers take security from their group).
+ *   <li>Dataset reader: {@code dataSetFieldContentMask}, {@code headerLayoutUri}.
  *   <li>Published dataset: {@code dataSetFolder}, metadata {@code description}, {@code
  *       dataSetClassId} (emitted as the all-zero Guid), the DataTypeSchemaHeader arrays, and the
  *       {@code PublishedVariableDataType} sampling/deadband/index-range/substitute-value fields
@@ -135,7 +138,6 @@ import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfiguration2Da
  *       extensionFields}. Non-{@code PublishedDataItems} dataset sources are rejected.
  *   <li>Standalone subscribed dataset: {@code dataSetFolder}. {@code SubscribedDataSetMirror} and
  *       inline standalone subscribed datasets are rejected.
- *   <li>Security group: {@code securityGroupFolder}, {@code rolePermissions}.
  *   <li>MQTT connection address: {@code networkInterface}.
  * </ul>
  */

@@ -426,6 +426,11 @@ class UdpLoopbackIntegrationTest {
     assertEquals(StatusCodes.Bad_ConfigurationError, statusCode.value());
   }
 
+  /**
+   * A secured mode is configuration, not an unsupported feature (K3): a Sign group with no
+   * SecurityGroup reference (and no bound key provider) fails startup with {@code
+   * Bad_ConfigurationError} naming the missing piece.
+   */
   @Test
   void startupFailsWhenSecurityModeIsSign() throws Exception {
     int port = freeUdpPort();
@@ -467,8 +472,11 @@ class UdpLoopbackIntegrationTest {
             PubSubService.create(
                 config, PubSubBindings.builder().source(dataSet.ref(), mapSource(values)).build()));
 
-    StatusCode statusCode = assertStartupFails(service);
-    assertEquals(StatusCodes.Bad_NotSupported, statusCode.value());
+    UaException cause = assertStartupFailsExceptionally(service);
+    assertEquals(StatusCodes.Bad_ConfigurationError, cause.getStatusCode().value());
+    assertTrue(
+        String.valueOf(cause.getMessage()).contains("SecurityGroup"),
+        "expected the missing SecurityGroup reference to be named: " + cause.getMessage());
   }
 
   @Test
@@ -1097,6 +1105,10 @@ class UdpLoopbackIntegrationTest {
 
   /** Assert that {@code startup()} fails and return the {@link StatusCode} of its UaException. */
   private static StatusCode assertStartupFails(PubSubService service) {
+    return assertStartupFailsExceptionally(service).getStatusCode();
+  }
+
+  private static UaException assertStartupFailsExceptionally(PubSubService service) {
     ExecutionException e =
         assertThrows(
             ExecutionException.class,
@@ -1107,7 +1119,7 @@ class UdpLoopbackIntegrationTest {
       cause = cause.getCause();
     }
     assertNotNull(cause, "expected a UaException cause, got: " + e);
-    return ((UaException) cause).getStatusCode();
+    return (UaException) cause;
   }
 
   // endregion

@@ -21,21 +21,26 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrokerTransportQualityOfService;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.DataSetOrderingType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.OverrideValueHandling;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
+import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.BrokerConnectionTransportDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.BrokerDataSetWriterTransportDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.BrokerWriterGroupTransportDataType;
@@ -49,16 +54,20 @@ import org.eclipse.milo.opcua.stack.core.types.structured.DataSetReaderMessageDa
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetWriterDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DatagramConnectionTransportDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DatagramWriterGroupTransportDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.FieldMetaData;
 import org.eclipse.milo.opcua.stack.core.types.structured.FieldTargetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.NetworkAddressUrlDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.PermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfiguration2DataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConnectionDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.PubSubKeyPushTargetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataItemsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataSetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedEventsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedVariableDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReaderGroupDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SecurityGroupDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.StandaloneSubscribedDataSetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SubscribedDataSetDataType;
@@ -69,6 +78,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.UadpDataSetReaderMessa
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpDataSetWriterMessageDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpNetworkMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpWriterGroupMessageDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriterGroupDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriterGroupMessageDataType;
 import org.junit.jupiter.api.Test;
@@ -264,6 +274,27 @@ class PubSubConfigMapperFromDataTypeTest {
       DataSetReaderMessageDataType messageSettings,
       SubscribedDataSetDataType subscribedDataSet) {
 
+    // Invalid is the §6.2.9.9 "no reader-level override" sentinel and the shape toDataType
+    // emits for override-less readers.
+    return wireReader(
+        name,
+        MessageSecurityMode.Invalid,
+        null,
+        null,
+        metaData,
+        messageSettings,
+        subscribedDataSet);
+  }
+
+  private static DataSetReaderDataType wireReader(
+      String name,
+      MessageSecurityMode securityMode,
+      String securityGroupId,
+      EndpointDescription[] securityKeyServices,
+      DataSetMetaDataType metaData,
+      DataSetReaderMessageDataType messageSettings,
+      SubscribedDataSetDataType subscribedDataSet) {
+
     return new DataSetReaderDataType(
         name,
         true,
@@ -275,13 +306,32 @@ class PubSubConfigMapperFromDataTypeTest {
         0.0,
         uint(0),
         null,
-        MessageSecurityMode.None,
-        null,
-        null,
+        securityMode,
+        securityGroupId,
+        securityKeyServices,
         null,
         null,
         messageSettings,
         subscribedDataSet);
+  }
+
+  private static EndpointDescription keyServiceEndpoint() {
+    return new EndpointDescription(
+        "opc.tcp://sks.example:4840",
+        new ApplicationDescription(
+            "urn:sks",
+            "urn:sks:product",
+            LocalizedText.english("SKS"),
+            ApplicationType.Server,
+            null,
+            null,
+            null),
+        ByteString.NULL_VALUE,
+        MessageSecurityMode.SignAndEncrypt,
+        "http://opcfoundation.org/UA/SecurityPolicy#Basic256Sha256",
+        null,
+        null,
+        ubyte(0));
   }
 
   /** The shape emitted for "reader has no configured metadata". */
@@ -312,6 +362,26 @@ class PubSubConfigMapperFromDataTypeTest {
         uint(0), ushort(0), ushort(0), NULL_UUID, NM_DYNAMIC, DSM_DYNAMIC, 0.0, 0.0, 0.0);
   }
 
+  /** A single-reader, reader-only UDP configuration wrapping {@code reader}. */
+  private static PubSubConfiguration2DataType readerOnlyConfig(
+      DataSetReaderDataType reader, SecurityGroupDataType... securityGroups) {
+
+    return wireConfig(
+        null,
+        new PubSubConnectionDataType[] {
+          wireUdpConnection(
+              "c",
+              Variant.ofNull(),
+              null,
+              new ReaderGroupDataType[] {wireReaderGroup("rg", reader)})
+        },
+        securityGroups.length == 0 ? null : securityGroups);
+  }
+
+  private static DataSetReaderConfig onlyReader(PubSubConfig config) {
+    return config.connection("c").orElseThrow().readerGroups().get(0).getDataSetReaders().get(0);
+  }
+
   // endregion
 
   // region Null tolerance
@@ -330,6 +400,51 @@ class PubSubConfigMapperFromDataTypeTest {
     assertTrue(config.standaloneSubscribedDataSets().isEmpty());
     assertTrue(config.securityGroups().isEmpty());
     assertTrue(config.properties().isEmpty());
+  }
+
+  /**
+   * The K16 documented mapper loss: {@code pubSubKeyPushTargets} is a datatype field with no config
+   * slot — a configuration carrying push targets maps WITHOUT throwing, the targets are dropped,
+   * and the reverse mapping emits none (push-model distribution is CUT; see the PubSubConfigMapper
+   * "Documented losses" contract).
+   */
+  @Test
+  void pubSubKeyPushTargetsAreDroppedNotRejected() {
+    var pushTarget =
+        new PubSubKeyPushTargetDataType(
+            "urn:milo:test:push-target",
+            new String[] {"folder"},
+            "opc.tcp://push-target:4840",
+            null,
+            new UserTokenPolicy("anonymous", UserTokenType.Anonymous, null, null, null),
+            ushort(3),
+            1000.0,
+            null,
+            new String[] {"SG1"});
+
+    PubSubConfiguration2DataType dataType =
+        new PubSubConfiguration2DataType(
+            null,
+            null,
+            true,
+            null,
+            null,
+            null,
+            null,
+            new PubSubKeyPushTargetDataType[] {pushTarget},
+            uint(0),
+            null);
+
+    PubSubConfig config = PubSubConfig.fromDataType(dataType, table());
+
+    // the rest of the (empty) configuration mapped normally
+    assertTrue(config.isEnabled());
+    assertTrue(config.connections().isEmpty());
+    assertTrue(config.securityGroups().isEmpty());
+
+    // and the drop is total: the reverse mapping emits no push targets
+    PubSubKeyPushTargetDataType[] emitted = config.toDataType(table()).getPubSubKeyPushTargets();
+    assertTrue(emitted == null || emitted.length == 0);
   }
 
   @Test
@@ -473,6 +588,8 @@ class PubSubConfigMapperFromDataTypeTest {
     assertNull(r.getDataSetWriterId());
     assertNull(r.getDataSetMetaData());
     assertNull(r.getSubscribedDataSet());
+    // a null reader securityMode maps to "no override"
+    assertNull(r.getMessageSecurity());
     assertEquals(Duration.ZERO, r.getMessageReceiveTimeout());
     assertEquals(uint(0), r.getKeyFrameCount());
     assertEquals(UadpDataSetReaderSettings.builder().build(), r.getSettings());
@@ -493,6 +610,87 @@ class PubSubConfigMapperFromDataTypeTest {
     assertEquals("sg", sg.getName());
     assertEquals("sg", sg.getSecurityGroupId());
     assertEquals(Duration.ofHours(1), sg.getKeyLifeTime());
+  }
+
+  @Test
+  void nullElementsInSecurityArraysAreSkipped() {
+    RolePermissionType rolePermission =
+        new RolePermissionType(
+            NodeIds.WellKnownRole_SecurityAdmin, PermissionType.of(PermissionType.Field.Call));
+
+    SecurityGroupDataType securityGroup =
+        new SecurityGroupDataType(
+            "sg",
+            new String[] {"folder-a", null, "folder-b"},
+            null,
+            null,
+            null,
+            null,
+            null,
+            new RolePermissionType[] {rolePermission, null},
+            null);
+
+    PubSubConfiguration2DataType dataType =
+        new PubSubConfiguration2DataType(
+            null,
+            null,
+            null,
+            null,
+            null,
+            new EndpointDescription[] {keyServiceEndpoint(), null},
+            new SecurityGroupDataType[] {securityGroup},
+            null,
+            uint(0),
+            null);
+
+    PubSubConfig config = PubSubConfig.fromDataType(dataType, table());
+
+    SecurityGroupConfig sg = config.securityGroups().get(0);
+    assertEquals(List.of("folder-a", "folder-b"), sg.getSecurityGroupFolder());
+    assertEquals(List.of(rolePermission), sg.getRolePermissions());
+    assertEquals(List.of(keyServiceEndpoint()), config.defaultSecurityKeyServices());
+  }
+
+  @Test
+  void nullElementsInGroupKeyServicesAreSkipped() {
+    SecurityGroupDataType securityGroup =
+        new SecurityGroupDataType("sg-1", null, 60000.0, null, null, null, "SG-001", null, null);
+
+    // wireWriterGroup has no key services slot; build the group inline to plant the null element.
+    WriterGroupDataType writerGroup =
+        new WriterGroupDataType(
+            "wg",
+            true,
+            MessageSecurityMode.Sign,
+            "SG-001",
+            new EndpointDescription[] {keyServiceEndpoint(), null},
+            uint(1400),
+            null,
+            ushort(1),
+            1000.0,
+            0.0,
+            ubyte(0),
+            null,
+            null,
+            new DatagramWriterGroupTransportDataType(ubyte(0), 0.0),
+            canonicalUadpGroupMessage(),
+            new DataSetWriterDataType[] {wireWriter("w", "ds1")});
+
+    PubSubConfiguration2DataType dataType =
+        wireConfig(
+            new PublishedDataSetDataType[] {wirePublishedDataSet("ds1", PUB_FIELD_ID)},
+            new PubSubConnectionDataType[] {
+              wireUdpConnection(
+                  "c", Variant.ofUInt16(ushort(9)), new WriterGroupDataType[] {writerGroup}, null)
+            },
+            new SecurityGroupDataType[] {securityGroup});
+
+    PubSubConfig config = PubSubConfig.fromDataType(dataType, table());
+
+    MessageSecurityConfig security =
+        config.connection("c").orElseThrow().writerGroups().get(0).getMessageSecurity();
+    assertNotNull(security);
+    assertEquals(List.of(keyServiceEndpoint()), security.getKeyServices());
   }
 
   // endregion
@@ -898,6 +1096,136 @@ class PubSubConfigMapperFromDataTypeTest {
               wireUdpConnection(
                   "c", Variant.ofUInt16(ushort(9)), new WriterGroupDataType[] {writerGroup}, null)
             });
+
+    assertThrows(
+        PubSubConfigValidationException.class, () -> PubSubConfig.fromDataType(dataType, table()));
+  }
+
+  // endregion
+
+  // region Reader-level security override
+
+  @Test
+  void invalidReaderSecurityModeMapsToAbsentOverride() {
+    DataSetReaderDataType reader =
+        wireReader(
+            "r",
+            MessageSecurityMode.Invalid,
+            null,
+            null,
+            emptyWireMetaData(),
+            canonicalUadpReaderMessage(),
+            new TargetVariablesDataType(null));
+
+    PubSubConfig config = PubSubConfig.fromDataType(readerOnlyConfig(reader), table());
+
+    assertNull(onlyReader(config).getMessageSecurity());
+  }
+
+  @Test
+  void legacyNoneReaderSecurityShapeMapsToAbsentOverride() {
+    // Earlier Milo versions emitted None/null/null for readers without an override; it must keep
+    // mapping to "no override" alongside the Invalid sentinel.
+    DataSetReaderDataType reader =
+        wireReader(
+            "r",
+            MessageSecurityMode.None,
+            null,
+            null,
+            emptyWireMetaData(),
+            canonicalUadpReaderMessage(),
+            new TargetVariablesDataType(null));
+
+    PubSubConfig config = PubSubConfig.fromDataType(readerOnlyConfig(reader), table());
+
+    assertNull(onlyReader(config).getMessageSecurity());
+  }
+
+  @Test
+  void allNullReaderKeyServicesNormalizeToAbsentOverride() {
+    // A securityKeyServices array whose elements are all null normalizes like an empty/null
+    // array, so None/null/{null,null} is still the legacy absent shape, not an active override.
+    DataSetReaderDataType reader =
+        wireReader(
+            "r",
+            MessageSecurityMode.None,
+            null,
+            new EndpointDescription[] {null, null},
+            emptyWireMetaData(),
+            canonicalUadpReaderMessage(),
+            new TargetVariablesDataType(null));
+
+    PubSubConfig config = PubSubConfig.fromDataType(readerOnlyConfig(reader), table());
+
+    assertNull(onlyReader(config).getMessageSecurity());
+  }
+
+  @Test
+  void readerOverrideToNoneWithGroupIdIsPreserved() {
+    SecurityGroupDataType securityGroup =
+        new SecurityGroupDataType("sg-1", null, 60000.0, null, null, null, "SG-001", null, null);
+
+    // None WITH a group id is a legal active override to unsecured operation, not the legacy
+    // all-default absent shape.
+    DataSetReaderDataType reader =
+        wireReader(
+            "r",
+            MessageSecurityMode.None,
+            "SG-001",
+            null,
+            emptyWireMetaData(),
+            canonicalUadpReaderMessage(),
+            new TargetVariablesDataType(null));
+
+    PubSubConfig config =
+        PubSubConfig.fromDataType(readerOnlyConfig(reader, securityGroup), table());
+
+    MessageSecurityConfig security = onlyReader(config).getMessageSecurity();
+    assertNotNull(security);
+    assertEquals(MessageSecurityMode.None, security.getMode());
+    assertEquals(new SecurityGroupRef("sg-1"), security.getSecurityGroup());
+    assertTrue(security.getKeyServices().isEmpty());
+  }
+
+  @Test
+  void readerSecurityGroupIdResolvedBackToGroupName() {
+    SecurityGroupDataType securityGroup =
+        new SecurityGroupDataType("sg-1", null, 60000.0, null, null, null, "SG-001", null, null);
+
+    DataSetReaderDataType reader =
+        wireReader(
+            "r",
+            MessageSecurityMode.Sign,
+            "SG-001",
+            new EndpointDescription[] {keyServiceEndpoint()},
+            emptyWireMetaData(),
+            canonicalUadpReaderMessage(),
+            new TargetVariablesDataType(null));
+
+    PubSubConfig config =
+        PubSubConfig.fromDataType(readerOnlyConfig(reader, securityGroup), table());
+
+    MessageSecurityConfig security = onlyReader(config).getMessageSecurity();
+    assertNotNull(security);
+    assertEquals(MessageSecurityMode.Sign, security.getMode());
+    // The wire id "SG-001" resolves back to a ref naming the group "sg-1".
+    assertEquals(new SecurityGroupRef("sg-1"), security.getSecurityGroup());
+    assertEquals(List.of(keyServiceEndpoint()), security.getKeyServices());
+  }
+
+  @Test
+  void danglingReaderSecurityGroupIdFailsValidation() {
+    DataSetReaderDataType reader =
+        wireReader(
+            "r",
+            MessageSecurityMode.Sign,
+            "unknown-group",
+            null,
+            emptyWireMetaData(),
+            canonicalUadpReaderMessage(),
+            new TargetVariablesDataType(null));
+
+    PubSubConfiguration2DataType dataType = readerOnlyConfig(reader);
 
     assertThrows(
         PubSubConfigValidationException.class, () -> PubSubConfig.fromDataType(dataType, table()));

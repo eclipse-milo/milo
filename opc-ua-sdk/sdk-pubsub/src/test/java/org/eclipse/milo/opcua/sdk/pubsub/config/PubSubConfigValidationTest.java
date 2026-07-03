@@ -487,6 +487,37 @@ class PubSubConfigValidationTest {
   }
 
   @Test
+  void unresolvedSecurityGroupRefOnDataSetReaderOverrideRejected() {
+    DataSetReaderConfig reader =
+        DataSetReaderConfig.builder("r").messageSecurity(securityRef("missing-sg")).build();
+
+    PubSubConfig.Builder builder =
+        PubSubConfig.builder()
+            .connection(udp("conn").readerGroup(readerGroup("RG", reader)).build());
+
+    PubSubConfigValidationException e =
+        assertThrows(PubSubConfigValidationException.class, builder::build);
+
+    assertTrue(e.getMessage().contains("dataSetReader 'r'"), e.getMessage());
+    assertTrue(e.getMessage().contains("SecurityGroupRef"), e.getMessage());
+    assertTrue(e.getMessage().contains("missing-sg"), e.getMessage());
+  }
+
+  @Test
+  void resolvableSecurityGroupRefOnDataSetReaderOverrideAllowed() {
+    DataSetReaderConfig reader =
+        DataSetReaderConfig.builder("r").messageSecurity(securityRef("sg")).build();
+
+    PubSubConfig config =
+        PubSubConfig.builder()
+            .connection(udp("conn").readerGroup(readerGroup("RG", reader)).build())
+            .securityGroup(SecurityGroupConfig.builder("sg").build())
+            .build();
+
+    assertEquals(1, config.connections().size());
+  }
+
+  @Test
   void messageSecurityWithoutSecurityGroupRefAllowed() {
     WriterGroupConfig writerGroup =
         WriterGroupConfig.builder("G")

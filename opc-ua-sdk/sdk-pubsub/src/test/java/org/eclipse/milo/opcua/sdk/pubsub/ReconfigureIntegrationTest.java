@@ -496,7 +496,7 @@ class ReconfigureIntegrationTest {
     ByteBuf data = Unpooled.wrappedBuffer(packet.getData(), 0, packet.getLength());
     try {
       DecodedNetworkMessage decoded =
-          new UadpMessageMapping().decode(new DecodeContext(new DefaultEncodingContext()), data);
+          new UadpMessageMapping().decode(DecodeContext.of(new DefaultEncodingContext()), data);
       return decoded.messages().size() == 1 ? decoded.messages().get(0) : null;
     } finally {
       data.release();

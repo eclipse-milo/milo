@@ -1,0 +1,24 @@
+{
+  "description": "Milo UADP encode-direction computed vector: SignAndEncrypt, PubSub-Aes256-CTR, 2-writer worked layout (PublisherId UInt16, full GroupHeader, 2-DataSetMessage PayloadHeader, Timestamp)",
+  "source": "Exported from UadpSecurityGoldenVectorTest (Milo encoder with injected fixed MessageNonce + sequential key data 00 01 02 ..); UadpSecurityVectorFixturesTest pins fixture == encoder output",
+  "direction": "computed",
+  "securityPolicyUri": "http://opcfoundation.org/UA/SecurityPolicy#PubSub-Aes256-CTR",
+  "securityMode": "SignAndEncrypt",
+  "securityTokenId": 7,
+  "keyData": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f40414243",
+  "signingKey": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "encryptingKey": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+  "keyNonce": "40414243",
+  "messageNonce": "a1a2a3a401000000",
+  "publisherId": {
+    "type": "UInt16",
+    "value": 4660
+  },
+  "writerGroupId": 258,
+  "dataSetWriterIds": [
+    1,
+    2
+  ],
+  "expectedPlaintext": "08000800010100062a000000010100062b000000",
+  "notes": "SecurityHeader at offset 28, payload region [42, 62), HMAC-SHA256 signature over [0, 62) in the trailing 32 bytes. Sign-only carries the real token id and the 8-byte MessageNonce (Annex A form, K4). The Sizes array at [42, 46) is inside the encrypted region (Table 161)."
+}

@@ -16,9 +16,13 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 /**
  * SPI providing runtime key material for a SecurityGroup, bound via {@code PubSubBindings}.
  *
- * <p>Shaped for eventual Security Key Service ({@code GetSecurityKeys}) integration; key material
- * is a runtime concern, never a static config blob. Unused by the v1 runtime, which supports {@code
- * MessageSecurityMode.None} only.
+ * <p>Mirrors the Security Key Service {@code GetSecurityKeys} method; key material is a runtime
+ * concern, never a static config blob. Implementations include {@link StaticSecurityKeyProvider}
+ * (pinned static keys) and the SKS pull provider in {@code milo-sdk-pubsub-sks}.
+ *
+ * <p>Threading: the returned future may complete on any thread — engine callers hop to their shared
+ * scheduler before touching engine state. Implementations must not block inside {@code getKeys};
+ * blocking fetch work belongs on an implementation-owned executor.
  */
 @FunctionalInterface
 public interface SecurityKeyProvider {

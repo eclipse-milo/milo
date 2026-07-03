@@ -70,6 +70,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.PublishedVariableDataT
 import org.eclipse.milo.opcua.stack.core.types.structured.ReaderGroupDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReaderGroupMessageDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReaderGroupTransportDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SecurityGroupDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.StandaloneSubscribedDataSetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.StandaloneSubscribedDataSetRefDataType;
@@ -125,13 +126,16 @@ final class ConfigToDataTypeMapper {
             .map(ConfigToDataTypeMapper::mapSecurityGroup)
             .toArray(SecurityGroupDataType[]::new);
 
+    EndpointDescription[] defaultSecurityKeyServices =
+        config.defaultSecurityKeyServices().toArray(new EndpointDescription[0]);
+
     return new PubSubConfiguration2DataType(
         publishedDataSets.length == 0 ? null : publishedDataSets,
         connections.length == 0 ? null : connections,
         config.isEnabled(),
         subscribedDataSets.length == 0 ? null : subscribedDataSets,
         null,
-        null,
+        defaultSecurityKeyServices.length == 0 ? null : defaultSecurityKeyServices,
         securityGroups.length == 0 ? null : securityGroups,
         null,
         uint(0),
@@ -483,6 +487,11 @@ final class ConfigToDataTypeMapper {
 
     PublisherId publisherId = reader.getPublisherId();
 
+    // Reader-level security override: absent overrides emit the §6.2.9.9 no-override sentinel
+    // (Invalid mode, null group id, null key services); present overrides emit their fields with
+    // the ref name resolved to the wire SecurityGroupId.
+    MessageSecurityConfig security = reader.getMessageSecurity();
+
     return new DataSetReaderDataType(
         reader.getName(),
         reader.isEnabled(),
@@ -494,9 +503,9 @@ final class ConfigToDataTypeMapper {
         toMillis(reader.getMessageReceiveTimeout()),
         reader.getKeyFrameCount(),
         null,
-        MessageSecurityMode.None,
-        null,
-        null,
+        security != null ? security.getMode() : MessageSecurityMode.Invalid,
+        securityGroupId(security),
+        keyServices(security),
         toKeyValuePairs(reader.getProperties()),
         transportSettings,
         messageSettings,
@@ -685,15 +694,20 @@ final class ConfigToDataTypeMapper {
   }
 
   private static SecurityGroupDataType mapSecurityGroup(SecurityGroupConfig securityGroup) {
+    String[] securityGroupFolder = securityGroup.getSecurityGroupFolder().toArray(new String[0]);
+
+    RolePermissionType[] rolePermissions =
+        securityGroup.getRolePermissions().toArray(new RolePermissionType[0]);
+
     return new SecurityGroupDataType(
         securityGroup.getName(),
-        null,
+        securityGroupFolder.length == 0 ? null : securityGroupFolder,
         toMillis(securityGroup.getKeyLifeTime()),
         securityGroup.getSecurityPolicyUri(),
         securityGroup.getMaxFutureKeyCount(),
         securityGroup.getMaxPastKeyCount(),
         securityGroup.getSecurityGroupId(),
-        null,
+        rolePermissions.length == 0 ? null : rolePermissions,
         toKeyValuePairs(securityGroup.getProperties()));
   }
 

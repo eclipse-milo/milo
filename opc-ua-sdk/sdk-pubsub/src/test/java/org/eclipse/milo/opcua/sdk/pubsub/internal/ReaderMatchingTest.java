@@ -318,7 +318,8 @@ class ReaderMatchingTest {
                     ushort(1),
                     ushort(networkMessageSequenceNumber),
                     null,
-                    List.of(drafts)));
+                    List.of(drafts),
+                    null));
 
     ByteBuf data = encoded.get(0).data();
     try {
@@ -699,16 +700,50 @@ class ReaderMatchingTest {
     assertEquals(1, eventCount("R1"));
   }
 
-  /** An inbound chunked NetworkMessage is no longer silently skipped (Part 14 §7.2.4.4.4). */
+  /**
+   * An inbound chunked data NetworkMessage is reassembled (Part 14 §7.2.4.4.4): a single chunk
+   * covering the whole payload completes immediately, the reassembled DataSetMessage is delivered,
+   * and nothing ticks decodeErrors.
+   */
   @Test
-  void chunkedNetworkMessageTicksConnectionDecodeErrorsWithBadNotSupported() throws Exception {
+  void chunkedDataNetworkMessageIsReassembledAndDelivered() throws Exception {
     startService(DataSetReaderConfig.builder("R1").build());
 
     injectAndFlush(
         bytes(
-            0x81, // byte 0: version 1 | ExtendedFlags1
+            0xC1, // byte 0: version 1 | PayloadHeader 0x40 | ExtendedFlags1 0x80
             0x80, // ExtendedFlags1: ExtendedFlags2 present
-            0x01, // ExtendedFlags2: chunk
+            0x01, // ExtendedFlags2: chunk, type Data
+            0x01, 0x00, // PayloadHeader (chunk form, Table 158): DataSetWriterId = 1
+            0x01, 0x00, // chunk MessageSequenceNumber = 1
+            0x00, 0x00, 0x00, 0x00, // ChunkOffset = 0
+            0x08, 0x00, 0x00, 0x00, // TotalSize = 8: this chunk completes the payload
+            0x08, 0x00, 0x00, 0x00, // ChunkData length = 8
+            0x01, // reassembled DSM: DataSetFlags1 valid | Variant encoding
+            0x01, 0x00, // FieldCount = 1
+            0x06, 0x2A, 0x00, 0x00, 0x00)); // Variant Int32 = 42
+
+    assertEquals(1, eventCount("R1"));
+    DataSetReceivedEvent event = takeEvent("R1");
+    assertEquals(ushort(1), event.dataSetWriterId());
+    assertEquals(Variant.ofInt32(42), event.fields().get(0).value().getValue());
+
+    PubSubDiagnostics.ComponentDiagnostics connection = diagnostics("conn");
+    assertEquals(0, connection.decodeErrors());
+  }
+
+  /** An inbound chunked DISCOVERY NetworkMessage stays detect-and-drop (Part 14 §7.2.4.4.4). */
+  @Test
+  void chunkedDiscoveryNetworkMessageTicksConnectionDecodeErrorsWithBadNotSupported()
+      throws Exception {
+    startService(DataSetReaderConfig.builder("R1").build());
+
+    injectAndFlush(
+        bytes(
+            0x91, // byte 0: version 1 | PublisherId 0x10 | ExtendedFlags1 0x80
+            0x80, // ExtendedFlags1: ExtendedFlags2 present (PublisherId type Byte)
+            0x09, // ExtendedFlags2: chunk | type discovery announcement
+            0x07, // PublisherId: Byte = 7
             0x01, 0x00, 0x05, 0x00, 0x00, 0x00)); // (chunk data, skipped)
 
     assertEquals(0, eventCount("R1"));
@@ -1185,21 +1220,27 @@ class ReaderMatchingTest {
     // silent; none of these DataSetMessages match R1's filter, so nothing is delivered and no
     // drop counters tick — but each NetworkMessage must advance R1's window
     assertNotNull(transport);
-    assertNotNull(transportExecutor);
     DataSetMessageDraft writerBDraft = draft(11, 2);
     for (int sequenceNumber = 1; sequenceNumber <= 20000; sequenceNumber++) {
       transport.inject(encode(pub, GROUP_SEQ_MASK, 7, uint(0), sequenceNumber, writerBDraft));
     }
-    transportExecutor.submit(() -> {}).get(10, TimeUnit.SECONDS);
-
-    assertEquals(0, eventCount("R1"));
-    assertEquals(0, diagnostics("conn/RG/R1").staleSequenceMessages());
-    assertEquals(0, diagnostics("conn/RG/R1").invalidSequenceMessages());
 
     // A's next data NetworkMessage: (20001 - 1 - 20000) mod 2^16 = 0 → NEW and delivered. With
     // the window stuck at 0 it would compute 20000 ≥ 2^14 and classify INVALID.
-    injectAndFlush(encode(pub, GROUP_SEQ_MASK, 7, uint(0), 20001, draft(10, 3)));
-    assertEquals(1, eventCount("R1"));
+    //
+    // A bare executor barrier is NOT a drain while a bulk backlog is queued (the connection's
+    // dispatch queue re-hops through the executor between tasks, so the barrier overtakes queued
+    // dispatches), but dispatch preserves arrival order: awaiting delivery of A's message proves
+    // every writer-B NetworkMessage was processed before it.
+    transport.inject(encode(pub, GROUP_SEQ_MASK, 7, uint(0), 20001, draft(10, 3)));
+    DataSetReceivedEvent event = eventsByReader.get("R1").poll(10, TimeUnit.SECONDS);
+    assertNotNull(event, "writer A's resumed NetworkMessage was not delivered");
+    assertEquals(ushort(10), event.dataSetWriterId());
+
+    // dispatched after all of writer B's NetworkMessages: none of those were delivered and none
+    // ticked drop counters, and A's message classified NEW
+    assertEquals(0, eventCount("R1"));
+    assertEquals(0, diagnostics("conn/RG/R1").staleSequenceMessages());
     assertEquals(0, diagnostics("conn/RG/R1").invalidSequenceMessages());
   }
 

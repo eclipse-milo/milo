@@ -79,6 +79,33 @@ public interface PubSubDiagnostics {
    *     14 §7.2.3 sequence-number window with a recency result in the invalid band — neither
    *     provably newer nor older than the last processed message, e.g. a huge forward jump after a
    *     publisher restarted its numbering. Same unit and posture as {@code staleSequenceMessages}.
+   * @param encryptionErrors the number of publish cycles of a secured WriterGroup skipped because
+   *     no usable key material was available (keys expired without replacement, a failed key
+   *     source, an exhausted MessageNonce sequence). Ticks at WriterGroup paths only, once per
+   *     skipped cycle; {@code lastError} and a diagnostics event are recorded only on the first
+   *     skip after a successful cycle (edge-triggered), so a dead key source does not storm the
+   *     event queue at the publishing interval.
+   * @param decryptionErrors the number of received secured NetworkMessages whose payload failed to
+   *     decrypt after the signature verified. Ticks at ReaderGroup paths — attributed to the first
+   *     secured group, in declaration order, matching the message identity — once per
+   *     NetworkMessage, with {@code lastError} and a diagnostics event (the same error class as
+   *     {@code decodeErrors}).
+   * @param invalidSignatureMessages the number of received secured NetworkMessages whose signature
+   *     did not verify (or that were too short to carry the promised signature). Ticks at
+   *     ReaderGroup paths, once per NetworkMessage, attributed like {@code decryptionErrors};
+   *     {@code lastError} is set but NO diagnostics event is emitted — forged traffic must not
+   *     become event-queue pressure — and a rate-limited WARN is logged instead.
+   * @param unknownTokenMessages the number of received secured NetworkMessages dropped because
+   *     their SecurityTokenId is outside the receiver's token window. Each drop may trigger at most
+   *     one single-flight key refresh; messages are never buffered while it runs. Ticks at
+   *     ReaderGroup paths, once per NetworkMessage; a normal-operation counter (no {@code
+   *     lastError}, no event).
+   * @param staleKeyMessages the number of received NetworkMessages dropped for want of usable keys
+   *     — no or expired key window (Part 14 §6.2.12.2) — or by the §7.2.4.3 receive-mode gate: a
+   *     received security mode below the group's configured mode, or a secured message to a group
+   *     configured with mode None. Ticks at ReaderGroup paths, once per (group, NetworkMessage); a
+   *     normal-operation counter (no {@code lastError}, no event). Security drops never count in
+   *     {@code decodeErrors}.
    * @param lastError the status code of the most recent error, or {@code null} if no error has
    *     occurred.
    */
@@ -92,5 +119,10 @@ public interface PubSubDiagnostics {
       long sourceErrors,
       long staleSequenceMessages,
       long invalidSequenceMessages,
+      long encryptionErrors,
+      long decryptionErrors,
+      long invalidSignatureMessages,
+      long unknownTokenMessages,
+      long staleKeyMessages,
       @Nullable StatusCode lastError) {}
 }

@@ -59,6 +59,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetRef;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
 import org.eclipse.milo.opcua.sdk.pubsub.config.ReaderGroupConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.SecurityGroupConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.SecurityGroupRef;
 import org.eclipse.milo.opcua.sdk.pubsub.config.UadpDataSetReaderSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.UadpDataSetWriterSettings;
@@ -68,6 +69,8 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.WriterGroupConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.WriterGroupMessageSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.json.JsonContentMasks;
 import org.eclipse.milo.opcua.sdk.pubsub.json.JsonMessageMappingProvider;
+import org.eclipse.milo.opcua.sdk.pubsub.security.PubSubSecurityPolicy;
+import org.eclipse.milo.opcua.sdk.pubsub.security.SecurityKeyProvider;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.TransportProvider;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.udp.UdpTransportProvider;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.MessageMappingProvider;
@@ -132,6 +135,10 @@ public final class PubSubServiceImpl implements PubSubService {
   private final HandleRegistry registry = new HandleRegistry();
   private final PubSubStateMachine stateMachine;
   private final ReaderDispatcher readerDispatcher;
+  private final SecurityKeyManager securityKeyManager;
+
+  /** The {@link SecurityKeyProvider}s bound at creation; fixed for the service lifetime. */
+  private final Map<SecurityGroupRef, SecurityKeyProvider> securityKeyProviders;
 
   /** Guarded by the engine lock. */
   private final Map<String, ConnectionRuntime> connections = new LinkedHashMap<>();
@@ -160,6 +167,12 @@ public final class PubSubServiceImpl implements PubSubService {
     stateMachine = new PubSubStateMachine(lock, this::onStateChange);
     readerDispatcher = new ReaderDispatcher(this);
 
+    securityKeyProviders =
+        bindings != null ? Map.copyOf(bindings.getSecurityKeyProviders()) : Map.of();
+    securityKeyManager =
+        new SecurityKeyManager(
+            diagnostics, stateMachine, securityKeyProviders, serviceConfig.getScheduledExecutor());
+
     if (bindings != null) {
       sources.putAll(bindings.getSources());
       bindings
@@ -167,8 +180,6 @@ public final class PubSubServiceImpl implements PubSubService {
           .forEach(
               (ref, listeners) ->
                   listeners.forEach(listener -> eventDispatcher.addDataSetListener(ref, listener)));
-      // SecurityKeyProviders are accepted but unused: only MessageSecurityMode.None is
-      // supported in this version.
     }
 
     synchronized (lock) {
@@ -307,6 +318,10 @@ public final class PubSubServiceImpl implements PubSubService {
     synchronized (lock) {
       started = false;
 
+      // dispose the component tree FIRST: deactivation cancels the publish tasks and detaches
+      // every secured group from the key manager, so key material is retired only after no new
+      // secured cycle can start — an in-flight cycle (or decode) still borrowing retired material
+      // drains within the manager's deferred-destroy grace, never racing the wipe (S3)
       for (ConnectionRuntime connection : connections.values()) {
         stateMachine.disposeSubtree(connection);
         Future<?> disposeFuture = connection.dispose();
@@ -314,6 +329,10 @@ public final class PubSubServiceImpl implements PubSubService {
           disposeFutures.add(disposeFuture);
         }
       }
+
+      // backstop for any key state the detach cascade did not close; also gates late
+      // attach/refresh attempts (cancellation only, no waiting)
+      securityKeyManager.shutdown();
 
       // clear the root operational flag so a post-shutdown enable() can never transition a
       // component past Paused and reactivate disposed transport resources; handles themselves
@@ -917,6 +936,45 @@ public final class PubSubServiceImpl implements PubSubService {
     return readerDispatcher;
   }
 
+  SecurityKeyManager getSecurityKeyManager() {
+    return securityKeyManager;
+  }
+
+  /**
+   * Whether {@code security} configures a secured mode (Sign or SignAndEncrypt). Group-level mode
+   * {@code Invalid} is treated like None (round-trip tolerance; mirrors the JSON gate's "mode not
+   * in {None, Invalid}" clause).
+   */
+  static boolean isSecured(@Nullable MessageSecurityConfig security) {
+    if (security == null) {
+      return false;
+    }
+    MessageSecurityMode mode = security.getMode();
+    return mode == MessageSecurityMode.Sign || mode == MessageSecurityMode.SignAndEncrypt;
+  }
+
+  /**
+   * The {@link SecurityGroupConfig} referenced by {@code ref}; the config builder validates every
+   * reference, so a miss can only follow a config/runtime mismatch.
+   */
+  SecurityGroupConfig requireSecurityGroup(SecurityGroupRef ref) throws UaException {
+    SecurityGroupConfig securityGroup = findSecurityGroup(ref);
+    if (securityGroup == null) {
+      throw new UaException(
+          StatusCodes.Bad_ConfigurationError, "SecurityGroup '%s' not found".formatted(ref.name()));
+    }
+    return securityGroup;
+  }
+
+  private @Nullable SecurityGroupConfig findSecurityGroup(SecurityGroupRef ref) {
+    for (SecurityGroupConfig securityGroup : config.securityGroups()) {
+      if (securityGroup.getName().equals(ref.name())) {
+        return securityGroup;
+      }
+    }
+    return null;
+  }
+
   /**
    * The built-in UADP mapping, used for the UADP-internal discovery codec regardless of any
    * user-configured "uadp" mapping override (discovery is not part of the mapping SPI).
@@ -1074,18 +1132,20 @@ public final class PubSubServiceImpl implements PubSubService {
   }
 
   /**
-   * Validate the conditions pinned to fail {@code startup()}: unsupported security modes on enabled
-   * groups, missing transport or mapping providers for enabled components, missing sources for
-   * enabled writers, publisher-less connections with enabled writer groups, enabled readers on
-   * broker connections without a configured data queueName, enabled writer groups on UDP
-   * connections with a maxNetworkMessageSize above the Part 14 §7.3.2.1 limit of 65535, enabled
-   * writers whose keyFrameCount > 1 cannot be honored — JSON writers whose effective content masks
-   * cannot express delta frames, and UADP writers with a non-zero ConfiguredSize; both only when
-   * the group's mapping resolves to the built-in provider (see {@link #deltaFrameConfigError}) —
-   * and enabled UADP writer groups asking for emission features the built-in mapping does not
-   * implement: the group-level PromotedFields content-mask bit and the RawData field-content-mask
-   * bit of enabled writers, rejected with {@code Bad_NotSupported} (see {@link
-   * #unsupportedUadpFeatureError}).
+   * Validate the conditions pinned to fail {@code startup()}: message security misconfiguration on
+   * enabled groups — a secured mode on a JSON-mapped group, or a secured group missing its
+   * SecurityGroup reference, a supported security policy, or a bound key provider (see {@link
+   * #checkWriterGroupMessageSecurity} / {@link #checkReaderGroupMessageSecurity}) — missing
+   * transport or mapping providers for enabled components, missing sources for enabled writers,
+   * publisher-less connections with enabled writer groups, enabled readers on broker connections
+   * without a configured data queueName, enabled writer groups on UDP connections with a
+   * maxNetworkMessageSize above the Part 14 §7.3.2.1 limit of 65535, enabled writers whose
+   * keyFrameCount > 1 cannot be honored — JSON writers whose effective content masks cannot express
+   * delta frames, and UADP writers with a non-zero ConfiguredSize; both only when the group's
+   * mapping resolves to the built-in provider (see {@link #deltaFrameConfigError}) — and enabled
+   * UADP writer groups asking for emission features the built-in mapping does not implement: the
+   * group-level PromotedFields content-mask bit and the RawData field-content-mask bit of enabled
+   * writers, rejected with {@code Bad_NotSupported} (see {@link #unsupportedUadpFeatureError}).
    */
   private void validateStartup(PubSubConfig config) throws UaException {
     if (!config.isEnabled()) {
@@ -1115,7 +1175,7 @@ public final class PubSubServiceImpl implements PubSubService {
 
         String groupPath = connection.name() + "/" + group.getName();
 
-        checkMessageSecurity(group.getMessageSecurity(), groupPath);
+        checkWriterGroupMessageSecurity(group, groupPath);
 
         if (!broker
             && group.getMaxNetworkMessageSize().longValue() > MAX_UDP_NETWORK_MESSAGE_SIZE) {
@@ -1172,7 +1232,7 @@ public final class PubSubServiceImpl implements PubSubService {
 
         String groupPath = connection.name() + "/" + group.getName();
 
-        checkMessageSecurity(group.getMessageSecurity(), groupPath);
+        checkReaderGroupMessageSecurity(group, groupPath);
 
         for (DataSetReaderConfig reader : group.getDataSetReaders()) {
           if (!reader.isEnabled()) {
@@ -1201,13 +1261,16 @@ public final class PubSubServiceImpl implements PubSubService {
 
   /**
    * Validate the subset of the {@link #validateStartup} conditions that reconfiguration must also
-   * enforce, because the runtime cannot degrade gracefully on them: missing mapping providers for
-   * enabled components, enabled readers on broker connections without a configured data queueName,
-   * and enabled writer groups on UDP connections with a maxNetworkMessageSize above the Part 14
-   * §7.3.2.1 limit of 65535. Throws {@link UaRuntimeException} with {@code Bad_ConfigurationError}
-   * (the reconfigure API has no checked-exception surface). Startup-only conditions with a graceful
-   * runtime degradation path (e.g. unbound sources, which surface as source errors) are not
-   * re-checked here.
+   * enforce, because the runtime cannot degrade gracefully on them: message security
+   * misconfiguration on enabled groups (K3 applies at startup AND reconfigure — a secured mode on a
+   * JSON-mapped group, or a secured group missing its SecurityGroup reference, a supported security
+   * policy, or a bound key provider; providers are fixed at creation, so such a group could only
+   * ever fail its activation), missing mapping providers for enabled components, enabled readers on
+   * broker connections without a configured data queueName, and enabled writer groups on UDP
+   * connections with a maxNetworkMessageSize above the Part 14 §7.3.2.1 limit of 65535. Throws
+   * {@link UaRuntimeException} with {@code Bad_ConfigurationError} (the reconfigure API has no
+   * checked-exception surface). Startup-only conditions with a graceful runtime degradation path
+   * (e.g. unbound sources, which surface as source errors) are not re-checked here.
    *
    * <p>The delta-frame consistency check ({@link #deltaFrameConfigError}) is also enforced here,
    * even though the runtime degrades such writers safely to every-cycle key frames: a configuration
@@ -1240,6 +1303,12 @@ public final class PubSubServiceImpl implements PubSubService {
         }
 
         String groupPath = connection.name() + "/" + group.getName();
+
+        try {
+          checkWriterGroupMessageSecurity(group, groupPath);
+        } catch (UaException e) {
+          throw new UaRuntimeException(e.getStatusCode().value(), e.getMessage());
+        }
 
         if (!broker
             && group.getMaxNetworkMessageSize().longValue() > MAX_UDP_NETWORK_MESSAGE_SIZE) {
@@ -1278,6 +1347,12 @@ public final class PubSubServiceImpl implements PubSubService {
         }
 
         String groupPath = connection.name() + "/" + group.getName();
+
+        try {
+          checkReaderGroupMessageSecurity(group, groupPath);
+        } catch (UaException e) {
+          throw new UaRuntimeException(e.getStatusCode().value(), e.getMessage());
+        }
 
         for (DataSetReaderConfig reader : group.getDataSetReaders()) {
           if (!reader.isEnabled()) {
@@ -1440,15 +1515,107 @@ public final class PubSubServiceImpl implements PubSubService {
     return settings == null || settings.getQueueName() == null || settings.getQueueName().isEmpty();
   }
 
-  private static void checkMessageSecurity(@Nullable MessageSecurityConfig security, String path)
+  /**
+   * Validate a writer group's message security (K3): a secured mode on a JSON-mapped group is
+   * rejected — JSON NetworkMessages have no message security in OPC UA 1.05 (Part 14 §7.3.4.1);
+   * transport security via {@code BrokerSecurityConfig} is the JSON-side substitute — and a secured
+   * mode on any other mapping (built-in UADP or a custom provider, which needs keys no matter who
+   * owns the wire format) requires a resolvable SecurityGroup reference, a supported security
+   * policy, and a bound {@link SecurityKeyProvider}. Group-level mode {@code Invalid} is treated
+   * like None. Enforced at startup, reconfigure, and group activation.
+   *
+   * @throws UaException with {@code Bad_ConfigurationError} naming the missing piece.
+   */
+  void checkWriterGroupMessageSecurity(WriterGroupConfig group, String path) throws UaException {
+    MessageSecurityConfig security = group.getMessageSecurity();
+    if (!isSecured(security)) {
+      return;
+    }
+
+    if (MAPPING_JSON.equals(mappingNameOf(group.getMessageSettings()))) {
+      throw jsonMessageSecurityError(security.getMode(), path);
+    }
+
+    checkSecuredGroupKeys(security, path);
+  }
+
+  /**
+   * Validate a reader group's message security (K3): the reader-group counterpart of {@link
+   * #checkWriterGroupMessageSecurity}. The mapping is a per-reader property here, so a secured
+   * group is rejected when any enabled reader is JSON-mapped; otherwise the secured-keys
+   * requirements apply. The Phase 4 runtime resolves message security at GROUP level only; a
+   * reader-level {@code messageSecurity} override is config-complete but not consumed here.
+   *
+   * @throws UaException with {@code Bad_ConfigurationError} naming the missing piece.
+   */
+  void checkReaderGroupMessageSecurity(ReaderGroupConfig group, String path) throws UaException {
+    MessageSecurityConfig security = group.getMessageSecurity();
+    if (!isSecured(security)) {
+      return;
+    }
+
+    for (DataSetReaderConfig reader : group.getDataSetReaders()) {
+      if (!reader.isEnabled()) {
+        continue;
+      }
+      if (MAPPING_JSON.equals(mappingNameOf(reader.getSettings()))) {
+        throw jsonMessageSecurityError(security.getMode(), path);
+      }
+    }
+
+    checkSecuredGroupKeys(security, path);
+  }
+
+  private static UaException jsonMessageSecurityError(MessageSecurityMode mode, String path) {
+    return new UaException(
+        StatusCodes.Bad_ConfigurationError,
+        ("MessageSecurityMode %s is not available for JSON-mapped groups: JSON NetworkMessages"
+                + " have no message security in OPC UA 1.05 (Part 14 §7.3.4.1); use transport"
+                + " security (BrokerSecurityConfig) instead (group '%s')")
+            .formatted(mode, path));
+  }
+
+  /**
+   * The secured-group key requirements (K3): a resolvable SecurityGroup reference, an effective
+   * security policy URI (group override, else the SecurityGroup's) that — when non-null — names a
+   * supported {@link PubSubSecurityPolicy} (a null URI passes: the provider's returned policy
+   * decides at fetch time, K8), and a bound {@link SecurityKeyProvider}.
+   */
+  private void checkSecuredGroupKeys(MessageSecurityConfig security, String path)
       throws UaException {
 
-    if (security != null && security.getMode() != MessageSecurityMode.None) {
+    SecurityGroupRef ref = security.getSecurityGroup();
+    if (ref == null) {
       throw new UaException(
-          StatusCodes.Bad_NotSupported,
-          "MessageSecurityMode %s is not supported (group '%s'); only None is supported in"
-                  .formatted(security.getMode(), path)
-              + " this version");
+          StatusCodes.Bad_ConfigurationError,
+          "MessageSecurityMode %s requires a SecurityGroup reference (group '%s')"
+              .formatted(security.getMode(), path));
+    }
+
+    SecurityGroupConfig securityGroup = findSecurityGroup(ref);
+    if (securityGroup == null) {
+      // the config builder validates every reference; reachable only on config/runtime mismatch
+      throw new UaException(
+          StatusCodes.Bad_ConfigurationError,
+          "group '%s' references unknown SecurityGroup '%s'".formatted(path, ref.name()));
+    }
+
+    String policyUri =
+        security.getSecurityPolicyUri() != null
+            ? security.getSecurityPolicyUri()
+            : securityGroup.getSecurityPolicyUri();
+    if (policyUri != null && PubSubSecurityPolicy.fromUri(policyUri).isEmpty()) {
+      throw new UaException(
+          StatusCodes.Bad_ConfigurationError,
+          "security policy '%s' is not a supported PubSub SecurityPolicy (group '%s')"
+              .formatted(policyUri, path));
+    }
+
+    if (!securityKeyProviders.containsKey(ref)) {
+      throw new UaException(
+          StatusCodes.Bad_ConfigurationError,
+          "no SecurityKeyProvider bound for SecurityGroup '%s' (group '%s')"
+              .formatted(ref.name(), path));
     }
   }
 

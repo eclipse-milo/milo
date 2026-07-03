@@ -148,6 +148,8 @@ class UadpDiscoveryModelTest {
             timestamp,
             messages,
             metaData,
+            null,
+            null,
             null),
         DecodedNetworkMessage.of(
             publisherId,
@@ -164,7 +166,8 @@ class UadpDiscoveryModelTest {
   @Test
   void decodedNetworkMessageOfAcceptsAllNullHeaders() {
     assertEquals(
-        new DecodedNetworkMessage(null, null, null, null, null, null, List.of(), List.of(), null),
+        new DecodedNetworkMessage(
+            null, null, null, null, null, null, List.of(), List.of(), null, null, null),
         DecodedNetworkMessage.of(null, null, null, null, null, null, List.of(), List.of()));
   }
 
@@ -206,7 +209,8 @@ class UadpDiscoveryModelTest {
             ushort(2),
             ushort(3),
             timestamp,
-            List.of(draft)),
+            List.of(draft),
+            null),
         EncodeContext.of(
             ENCODING_CONTEXT,
             publisherId,
@@ -220,7 +224,7 @@ class UadpDiscoveryModelTest {
 
   @Test
   void decodeContextOfMirrorsCanonicalConstructor() {
-    assertEquals(new DecodeContext(ENCODING_CONTEXT), DecodeContext.of(ENCODING_CONTEXT));
+    assertEquals(new DecodeContext(ENCODING_CONTEXT, null), DecodeContext.of(ENCODING_CONTEXT));
   }
 
   // endregion

@@ -25,6 +25,7 @@ import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfiguration2DataType;
 import org.jspecify.annotations.Nullable;
 
@@ -49,6 +50,7 @@ public final class PubSubConfig {
   private final List<PublishedDataSetConfig> publishedDataSets;
   private final List<StandaloneSubscribedDataSetConfig> standaloneSubscribedDataSets;
   private final List<SecurityGroupConfig> securityGroups;
+  private final List<EndpointDescription> defaultSecurityKeyServices;
   private final Map<QualifiedName, Variant> properties;
 
   private PubSubConfig(Builder builder) {
@@ -57,6 +59,7 @@ public final class PubSubConfig {
     this.publishedDataSets = List.copyOf(builder.publishedDataSets);
     this.standaloneSubscribedDataSets = List.copyOf(builder.standaloneSubscribedDataSets);
     this.securityGroups = List.copyOf(builder.securityGroups);
+    this.defaultSecurityKeyServices = List.copyOf(builder.defaultSecurityKeyServices);
     this.properties = Collections.unmodifiableMap(new LinkedHashMap<>(builder.properties));
   }
 
@@ -135,6 +138,16 @@ public final class PubSubConfig {
   }
 
   /**
+   * Get the default Security Key Service endpoints of this config, used for groups and dataset
+   * readers that configure none of their own.
+   *
+   * @return the default key service endpoints; possibly empty.
+   */
+  public List<EndpointDescription> defaultSecurityKeyServices() {
+    return defaultSecurityKeyServices;
+  }
+
+  /**
    * Get the additional properties of this config, in insertion order.
    *
    * @return an unmodifiable view of the additional properties.
@@ -175,6 +188,7 @@ public final class PubSubConfig {
     builder.publishedDataSets.addAll(publishedDataSets);
     builder.standaloneSubscribedDataSets.addAll(standaloneSubscribedDataSets);
     builder.securityGroups.addAll(securityGroups);
+    builder.defaultSecurityKeyServices.addAll(defaultSecurityKeyServices);
     builder.properties.putAll(properties);
     return builder;
   }
@@ -192,6 +206,7 @@ public final class PubSubConfig {
         && publishedDataSets.equals(that.publishedDataSets)
         && standaloneSubscribedDataSets.equals(that.standaloneSubscribedDataSets)
         && securityGroups.equals(that.securityGroups)
+        && defaultSecurityKeyServices.equals(that.defaultSecurityKeyServices)
         && properties.equals(that.properties);
   }
 
@@ -203,18 +218,20 @@ public final class PubSubConfig {
         publishedDataSets,
         standaloneSubscribedDataSets,
         securityGroups,
+        defaultSecurityKeyServices,
         properties);
   }
 
   @Override
   public String toString() {
-    return "PubSubConfig{enabled=%s, connections=%s, publishedDataSets=%s, standaloneSubscribedDataSets=%s, securityGroups=%s, properties=%s}"
+    return "PubSubConfig{enabled=%s, connections=%s, publishedDataSets=%s, standaloneSubscribedDataSets=%s, securityGroups=%s, defaultSecurityKeyServices=%s, properties=%s}"
         .formatted(
             enabled,
             connections,
             publishedDataSets,
             standaloneSubscribedDataSets,
             securityGroups,
+            defaultSecurityKeyServices,
             properties);
   }
 
@@ -236,6 +253,7 @@ public final class PubSubConfig {
     private final List<StandaloneSubscribedDataSetConfig> standaloneSubscribedDataSets =
         new ArrayList<>();
     private final List<SecurityGroupConfig> securityGroups = new ArrayList<>();
+    private final List<EndpointDescription> defaultSecurityKeyServices = new ArrayList<>();
     private final Map<QualifiedName, Variant> properties = new LinkedHashMap<>();
 
     private Builder() {}
@@ -292,6 +310,18 @@ public final class PubSubConfig {
      */
     public Builder securityGroup(SecurityGroupConfig securityGroup) {
       securityGroups.add(securityGroup);
+      return this;
+    }
+
+    /**
+     * Add a default Security Key Service endpoint, used for groups and dataset readers that
+     * configure none of their own.
+     *
+     * @param endpoint the key service endpoint to add.
+     * @return this {@link Builder}.
+     */
+    public Builder defaultSecurityKeyService(EndpointDescription endpoint) {
+      defaultSecurityKeyServices.add(endpoint);
       return this;
     }
 
@@ -471,6 +501,7 @@ public final class PubSubConfig {
                 readerPath
                     + ": unresolved StandaloneSubscribedDataSetRef '%s'".formatted(ref.name()));
           }
+          checkSecurityGroupRef(reader.getMessageSecurity(), securityGroupNames, readerPath);
         }
       }
     }
