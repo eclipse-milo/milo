@@ -32,6 +32,12 @@ public enum SecurityAlgorithm {
   /** Symmetric Encryption; transformation to be used with {@link Cipher#getInstance(String)}. */
   Aes256("http://www.w3.org/2001/04/xmlenc#aes256-cbc", "AES/CBC/NoPadding"),
 
+  /** Symmetric Encryption; transformation to be used with {@link Cipher#getInstance(String)}. */
+  Aes128Ctr("http://opcfoundation.org/UA/security/aes128-ctr", "AES/CTR/NoPadding"),
+
+  /** Symmetric Encryption; transformation to be used with {@link Cipher#getInstance(String)}. */
+  Aes256Ctr("http://opcfoundation.org/UA/security/aes256-ctr", "AES/CTR/NoPadding"),
+
   /** Asymmetric Signature; transformation to be used with {@link Signature#getInstance(String)}. */
   RsaSha1("http://www.w3.org/2000/09/xmldsig#rsa-sha1", "SHA1withRSA"),
 
