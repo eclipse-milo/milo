@@ -177,6 +177,8 @@ To be clear about the test status: TLS and authentication are implemented and wi
 
 Note also that `BrokerSecurityConfig` deliberately does not round-trip through the Part 14 wire configuration (`PubSubConfiguration2DataType`): credentials and key paths are dropped on export and come back as defaults, so secured deployments must re-apply security config in code after importing a wire config.
 
+TLS is transport security — it protects the hop to the broker, not the messages themselves. UADP-mapped groups on MQTT connections can additionally use Part 14 [message security](message-security-and-sks.md) (Sign or SignAndEncrypt): the secured bytes travel inside the broker message, end to end from publisher to subscriber, and the broker never holds a key. The security path is transport-independent, but the in-repo secured test matrix runs over UDP, so treat secured-over-MQTT the way this page treats TLS: applied but unverified against a real broker. For JSON-mapped groups there is no message security in OPC UA 1.05 — a secured JSON group is rejected with `Bad_ConfigurationError` — so TLS is the JSON mapping's only protection.
+
 ## Running the examples
 
 The MQTT examples live in `milo-examples/pubsub-examples` under `org.eclipse.milo.examples.pubsub.mqtt`. Build the module once from the repository root:

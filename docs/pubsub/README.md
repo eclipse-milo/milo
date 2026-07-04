@@ -13,13 +13,14 @@ runtime can be hosted standalone as a `PubSubService` — no OPC UA server requi
 an `OpcUaServer` via `ServerPubSub`, where datasets publish live node values and received values
 are written back into nodes.
 
-The support ships as three Maven artifacts, all managed by `milo-bom`:
+The support ships as four Maven artifacts, all managed by `milo-bom`:
 
 | Artifact | Contents |
 |---|---|
-| `org.eclipse.milo:milo-sdk-pubsub` | Configuration model, runtime engine, UADP and JSON codecs, UDP transport |
+| `org.eclipse.milo:milo-sdk-pubsub` | Configuration model, runtime engine, UADP and JSON codecs, message security, UDP transport |
 | `org.eclipse.milo:milo-sdk-pubsub-mqtt` | MQTT transport, built on the HiveMQ MQTT client |
-| `org.eclipse.milo:milo-sdk-pubsub-server` | `ServerPubSub`, the `OpcUaServer` integration |
+| `org.eclipse.milo:milo-sdk-pubsub-server` | `ServerPubSub`, the `OpcUaServer` integration, the opt-in SKS server face |
+| `org.eclipse.milo:milo-sdk-pubsub-sks` | `SksSecurityKeyProvider`, the SKS pull client (depends on `milo-sdk-client`) |
 
 The core module depends only on the Milo stack — not on the client or server SDK — so a standalone
 publisher or subscriber pulls in no client/server machinery at all.
@@ -39,12 +40,13 @@ The headline capabilities, at a glance:
 | [Live reconfiguration](operations.md#live-reconfiguration) of a running service | Works |
 | [Delta-frame](limitations-and-interop.md#delta-frames) (changed-fields-only) publishing | Works — `keyFrameCount` is honored; cycles between key frames send only the changed fields, or nothing at all when nothing changed |
 | Subscriber [sequence-number tracking](limitations-and-interop.md#sequence-numbers): duplicate, reordered-older, and out-of-window messages are dropped and counted | Works |
-| Message security (Sign/SignAndEncrypt) and SKS (Security Key Service) key distribution | Not yet — enabled secure groups fail startup with `Bad_NotSupported` ([details](limitations-and-interop.md#message-security-and-sks)) |
+| [UADP message security](message-security-and-sks.md) (Sign/SignAndEncrypt, PubSub-Aes128-CTR and PubSub-Aes256-CTR, both roles) | Works — JSON has no message security in OPC UA 1.05: secured JSON groups are rejected with `Bad_ConfigurationError` |
+| [SKS](message-security-and-sks.md) (Security Key Service) key distribution | Works — pull only: an `SksSecurityKeyProvider` client, a `StaticSecurityKeyProvider` for pre-shared keys, and an opt-in `GetSecurityKeys` server face; push (`SetSecurityKeys`) and the SKS management methods are not implemented |
 | [Event](limitations-and-interop.md#events) publishing | Not yet — received event messages are decoded and delivered, but none are published |
-| [NetworkMessage chunking](limitations-and-interop.md#chunking-and-message-size) (splitting oversized messages) | Not yet — a configured `maxNetworkMessageSize` is enforced, not chunked: an oversized message is skipped with a `Bad_EncodingLimitsExceeded` diagnostics error, and inbound chunked messages are detected but not reassembled |
+| [NetworkMessage chunking](limitations-and-interop.md#chunking-and-message-size) | Partial — inbound chunked messages are reassembled (with hard DoS caps); chunk *emission* is absent: a configured `maxNetworkMessageSize` is enforced, not chunked, and an oversized message is skipped with a `Bad_EncodingLimitsExceeded` diagnostics error |
 | UADP [`RawData` field encoding and PromotedFields](limitations-and-interop.md#rawdata-and-promoted-fields) | Not yet — rejected with `Bad_NotSupported` at startup, reconfigure, and activation |
 | Ethernet, AMQP, and MQTT-over-WebSocket [transports](limitations-and-interop.md#transports) | Not yet — rejected at config build or connection open |
-| Remote configuration over OPC UA | Not yet — the standard PubSub method nodes (ns0) return `Bad_NotImplemented` ([details](limitations-and-interop.md#server-integration-limits)) |
+| Remote configuration over OPC UA | Not yet — the standard PubSub method nodes (ns0) return `Bad_NotImplemented`; the one exception is `GetSecurityKeys` when the SKS server face is enabled ([details](limitations-and-interop.md#server-integration-limits)) |
 | `ServerPubSub` over MQTT | Not yet — UDP/UADP only; rejected with `Bad_ConfigurationError` |
 
 A distinction that matters beyond this table: some unsupported configuration is rejected with a
@@ -72,6 +74,9 @@ Then branch by what you're building:
 - Attaching PubSub to an `OpcUaServer`? [Server integration](server-integration.md) —
   `ServerPubSub.attach`, publishing node values with no source code, and writing received
   datasets into nodes with TargetVariables.
+- Signing or encrypting messages? [Message security and SKS](message-security-and-sks.md) —
+  the two security policies and modes, configuring secured groups, static and SKS-pulled keys,
+  the key lifecycle, and serving keys from an `OpcUaServer`.
 
 Three pages serve as reference once you're past the tutorial:
 

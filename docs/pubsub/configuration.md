@@ -5,8 +5,10 @@ This page is a reference for the PubSub configuration model in
 when you are authoring a `PubSubConfig` in Java and want to know what the builders validate, what
 the defaults actually put on the wire, and which knobs do nothing yet.
 
-The model is a plain object graph: a `PubSubConfig` holds `PublishedDataSetConfig`s and
-`PubSubConnectionConfig`s; each connection holds `WriterGroupConfig`s (with `DataSetWriterConfig`s)
+The model is a plain object graph: a `PubSubConfig` holds `PublishedDataSetConfig`s,
+`PubSubConnectionConfig`s, and `SecurityGroupConfig`s (covered on the
+[message security page](message-security-and-sks.md)); each connection holds
+`WriterGroupConfig`s (with `DataSetWriterConfig`s)
 and `ReaderGroupConfig`s (with `DataSetReaderConfig`s). `PubSubConnectionConfig` is sealed: UDP
 (`PubSubConnectionConfig.udp(name)`) and MQTT (`PubSubConnectionConfig.mqtt(name)`) are the only
 connection types in this release — Ethernet and AMQP connections are inexpressible (see
@@ -107,16 +109,21 @@ covers:
 - an enabled writer with a `keyFrameCount` greater than 1 that its mapping cannot honor: JSON
   masks missing `DataSetMessageHeader` or `MessageType`, or a UADP writer with a non-zero
   `ConfiguredSize` (see [key frames and delta frames](#key-frames-and-delta-frames-keyframecount))
+- an enabled group whose `MessageSecurityConfig` mode is `Sign` or `SignAndEncrypt` but is
+  missing what a secured group needs — a resolvable `SecurityGroupRef`, a supported security
+  policy (where one is named), or a `SecurityKeyProvider` bound via
+  `PubSubBindings.securityKeys(...)` — or that is JSON-mapped, since JSON NetworkMessages have no
+  message security in OPC UA 1.05; the error names the missing piece (see
+  [message security and SKS](message-security-and-sks.md))
 
 `Bad_NotSupported` is reserved for features that are recognized but not implemented in this
-release: any enabled group whose `MessageSecurityConfig` mode is anything other than `None`,
-MQTT-over-WebSocket broker URIs, and — on UADP-mapped writer groups — the `PromotedFields`
-network-message mask bit and the `RawData` field-content mask bit of enabled writers (see
-[field encoding](#field-encoding-datasetfieldcontentmask)). Disabled components with these
-settings are tolerated so that configs can round-trip; a component that is enabled later instead
-fails into PubSubState Error with the same code at activation. The UADP mask checks apply only
-when the `"uadp"` mapping resolves to the built-in provider — a custom provider registered under
-that name owns its wire format and is never second-guessed.
+release: MQTT-over-WebSocket broker URIs, and — on UADP-mapped writer groups — the
+`PromotedFields` network-message mask bit and the `RawData` field-content mask bit of enabled
+writers (see [field encoding](#field-encoding-datasetfieldcontentmask)). Disabled components with
+these settings are tolerated so that configs can round-trip; a component that is enabled later
+instead fails into PubSubState Error with the same code at activation. The UADP mask checks apply
+only when the `"uadp"` mapping resolves to the built-in provider — a custom provider registered
+under that name owns its wire format and is never second-guessed.
 
 At reconfigure time, `reconfigure(...)` and `update(...)` run the same startup checks before
 applying anything. Failures throw an unchecked `UaRuntimeException` with `Bad_ConfigurationError`
@@ -361,8 +368,11 @@ encoded NetworkMessage, before transport protocol headers, on every transport: w
 non-zero, an encoded NetworkMessage that exceeds it is skipped — never sent — and recorded as a
 group-path diagnostics error with `Bad_EncodingLimitsExceeded` carrying the actual and maximum
 sizes. The skipped DataSetMessages are not counted as sent, and the affected writers' delta
-baselines are invalidated so their next message is a key frame. There is still no chunking in
-either direction: an oversize message is dropped, not split.
+baselines are invalidated so their next message is a key frame. There is still no chunk
+*emission*: an oversize message is dropped, not split (inbound chunks from peers are reassembled
+— see [chunking and message size](limitations-and-interop.md#chunking-and-message-size)). On a
+[secured group](message-security-and-sks.md), the budget is checked against the final secured
+size, which includes 46–47 bytes of security overhead per NetworkMessage.
 
 The default changed along with the enforcement: it is now `uint(0)`, meaning no enforced limit —
 earlier revisions of this module defaulted to 1400 and ignored the value. On UDP connections, an
@@ -484,17 +494,21 @@ into one of two camps: rejected (you get an error) or inert (silently ignored). 
 | Knob | Behavior today |
 | --- | --- |
 | `DataSetReaderConfig.keyFrameCount` | Inert. Round-trip only; the reader never consults the expected cadence — frame classification and the key-frame startup gate work from message content alone. |
-| `MessageSecurityConfig` with mode `Sign` or `SignAndEncrypt` | Rejected. `startup()` fails with `Bad_NotSupported` for any enabled group; disabled groups are tolerated for round-trip. |
+| `DataSetReaderConfig.messageSecurity` (the per-reader security override) | Inert. Round-trips and its `SecurityGroupRef` is validated, but the runtime resolves [message security](message-security-and-sks.md) at the group level only — the override is never consulted for key management or message routing. |
 | UADP `PromotedFields` network-message mask bit / `RawData` field-content mask bit | Rejected. `startup()` and reconfigure fail with `Bad_NotSupported` for enabled UADP-mapped groups and writers; components enabled later fail into Error at activation. Disabled components are tolerated for round-trip; JSON `RawData` is implemented; custom `"uadp"` providers are exempt. |
-| `SecurityKeyProvider` / `SecurityGroupConfig` (SKS) | Inert. Providers are accepted but never invoked; the one non-silent edge is that binding a provider to an unknown security group name throws `IllegalArgumentException` at create time. |
+| `SecurityGroupConfig.securityGroupFolder` / `rolePermissions` | Inert in the runtime engine. They round-trip, and `rolePermissions` is enforced by the opt-in [SKS server face](message-security-and-sks.md#the-sks-server-face); nothing else reads them. |
 | UADP timing offsets (`SamplingOffset`, `PublishingOffset`, `ReceiveOffset`, `ProcessingOffset`) | Inert. No typed config fields exist; imported values are preserved in `rawMessageSettings` and never consulted by the publish or receive paths. |
 | `BrokerTransportSettings.resourceUri` / `authenticationProfileUri` | Inert. Round-trip only; never read by the runtime. |
 | Writer-level `BrokerTransportSettings` QoS without a `queueName` override | Inert for data messages — the writer stays in the group's shared partition. Writer QoS is honored when combined with a queue override. |
 
-Two former entries have graduated out of this list: `DataSetWriterConfig.keyFrameCount` is honored
-now (see [key frames and delta frames](#key-frames-and-delta-frames-keyframecount)) and
+Several former entries have graduated out of this list: `DataSetWriterConfig.keyFrameCount` is
+honored (see [key frames and delta frames](#key-frames-and-delta-frames-keyframecount)),
 `maxNetworkMessageSize` is enforced on both group kinds (see
-[size budgets](#networkmessage-size-budgets-maxnetworkmessagesize)).
+[size budgets](#networkmessage-size-budgets-maxnetworkmessagesize)), and group-level
+`MessageSecurityConfig`, `SecurityGroupConfig`, and the `SecurityKeyProvider` SPI now execute —
+UADP message security and SKS key distribution are implemented (see
+[message security and SKS](message-security-and-sks.md); note the secured-group validation added
+to the [startup checks](#when-validation-happens) above).
 
 See [limitations](limitations-and-interop.md) for the full picture of what is and is not
 implemented, including the receive-side behavior for features that are emit-rejected here.

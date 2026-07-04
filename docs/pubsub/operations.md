@@ -42,7 +42,10 @@ Only the enabled flag is externally settable; everything else is computed. A com
 its children sit in `Paused` until it recovers.
 
 Most components pass through `PreOperational` instantaneously on the way to `Operational`.
-DataSetReaders are the exception: a reader stays `PreOperational` until it accepts a first key
+There are two exceptions. A [secured](message-security-and-sks.md) writer or reader group stays
+`PreOperational` until its first key fetch succeeds (its children wait in `Paused`), and fails
+into `Error` if no fetch succeeds within twice the configured key lifetime. And a DataSetReader
+stays `PreOperational` until it accepts a first key
 frame (including a zero-field heartbeat key frame — a key frame with no fields, which some
 stacks send as a liveness signal) or an event DataSetMessage (Milo decodes event messages from
 peers but never publishes them; see [events](limitations-and-interop.md#events)). A keep-alive
@@ -334,8 +337,11 @@ keep-alive reseed when the writer emits keep-alives, otherwise the record discar
 above (`"pub-conn/group/writer"`, `"sub-conn/readers/reader"`). Each `ComponentDiagnostics`
 carries `networkMessagesSent`, `networkMessagesReceived`, `dataSetMessagesSent`,
 `dataSetMessagesReceived`, `decodeErrors`, `sourceErrors`, the per-reader sequence-drop
-counters `staleSequenceMessages` and `invalidSequenceMessages`, and a nullable `lastError`
-status code; counters that do not apply to a component type stay zero.
+counters `staleSequenceMessages` and `invalidSequenceMessages`, the five security counters
+(`encryptionErrors` at writer-group paths; `decryptionErrors`, `invalidSignatureMessages`,
+`unknownTokenMessages`, and `staleKeyMessages` at reader-group paths — their exact semantics are
+tabulated on the [message security page](message-security-and-sks.md#the-key-lifecycle-at-runtime)),
+and a nullable `lastError` status code; counters that do not apply to a component type stay zero.
 
 A few counters reward knowing exactly where they tick. `networkMessagesReceived` on a
 connection counts data-path arrivals — one tick per datagram or broker message, before decoding
@@ -343,9 +349,15 @@ and regardless of the outcome — while on a reader group it counts NetworkMessa
 at least one DataSetMessage matching one of the group's readers; a climbing connection counter
 over flat group counters therefore means traffic that does not decode or does not match.
 `decodeErrors` counts messages dropped for cause, at the path that dropped them: undecodable or
-truncated input and unsupported chunked NetworkMessages at the connection, NetworkMessages
-larger than a reader group's non-zero `maxNetworkMessageSize` at the group, version mismatches
-and invalid DataSetMessages at the reader. The sequence-drop counters are the exception to
+truncated input, unsupported chunked *discovery* messages, and reassembled chunk payloads that
+fail to decode at the connection (inbound data-plane chunks are otherwise
+[reassembled and delivered](limitations-and-interop.md#chunking-and-message-size)),
+NetworkMessages larger than a reader group's non-zero `maxNetworkMessageSize` at the group,
+version mismatches and invalid DataSetMessages at the reader. Security drops never tick
+`decodeErrors` — they have [their own counters](message-security-and-sks.md#the-key-lifecycle-at-runtime),
+of which only `decryptionErrors` records `lastError` and emits an event (`encryptionErrors` is
+edge-triggered, `invalidSignatureMessages` sets `lastError` without an event, and the other two
+are silent). The sequence-drop counters are the exception to
 "drops are errors": a duplicate dropped by the
 [sequence-number window](#sequence-numbers-and-duplicate-handling) is normal operation, so they
 tick without touching `lastError` and without emitting any diagnostics event — visible in
@@ -354,13 +366,15 @@ counters equals the total DataSetMessages matched to that reader.
 
 For push-style monitoring, `addDiagnosticsListener` registers a `PubSubDiagnosticsListener`. In
 this version only *error* events are delivered — decode failures, source read failures, send
-failures, receive timeouts, and publish-side oversize skips (a NetworkMessage exceeding the
+failures, receive timeouts, publish-side oversize skips (a NetworkMessage exceeding the
 writer group's non-zero `maxNetworkMessageSize` is skipped, not sent, and reported at the group
-path with `Bad_EncodingLimitsExceeded` and the actual and maximum sizes) — each as a
+path with `Bad_EncodingLimitsExceeded` and the actual and maximum sizes), decryption failures,
+and the *first* keyless-skipped publish cycle of a secured writer group after a successful one —
+each as a
 `PubSubDiagnosticsEvent` with the component path, a classifying `StatusCode`, a message, and
 the underlying exception when there is one. Happy-path activity is visible only through the
-counters, and sequence-window drops emit no events at all; do not wait for informational events
-that will never come.
+counters; sequence-window drops and most [security drops](message-security-and-sks.md#the-key-lifecycle-at-runtime)
+emit no events at all; do not wait for informational events that will never come.
 
 ## Threading and shutdown
 

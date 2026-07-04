@@ -255,6 +255,7 @@ Ctrl-C stops each side cleanly via the shutdown hook.
 - [Metadata and discovery](metadata-and-discovery.md) — how subscribers learn field names and types: the three `MetadataPolicy` values, multicast data planes with zero-config metadata via `REQUEST_IF_MISSING` probing (see `DiscoveryPublisherExample` and `DiscoverySubscriberExample`), and retained MQTT metadata.
 - [MQTT transport](mqtt.md) — broker connections with UADP or JSON payloads, topic derivation, and retained metadata; the `mqtt/` examples include an embeddable broker so you need no external infrastructure.
 - [Server integration](server-integration.md) — `ServerPubSub`: publish address-space node values automatically and write received DataSets into target variables; see the `server/` examples.
+- [Message security and SKS](message-security-and-sks.md) — signing and encrypting UADP NetworkMessages: the two security policies, configuring secured groups, key providers (static and SKS-pulled), and serving keys from an `OpcUaServer`.
 - [Operations](operations.md) — the component state machine, the receive-timeout watchdog, diagnostics, and replacing config on a live service with `update(...)`; see `ReconfigureExample`.
 - [Examples](examples.md) — the full catalog of runnable example programs, their verified run commands, and the ports and identifiers they use.
 - [Limitations and interop](limitations-and-interop.md) — what each module supports, what is rejected versus silently inert, and interop status.

@@ -362,7 +362,25 @@ What you get, and the edges:
 - `SupportedTransportProfiles` advertises the UDP-UADP profile only, matching what the server
   integration actually runs.
 - The ns0 method nodes (`AddConnection`, `RemoveConnection`, the SKS — Security Key Service —
-  methods) are left unbacked; a client calling them gets `Bad_NotImplemented`.
+  management methods) are left unbacked; a client calling them gets `Bad_NotImplemented`. The one
+  exception is `GetSecurityKeys`, backed when the [SKS server face](#serving-security-keys-the-sks-server-face)
+  is enabled — which works whether or not the information model is exposed.
+
+## Serving security keys: the SKS server face
+
+`ServerPubSubOptions.builder().securityKeyServerEnabled(true)` (default `false`) turns the
+attached server into a Security Key Service for the `SecurityGroupConfig`s of the attach-time
+configuration: at `startup()` a `GetSecurityKeys` handler is attached to the ns0 method node, keys
+are generated and rotated per each group's `keyLifeTime`, and the ns0 `PubSubCapablities` flags
+advertise pull support. Calls require a SignAndEncrypt channel, and authorization defaults to a
+posture that fails closed on groups carrying explicit `rolePermissions` — replaceable wholesale
+via `ServerPubSubOptions.methodAuthorizer(...)`.
+
+The full treatment — key generation and rotation arithmetic, the authorization posture table, and
+the limits (attach-time snapshot, no push distribution, no SKS management methods) — is on the
+[message security and SKS page](message-security-and-sks.md#the-sks-server-face). Note that the
+face serves keys regardless of whether this server's own PubSub runtime uses them: a UDP-only
+`ServerPubSub` can act as the SKS for secured publishers and subscribers running elsewhere.
 
 ## Persisting configuration
 
@@ -399,7 +417,8 @@ them:
 - **Remote configuration.** `ServerPubSubOptions.allowRemoteConfiguration(true)` throws
   `UnsupportedOperationException` at `attach` — the Part 14 configuration methods
   (`AddConnection` and friends) are not implemented. Clients that call the unbacked ns0 method
-  nodes get `Bad_NotImplemented`.
+  nodes get `Bad_NotImplemented`; the sole backed ns0 PubSub method is `GetSecurityKeys` when the
+  [SKS server face](#serving-security-keys-the-sks-server-face) is enabled.
 - **`diagnosticsEnabled`.** Currently inert: the option is stored but nothing reads it. Setting
   it neither fails nor does anything. Engine diagnostics counters are still available through
   `runtime().diagnostics()`.
