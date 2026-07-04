@@ -377,6 +377,17 @@
                 <version>(?i).*[-_\.](alpha|b|beta|rc|m|ea)[-_\.]?[0-9]*</version>
               </ignoreVersion>
             </ignoreVersions>
+            <rules>
+              <rule>
+                <groupId>io.netty</groupId>
+                <ignoreVersions>
+                  <ignoreVersion>
+                    <type>range</type>
+                    <version>[4.2.0,)</version>
+                  </ignoreVersion>
+                </ignoreVersions>
+              </rule>
+            </rules>
           </ruleSet>
         </configuration>
       </plugin>
