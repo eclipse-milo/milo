@@ -50,6 +50,19 @@ class ServerPubSubOptionsTest {
   }
 
   @Test
+  void statusEventsDefaultToDisabledAndAreIndependentlySettable() {
+    assertFalse(ServerPubSubOptions.builder().build().isStatusEventsEnabled());
+
+    // D32: statusEventsEnabled is independent of both exposeInformationModel and
+    // diagnosticsEnabled — settable on its own
+    ServerPubSubOptions options = ServerPubSubOptions.builder().statusEventsEnabled(true).build();
+
+    assertTrue(options.isStatusEventsEnabled());
+    assertFalse(options.isExposeInformationModel());
+    assertFalse(options.isDiagnosticsEnabled());
+  }
+
+  @Test
   void toBuilderRoundTripPreservesAllFields() {
     PubSubMethodAuthorizer authorizer = mock(PubSubMethodAuthorizer.class);
     PubSubConfigurationStore store = mock(PubSubConfigurationStore.class);
@@ -60,6 +73,7 @@ class ServerPubSubOptionsTest {
             .allowRemoteConfiguration(true)
             .configurationStore(store)
             .diagnosticsEnabled(true)
+            .statusEventsEnabled(true)
             .securityKeyServerEnabled(true)
             .methodAuthorizer(authorizer)
             .build();
@@ -73,6 +87,7 @@ class ServerPubSubOptionsTest {
     assertTrue(copy.isAllowRemoteConfiguration());
     assertSame(store, copy.getConfigurationStore());
     assertTrue(copy.isDiagnosticsEnabled());
+    assertTrue(copy.isStatusEventsEnabled());
     assertTrue(copy.isSecurityKeyServerEnabled());
     assertSame(authorizer, copy.getMethodAuthorizer());
   }
@@ -85,5 +100,12 @@ class ServerPubSubOptionsTest {
     assertNotEquals(base, base.toBuilder().securityKeyServerEnabled(true).build());
     assertNotEquals(
         base, base.toBuilder().methodAuthorizer(mock(PubSubMethodAuthorizer.class)).build());
+  }
+
+  @Test
+  void equalsDistinguishesStatusEventsEnabled() {
+    ServerPubSubOptions base = ServerPubSubOptions.builder().build();
+
+    assertNotEquals(base, base.toBuilder().statusEventsEnabled(true).build());
   }
 }

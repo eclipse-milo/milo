@@ -42,7 +42,11 @@ public interface PubSubMethodAuthorizer {
    * ServerPubSubOptions#isAllowRemoteConfiguration()} is enabled: the eight {@code
    * PubSubConfiguration} file-model handlers (Open, Close, Read, Write, GetPosition, SetPosition,
    * ReserveIds, CloseAndUpdate — including the read-side methods; the whole file surface is
-   * configure-gated) and the Enable/Disable handlers on every component Status object.
+   * configure-gated) and the Enable/Disable handlers on every component Status object. Also
+   * consulted by the diagnostics {@code Reset} handlers — the ns0 root ({@code i=17421}) and every
+   * per-component Diagnostics object — whenever {@link ServerPubSubOptions#isDiagnosticsEnabled()}
+   * activates the exposure (Part 14 §9.1.11.3: the caller "must be authorized to modify the
+   * configuration"), independent of {@code allowRemoteConfiguration}.
    *
    * @param session the {@link Session} the Call arrived on.
    * @return {@link StatusCode#GOOD} to allow the call, or a bad code to deny it.

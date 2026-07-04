@@ -25,8 +25,10 @@ import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.ValueRanks;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.sdk.pubsub.ComponentType;
+import org.eclipse.milo.opcua.sdk.pubsub.MetaDataListener;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubHandle;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubService;
+import org.eclipse.milo.opcua.sdk.pubsub.PubSubStateListener;
 import org.eclipse.milo.opcua.sdk.pubsub.ReconfigureResult;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetReaderConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetWriterConfig;
@@ -57,12 +59,14 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.UadpWriterGroupMessageTyp
 import org.eclipse.milo.opcua.sdk.server.model.objects.WriterGroupTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.BaseDataVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PubSubDiagnosticsCounterTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.SelectionListTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
+import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilter;
 import org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
@@ -72,7 +76,9 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.DiagnosticsLevel;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubDiagnosticsCounterClassification;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
@@ -119,16 +125,21 @@ import org.slf4j.LoggerFactory;
  * the component keeps its name path), matching the engine's path-stable counter preservation.
  *
  * <p>All variables are read-only ({@code AccessLevel.CurrentRead}, the {@code UaVariableNode}
- * default). Method nodes are created only when {@link
- * ServerPubSubOptions#isAllowRemoteConfiguration()} is {@code true}: an {@code Enable} and {@code
- * Disable} pair on every component Status object (see {@link PubSubStatusMethods}). The ns0 root
- * Status object ({@code i=17405}) never gets the pair — its Enable/Disable members are Optional,
- * the Foundation NodeSet omits them, and Call dispatch routes by objectId to the ns0 namespace,
- * which cannot see fragment-held method nodes (D23). Pre-existing ns0 method nodes (AddConnection,
- * RemoveConnection, the SKS methods, ...) and unbacked optional ns0 components (Diagnostics,
- * PubSubConfiguration, PubSubCapablities, ...) are left exactly as the ns0 loader created them.
- * PublishedDataSet nodes carry no Status child (Part 14 defines none); published-dataset runtime
- * state is not surfaced.
+ * default). Method nodes are created when {@link ServerPubSubOptions#isAllowRemoteConfiguration()}
+ * is {@code true} — an {@code Enable} and {@code Disable} pair on every component Status object
+ * (see {@link PubSubStatusMethods}) — and when {@link ServerPubSubOptions#isDiagnosticsEnabled()}
+ * is {@code true} — a {@code Reset} Method on every per-component Diagnostics object (see {@link
+ * PubSubDiagnosticsExposure}). The ns0 root Status object ({@code i=17405}) never gets the
+ * Enable/Disable pair — its Enable/Disable members are Optional, the Foundation NodeSet omits them,
+ * and Call dispatch routes by objectId to the ns0 namespace, which cannot see fragment-held method
+ * nodes (D23). Pre-existing ns0 method nodes (AddConnection, RemoveConnection, the SKS methods,
+ * ...) keep their loader state, except the ns0 Diagnostics Reset ({@code i=17421}), which gains an
+ * invocation handler while diagnostics are enabled. The ns0 {@code PubSubCapablities} properties
+ * ({@code i=23678}) are populated with values at startup (R20); the loader-built ns0 root {@code
+ * Diagnostics} subtree ({@code i=17409}) is backed with values and filters when {@link
+ * ServerPubSubOptions#isDiagnosticsEnabled()} is {@code true} and restored at shutdown — in both
+ * cases values/behavior only, never structure. PublishedDataSet nodes carry no Status child (Part
+ * 14 defines none); published-dataset runtime state is not surfaced.
  *
  * <p>Values are populated from the current {@link PubSubConfig}, normalized through {@code
  * PubSubConfig.toDataType} so defaults, transport profile URIs, and derived DataSetMetaData match
@@ -174,9 +185,15 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
   private final Map<String, UaVariableNode> metaDataVariables = new ConcurrentHashMap<>();
 
   /**
-   * Guards listener callbacks; set on startup, cleared on shutdown. Listeners cannot be removed.
+   * Guards listener callbacks against in-flight deliveries; set on startup, cleared on shutdown
+   * (the listeners themselves are removed at shutdown via the R12 removal API).
    */
   private volatile boolean active = false;
+
+  /** The live-update listeners, held for removal at shutdown. */
+  private volatile @Nullable PubSubStateListener stateListener;
+
+  private volatile @Nullable MetaDataListener metaDataListener;
 
   /**
    * The {@link ComponentNodeListener}s observing per-component subtree builds and removals.
@@ -189,9 +206,17 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
 
   private final PubSubService service;
   private final boolean allowRemoteConfiguration;
+  private final boolean securityKeyServerEnabled;
   private final PubSubMethodAuthorizer authorizer;
   private final Supplier<UInteger> configurationVersion;
   private final UShort namespaceIndex;
+
+  /**
+   * The §9.1.11 diagnostics exposure (WP-Z), present iff {@link
+   * ServerPubSubOptions#isDiagnosticsEnabled()}; registered as a {@link ComponentNodeListener} so
+   * per-component Diagnostics objects follow the initial build and every R10 rebuild.
+   */
+  private final @Nullable PubSubDiagnosticsExposure exposure;
 
   /**
    * Create a fragment exposing {@code config}.
@@ -215,10 +240,19 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
     this.config = config;
     this.service = service;
     this.allowRemoteConfiguration = options.isAllowRemoteConfiguration();
+    this.securityKeyServerEnabled = options.isSecurityKeyServerEnabled();
     this.authorizer = authorizer;
     this.configurationVersion = configurationVersion;
 
     namespaceIndex = server.getServerNamespace().getNamespaceIndex();
+
+    this.exposure =
+        options.isDiagnosticsEnabled()
+            ? new PubSubDiagnosticsExposure(this, server, service, authorizer)
+            : null;
+    if (exposure != null) {
+      addComponentNodeListener(exposure);
+    }
 
     subscriptionModel = new SubscriptionModel(server, this);
     getLifecycleManager().addLifecycle(subscriptionModel);
@@ -234,8 +268,16 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
                 PubSubConfiguration2DataType configuration =
                     PubSubInfoModelFragment.this.config.toDataType(getServer().getNamespaceTable());
 
+                if (exposure != null) {
+                  exposure.onBuildPass(configuration);
+                }
+
                 buildNodes(configuration);
                 populateExistingNs0Nodes(configuration);
+
+                if (exposure != null) {
+                  exposure.backNs0Root();
+                }
 
                 active = true;
                 registerListeners();
@@ -244,6 +286,13 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
               @Override
               public void shutdown() {
                 active = false;
+                removeListeners();
+                if (exposure != null) {
+                  // before the root state flip: ns0 diagnostics nodes outlive the fragment and
+                  // must not serve values from a dead service (fragment nodes die with the
+                  // node manager)
+                  exposure.restoreNs0Root();
+                }
                 setRootState(PubSubState.Disabled);
               }
             });
@@ -394,6 +443,7 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
       buildReaderGroupNodes(nodeId, name, group);
     }
 
+    stageDiagnostics(name, name, null, null);
     notifyBuilt(ComponentType.CONNECTION, name, node);
   }
 
@@ -528,6 +578,7 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
       buildDataSetWriterNodes(nodeId, connectionName, name, writer);
     }
 
+    stageDiagnostics(path, connectionName, name, null);
     notifyBuilt(ComponentType.WRITER_GROUP, path, node);
   }
 
@@ -631,6 +682,7 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
               Reference.Direction.INVERSE));
     }
 
+    stageDiagnostics(path, connectionName, groupName, name);
     notifyBuilt(ComponentType.DATA_SET_WRITER, path, node);
   }
 
@@ -662,6 +714,7 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
       buildDataSetReaderNodes(nodeId, connectionName, name, reader);
     }
 
+    stageDiagnostics(path, connectionName, name, null);
     notifyBuilt(ComponentType.READER_GROUP, path, node);
   }
 
@@ -787,7 +840,24 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
 
     buildSubscribedDataSetNodes(node, nodeId, reader);
 
+    stageDiagnostics(path, connectionName, groupName, name);
     notifyBuilt(ComponentType.DATA_SET_READER, path, node);
+  }
+
+  /**
+   * Stage a component's name components with the diagnostics exposure just before its build
+   * notification fires: name paths cannot be split back into components (names may contain {@code
+   * '/'}), so the exposure's {@link ComponentNodeListener} mint consumes coordinates staged here.
+   */
+  private void stageDiagnostics(
+      String namePath,
+      String connectionName,
+      @Nullable String groupName,
+      @Nullable String componentName) {
+
+    if (exposure != null) {
+      exposure.stageComponent(namePath, connectionName, groupName, componentName);
+    }
   }
 
   private void buildReaderMessageSettingsNodes(
@@ -987,8 +1057,11 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
    * declaration's BrowseName in ns0. No InputArguments/OutputArguments properties are created (both
    * are empty), methods carry no HasTypeDefinition, and no RolePermissions are minted (the
    * authorizer is the gate).
+   *
+   * <p>Package-private for the diagnostics exposure (WP-Z): the per-component {@code Reset}
+   * Methods.
    */
-  private UaMethodNode addMethodNode(UaNode parent, String name) {
+  UaMethodNode addMethodNode(UaNode parent, String name) {
     NodeId nodeId = childNodeId(parent, name);
 
     var node =
@@ -1019,9 +1092,12 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
 
   // region node helpers
 
-  /** The shared shape of the generated object TypeNode constructors (without event notifier). */
+  /**
+   * The shared shape of the generated object TypeNode constructors (without event notifier).
+   * Package-private for the diagnostics exposure (WP-Z).
+   */
   @FunctionalInterface
-  private interface ObjectNodeConstructor<T extends UaObjectNode> {
+  interface ObjectNodeConstructor<T extends UaObjectNode> {
     T create(
         UaNodeContext context,
         NodeId nodeId,
@@ -1173,6 +1249,79 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
   }
 
   /**
+   * Create a PubSubDiagnosticsCounterType variable node ({@code i=19725}, DataType UInt32) under
+   * {@code parent} (HasComponent) with its four Part 14 §9.1.11.5 properties: {@code Active}
+   * (always {@code true} — R13 has no activation machinery), {@code Classification} and {@code
+   * DiagnosticsLevel} static per the caller's row, and {@code TimeFirstChange} served by {@code
+   * timeFirstChangeFilter}. The counter's Value is served by {@code valueFilter} (pull model,
+   * clamped to UInt32 at exposure).
+   *
+   * <p>Package-private for the diagnostics exposure (WP-Z).
+   */
+  PubSubDiagnosticsCounterTypeNode addCounterNode(
+      UaNode parent,
+      String name,
+      PubSubDiagnosticsCounterClassification classification,
+      DiagnosticsLevel level,
+      AttributeFilter valueFilter,
+      AttributeFilter timeFirstChangeFilter) {
+
+    NodeId nodeId = childNodeId(parent, name);
+
+    var node =
+        new PubSubDiagnosticsCounterTypeNode(
+            getNodeContext(),
+            nodeId,
+            new QualifiedName(0, name),
+            LocalizedText.english(name),
+            LocalizedText.NULL_VALUE,
+            uint(0),
+            uint(0),
+            null,
+            null,
+            null,
+            new DataValue(Variant.NULL_VALUE),
+            NodeIds.UInt32,
+            ValueRanks.Scalar,
+            null);
+
+    node.addReference(
+        new Reference(
+            nodeId,
+            NodeIds.HasTypeDefinition,
+            NodeIds.PubSubDiagnosticsCounterType.expanded(),
+            Reference.Direction.FORWARD));
+
+    getNodeManager().addNode(node);
+
+    node.addReference(
+        new Reference(
+            nodeId,
+            NodeIds.HasComponent,
+            parent.getNodeId().expanded(),
+            Reference.Direction.INVERSE));
+
+    node.getFilterChain().addLast(valueFilter);
+
+    addPropertyNode(node, "Active", NodeIds.Boolean, ValueRanks.Scalar, new Variant(true));
+    addPropertyNode(
+        node,
+        "Classification",
+        NodeIds.PubSubDiagnosticsCounterClassification,
+        ValueRanks.Scalar,
+        new Variant(classification));
+    addPropertyNode(
+        node, "DiagnosticsLevel", NodeIds.DiagnosticsLevel, ValueRanks.Scalar, new Variant(level));
+
+    PropertyTypeNode timeFirstChangeNode =
+        addPropertyNode(
+            node, "TimeFirstChange", NodeIds.DateTime, ValueRanks.Scalar, Variant.NULL_VALUE);
+    timeFirstChangeNode.getFilterChain().addLast(timeFirstChangeFilter);
+
+    return node;
+  }
+
+  /**
    * Create a scalar String SelectionListType component variable under {@code parent} with its
    * Mandatory Selections property.
    */
@@ -1272,6 +1421,10 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
     PubSubConfiguration2DataType configuration =
         newConfig.toDataType(getServer().getNamespaceTable());
 
+    if (exposure != null) {
+      exposure.onBuildPass(configuration);
+    }
+
     // 1. deletions: every removed and restarted subtree, ancestors before descendants so a
     //    descendant entry coexisting with its ancestor's entry is skipped (node already gone)
     removeChangedSubtrees(result, ReconfigureResult.Scope.CONNECTION);
@@ -1315,6 +1468,14 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
    */
   void addComponentNodeListener(ComponentNodeListener listener) {
     componentNodeListeners.add(listener);
+  }
+
+  /**
+   * Get the diagnostics exposure, or {@code null} when {@link
+   * ServerPubSubOptions#isDiagnosticsEnabled()} is {@code false}. Package-private for tests.
+   */
+  @Nullable PubSubDiagnosticsExposure diagnosticsExposure() {
+    return exposure;
   }
 
   /**
@@ -1576,9 +1737,10 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
     }
   }
 
-  // region wire-form lookups (names are unique per scope, enforced by the config builder)
+  // region wire-form lookups (names are unique per scope, enforced by the config builder;
+  // package-private static for the diagnostics exposure, WP-Z)
 
-  private static @Nullable PubSubConnectionDataType findConnection(
+  static @Nullable PubSubConnectionDataType findConnection(
       PubSubConfiguration2DataType configuration, String name) {
 
     for (PubSubConnectionDataType connection :
@@ -1590,7 +1752,7 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
     return null;
   }
 
-  private static @Nullable PublishedDataSetDataType findPublishedDataSet(
+  static @Nullable PublishedDataSetDataType findPublishedDataSet(
       PubSubConfiguration2DataType configuration, String name) {
 
     for (PublishedDataSetDataType dataSet :
@@ -1602,9 +1764,12 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
     return null;
   }
 
-  private static @Nullable WriterGroupDataType findWriterGroup(
-      PubSubConnectionDataType connection, @Nullable String name) {
+  static @Nullable WriterGroupDataType findWriterGroup(
+      @Nullable PubSubConnectionDataType connection, @Nullable String name) {
 
+    if (connection == null) {
+      return null;
+    }
     for (WriterGroupDataType group :
         orEmpty(connection.getWriterGroups(), WriterGroupDataType[]::new)) {
       if (Objects.equals(group.getName(), name)) {
@@ -1614,9 +1779,12 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
     return null;
   }
 
-  private static @Nullable ReaderGroupDataType findReaderGroup(
-      PubSubConnectionDataType connection, @Nullable String name) {
+  static @Nullable ReaderGroupDataType findReaderGroup(
+      @Nullable PubSubConnectionDataType connection, @Nullable String name) {
 
+    if (connection == null) {
+      return null;
+    }
     for (ReaderGroupDataType group :
         orEmpty(connection.getReaderGroups(), ReaderGroupDataType[]::new)) {
       if (Objects.equals(group.getName(), name)) {
@@ -1626,7 +1794,7 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
     return null;
   }
 
-  private static @Nullable DataSetWriterDataType findDataSetWriter(
+  static @Nullable DataSetWriterDataType findDataSetWriter(
       WriterGroupDataType group, @Nullable String name) {
 
     for (DataSetWriterDataType writer :
@@ -1638,7 +1806,7 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
     return null;
   }
 
-  private static @Nullable DataSetReaderDataType findDataSetReader(
+  static @Nullable DataSetReaderDataType findDataSetReader(
       ReaderGroupDataType group, @Nullable String name) {
 
     for (DataSetReaderDataType reader :
@@ -1729,7 +1897,64 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
         PublishSubscribeType.SUPPORTED_TRANSPORT_PROFILES.getBrowseName(),
         new Variant(new String[] {UdpTransportProvider.TRANSPORT_PROFILE_URI}));
 
+    populateCapabilities();
+
     refreshNs0Values(configuration, config.isEnabled());
+  }
+
+  /**
+   * Populate the ns0 {@code PubSubCapablities} (sic, the NodeSet's own typo) object {@code i=23678}
+   * (R20): every {@code Max*} property is {@code 0} (no limit) — including
+   * MaxWriterGroups/MaxDataSetWriters, because the ReserveIds allocator bounds auto-assigned
+   * <em>ids</em> (0x8000–0xFFFF), not the number of configurable components (D15) — {@code
+   * SupportSecurityKeyPull=true} (pull support exists engine-side regardless of the SKS face),
+   * {@code SupportSecurityKeyPush=false} (push CUT, K16), and {@code SupportSecurityKeyServer}
+   * tracking {@link ServerPubSubOptions#isSecurityKeyServerEnabled()} (K15).
+   *
+   * <p>Values only; nothing is created. Composition with {@link SksServerFace}: the fragment starts
+   * before the face in {@code ServerPubSub.startup()}, and an enabled face re-sets Pull/Push/Server
+   * to identical values at its startup and owns the {@code Server=false} flip at its shutdown;
+   * fragment shutdown leaves the capability values in place.
+   */
+  private void populateCapabilities() {
+    Variant noLimit = new Variant(uint(0));
+
+    setCapabilityValue(NodeIds.PublishSubscribe_PubSubCapablities_MaxPubSubConnections, noLimit);
+    setCapabilityValue(NodeIds.PublishSubscribe_PubSubCapablities_MaxWriterGroups, noLimit);
+    setCapabilityValue(NodeIds.PublishSubscribe_PubSubCapablities_MaxReaderGroups, noLimit);
+    setCapabilityValue(NodeIds.PublishSubscribe_PubSubCapablities_MaxDataSetWriters, noLimit);
+    setCapabilityValue(NodeIds.PublishSubscribe_PubSubCapablities_MaxDataSetReaders, noLimit);
+    setCapabilityValue(NodeIds.PublishSubscribe_PubSubCapablities_MaxFieldsPerDataSet, noLimit);
+    setCapabilityValue(
+        NodeIds.PublishSubscribe_PubSubCapablities_MaxDataSetWritersPerGroup, noLimit);
+    setCapabilityValue(
+        NodeIds.PublishSubscribe_PubSubCapablities_MaxNetworkMessageSizeDatagram, noLimit);
+    setCapabilityValue(
+        NodeIds.PublishSubscribe_PubSubCapablities_MaxNetworkMessageSizeBroker, noLimit);
+    setCapabilityValue(NodeIds.PublishSubscribe_PubSubCapablities_MaxSecurityGroups, noLimit);
+    setCapabilityValue(NodeIds.PublishSubscribe_PubSubCapablities_MaxPushTargets, noLimit);
+    setCapabilityValue(NodeIds.PublishSubscribe_PubSubCapablities_MaxPublishedDataSets, noLimit);
+    setCapabilityValue(
+        NodeIds.PublishSubscribe_PubSubCapablities_MaxStandaloneSubscribedDataSets, noLimit);
+
+    setCapabilityValue(
+        NodeIds.PublishSubscribe_PubSubCapablities_SupportSecurityKeyPull, new Variant(true));
+    setCapabilityValue(
+        NodeIds.PublishSubscribe_PubSubCapablities_SupportSecurityKeyPush, new Variant(false));
+    setCapabilityValue(
+        NodeIds.PublishSubscribe_PubSubCapablities_SupportSecurityKeyServer,
+        new Variant(securityKeyServerEnabled));
+  }
+
+  /** Set the value of an existing ns0 capabilities variable node; never creates. */
+  private void setCapabilityValue(NodeId nodeId, Variant value) {
+    Optional<UaNode> node = getServer().getAddressSpaceManager().getManagedNode(nodeId);
+
+    if (node.orElse(null) instanceof UaVariableNode variableNode) {
+      variableNode.setValue(new DataValue(value));
+    } else {
+      LOGGER.warn("ns0 capabilities node not found: {}", nodeId);
+    }
   }
 
   /**
@@ -1785,11 +2010,12 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
   }
 
   /**
-   * Register the live-update listeners. {@link PubSubService} has no listener removal, so the
-   * callbacks are guarded by {@link #active} and become no-ops after shutdown.
+   * Register the live-update listeners (and the diagnostics exposure's, when present). The listener
+   * references are held for removal at shutdown; the {@link #active} guard additionally neutralizes
+   * deliveries already in flight when removal runs.
    */
   private void registerListeners() {
-    service.addStateListener(
+    PubSubStateListener stateListener =
         event -> {
           if (!active || !isTrackedComponentType(event.component().componentType())) {
             return;
@@ -1799,9 +2025,12 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
           if (stateNode != null) {
             stateNode.setValue(new DataValue(new Variant(event.newState())));
           }
-        });
+        };
 
-    service.addMetaDataListener(
+    this.stateListener = stateListener;
+    service.addStateListener(stateListener);
+
+    MetaDataListener metaDataListener =
         event -> {
           if (!active) {
             return;
@@ -1811,7 +2040,33 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
           if (metaDataNode != null) {
             metaDataNode.setValue(new DataValue(new Variant(event.metaData())));
           }
-        });
+        };
+
+    this.metaDataListener = metaDataListener;
+    service.addMetaDataListener(metaDataListener);
+
+    if (exposure != null) {
+      exposure.registerListeners();
+    }
+  }
+
+  /** Remove the listeners registered by {@link #registerListeners()} (R12 removal API). */
+  private void removeListeners() {
+    PubSubStateListener stateListener = this.stateListener;
+    if (stateListener != null) {
+      service.removeStateListener(stateListener);
+      this.stateListener = null;
+    }
+
+    MetaDataListener metaDataListener = this.metaDataListener;
+    if (metaDataListener != null) {
+      service.removeMetaDataListener(metaDataListener);
+      this.metaDataListener = null;
+    }
+
+    if (exposure != null) {
+      exposure.removeListeners();
+    }
   }
 
   /**

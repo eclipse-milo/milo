@@ -93,8 +93,11 @@ import org.slf4j.LoggerFactory;
  * <p>Attach timing: {@code attach} is legal any time after {@link OpcUaServer} construction — the
  * server's address space, including the ns0 PublishSubscribe subtree, is loaded by the constructor.
  * {@link #startup()} does not require {@code server.startup()} and ignores endpoint state entirely;
- * PubSub operates independently of the server's client-facing transports. The caller owns shutdown
- * ordering: {@code OpcUaServer.shutdown()} does not shut down an attached {@link ServerPubSub}.
+ * PubSub operates independently of the server's client-facing transports. One exception: with
+ * {@link ServerPubSubOptions#isStatusEventsEnabled()} the status-event bridge fires events through
+ * the server's {@code EventFactory}, whose lifecycle expects {@code server.startup()} first —
+ * events emitted before then are dropped with a WARN. The caller owns shutdown ordering: {@code
+ * OpcUaServer.shutdown()} does not shut down an attached {@link ServerPubSub}.
  */
 public final class ServerPubSub implements AutoCloseable {
 
@@ -119,6 +122,9 @@ public final class ServerPubSub implements AutoCloseable {
   /** Guarded by {@link #lifecycleLock}. */
   private FaceState configurationFaceState = FaceState.NEW;
 
+  /** Guarded by {@link #lifecycleLock}. */
+  private FaceState statusEventBridgeState = FaceState.NEW;
+
   /** The raw engine service; internal use only — API callers get {@link #managedService}. */
   private final PubSubService service;
 
@@ -129,6 +135,7 @@ public final class ServerPubSub implements AutoCloseable {
   private final @Nullable SksServerFace sksServerFace;
   private final @Nullable PubSubConfigurationFace configurationFace;
   private final @Nullable PubSubConfigurationStore configurationStore;
+  private final @Nullable PubSubStatusEventBridge statusEventBridge;
 
   /**
    * The SecurityGroups of the current configuration, by SecurityGroupId; the default authorizer's
@@ -211,8 +218,8 @@ public final class ServerPubSub implements AutoCloseable {
 
     // one effective authorizer per attachment (S13): the options-configured instance, else the
     // shared default; every PubSub Method handler (the SKS face, the fragment's Enable/Disable
-    // handlers, the remote-configuration face, and — as they land — the diagnostics Reset
-    // handlers) consults this same instance
+    // handlers, the remote-configuration face, and the diagnostics Reset handlers) consults
+    // this same instance
     this.securityGroupsById = securityGroupsById(config);
 
     PubSubMethodAuthorizer configuredAuthorizer = options.getMethodAuthorizer();
@@ -256,6 +263,11 @@ public final class ServerPubSub implements AutoCloseable {
                 this::currentConfigurationVersion,
                 this::managedService)
             : null;
+
+    // the R17 status-event bridge: engine state changes and send failures become OPC UA events
+    // fired with Server-object semantics; independent of the exposed information model (D32)
+    this.statusEventBridge =
+        options.isStatusEventsEnabled() ? new PubSubStatusEventBridge(server, service) : null;
 
     // Post-apply hooks, in FIXED registration order (S11); registered before the mediator is
     // constructed because the hook list is fixed at construction:
@@ -321,6 +333,14 @@ public final class ServerPubSub implements AutoCloseable {
    */
   public static ServerPubSub attach(
       OpcUaServer server, PubSubConfig config, ServerPubSubOptions options) {
+
+    if (options.isDiagnosticsEnabled() && !options.isExposeInformationModel()) {
+      // documented no-op, never a throw: the §9.1.11 diagnostics exposure lives in the
+      // information model fragment, which only exists when the model is exposed
+      LOGGER.warn(
+          "diagnosticsEnabled has no effect without exposeInformationModel;"
+              + " no diagnostics will be exposed");
+    }
 
     NamespaceTable namespaceTable = server.getNamespaceTable();
 
@@ -415,6 +435,14 @@ public final class ServerPubSub implements AutoCloseable {
           return CompletableFuture.failedFuture(e);
         }
       }
+
+      if (statusEventBridge != null && statusEventBridgeState == FaceState.NEW) {
+        // registers the engine listeners (removed again at shutdown, S4); event emission
+        // additionally expects a STARTED server — the EventFactory lifecycle — and drops
+        // events with a WARN otherwise (documented on statusEventsEnabled)
+        statusEventBridge.startup();
+        statusEventBridgeState = FaceState.STARTED;
+      }
     }
 
     return service.startup().thenApply(s -> this);
@@ -450,6 +478,9 @@ public final class ServerPubSub implements AutoCloseable {
               shutdownFragment();
               shutdownSksServerFace();
               shutdownConfigurationFace();
+              // after the queue drain: shutdown-induced dispose events have reached the bridge
+              // (and were silenced by cause, D33) before its listeners are deregistered
+              shutdownStatusEventBridge();
             });
   }
 
@@ -488,6 +519,18 @@ public final class ServerPubSub implements AutoCloseable {
         configurationFace.shutdown();
       }
       configurationFaceState = FaceState.STOPPED;
+    }
+  }
+
+  private void shutdownStatusEventBridge() {
+    if (statusEventBridge == null) {
+      return;
+    }
+    synchronized (lifecycleLock) {
+      if (statusEventBridgeState == FaceState.STARTED) {
+        statusEventBridge.shutdown();
+      }
+      statusEventBridgeState = FaceState.STOPPED;
     }
   }
 
@@ -554,6 +597,14 @@ public final class ServerPubSub implements AutoCloseable {
    */
   @Nullable PubSubConfigurationFace configurationFace() {
     return configurationFace;
+  }
+
+  /**
+   * Get the status-event bridge, or {@code null} when {@link
+   * ServerPubSubOptions#isStatusEventsEnabled()} is {@code false}. Package-private for tests.
+   */
+  @Nullable PubSubStatusEventBridge statusEventBridge() {
+    return statusEventBridge;
   }
 
   /**
@@ -1027,9 +1078,10 @@ public final class ServerPubSub implements AutoCloseable {
   }
 
   /**
-   * Lifecycle of an optional server-side face (the info model fragment, the SKS face); guarded by
-   * {@link #lifecycleLock}. {@code STOPPED} is terminal: a face never restarts, and a face marked
-   * {@code STOPPED} before it started (close won the race) never starts at all.
+   * Lifecycle of an optional server-side face (the info model fragment, the SKS face, the
+   * remote-configuration face, the status-event bridge); guarded by {@link #lifecycleLock}. {@code
+   * STOPPED} is terminal: a face never restarts, and a face marked {@code STOPPED} before it
+   * started (close won the race) never starts at all.
    */
   private enum FaceState {
     NEW,

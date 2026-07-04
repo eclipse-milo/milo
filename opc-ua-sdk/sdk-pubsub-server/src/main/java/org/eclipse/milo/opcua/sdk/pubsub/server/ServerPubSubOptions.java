@@ -28,6 +28,7 @@ public final class ServerPubSubOptions {
   private final boolean allowRemoteConfiguration;
   private final @Nullable PubSubConfigurationStore configurationStore;
   private final boolean diagnosticsEnabled;
+  private final boolean statusEventsEnabled;
   private final PubSubBindings bindings;
   private final boolean securityKeyServerEnabled;
   private final @Nullable PubSubMethodAuthorizer methodAuthorizer;
@@ -37,6 +38,7 @@ public final class ServerPubSubOptions {
     this.allowRemoteConfiguration = builder.allowRemoteConfiguration;
     this.configurationStore = builder.configurationStore;
     this.diagnosticsEnabled = builder.diagnosticsEnabled;
+    this.statusEventsEnabled = builder.statusEventsEnabled;
     this.bindings = builder.bindings;
     this.securityKeyServerEnabled = builder.securityKeyServerEnabled;
     this.methodAuthorizer = builder.methodAuthorizer;
@@ -74,12 +76,27 @@ public final class ServerPubSubOptions {
   }
 
   /**
-   * Get whether PubSub diagnostics are exposed in the server's information model.
+   * Get whether the Part 14 §9.1.11 PubSub diagnostics exposure is enabled.
+   *
+   * <p>See {@link Builder#diagnosticsEnabled(boolean)} for what {@code true} activates; effective
+   * only together with {@link #isExposeInformationModel()}.
    *
    * @return {@code true} if diagnostics exposure is enabled; defaults to {@code false}.
    */
   public boolean isDiagnosticsEnabled() {
     return diagnosticsEnabled;
+  }
+
+  /**
+   * Get whether the Part 14 §9.1.13 PubSub status-event bridge is enabled.
+   *
+   * <p>See {@link Builder#statusEventsEnabled(boolean)} for what {@code true} activates;
+   * independent of both {@link #isExposeInformationModel()} and {@link #isDiagnosticsEnabled()}.
+   *
+   * @return {@code true} if status events are enabled; defaults to {@code false}.
+   */
+  public boolean isStatusEventsEnabled() {
+    return statusEventsEnabled;
   }
 
   /**
@@ -124,6 +141,7 @@ public final class ServerPubSubOptions {
     builder.allowRemoteConfiguration = allowRemoteConfiguration;
     builder.configurationStore = configurationStore;
     builder.diagnosticsEnabled = diagnosticsEnabled;
+    builder.statusEventsEnabled = statusEventsEnabled;
     builder.bindings = bindings;
     builder.securityKeyServerEnabled = securityKeyServerEnabled;
     builder.methodAuthorizer = methodAuthorizer;
@@ -142,6 +160,7 @@ public final class ServerPubSubOptions {
         && allowRemoteConfiguration == that.allowRemoteConfiguration
         && Objects.equals(configurationStore, that.configurationStore)
         && diagnosticsEnabled == that.diagnosticsEnabled
+        && statusEventsEnabled == that.statusEventsEnabled
         && bindings.equals(that.bindings)
         && securityKeyServerEnabled == that.securityKeyServerEnabled
         && Objects.equals(methodAuthorizer, that.methodAuthorizer);
@@ -154,6 +173,7 @@ public final class ServerPubSubOptions {
         allowRemoteConfiguration,
         configurationStore,
         diagnosticsEnabled,
+        statusEventsEnabled,
         bindings,
         securityKeyServerEnabled,
         methodAuthorizer);
@@ -175,6 +195,7 @@ public final class ServerPubSubOptions {
     private boolean allowRemoteConfiguration = false;
     private @Nullable PubSubConfigurationStore configurationStore;
     private boolean diagnosticsEnabled = false;
+    private boolean statusEventsEnabled = false;
     private PubSubBindings bindings = PubSubBindings.builder().build();
     private boolean securityKeyServerEnabled = false;
     private @Nullable PubSubMethodAuthorizer methodAuthorizer;
@@ -230,13 +251,60 @@ public final class ServerPubSubOptions {
     }
 
     /**
-     * Set whether PubSub diagnostics are exposed in the server's information model.
+     * Set whether the Part 14 §9.1.11 PubSub diagnostics exposure is enabled (CU "PubSub Model
+     * Diagnostics").
+     *
+     * <p>When {@code true}, the exposed information model serves the PubSub diagnostics: the
+     * loader-built ns0 root {@code Diagnostics} subtree ({@code i=17409}) is backed with live
+     * values and its {@code Reset} Method ({@code i=17421}) gains a handler, and every exposed
+     * connection, writer/reader group, and dataset writer/reader gains a {@code Diagnostics} object
+     * ({@code "PubSub/<path>/Diagnostics"}) whose counters and LiveValues are computed per read
+     * from the runtime's diagnostics. Counter values saturate at the UInt32 maximum (Part 14
+     * §9.1.11.5); DiagnosticsLevel is read-only {@code Basic} with no level-switching machinery (a
+     * conformant simplification). Every {@code Reset} handler is gated by the effective {@link
+     * PubSubMethodAuthorizer#checkConfigure(org.eclipse.milo.opcua.sdk.server.Session)},
+     * independent of {@link #allowRemoteConfiguration(boolean)}.
+     *
+     * <p>Effective only together with {@link #exposeInformationModel(boolean)} — the diagnostics
+     * exposure lives in the information model fragment. Enabling diagnostics without exposing the
+     * information model is a WARN-logged no-op.
      *
      * @param value {@code true} to expose diagnostics.
      * @return this {@link Builder}.
      */
     public Builder diagnosticsEnabled(boolean value) {
       this.diagnosticsEnabled = value;
+      return this;
+    }
+
+    /**
+     * Set whether the Part 14 §9.1.13 PubSub status-event bridge is enabled (CUs "PubSub Model
+     * Status Event" and "PubSub Model Diagnostics Events").
+     *
+     * <p>When {@code true}, {@link ServerPubSub} bridges the runtime's state changes and
+     * transmission failures to OPC UA events fired with Server-object semantics: clients receive
+     * them through event monitored items on the Server object ({@code i=2253}). Every state change
+     * of a connection, writer/reader group, or dataset writer/reader emits a {@code
+     * PubSubStatusEventType} ({@code i=15535}) event; a NetworkMessage transmission failure emits a
+     * {@code PubSubCommunicationFailureEventType} ({@code i=15563}) event carrying the failure's
+     * status code — the first failure per outage episode only, re-armed when the affected component
+     * (or an ancestor) transitions back to Operational. Informational transitions carry severity
+     * 100, Error entries and communication failures severity 500.
+     *
+     * <p>Independent of {@link #exposeInformationModel(boolean)}: the event fields ({@code
+     * SourceNode}, {@code ConnectionId}, {@code GroupId}) always carry the deterministic NodeIds of
+     * the information model fragment, so when the model is not exposed they reference
+     * non-materialized (non-browsable) NodeIds. Separate from {@link #diagnosticsEnabled(boolean)}
+     * (CU "PubSub Model Diagnostics"), which gates the §9.1.11 diagnostics exposure.
+     *
+     * <p>Firing events requires a started server: call {@code OpcUaServer.startup()} before {@code
+     * ServerPubSub.startup()}. Events that cannot be constructed or fired are dropped with a WARN.
+     *
+     * @param value {@code true} to bridge status events.
+     * @return this {@link Builder}.
+     */
+    public Builder statusEventsEnabled(boolean value) {
+      this.statusEventsEnabled = value;
       return this;
     }
 

@@ -421,6 +421,45 @@ class SksServerFaceTest {
   }
 
   @Test
+  void fragmentAndFaceComposeOnTheCapabilityValues() throws Exception {
+    // with both the info model fragment and the SKS face enabled, the fragment populates the
+    // full PubSubCapablities set at startup and the face re-sets Pull/Push/Server to identical
+    // values (composition, not conflict); the Server=false flip at shutdown is face-owned
+    ServerPubSub serverPubSub =
+        ServerPubSub.attach(
+            testServer.getServer(),
+            securityGroupsConfig(),
+            ServerPubSubOptions.builder()
+                .exposeInformationModel(true)
+                .securityKeyServerEnabled(true)
+                .build());
+
+    serverPubSub.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+    try {
+      assertEquals(
+          true, capabilityValue(NodeIds.PublishSubscribe_PubSubCapablities_SupportSecurityKeyPull));
+      assertEquals(
+          false,
+          capabilityValue(NodeIds.PublishSubscribe_PubSubCapablities_SupportSecurityKeyPush));
+      assertEquals(
+          true,
+          capabilityValue(NodeIds.PublishSubscribe_PubSubCapablities_SupportSecurityKeyServer));
+
+      // the fragment's R20 population rides along (D15: 0 = no limit)
+      assertEquals(
+          uint(0), capabilityValue(NodeIds.PublishSubscribe_PubSubCapablities_MaxWriterGroups));
+    } finally {
+      serverPubSub.close();
+    }
+
+    assertEquals(
+        false,
+        capabilityValue(NodeIds.PublishSubscribe_PubSubCapablities_SupportSecurityKeyServer));
+    assertEquals(
+        true, capabilityValue(NodeIds.PublishSubscribe_PubSubCapablities_SupportSecurityKeyPull));
+  }
+
+  @Test
   void olderFaceShutdownDoesNotClobberANewerAttach() {
     UaMethodNode methodNode = getSecurityKeysNode();
     assertSame(MethodInvocationHandler.NOT_IMPLEMENTED, methodNode.getInvocationHandler());
