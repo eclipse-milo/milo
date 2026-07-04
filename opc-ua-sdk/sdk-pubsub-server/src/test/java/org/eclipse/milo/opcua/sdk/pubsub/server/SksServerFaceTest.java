@@ -52,8 +52,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * The direct-invoke authorization matrix for the SKS server face (K17.2/K17.3), plus handler
- * lifecycle (attach on startup, restore on shutdown) and capabilities values.
+ * The direct-invoke authorization matrix for the SKS server face, plus handler lifecycle (attach on
+ * startup, restore on shutdown) and capabilities values.
  *
  * <p>The handler is invoked directly with a stubbed {@link AccessContext} and a mocked {@link
  * Session}: on the real service path an unencrypted Call never reaches the handler (the access
@@ -282,11 +282,11 @@ class SksServerFaceTest {
   }
 
   /**
-   * A10: a custom {@link PubSubMethodAuthorizer} GRANT overrides the default posture — a caller
-   * with no roles against a group carrying restrictive RolePermissions (which the default
-   * authorizer denies, see {@link #restrictedGroupIsDeniedWithoutRoleMapper}) is served keys when
-   * the SPI says GOOD. The channel-mode check is NOT delegated: an unencrypted caller stays denied
-   * regardless of the authorizer.
+   * A custom {@link PubSubMethodAuthorizer} GRANT overrides the default posture — a caller with no
+   * roles against a group carrying restrictive RolePermissions (which the default authorizer
+   * denies, see {@link #restrictedGroupIsDeniedWithoutRoleMapper}) is served keys when the SPI says
+   * GOOD. The channel-mode check is NOT delegated: an unencrypted caller stays denied regardless of
+   * the authorizer.
    */
   @Test
   void customAuthorizerGrantOverridesTheRestrictivePosture() throws Exception {
@@ -330,7 +330,7 @@ class SksServerFaceTest {
       assertNotNull(keys);
       assertTrue(keys.length >= 1);
 
-      // the K17.2 channel check runs BEFORE the authorizer: the grant does not override it
+      // the channel check runs BEFORE the authorizer: the grant does not override it
       CallMethodResult unencrypted =
           invokeGetSecurityKeys(mockSession(MessageSecurityMode.None, null), RESTRICTED_GROUP);
       assertEquals(
@@ -341,10 +341,9 @@ class SksServerFaceTest {
   }
 
   /**
-   * The K15/K16 deferral pin: with the face attached and serving GetSecurityKeys, the SKS
-   * management and push methods — AddSecurityGroup, RemoveSecurityGroup (K15-deferred) and
-   * SetSecurityKeys (K16 push CUT) — remain {@code NOT_IMPLEMENTED} and answer {@code
-   * Bad_NotImplemented}.
+   * With the SKS helper attached and serving GetSecurityKeys, the SKS management and push methods —
+   * AddSecurityGroup, RemoveSecurityGroup, and SetSecurityKeys — remain {@code NOT_IMPLEMENTED} and
+   * answer {@code Bad_NotImplemented}.
    */
   @Test
   void sksManagementAndPushMethodsRemainNotImplemented() throws Exception {
@@ -393,7 +392,7 @@ class SksServerFaceTest {
 
     ServerPubSub serverPubSub = attachWithSksFace();
     try {
-      // exposeInformationModel is false (the default): the face attaches independently
+      // exposeInformationModel is false (the default): the SKS helper attaches independently
       assertNotSame(MethodInvocationHandler.NOT_IMPLEMENTED, methodNode.getInvocationHandler());
 
       assertEquals(
@@ -422,9 +421,9 @@ class SksServerFaceTest {
 
   @Test
   void fragmentAndFaceComposeOnTheCapabilityValues() throws Exception {
-    // with both the info model fragment and the SKS face enabled, the fragment populates the
-    // full PubSubCapablities set at startup and the face re-sets Pull/Push/Server to identical
-    // values (composition, not conflict); the Server=false flip at shutdown is face-owned
+    // with both the info model fragment and the SKS helper enabled, the fragment populates the
+    // full PubSubCapablities set at startup and the helper re-sets Pull/Push/Server to identical
+    // values (composition, not conflict); the Server=false flip at shutdown is helper-owned
     ServerPubSub serverPubSub =
         ServerPubSub.attach(
             testServer.getServer(),
@@ -445,7 +444,7 @@ class SksServerFaceTest {
           true,
           capabilityValue(NodeIds.PublishSubscribe_PubSubCapablities_SupportSecurityKeyServer));
 
-      // the fragment's R20 population rides along (D15: 0 = no limit)
+      // the fragment's capability population rides along; 0 = no limit
       assertEquals(
           uint(0), capabilityValue(NodeIds.PublishSubscribe_PubSubCapablities_MaxWriterGroups));
     } finally {
@@ -473,12 +472,12 @@ class SksServerFaceTest {
       MethodInvocationHandler olderHandler = methodNode.getInvocationHandler();
       assertNotSame(MethodInvocationHandler.NOT_IMPLEMENTED, olderHandler);
 
-      // a second attach warns and replaces: only one face per server is supported
+      // a second attach warns and replaces: only one SKS helper per server is supported
       newerFace.startup();
       MethodInvocationHandler newerHandler = methodNode.getInvocationHandler();
       assertNotSame(olderHandler, newerHandler);
 
-      // the older face's shutdown must not restore NOT_IMPLEMENTED over the newer handler
+      // the older helper's shutdown must not restore NOT_IMPLEMENTED over the newer handler
       olderFace.shutdown();
       assertSame(newerHandler, methodNode.getInvocationHandler());
     } finally {
@@ -492,7 +491,7 @@ class SksServerFaceTest {
   void defaultAuthorizerConfigurePosture() {
     var authorizer = new DefaultPubSubMethodAuthorizer(groupId -> null);
 
-    // no RoleMapper: allow, consistent with the core posture (D10)
+    // no RoleMapper: allow, consistent with the core posture
     assertEquals(StatusCode.GOOD, authorizer.checkConfigure(encryptedSession(null)));
 
     assertEquals(
@@ -508,7 +507,7 @@ class SksServerFaceTest {
   void defaultAuthorizerSksAdminPosture() {
     var authorizer = new DefaultPubSubMethodAuthorizer(groupId -> null);
 
-    // no RoleMapper: allow, consistent with the core posture (D10)
+    // no RoleMapper: allow, consistent with the core posture
     assertEquals(StatusCode.GOOD, authorizer.checkSksAdmin(encryptedSession(null)));
 
     assertEquals(

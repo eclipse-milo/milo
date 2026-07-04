@@ -57,7 +57,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * The R8 persistence contract: the attach-time save carries the seeded VersionTime (the {@code
+ * The persistence contract: the attach-time save carries the seeded VersionTime (the {@code
  * uint(0)} placeholder is retired), every successful mediator apply saves the wire form with the
  * mediator version, Enable/Disable, ReserveIds, and match-only CloseAndUpdate calls never save, a
  * save failure is isolated (results still reported, WARN + {@link
@@ -175,7 +175,7 @@ class RemoteConfigPersistenceTest {
     assertNotNull(saveError);
     assertEquals("simulated save failure", saveError.getMessage());
 
-    // the next successful apply retries and clears the accessor (D14)
+    // the next successful apply retries and clears the accessor
     store.failing = false;
     serverPubSub.runtime().update(current -> current.toBuilder().enabled(true).build());
     assertNull(serverPubSub.lastConfigurationSaveError());

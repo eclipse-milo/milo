@@ -385,7 +385,7 @@ final class ReaderDispatcher {
         countSecuritySkip(security, securityResolvedGroup);
       } else {
         // the resolver refused to route (no secured group covers this traffic), so the message
-        // can never reach the receive-mode gate below — count its K7 drops here instead
+        // can never reach the receive-mode gate below — count its receive-mode drops here instead
         countUnroutedSecuritySkip(connection, mappingName, decoded, oversizeGroups, security);
       }
       return;
@@ -400,13 +400,13 @@ final class ReaderDispatcher {
         continue;
       }
 
-      // §7.2.4.3 / K7 receive-mode gate, per (group, NetworkMessage): a received mode below the
+      // §7.2.4.3 receive-mode gate, per (group, NetworkMessage): a received mode below the
       // group's configured mode is dropped (SHALL), a secured message to a mode-None group is
       // dropped (its keys never resolve anyway), and a received mode above the configured mode
       // is processed (MAY — the keys come from the same window). Dropped messages tick
       // staleKeyMessages once per group, but only when the message would otherwise have matched
       // one of the group's readers — unrelated traffic is not counted. Discovery/metadata
-      // announcements travel as separate mode-None messages (K10) through handleAnnouncement,
+      // announcements travel as separate mode-None messages through handleAnnouncement,
       // which this gate deliberately does not cover.
       if (!receiveModeAccepts(group.config().getMessageSecurity(), receivedMode)) {
         if (anyReaderMatches(group, mappingName, decoded)) {
@@ -762,13 +762,13 @@ final class ReaderDispatcher {
   // region message security
 
   /**
-   * The §7.2.4.3 / K7 receive-mode gate: whether a group configured with {@code security} accepts a
+   * The §7.2.4.3 receive-mode gate: whether a group configured with {@code security} accepts a
    * NetworkMessage received with {@code receivedMode}.
    *
    * <ul>
-   *   <li>configured None (or Invalid, or no config — D1): accept only received None. The K7 MAY
-   *       (process higher) is not exercised: keys are only ever resolved for secured groups, so a
-   *       secured message can never be processed by a mode-None group.
+   *   <li>configured None (or Invalid, or no config): accept only received None. The MAY (process
+   *       higher) is not exercised: keys are only ever resolved for secured groups, so a secured
+   *       message can never be processed by a mode-None group.
    *   <li>configured Sign: drop received None (SHALL); accept Sign and SignAndEncrypt (the MAY —
    *       the keys come from the same token window).
    *   <li>configured SignAndEncrypt: accept only received SignAndEncrypt (SHALL drop below).
@@ -790,7 +790,7 @@ final class ReaderDispatcher {
     return modeRank(receivedMode) >= modeRank(configured);
   }
 
-  /** The §7.2.4.3 numeric mode order; group-level Invalid ranks like None (D1). */
+  /** The §7.2.4.3 numeric mode order; group-level Invalid ranks like None. */
   private static int modeRank(MessageSecurityMode mode) {
     return switch (mode) {
       case Invalid, None -> 1;
@@ -801,10 +801,10 @@ final class ReaderDispatcher {
 
   /**
    * Count one header-only security skip against the reader group whose keys were used (or would
-   * have been used): the group the resolver routed to by the C7/S7 declaration-order rule over the
-   * plaintext wire identity (PublisherId, WriterGroupId, DataSetWriterIds). One tick per
-   * NetworkMessage; security drops never tick {@code decodeErrors}. Secured traffic the resolver
-   * refused to route is counted by {@link #countUnroutedSecuritySkip} instead.
+   * have been used): the group the resolver routed to by declaration order over the plaintext wire
+   * identity (PublisherId, WriterGroupId, DataSetWriterIds). One tick per NetworkMessage; security
+   * drops never tick {@code decodeErrors}. Secured traffic the resolver refused to route is counted
+   * by {@link #countUnroutedSecuritySkip} instead.
    */
   private void countSecuritySkip(ReceivedSecurity security, ReaderGroupRuntime group) {
     switch (security.outcome()) {
@@ -837,9 +837,9 @@ final class ReaderDispatcher {
   /**
    * Count one header-only security skip the resolver refused to route: no receiving secured group
    * matched the plaintext wire identity, so the message arrived payload-skipped and can never reach
-   * the receive-mode gate in {@code handleDecoded} — but K7 pins its drop counted, not silent.
-   * Applies the gate's own counting condition per group: {@code staleKeyMessages} ticks for each
-   * group whose configured mode rejects the received mode and whose readers the message would have
+   * the receive-mode gate in {@code handleDecoded}; the drop is counted rather than silent. Applies
+   * the gate's own counting condition per group: {@code staleKeyMessages} ticks for each group
+   * whose configured mode rejects the received mode and whose readers the message would have
    * matched (unrelated traffic is not counted). The canonical instance is a subscriber whose
    * matching reader groups are all mode-None receiving a publisher's secured traffic: without this
    * tick every security counter would sit at zero while its data silently drops.
@@ -899,7 +899,7 @@ final class ReaderDispatcher {
 
   /**
    * The first secured reader group, in declaration order, whose readers match the plaintext wire
-   * identity (C7/S7): the SecurityHeader does not name the SecurityGroup — "The relation to the
+   * identity: the SecurityHeader does not name the SecurityGroup — "The relation to the
    * SecurityGroup is done through DataSetWriterIds contained in the NetworkMessage" (Part 14 Table
    * 154) — so secured groups are routed by (PublisherId, WriterGroupId, DataSetWriterIds).
    * Disabled/Paused groups are skipped; the group's key window (or its absence) decides the rest.

@@ -308,7 +308,7 @@ TargetVariables index range must parse, the config must map to its wire form) an
 attachment re-synchronizes itself before the call returns — the exposed information model rebuilds
 the affected subtrees, TargetVariables writers are re-derived for affected readers, added or
 changed fully node-addressed datasets are auto-bound (unless you bound a source yourself, which
-always wins), the SKS face refreshes its served groups, and the configuration is saved to a
+always wins), the served SKS groups are refreshed, and the configuration is saved to a
 configured store. In other words: reconfiguring through `runtime()` no longer desyncs the server
 integration. (One asymmetry to know: a dataset changed *away* from fully node-addressed keeps its
 earlier automatic source binding — the engine has no unbind — unlike an identical attach-time
@@ -410,7 +410,7 @@ default `Bad_NotImplemented` and its property values stay null.
 
 ### The configuration file object
 
-The face backs the eight Part 14 §9.1.3.7 methods on `i=25451` — the six FileType methods
+Remote-configuration support backs the eight Part 14 §9.1.3.7 methods on `i=25451` — the six FileType methods
 (`Open`, `Close`, `Read`, `Write`, `GetPosition`, `SetPosition`) plus `ReserveIds` and
 `CloseAndUpdate` — and maintains the file properties, including three the ns0 loader does not
 instantiate (`MimeType` = `application/opcua+uabinary`, `MaxByteStringLength`, and
@@ -542,7 +542,7 @@ posture that fails closed on groups carrying explicit `rolePermissions` — repl
 via `ServerPubSubOptions.methodAuthorizer(...)`.
 
 The served groups follow the configuration: on every successful apply through `runtime()` or a
-remote `CloseAndUpdate`, the face refreshes its group set — retained groups keep serving their
+remote `CloseAndUpdate`, the SKS helper refreshes its group set — retained groups keep serving their
 keys undisturbed, while a group whose `SecurityPolicyUri` or `KeyLifetime` changed has its
 existing keys invalidated and regenerated (Part 14 §6.2.12.2; the engine independently restarts
 referencing groups so consumers re-fetch).

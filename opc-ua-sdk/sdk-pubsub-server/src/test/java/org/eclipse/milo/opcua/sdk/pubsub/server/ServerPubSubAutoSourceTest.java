@@ -64,9 +64,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * Automatic address-space sources per pinned decision S3, end-to-end over unicast loopback UDP: a
- * {@link ServerPubSub} publisher whose datasets are backed by live server nodes, observed by a
- * standalone subscriber service.
+ * Automatic address-space sources end-to-end over unicast loopback UDP: a {@link ServerPubSub}
+ * publisher whose datasets are backed by live server nodes, observed by a standalone subscriber
+ * service.
  *
  * <p>Network safety: every connection uses unicast 127.0.0.1 with ephemeral ports and an explicit
  * loopback {@code discoveryAddress}, so the engine's discovery channels never touch the default

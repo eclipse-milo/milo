@@ -59,7 +59,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Golden vectors for the JSON mapping: the worked {@code ua-data} and {@code ua-metadata} examples
- * of the Phase 3 grounding (themselves built strictly from Part 14 §7.2.5.3/.4/.5 rules) and the
+ * of the JSON mapping grounding (itself built strictly from Part 14 §7.2.5.3/.4/.5 rules) and the
  * spec's own verbatim §7.2.5.4.2 DataSetMessage examples.
  *
  * <p>Encode comparisons are JsonElement-level (member order insensitive); the pinned Table 184/185
@@ -124,8 +124,7 @@ class JsonGoldenVectorTest {
    * Encoding the worked-example draft reproduces grounding example 7.1, with two recorded
    * differences: {@code MessageId} is a random UUID (asserted separately, stripped before
    * comparison) and the Good DataSetMessage {@code Status} is omitted rather than emitted as {@code
-   * {}} (the pinned N5 omit-when-Good behavior; the grounding notes a publisher "may equally omit"
-   * it).
+   * {}} (the omit-when-Good behavior; the grounding notes a publisher "may equally omit" it).
    */
   @Test
   void encodeKeyFrameMatchesWorkedExample() throws Exception {

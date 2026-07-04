@@ -57,38 +57,37 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The remote-configuration face: backs the ns0 {@code PublishSubscribe.PubSubConfiguration} file
- * object ({@code i=25451}, PubSubConfigurationType) with the eight Part 14 §9.1.3.7 method handlers
- * — Open/Close/Read/Write/GetPosition/SetPosition (FileType) plus ReserveIds and CloseAndUpdate —
- * and maintains the file object's property values (pinned decisions R1–R9).
+ * Backs the ns0 {@code PublishSubscribe.PubSubConfiguration} file object ({@code i=25451},
+ * PubSubConfigurationType) with the eight Part 14 §9.1.3.7 method handlers —
+ * Open/Close/Read/Write/GetPosition/SetPosition (FileType) plus ReserveIds and CloseAndUpdate — and
+ * maintains the file object's property values.
  *
  * <p>Mirror of the {@link SksServerFace} pattern: loader-built ns0 nodes are mutated in place —
- * handler slots and values only — and restored at shutdown, with ONE sanctioned structural
- * exception (D19): the three optional properties the ns0 loader does not instantiate (MimeType
- * {@code i=25456}, MaxByteStringLength {@code i=25457}, LastModifiedTime {@code i=25458}) are
- * created with their reserved numeric ids inside <b>ns0's own node manager</b> (obtained from the
- * loader-built {@code i=25451} node) and removed at face shutdown. They cannot live in a fragment
- * node manager: service-level dispatch routes every ns0 NodeId to the ns0 namespace
- * first-filter-match, so fragment-hosted ns0-id nodes would read {@code Bad_NodeIdUnknown} over
- * real service calls. Typed create-on-set setters are never used (they would mint derived string
- * ids instead of the reserved numeric ids).
+ * handler slots and values only — and restored at shutdown, with one structural exception: the
+ * three optional properties the ns0 loader does not instantiate (MimeType {@code i=25456},
+ * MaxByteStringLength {@code i=25457}, LastModifiedTime {@code i=25458}) are created with their
+ * reserved numeric ids inside <b>ns0's own node manager</b> (obtained from the loader-built {@code
+ * i=25451} node) and removed at face shutdown. They cannot live in a fragment node manager:
+ * service-level dispatch routes every ns0 NodeId to the ns0 namespace first-filter-match, so
+ * fragment-hosted ns0-id nodes would read {@code Bad_NodeIdUnknown} over real service calls. Typed
+ * create-on-set setters are never used (they would mint derived string ids instead of the reserved
+ * numeric ids).
  *
- * <p>When {@link ServerPubSubOptions#isAllowRemoteConfiguration()} is {@code false} no face is
- * created: ns0 stays untouched — the eight methods keep the loader default {@code
- * Bad_NotImplemented} and the file property values stay loader-null (D20; preserves the Phase 2
- * untouched-ns0 contract).
+ * <p>When {@link ServerPubSubOptions#isAllowRemoteConfiguration()} is {@code false}, the helper is
+ * not created: ns0 stays untouched, the eight methods keep the loader default {@code
+ * Bad_NotImplemented}, and the file property values stay loader-null.
  *
- * <p>Check order on every handler (K17.2 adapted, S13): session — a session-less invocation answers
- * {@code Bad_UserAccessDenied} (D29, not the SKS face's grandfathered {@code Bad_SessionIdInvalid})
- * — then arguments, then authorization via {@link PubSubMethodAuthorizer#checkConfigure} with any
- * bad code surfaced verbatim (R9/D41: ALL eight handlers are configure-gated, including the
- * read-side Open(0x01)/Read/GetPosition — a caller that may not configure may not read the
- * configuration file either), then handle existence and mode state, then work. No channel
- * security-mode gate exists: the spec pins no channel minimum for these methods ({@code i=25451}
- * carries no AccessRestrictions), so none is invented. SecurityGroup references additionally
- * consult {@link PubSubMethodAuthorizer#checkSksAdmin} once per CloseAndUpdate (R7).
+ * <p>Check order on every handler: session — a session-less invocation answers {@code
+ * Bad_UserAccessDenied} — then arguments, then authorization via {@link
+ * PubSubMethodAuthorizer#checkConfigure} with any bad code surfaced verbatim. All eight handlers
+ * are configure-gated, including the read-side Open(0x01)/Read/GetPosition; a caller that may not
+ * configure may not read the configuration file either. Handle existence and mode state are checked
+ * after authorization, then the operation runs. No channel security-mode gate exists: the spec
+ * defines no channel minimum for these methods ({@code i=25451} carries no AccessRestrictions), so
+ * none is invented. SecurityGroup references additionally consult {@link
+ * PubSubMethodAuthorizer#checkSksAdmin} once per CloseAndUpdate.
  *
- * <p>Property values (R3/D43): {@code Size} always serves the real encoded length of the current
+ * <p>Property values: {@code Size} always serves the real encoded length of the current
  * configuration file (never {@code Bad_NotSupported}); while a write handle is open it does not
  * track the buffer ("the size might not be accurate" is spec-tolerated). {@code Writable}/{@code
  * UserWritable} are capability values, {@code true} for any user (per-user enforcement lives in the
@@ -99,12 +98,12 @@ import org.slf4j.LoggerFactory;
  * {@link #onConfigurationApplied}.
  *
  * <p>Snapshots and buffers are encoded/decoded with the {@link PubSubConfigFiles} DataType level;
- * the wire form always carries the mediator-owned ConfigurationVersion (D26) patched in via {@link
+ * the wire form always carries the mediator-owned ConfigurationVersion patched in via {@link
  * #withConfigurationVersion} — read as one atomically-swapped (config, version) pair, so a snapshot
  * racing an owner {@code runtime()} apply can never carry pre-apply content stamped with the
  * post-apply version (see {@link #applied}). Decoding a CloseAndUpdate buffer enforces the
  * §9.1.3.7.1 namespaces rule: a non-empty header must match the server's NamespaceTable
- * positionally, else {@code Bad_TypeMismatch} (D18).
+ * positionally, else {@code Bad_TypeMismatch}.
  *
  * <p>Threading: one face lock serializes the eight handlers and session eviction; lock order is
  * one-way face lock &rarr; mediator lock &rarr; engine lock (CloseAndUpdate applies inside the
@@ -145,7 +144,7 @@ final class PubSubConfigurationFace {
   private final FileHandleManager handleManager = new FileHandleManager();
   private final PubSubIdReservations reservations;
 
-  /** The read/write clamp: the served MaxByteStringLength value (R3; 1 MiB Milo default). */
+  /** The read/write clamp: the served MaxByteStringLength value (1 MiB Milo default). */
   private final long maxByteStringLength;
 
   /**
@@ -154,8 +153,7 @@ final class PubSubConfigurationFace {
    * published atomically because the mediator bumps its version BEFORE the hooks run: a pull path
    * that does not go through a hook (an Open snapshot via {@link #currentWireConfig()}, or
    * ReserveIds' live-id exclusion set) and races the hook window must observe the previous coherent
-   * pair — never pre-apply content stamped with the post-apply version (D26: one clock, one value
-   * per apply).
+   * pair — never pre-apply content stamped with the post-apply version.
    */
   private volatile AppliedConfiguration applied;
 
@@ -169,7 +167,7 @@ final class PubSubConfigurationFace {
   /** The loader-built method nodes this face attached handlers to; guarded by {@link #lock}. */
   private final Map<UaMethodNode, MethodInvocationHandler> attachedHandlers = new LinkedHashMap<>();
 
-  /** The three created optional property nodes (D19 carve-out); guarded by {@link #lock}. */
+  /** The three created optional property nodes; guarded by {@link #lock}. */
   private final List<UaNode> createdNodes = new ArrayList<>();
 
   private @Nullable SessionListener sessionListener;
@@ -180,13 +178,13 @@ final class PubSubConfigurationFace {
    *     from the start (the supplier itself cannot be read here: it is deferred until the owning
    *     {@link ServerPubSub}'s construction completed, and reading it lazily on first use would
    *     reintroduce the torn-pair window for the first apply).
-   * @param configurationObjectIds the fragment-backed R11 lookup, or {@code null} when the
+   * @param configurationObjectIds the fragment-backed object lookup, or {@code null} when the
    *     information model is not exposed (CloseAndUpdate then returns the empty
    *     ConfigurationObjects array).
-   * @param configurationVersion the mediator-owned ConfigurationVersion single source (D26);
-   *     deferred — only read once the owning {@link ServerPubSub}'s construction completed.
-   * @param managedService the mediator (S11); deferred like {@code configurationVersion}. All
-   *     remote mutations are applied through it, never the raw engine service.
+   * @param configurationVersion the mediator-owned ConfigurationVersion single source; deferred —
+   *     only read once the owning {@link ServerPubSub}'s construction completed.
+   * @param managedService the mediator; deferred like {@code configurationVersion}. All remote
+   *     mutations are applied through it, never the raw engine service.
    */
   PubSubConfigurationFace(
       OpcUaServer server,
@@ -211,8 +209,8 @@ final class PubSubConfigurationFace {
 
   /**
    * Attach the eight method handlers to the loader-built ns0 nodes, create the three optional
-   * properties in ns0's node manager (D19), initialize the four mandatory property values, and
-   * register the session-close eviction listener.
+   * properties in ns0's node manager, initialize the four mandatory property values, and register
+   * the session-close eviction listener.
    */
   void startup() {
     synchronized (lock) {
@@ -261,7 +259,7 @@ final class PubSubConfigurationFace {
           NodeIds.PublishSubscribe_PubSubConfiguration_LastModifiedTime,
           "LastModifiedTime",
           NodeIds.DateTime,
-          // D43: the initial value is the face startup instant — the instant the file came
+          // the initial value is the helper startup instant — the instant the file came
           // into being on this server; each apply instant thereafter
           new Variant(DateTime.now()));
 
@@ -338,7 +336,7 @@ final class PubSubConfigurationFace {
   /**
    * Mediator post-apply hook: retain the applied configuration for snapshots/ReserveIds, and
    * refresh the file's {@code Size} and {@code LastModifiedTime} — the apply instant, the same
-   * instant the ConfigurationVersion advanced (D43). Runs for BOTH remote applies and owner {@code
+   * instant the ConfigurationVersion advanced. Runs for BOTH remote applies and owner {@code
    * runtime()} applies; serialized by the mediator; deliberately does not take the face lock (see
    * the class threading notes) — the ns0 writes are guarded by {@link #ns0WriteLock} instead, with
    * {@link #active} re-checked inside it so a racing shutdown's restore cannot be overwritten.
@@ -373,8 +371,8 @@ final class PubSubConfigurationFace {
   /**
    * Rebuild {@code wire} with {@code version} as its ConfigurationVersion: the mediator-owned
    * VersionTime is patched onto every observable wire form — snapshots, Size, and every store save,
-   * including the attach-time save — retiring the mapper's {@code uint(0)} placeholder (D26).
-   * Shared with {@link ServerPubSub}'s persistence.
+   * including the attach-time save — retiring the mapper's {@code uint(0)} placeholder. Shared with
+   * {@link ServerPubSub}'s persistence.
    */
   static PubSubConfiguration2DataType withConfigurationVersion(
       PubSubConfiguration2DataType wire, UInteger version) {
@@ -395,10 +393,10 @@ final class PubSubConfigurationFace {
   // region internals
 
   /**
-   * The current configuration in its file wire form, carrying the mediator version (D26). The
-   * (config, version) pair is read atomically from {@link #applied}: reading the version supplier
-   * here instead could pair pre-apply content with a post-apply version while the mediator hooks
-   * are still running.
+   * The current configuration in its file wire form, carrying the mediator version. The (config,
+   * version) pair is read atomically from {@link #applied}: reading the version supplier here
+   * instead could pair pre-apply content with a post-apply version while the mediator hooks are
+   * still running.
    */
   private PubSubConfiguration2DataType currentWireConfig() {
     AppliedConfiguration current = applied;
@@ -411,7 +409,7 @@ final class PubSubConfigurationFace {
     return PubSubConfigFiles.encodeDataType(currentWireConfig(), server.getStaticEncodingContext());
   }
 
-  /** Session-close eviction (R3): driven by the registered {@link SessionListener} and tests. */
+  /** Session-close eviction, driven by the registered {@link SessionListener} and tests. */
   void evictSession(Session session) {
     synchronized (lock) {
       NodeId sessionId = session.getSessionId();
@@ -449,9 +447,9 @@ final class PubSubConfigurationFace {
   }
 
   /**
-   * The D19 carve-out: create an optional property with its reserved ns0 numeric id inside ns0's
-   * own node manager (the only routable mechanism — see the class Javadoc), grafted under {@code
-   * i=25451} with the fragment's reference discipline. Removed at shutdown.
+   * Create an optional property with its reserved ns0 numeric id inside ns0's own node manager (the
+   * only routable mechanism — see the class Javadoc), grafted under {@code i=25451} with the
+   * fragment's reference discipline. Removed at shutdown.
    */
   private void createProperty(
       UaNode configurationNode, NodeId nodeId, String name, NodeId dataTypeId, Variant value) {
@@ -509,8 +507,8 @@ final class PubSubConfigurationFace {
   }
 
   /**
-   * The session-presence prefix shared by all eight handlers, first in the S13 check order: a
-   * session-less invocation is {@code Bad_UserAccessDenied} (D29).
+   * The session-presence prefix shared by all eight handlers, first in the check order: a
+   * session-less invocation is {@code Bad_UserAccessDenied}.
    */
   private Session checkedSession(
       org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
@@ -523,9 +521,8 @@ final class PubSubConfigurationFace {
   }
 
   /**
-   * The authorization step shared by all eight handlers, run AFTER argument validation (the S13
-   * check order: session &rarr; args &rarr; authorization): the authorizer's code is surfaced
-   * verbatim (R9).
+   * The authorization step shared by all eight handlers, run after argument validation. The
+   * authorizer's code is surfaced verbatim.
    */
   private void checkAuthorized(Session session) throws UaException {
     StatusCode checkResult = authorizer.checkConfigure(session);
@@ -744,7 +741,7 @@ final class PubSubConfigurationFace {
       synchronized (lock) {
         checkActive();
 
-        // a reservation is NOT a configuration mutation: no store save, no version bump (R8);
+        // a reservation is NOT a configuration mutation: no store save, no version bump;
         // the live-id exclusion set is read from the same atomically-swapped pair the file
         // snapshots use
         Grant grant =
@@ -797,7 +794,7 @@ final class PubSubConfigurationFace {
         handleManager.checkWriteHandle(sessionId, fileHandle);
 
         // the handle/mode checks passed: the handle closes now, whether or not changes are
-        // applied — including the Bad_NothingToDo and Bad_TypeMismatch failures below (D40);
+        // applied — including the Bad_NothingToDo and Bad_TypeMismatch failures below;
         // the client re-opens to rewrite
         byte[] buffer = handleManager.closeWriteHandle(sessionId, fileHandle);
         setOpenCountValue();
@@ -840,8 +837,8 @@ final class PubSubConfigurationFace {
     /**
      * Decode the buffer as a {@code UABinaryFileDataType} with a {@link
      * PubSubConfiguration2DataType} Body — the base {@link PubSubConfigurationDataType} is rejected
-     * — enforcing the namespaces-header rule (D18); any failure is the method-level {@code
-     * Bad_TypeMismatch} (the handle is already closed, D40).
+     * — enforcing the namespaces-header rule; any failure is the method-level {@code
+     * Bad_TypeMismatch} (the handle is already closed).
      */
     private PubSubConfiguration2DataType decodeBuffer(byte[] buffer) throws UaException {
       return PubSubConfigFiles.decodeDataType(buffer, server.getStaticEncodingContext());
@@ -852,7 +849,7 @@ final class PubSubConfigurationFace {
 
   /**
    * One apply's coherent (configuration, ConfigurationVersion) pair, published as a single volatile
-   * swap so no pull path can pair one apply's content with another apply's version (D26).
+   * swap so no pull path can pair one apply's content with another apply's version.
    */
   private record AppliedConfiguration(PubSubConfig config, UInteger version) {}
 }

@@ -25,7 +25,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.junit.jupiter.api.Test;
 
 /**
- * The R2/R3 FileType handle state machine: the mode whitelist, the write-exclusive locking
+ * The FileType handle state machine: the mode whitelist, the write-exclusive locking
  * shall-sentences, (Session, fileHandle) identity, per-handle positions and snapshots, the read
  * clamp and EOF contract, write extension and the size cap, SetPosition clamping, the 0x03
  * truncation rule, the OpenCount arithmetic and cap, and session eviction.

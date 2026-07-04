@@ -58,8 +58,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * The R8 persistence cadence driven ENTIRELY by a real client (T5 §9) — the wire-level layer over
- * the direct-invoke {@link RemoteConfigPersistenceTest}: a client CloseAndUpdate that mutates saves
+ * The persistence cadence driven entirely by a real client — the wire-level layer over the
+ * direct-invoke {@link RemoteConfigPersistenceTest}: a client CloseAndUpdate that mutates saves
  * exactly once and the payload round-trips with the real VersionTime; a match-only client call
  * saves nothing; Enable/Disable THROUGH THE MINTED STATUS METHODS saves nothing (the row a prior
  * review flagged as untested — the direct suite only covered {@code runtime().enable}); the P3

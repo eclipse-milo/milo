@@ -66,20 +66,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 
 /**
- * CAPTURED decode-direction vectors (K20): each committed fixture pair {@code
+ * Captured decode-direction vectors: each committed fixture pair {@code
  * security-vectors/captured/<name>.bin} + {@code <name>.keys.json} is one secured NetworkMessage
- * captured from a third-party stack — open62541 ({@code Sign} and {@code SignAndEncrypt} × both
- * policies) and OPC Labs UADemoPublisher ({@code SignAndEncrypt}) per the gap-golden sourcing
- * verdict (UA-.NETStandard is never a secured source) — decoded through {@link UadpMessageMapping}
- * with a fixed-key {@link SecurityContextResolver} built from the fixture's key material.
+ * captured from a third-party stack, then decoded through {@link UadpMessageMapping} with a
+ * fixed-key {@link SecurityContextResolver} built from the fixture's key material.
  *
- * <p>Fixture pairs are discovered at runtime as test resources. Committing them (runbook rows R2/R4
- * + the §9 capture pipeline) is a BLOCKING Phase 4 exit criterion: until they land, the factory
- * yields a single always-visible "captures missing" marker — aborted (reported as skipped) by
- * default, failing under {@code -Dmilo.pubsub.security.requireCapturedVectors=true} — so the absent
- * decode-direction evidence can never read as a green verification. The scaffolding self-tests
- * below prove the fixture machinery meanwhile. The {@code .keys.json} schema is the WP-T4 §2.2
- * contract: {@code keyData} is canonical (every fixture load exercises the K14 splitter), and the
+ * <p>Fixture pairs are discovered at runtime as test resources. Until they are present, the factory
+ * yields a single always-visible "captures missing" marker: aborted by default, and failed under
+ * {@code -Dmilo.pubsub.security.requireCapturedVectors=true}. That keeps absent decode-direction
+ * evidence from looking like a green verification. The scaffolding self-tests below prove the
+ * fixture machinery meanwhile. The {@code .keys.json} schema uses canonical {@code keyData}; the
  * redundant {@code signingKey}/{@code encryptingKey}/{@code keyNonce} fields, when present, are
  * cross-checked against the split.
  *
@@ -137,21 +133,18 @@ class UadpSecurityCapturedVectorTest {
   }
 
   /**
-   * The always-visible stand-in for absent captures: K20 pins decode-direction verification on
-   * vectors CAPTURED from open62541 + OPC Labs, and this wave delivered the machinery but not the
-   * captures (they need the secured fleet image and proprietary tooling the runbook drives).
-   * Aborted by default so routine CI reports "skipped", never a silent green; the Phase 4 exit gate
-   * runs with {@value #REQUIRE_CAPTURES_PROPERTY}=true, which turns it into a failure.
+   * The always-visible stand-in for absent captures. Aborted by default so routine CI reports
+   * "skipped", never a silent green; strict verification runs with {@value
+   * #REQUIRE_CAPTURES_PROPERTY}=true, which turns the missing captures into a failure.
    */
   private static DynamicTest capturedVectorsMissingMarker() {
     return dynamicTest(
-        "CAPTURED decode-direction vectors are missing (K20 blocking Phase 4 exit criterion)",
+        "captured decode-direction vectors are missing",
         () -> {
           String message =
-              "no fixtures under src/test/resources/security-vectors/captured/ — the K20"
-                  + " decode-direction evidence (open62541 + OPC Labs captures, secured-interop"
-                  + " runbook rows R2/R4 + §9) is not committed yet; committing it is a blocking"
-                  + " Phase 4 exit criterion (see security-vectors/README.md)";
+              "no fixtures under src/test/resources/security-vectors/captured/; strict secured"
+                  + " interop verification requires captured third-party vectors (see"
+                  + " security-vectors/README.md)";
           if (Boolean.getBoolean(REQUIRE_CAPTURES_PROPERTY)) {
             fail(message);
           }
@@ -239,7 +232,7 @@ class UadpSecurityCapturedVectorTest {
     assertEquals(100L, vector.writerGroupId);
     assertEquals(List.of(62541L), vector.dataSetWriterIds);
 
-    // splitting the canonical keyData exercises the K14 splitter and must agree with the
+    // splitting the canonical keyData exercises the key-data splitter and must agree with the
     // redundant fields
     SecurityKeyMaterial keys = vector.splitKeyMaterial();
     assertEquals(PubSubSecurityPolicy.PubSubAes128Ctr, keys.getPolicy());
@@ -329,7 +322,7 @@ class UadpSecurityCapturedVectorTest {
     verifyVector(vector, message);
   }
 
-  /** The sample from the WP-T4 §2.2 schema, keyData chosen so the redundant fields agree. */
+  /** A sample captured-vector descriptor, with keyData chosen so the redundant fields agree. */
   private static String sampleKeysJson() {
     StringBuilder keyData = new StringBuilder();
     for (int i = 0; i < 52; i++) {
@@ -389,7 +382,7 @@ class UadpSecurityCapturedVectorTest {
 
   // region keys.json model
 
-  /** One parsed {@code <name>.keys.json} fixture descriptor (WP-T4 §2.2 schema). */
+  /** One parsed {@code <name>.keys.json} fixture descriptor. */
   private static final class CapturedVector {
 
     final String description;
@@ -434,8 +427,8 @@ class UadpSecurityCapturedVectorTest {
     }
 
     /**
-     * Split the canonical {@code keyData} (the K14 splitter under test on every fixture load) and
-     * cross-check the redundant split fields when the fixture carries them.
+     * Split the canonical {@code keyData} (the key-data splitter under test on every fixture load)
+     * and cross-check the redundant split fields when the fixture carries them.
      */
     SecurityKeyMaterial splitKeyMaterial() throws Exception {
       SecurityKeyMaterial keys = SecurityKeyMaterial.split(policy(), ByteString.of(keyData));

@@ -286,7 +286,7 @@ class JsonMappingBehaviorTest {
 
   // endregion
 
-  // region sequence numbers (UInt32, E6/N5)
+  // region sequence numbers (UInt32)
 
   /** Wire SequenceNumbers are UInt32: values beyond the UInt16 range decode losslessly. */
   @Test
@@ -635,9 +635,9 @@ class JsonMappingBehaviorTest {
   // region timestamps and status defaults
 
   /**
-   * The engine never fills draft timestamps for JSON writers (it pattern-matches UADP settings
-   * only, recorded WP-N deviation): with the Timestamp bit set and a null draft timestamp the
-   * mapping self-supplies {@code DateTime.now()}.
+   * The engine never fills draft timestamps for JSON writers because it pattern-matches UADP
+   * settings only: with the Timestamp bit set and a null draft timestamp the mapping self-supplies
+   * {@code DateTime.now()}.
    */
   @Test
   void timestampSelfSuppliedWhenDraftTimestampNull() throws Exception {
@@ -660,8 +660,7 @@ class JsonMappingBehaviorTest {
 
   /**
    * A missing Status member decodes as Good on a header-ful DataSetMessage; a bare payload-only
-   * DataSetMessage has no header whose omission could mean Good, so its status is null (recorded
-   * WP-N deviation).
+   * DataSetMessage has no header whose omission could mean Good, so its status is null.
    */
   @Test
   void missingStatusDecodesGoodOnHeaderfulMessagesOnly() throws Exception {

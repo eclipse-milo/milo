@@ -56,7 +56,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 /**
  * Encode/decode round trips for the UADP codec with message security on, across the {@link
  * UadpRoundTripTest} network-content-mask matrix × {Sign, SignAndEncrypt} × {PubSub-Aes128-CTR,
- * PubSub-Aes256-CTR} (K2, K5).
+ * PubSub-Aes256-CTR}.
  *
  * <p>Each cell asserts three things:
  *

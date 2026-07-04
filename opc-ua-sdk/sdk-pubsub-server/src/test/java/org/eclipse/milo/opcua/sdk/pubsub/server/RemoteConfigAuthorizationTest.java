@@ -54,12 +54,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * The R9/D41 authorization posture on the remote-configuration surface: {@code checkConfigure} is
- * consulted by ALL EIGHT file-model handlers (including the read side), a session-less invocation
- * answers {@code Bad_UserAccessDenied} (D29), the default authorizer's RoleMapper matrix
- * (ConfigureAdmin-or-equivalent), custom authorizer codes surfaced verbatim, and the R7 bit-11
- * rule: a {@code checkSksAdmin} denial fails each SecurityGroup reference per-element while the
- * method stays Good.
+ * Authorization posture on the remote-configuration surface: {@code checkConfigure} is consulted by
+ * ALL EIGHT file-model handlers (including the read side), a session-less invocation answers {@code
+ * Bad_UserAccessDenied}, the default authorizer's RoleMapper matrix (ConfigureAdmin-or-equivalent),
+ * custom authorizer codes surfaced verbatim, and the bit-11 rule: a {@code checkSksAdmin} denial
+ * fails each SecurityGroup reference per-element while the method stays Good.
  */
 class RemoteConfigAuthorizationTest {
 
@@ -137,7 +136,7 @@ class RemoteConfigAuthorizationTest {
 
   @Test
   void argumentValidationRunsBeforeAuthorizationOnAllEightHandlers() throws Exception {
-    // S13 check order: session -> args -> authorization. A caller the authorizer denies who
+    // check order: session -> args -> authorization. A caller the authorizer denies who
     // also sends null required arguments answers Bad_InvalidArgument, not the authorizer's code
     // (null Variant values pass the base class's type checks and reach the typed invoke).
     var authorizer = denyingConfigureAuthorizer();

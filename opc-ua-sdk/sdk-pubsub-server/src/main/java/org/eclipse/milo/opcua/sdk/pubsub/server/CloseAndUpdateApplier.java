@@ -70,9 +70,8 @@ import org.eclipse.milo.opcua.stack.core.types.structured.WriterGroupDataType;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The CloseAndUpdate element-operation engine (Part 14 §9.1.3.7.6, Tables 239/241/243; pinned
- * decisions R4/R6/R7/R11), applied against the live {@link PubSubConfig} through the managed
- * runtime.
+ * The CloseAndUpdate element-operation engine (Part 14 §9.1.3.7.6, Tables 239/241/243), applied
+ * against the live {@link PubSubConfig} through the managed runtime.
  *
  * <p><b>Reference model:</b> a reference is (operation bits, one element-kind bit, file-array
  * coordinates). Exactly five operation-bit rows are valid — Add, Match, Add+Match, Modify, Remove;
@@ -80,20 +79,19 @@ import org.jspecify.annotations.Nullable;
  * reference bits is a per-element {@code Bad_InvalidArgument}. Match is legal only for Connection,
  * WriterGroup, and ReaderGroup references, and the matched file element's name and id shall be
  * null. Bit 12 (PushTarget) references are rejected per-element with {@code Bad_InvalidArgument}:
- * push targets are unmodeled, so the rejection is a modeling gap, not an authorization outcome (D13
- * — overriding the digest's {@code Bad_UserAccessDenied} row; R7 pins only per-ref rejection). Bit
- * 11 (SecurityGroup) references are supported against the K9 model, guarded by one {@code
- * checkSksAdmin} evaluation per call (R7): denial fails each bit-11 reference per-element — never
- * the method.
+ * push targets are unmodeled, so the rejection is a modeling gap, not an authorization outcome. Bit
+ * 11 (SecurityGroup) references are supported against the configured SecurityGroup model, guarded
+ * by one {@code checkSksAdmin} evaluation per call: denial fails each bit-11 reference per-element
+ * — never the method.
  *
  * <p><b>Coordinates:</b> indices address the FILE; names bind file elements to LIVE elements. For
  * writer/reader references the ElementIndex indexes the <em>group's</em>
  * DataSetWriters/DataSetReaders array — the only coherent reading of Table 241's "array of the
- * PubSubConfiguration" (CU open question D). The GroupIndex writer branch is read symmetrically to
- * the reader branch: Table 241's final writer-branch sentence ("the name of the ReaderGroup is
- * used…") is an obvious copy-paste defect in v1.05.06 §9.1.3.7.3 — by symmetry the WriterGroup name
- * binds the live group. Out-of-bounds indices are {@code Bad_InvalidArgument}; unused index fields
- * are not validated against 0 (junk in unused slots is tolerated).
+ * PubSubConfiguration". The GroupIndex writer branch is read symmetrically to the reader branch:
+ * Table 241's final writer-branch sentence ("the name of the ReaderGroup is used…") is an obvious
+ * copy-paste defect in v1.05.06 §9.1.3.7.3 — by symmetry the WriterGroup name binds the live group.
+ * Out-of-bounds indices are {@code Bad_InvalidArgument}; unused index fields are not validated
+ * against 0 (junk in unused slots is tolerated).
  *
  * <p><b>Processing order:</b> all Removes first, in input order; then the non-remove pass, parents
  * before children — Milo-defined deterministic order: kind-major (SecurityGroups,
@@ -115,7 +113,7 @@ import org.jspecify.annotations.Nullable;
  * including duplicate wire-id collisions — to {@code Bad_InvalidArgument}) and the working state
  * reverts to last-good.
  *
- * <p><b>Match:</b> structural comparison of the pinned Table-239 field sets, performed on the
+ * <p><b>Match:</b> structural comparison of the Table 239 field sets, performed on the
  * CONFIG-mapped forms of both sides so both share one normalization; connection/group properties
  * compare only the keys present in the file element. Local-only config the wire cannot carry
  * (broker credentials, security-policy URI overrides, the group-level broker metadata
@@ -139,9 +137,9 @@ import org.jspecify.annotations.Nullable;
  * their reference with {@code Bad_InvalidArgument}. A per-element {@code enabled} flag in the
  * payload is honored as ordinary payload (the top-level ignore rule covers only the top-level
  * Enable field): an element added enabled comes up through the §6.2.1 state machine — and every
- * applied change goes through {@code DISABLE_AFFECTED} (R6), so affected components bounce visibly
- * through the state machine; per the documented engine rules (D44) a path-stable restart — what a
- * Modify produces — <em>preserves</em> DataSetMessage and NetworkMessage sequence numbering (added
+ * applied change goes through {@code DISABLE_AFFECTED}, so affected components bounce visibly
+ * through the state machine; per the documented engine rules, a path-stable restart — what a Modify
+ * produces — <em>preserves</em> DataSetMessage and NetworkMessage sequence numbering (added
  * elements start at 0; only cross-call remove+re-add and a 16/32-bit mapping-width switch restart
  * at 0); this visibility is intended (do not switch modes; STOP_AND_RESTART is not exposed).
  *
@@ -150,15 +148,15 @@ import org.jspecify.annotations.Nullable;
  * only element operations fail (documented Milo behavior — no method result code covers element
  * failure). Atomic mode ({@code true}) applies the working configuration only when every reference
  * succeeded; partial mode applies the survivors. Either way there is exactly ONE apply, driven
- * through the mediator's {@link PubSubService#update} (S11) — which uses {@code DISABLE_AFFECTED}
- * and runs the transform against the <em>current</em> configuration inside the mediator's critical
+ * through the mediator's {@link PubSubService#update} — which uses {@code DISABLE_AFFECTED} and
+ * runs the transform against the <em>current</em> configuration inside the mediator's critical
  * section, so a concurrent {@code runtime()} apply can never be silently overwritten. A pure-Match
  * call (or one where no mutating reference survived) applies nothing, reports {@code
  * ChangesApplied=false} with its individual results, and skips the reconfigure — so no version bump
- * and no store save (R8). If the engine's reconfigure validation rejects the surviving
- * configuration, nothing was applied and every reference still marked Good inherits the extracted
- * status code (else {@code Bad_ConfigurationError}) — documented Milo behavior (D17); no per-ref
- * attribution is possible without an engine dry-run seam.
+ * and no store save. If the engine's reconfigure validation rejects the surviving configuration,
+ * nothing was applied and every reference still marked Good inherits the extracted status code
+ * (else {@code Bad_ConfigurationError}) — documented Milo behavior; no per-ref attribution is
+ * possible without an engine dry-run seam.
  *
  * <p><b>Top-level fields</b> ([CU §7.1], applied only when a mutating apply happens): {@code
  * Enable} and {@code DataSetClasses} are ignored; {@code DefaultSecurityKeyServices} replaces the
@@ -176,9 +174,9 @@ import org.jspecify.annotations.Nullable;
  * Match resolutions, which name elements that exist regardless, are reported. ConfigurationObjects
  * is length-matched with {@link NodeId#NULL_VALUE} in the slots of Remove references, failed
  * references, and kinds the information model never materializes (SecurityGroups, standalone
- * SubscribedDataSets, PushTargets) — or EMPTY when the {@link ConfigurationObjectIds} seam is
- * absent (D25). The mediator's post-apply hooks run synchronously inside {@code update}, so the
- * fragment nodes exist by the time the lookups run.
+ * SubscribedDataSets, PushTargets) — or EMPTY when the {@link ConfigurationObjectIds} lookup is
+ * absent. The mediator's post-apply hooks run synchronously inside {@code update}, so the fragment
+ * nodes exist by the time the lookups run.
  */
 final class CloseAndUpdateApplier {
 
@@ -188,7 +186,7 @@ final class CloseAndUpdateApplier {
   private final @Nullable ConfigurationObjectIds configurationObjectIds;
 
   /**
-   * @param managedService the mediator (S11) — every apply MUST go through it, never the raw engine
+   * @param managedService the mediator — every apply MUST go through it, never the raw engine
    *     service.
    * @param configurationObjectIds the fragment-backed lookup, or {@code null} when the information
    *     model is not exposed (ConfigurationObjects is then empty).
@@ -210,7 +208,7 @@ final class CloseAndUpdateApplier {
    *
    * @param sessionId the calling session's id (reservation preference and exclusivity).
    * @param sksAdminCheck evaluated at most ONCE per call, iff any SecurityGroup reference is
-   *     present (R7; {@code Session.getRoleIds()} is recomputed per call).
+   *     present ({@code Session.getRoleIds()} is recomputed per call).
    * @param file the decoded buffer content.
    * @param requireCompleteUpdate atomic ({@code true}) vs partial ({@code false}) mode.
    * @param references the ConfigurationReferences argument; never null or empty (the handler
@@ -285,7 +283,7 @@ final class CloseAndUpdateApplier {
     } catch (Exception e) {
       // the mediator's pre-validation or the engine's reconfigure validation rejected the
       // surviving configuration: nothing was applied; every reference still marked Good
-      // inherits the extracted status code (D17)
+      // inherits the extracted status code
       consumed.clear();
       applied[0] = null;
 
@@ -368,7 +366,7 @@ final class CloseAndUpdateApplier {
           case REF_PUB_DATASET -> Kind.PUBLISHED_DATA_SET;
           case REF_SUB_DATASET -> Kind.SUBSCRIBED_DATA_SET;
           case REF_SECURITY_GROUP -> Kind.SECURITY_GROUP;
-          // D13: unmodeled push targets are a modeling gap, rejected per-element
+          // unmodeled push targets are a modeling gap, rejected per-element
           default -> throw invalidRef("PubSubKeyPushTargets are not supported");
         };
 
@@ -1102,9 +1100,9 @@ final class CloseAndUpdateApplier {
 
           WriterGroupConfig matched;
           if (wire.getHeaderLayoutUri() != null && !wire.getHeaderLayoutUri().isEmpty()) {
-            // HeaderLayoutUri is IN the pinned [CU §3.2] field set, but the config model
+            // HeaderLayoutUri is IN the fixed CloseAndUpdate field set, but the config model
             // cannot host a header layout (mapper-dropped), so a live group never carries
-            // one: a pattern demanding a non-empty HeaderLayoutUri differs in a pinned
+            // one: a pattern demanding a non-empty HeaderLayoutUri differs in a compared
             // field and never matches. Checked on the wire element — the config-mapped
             // comparison below cannot see the field.
             matched = null;
@@ -1500,7 +1498,7 @@ final class CloseAndUpdateApplier {
   private NodeId[] configurationObjects(Ref[] refs, StatusCode[] results) {
     ConfigurationObjectIds objectIds = configurationObjectIds;
     if (objectIds == null) {
-      // the fragment/seam is absent: the spec's "null or empty" opt-out arm (D25)
+      // the information-model lookup is absent: the spec's "null or empty" opt-out arm
       return new NodeId[0];
     }
 
@@ -1533,7 +1531,7 @@ final class CloseAndUpdateApplier {
                         ref.resolvedConnectionName, ref.resolvedGroupName, ref.resolvedName)
                     : null;
             case PUBLISHED_DATA_SET -> objectIds.publishedDataSetObjectId(ref.resolvedName);
-            // never materialized by the fragment: NULL_VALUE slots (D25)
+            // never materialized by the fragment: NULL_VALUE slots
             case SUBSCRIBED_DATA_SET, SECURITY_GROUP -> null;
           };
       if (id != null) {
@@ -1674,7 +1672,7 @@ final class CloseAndUpdateApplier {
   // region match comparison (config-mapped forms, both sides)
 
   /**
-   * The pinned connection field set: TransportProfileUri (the config class distinguishes datagram
+   * The connection match field set: TransportProfileUri (the config class distinguishes datagram
    * from broker; the UADP/JSON broker split is a per-group property with no connection-level
    * counterpart), Address, TransportSettings (the datagram discovery address and the raw escape
    * hatch), and the property keys present in the file element.
@@ -1697,10 +1695,10 @@ final class CloseAndUpdateApplier {
   }
 
   /**
-   * The pinned writer group field set: SecurityMode/SecurityGroupId/SecurityKeyServices,
+   * The writer group match field set: SecurityMode/SecurityGroupId/SecurityKeyServices,
    * MaxNetworkMessageSize, PublishingInterval, KeepAliveTime, Priority, TransportSettings, and
    * MessageSettings, plus the property keys present in the file element. HeaderLayoutUri — also in
-   * the pinned set — has no config counterpart and cannot be compared here; the match arm enforces
+   * the match set — has no config counterpart and cannot be compared here; the match arm enforces
    * it on the wire element instead (a non-empty pattern HeaderLayoutUri never matches, because a
    * live Milo group can never carry a layout). The local-only security-policy-URI override and the
    * Milo-local group-level broker metadata fields are excluded (the wire cannot carry them).
@@ -1720,7 +1718,7 @@ final class CloseAndUpdateApplier {
   }
 
   /**
-   * The pinned reader group field set: SecurityMode/SecurityGroupId/SecurityKeyServices,
+   * The reader group match field set: SecurityMode/SecurityGroupId/SecurityKeyServices,
    * MaxNetworkMessageSize, TransportSettings, and MessageSettings (both raw escape hatches; the
    * config model has no typed reader-group settings), plus the property keys present in the file
    * element.
@@ -2117,7 +2115,7 @@ final class CloseAndUpdateApplier {
 
   // region types
 
-  /** The outcome of one CloseAndUpdate evaluation (S15: no invalidated-security-group output). */
+  /** The outcome of one CloseAndUpdate evaluation. */
   record Outcome(
       boolean changesApplied,
       StatusCode[] referencesResults,

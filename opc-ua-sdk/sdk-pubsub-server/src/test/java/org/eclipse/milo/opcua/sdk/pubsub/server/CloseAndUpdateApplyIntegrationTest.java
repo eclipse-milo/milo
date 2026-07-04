@@ -76,9 +76,9 @@ import org.junit.jupiter.api.Test;
  * writer-group ids from the caller's OWN outstanding ReserveIds block, foreign sessions'
  * reservations avoided), atomic-mode nothing-applied proven by re-reading the FILE through a fresh
  * read handle, parent-failure {@code Bad_NotFound} propagation, remove-cascade with the fragment
- * subtree gone and the D25 {@code NodeId.NULL_VALUE} remove slot, the F5 ConfigurationVersion
- * advance (ns0 {@code i=25481} and the file wire form), and the empty ConfigurationObjects shape
- * without the information model.
+ * subtree gone and the {@code NodeId.NULL_VALUE} remove slot, the ConfigurationVersion advance (ns0
+ * {@code i=25481} and the file wire form), and the empty ConfigurationObjects shape without the
+ * information model.
  *
  * <p>Per-test {@link ServerPubSub} attach for a stable baseline; two clients for the cross-session
  * reservation rows.
@@ -184,8 +184,8 @@ class CloseAndUpdateApplyIntegrationTest {
             .dataSetWriter("ap-conn2", "ap-wg2", "ap-dsw2")
             .isPresent());
 
-    // E3: ConfigurationObjects is length-matched, carries the deterministic fragment NodeIds,
-    // and every id resolves for a REAL client (R10 rebuilt the model before the method returned)
+    // ConfigurationObjects is length-matched, carries the deterministic fragment NodeIds,
+    // and every id resolves for a REAL client (the model rebuilt before the method returned)
     NodeId[] objects = FileModelTestClient.configurationObjects(result);
     assertNotNull(objects);
     assertEquals(3, objects.length);
@@ -198,7 +198,7 @@ class CloseAndUpdateApplyIntegrationTest {
       assertNodePresent(objectId);
     }
 
-    // E2: nothing was auto-assigned (explicit names and ids) — no ConfigurationValues entries
+    // nothing was auto-assigned (explicit names and ids) — no ConfigurationValues entries
     assertTrue(fileA.configurationValues(result).isEmpty());
   }
 
@@ -206,7 +206,7 @@ class CloseAndUpdateApplyIntegrationTest {
   void autoAssignmentHonorsOwnReservationsAndAvoidsForeignOnes() throws Exception {
     attach(true);
 
-    // both sessions reserve; the blocks are disjoint and the outputs are typed (G3: UDP profile
+    // both sessions reserve; the blocks are disjoint and the outputs are typed (UDP profile
     // PublisherId defaults are UInt64)
     Set<Integer> reservedByA = new TreeSet<>();
     Set<Integer> reservedByB = new TreeSet<>();
@@ -231,7 +231,7 @@ class CloseAndUpdateApplyIntegrationTest {
         "reservation blocks of different sessions must be disjoint");
 
     // session A adds a connection with null name + null PublisherId and a group with id 0 +
-    // null name: the assignments surface in ConfigurationValues (E2, self-correlating)
+    // null name: the assignments surface in ConfigurationValues (self-correlating)
     PubSubConfiguration2DataType wire =
         fileConfigWithExtraConnection().toDataType(testServer.getServer().getNamespaceTable());
     wire.getConnections()[1] = withNullNameAndPublisherId(wire.getConnections()[1]);
@@ -401,13 +401,13 @@ class CloseAndUpdateApplyIntegrationTest {
     assertTrue(FileModelTestClient.changesApplied(result));
     assertEquals(StatusCode.GOOD, FileModelTestClient.referencesResults(result)[0]);
 
-    // D25: remove slots carry NodeId.NULL_VALUE
+    // remove slots carry NodeId.NULL_VALUE
     NodeId[] objects = FileModelTestClient.configurationObjects(result);
     assertNotNull(objects);
     assertEquals(1, objects.length);
     assertEquals(NodeId.NULL_VALUE, objects[0]);
 
-    // B5: the cascade removed the whole subtree — runtime and information model alike
+    // the cascade removed the whole subtree — runtime and information model alike
     assertTrue(serverPubSub.runtime().components().connection(CONNECTION).isEmpty());
     assertTrue(
         serverPubSub
@@ -418,7 +418,7 @@ class CloseAndUpdateApplyIntegrationTest {
     assertNodeGone(connectionNodeId);
     assertNodeGone(writerNodeId);
 
-    // F5: the ConfigurationVersion advanced strictly — ns0 i=25481 and the file agree
+    // the ConfigurationVersion advanced strictly — ns0 i=25481 and the file agree
     UInteger versionAfter = readNs0Version();
     assertTrue(
         versionAfter.longValue() > versionBefore.longValue(),

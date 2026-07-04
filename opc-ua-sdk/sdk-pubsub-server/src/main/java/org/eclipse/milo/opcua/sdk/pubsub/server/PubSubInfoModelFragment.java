@@ -119,10 +119,10 @@ import org.slf4j.LoggerFactory;
  * this fragment's node manager only; ns0's node manager is never structurally modified.
  *
  * <p>Node identity: every node created by this fragment has a deterministic string {@link NodeId}
- * per {@link PubSubNodeIds} (pinned decision R11), stable across server restarts for an unchanged
- * configuration and across rebuilds for restarted components — the path-stability guarantee the
- * diagnostics exposure relies on ({@code "PubSub/<path>/Diagnostics/..."} ids never change while
- * the component keeps its name path), matching the engine's path-stable counter preservation.
+ * per {@link PubSubNodeIds}, stable across server restarts for an unchanged configuration and
+ * across rebuilds for restarted components — the path-stability guarantee the diagnostics exposure
+ * relies on ({@code "PubSub/<path>/Diagnostics/..."} ids never change while the component keeps its
+ * name path), matching the engine's path-stable counter preservation.
  *
  * <p>All variables are read-only ({@code AccessLevel.CurrentRead}, the {@code UaVariableNode}
  * default). Method nodes are created when {@link ServerPubSubOptions#isAllowRemoteConfiguration()}
@@ -132,11 +132,11 @@ import org.slf4j.LoggerFactory;
  * PubSubDiagnosticsExposure}). The ns0 root Status object ({@code i=17405}) never gets the
  * Enable/Disable pair — its Enable/Disable members are Optional, the Foundation NodeSet omits them,
  * and Call dispatch routes by objectId to the ns0 namespace, which cannot see fragment-held method
- * nodes (D23). Pre-existing ns0 method nodes (AddConnection, RemoveConnection, the SKS methods,
- * ...) keep their loader state, except the ns0 Diagnostics Reset ({@code i=17421}), which gains an
- * invocation handler while diagnostics are enabled. The ns0 {@code PubSubCapablities} properties
- * ({@code i=23678}) are populated with values at startup (R20); the loader-built ns0 root {@code
- * Diagnostics} subtree ({@code i=17409}) is backed with values and filters when {@link
+ * nodes. Pre-existing ns0 method nodes (AddConnection, RemoveConnection, the SKS methods, ...) keep
+ * their loader state, except the ns0 Diagnostics Reset ({@code i=17421}), which gains an invocation
+ * handler while diagnostics are enabled. The ns0 {@code PubSubCapablities} properties ({@code
+ * i=23678}) are populated with values at startup; the loader-built ns0 root {@code Diagnostics}
+ * subtree ({@code i=17409}) is backed with values and filters when {@link
  * ServerPubSubOptions#isDiagnosticsEnabled()} is {@code true} and restored at shutdown — in both
  * cases values/behavior only, never structure. PublishedDataSet nodes carry no Status child (Part
  * 14 defines none); published-dataset runtime state is not surfaced.
@@ -147,7 +147,7 @@ import org.slf4j.LoggerFactory;
  * i=17406}, SupportedTransportProfiles {@code i=17481}, ConfigurationVersion, and
  * ConfigurationProperties) are populated by looking up the existing nodes and setting values only;
  * property create-on-set against ns0 parents is never triggered. The ConfigurationVersion value is
- * read from the mediator-owned single source (D26), never a locally sampled clock.
+ * read from the mediator-owned single source, never a locally sampled clock.
  *
  * <p>Live state: component Status/State variables are updated from {@link
  * PubSubService#addStateListener}, keyed by component name path so that reconfiguration (which
@@ -158,9 +158,9 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Reconfiguration: {@link #applyReconfigure} — driven as the first {@link ManagedPubSubService}
  * post-apply hook — incrementally deletes and rebuilds the config-derived subtrees affected by a
- * successful apply (R10), keyed by name path, so {@code ServerPubSub.runtime()} reconfigures no
- * longer desync the exposed model. {@link ComponentNodeListener}s observe the per-component subtree
- * builds and removals.
+ * successful apply, keyed by name path, so {@code ServerPubSub.runtime()} reconfigures no longer
+ * desync the exposed model. {@link ComponentNodeListener}s observe the per-component subtree builds
+ * and removals.
  *
  * <p>Created by {@link ServerPubSub} when {@link ServerPubSubOptions#isExposeInformationModel()} is
  * {@code true}; {@link #startup()} and {@link #shutdown()} are driven by the owning {@link
@@ -186,7 +186,7 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
 
   /**
    * Guards listener callbacks against in-flight deliveries; set on startup, cleared on shutdown
-   * (the listeners themselves are removed at shutdown via the R12 removal API).
+   * (the listeners themselves are removed at shutdown).
    */
   private volatile boolean active = false;
 
@@ -212,9 +212,9 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
   private final UShort namespaceIndex;
 
   /**
-   * The §9.1.11 diagnostics exposure (WP-Z), present iff {@link
+   * The §9.1.11 diagnostics exposure, present iff {@link
    * ServerPubSubOptions#isDiagnosticsEnabled()}; registered as a {@link ComponentNodeListener} so
-   * per-component Diagnostics objects follow the initial build and every R10 rebuild.
+   * per-component Diagnostics objects follow the initial build and every reconfiguration rebuild.
    */
   private final @Nullable PubSubDiagnosticsExposure exposure;
 
@@ -223,9 +223,9 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
    *
    * @param authorizer the effective {@link PubSubMethodAuthorizer} resolved by {@link
    *     ServerPubSub}, consulted by the Enable/Disable handlers.
-   * @param configurationVersion the mediator-owned ConfigurationVersion single source (D26), read
-   *     for the ns0 {@code ConfigurationVersion} property at startup and per apply. Deferred: only
-   *     invoked once the owning {@link ServerPubSub}'s construction has completed.
+   * @param configurationVersion the mediator-owned ConfigurationVersion single source, read for the
+   *     ns0 {@code ConfigurationVersion} property at startup and per apply. Deferred: only invoked
+   *     once the owning {@link ServerPubSub}'s construction has completed.
    */
   PubSubInfoModelFragment(
       OpcUaServer server,
@@ -1021,7 +1021,7 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
    * Optional Enable/Disable Method pair is minted on the Status object (see {@link
    * PubSubStatusMethods}); {@code handleLookup} resolves the component's handle per invocation
    * (name components captured at mint time — handles are invalidated by reconfiguration and paths
-   * are never parsed, R11).
+   * are never parsed).
    */
   private void addStatusNodes(
       UaNode parent, String componentPath, Supplier<Optional<PubSubHandle>> handleLookup) {
@@ -1058,8 +1058,7 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
    * are empty), methods carry no HasTypeDefinition, and no RolePermissions are minted (the
    * authorizer is the gate).
    *
-   * <p>Package-private for the diagnostics exposure (WP-Z): the per-component {@code Reset}
-   * Methods.
+   * <p>Package-private for the diagnostics exposure: the per-component {@code Reset} Methods.
    */
   UaMethodNode addMethodNode(UaNode parent, String name) {
     NodeId nodeId = childNodeId(parent, name);
@@ -1094,7 +1093,7 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
 
   /**
    * The shared shape of the generated object TypeNode constructors (without event notifier).
-   * Package-private for the diagnostics exposure (WP-Z).
+   * Package-private for the diagnostics exposure.
    */
   @FunctionalInterface
   interface ObjectNodeConstructor<T extends UaObjectNode> {
@@ -1116,7 +1115,7 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
    * under {@code parentNodeId} with an inverse {@code referenceTypeId} reference (the node manager
    * stores both directions, so the parent browses the forward reference without being modified).
    *
-   * <p>Package-private for the diagnostics exposure (WP-Z).
+   * <p>Package-private for the diagnostics exposure.
    */
   <T extends UaObjectNode> T addObjectNode(
       ObjectNodeConstructor<T> constructor,
@@ -1159,7 +1158,7 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
    * Create a PropertyType variable node under {@code parent} (HasProperty), pre-created explicitly
    * so the typed-setter create-on-set path is never exercised. Read-only by default.
    *
-   * <p>Package-private for the diagnostics exposure (WP-Z).
+   * <p>Package-private for the diagnostics exposure.
    */
   PropertyTypeNode addPropertyNode(
       UaNode parent, String name, NodeId dataTypeId, int valueRank, Variant value) {
@@ -1205,7 +1204,7 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
   /**
    * Create a scalar BaseDataVariableType component variable under {@code parent} (HasComponent).
    *
-   * <p>Package-private for the diagnostics exposure (WP-Z).
+   * <p>Package-private for the diagnostics exposure.
    */
   BaseDataVariableTypeNode addVariableNode(
       UaNode parent, String name, NodeId dataTypeId, Variant value) {
@@ -1251,12 +1250,12 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
   /**
    * Create a PubSubDiagnosticsCounterType variable node ({@code i=19725}, DataType UInt32) under
    * {@code parent} (HasComponent) with its four Part 14 §9.1.11.5 properties: {@code Active}
-   * (always {@code true} — R13 has no activation machinery), {@code Classification} and {@code
+   * (always {@code true}; there is no activation machinery), {@code Classification} and {@code
    * DiagnosticsLevel} static per the caller's row, and {@code TimeFirstChange} served by {@code
    * timeFirstChangeFilter}. The counter's Value is served by {@code valueFilter} (pull model,
    * clamped to UInt32 at exposure).
    *
-   * <p>Package-private for the diagnostics exposure (WP-Z).
+   * <p>Package-private for the diagnostics exposure.
    */
   PubSubDiagnosticsCounterTypeNode addCounterNode(
       UaNode parent,
@@ -1372,7 +1371,7 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
   /**
    * The deterministic id of a member child of {@code parent} (see {@link PubSubNodeIds}).
    *
-   * <p>Package-private for the diagnostics exposure (WP-Z).
+   * <p>Package-private for the diagnostics exposure.
    */
   NodeId childNodeId(UaNode parent, String name) {
     return PubSubNodeIds.childNodeId(parent.getNodeId(), name);
@@ -1380,7 +1379,7 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
 
   // endregion
 
-  // region reconfiguration rebuild (R10)
+  // region reconfiguration rebuild
 
   /**
    * Apply a successful reconfiguration to the exposed model: delete the subtrees of removed and
@@ -1389,7 +1388,7 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
    *
    * <p>Caller: the first {@link ManagedPubSubService.ReconfigureHook}, on the reconfiguring thread,
    * inside the mediator's critical section. The engine apply has already completed, so {@code
-   * components()} lookups resolve the new handles. Restarted components keep their NodeIds (R11
+   * components()} lookups resolve the new handles. Restarted components keep their NodeIds
    * determinism); a client monitoring a removed component's node starts seeing {@code
    * Bad_NodeIdUnknown}. A reconfigure applied while the fragment is not active — before startup, or
    * racing fragment shutdown — records the new configuration without rebuilding: startup builds
@@ -1738,7 +1737,7 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
   }
 
   // region wire-form lookups (names are unique per scope, enforced by the config builder;
-  // package-private static for the diagnostics exposure, WP-Z)
+  // package-private static for the diagnostics exposure)
 
   static @Nullable PubSubConnectionDataType findConnection(
       PubSubConfiguration2DataType configuration, String name) {
@@ -1822,7 +1821,7 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
 
   // endregion
 
-  // region ConfigurationObjectIds (R4/R11)
+  // region ConfigurationObjectIds
 
   @Override
   public @Nullable NodeId connectionObjectId(String connectionName) {
@@ -1903,18 +1902,18 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
   }
 
   /**
-   * Populate the ns0 {@code PubSubCapablities} (sic, the NodeSet's own typo) object {@code i=23678}
-   * (R20): every {@code Max*} property is {@code 0} (no limit) — including
+   * Populate the ns0 {@code PubSubCapablities} (sic, the NodeSet's own typo) object {@code
+   * i=23678}: every {@code Max*} property is {@code 0} (no limit) — including
    * MaxWriterGroups/MaxDataSetWriters, because the ReserveIds allocator bounds auto-assigned
-   * <em>ids</em> (0x8000–0xFFFF), not the number of configurable components (D15) — {@code
-   * SupportSecurityKeyPull=true} (pull support exists engine-side regardless of the SKS face),
-   * {@code SupportSecurityKeyPush=false} (push CUT, K16), and {@code SupportSecurityKeyServer}
-   * tracking {@link ServerPubSubOptions#isSecurityKeyServerEnabled()} (K15).
+   * <em>ids</em> (0x8000–0xFFFF), not the number of configurable components — {@code
+   * SupportSecurityKeyPull=true} (pull support exists engine-side regardless of the SKS helper),
+   * {@code SupportSecurityKeyPush=false} (push distribution is not implemented), and {@code
+   * SupportSecurityKeyServer} tracking {@link ServerPubSubOptions#isSecurityKeyServerEnabled()}.
    *
    * <p>Values only; nothing is created. Composition with {@link SksServerFace}: the fragment starts
-   * before the face in {@code ServerPubSub.startup()}, and an enabled face re-sets Pull/Push/Server
-   * to identical values at its startup and owns the {@code Server=false} flip at its shutdown;
-   * fragment shutdown leaves the capability values in place.
+   * before the SKS helper in {@code ServerPubSub.startup()}, and an enabled helper re-sets
+   * Pull/Push/Server to identical values at its startup and owns the {@code Server=false} flip at
+   * its shutdown; fragment shutdown leaves the capability values in place.
    */
   private void populateCapabilities() {
     Variant noLimit = new Variant(uint(0));
@@ -1959,7 +1958,7 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
 
   /**
    * Refresh the ns0 values maintained per apply (and set at startup): the ConfigurationVersion —
-   * read from the mediator-owned single source (D26) — the ConfigurationProperties, and the root
+   * read from the mediator-owned single source — the ConfigurationProperties, and the root
    * Status/State.
    */
   private void refreshNs0Values(PubSubConfiguration2DataType configuration, boolean enabled) {
@@ -2050,7 +2049,7 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
     }
   }
 
-  /** Remove the listeners registered by {@link #registerListeners()} (R12 removal API). */
+  /** Remove the listeners registered by {@link #registerListeners()}. */
   private void removeListeners() {
     PubSubStateListener stateListener = this.stateListener;
     if (stateListener != null) {

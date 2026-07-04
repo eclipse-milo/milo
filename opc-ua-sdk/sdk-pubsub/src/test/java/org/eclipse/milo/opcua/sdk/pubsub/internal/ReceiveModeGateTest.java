@@ -19,11 +19,11 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.junit.jupiter.api.Test;
 
 /**
- * The K7 / Part 14 §7.2.4.3 receive-mode matrix, decided per (group, NetworkMessage) by {@link
+ * The Part 14 §7.2.4.3 receive-mode matrix, decided per (group, NetworkMessage) by {@link
  * ReaderDispatcher#receiveModeAccepts}: drop received modes below the configured mode (SHALL),
  * process received modes above it (MAY — the keys come from the same token window), drop secured
  * messages to mode-None groups (their keys never resolve), and treat group-level {@code Invalid}
- * (or no config at all) like None (D1).
+ * (or no config at all) like None.
  */
 class ReceiveModeGateTest {
 

@@ -51,15 +51,14 @@ import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 /**
- * Companion to {@link SecurityKeyManagerTest} covering the reschedule/retry/threading rows of the
- * key lifecycle (Part 14 §8.3.2, §6.2.12.2; plan pins K6, D15): re-learned
- * TimeToNextKey/KeyLifetime durations rescheduling the one-shot tasks, the min(KeyLifetime/2, 10 s)
- * retry cap, persistent refresh failure expiring held keys into Error — with the publisher snapshot
- * nulled BEFORE the failure transition (observed from inside the state change listener), so no
- * further sends happen, and the material zeroized only after the retirement grace so no in-flight
- * borrow races the wipe — a synchronous provider throw as a failed fetch, the provider-thread hop
- * (a future completing on a foreign thread mutates nothing until the pinned scheduler runs), and
- * shutdown.
+ * Companion to {@link SecurityKeyManagerTest} covering reschedule, retry, and threading behavior
+ * for the key lifecycle (Part 14 §8.3.2, §6.2.12.2): re-learned TimeToNextKey/KeyLifetime durations
+ * rescheduling the one-shot tasks, the min(KeyLifetime/2, 10 s) retry cap, persistent refresh
+ * failure expiring held keys into Error — with the publisher snapshot nulled BEFORE the failure
+ * transition (observed from inside the state change listener), so no further sends happen, and the
+ * material zeroized only after the retirement grace so no in-flight borrow races the wipe — a
+ * synchronous provider throw as a failed fetch, the provider-thread hop (a future completing on a
+ * foreign thread mutates nothing until the configured scheduler runs), and shutdown.
  *
  * <p>Deterministic: cadence is driven through the injectable clock + one-shot scheduler seams — no
  * sleeping, no real timers, and the only real thread used is join()ed before any assertion.
@@ -313,14 +312,14 @@ class SecurityKeyManagerRescheduleAndRetryTest {
     scheduler.advanceTo(seconds(150));
     assertEquals(PubSubState.Error, component.state());
 
-    // D15: expiry fails with Bad_SecurityChecksFailed...
+    // expiry fails with Bad_SecurityChecksFailed...
     assertEquals(1, errorObservations.size());
     ErrorObservation observation = errorObservations.get(0);
     assertEquals(new StatusCode(StatusCodes.Bad_SecurityChecksFailed), observation.statusCode());
     // ...and by the time the transition ran, the snapshots were ALREADY nulled — that is what
     // stops sends: an in-flight publish cycle resolves null and skips. The material itself is
     // only retired at that point (zeroized after the destroy grace), so a cycle that resolved
-    // its context just before the expiry never races the wipe (S3)
+    // its context just before the expiry never races the wipe
     assertTrue(observation.publisherSnapshotWasNull());
     assertTrue(observation.subscriberWindowWasNull());
     assertFalse(observation.watchedKeysWereDestroyed());
@@ -359,8 +358,8 @@ class SecurityKeyManagerRescheduleAndRetryTest {
     assertEquals(PubSubState.PreOperational, component.state());
 
     // the throw is a failed fetch: retries at configuredKeyLifetime/2 = 500 ms until the
-    // 2×KeyLifetime startup deadline fails the group (D15: a plain RuntimeException carries no
-    // status, so the extracted fetch status defaults to Bad_InternalError)
+    // 2×KeyLifetime startup deadline fails the group. A plain RuntimeException carries no status,
+    // so the extracted fetch status defaults to Bad_InternalError.
     scheduler.advanceTo(millis(1_999));
     assertEquals(PubSubState.PreOperational, component.state());
     assertTrue(provider.requests.size() > 1, "expected retries before the startup deadline");
@@ -383,12 +382,12 @@ class SecurityKeyManagerRescheduleAndRetryTest {
   }
 
   @Test
-  void foreignThreadCompletionMutatesNothingUntilThePinnedSchedulerRuns() throws Exception {
+  void foreignThreadCompletionMutatesNothingUntilTheConfiguredSchedulerRuns() throws Exception {
     TestComponent component = attachPublisher(securityGroup(Duration.ofSeconds(60)));
     scheduler.runPending();
     assertEquals(1, provider.futures.size());
 
-    // the provider completes on its own thread: the manager must hop to the pinned scheduler
+    // the provider completes on its own thread: the manager must hop to the configured scheduler
     // (whenCompleteAsync) instead of running state mutation on the foreign thread
     var thread =
         new Thread(
@@ -516,15 +515,14 @@ class SecurityKeyManagerRescheduleAndRetryTest {
     @Override
     public ScheduledFuture<?> scheduleAtFixedRate(
         Runnable command, long initialDelay, long period, TimeUnit unit) {
-      throw new UnsupportedOperationException(
-          "the key manager must not use fixed-rate scheduling (K6: one-shot + reschedule)");
+      throw new UnsupportedOperationException("the key manager must not use fixed-rate scheduling");
     }
 
     @Override
     public ScheduledFuture<?> scheduleWithFixedDelay(
         Runnable command, long initialDelay, long delay, TimeUnit unit) {
       throw new UnsupportedOperationException(
-          "the key manager must not use fixed-delay scheduling (K6: one-shot + reschedule)");
+          "the key manager must not use fixed-delay scheduling");
     }
 
     @Override

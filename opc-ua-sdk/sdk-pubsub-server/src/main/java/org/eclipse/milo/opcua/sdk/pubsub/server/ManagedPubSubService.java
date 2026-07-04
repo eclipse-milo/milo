@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
  *       anything ({@link ServerPubSub#validateNodeFieldAddresses} plus a dry-run wire mapping),
  *       throwing {@link PubSubConfigValidationException} with nothing applied and no hooks run;
  *   <li>advance the mediator-owned ConfigurationVersion exactly once per successful apply — the
- *       single source (D26) read by the ns0 {@code ConfigurationVersion} property, persisted
+ *       single source read by the ns0 {@code ConfigurationVersion} property, persisted
  *       configuration snapshots, and the file-model {@code Size}/{@code LastModifiedTime} values,
  *       so every surface observes one clock and one value per apply;
  *   <li>run the registered {@link ReconfigureHook}s synchronously, in registration order, before
@@ -80,8 +80,8 @@ final class ManagedPubSubService implements PubSubService {
   private final Consumer<PublishedDataSetRef> bindSourceObserver;
 
   /**
-   * The ConfigurationVersion single source (D26): a VersionTime, seeded at attach and advanced
-   * exactly once per successful apply. Writes are guarded by {@code reconfigureLock}; volatile for
+   * The ConfigurationVersion single source: a VersionTime, seeded at attach and advanced exactly
+   * once per successful apply. Writes are guarded by {@code reconfigureLock}; volatile for
    * lock-free reads.
    */
   private volatile UInteger configurationVersion;

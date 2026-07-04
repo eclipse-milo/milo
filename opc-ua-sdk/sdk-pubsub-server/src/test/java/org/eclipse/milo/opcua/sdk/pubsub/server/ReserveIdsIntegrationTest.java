@@ -46,18 +46,16 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * Client-driven ReserveIds rows the WP-X locals cannot reach (T5 §7.1/§7.2): R6 — session close
- * RELEASES the session's reservations, observed deterministically through real sessions — and R7 —
- * exhaustion of the 0x8000-0xFFFF id space answers {@code Bad_ResourceUnavailable} (D15), including
- * the up-front reject of a request larger than the whole 32768-id space.
+ * Client-driven ReserveIds coverage through real sessions: session close releases the session's
+ * reservations, exhaustion of the 0x8000-0xFFFF id space answers {@code Bad_ResourceUnavailable},
+ * and a request larger than the whole 32768-id space is rejected up front.
  *
- * <p>SEAM NOTE (brief §7.1 R6 "assert via registry inspection"): the face's live {@link
- * PubSubIdReservations} registry is private with no accessor, so this class pins release-on-close
- * through the equally deterministic exhaustion gate instead — session A reserves the ENTIRE
- * WriterGroupId space, so session B's one-id request can only ever succeed if A's disconnect
- * released the block; no probabilistic reuse observation is involved. The remaining allocator unit
- * rows (grant disjointness, typing, consumption) are pinned in {@code PubSubIdReservationsTest} and
- * {@code PubSubConfigurationFaceTest}.
+ * <p>The live {@link PubSubIdReservations} registry is private with no accessor, so this class
+ * proves release-on-close through the equally deterministic exhaustion gate instead: session A
+ * reserves the ENTIRE WriterGroupId space, so session B's one-id request can only ever succeed if
+ * A's disconnect released the block; no probabilistic reuse observation is involved. The remaining
+ * allocator unit coverage (grant disjointness, typing, consumption) lives in {@code
+ * PubSubIdReservationsTest} and {@code PubSubConfigurationFaceTest}.
  */
 class ReserveIdsIntegrationTest {
 
@@ -97,10 +95,10 @@ class ReserveIdsIntegrationTest {
   }
 
   /**
-   * R6 (+R7): session A reserves the entire 32768-id WriterGroupId space (typed grant asserted),
-   * proving exhaustion against BOTH sessions; after A disconnects, B's one-id request succeeds —
-   * impossible without the session-close eviction driving {@code releaseSession} — and, the space
-   * being empty again, deterministically receives the first server-assigned id 0x8000.
+   * Session A reserves the entire 32768-id WriterGroupId space (typed grant asserted), proving
+   * exhaustion against BOTH sessions; after A disconnects, B's one-id request succeeds — impossible
+   * without the session-close eviction driving {@code releaseSession} — and, the space being empty
+   * again, deterministically receives the first server-assigned id 0x8000.
    */
   @Test
   void sessionCloseReleasesTheSessionsReservations() throws Exception {
@@ -121,7 +119,7 @@ class ReserveIdsIntegrationTest {
       assertEquals(ushort(0x8000), writerGroupIds[0]);
       assertEquals(ushort(0xFFFF), writerGroupIds[writerGroupIds.length - 1]);
 
-      // R7: the space is exhausted for EVERY session — the owner and a bystander alike
+      // the space is exhausted for EVERY session — the owner and a bystander alike
       assertEquals(
           StatusCodes.Bad_ResourceUnavailable,
           reserveIds(doomed, ushort(1), ushort(0)).getStatusCode().getValue(),
@@ -159,8 +157,8 @@ class ReserveIdsIntegrationTest {
   }
 
   /**
-   * R7's up-front bound: a count that exceeds the whole 32768-id space can never be satisfied and
-   * answers {@code Bad_ResourceUnavailable} without sweeping the space (D15 — the code still means
+   * Up-front bound: a count that exceeds the whole 32768-id space can never be satisfied and
+   * answers {@code Bad_ResourceUnavailable} without sweeping the space (the code still means
    * id-space exhaustion). Nothing is recorded by the failed call.
    */
   @Test

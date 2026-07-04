@@ -56,7 +56,7 @@ class GetSecurityKeysResponseTest {
 
   @Test
   void policyUriIsPassedThroughVerbatim() throws UaException {
-    // The K8 policy check belongs to the consuming key manager, not this transport.
+    // The policy check belongs to the consuming key manager, not this transport.
     SecurityKeySet keySet =
         GetSecurityKeysResponse.parse(
             result(

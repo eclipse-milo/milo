@@ -68,9 +68,9 @@ import org.slf4j.LoggerFactory;
  *   <li>a {@link SecurityKeySet} with {@code timeToNextKey == ZERO && keyLifetime == ZERO} is a
  *       static key set: installed once, no refresh/switch/expiry scheduling. Exactly one of the two
  *       being zero is malformed and the fetch is treated as failed.
- *   <li>K8: the provider-returned {@code securityPolicyUri} is authoritative — it must be a
- *       supported {@link PubSubSecurityPolicy} and, when an attached group pins a non-null
- *       configured policy URI, must equal it; otherwise the fetch FAILED (never downgrade).
+ *   <li>the provider-returned {@code securityPolicyUri} is authoritative — it must be a supported
+ *       {@link PubSubSecurityPolicy} and, when an attached group pins a non-null configured policy
+ *       URI, must equal it; otherwise the fetch FAILED (never downgrade).
  * </ul>
  *
  * <p>Subscriber token window: {prev, current, futures}, published as an immutable {@link
@@ -78,7 +78,7 @@ import org.slf4j.LoggerFactory;
  * (messages keep dropping, counted, meanwhile — no buffering); force-key-reset (SecurityFlags bit
  * 3) triggers the same single-flight refresh. Fetch responses are merged on {@code FirstTokenId}:
  * overlap keeps existing entries, a disconnected {@code FirstTokenId} discards and replaces the
- * window (§8.3.2 / K6).
+ * window (§8.3.2).
  *
  * <p>Key material ownership (zeroization posture): each key is split ONCE per token into a {@link
  * SecurityKeyMaterial} when it enters the window and RETIRED exactly when its token leaves the
@@ -86,9 +86,9 @@ import org.slf4j.LoggerFactory;
  * reference immediately but defers the zeroizing {@code destroy()} by {@link
  * #RETIRED_KEY_DESTROY_DELAY_NANOS}: the hot-path borrowers — a publish cycle mid-encode on a
  * scheduler thread, a decode on a transport dispatch thread — never coordinate with the manager, so
- * the grace period is what guarantees no {@code destroy()} races an active borrow (the S3 borrow
- * contract). Material that was never installed into a window (merge duplicates, responses arriving
- * after close) has no borrowers and is destroyed inline.
+ * the grace period is what guarantees no {@code destroy()} races an active borrow. Material that
+ * was never installed into a window (merge duplicates, responses arriving after close) has no
+ * borrowers and is destroyed inline.
  *
  * <p>Threading: {@code attach*}/{@code detach}/{@code shutdown} are called under the engine lock
  * and only mutate maps and schedule tasks — the fetch itself always runs on the scheduler, never
@@ -103,7 +103,7 @@ final class SecurityKeyManager {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SecurityKeyManager.class);
 
-  /** RequestedKeyCount (future keys beyond the current one) when maxFutureKeyCount is 0 (D2). */
+  /** RequestedKeyCount (future keys beyond the current one) when maxFutureKeyCount is 0. */
   private static final int DEFAULT_REQUESTED_KEY_COUNT = 2;
 
   /**
@@ -115,7 +115,7 @@ final class SecurityKeyManager {
   /** Cap on the fetch retry delay; retries must be faster than the key lifetime (§5.4.5.3). */
   private static final long MAX_RETRY_DELAY_NANOS = TimeUnit.SECONDS.toNanos(10);
 
-  /** The largest NonceSequenceNumber; the sequence never wraps within one token (K5). */
+  /** The largest NonceSequenceNumber; the sequence never wraps within one token. */
   private static final long NONCE_SEQUENCE_MAX = 0xFFFF_FFFFL;
 
   /**
@@ -371,12 +371,12 @@ final class SecurityKeyManager {
 
   // endregion
 
-  // region Phase 5 LiveValue feed
+  // region diagnostics LiveValue feed
 
   /**
    * A point-in-time view of the key state of {@code ref} — current token id and time to the next
    * key switch — or {@code null} if the ref has no key state. Feeds the Part 14 §9.1.11 {@code
-   * SecurityTokenID}/{@code TimeToNextTokenID} LiveValues in Phase 5.
+   * SecurityTokenID}/{@code TimeToNextTokenID} LiveValues.
    *
    * @param securityGroupId the id of the SecurityGroup as known to the Security Key Service.
    * @param securityPolicyUri the URI of the policy the current keys were generated for, or {@code
@@ -502,7 +502,7 @@ final class SecurityKeyManager {
     CompletableFuture<SecurityKeySet> future;
     try {
       // StartingTokenId is always 0 (the current token): publishers SHALL, subscribers should,
-      // and past tokens are never re-fetched (K6)
+      // and past tokens are never re-fetched
       future = state.provider.getKeys(state.securityGroupId, uint(0), state.requestedKeyCount);
     } catch (RuntimeException e) {
       future = CompletableFuture.failedFuture(e);
@@ -530,7 +530,7 @@ final class SecurityKeyManager {
       return;
     }
 
-    // K8: the provider-returned policy URI is authoritative — it must be a supported policy and
+    // the provider-returned policy URI is authoritative — it must be a supported policy and
     // match every attacher's non-null configured URI; a mismatch fails the fetch (never downgrade)
     PubSubSecurityPolicy policy =
         PubSubSecurityPolicy.fromUri(keySet.securityPolicyUri()).orElse(null);
@@ -790,7 +790,7 @@ final class SecurityKeyManager {
   }
 
   /**
-   * Merge a fetch response into the window (K6/§8.3.2): overlap on {@code FirstTokenId} keeps the
+   * Merge a fetch response into the window (§8.3.2): overlap on {@code FirstTokenId} keeps the
    * existing entries and appends the new tail; a {@code FirstTokenId} that does not connect to the
    * window discards and replaces it. Because {@code StartingTokenId} is always 0, the response's
    * first token IS the SKS's current token, so the window is advanced to it afterwards (retaining
@@ -881,7 +881,7 @@ final class SecurityKeyManager {
   /**
    * Rebuild the volatile snapshots from the window. The publisher snapshot is preserved when the
    * current token did not change, so the nonce counter is NEVER reset by a mere refresh — only a
-   * token switch resets it to 1 (K5: never reuse a (key, nonce) pair).
+   * token switch resets it to 1, ensuring a (key, nonce) pair is never reused.
    */
   private void rebuildSnapshots(GroupKeyState state) {
     SecurityKeyMaterial currentKey = state.currentKey;
@@ -1116,8 +1116,8 @@ final class SecurityKeyManager {
       this.provider = provider;
       this.securityGroupId = securityGroup.getSecurityGroupId();
       this.configuredKeyLifetimeNanos = Math.max(1L, securityGroup.getKeyLifeTime().toNanos());
-      // RequestedKeyCount = future keys beyond the current one; pinned default 2 when the
-      // config's maxFutureKeyCount is 0 (D2)
+      // RequestedKeyCount = future keys beyond the current one; default to 2 when the
+      // config's maxFutureKeyCount is 0
       long maxFutureKeyCount = securityGroup.getMaxFutureKeyCount().longValue();
       this.requestedKeyCount =
           uint(maxFutureKeyCount > 0 ? maxFutureKeyCount : DEFAULT_REQUESTED_KEY_COUNT);

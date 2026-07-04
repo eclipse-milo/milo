@@ -69,11 +69,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for the E6 dispatch evolution: hand-decoded DataSetMessages with name-keyed {@link
- * DecodedField}s (as the JSON mapping produces) are matched against the reader's effective metadata
- * by NAME — the metadata position becomes the {@link DataSetFieldValue} index and the metadata
- * dataSetFieldId is resolved; unknown wire names are kept with the null fieldId — and PublisherIds
- * of differing types compare by canonical string form through a real reader filter.
+ * Tests for name-keyed dispatch: hand-decoded DataSetMessages with name-keyed {@link DecodedField}s
+ * (as the JSON mapping produces) are matched against the reader's effective metadata by NAME — the
+ * metadata position becomes the {@link DataSetFieldValue} index and the metadata dataSetFieldId is
+ * resolved; unknown wire names are kept with the null fieldId — and PublisherIds of differing types
+ * compare by canonical string form through a real reader filter.
  *
  * <p>A stub {@link MessageMappingProvider} registered under the name {@code "uadp"} (configured
  * providers shadow the built-in) returns the hand-built {@link DecodedNetworkMessage}, so the wire

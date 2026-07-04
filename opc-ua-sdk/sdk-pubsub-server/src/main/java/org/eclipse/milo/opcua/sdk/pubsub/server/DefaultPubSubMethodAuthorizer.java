@@ -24,14 +24,14 @@ import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The default {@link PubSubMethodAuthorizer} posture (K17.3): with a {@code RoleMapper} configured
- * the well-known roles apply; without one, callers are allowed unless a SecurityGroup carries
- * explicit non-empty RolePermissions (fail closed on explicit restrictions).
+ * The default {@link PubSubMethodAuthorizer} posture: with a {@code RoleMapper} configured the
+ * well-known roles apply; without one, callers are allowed unless a SecurityGroup carries explicit
+ * non-empty RolePermissions (fail closed on explicit restrictions).
  *
  * <p>{@link ServerPubSub} resolves one effective authorizer per attachment — the options-configured
  * {@link PubSubMethodAuthorizer} if present, else an instance of this class — and hands the same
- * instance to every PubSub Method handler (the SKS face and, as they land, the remote-configuration
- * and diagnostics handlers), so one posture governs every check.
+ * instance to every PubSub Method handler (SKS, remote configuration, and diagnostics), so one
+ * posture governs every check.
  */
 final class DefaultPubSubMethodAuthorizer implements PubSubMethodAuthorizer {
 
@@ -54,7 +54,7 @@ final class DefaultPubSubMethodAuthorizer implements PubSubMethodAuthorizer {
   public StatusCode checkConfigure(Session session) {
     Optional<List<NodeId>> roleIds = session.getRoleIds();
 
-    // no RoleMapper: allow, consistent with the core posture (D10)
+    // no RoleMapper: allow, consistent with the core posture
     return roleIds
         .map(ids -> ids.contains(NodeIds.WellKnownRole_ConfigureAdmin) ? StatusCode.GOOD : DENIED)
         .orElse(StatusCode.GOOD);
@@ -64,7 +64,7 @@ final class DefaultPubSubMethodAuthorizer implements PubSubMethodAuthorizer {
   public StatusCode checkSksAdmin(Session session) {
     Optional<List<NodeId>> roleIds = session.getRoleIds();
 
-    // no RoleMapper: allow, consistent with the core posture (D10)
+    // no RoleMapper: allow, consistent with the core posture
     return roleIds
         .map(
             ids ->

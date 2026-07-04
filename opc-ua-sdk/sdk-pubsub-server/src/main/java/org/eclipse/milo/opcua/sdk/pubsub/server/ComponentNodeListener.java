@@ -15,9 +15,8 @@ import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectNode;
 
 /**
  * Observes the info model fragment building and removing per-component subtrees, on the initial
- * build and on the incremental reconfiguration rebuilds (pinned decision R10) — the seam the
- * diagnostics exposure hangs per-component objects on (R18: "per-component objects follow R10
- * rebuild").
+ * build and on incremental reconfiguration rebuilds. Diagnostics exposure uses these callbacks to
+ * attach and remove per-component objects alongside the fragment's own component subtree lifecycle.
  *
  * <p>Fired for connections, writer/reader groups, and dataset writers/readers only — never for
  * published datasets (no diagnostics type attaches to them). {@link #onComponentBuilt} fires after

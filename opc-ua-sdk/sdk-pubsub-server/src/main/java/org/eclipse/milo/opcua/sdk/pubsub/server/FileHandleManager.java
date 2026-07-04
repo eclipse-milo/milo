@@ -23,12 +23,12 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The FileType handle state machine of the {@code PubSubConfiguration} file object (Part 20 §4.2
- * with the Part 14 §9.1.3.7.1 overlay; pinned decisions R2/R3).
+ * with the Part 14 §9.1.3.7.1 overlay).
  *
- * <p>Deliberately package-private and PubSub-only (R2): not designed for reuse as a generic
- * sdk-server FileType utility; promote later if TrustList/GDS work wants one.
+ * <p>Deliberately package-private and PubSub-only: not designed for reuse as a generic sdk-server
+ * FileType utility; promote later if TrustList/GDS work wants one.
  *
- * <p>Contract highlights, all pinned by R3:
+ * <p>Contract highlights:
  *
  * <ul>
  *   <li><b>Modes:</b> only Read ({@code 0x01}), Read+Write ({@code 0x03}), and Write+EraseExisting
@@ -237,7 +237,7 @@ final class FileHandleManager {
    * Set the handle's position (mode-independent), clamping past-EOF values to EOF.
    *
    * @param position the requested position as raw UInt64 bits; positions &ge; 2^63 arrive negative
-   *     as a signed long and clamp to EOF like any other past-EOF value (P20 4.2.7, R3).
+   *     as a signed long and clamp to EOF like any other past-EOF value (Part 20 §4.2.7).
    * @throws UaException {@code Bad_InvalidArgument} for an unknown or foreign handle.
    */
   void setPosition(NodeId sessionId, UInteger fileHandle, long position) throws UaException {
@@ -264,7 +264,7 @@ final class FileHandleManager {
    * truncated at the final write position (an untouched {@code 0x03} buffer is the unmodified
    * snapshot); {@code 0x06} buffers are returned whole. The caller must have called {@link
    * #checkWriteHandle} first — closure happens whenever the handle/mode checks passed, whether or
-   * not changes are subsequently applied (FT §9.3, D40).
+   * not changes are subsequently applied.
    */
   byte[] closeWriteHandle(NodeId sessionId, UInteger fileHandle) {
     HandleState state = handles.remove(new HandleKey(sessionId, fileHandle));
@@ -279,8 +279,7 @@ final class FileHandleManager {
   }
 
   /**
-   * Evict every handle of {@code sessionId} (session-close eviction, R3), releasing the write lock
-   * if held.
+   * Evict every handle of {@code sessionId} on session close, releasing the write lock if held.
    *
    * @return the number of handles evicted.
    */

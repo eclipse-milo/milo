@@ -41,8 +41,8 @@
     </dependency>
 
     <dependency>
-      <!-- PubSubInteropTool's "sks" mode (WP-T4: live secured-interop rows R5/R6) pulls keys
-           with the SksSecurityKeyProvider; test scope only, nothing in main uses it. -->
+      <!-- PubSubInteropTool's "sks" mode pulls keys with the SksSecurityKeyProvider; test
+           scope only, nothing in main uses it. -->
       <groupId>org.eclipse.milo</groupId>
       <artifactId>milo-sdk-pubsub-sks</artifactId>
       <version>${project.version}</version>

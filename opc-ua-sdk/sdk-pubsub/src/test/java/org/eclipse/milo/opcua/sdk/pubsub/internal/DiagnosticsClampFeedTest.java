@@ -16,10 +16,10 @@ import org.eclipse.milo.opcua.sdk.pubsub.PubSubDiagnostics.ComponentDiagnostics;
 import org.junit.jupiter.api.Test;
 
 /**
- * The engine-side feed row for the R13 UInt32 exposure clamp: counters are 64-bit in the engine and
- * are never clamped there — a value pushed past {@code 0xFFFF_FFFF} keeps counting and the snapshot
- * returns the true long. The clamp is applied only at server-side exposure (WP-Z's {@code
- * clampUInt32}); this row guards the feed's integrity underneath it.
+ * Engine-side coverage for the UInt32 exposure clamp: counters are 64-bit in the engine and are
+ * never clamped there — a value pushed past {@code 0xFFFF_FFFF} keeps counting and the snapshot
+ * returns the true long. The clamp is applied only at server-side exposure; this test guards the
+ * feed's integrity underneath it.
  */
 class DiagnosticsClampFeedTest {
 

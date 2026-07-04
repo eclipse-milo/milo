@@ -67,12 +67,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Engine mapping of the R16 {@code TransportStateListener} edges, exercised without a broker via a
- * stub transport that captures the context listener: a down edge fails the connection to {@code
- * Error} with the transport's status code (children Paused, publishing stops) and emits NO
- * diagnostics event — the state transition is the whole signal; an up edge recovers it (children
- * reactivate, publishing resumes). Duplicate edges are idempotent, an up without a prior down is a
- * no-op (initial connect), and edges on a disposed runtime are inert.
+ * Engine mapping of the {@code TransportStateListener} edges, exercised without a broker via a stub
+ * transport that captures the context listener: a down edge fails the connection to {@code Error}
+ * with the transport's status code (children Paused, publishing stops) and emits NO diagnostics
+ * event — the state transition is the whole signal; an up edge recovers it (children reactivate,
+ * publishing resumes). Duplicate edges are idempotent, an up without a prior down is a no-op
+ * (initial connect), and edges on a disposed runtime are inert.
  */
 class TransportStateEngineTest {
 
@@ -144,7 +144,7 @@ class TransportStateEngineTest {
     // publishing stops once the deactivation lands (an in-flight cycle may still complete)
     awaitPublishQuiescence(transport.sends);
 
-    // D6/D7: the down edge is a state transition only — no diagnostics event is emitted
+    // the down edge is a state transition only; no diagnostics event is emitted
     assertTrue(
         diagnosticsEvents.isEmpty(),
         "the transport-down edge must not emit diagnostics events: " + diagnosticsEvents);

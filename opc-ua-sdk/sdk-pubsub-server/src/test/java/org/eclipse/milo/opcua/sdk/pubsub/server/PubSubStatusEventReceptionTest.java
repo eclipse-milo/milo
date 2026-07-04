@@ -60,17 +60,17 @@ import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand
 import org.junit.jupiter.api.Test;
 
 /**
- * The R17 end-to-end row (the in-repo half of the D35 gate, carried forward from the wave-2a
- * spike): a REAL engine state change — {@code runtime().disable(connection)} on a running {@link
- * ServerPubSub} with {@code statusEventsEnabled} — travels engine listener &rarr; {@link
- * PubSubStatusEventBridge} &rarr; {@code EventFactory}/event notifier &rarr; a Milo client's event
- * monitored item on the Server object ({@code i=2253}, D42) with an {@code OfType(i=15535)} where
- * clause, arriving typed as the abstract {@code PubSubStatusEventType} with the §6.2 field set
- * ({@code SourceNode}/{@code ConnectionId} carrying the deterministic fragment NodeIds, {@code
- * GroupId} null for the connection-sourced event, {@code State == Disabled}).
+ * End-to-end status event coverage: a REAL engine state change — {@code
+ * runtime().disable(connection)} on a running {@link ServerPubSub} with {@code statusEventsEnabled}
+ * — travels engine listener &rarr; {@link PubSubStatusEventBridge} &rarr; {@code
+ * EventFactory}/event notifier &rarr; a Milo client's event monitored item on the Server object
+ * ({@code i=2253}) with an {@code OfType(i=15535)} where clause, arriving typed as the abstract
+ * {@code PubSubStatusEventType} with the §6.2 field set ({@code SourceNode}/{@code ConnectionId}
+ * carrying the deterministic fragment NodeIds, {@code GroupId} null for the connection-sourced
+ * event, {@code State == Disabled}).
  *
- * <p>The information model is NOT exposed (D32): the event fields reference non-materialized
- * NodeIds, proving the bridge's independence from the fragment end-to-end.
+ * <p>The information model is NOT exposed: the event fields reference non-materialized NodeIds,
+ * proving the bridge's independence from the fragment end-to-end.
  */
 class PubSubStatusEventReceptionTest {
 

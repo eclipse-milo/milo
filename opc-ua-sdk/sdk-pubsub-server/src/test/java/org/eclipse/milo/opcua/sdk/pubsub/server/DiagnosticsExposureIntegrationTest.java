@@ -73,21 +73,20 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * The R13/R18 diagnostics exposure read by a REAL client (T5 §11.1): the per-component Diagnostics
- * values served over the wire equal the engine collector's snapshot at quiescence (never compared
- * mid-flight — trap 5), the Mandatory DSW and DSR {@code FailedDataSetMessages} counter nodes are
- * PRESENT with Error classification (the row a prior review flagged as unasserted), the D47
- * token-pair LiveValues exist exactly on secured groups, the read-only {@code DiagnosticsLevel}
- * rejects client writes (R13 — no level machinery), and the DX4 error side is observed through the
- * minted nodes: a reader driven into Error flips its group's {@code SubError} and its {@code
- * TotalError} equals the sum of its Error-classified exposed counters.
+ * Diagnostics exposure read by a REAL client: the per-component Diagnostics values served over the
+ * wire equal the engine collector's snapshot at quiescence (never compared mid-flight), the
+ * Mandatory DSW and DSR {@code FailedDataSetMessages} counter nodes are PRESENT with Error
+ * classification, the token-pair LiveValues exist exactly on secured groups, the read-only {@code
+ * DiagnosticsLevel} rejects client writes, and the error side is observed through the minted nodes:
+ * a reader driven into Error flips its group's {@code SubError} and its {@code TotalError} equals
+ * the sum of its Error-classified exposed counters.
  *
  * <p>Topology: one enabled publishing writer group fed by a callback source (loopback unicast to a
  * silent sink port), one DISABLED secured writer group (structure needs no key material), and a
  * DISABLED reader group/reader pair whose reader carries a short {@code messageReceiveTimeout}. The
- * error row enables the pair, feeds the reader from a short-lived external publisher until it turns
- * Operational, then stops the publisher so the timeout expires into Error (the deterministic
- * DX4/EV4 stimulus). The engine's 64-bit counters cross the exposure's UInt32 clamp ({@code
+ * error scenario enables the pair, feeds the reader from a short-lived external publisher until it
+ * turns Operational, then stops the publisher so the timeout expires into Error (the deterministic
+ * deterministic stimulus). The engine's 64-bit counters cross the exposure's UInt32 clamp ({@code
  * PubSubDiagnosticsExposure.clampUInt32}) on their way to the wire — the clamp boundary itself is
  * unit-pinned in {@code PubSubDiagnosticsComputationTest}.
  */
@@ -133,7 +132,7 @@ class DiagnosticsExposureIntegrationTest {
   private static ServerPubSub serverPubSub;
   private static OpcUaClient client;
 
-  /** The server connection's data port; the external DX4 publisher targets it. */
+  /** The server connection's data port; the external publisher targets it. */
   private static int dataPort;
 
   @BeforeAll
@@ -228,7 +227,7 @@ class DiagnosticsExposureIntegrationTest {
 
     // the six Table 311 State* counters on the connection object reflect the collector —
     // including the StateDisabledByMethod tick from the disable above (METHOD cause is
-    // caller-agnostic, D30)
+    // caller-agnostic)
     assertTrue(conn.stateDisabledByMethod() >= 1);
     assertEquals(
         PubSubDiagnosticsExposure.clampUInt32(conn.stateDisabledByMethod()),
@@ -287,7 +286,7 @@ class DiagnosticsExposureIntegrationTest {
 
   @Test
   void tokenPairLiveValuesExistExactlyOnSecuredGroups() throws Exception {
-    // D47: SecurityTokenID/TimeToNextTokenID minted for the SECURED group ...
+    // SecurityTokenID/TimeToNextTokenID minted for the SECURED group ...
     for (String member : List.of("SecurityTokenID", "TimeToNextTokenID")) {
       NodeId securedNodeId =
           fragmentNodeId(CONNECTION + "/" + SECURED_GROUP + "/Diagnostics/LiveValues/" + member);
@@ -307,15 +306,14 @@ class DiagnosticsExposureIntegrationTest {
   }
 
   /**
-   * DX4 error side, observed through real nodes: a reader failure ticks its Error-classified {@code
+   * Error side, observed through real nodes: a reader failure ticks its Error-classified {@code
    * StateError}, its {@code TotalError} equals the sum of its Error-classified exposed counters,
    * and the reader GROUP's {@code SubError} flips true (the §9.1.11.2 direct-child rollup).
    *
-   * <p>Deviation note (brief §11.1 DX4 parenthetical "root SubError flips"): the root {@code
-   * i=17409} SubError rolls up only its OWN direct child layer — the connections' Error-classified
-   * counters — per the same direct-child rule, so a reader failure is architecturally unable to
-   * flip it; the group-scope flip is the reachable end-to-end observation and is what this row
-   * pins.
+   * <p>The root {@code i=17409} SubError rolls up only its OWN direct child layer — the
+   * connections' Error-classified counters — per the same direct-child rule, so a reader failure is
+   * architecturally unable to flip it; the group-scope flip is the reachable end-to-end
+   * observation.
    */
   @Test
   void readerFailureFlipsTheGroupsSubErrorAndTotalErrorSums() throws Exception {
@@ -326,7 +324,7 @@ class DiagnosticsExposureIntegrationTest {
     assertEquals(
         Boolean.FALSE, goodValue(diagnosticsNodeId(groupPath, "SubError")), "SubError baseline");
 
-    // deterministic error stimulus (the EV4 route): make sure the connection is running
+    // deterministic error stimulus: make sure the connection is running
     // (another row disables it), enable the reader pair, and feed the reader from an external
     // publisher until it turns Operational (Table 2: a DataSetReader completes startup only on
     // its first key frame) — then STOP the publisher, so the configured messageReceiveTimeout
@@ -398,7 +396,7 @@ class DiagnosticsExposureIntegrationTest {
     Object level = goodValue(levelNodeId);
     assertEquals(0, ((Number) level).intValue(), "DiagnosticsLevel Basic");
 
-    // ... and rejects writes (R13: no level machinery)
+    // ... and rejects writes
     List<StatusCode> writeResults =
         client.writeValues(List.of(levelNodeId), List.of(DataValue.valueOnly(new Variant(1))));
     assertTrue(writeResults.get(0).isBad(), "DiagnosticsLevel write must be rejected");
@@ -450,7 +448,7 @@ class DiagnosticsExposureIntegrationTest {
                                 .dataSetWriterId(ushort(1))
                                 .dataSetMetaData(externalMetaData())
                                 .metadataPolicy(MetadataPolicy.REQUIRE_CONFIGURED)
-                                // the DX4 error stimulus: once the external publisher
+                                // the error stimulus: once the external publisher
                                 // stops, the reader expires into Error
                                 .messageReceiveTimeout(Duration.ofMillis(750))
                                 .build())

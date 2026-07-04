@@ -81,15 +81,15 @@ import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 /**
- * The R4/R6/R7/R11 CloseAndUpdate element-operation matrix, unit-driven against live {@link
- * PubSubConfig} values and a transform-capturing fake service (no server needed): operation-bit
- * validation, index bounds, Match semantics (incl. the GroupHeader guard), removes-first and parent
- * rebinding, cascades and {@code Bad_NotFound} propagation, Modify full-replacement, ElementAdd
+ * The CloseAndUpdate element-operation matrix, unit-driven against live {@link PubSubConfig} values
+ * and a transform-capturing fake service (no server needed): operation-bit validation, index
+ * bounds, Match semantics (incl. the GroupHeader guard), removes-first and parent rebinding,
+ * cascades and {@code Bad_NotFound} propagation, Modify full-replacement, ElementAdd
  * auto-assignment (names, PublisherId, ids honoring reservations), atomic vs partial apply,
- * top-level field handling, bit-11 guarding, engine-validation attribution (D17), and the
+ * top-level field handling, bit-11 guarding, engine-validation attribution, and the
  * ConfigurationValues/ConfigurationObjects outputs. DataSetReader, ReaderGroup-Match,
- * PublishedDataSet, and standalone SubscribedDataSet references have their own applier arms — their
- * rows live in {@link CloseAndUpdateElementKindsTest}.
+ * PublishedDataSet, and standalone SubscribedDataSet references have their own applier arms,
+ * covered by {@link CloseAndUpdateElementKindsTest}.
  */
 class CloseAndUpdateApplierTest {
 
@@ -297,7 +297,7 @@ class CloseAndUpdateApplierTest {
                 PubSubConfigurationRefMask.Field.ElementAdd,
                 PubSubConfigurationRefMask.Field.ReferenceConnection,
                 PubSubConfigurationRefMask.Field.ReferenceWriterGroup),
-            // bit 12: PushTargets are unmodeled — per-ref Bad_InvalidArgument (D13)
+            // bit 12: PushTargets are unmodeled — per-ref Bad_InvalidArgument
             ref(
                 0,
                 0,
@@ -349,8 +349,8 @@ class CloseAndUpdateApplierTest {
   @Test
   void malformedRefDoesNotCollapseThePartialApply() {
     // a bit-12 PushTarget ref (valid op bits, no resolvable kind) alongside a valid connection
-    // Add: the malformed ref fails per-element (D13) and the survivor still applies — R4's
-    // per-ref evaluation, never early-abort
+    // Add: the malformed ref fails per-element and the survivor still applies — per-ref
+    // evaluation, never early-abort
     PubSubConfig fileConfig =
         PubSubConfig.builder().connection(connection("conn2", 15002).build()).build();
 
@@ -749,7 +749,7 @@ class CloseAndUpdateApplierTest {
     assertFalse(atomic.changesApplied());
     assertEquals(0, service.applyCount);
 
-    // partial: the survivor applies under the live parent (R4)
+    // partial: the survivor applies under the live parent
     CloseAndUpdateApplier.Outcome partial = apply(false, file, badModify, childAdd);
     assertCode(StatusCodes.Bad_InvalidArgument, partial.referencesResults()[0]);
     assertCode(StatusCodes.Good, partial.referencesResults()[1]);
@@ -1290,7 +1290,7 @@ class CloseAndUpdateApplierTest {
   @Test
   void engineValidationFailureIsAttributedToAllWouldBeAppliedRefs() {
     // the engine rejects the surviving configuration: every ref still marked Good inherits the
-    // extracted code; the already-failed ref keeps its own (D17)
+    // extracted code; the already-failed ref keeps its own
     service.throwOnApply = new UaRuntimeException(StatusCodes.Bad_NotSupported, "rejected");
 
     PubSubConfiguration2DataType file = fileOf(liveConfig());
@@ -1394,7 +1394,7 @@ class CloseAndUpdateApplierTest {
                 new PubSubConfigurationRefDataType[] {modifyWg, removeRg, removeSg, badRef});
 
     // length-matched: the modified writer group resolves; Remove slots, never-materialized
-    // kinds, and failed refs are NULL_VALUE (D25)
+    // kinds, and failed refs are NULL_VALUE
     NodeId[] objects = outcome.configurationObjects();
     assertEquals(4, objects.length);
     assertEquals(new NodeId(2, "PubSub/" + CONN + "/" + WRITER_GROUP), objects[0]);

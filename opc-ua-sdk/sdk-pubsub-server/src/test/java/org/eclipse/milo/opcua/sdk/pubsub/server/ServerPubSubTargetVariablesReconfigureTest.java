@@ -63,11 +63,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * Bindings re-derivation on reconfigure (Phase 5 deliverable G, D24): the automatic TargetVariables
- * writers follow readers added, restarted, and removed through {@code ServerPubSub.runtime()} —
- * closing the old "runtime() reconfigures don't rebind" limitation. An in-process standalone
- * publisher drives the reader over unicast loopback UDP, and the Table 80 writes are asserted as
- * address-space writes on the embedded test server's nodes.
+ * Bindings re-derivation on reconfigure: the automatic TargetVariables writers follow readers
+ * added, restarted, and removed through {@code ServerPubSub.runtime()} — closing the old "runtime()
+ * reconfigures don't rebind" limitation. An in-process standalone publisher drives the reader over
+ * unicast loopback UDP, and the Table 80 writes are asserted as address-space writes on the
+ * embedded test server's nodes.
  *
  * <p>Network safety: connections use unicast 127.0.0.1 with ephemeral ports and an explicit
  * loopback {@code discoveryAddress}, so the engine's discovery channels never touch the default

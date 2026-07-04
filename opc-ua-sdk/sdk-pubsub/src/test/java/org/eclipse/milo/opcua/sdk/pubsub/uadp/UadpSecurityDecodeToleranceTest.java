@@ -198,8 +198,8 @@ class UadpSecurityDecodeToleranceTest {
   // region reserved flags / footer / header forms
 
   /**
-   * Each reserved SecurityFlags bit (4-7) skips the whole message like other reserved flag values
-   * (K4): no security record, no failure — and the resolver is never consulted.
+   * Each reserved SecurityFlags bit (4-7) skips the whole message like other reserved flag values:
+   * no security record, no failure — and the resolver is never consulted.
    */
   @Test
   void reservedSecurityFlagsBitsSkipMessageWithoutReachingTheResolver() throws Exception {
@@ -229,10 +229,10 @@ class UadpSecurityDecodeToleranceTest {
   }
 
   /**
-   * A flagged SecurityFooter on an ENCRYPTED message is skipped via SecurityFooterSize (K4): the
-   * payload window boundary math excludes the footer AND the signature, so the ciphertext region —
-   * which sits between the SecurityHeader and the footer — still decrypts and parses. (The
-   * sign-only footer form is covered by {@link UadpSecurityGoldenVectorTest}.)
+   * A flagged SecurityFooter on an ENCRYPTED message is skipped via SecurityFooterSize: the payload
+   * window boundary math excludes the footer AND the signature, so the ciphertext region — which
+   * sits between the SecurityHeader and the footer — still decrypts and parses. (The sign-only
+   * footer form is covered by {@link UadpSecurityGoldenVectorTest}.)
    */
   @Test
   void securityFooterOnEncryptedMessageIsSkipped() throws Exception {
@@ -270,7 +270,7 @@ class UadpSecurityDecodeToleranceTest {
   }
 
   /**
-   * Both sign-only SecurityHeader forms decode (K4, NonceLength self-describing): the Annex A
+   * Both sign-only SecurityHeader forms decode, with NonceLength self-describing: the Annex A
    * A.2.1.5 form the encoder emits — real token id, 8-byte nonce — and the literal Table 154
    * reading — SecurityTokenId 0, NonceLength 0, no nonce. The resolver sees the token id as
    * received either way.
@@ -347,7 +347,7 @@ class UadpSecurityDecodeToleranceTest {
 
   /**
    * A SIGN-ONLY message with an oversized nonce (16 bytes) still verifies: NonceLength is
-   * self-describing on decode (K4), and sign-only never feeds the nonce to a cipher.
+   * self-describing on decode, and sign-only never feeds the nonce to a cipher.
    */
   @Test
   void signOnlyMessageWithOversizedNonceStillVerifies() throws Exception {

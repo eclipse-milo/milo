@@ -47,8 +47,8 @@ import org.slf4j.LoggerFactory;
  * key material. Both the {@link InstantSource} and the {@link KeyGenerator} are injectable for test
  * determinism.
  *
- * <p>Zeroization: keys are held as immutable {@link ByteString}s and are never wiped; the Phase 4
- * zeroization posture confines wiping to {@code SecurityKeyMaterial} on the consuming side.
+ * <p>Zeroization: keys are held as immutable {@link ByteString}s and are never wiped here; wiping
+ * is confined to {@code SecurityKeyMaterial} on the consuming side.
  *
  * <p>Thread safety: the group map is an immutable map held in a volatile field, swapped atomically
  * by {@link #replaceGroups} (the SKS refresh hook, serialized by the managed runtime); each group's
@@ -112,8 +112,7 @@ final class SecurityGroupKeyStore {
   }
 
   /**
-   * Replace the served SecurityGroups after a configuration apply (Part 14 §6.2.12.2; pinned
-   * decision R7, seam S15).
+   * Replace the served SecurityGroups after a configuration apply (Part 14 §6.2.12.2).
    *
    * <ul>
    *   <li><b>Retained</b> groups — present before and after, id not in {@code invalidatedIds} —
@@ -179,11 +178,11 @@ final class SecurityGroupKeyStore {
   /**
    * Serve keys for one SecurityGroup.
    *
-   * <p>Request semantics (uniform Phase 4 pin): {@code startingTokenId == 0} requests the current
-   * token; a non-zero starting token is clamped into the served window {@code [currentTokenId -
-   * maxPastKeyCount, currentTokenId + maxFutureKeyCount]} rather than failing. {@code
-   * requestedKeyCount} is the number of keys returned <em>beyond the first</em>, capped by the
-   * future edge of the window; {@code 0} returns just the first key.
+   * <p>Request semantics: {@code startingTokenId == 0} requests the current token; a non-zero
+   * starting token is clamped into the served window {@code [currentTokenId - maxPastKeyCount,
+   * currentTokenId + maxFutureKeyCount]} rather than failing. {@code requestedKeyCount} is the
+   * number of keys returned <em>beyond the first</em>, capped by the future edge of the window;
+   * {@code 0} returns just the first key.
    *
    * @param securityGroupId the SecurityGroupId to serve keys for.
    * @param startingTokenId the requested starting token id; {@code 0} for the current token.
@@ -308,7 +307,7 @@ final class SecurityGroupKeyStore {
 
     /**
      * Refresh the serving-window bounds from {@code config} on a retained group: a change to only
-     * MaxPastKeyCount/MaxFutureKeyCount does not invalidate keys (the S15 invalidation triggers are
+     * MaxPastKeyCount/MaxFutureKeyCount does not invalidate keys (the invalidation triggers are
      * SecurityPolicyUri and KeyLifetime), but the applied counts must govern the window served from
      * now on. Keys and the rotation base are untouched.
      */

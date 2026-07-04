@@ -56,8 +56,8 @@ import org.junit.jupiter.api.Test;
  * actually applies the SecurityGroup operation (observable in the re-read configuration file), the
  * deny variant fails EXACTLY the bit-11 slots while non-SKS references in the same call still apply
  * and the method stays Good; bit-12 PushTarget references answer per-ref {@code
- * Bad_InvalidArgument} for EVERY operation (D13 — a modeling gap, never an authorization outcome,
- * never a method-level failure) with surrounding valid references applied in partial mode.
+ * Bad_InvalidArgument} for EVERY operation (a modeling gap, never an authorization outcome, never a
+ * method-level failure) with surrounding valid references applied in partial mode.
  */
 class CloseAndUpdateSecurityRefsTest {
 
@@ -117,7 +117,7 @@ class CloseAndUpdateSecurityRefsTest {
         Arrays.stream(groups).anyMatch(g -> SECURITY_GROUP.equals(g.getName())),
         "expected " + SECURITY_GROUP + " in " + Arrays.toString(groups));
 
-    // B33: removing the UNREFERENCED group succeeds
+    // removing the UNREFERENCED group succeeds
     FileModelTestClient.CallResult remove =
         apply(
             fileWithSecurityGroup(),
@@ -156,7 +156,7 @@ class CloseAndUpdateSecurityRefsTest {
   void pushTargetRefsAreRejectedPerElementForEveryOperation() throws Exception {
     ServerPubSub serverPubSub = attach(authorizer(StatusCode.GOOD));
 
-    // D13: every operation against bit 12 fails per-ref with Bad_InvalidArgument — never
+    // every operation against bit 12 fails per-ref with Bad_InvalidArgument — never
     // Bad_UserAccessDenied (not an authorization outcome), never a method-level failure —
     // and the surrounding valid reference still applies in partial mode
     FileModelTestClient.CallResult result =

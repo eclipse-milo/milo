@@ -36,8 +36,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * The {@code ReserveIds} registry and the server-assigned WriterGroupId/DataSetWriterId allocator
- * (Part 14 §9.1.3.7.5; pinned decision R5), shared with the CloseAndUpdate ElementAdd
- * auto-assignment (R4).
+ * (Part 14 §9.1.3.7.5), shared with CloseAndUpdate ElementAdd auto-assignment.
  *
  * <p>Registry semantics (verbatim-anchored):
  *
@@ -49,16 +48,15 @@ import org.slf4j.LoggerFactory;
  *       configuration-tool range). Uniqueness for new grants spans the ids used anywhere in the
  *       live configuration <em>plus</em> ALL outstanding reservations, including other sessions'.
  *       Ids freed by component deletion become grantable again.
- *   <li>{@code Bad_ResourceUnavailable} means id-space exhaustion of the 0x8000–0xFFFF range only
- *       (D15) — the allocator imposes NO component-count limit, consistent with the R20
- *       recommendation that the advertised MaxWriterGroups/MaxDataSetWriters stay 0 (no limit).
+ *   <li>{@code Bad_ResourceUnavailable} means id-space exhaustion of the 0x8000–0xFFFF range only —
+ *       the allocator imposes no component-count limit, consistent with advertising
+ *       MaxWriterGroups/MaxDataSetWriters as 0 (no limit).
  *   <li>An unknown or unsupported TransportProfileUri answers {@code Bad_InvalidArgument} (the
- *       documented R5 choice; the spec names no code). The supported set is the three URIs Milo's
- *       configuration model can express — deliberately independent of which transport providers are
- *       on the classpath (D45): reservations are configuration-tool currency; provider presence is
- *       enforced when a configuration is applied. This is also why the set is wider than the
- *       fragment's UDP-only {@code SupportedTransportProfiles} advertisement (blessed asymmetry,
- *       D16).
+ *       documented Milo behavior; the spec names no code). The supported set is the three URIs
+ *       Milo's configuration model can express — deliberately independent of which transport
+ *       providers are on the classpath: reservations are configuration-tool currency; provider
+ *       presence is enforced when a configuration is applied. This is also why the set is wider
+ *       than the fragment's UDP-only {@code SupportedTransportProfiles} advertisement.
  * </ul>
  *
  * <p>DefaultPublisherId (Part 14 §6.2.7.1): datagram and UADP-over-broker profiles answer a UInt64
@@ -231,8 +229,7 @@ final class PubSubIdReservations {
   }
 
   /**
-   * An inspection snapshot of the outstanding reservations, keyed by (session, profile); for tests
-   * (S17).
+   * An inspection snapshot of the outstanding reservations, keyed by (session, profile); for tests.
    */
   Map<Key, Grant> reservations() {
     var snapshot = new LinkedHashMap<Key, Grant>();
@@ -272,7 +269,7 @@ final class PubSubIdReservations {
 
   /**
    * The §6.2.7.1 typed default for a supported profile: {@code base} itself for UInt64 profiles,
-   * its decimal String for the JSON-over-broker profile. Package-private test seam (S17).
+   * its decimal String for the JSON-over-broker profile. Package-private for tests.
    */
   static Object typedDefaultPublisherId(String transportProfileUri, ULong base) {
     return PROFILE_MQTT_JSON.equals(transportProfileUri) ? base.toString() : base;
@@ -281,7 +278,7 @@ final class PubSubIdReservations {
   /**
    * Derive the recommended §6.2.7.1 UInt64 PublisherId: the first 6 bytes are {@code address} (a
    * MAC address, or the process-stable random substitute when {@code null}), the last 2 bytes are
-   * {@code port}. Package-private test seam (S17).
+   * {@code port}. Package-private for tests.
    */
   static ULong deriveUInt64PublisherId(byte @Nullable [] address, int port) {
     byte[] bytes = address != null && address.length >= 6 ? address : FALLBACK_ADDRESS;
@@ -300,8 +297,8 @@ final class PubSubIdReservations {
     if (count > idSpace) {
       // up-front bound: the request can never be satisfied (the wire count is a UInt16, up
       // to 65535, but the space per kind holds 32768 ids), and rejecting it before any sweep
-      // keeps a hostile or mistaken max-count request from stalling the face lock — which
-      // session-close eviction shares — on pointless work. Still D15: id-space exhaustion.
+      // keeps a hostile or mistaken max-count request from stalling the configuration lock, which
+      // session-close eviction shares, on pointless work. This is id-space exhaustion.
       throw new UaException(
           StatusCodes.Bad_ResourceUnavailable,
           "cannot reserve %d %s ids: the request exceeds the %d-id 0x8000-0xFFFF space"

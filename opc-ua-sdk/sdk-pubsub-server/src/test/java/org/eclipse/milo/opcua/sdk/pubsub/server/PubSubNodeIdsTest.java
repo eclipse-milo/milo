@@ -20,9 +20,9 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.junit.jupiter.api.Test;
 
 /**
- * The R11 deterministic NodeId scheme: {@link PubSubNodeIds} must reproduce the exact string ids
- * the info model fragment has always minted (golden strings), and the prefix-strip must round-trip
- * name paths — including names containing {@code '/'} — while rejecting non-fragment ids.
+ * The deterministic NodeId scheme: {@link PubSubNodeIds} must reproduce the exact string ids the
+ * info model fragment has always minted (golden strings), and the prefix-strip must round-trip name
+ * paths — including names containing {@code '/'} — while rejecting non-fragment ids.
  */
 class PubSubNodeIdsTest {
 

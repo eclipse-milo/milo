@@ -70,12 +70,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * D44/R14 rows beyond {@link ReconfigureIntegrationTest}: NetworkMessage sequence continuity and
- * counter/TimeFirstChange preservation hold across MULTIPLE consecutive path-stable restarts
- * (observed on the raw UDP wire, strictly monotonic across every restart boundary), and a live Milo
- * subscriber accepts post-restart traffic seamlessly — its Part 14 §7.2.3 sequence windows record
- * ZERO stale/invalid drops because the preserved publisher sequence never jumps backward (a restart
- * at 0 would trip the restart-rejection window).
+ * NetworkMessage sequence continuity and counter/TimeFirstChange preservation hold across MULTIPLE
+ * consecutive path-stable restarts (observed on the raw UDP wire, strictly monotonic across every
+ * restart boundary), and a live Milo subscriber accepts post-restart traffic seamlessly — its Part
+ * 14 §7.2.3 sequence windows record ZERO stale/invalid drops because the preserved publisher
+ * sequence never jumps backward (a restart at 0 would trip the restart-rejection window).
  *
  * <p>Width-change reset and removal+re-add zeroing are covered by {@code
  * ReconfigureIntegrationTest} and are deliberately not duplicated here.
@@ -150,7 +149,7 @@ class CounterPreservationReconfigureTest {
 
       publisher.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
 
-      // phase 0: traffic flows, the sequence scan starts, and a TimeFirstChange baseline forms
+      // traffic flows, the sequence scan starts, and a TimeFirstChange baseline forms
       Integer previousSequence = observeMonotonicSequence(socket, null, 5);
 
       awaitTrue(
@@ -234,7 +233,7 @@ class CounterPreservationReconfigureTest {
     assertEquals(0, readerDiagnostics(subscriber, readerPath).staleSequenceMessages());
     assertEquals(0, readerDiagnostics(subscriber, readerPath).invalidSequenceMessages());
 
-    // path-stable restart of the publishing group (D44: DSM and NM sequences preserved)
+    // path-stable restart of the publishing group: DSM and NM sequences are preserved
     ReconfigureResult result =
         publisher.reconfigure(
             publisherConfig(port, discoveryPort, Duration.ofMillis(60)),

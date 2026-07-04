@@ -66,17 +66,17 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Cascade half of the R12 State* attribution matrix (D2/D30/D33), on a publisher tree
- * connection/group/writer: an explicit {@code disable}/{@code enable} of a NON-leaf component ticks
- * ByMethod on exactly that component while every descendant ticks the *ByParent counters (cause
- * PARENT on the cascaded events, final-hop rule: exactly one Operational-entry tick per component),
- * and a transport-driven Error/recovery cycle ticks StateError and StateOperationalFromError on the
- * connection only — descendants pause and recover with PARENT attribution and never tick the
- * FromError or ByMethod counters.
+ * Cascade coverage for State* attribution on a publisher tree connection/group/writer: an explicit
+ * {@code disable}/{@code enable} of a NON-leaf component ticks ByMethod on exactly that component
+ * while every descendant ticks the *ByParent counters (cause PARENT on the cascaded events,
+ * final-hop rule: exactly one Operational-entry tick per component), and a transport-driven
+ * Error/recovery cycle ticks StateError and StateOperationalFromError on the connection only —
+ * descendants pause and recover with PARENT attribution and never tick the FromError or ByMethod
+ * counters.
  *
  * <p>Complements {@code StateCauseAttributionTest} (startup, leaf-method, watchdog-error, and
- * dispose rows on a reader tree) and {@code TransportStateEngineTest} (R16 edge semantics and event
- * causes, no counter rows).
+ * dispose behavior on a reader tree) and {@code TransportStateEngineTest} (transport edge semantics
+ * and event causes, no counter coverage).
  */
 class StateCauseCascadeAttributionTest {
 

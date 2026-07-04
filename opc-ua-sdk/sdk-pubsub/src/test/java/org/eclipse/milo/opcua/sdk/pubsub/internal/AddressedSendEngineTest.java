@@ -79,7 +79,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for the engine's addressed publish path (E1/E3): the engine always sends through {@link
+ * Tests for the engine's addressed publish path: the engine always sends through {@link
  * PublisherChannel#send(ByteBuf, MessageAddress)} with fully resolved values — on UDP connections a
  * queue-less {@code AtMostOnce} DATA address, on broker connections the resolved queue name and
  * delivery guarantee — and a writer-level queue override partitions that writer's DataSetMessages
@@ -442,7 +442,7 @@ class AddressedSendEngineTest {
 
   @Test
   void uadpEncodeAttributesContributingWritersInPayloadOrder() throws Exception {
-    // E1: encode returns a list and every EncodedNetworkMessage carries writer attribution;
+    // encode returns a list and every EncodedNetworkMessage carries writer attribution;
     // the UADP mapping returns a singleton attributed with every draft's writer in payload order
     WriterGroupConfig group = WriterGroupConfig.builder("WG").writerGroupId(ushort(1)).build();
 

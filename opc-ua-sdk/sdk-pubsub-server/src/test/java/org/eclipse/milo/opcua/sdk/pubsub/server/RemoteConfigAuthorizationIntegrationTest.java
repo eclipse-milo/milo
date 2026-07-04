@@ -54,25 +54,24 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * The remote-configuration authorization matrix over REAL channels and sessions (T5 §8) — the
+ * The remote-configuration authorization matrix over real channels and sessions, covering the
  * client-driven layer above the mocked-session {@link RemoteConfigAuthorizationTest}:
  *
  * <ul>
- *   <li>D41: a custom authorizer's {@code checkConfigure} code surfaces VERBATIM on every consumer
- *       — the eight file methods, root and per-component Reset, and the Status Enable/Disable pair
- *       — through the real Call service (AUTH1/AUTH12/AUTH13).
- *   <li>AUTH4/AUTH5: the default authorizer's RoleMapper matrix end-to-end — with a mapper granting
+ *   <li>A custom authorizer's {@code checkConfigure} code surfaces VERBATIM on every consumer — the
+ *       eight file methods, root and per-component Reset, and the Status Enable/Disable pair —
+ *       through the real Call service.
+ *   <li>The default authorizer's RoleMapper matrix end-to-end — with a mapper granting
  *       ConfigureAdmin the handler actually RUNS (OpenCount moves); with a mapper granting only the
  *       Anonymous well-known role the handler is the denying gate.
- *   <li>AUTH9: handles are session-scoped — a second real session presenting the owner's handle
- *       answers {@code Bad_InvalidArgument} on all six handle-consuming methods.
- *   <li>AUTH10: session-close eviction — the write lock and buffered bytes die with the session.
- *   <li>AUTH11: {@code allowRemoteConfiguration=false} keeps the eight methods {@code
- *       Bad_NotImplemented} and {@code diagnosticsEnabled=false} keeps Reset {@code
- *       Bad_NotImplemented} over the wire.
+ *   <li>Handles are session-scoped — a second real session presenting the owner's handle answers
+ *       {@code Bad_InvalidArgument} on all six handle-consuming methods.
+ *   <li>Session-close eviction — the write lock and buffered bytes die with the session.
+ *   <li>{@code allowRemoteConfiguration=false} keeps the eight methods {@code Bad_NotImplemented}
+ *       and {@code diagnosticsEnabled=false} keeps Reset {@code Bad_NotImplemented} over the wire.
  * </ul>
  *
- * <p>The session-less {@code Bad_UserAccessDenied} row (AUTH8) is already pinned direct-invoke in
+ * <p>The session-less {@code Bad_UserAccessDenied} case is already covered by direct invocation in
  * {@link RemoteConfigAuthorizationTest} and is not duplicated here.
  */
 class RemoteConfigAuthorizationIntegrationTest {
@@ -112,7 +111,7 @@ class RemoteConfigAuthorizationIntegrationTest {
 
   @Test
   void customDenyCodeSurfacesVerbatimOnEveryConsumer() throws Exception {
-    // D41: checkConfigure gates ALL of: the eight file methods, ReserveIds and CloseAndUpdate
+    // checkConfigure gates ALL of: the eight file methods, ReserveIds and CloseAndUpdate
     // (both in the eight), Reset (root and per-component), and Enable/Disable
     var denyCode = new StatusCode(StatusCodes.Bad_ConfigurationError);
 
@@ -162,7 +161,7 @@ class RemoteConfigAuthorizationIntegrationTest {
 
   @Test
   void roleMapperMatrixEndToEnd() throws Exception {
-    // AUTH4/AUTH5 over a real session: the access controller admits the Call (the loaded ns0
+    // over a real session: the access controller admits the Call (the loaded ns0
     // RolePermissions include the Call bit) and the HANDLER's checkConfigure is the gate.
     // Mapper granting ConfigureAdmin to the anonymous identity: allowed, and the handler
     // demonstrably RAN (OpenCount moved)
@@ -294,7 +293,7 @@ class RemoteConfigAuthorizationIntegrationTest {
 
   @Test
   void gatingFlagsKeepTheHandlersNotImplemented() throws Exception {
-    // AUTH11: allowRemoteConfiguration=false + diagnosticsEnabled=false
+    // allowRemoteConfiguration=false + diagnosticsEnabled=false
     attach(
         ServerPubSubOptions.builder().exposeInformationModel(true).allowRemoteConfiguration(false));
 

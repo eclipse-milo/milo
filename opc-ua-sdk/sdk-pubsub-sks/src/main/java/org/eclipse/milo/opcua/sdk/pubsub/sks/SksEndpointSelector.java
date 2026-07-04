@@ -64,7 +64,7 @@ final class SksEndpointSelector {
   /**
    * The discovery URLs to run GetEndpoints at for a config entry.
    *
-   * <p>Spec path: the non-empty elements of {@code server.discoveryUrls}. Tolerance fallback (K12):
+   * <p>Spec path: the non-empty elements of {@code server.discoveryUrls}. As a tolerance fallback,
    * when that list is empty, a filled {@code endpointUrl} is used as the discovery target.
    *
    * @param entry the SecurityKeyServices entry.

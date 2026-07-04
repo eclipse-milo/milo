@@ -236,7 +236,7 @@ class UadpSecurityGoldenVectorTest {
   }
 
   /**
-   * The full {mode} × {policy} matrix (K2): the encoder's output equals an independent {@code
+   * The full {mode} × {policy} matrix: the encoder's output equals an independent {@code
    * javax.crypto} recompute spliced around the mode-None encoding of the same context, and decodes
    * back — through a fixed-key resolver — to the same model as the mode-None bytes. The
    * multi-writer payload puts the Sizes array inside the encrypted region (Table 161).
@@ -256,7 +256,7 @@ class UadpSecurityGoldenVectorTest {
     assertArrayEquals(expected, secured);
 
     // spot-check the worked layout: SecurityFlags at 28, token at 29, NonceLength at 33 —
-    // sign-only also carries the real token id and the 8-byte nonce (the Annex A form, K4)
+    // sign-only also carries the real token id and the 8-byte nonce (the Annex A form)
     assertEquals(encrypt ? 0x03 : 0x01, secured[SECURITY_HEADER_OFFSET] & 0xFF);
     assertEquals(TOKEN_ID, secured[SECURITY_HEADER_OFFSET + 1] & 0xFF);
     assertEquals(8, secured[SECURITY_HEADER_OFFSET + 5] & 0xFF);
@@ -476,11 +476,11 @@ class UadpSecurityGoldenVectorTest {
   }
 
   /**
-   * The positive force-key-reset wire row (K6 subscriber side): a secured NetworkMessage with
-   * SecurityFlags bit 3 set decodes {@code VERIFIED} — bit 3 is not a reserved bit and must not
-   * skip the message — and the {@link SecurityContextResolver.ResolveRequest} carries {@code
-   * forceKeyReset=true} so the resolver can trigger its proactive refetch (the manager reaction is
-   * covered by the SecurityKeyManager tests).
+   * Positive force-key-reset wire coverage: a secured NetworkMessage with SecurityFlags bit 3 set
+   * decodes {@code VERIFIED} — bit 3 is not a reserved bit and must not skip the message — and the
+   * {@link SecurityContextResolver.ResolveRequest} carries {@code forceKeyReset=true} so the
+   * resolver can trigger its proactive refetch (the manager reaction is covered by the
+   * SecurityKeyManager tests).
    */
   @Test
   void forceKeyResetBitDecodesVerifiedAndSurfacesInResolveRequest() throws Exception {

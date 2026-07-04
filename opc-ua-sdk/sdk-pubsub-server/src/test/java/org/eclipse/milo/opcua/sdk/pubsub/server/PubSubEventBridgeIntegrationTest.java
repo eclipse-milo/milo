@@ -82,18 +82,18 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * R17 event rows through a REAL client monitored item (T5 §12.2, reusing the spike's OfType
- * mechanics): a state change driven by the minted Status methods arrives typed {@code i=15535} with
- * the informational severity band; a send failure (driven through the S17 bridge seam — no
+ * Status event coverage through a REAL client monitored item, reusing the spike's OfType mechanics:
+ * a state change driven by the minted Status methods arrives typed {@code i=15535} with the
+ * informational severity band; a send failure (driven through the bridge test hook — no
  * deterministic in-module send-failure stimulus exists) arrives typed {@code i=15563} THROUGH the
- * {@code OfType(i=15535)} filter (the both-subtypes pin) carrying the synthetic code in {@code
- * Error} and the Error severity band; the first-failure-per-episode suppression holds over the wire
- * and re-arms when the path passes through Operational (D34); {@code close()} emits NO
- * Disabled-spray (dispose transitions are silenced, D33); a rapid bounce loop drains completely
- * with the server healthy afterwards (EV9 — the shared serialized listener executor absorbs the
- * burst without deadlock or loss); and the EV4 REAL Error-entry stimulus — a reader whose {@code
- * messageReceiveTimeout} expires once its external publisher stops — arrives typed {@code i=15535}
- * with {@code State == Error} and the Error severity band.
+ * {@code OfType(i=15535)} filter carrying the synthetic code in {@code Error} and the Error
+ * severity band; the first-failure-per-episode suppression holds over the wire and re-arms when the
+ * path passes through Operational; {@code close()} emits NO Disabled-spray (dispose transitions are
+ * silenced); a rapid bounce loop drains completely with the server healthy afterwards (the shared
+ * serialized listener executor absorbs the burst without deadlock or loss); and the real
+ * Error-entry stimulus — a reader whose {@code messageReceiveTimeout} expires once its external
+ * publisher stops — arrives typed {@code i=15535} with {@code State == Error} and the Error
+ * severity band.
  *
  * <p>The single real-stimulus reception row (engine {@code runtime().disable} &rarr; client) is
  * {@link PubSubStatusEventReceptionTest}; the bridge's field-mapping unit rows are {@link
@@ -160,7 +160,7 @@ class PubSubEventBridgeIntegrationTest {
 
       NodeId groupNodeId = fragmentNodeId(CONNECTION + "/" + WRITER_GROUP);
 
-      // EV1: Disable through the minted Status method — the group-sourced Disabled event
+      // Disable through the minted Status method — the group-sourced Disabled event
       // arrives typed i=15535 with GroupId == the group node and informational severity
       assertEquals(StatusCode.GOOD, callStatus("Disable").getStatusCode());
 
@@ -184,7 +184,7 @@ class PubSubEventBridgeIntegrationTest {
               groupNodeId.equals(e[SOURCE_NODE].getValue())
                   && stateOf(e) == PubSubState.Operational.getValue());
 
-      // EV5: a synthetic send failure through the S17 seam arrives typed i=15563 THROUGH the
+      // a synthetic send failure through the bridge hook arrives typed i=15563 THROUGH the
       // OfType(i=15535) filter, Error == the synthetic code, severity in the Error band
       PubSubStatusEventBridge bridge = serverPubSub.statusEventBridge();
       assertNotNull(bridge);
@@ -202,7 +202,7 @@ class PubSubEventBridgeIntegrationTest {
           severityOf(failure) >= 334 && severityOf(failure) <= 666,
           "communication failures use the 334-666 band, was " + severityOf(failure));
 
-      // EV6: a second failure in the SAME episode is suppressed ...
+      // a second failure in the SAME episode is suppressed ...
       bridge.onDiagnosticsEvent(sendFailure(sendFailureCode));
 
       // ... re-arm by passing the path through Operational, then fail again — the SECOND
@@ -234,9 +234,9 @@ class PubSubEventBridgeIntegrationTest {
   }
 
   /**
-   * EV9: absence of deadlock and unbounded queue growth under a bounce loop — the bridge, the
-   * fragment's ComponentNodeListener, and the engine state listeners all share the serialized
-   * listener executor, and the bridge re-enters EventFactory/EventNotifier from it. Twenty rapid
+   * Absence of deadlock and unbounded queue growth under a bounce loop — the bridge, the fragment's
+   * ComponentNodeListener, and the engine state listeners all share the serialized listener
+   * executor, and the bridge re-enters EventFactory/EventNotifier from it. Twenty rapid
    * Disable/Enable cycles (no per-cycle await of delivery) must drain completely: every cycle's
    * Disabled and Operational-entry events arrive over the wire, and the server stays healthy
    * (further Status calls and reads still answer). Soft-ordering only; no lock-order assertions.
@@ -330,7 +330,7 @@ class PubSubEventBridgeIntegrationTest {
       awaitOperational(serverPubSub, CONNECTION + "/" + WRITER_GROUP);
       drainToQuiet(received);
 
-      // D33/EV8: shutdown disposes every component — cause=DISPOSE transitions emit NOTHING
+      // shutdown disposes every component — cause=DISPOSE transitions emit NOTHING
       serverPubSub.close();
 
       List<Variant[]> afterClose = drain(received, Duration.ofSeconds(1));
@@ -350,12 +350,12 @@ class PubSubEventBridgeIntegrationTest {
   }
 
   /**
-   * EV4: the pinned deterministic REAL Error stimulus — a reader fed by an external publisher until
-   * it turns Operational (Table 2: a DataSetReader completes startup only on its first key frame),
-   * whose configured {@code messageReceiveTimeout} then expires when the publisher stops — arrives
-   * at a REAL client as an {@code i=15535} event sourced at the reader with {@code State == Error}
-   * and severity in the 334–666 Error band (previously the Error-entry band was pinned only
-   * unit-side; the wire band was asserted only for the synthetic {@code i=15563} row).
+   * Deterministic REAL Error stimulus — a reader fed by an external publisher until it turns
+   * Operational (Table 2: a DataSetReader completes startup only on its first key frame), whose
+   * configured {@code messageReceiveTimeout} then expires when the publisher stops — arrives at a
+   * REAL client as an {@code i=15535} event sourced at the reader with {@code State == Error} and
+   * severity in the 334–666 Error band (previously the Error-entry band was pinned only unit-side;
+   * the wire band was asserted only for the synthetic {@code i=15563} row).
    */
   @Test
   void readerTimeoutErrorEntryArrivesWithTheErrorSeverityBand() throws Exception {
@@ -577,7 +577,7 @@ class PubSubEventBridgeIntegrationTest {
                                     .dataSetWriterId(ushort(1))
                                     .dataSetMetaData(externalMetaData())
                                     .metadataPolicy(MetadataPolicy.REQUIRE_CONFIGURED)
-                                    // the EV4 error stimulus: once the external publisher
+                                    // the error stimulus: once the external publisher
                                     // stops, the reader expires into Error
                                     .messageReceiveTimeout(Duration.ofMillis(750))
                                     .build())

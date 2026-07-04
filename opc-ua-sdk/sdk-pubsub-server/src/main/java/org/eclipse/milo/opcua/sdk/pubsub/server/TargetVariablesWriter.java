@@ -75,9 +75,9 @@ import org.slf4j.LoggerFactory;
  * later delivery would correct the target); Error-state arrivals are still written, since received
  * data recovers an Error reader.
  *
- * <p>Deviation from Table 80 footnote (b), documented here per the pinned Phase 2 plan: when no
- * usable value was ever received, {@code LastUsableValue} writes a null {@link Variant} with {@code
- * Uncertain_LastUsableValue} instead of synthesizing a DataType default value.
+ * <p>Deviation from Table 80 footnote (b): when no usable value was ever received, {@code
+ * LastUsableValue} writes a null {@link Variant} with {@code Uncertain_LastUsableValue} instead of
+ * synthesizing a DataType default value.
  *
  * <p>Writes go through the server's internal write path, which enforces {@code
  * AccessLevel.CurrentWrite} even for internal operations: target variables must be writable. Write

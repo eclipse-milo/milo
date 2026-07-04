@@ -44,12 +44,11 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.junit.jupiter.api.Test;
 
 /**
- * The composed N20 row (K19 × K5): a secured multi-chunk set with one tampered middle chunk is
- * discarded as a WHOLE — the tampered chunk fails verification ({@code INVALID_SIGNATURE},
- * header-only, no chunk surfaced), so it is never fed to the {@link ChunkReassembler} (mirroring
- * the dispatcher, which drops every non-{@code VERIFIED} security outcome before reassembly) and
- * its set can never complete — while a subsequent clean set with a newer MessageSequenceNumber
- * reassembles and decodes fine.
+ * A secured multi-chunk set with one tampered middle chunk is discarded as a whole: the tampered
+ * chunk fails verification ({@code INVALID_SIGNATURE}, header-only, no chunk surfaced), so it is
+ * never fed to the {@link ChunkReassembler} (mirroring the dispatcher, which drops every non-{@code
+ * VERIFIED} security outcome before reassembly) and its set can never complete. A subsequent clean
+ * set with a newer MessageSequenceNumber reassembles and decodes fine.
  *
  * <p>Chunk construction is hand-derived per Part 14 Tables 158/159 with {@code javax.crypto}
  * directly (chunk EMISSION is out of scope, so there is no Milo encoder to produce these bytes);

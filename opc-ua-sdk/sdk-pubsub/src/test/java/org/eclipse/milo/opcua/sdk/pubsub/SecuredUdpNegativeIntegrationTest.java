@@ -77,17 +77,17 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Wire-level NEGATIVE rows against a live secured subscriber: hand-crafted secured datagrams are
- * injected at the dispatcher through a real UDP socket and the K6 security-drop counters are
- * asserted POSITIVELY (the green-path loopback tests only ever assert them zero).
+ * Wire-level negative coverage against a live secured subscriber: hand-crafted secured datagrams
+ * are injected at the dispatcher through a real UDP socket and the security-drop counters are
+ * asserted positively (the green-path loopback tests only ever assert them zero).
  *
  * <ul>
- *   <li>N9 valid-replay half (K18): a byte-identical VALID secured NetworkMessage replayed at the
- *       subscriber verifies and is then dropped by the §7.2.3 window — {@code
- *       staleSequenceMessages} ticks while {@code invalidSignatureMessages} and {@code
- *       decryptionErrors} stay zero, proving the window runs AFTER verification.
- *   <li>N10 counted half (K6): an out-of-window SecurityTokenId ticks {@code unknownTokenMessages}
- *       (not {@code dataSetMessagesReceived}) and fires exactly one provider refresh.
+ *   <li>A byte-identical valid secured NetworkMessage replayed at the subscriber verifies and is
+ *       then dropped by the §7.2.3 window — {@code staleSequenceMessages} ticks while {@code
+ *       invalidSignatureMessages} and {@code decryptionErrors} stay zero, proving the window runs
+ *       AFTER verification.
+ *   <li>An out-of-window SecurityTokenId ticks {@code unknownTokenMessages} (not {@code
+ *       dataSetMessagesReceived}) and fires exactly one provider refresh.
  *   <li>DECRYPT_FAILED counter path: an encrypted NetworkMessage whose NonceLength is 0 (spliced,
  *       re-signed) verifies but cannot seed the cipher — {@code decryptionErrors} ticks.
  * </ul>
@@ -143,7 +143,7 @@ class SecuredUdpNegativeIntegrationTest {
   }
 
   /**
-   * N9, valid half: the first crafted (valid) datagram delivers; the byte-identical replay
+   * Valid replay half: the first crafted (valid) datagram delivers; the byte-identical replay
    * verifies, reaches the §7.2.3 window, and drops as stale — the ordering proof is {@code
    * staleSequenceMessages == 1} with {@code invalidSignatureMessages == 0} and {@code
    * decryptionErrors == 0}.
@@ -173,7 +173,7 @@ class SecuredUdpNegativeIntegrationTest {
                 == 1,
         "staleSequenceMessages == 1 after the valid replay");
 
-    // K18 ordering: only the post-verification window dropped it
+    // only the post-verification window dropped it
     assertEquals(
         0,
         counter(
@@ -202,7 +202,7 @@ class SecuredUdpNegativeIntegrationTest {
   }
 
   /**
-   * N10, counted half: a secured message under an out-of-window SecurityTokenId ticks {@code
+   * Counted half: a secured message under an out-of-window SecurityTokenId ticks {@code
    * unknownTokenMessages} at the resolved group, delivers nothing, and fires exactly ONE
    * single-flight provider refresh.
    */

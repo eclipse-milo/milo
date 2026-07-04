@@ -30,7 +30,7 @@ import org.jspecify.annotations.Nullable;
  * milliseconds; NaN, infinite, zero, and negative values are malformed — zero durations are
  * reserved for the static-key sentinel that only {@code StaticSecurityKeyProvider} produces.
  *
- * <p>{@code SecurityPolicyUri} is passed through VERBATIM: the policy-vs-config mismatch check (K8)
+ * <p>{@code SecurityPolicyUri} is passed through VERBATIM: the policy-vs-config mismatch check
  * belongs to the consuming key manager, never to this transport.
  *
  * <p>Every field is defensively checked — a foreign SKS returning null, short, or mistyped outputs

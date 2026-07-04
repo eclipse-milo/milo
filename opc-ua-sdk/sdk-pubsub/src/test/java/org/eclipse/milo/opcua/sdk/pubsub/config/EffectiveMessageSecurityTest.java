@@ -27,17 +27,15 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.junit.jupiter.api.Test;
 
 /**
- * The K9 effective-SKS inheritance chain pinned on {@link EffectiveMessageSecurity}: {@code mode}
- * and {@code securityGroup} come from the reader override when one is present, else from the group;
- * {@code keyServices} is the first non-empty of override → group → {@link
+ * The effective SKS inheritance chain on {@link EffectiveMessageSecurity}: {@code mode} and {@code
+ * securityGroup} come from the reader override when one is present, else from the group; {@code
+ * keyServices} is the first non-empty of override → group → {@link
  * PubSubConfig#defaultSecurityKeyServices()}.
  *
- * <p>As-built note (pinned deliberately): ANY non-null reader override is active — including one
- * whose mode is {@code Invalid} or {@code None} — whereas the WP-T4 brief phrased activation as
- * "active iff reader SecurityMode != Invalid". The all-default {@code Invalid} sentinel never
- * reaches this resolver from the Part 14 mapping direction ({@code PubSubConfigMapper} normalizes
- * it to an absent override), so the object-presence semantics pinned here are the authoritative
- * config-model behavior.
+ * <p>As-built note: ANY non-null reader override is active, including one whose mode is {@code
+ * Invalid} or {@code None}. The all-default {@code Invalid} sentinel never reaches this resolver
+ * from the Part 14 mapping direction ({@code PubSubConfigMapper} normalizes it to an absent
+ * override), so object presence is the authoritative config-model behavior.
  */
 class EffectiveMessageSecurityTest {
 
@@ -117,8 +115,8 @@ class EffectiveMessageSecurityTest {
   }
 
   /**
-   * The as-built activation pin: ANY non-null override is active, even mode {@code None} with no
-   * SecurityGroup — it replaces the group's mode and ref rather than inheriting them.
+   * The as-built activation behavior: ANY non-null override is active, even mode {@code None} with
+   * no SecurityGroup — it replaces the group's mode and ref rather than inheriting them.
    */
   @Test
   void anyNonNullOverrideIsActiveEvenModeNone() {

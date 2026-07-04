@@ -38,7 +38,7 @@ import org.junit.jupiter.params.provider.ValueSource;
  * Surfacing semantics of {@link UadpMessageMapping#decodeMessage}: which inputs surface as {@link
  * UadpDiscoveryProbe} or {@link UadpMetaDataAnnouncement}, and which discovery content is tolerated
  * but NOT surfaced -- yielding a header-only {@link DecodedNetworkMessage} -- per OPC UA Part 14
- * v1.05 §7.2.4.6 and the Phase 2 scope (DataSetMetaData probes and announcements only).
+ * v1.05 §7.2.4.6 and the discovery-message scope (DataSetMetaData probes and announcements only).
  *
  * <p>Like the legacy decode surface, {@code decodeMessage} is tolerant: malformed, truncated, or
  * hostile input never raises an exception to the caller.

@@ -494,7 +494,7 @@ class SksSecurityKeyProviderTest {
   void identityNonIntersectionFailsTheEntryAndFailsOver() throws Exception {
     ScriptedOps ops = new ScriptedOps();
     // Entry 0 lists UserName only, but its discovered endpoint offers Anonymous only: no
-    // intersection means the ENTRY fails (K12 — never silently downgrade past the list), before
+    // intersection means the entry fails without silently downgrading past the list, before
     // any connect, and the fetch fails over to entry 1 in array order.
     ops.scriptEntry(SKS1_DISCOVERY_URL, SKS1_URI, SKS1_ENDPOINT_URL);
     ops.scriptEntry(SKS2_DISCOVERY_URL, SKS2_URI, SKS2_ENDPOINT_URL);

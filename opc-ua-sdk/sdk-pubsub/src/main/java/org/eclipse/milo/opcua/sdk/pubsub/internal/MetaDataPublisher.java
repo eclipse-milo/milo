@@ -325,8 +325,8 @@ final class MetaDataPublisher {
                 }
               });
 
-      // the message was handed to the channel: count it sent at the connection path (the R14
-      // hand-off convention WriterGroupRuntime and DiscoveryRuntime already follow); metadata
+      // the message was handed to the channel: count it sent at the connection path, matching
+      // WriterGroupRuntime and DiscoveryRuntime hand-off behavior; metadata
       // messages never tick writer-group counters
       service.getDiagnostics().networkMessageSent(connection.path());
     } catch (RuntimeException e) {

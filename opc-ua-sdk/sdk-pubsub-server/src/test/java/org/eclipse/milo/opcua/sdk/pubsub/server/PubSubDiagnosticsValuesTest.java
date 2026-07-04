@@ -78,11 +78,11 @@ import org.junit.jupiter.api.Test;
  * collector snapshot (the pull model serves {@code PubSubDiagnostics.component(path)} per read),
  * TimeFirstChange appears once a counter leaves zero, the DSR MessageSequenceNumber follows
  * deliveries, the Major/MinorVersion LiveValues match the configured metadata, the DSW
- * MessageSequenceNumber serves the NEXT sequence value (D4), ResolvedAddress serves the loopback
- * URL (R15 — an IP-literal URL resolves to itself), and the Configured and Operational counts
- * follow the runtime state at both the fragment group scope and the ns0 root LiveValues (the
- * root-goes-Operational half of the {@link PubSubDiagnosticsNs0Test} root-count row lives here,
- * where the loopback fixture is).
+ * MessageSequenceNumber serves the NEXT sequence value, ResolvedAddress serves the loopback URL (an
+ * IP-literal URL resolves to itself), and the Configured and Operational counts follow the runtime
+ * state at both the fragment group scope and the ns0 root LiveValues (the root-goes-Operational
+ * half of the {@link PubSubDiagnosticsNs0Test} root-count row lives here, where the loopback
+ * fixture is).
  *
  * <p>Fixture shape copied from {@link PubSubInfoModelLiveStateTest}: the exposed runtime publishes
  * one node-backed dataset and reads from a standalone external publisher. Network safety: unicast
@@ -242,7 +242,7 @@ class PubSubDiagnosticsValuesTest {
 
     // DSR FailedDataSetMessages serves the clamped collector snapshot — stably zero here
     // because the confirmed reader decodes every delivery (the DECODE_ERRORS mapping behind
-    // the row is unit-pinned in PubSubDiagnosticsComputationTest)
+    // the computation is unit-covered in PubSubDiagnosticsComputationTest)
     assertEquals(
         PubSubDiagnosticsExposure.clampUInt32(diagnostics(serverPubSub, readerPath).decodeErrors()),
         fragmentNodeValue(readerDiagnostics + "/Counters/FailedDataSetMessages"));
@@ -257,7 +257,7 @@ class PubSubDiagnosticsValuesTest {
         readerVersion.getMinorVersion(),
         fragmentNodeValue(readerDiagnostics + "/LiveValues/MinorVersion"));
 
-    // DSW MessageSequenceNumber serves the NEXT sequence value (>= 1 once publishing, D4)
+    // DSW MessageSequenceNumber serves the NEXT sequence value (>= 1 once publishing)
     awaitNodeValue(
         writerDiagnostics + "/LiveValues/MessageSequenceNumber",
         value -> value instanceof UShort next && next.intValue() >= 1,

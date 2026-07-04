@@ -50,9 +50,9 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests of the publisher nonce state exposed through {@link SecurityKeyManager.PublisherKeys}: the
  * MessageNonce wire form ({@code Random[4] || NonceSequenceNumber} little-endian, Part 14 Table
- * 156), the K5 pins — counter reset to 1 exactly on token switch, NOT on a refresh that keeps the
- * token, one shared counter per SecurityGroupRef across all reads — and the hard stop (throw plus
- * dropped publisher snapshot) instead of a sequence wrap.
+ * 156), counter reset to 1 exactly on token switch, no reset on a refresh that keeps the token, one
+ * shared counter per SecurityGroupRef across all reads, and the hard stop (throw plus dropped
+ * publisher snapshot) instead of a sequence wrap.
  */
 class PublisherNonceStateTest {
 

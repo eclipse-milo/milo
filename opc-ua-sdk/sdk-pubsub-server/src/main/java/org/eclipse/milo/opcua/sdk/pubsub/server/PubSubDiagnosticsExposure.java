@@ -83,26 +83,26 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The Part 14 §9.1.11 PubSub diagnostics exposure (pinned decisions R13, R14, R15, R18, R20 rider):
- * backs the loader-built ns0 root Diagnostics subtree ({@code i=17409}) and mints one {@code
- * Diagnostics} object per exposed connection, writer/reader group, and dataset writer/reader.
+ * The Part 14 §9.1.11 PubSub diagnostics exposure: backs the loader-built ns0 root Diagnostics
+ * subtree ({@code i=17409}) and mints one {@code Diagnostics} object per exposed connection,
+ * writer/reader group, and dataset writer/reader.
  *
  * <p>Created by {@link PubSubInfoModelFragment} when {@link
  * ServerPubSubOptions#isDiagnosticsEnabled()} is {@code true} and driven by the fragment's
- * lifecycle; per-component minting rides the fragment's {@link ComponentNodeListener} seam (builds
- * fire nested-before-container; the mint has no cross-component dependencies), so incremental
- * reconfiguration rebuilds (R10) carry the Diagnostics objects for free. Because component name
- * paths cannot be split back into name components (names may contain {@code '/'}, see {@link
+ * lifecycle; per-component minting rides the fragment's {@link ComponentNodeListener} callbacks
+ * (builds fire nested-before-container; the mint has no cross-component dependencies), so
+ * incremental reconfiguration rebuilds carry the Diagnostics objects for free. Because component
+ * name paths cannot be split back into name components (names may contain {@code '/'}, see {@link
  * PubSubNodeIds}), the fragment's builders stage each component's name components via {@link
  * #stageComponent} immediately before the build notification fires.
  *
  * <p><b>Values are served pull-model</b>: every counter, Total*, SubError, and non-static LiveValue
  * node carries an {@link AttributeFilters#getValue} filter computing the {@link DataValue} at
- * read/sample time from {@link PubSubService#diagnostics()} (one per-path snapshot per read, D49)
- * and this exposure's registries. Filter bodies run on session/sampler threads and are non-blocking
- * and lock-free: map reads, one {@code component(path)} call, and the engine's handle-keyed
- * accessors only; DNS resolution for {@code ResolvedAddress} happens once at node-build time (R15),
- * never at read. Handles for the R13 LiveValue feeds ({@link PubSubService#securityKeyInfo}, {@link
+ * read/sample time from {@link PubSubService#diagnostics()} (one per-path snapshot per read) and
+ * this exposure's registries. Filter bodies run on session/sampler threads and are non-blocking and
+ * lock-free: map reads, one {@code component(path)} call, and the engine's handle-keyed accessors
+ * only; DNS resolution for {@code ResolvedAddress} happens once at node-build time, never at read.
+ * Handles for the LiveValue feeds ({@link PubSubService#securityKeyInfo}, {@link
  * PubSubService#nextDataSetMessageSequenceNumber}) are resolved per read via {@code components()}
  * lookups and never cached; a vanished component ({@code IllegalArgumentException}) serves a
  * null-value {@link DataValue}.
@@ -110,29 +110,28 @@ import org.slf4j.LoggerFactory;
  * <p><b>Numeric posture</b> (§9.1.11.5): counters clamp to UInt32 at {@code 0xFFFFFFFF} with the
  * served SourceTimestamp still advancing at the cap ({@link #counterValue}); counts clamp to UInt16
  * at 65535; DataSetMessage sequence numbers narrow to 16 bits (the JSON mapping counts 32-bit on
- * the wire — documented narrowing, D12); {@code TimeToNextTokenID} serves Duration as Double
+ * the wire — documented narrowing); {@code TimeToNextTokenID} serves Duration as Double
  * milliseconds.
  *
- * <p><b>DiagnosticsLevel posture</b> (R13/D36): the object-level DiagnosticsLevel is read-only
- * {@code Basic} and there is no level-switching or activation machinery. The Advanced/Info-level
- * rows (WG EncryptionErrors, RG DecryptionErrors, the token and sequence LiveValues) are
- * nonetheless served with {@code Active=true} — documented surplus provision beyond what
- * level=Basic demands; they are counting either way.
+ * <p><b>DiagnosticsLevel posture</b>: the object-level DiagnosticsLevel is read-only {@code Basic}
+ * and there is no level-switching or activation machinery. The Advanced/Info-level rows (WG
+ * EncryptionErrors, RG DecryptionErrors, the token and sequence LiveValues) are nonetheless served
+ * with {@code Active=true} — documented surplus provision beyond what level=Basic demands; they are
+ * counting either way.
  *
- * <p><b>Reset</b> (§9.1.11.3, D41/D38/D29): every Diagnostics object carries a zero-argument {@code
- * Reset} Method gated by the effective {@link PubSubMethodAuthorizer#checkConfigure} (bad codes
- * surfaced verbatim; session-less invocations answer {@code Bad_UserAccessDenied}; no
- * channel-security minimum). Per-component Reset delegates to {@link
+ * <p><b>Reset</b> (§9.1.11.3): every Diagnostics object carries a zero-argument {@code Reset}
+ * Method gated by the effective {@link PubSubMethodAuthorizer#checkConfigure} (bad codes surfaced
+ * verbatim; session-less invocations answer {@code Bad_UserAccessDenied}; no channel-security
+ * minimum). Per-component Reset delegates to {@link
  * org.eclipse.milo.opcua.sdk.pubsub.PubSubDiagnostics#reset(String)} — per-object scope, {@code
  * lastError} and {@code ServerPubSub.targetWriteErrors()} untouched. The PublishSubscribe root has
- * no engine path (D10): the root's six State* counters are fragment-local ({@link
- * #tickRootStateCounter} — nothing ticks them in this version because the ns0 root Status
- * Enable/Disable pair is not minted, D23, and fragment lifecycle transitions are service lifecycle,
- * not §6.2.1 causes) and the root Reset zeroes exactly those fragment-local counters, never calling
- * the engine.
+ * no engine path: the root's six State* counters are fragment-local ({@link #tickRootStateCounter}
+ * — nothing ticks them in this version because the ns0 root Status Enable/Disable pair is not
+ * minted and fragment lifecycle transitions are service lifecycle, not §6.2.1 causes) and the root
+ * Reset zeroes exactly those fragment-local counters, never calling the engine.
  *
- * <p><b>ns0 discipline</b> (R18): the {@code i=17409} subtree is fully loader-built — this class
- * sets values, attaches filters, and attaches the {@code i=17421} Reset invocation handler
+ * <p><b>ns0 discipline</b>: the {@code i=17409} subtree is fully loader-built — this class sets
+ * values, attaches filters, and attaches the {@code i=17421} Reset invocation handler
  * (warn-if-occupied, restore-if-still-ours at shutdown, the {@code SksServerFace} precedent); it
  * never mints ns0 nodes. {@link #restoreNs0Root()} removes every attached filter, nulls every
  * statically set value, and restores {@link MethodInvocationHandler#NOT_IMPLEMENTED}, so ns0 never
@@ -143,8 +142,8 @@ import org.slf4j.LoggerFactory;
  * <p>Registry hygiene: {@link #unregisterComponent} — invoked from the fragment's removal path via
  * {@link #onComponentRemoving} — prunes all per-path registries by exact key and {@code "<path>/"}
  * prefix, so reconfigure-heavy servers do not leak entries. Path-stable restarted components keep
- * their NodeIds and (post-R14 engine preservation) their counter values; the pull model makes
- * rebuilt nodes self-consistent.
+ * their NodeIds and their engine-preserved counter values; the pull model makes rebuilt nodes
+ * self-consistent.
  */
 final class PubSubDiagnosticsExposure implements ComponentNodeListener {
 
@@ -194,14 +193,14 @@ final class PubSubDiagnosticsExposure implements ComponentNodeListener {
 
   /**
    * The wire configuration the current build pass builds from, recorded by {@link #onBuildPass}
-   * before the fragment's builders run (initial build and every R10 rebuild); the mint resolves
+   * before the fragment's builders run (initial build and every rebuild); the mint resolves
    * per-component wire data (security, addresses, metadata versions) from it by name components.
    */
   private volatile @Nullable PubSubConfiguration2DataType buildingConfiguration;
 
   /**
    * Name components staged by the fragment's builders, keyed by name path, consumed by {@link
-   * #onComponentBuilt} (paths cannot be split; coordinates must be carried explicitly, R11).
+   * #onComponentBuilt} (paths cannot be split; coordinates must be carried explicitly).
    */
   private final ConcurrentMap<String, StagedCoordinates> staged = new ConcurrentHashMap<>();
 
@@ -224,9 +223,7 @@ final class PubSubDiagnosticsExposure implements ComponentNodeListener {
   private final ConcurrentMap<String, ConfigurationVersionDataType> dsrVersions =
       new ConcurrentHashMap<>();
 
-  /**
-   * The fragment-local root State* counters (D10: the PublishSubscribe root has no engine path).
-   */
+  /** The fragment-local root State* counters; the PublishSubscribe root has no engine path. */
   private final ConcurrentMap<PubSubCounter, AtomicLong> rootCounters = new ConcurrentHashMap<>();
 
   /** First-left-zero times of the root counters; entry present only once non-zero. */
@@ -321,7 +318,7 @@ final class PubSubDiagnosticsExposure implements ComponentNodeListener {
     service.addMetaDataListener(metaDataListener);
   }
 
-  /** Remove the engine listeners (R12 removal API); called at fragment shutdown. */
+  /** Remove the engine listeners; called at fragment shutdown. */
   void removeListeners() {
     active = false;
     service.removeStateListener(stateListener);
@@ -367,7 +364,7 @@ final class PubSubDiagnosticsExposure implements ComponentNodeListener {
 
   @Override
   public void onComponentRemoving(ComponentType type, String namePath) {
-    // the reciprocal registry hook (S7): the fragment's reconfigure removal path notifies each
+    // the reciprocal registry hook: the fragment's reconfigure removal path notifies each
     // removed component (children before parents) before deleting its subtree
     unregisterComponent(namePath);
   }
@@ -390,8 +387,7 @@ final class PubSubDiagnosticsExposure implements ComponentNodeListener {
   /**
    * Mint the Diagnostics object of one built component: the type-appropriate Diagnostics instance
    * under the component node plus DiagnosticsLevel, TotalInformation/TotalError, Reset, SubError,
-   * Counters, and LiveValues members per §9.1.11.7–9.1.11.12 (all Mandatory rows + the R13
-   * Optional-row set).
+   * Counters, and LiveValues members per §9.1.11.7–9.1.11.12.
    */
   private void mintDiagnostics(
       ComponentType type,
@@ -423,15 +419,15 @@ final class PubSubDiagnosticsExposure implements ComponentNodeListener {
             NodeIds.HasComponent,
             componentNode.getNodeId());
 
-    // DiagnosticsLevel: read-only Basic, no level machinery (R13)
+    // DiagnosticsLevel: read-only Basic, no level machinery
     fragment.addVariableNode(
         diagnosticsNode,
         "DiagnosticsLevel",
         NodeIds.DiagnosticsLevel,
         new Variant(DiagnosticsLevel.Basic));
 
-    // Total* computed at exposure from the object's own spec-exposed counters (R18), with the
-    // D37-pinned properties (Classification per polarity, level Basic, Active=true,
+    // Total* computed at exposure from the object's own spec-exposed counters, with the
+    // standard properties (Classification per polarity, level Basic, Active=true,
     // TimeFirstChange = earliest contributing counter)
     fragment.addCounterNode(
         diagnosticsNode,
@@ -503,7 +499,7 @@ final class PubSubDiagnosticsExposure implements ComponentNodeListener {
     }
   }
 
-  /** §9.1.11.8: ResolvedAddress only, computed once at build time (R15), served statically. */
+  /** §9.1.11.8: ResolvedAddress only, computed once at build time and served statically. */
   private void mintConnectionLiveValues(
       UaObjectNode liveValuesNode,
       RegisteredComponent component,
@@ -527,7 +523,7 @@ final class PubSubDiagnosticsExposure implements ComponentNodeListener {
         new Variant(resolvedAddress(url)));
   }
 
-  /** §9.1.11.9: writer counts plus the D47 token pair for secured groups. */
+  /** §9.1.11.9: writer counts plus token LiveValues for secured groups. */
   private void mintWriterGroupLiveValues(
       UaObjectNode liveValuesNode,
       RegisteredComponent component,
@@ -588,7 +584,7 @@ final class PubSubDiagnosticsExposure implements ComponentNodeListener {
 
   /**
    * §9.1.11.11: MessageSequenceNumber always minted, serving the writer's NEXT DataSetMessage
-   * sequence number — what the next data message will carry and keep-alives advertise (D4, Part 14
+   * sequence number — what the next data message will carry and keep-alives advertise (Part 14
    * §7.2.4.5.8), 16-bit narrowed; Major/MinorVersion static from the referenced PublishedDataSet's
    * metadata version, refreshed by rebuilds.
    */
@@ -648,7 +644,7 @@ final class PubSubDiagnosticsExposure implements ComponentNodeListener {
   /**
    * §9.1.11.12: MessageSequenceNumber from the last delivered DataSet (null before the first
    * delivery), Major/MinorVersion from the effective metadata version (configured seed, updated by
-   * received metadata), and the D47 token pair when the owning ReaderGroup is secured (the runtime
+   * received metadata), and token LiveValues when the owning ReaderGroup is secured (the runtime
    * routes security by group; the served values reflect the owning group's key state).
    */
   private void mintDataSetReaderLiveValues(
@@ -721,8 +717,8 @@ final class PubSubDiagnosticsExposure implements ComponentNodeListener {
   }
 
   /**
-   * The D47 SecurityTokenID/TimeToNextTokenID pair, fed by {@link PubSubService#securityKeyInfo}:
-   * null values while the group holds no key state (not yet fetched, detached) or the component
+   * The SecurityTokenID/TimeToNextTokenID pair, fed by {@link PubSubService#securityKeyInfo}: null
+   * values while the group holds no key state (not yet fetched, detached) or the component
    * vanished. Token metadata only — never key material.
    */
   private void mintTokenLiveValues(
@@ -785,7 +781,7 @@ final class PubSubDiagnosticsExposure implements ComponentNodeListener {
 
   // endregion
 
-  // region ns0 root backing (i=17409, R18: back values, never mint)
+  // region ns0 root backing (i=17409: back values, never mint)
 
   /**
    * Back the loader-built ns0 root Diagnostics subtree: static values on DiagnosticsLevel and the
@@ -1007,8 +1003,8 @@ final class PubSubDiagnosticsExposure implements ComponentNodeListener {
   /**
    * Like {@link #attachNs0Filter} for ns0 nodes the loader legitimately omits: the loader-built
    * {@code i=17409} instance carries no Optional TimeFirstChange counter properties (verified
-   * against {@code VariableNodeLoader}). R18 forbids minting them, so the value simply has no ns0
-   * surface — the fragment-minted per-component counter nodes still expose TimeFirstChange.
+   * against {@code VariableNodeLoader}). This class never mints ns0 nodes, so the value simply has
+   * no ns0 surface — the fragment-minted per-component counter nodes still expose TimeFirstChange.
    */
   private void attachNs0OptionalFilter(NodeId nodeId, AttributeFilter filter) {
     Optional<UaNode> node = server.getAddressSpaceManager().getManagedNode(nodeId);
@@ -1035,13 +1031,13 @@ final class PubSubDiagnosticsExposure implements ComponentNodeListener {
 
   // endregion
 
-  // region root-local counters (D10)
+  // region root-local counters
 
   /**
    * Tick one of the fragment-local root State* counters. Nothing calls this in the current version:
-   * the ns0 root Status Enable/Disable pair is not minted (D23) and fragment lifecycle transitions
-   * are service lifecycle, not Part 14 §6.2.1 causes — the hook exists for tests and for a future
-   * root Enable/Disable wiring (seam S8).
+   * the ns0 root Status Enable/Disable pair is not minted and fragment lifecycle transitions are
+   * service lifecycle, not Part 14 §6.2.1 causes — the hook exists for tests and for possible
+   * future root Enable/Disable wiring.
    */
   void tickRootStateCounter(PubSubCounter counter) {
     AtomicLong value = rootCounters.get(counter);
@@ -1105,7 +1101,7 @@ final class PubSubDiagnosticsExposure implements ComponentNodeListener {
 
   // endregion
 
-  // region value computation (pull model; pure functions are the S17 test seams)
+  // region value computation (pull model; pure functions are package-private for tests)
 
   /**
    * Saturate a 64-bit engine counter to UInt32 (§9.1.11.5: a counter "shall not be incremented
@@ -1135,7 +1131,7 @@ final class PubSubDiagnosticsExposure implements ComponentNodeListener {
 
   /**
    * A DataSetMessage sequence number narrowed to the UInt16 LiveValue (Table 329/331); JSON
-   * mappings count 32-bit on the wire and are narrowed to the low 16 bits (documented, D12).
+   * mappings count 32-bit on the wire and are narrowed to the low 16 bits.
    */
   static DataValue sequenceNumberValue(UInteger sequenceNumber) {
     return new DataValue(
@@ -1155,14 +1151,14 @@ final class PubSubDiagnosticsExposure implements ComponentNodeListener {
     return new DataValue(value, StatusCode.GOOD, DateTime.now());
   }
 
-  /** A null-value read: the feed is empty or the component vanished (S5). */
+  /** A null-value read: the feed is empty or the component vanished. */
   private static DataValue nullValue() {
     return new DataValue(Variant.NULL_VALUE, StatusCode.GOOD, DateTime.now());
   }
 
   /**
    * The spec-exposed counters of one component subtype (§4.3 mapping): the six State* counters on
-   * every object, plus the per-subtype rows. Vendor counters stay SDK-API-only (R14); the DSR
+   * every object, plus the per-subtype rows. Vendor counters stay SDK-API-only; the DSR
    * FailedDataSetMessages row maps to the engine's per-reader {@code decodeErrors} substance.
    */
   static List<CounterSpec> counterSpecs(ComponentType type) {
@@ -1246,7 +1242,7 @@ final class PubSubDiagnosticsExposure implements ComponentNodeListener {
   /**
    * TotalInformation/TotalError substance: the sum of the object's OWN spec-exposed counters with
    * {@code classification} (§9.1.11.2 — own Counters folder only, never descendants; vendor
-   * counters do not participate, R14).
+   * counters do not participate.
    */
   static long classificationSum(
       ComponentType type,
@@ -1262,7 +1258,7 @@ final class PubSubDiagnosticsExposure implements ComponentNodeListener {
     return sum;
   }
 
-  /** D37: Total* TimeFirstChange = the earliest contributing counter's, null while all zero. */
+  /** Total* TimeFirstChange = the earliest contributing counter's, null while all zero. */
   static @Nullable DateTime earliestTimeFirstChange(
       ComponentType type,
       ComponentDiagnostics diagnostics,
@@ -1299,7 +1295,7 @@ final class PubSubDiagnosticsExposure implements ComponentNodeListener {
   }
 
   /**
-   * R15: the ResolvedAddress LiveValue. Datagram URLs ({@code opc.udp://...}) get a best-effort
+   * The ResolvedAddress LiveValue. Datagram URLs ({@code opc.udp://...}) get a best-effort
    * hostname-to-IP substitution — resolution runs at node-build time, never on sampler threads;
    * failure serves the configured URL as-is. Broker URLs (detected by scheme string, never by
    * importing transport modules) and everything else are served verbatim. A documented
@@ -1340,7 +1336,7 @@ final class PubSubDiagnosticsExposure implements ComponentNodeListener {
 
   // region filters and registry queries
 
-  /** One per-path snapshot per read (D49); null while the engine holds no entry for the path. */
+  /** One per-path snapshot per read; null while the engine holds no entry for the path. */
   private @Nullable ComponentDiagnostics diagnosticsOf(String path) {
     return service.diagnostics().component(path).orElse(null);
   }
@@ -1508,7 +1504,7 @@ final class PubSubDiagnosticsExposure implements ComponentNodeListener {
     return metaData != null ? metaData.getConfigurationVersion() : null;
   }
 
-  /** Secured per D47: a Sign/SignAndEncrypt mode together with a SecurityGroup reference. */
+  /** Secured mode together with a SecurityGroup reference. */
   static boolean secured(@Nullable MessageSecurityMode mode, @Nullable String securityGroupId) {
     return (mode == MessageSecurityMode.Sign || mode == MessageSecurityMode.SignAndEncrypt)
         && securityGroupId != null;
@@ -1549,11 +1545,12 @@ final class PubSubDiagnosticsExposure implements ComponentNodeListener {
   // region Reset handlers
 
   /**
-   * The shared session &rarr; authorization prefix (D29/D41/D38: session-less &rarr; {@code
-   * Bad_UserAccessDenied}; the effective authorizer's code surfaced verbatim; no channel-security
-   * minimum). With a RoleMapper configured, the ns0 {@code i=17421} node's loader RolePermissions
-   * (ConfigureAdmin) additionally gate the Call in the AccessController before the handler runs;
-   * fragment-minted Reset nodes carry no RolePermissions — the authorizer is their gate.
+   * The shared session &rarr; authorization prefix: session-less invocations answer {@code
+   * Bad_UserAccessDenied}; the effective authorizer's code is surfaced verbatim; no
+   * channel-security minimum is invented. With a RoleMapper configured, the ns0 {@code i=17421}
+   * node's loader RolePermissions (ConfigureAdmin) additionally gate the Call in the
+   * AccessController before the handler runs; fragment-minted Reset nodes carry no RolePermissions
+   * — the authorizer is their gate.
    */
   private void checkResetAuthorized(InvocationContext context) throws UaException {
 
@@ -1569,7 +1566,7 @@ final class PubSubDiagnosticsExposure implements ComponentNodeListener {
   /**
    * Per-component Reset: delegates to the engine's per-object {@code reset(path)} — that path's
    * counters and TimeFirstChange baselines only; {@code lastError}, {@code targetWriteErrors()},
-   * and other objects' counters untouched (§9.1.11.3, R12).
+   * and other objects' counters untouched (§9.1.11.3).
    */
   private final class ComponentResetHandler extends PubSubDiagnosticsType.ResetMethod {
 
@@ -1589,7 +1586,7 @@ final class PubSubDiagnosticsExposure implements ComponentNodeListener {
 
   /**
    * Root Reset ({@code i=17421}): zeroes the fragment-local root counters only — the root has no
-   * engine path and the engine collector is never called (D10).
+   * engine path and the engine collector is never called.
    */
   private final class RootResetHandler extends PubSubDiagnosticsType.ResetMethod {
 
@@ -1606,7 +1603,7 @@ final class PubSubDiagnosticsExposure implements ComponentNodeListener {
 
   // endregion
 
-  /** One exposed counter row: browse name, engine identity, and D37/§4.3 properties. */
+  /** One exposed counter row: browse name, engine identity, and §4.3 properties. */
   record CounterSpec(
       String browseName,
       PubSubCounter counter,
@@ -1620,7 +1617,7 @@ final class PubSubDiagnosticsExposure implements ComponentNodeListener {
   /**
    * A component with a minted Diagnostics object. Coordinates are carried as name components (a
    * connection's {@code groupName}/{@code componentName} are null; a group's {@code componentName}
-   * is null) — paths are never parsed (R11).
+   * is null) — paths are never parsed.
    */
   record RegisteredComponent(
       ComponentType type,

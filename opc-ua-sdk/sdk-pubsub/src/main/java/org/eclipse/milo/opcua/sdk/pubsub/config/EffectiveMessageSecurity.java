@@ -28,9 +28,9 @@ import org.jspecify.annotations.Nullable;
  *       group's key services, and {@link PubSubConfig#defaultSecurityKeyServices()}; else empty.
  * </ul>
  *
- * <p>Writers have no per-writer override; only the two factories below exist. The Phase 4 runtime
- * resolves security at the group level only ({@link #forGroup}); {@link #forReader} serves
- * key-provider construction and Phase 5.
+ * <p>Writers have no per-writer override; only the two factories below exist. The current runtime
+ * resolves writer security at the group level ({@link #forGroup}); {@link #forReader} is used for
+ * reader-specific key-provider construction and remote configuration validation.
  *
  * @param mode the effective {@link MessageSecurityMode}.
  * @param securityGroup the effective {@link SecurityGroupRef}, or {@code null} if none is

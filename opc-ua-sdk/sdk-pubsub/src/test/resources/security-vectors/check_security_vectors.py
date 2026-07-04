@@ -15,7 +15,7 @@ NetworkMessage from OPC 10000-14 v1.05 alone — never by calling any Milo code:
      (PublisherId, WriterGroupId, DataSetWriterIds, SecurityTokenId, MessageNonce,
      SecurityFlags per the declared mode).
   3. Cross-checks the ``keyData`` split into SigningKey / EncryptingKey / KeyNonce
-     (Table 155 — the K14 splitter oracle).
+     (Table 155 key-data split).
   4. Verifies the trailing HMAC-SHA256 signature over everything before it
      (Part 14 section 7.2.4.4.3.2) with the Python stdlib ``hmac``.
   5. For SignAndEncrypt: assembles the AES-CTR counter block
@@ -236,7 +236,7 @@ def check_vector(bin_path, keys_path, aes_ctr, report):
     keys = json.loads(keys_path.read_text())
     print(f"== {bin_path.parent.name}/{bin_path.stem} ({keys.get('direction', '?')}) ==")
 
-    # 1. keys.json internal consistency: the Table 155 key-data split (K14 oracle)
+    # 1. keys.json internal consistency: the Table 155 key-data split
     policy_uri = keys["securityPolicyUri"]
     policy = POLICIES.get(policy_uri)
     if not report.check(policy is not None, f"securityPolicyUri known: {policy_uri}"):

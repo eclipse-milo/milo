@@ -52,12 +52,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * The R3 FileType state machine driven CLIENT-SIDE over a real opc.tcp channel (T5 §5.1–5.3): the
- * open-mode matrix, the Part 20 shall-sentence locking rows (including the own-readers-block-write
- * trap and the {@code Bad_NotReadable}/{@code Bad_NotWritable} vocabulary — never {@code
- * Bad_InvalidState} for lock conflicts), read/write/position behavior, snapshot-at-Open isolation,
- * the write-handle Close abort, and the normative read-modify-write (0x03) sequence ending in
- * CloseAndUpdate.
+ * The FileType state machine driven CLIENT-SIDE over a real opc.tcp channel: the open-mode matrix,
+ * the Part 20 shall-sentence locking rows (including the own-readers-block-write trap and the
+ * {@code Bad_NotReadable}/{@code Bad_NotWritable} vocabulary — never {@code Bad_InvalidState} for
+ * lock conflicts), read/write/position behavior, snapshot-at-Open isolation, the write-handle Close
+ * abort, and the normative read-modify-write (0x03) sequence ending in CloseAndUpdate.
  *
  * <p>Two clients (two real sessions) drive the cross-session locking rows. Every test leaves zero
  * open handles; {@code @AfterEach} asserts {@code OpenCount == 0} via a real property read.
@@ -322,7 +321,7 @@ class FileTypeStateMachineIntegrationTest {
       System.arraycopy(firstHalf.bytesOrEmpty(), 0, assembled, 0, firstHalf.length());
       System.arraycopy(rest, 0, assembled, firstHalf.length(), rest.length);
 
-      // the open handle still serves the ORIGINAL stream (R3 "materialized AT Open") ...
+      // the open handle still serves the ORIGINAL stream (materialized AT Open) ...
       assertArrayEquals(baseline, assembled);
     } finally {
       fileA.closeOk(handle);

@@ -84,14 +84,13 @@ import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 /**
- * The CloseAndUpdate element-kind rows the WP-X unit matrix ({@code CloseAndUpdateApplierTest}) and
- * the client-driven integration class do not reach (T5 §6.2 B15/B22–B30, §6.6 F2/F3, §6.7 G1): the
- * applier's dedicated DataSetReader arms (add/modify/remove, remote ids never auto-assigned),
- * ReaderGroup Match with the pinned SecurityMode/SecurityGroupId field set, PublishedDataSet and
- * standalone SubscribedDataSet add/modify/remove — including the B27 remove-of-a-referenced-PDS
- * per-ref validation failure and the E2 Identifier-NULL rule for PDS/SDS adds — plus the top-level
- * residuals (populated DataSetClasses ignored, null/empty DefaultSecurityKeyServices keeps the live
- * value) and the empty-string name auto-assignment leg.
+ * CloseAndUpdate element-kind coverage that {@code CloseAndUpdateApplierTest} and the client-driven
+ * integration class do not reach: the applier's dedicated DataSetReader arms (add/modify/remove,
+ * remote ids never auto-assigned), ReaderGroup Match with the fixed SecurityMode/SecurityGroupId
+ * field set, PublishedDataSet and standalone SubscribedDataSet add/modify/remove — including the
+ * remove-of-a-referenced-PDS per-ref validation failure and the Identifier-NULL rule for PDS/SDS
+ * adds — plus the top-level residuals (populated DataSetClasses ignored, null/empty
+ * DefaultSecurityKeyServices keeps the live value) and the empty-string name auto-assignment leg.
  *
  * <p>Unit-driven against live {@link PubSubConfig} values and a transform-capturing fake service,
  * mirroring {@code CloseAndUpdateApplierTest}'s conventions.
@@ -240,9 +239,9 @@ class CloseAndUpdateElementKindsTest {
   // endregion
 
   /**
-   * B15: ReaderGroup Match compares the pinned field set including the security triple — an
-   * identical secured pattern matches (reporting the resolved name with a NULL identifier), while a
-   * pattern differing only in SecurityMode/SecurityGroupId answers {@code Bad_NoMatch}.
+   * ReaderGroup Match compares the fixed field set including the security triple — an identical
+   * secured pattern matches (reporting the resolved name with a NULL identifier), while a pattern
+   * differing only in SecurityMode/SecurityGroupId answers {@code Bad_NoMatch}.
    */
   @Test
   void readerGroupMatchComparesTheSecurityFields() {
@@ -303,8 +302,8 @@ class CloseAndUpdateElementKindsTest {
   }
 
   /**
-   * B22 + E2: a DataSetReader Add auto-assigns ONLY the name (reported with a NULL identifier —
-   * "only … PubSubConnection, WriterGroup or DataSetWriter" carry identifiers); the reader's
+   * A DataSetReader Add auto-assigns ONLY the name (reported with a NULL identifier — "only …
+   * PubSubConnection, WriterGroup or DataSetWriter" carry identifiers); the reader's
    * WriterGroupId/DataSetWriterId identify the REMOTE publisher's components and are never
    * auto-assigned — a wire 0 stays unset instead of drawing from 0x8000–0xFFFF.
    */
@@ -359,13 +358,13 @@ class CloseAndUpdateElementKindsTest {
     assertNull(added.getDataSetWriterId(), "a reader's wire 0 reads as null, never auto-assigned");
     assertTrue(outcome.consumedReservations().isEmpty());
 
-    // E2: the assignment entry carries the assigned name and a NULL identifier
+    // the assignment entry carries the assigned name and a NULL identifier
     assertEquals(1, outcome.configurationValues().length);
     assertEquals("DataSetReader1", outcome.configurationValues()[0].getName());
     assertEquals(Variant.NULL_VALUE, outcome.configurationValues()[0].getIdentifier());
   }
 
-  /** B23/B24: DataSetReader Modify is a by-name full replacement; Remove drops the reader. */
+  /** DataSetReader Modify is a by-name full replacement; Remove drops the reader. */
   @Test
   void dataSetReaderModifyAndRemoveBindByName() {
     // Modify: same reader name, a different messageReceiveTimeout
@@ -431,12 +430,12 @@ class CloseAndUpdateElementKindsTest {
   }
 
   /**
-   * B25/B26 + E2: PublishedDataSet Add (explicit and auto-assigned names, identifier always NULL),
-   * Modify as a by-name full replacement, and Remove of an UNREFERENCED dataset.
+   * PublishedDataSet Add (explicit and auto-assigned names, identifier always NULL), Modify as a
+   * by-name full replacement, and Remove of an UNREFERENCED dataset.
    */
   @Test
   void publishedDataSetAddModifyAndUnreferencedRemove() {
-    // B26 Modify: same name, a different field definition
+    // Modify: same name, a different field definition
     PubSubConfig modifyFile =
         PubSubConfig.builder().publishedDataSet(dataSet(DATA_SET, "value2")).build();
 
@@ -461,7 +460,7 @@ class CloseAndUpdateElementKindsTest {
             .orElseThrow();
     assertEquals("value2", modifiedDs.getFields().get(0).getName());
 
-    // B25 Add with an explicit name: applied, and no ConfigurationValues entry (nothing assigned)
+    // Add with an explicit name: applied, and no ConfigurationValues entry (nothing assigned)
     PubSubConfig addFile = PubSubConfig.builder().publishedDataSet(dataSet("ds2", "value")).build();
 
     CloseAndUpdateApplier.Outcome added =
@@ -482,7 +481,7 @@ class CloseAndUpdateElementKindsTest {
             .anyMatch(ds -> ds.getName().equals("ds2")));
     assertEquals(0, added.configurationValues().length);
 
-    // B25 + E2: a null-name Add auto-assigns and reports the name with a NULL identifier
+    // a null-name Add auto-assigns and reports the name with a NULL identifier
     PubSubConfiguration2DataType nullNameFile = fileOf(addFile);
     nullNameFile.getPublishedDataSets()[0] =
         withPublishedDataSetName(nullNameFile.getPublishedDataSets()[0], null);
@@ -523,7 +522,7 @@ class CloseAndUpdateElementKindsTest {
   }
 
   /**
-   * B27: removing a PublishedDataSet still referenced by a live writer fails per-ref with the
+   * Removing a PublishedDataSet still referenced by a live writer fails per-ref with the
    * config-validation code ({@code Bad_InvalidArgument} — a dangling reference, not a name
    * duplication) and nothing is applied.
    */
@@ -551,12 +550,12 @@ class CloseAndUpdateElementKindsTest {
   }
 
   /**
-   * B28/B29/B30 + E2: standalone SubscribedDataSet Add (explicit and auto-assigned names,
-   * identifier always NULL), Modify as a by-name full replacement, and Remove.
+   * Standalone SubscribedDataSet Add (explicit and auto-assigned names, identifier always NULL),
+   * Modify as a by-name full replacement, and Remove.
    */
   @Test
   void standaloneSubscribedDataSetAddModifyAndRemove() {
-    // B29 Modify: same name, replacement metadata
+    // Modify: same name, replacement metadata
     PubSubConfig modifyFile =
         PubSubConfig.builder().standaloneSubscribedDataSet(standalone(STANDALONE, "md2")).build();
 
@@ -576,7 +575,7 @@ class CloseAndUpdateElementKindsTest {
     assertNotNull(applied);
     assertEquals("md2", applied.standaloneSubscribedDataSets().get(0).getMetaData().getName());
 
-    // B28 Add with an explicit name
+    // Add with an explicit name
     PubSubConfig addFile =
         PubSubConfig.builder().standaloneSubscribedDataSet(standalone("sds2", "md3")).build();
 
@@ -598,7 +597,7 @@ class CloseAndUpdateElementKindsTest {
             .anyMatch(sds -> sds.getName().equals("sds2")));
     assertEquals(0, added.configurationValues().length);
 
-    // B28 + E2: a null-name Add auto-assigns and reports a NULL identifier
+    // a null-name Add auto-assigns and reports a NULL identifier
     PubSubConfiguration2DataType nullNameFile = fileOf(addFile);
     nullNameFile.getSubscribedDataSets()[0] =
         withSubscribedDataSetName(nullNameFile.getSubscribedDataSets()[0], null);
@@ -619,7 +618,7 @@ class CloseAndUpdateElementKindsTest {
     assertEquals("SubscribedDataSet1", autoNamed.configurationValues()[0].getName());
     assertEquals(Variant.NULL_VALUE, autoNamed.configurationValues()[0].getIdentifier());
 
-    // B30 Remove
+    // Remove
     CloseAndUpdateApplier.Outcome removed =
         apply(
             true,
@@ -639,9 +638,9 @@ class CloseAndUpdateElementKindsTest {
   }
 
   /**
-   * F2/F3: a populated top-level DataSetClasses array is ignored, and a null (then empty)
+   * A populated top-level DataSetClasses array is ignored, and a null (then empty)
    * DefaultSecurityKeyServices leaves the live value untouched — only the non-empty replace
-   * direction (F4) writes it.
+   * direction writes it.
    */
   @Test
   void populatedDataSetClassesAreIgnoredAndNullOrEmptyKeyServicesKeepTheLiveValue() {
@@ -676,7 +675,7 @@ class CloseAndUpdateElementKindsTest {
                 connection(CONN, 15001).writerGroup(writerGroup("extra-wg", 44).build()).build())
             .build();
 
-    // F2 + F3 (null): populated DataSetClasses, null DefaultSecurityKeyServices
+    // populated DataSetClasses, null DefaultSecurityKeyServices
     CloseAndUpdateApplier.Outcome outcome =
         apply(
             true,
@@ -700,7 +699,7 @@ class CloseAndUpdateElementKindsTest {
         mappedClasses == null || mappedClasses.length == 0,
         "a populated DataSetClasses array is ignored");
 
-    // F3 (empty): an empty DefaultSecurityKeyServices array keeps the live value too
+    // an empty DefaultSecurityKeyServices array keeps the live value too
     PubSubConfig secondFileConfig =
         PubSubConfig.builder()
             .connection(
@@ -723,7 +722,7 @@ class CloseAndUpdateElementKindsTest {
     assertEquals(List.of(endpoint), second.appliedConfig().defaultSecurityKeyServices());
   }
 
-  /** G1: an empty-string name — like null — triggers auto-assignment (nullOrEmpty's other leg). */
+  /** An empty-string name — like null — triggers auto-assignment (nullOrEmpty's other leg). */
   @Test
   void emptyStringNameTriggersAutoAssignment() {
     // a connection named "" at file index 1

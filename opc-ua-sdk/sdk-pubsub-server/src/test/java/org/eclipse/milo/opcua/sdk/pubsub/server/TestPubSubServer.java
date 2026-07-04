@@ -35,9 +35,9 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
  * <p>The server is fully usable as an address-space host as soon as it is constructed (ns0 loads in
  * the {@code OpcUaServer} constructor) and is intentionally <b>never started</b>: {@code
  * OpcUaServer.startup()} would fail with no bindable endpoints, and PubSub operates independently
- * of the server's client-facing transports (pinned decision S2). Because the server is never
- * started, {@link #close()} only shuts down the test namespace; {@code OpcUaServer.shutdown()} must
- * not be called on a never-started server (its EventFactory lifecycle would throw).
+ * of the server's client-facing transports. Because the server is never started, {@link #close()}
+ * only shuts down the test namespace; {@code OpcUaServer.shutdown()} must not be called on a
+ * never-started server (its EventFactory lifecycle would throw).
  *
  * <p>Shared fixture API (also used by the T-L info-model tests):
  *

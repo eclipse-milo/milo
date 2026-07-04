@@ -92,13 +92,12 @@ import org.junit.jupiter.params.provider.MethodSource;
  * in-process, with a {@link StaticSecurityKeyProvider} pinning the same key data on both sides
  * (static sentinel: no rotation, no expiry).
  *
- * <p>Covered Phase 4 rows: the K2 policy subset over the K3-gated engine ({@code Sign} / {@code
- * SignAndEncrypt} × {@code PubSub-Aes128-CTR} / {@code PubSub-Aes256-CTR}), the §7.2.4.3 / K7
- * receive-mode gate (drop lower — process higher), tampered-datagram rejection (invalid signature
- * counted, clean traffic unaffected), the K3 missing-provider startup gate, and a secured-group
- * reconfigure smoke test. Rollover, token windows, and negative codec rows live in the
- * SecurityKeyManager / codec test suites — this class stays green-path plus the wire-level rows
- * that need real sockets.
+ * <p>Coverage includes both PubSub security policies for {@code Sign} and {@code SignAndEncrypt},
+ * the §7.2.4.3 receive-mode gate (drop lower, process higher), tampered-datagram rejection (invalid
+ * signature counted, clean traffic unaffected), the missing-provider startup gate, and a
+ * secured-group reconfigure smoke test. Rollover, token windows, and negative codec cases live in
+ * the SecurityKeyManager and codec test suites; this class focuses on green-path behavior and the
+ * wire-level checks that need real sockets.
  *
  * <p>Network safety (same rules as {@link UdpLoopbackIntegrationTest}): every UDP connection pins
  * an explicit loopback {@code discoveryAddress}, so the engine's discovery channels never bind the
@@ -123,7 +122,7 @@ class SecuredUdpLoopbackIntegrationTest {
   private static final DataSetReaderRef READER_REF =
       new DataSetReaderRef("sub-conn", "rgrp", "reader");
 
-  /** Both PubSub security policies sign with HMAC-SHA256: 32 trailing signature bytes (K4). */
+  /** Both PubSub security policies sign with HMAC-SHA256: 32 trailing signature bytes. */
   private static final int SIGNATURE_LENGTH = 32;
 
   /**
@@ -176,9 +175,9 @@ class SecuredUdpLoopbackIntegrationTest {
   }
 
   /**
-   * The K2 green path: secured publisher → secured subscriber end-to-end, correct field values
-   * (including a fresh value published mid-test, proving ongoing verify/decrypt of new ciphertext),
-   * reader Operational, and zero security-drop and sequence-drop counters.
+   * Secured publisher → secured subscriber end-to-end, correct field values (including a fresh
+   * value published mid-test, proving ongoing verify/decrypt of new ciphertext), reader
+   * Operational, and zero security-drop and sequence-drop counters.
    */
   @ParameterizedTest(name = "{0} x {1}")
   @MethodSource("securedRows")
@@ -253,7 +252,7 @@ class SecuredUdpLoopbackIntegrationTest {
     // subscriber side: zero security drops of any kind ...
     assertZeroSecurityDrops(subscriber, "sub-conn/rgrp");
 
-    // ... and (K18 guard) organic secured traffic produces no sequence-window drops either
+    // ... and organic secured traffic produces no sequence-window drops either
     assertEquals(
         0,
         counter(
@@ -269,8 +268,7 @@ class SecuredUdpLoopbackIntegrationTest {
   }
 
   /**
-   * The §7.2.4.3 / K7 receive-mode gate, both directions at once, against live SignAndEncrypt
-   * traffic:
+   * The §7.2.4.3 receive-mode gate, both directions at once, against live SignAndEncrypt traffic:
    *
    * <ul>
    *   <li>SHALL drop lower: a mode-None reader group matching the same traffic receives nothing,
@@ -482,7 +480,7 @@ class SecuredUdpLoopbackIntegrationTest {
       assertEquals(
           0, counter(subscriber, "sub-conn", PubSubDiagnostics.ComponentDiagnostics::decodeErrors));
 
-      // the K18 ordering proof: the §7.2.3 sequence windows run AFTER verification, so a
+      // the §7.2.3 sequence windows run AFTER verification, so a
       // tampered replay ticks ONLY invalidSignatureMessages — it never reaches the windows and
       // the sequence-drop counters stay zero (organic loopback traffic is ordered, so it
       // contributes nothing either)
@@ -516,9 +514,9 @@ class SecuredUdpLoopbackIntegrationTest {
   }
 
   /**
-   * The live token-rollover row (K6 on the wire): publisher and subscriber each pull from the same
-   * scripted rotating "SKS" (TimeToNextKey ≈ 500 ms, KeyLifetime ≈ 1 s, several tokens) and must
-   * stay in sync across ≥ 2 token switches with zero security drops of any kind.
+   * Live token rollover on the wire: publisher and subscriber each pull from the same scripted
+   * rotating "SKS" (TimeToNextKey ≈ 500 ms, KeyLifetime ≈ 1 s, several tokens) and must stay in
+   * sync across ≥ 2 token switches with zero security drops of any kind.
    *
    * <p>The switches are OBSERVED on the wire, not assumed from wall-clock time: a witness writer
    * group on the same SecurityGroup publishes to a raw socket, and the test parses the plaintext
@@ -635,8 +633,8 @@ class SecuredUdpLoopbackIntegrationTest {
   }
 
   /**
-   * The K3 gate at integration level: an enabled secured group whose SecurityGroup has no bound
-   * {@link org.eclipse.milo.opcua.sdk.pubsub.security.SecurityKeyProvider} fails startup with
+   * Missing-provider gate at integration level: an enabled secured group whose SecurityGroup has no
+   * bound {@link org.eclipse.milo.opcua.sdk.pubsub.security.SecurityKeyProvider} fails startup with
    * {@code Bad_ConfigurationError} naming the missing provider — on both the writer-group and the
    * reader-group side.
    */
@@ -841,7 +839,7 @@ class SecuredUdpLoopbackIntegrationTest {
   }
 
   /**
-   * Subscriber config for the K7 receive-mode matrix: TWO reader groups matching the same secured
+   * Subscriber config for the receive-mode matrix: TWO reader groups matching the same secured
    * traffic — "rgrp-none" with no message security (declared first, proving secured routing skips
    * it) and "rgrp-sign" configured Sign with the SecurityGroup's keys.
    */
@@ -1148,7 +1146,7 @@ class SecuredUdpLoopbackIntegrationTest {
     return diagnostics == null ? 0L : counter.applyAsLong(diagnostics);
   }
 
-  /** Every K6 security-drop counter — and {@code decodeErrors} — is zero at {@code groupPath}. */
+  /** Every security-drop counter — and {@code decodeErrors} — is zero at {@code groupPath}. */
   private static void assertZeroSecurityDrops(PubSubService subscriber, String groupPath) {
     assertEquals(
         0,

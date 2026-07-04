@@ -34,7 +34,7 @@ against a fully hand-derived worked example and an independent `javax.crypto` re
 encoder output (and `keys.json` identical to the test constants), so the fixtures cannot
 drift. The Python harness then re-derives everything a third time with a non-JVM stack.
 
-## computed/ — encode-direction vectors (K20)
+## computed/ — encode-direction vectors
 
 Deterministic Milo encoder output: fixed MessageNonce `a1a2a3a4 01000000` (injected via
 the `MessageNonceSupplier` seam), SecurityTokenId 7, sequential key data
@@ -53,25 +53,25 @@ HMAC-SHA256 signature in the trailing 32 bytes.
 
 `milo-aes256ctr-se` is bit-identical to the hand-derived worked example in
 `UadpSecurityGoldenVectorTest.handDerivedWorkedExampleVector`. Sign-only vectors carry
-the real token id and the 8-byte nonce (the Annex A form, K4).
+the real token id and the 8-byte nonce (the Annex A form).
 
 To add a computed vector: extend `UadpSecurityGoldenVectorTest` first, export the bytes
 it pins, then extend `UadpSecurityVectorFixturesTest` (it also asserts the exact fixture
 set, so an unregistered fixture fails the build) and rerun the harness.
 
-## captured/ — decode-direction vectors (K20)
+## captured/ — decode-direction vectors
 
 Reserved for third-party captures (open62541 `pubsub_publish_encrypted` with patched
 static keys; OPC Labs UADemoPublisher `static:?key=`) produced by the live-interop
-runbook (rows R2/R4 + §9) — see `milo-pubsub-notes/interop-fleet/SECURED-RUNBOOK.md`.
+secured interop capture procedure — see `milo-pubsub-notes/interop-fleet/SECURED-RUNBOOK.md`.
 Curate one NetworkMessage per `.bin` with a hand-written `.keys.json` (same schema);
 `UadpSecurityCapturedVectorTest` picks the directory up automatically.
 UA-.NETStandard is never a secured-vector source (its PubSub security is stubbed).
 
-**These captures are a BLOCKING Phase 4 exit criterion, not a nice-to-have**: K20 pins
-decode-direction verification on vectors captured from third-party stacks, and until they
-are committed the decode direction rests only on Milo-encoder round-trips plus the
-hand-derived vector. While the directory is empty, `UadpSecurityCapturedVectorTest`
+**These captures are required before claiming third-party decode coverage**: decode-direction
+verification depends on vectors captured from third-party stacks, and until they are committed the
+decode direction rests only on Milo-encoder round-trips plus the hand-derived vector. While the
+directory is empty, `UadpSecurityCapturedVectorTest`
 surfaces one "captures missing" marker test — skipped (aborted) in routine CI, FAILING
 when run with `-Dmilo.pubsub.security.requireCapturedVectors=true` (the exit-gate mode) —
 so the gap is never reported as a silent green.

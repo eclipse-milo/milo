@@ -69,13 +69,12 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * The §9.1.10 Enable/Disable Method matrix (pinned decision R1, K17.2 check order): current-state
- * rules against a started runtime's real states (Operational, PreOperational, Paused, Disabled),
- * the session/authorization prefix (session-less {@code Bad_UserAccessDenied} per D29, authorizer
- * codes surfaced verbatim, default-authorizer RoleMapper posture), the {@code
- * allowRemoteConfiguration} gate (default false: no method nodes minted), the D23 root-pair ABSENCE
- * (ns0 {@code i=17407}/{@code i=17408} are never minted), and handler survival across component
- * restarts.
+ * The §9.1.10 Enable/Disable Method matrix: current-state rules against a started runtime's real
+ * states (Operational, PreOperational, Paused, Disabled), the session/authorization prefix
+ * (session-less {@code Bad_UserAccessDenied}, authorizer codes surfaced verbatim,
+ * default-authorizer RoleMapper posture), the {@code allowRemoteConfiguration} gate (default false:
+ * no method nodes minted), the root-pair absence (ns0 {@code i=17407}/{@code i=17408} are never
+ * minted), and handler survival across component restarts.
  *
  * <p>Handlers are invoked directly with a stubbed {@link AccessContext} and a mocked {@link
  * Session} (the {@link SksServerFaceTest} pattern): the state rules and check order are
@@ -208,7 +207,7 @@ class PubSubStatusMethodsTest {
 
     String statusPath = "PubSub/" + CONN_OFF;
 
-    // session-less invocation: Bad_UserAccessDenied (D29), before any state evaluation
+    // session-less invocation: Bad_UserAccessDenied, before any state evaluation
     UaMethodNode disableNode = methodNode(statusPath + "/Status/Disable");
     CallMethodResult sessionless =
         disableNode
@@ -286,7 +285,7 @@ class PubSubStatusMethodsTest {
     Ports ports = Ports.pick();
     attachAndStart(ports, remoteConfigOptions(), true);
 
-    // D23: the ns0 root Status Enable/Disable (i=17407/i=17408) are Optional members the
+    // the ns0 root Status Enable/Disable (i=17407/i=17408) are Optional members the
     // loader omits, and the fragment must not mint them (Call dispatch by objectId routes to
     // the ns0 namespace, which cannot see fragment-held method nodes)
     assertTrue(managedNode(NodeIds.PublishSubscribe_Status).isPresent());

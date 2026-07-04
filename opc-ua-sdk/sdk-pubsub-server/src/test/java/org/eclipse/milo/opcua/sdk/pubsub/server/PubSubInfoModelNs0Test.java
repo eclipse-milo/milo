@@ -43,12 +43,11 @@ import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
 import org.junit.jupiter.api.Test;
 
 /**
- * Population of the existing ns0 PublishSubscribe nodes per pinned decision S8: with {@code
- * exposeInformationModel(true)}, startup sets SupportedTransportProfiles ({@code i=17481}),
- * Status/State ({@code i=17406}), ConfigurationVersion ({@code i=25481}), and
- * ConfigurationProperties ({@code i=32404}); shutdown sets the root state Disabled. With the
- * default {@code exposeInformationModel(false)}, the ns0 null skeleton is left untouched and no
- * fragment nodes exist.
+ * Population of the existing ns0 PublishSubscribe nodes: with {@code exposeInformationModel(true)},
+ * startup sets SupportedTransportProfiles ({@code i=17481}), Status/State ({@code i=17406}),
+ * ConfigurationVersion ({@code i=25481}), and ConfigurationProperties ({@code i=32404}); shutdown
+ * sets the root state Disabled. With the default {@code exposeInformationModel(false)}, the ns0
+ * null skeleton is left untouched and no fragment nodes exist.
  *
  * <p>Each test uses a fresh {@link TestPubSubServer} because the ns0 PublishSubscribe values are
  * server-global state that earlier exposures would otherwise leak into later assertions.

@@ -26,9 +26,9 @@ import java.util.List;
  * 1.5-8 s. Note that CE leaves a few non-daemon executor threads alive after {@link #stop()}; the
  * surefire fork exits anyway, but tests must not assert on JVM exit.
  *
- * <p>Environment requirements (proven by the WP-O smoke): the module pom pins test-scoped
- * jctools-core 4.0.6 (CE fails bootstrap on the client's mediated 2.1.2), and CE 2026.5 does not
- * bootstrap on JDK 25 — run on the project toolchain (17/21).
+ * <p>Environment requirements: the module pom pins test-scoped jctools-core 4.0.6 (CE fails
+ * bootstrap on the client's mediated 2.1.2), and CE 2026.5 does not bootstrap on JDK 25 — run on
+ * the project toolchain (17/21).
  */
 final class EmbeddedTestBroker implements AutoCloseable {
 

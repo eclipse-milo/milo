@@ -73,14 +73,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * The K3 message security gate at startup, reconfigure, and activation: a secured mode on a
+ * The message security gate at startup, reconfigure, and activation: a secured mode on a
  * JSON-mapped group is rejected with {@code Bad_ConfigurationError} pointing at transport security
  * ({@code BrokerSecurityConfig}) — JSON NetworkMessages have no message security in OPC UA 1.05
  * (Part 14 §7.3.4.1) — and a secured UADP group requires a resolvable SecurityGroup reference, a
  * supported PubSub security policy, and a bound {@link SecurityKeyProvider}, else {@code
  * Bad_ConfigurationError} naming the missing piece. Group-level mode {@code Invalid} is treated
- * like None (D1). A fully bound secured group is accepted and — with a static key provider —
- * completes startup into {@code Operational}.
+ * like None. A fully bound secured group is accepted and — with a static key provider — completes
+ * startup into {@code Operational}.
  */
 class SecurityStartupValidationTest {
 
@@ -361,7 +361,7 @@ class SecurityStartupValidationTest {
 
   @Test
   void groupLevelInvalidModeIsTreatedLikeNone() throws Exception {
-    // Invalid mode with no SecurityGroup at all: passes the gate (D1) and starts
+    // Invalid mode with no SecurityGroup at all: passes the gate and starts
     PubSubService service =
         createService(
             uadpPublisherConfig(security(MessageSecurityMode.Invalid, null), null, true),
@@ -416,10 +416,10 @@ class SecurityStartupValidationTest {
   }
 
   /**
-   * The N19 reconfigure half of the K3 JSON gate: a service running an UNsecured JSON group rejects
-   * a reconfiguration INTO a secured mode on that group with {@code Bad_ConfigurationError} naming
-   * BrokerSecurityConfig — even with a key provider bound, because JSON NetworkMessages have no
-   * message security in OPC UA 1.05 (Part 14 §7.3.4.1).
+   * Reconfigure coverage for the JSON security gate: a service running an UNsecured JSON group
+   * rejects a reconfiguration INTO a secured mode on that group with {@code Bad_ConfigurationError}
+   * naming BrokerSecurityConfig — even with a key provider bound, because JSON NetworkMessages have
+   * no message security in OPC UA 1.05 (Part 14 §7.3.4.1).
    */
   @Test
   void reconfigureIntoSecuredJsonGroupFailsPointingAtBrokerSecurityConfig() throws Exception {

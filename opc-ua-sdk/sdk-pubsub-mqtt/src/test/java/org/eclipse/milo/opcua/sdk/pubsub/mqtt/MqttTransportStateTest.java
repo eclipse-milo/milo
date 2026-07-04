@@ -56,7 +56,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * R16 transport-state rows beyond {@code MqttReconnectTest} (which owns the Error-on-stop /
+ * Transport-state coverage beyond {@code MqttReconnectTest} (which owns the Error-on-stop /
  * recover-resubscribe-republish choreography and asserts the retained-metadata republish with a raw
  * probe): after a broker restart and recovery, a FRESH Milo subscriber-only service — whose broker
  * session finds only what the recovered publisher re-published — receives the DataSetMetaData
@@ -121,7 +121,7 @@ class MqttTransportStateTest {
     }
 
     // stop the broker (all in-memory state, including the retained metadata, is lost) and
-    // bring a FRESH instance up on the SAME port; R16 recovery reactivates the writer and
+    // bring a FRESH instance up on the SAME port; recovery reactivates the writer and
     // re-publishes the retained metadata announce
     firstBroker.stop();
     awaitTrue(
@@ -176,7 +176,7 @@ class MqttTransportStateTest {
 
       // prove the MQTT session is CONNECTED (traffic flows) before stopping the broker:
       // Operational alone is granted by the engine state machine at startup completion and
-      // does not prove the CONNACK arrived, while the R16 down edge is deliberately
+      // does not prove the CONNACK arrived, while the down edge is deliberately
       // connected-gated (a session that never connected is not an outage) — stopping the
       // broker inside the pre-CONNACK window would never produce the Error awaited below
       try (RawMqtt5Probe probe = RawMqtt5Probe.connect(port)) {

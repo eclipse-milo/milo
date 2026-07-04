@@ -67,7 +67,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Cause attribution of the R12 State* counters and the {@link PubSubStateChangeEvent#cause()}
+ * Cause attribution of the State* counters and the {@link PubSubStateChangeEvent#cause()}
  * component, exercised through {@link PubSubService} with a stub in-memory transport: startup ticks
  * neither ByMethod nor ByParent on the initiating component (descendants tick ByParent), explicit
  * enable/disable ticks ByMethod — including the final hop of a deferred startup — fail/recover tick

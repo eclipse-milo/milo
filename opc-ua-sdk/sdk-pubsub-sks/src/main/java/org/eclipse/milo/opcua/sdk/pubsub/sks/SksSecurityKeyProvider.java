@@ -52,10 +52,10 @@ import org.slf4j.LoggerFactory;
  * A {@link SecurityKeyProvider} that pulls key material from a Security Key Service by calling
  * {@code GetSecurityKeys} (ns=0;i=15215) on the well-known PublishSubscribe Object (ns=0;i=14443).
  *
- * <p><b>Resolution (Part 14 Table 40, K12):</b> each SecurityKeyServices entry is an SKS identity
- * record keyed by {@code server.applicationUri}, not a connectable endpoint. Per fetch, entries are
- * tried in array order (a previously successful entry is tried first): GetEndpoints at the entry's
- * {@code server.discoveryUrls}, filter by ApplicationUri match and {@code SignAndEncrypt},
+ * <p><b>Resolution (Part 14 Table 40):</b> each SecurityKeyServices entry is an SKS identity record
+ * keyed by {@code server.applicationUri}, not directly a connectable endpoint. Per fetch, entries
+ * are tried in array order (a previously successful entry is tried first): GetEndpoints at the
+ * entry's {@code server.discoveryUrls}, filter by ApplicationUri match and {@code SignAndEncrypt},
  * constrain by the entry's SecurityPolicyUri (else rank by the discovered endpoints'
  * securityLevel), then connect with a validating certificate check and an identity chosen per the
  * entry's {@code UserIdentityTokens}. Tolerance fallback (on by default): an entry with a filled
@@ -77,7 +77,7 @@ import org.slf4j.LoggerFactory;
  * down).
  *
  * <p>The returned {@link SecurityKeySet#securityPolicyUri()} is passed through verbatim; checking
- * it against the configured SecurityGroup policy (K8) is the consuming key manager's job.
+ * it against the configured SecurityGroup policy is the consuming key manager's job.
  */
 public final class SksSecurityKeyProvider implements SecurityKeyProvider, AutoCloseable {
 
@@ -282,7 +282,7 @@ public final class SksSecurityKeyProvider implements SecurityKeyProvider, AutoCl
       long code = statusCode.value();
       if (code == StatusCodes.Bad_NotFound) {
         // Unknown SecurityGroupId: a configuration error that would 404 at every redundant
-        // instance of the SKS — fail the fetch without an entry-failover retry storm (D8).
+        // instance of the SKS, so fail the fetch without an entry-failover retry storm.
         throw new FatalFetchException(
             ("SecurityGroupId '%s' is unknown at the SKS (securityKeyServices[%d], %s); check the"
                     + " configured SecurityGroupId")
@@ -593,9 +593,9 @@ public final class SksSecurityKeyProvider implements SecurityKeyProvider, AutoCl
     }
 
     /**
-     * Enable or disable the tolerance fallback (K12): a non-conformant entry with a filled {@code
-     * endpointUrl} and empty {@code discoveryUrls} uses the endpointUrl as its discovery target.
-     * Enabled by default (warned at build time); disabling makes such entries fail {@link
+     * Enable or disable the Table 40 tolerance fallback: a non-conformant entry with a filled
+     * {@code endpointUrl} and empty {@code discoveryUrls} uses the endpointUrl as its discovery
+     * target. Enabled by default (warned at build time); disabling makes such entries fail {@link
      * #build()}.
      *
      * @param toleranceFallback true to enable the fallback.
@@ -750,7 +750,7 @@ public final class SksSecurityKeyProvider implements SecurityKeyProvider, AutoCl
   private record ResolvedEndpoint(
       EndpointDescription endpoint, List<EndpointDescription> discoveredEndpoints) {}
 
-  /** Marker for failures that must not fail over to the next entry (D8: {@code Bad_NotFound}). */
+  /** Marker for failures that must not fail over to the next entry. */
   private static final class FatalFetchException extends UaException {
 
     private FatalFetchException(String message) {

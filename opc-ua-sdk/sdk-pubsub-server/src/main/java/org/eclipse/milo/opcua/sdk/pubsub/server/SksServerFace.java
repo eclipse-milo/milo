@@ -42,14 +42,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The opt-in Security Key Service server face: serves {@code GetSecurityKeys} for the locally
+ * The opt-in Security Key Service server helper: serves {@code GetSecurityKeys} for the locally
  * configured SecurityGroups by attaching an invocation handler to the ns0 method node ({@code
  * i=15215}) and advertising the SKS capabilities.
  *
  * <p>The ns0 nodes are mutated in place, values and handler only; ns0's node manager is never
- * structurally modified, so the face works independently of {@link
+ * structurally modified, so the helper works independently of {@link
  * ServerPubSubOptions#isExposeInformationModel()}. Because the handler slot on {@code i=15215} is
- * process-global for the server, at most one enabled face per {@link OpcUaServer} is supported;
+ * process-global for the server, at most one enabled helper per {@link OpcUaServer} is supported;
  * {@link #shutdown()} only restores {@link MethodInvocationHandler#NOT_IMPLEMENTED} if the node
  * still carries the handler this face attached.
  *
@@ -57,7 +57,7 @@ import org.slf4j.LoggerFactory;
  * {@link PubSubConfig#securityGroups()} and refreshed on every successful configuration apply
  * through the managed runtime — remote CloseAndUpdate edits and owner {@code
  * ServerPubSub.runtime()} reconfigures alike — via {@link #onConfigurationApplied}, registered as a
- * post-apply hook (S15): retained groups keep serving their keys undisturbed, while groups whose
+ * post-apply hook: retained groups keep serving their keys undisturbed, while groups whose
  * SecurityPolicyUri or KeyLifetime changed have all existing keys invalidated and regenerated (Part
  * 14 §6.2.12.2; the engine independently restarts every referencing writer/reader group so
  * consumers re-fetch).
@@ -81,7 +81,7 @@ final class SksServerFace {
   private @Nullable GetSecurityKeysMethodImpl attachedHandler;
 
   /**
-   * Create a face for {@code server} serving keys for the SecurityGroups of {@code config}.
+   * Create a helper for {@code server} serving keys for the SecurityGroups of {@code config}.
    *
    * @param authorizer the effective {@link PubSubMethodAuthorizer} resolved by {@link
    *     ServerPubSub}: the options-configured authorizer, else the shared {@link
@@ -97,13 +97,13 @@ final class SksServerFace {
   }
 
   /**
-   * Post-apply hook (S15, hook #3): refresh the key store from the applied configuration's
-   * SecurityGroups. The invalidated ids — groups whose SecurityPolicyUri or KeyLifetime changed
-   * relative to the last-seen configuration, plus removed groups — are computed here from the
-   * retained {@code lastConfig} (§6.2.12.2 "all existing keys of the SecurityGroup are
-   * invalidated"); retained groups keep their rotation state. Violations in the replacement set are
-   * logged inside {@link SecurityGroupKeyStore#replaceGroups} and never thrown — a post-apply hook
-   * must not fail the apply. Runs on the reconfiguring thread, serialized by the managed runtime.
+   * Post-apply hook: refresh the key store from the applied configuration's SecurityGroups. The
+   * invalidated ids — groups whose SecurityPolicyUri or KeyLifetime changed relative to the
+   * last-seen configuration, plus removed groups — are computed here from the retained {@code
+   * lastConfig} (§6.2.12.2 "all existing keys of the SecurityGroup are invalidated"); retained
+   * groups keep their rotation state. Violations in the replacement set are logged inside {@link
+   * SecurityGroupKeyStore#replaceGroups} and never thrown — a post-apply hook must not fail the
+   * apply. Runs on the reconfiguring thread, serialized by the managed runtime.
    */
   void onConfigurationApplied(PubSubConfig newConfig, ReconfigureResult result) {
     PubSubConfig oldConfig = this.lastConfig;
@@ -208,8 +208,8 @@ final class SksServerFace {
   }
 
   /**
-   * The {@code GetSecurityKeys} handler; check order per K17.2: session, channel security mode,
-   * argument validity, authorization, existence, then serve.
+   * The {@code GetSecurityKeys} handler; check order: session, channel security mode, argument
+   * validity, authorization, existence, then serve.
    */
   private final class GetSecurityKeysMethodImpl extends PubSubKeyServiceType.GetSecurityKeysMethod {
 

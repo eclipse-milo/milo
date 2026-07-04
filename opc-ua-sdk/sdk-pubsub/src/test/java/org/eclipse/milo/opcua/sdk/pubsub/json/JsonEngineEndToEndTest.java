@@ -134,7 +134,7 @@ class JsonEngineEndToEndTest {
       return new PublisherChannel() {
         @Override
         public CompletableFuture<Void> send(ByteBuf message) {
-          // E3 pins that the engine always uses the addressed form on data and metadata paths
+          // the engine always uses the addressed form on data and metadata paths
           unaddressedSends.incrementAndGet();
           message.release();
           return CompletableFuture.completedFuture(null);
@@ -341,7 +341,7 @@ class JsonEngineEndToEndTest {
     Sent metaDataSent = awaitSent(publisherTransport, MessageAddress.Kind.METADATA);
     Sent dataSent = awaitSent(publisherTransport, MessageAddress.Kind.DATA);
 
-    // E5/E7/E8: the metadata address is the derived per-writer metadata topic, retained, QoS1
+    // the metadata address is the derived per-writer metadata topic, retained, QoS1
     assertEquals("opcua/json/metadata/line-7/grp/writer", metaDataSent.address().queueName());
     assertTrue(metaDataSent.address().retain());
     assertEquals(
@@ -356,7 +356,7 @@ class JsonEngineEndToEndTest {
     assertEquals("writer", metaDataWire.get("DataSetWriterName").getAsString());
     assertEquals("ds", metaDataWire.get("MetaData").getAsJsonObject().get("Name").getAsString());
 
-    // E7/E8: the data address is the derived group data topic, not retained, QoS0
+    // the data address is the derived group data topic, not retained, QoS0
     assertEquals("opcua/json/data/line-7/grp", dataSent.address().queueName());
     assertTrue(!dataSent.address().retain());
     assertEquals(
@@ -472,7 +472,7 @@ class JsonEngineEndToEndTest {
 
     // endregion
 
-    // E3: the engine never used the unaddressed send path
+    // the engine never used the unaddressed send path
     assertEquals(0, publisherTransport.unaddressedSends.get());
     assertEquals(0, subscriberTransport.unaddressedSends.get());
   }

@@ -67,10 +67,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Send-failure diagnostics after the Phase 5 un-flatten: real status codes (never a blanket {@code
- * Bad_CommunicationError}), {@link PubSubDiagnosticsEvent.Kind} classification, and the
- * failedTransmissions / failedDataSetMessages arbitration — an oversize drop ticks both, an encode
- * failure ticks failedDataSetMessages only.
+ * Send-failure diagnostics after status codes are preserved end-to-end: real status codes (never a
+ * blanket {@code Bad_CommunicationError}), {@link PubSubDiagnosticsEvent.Kind} classification, and
+ * the failedTransmissions / failedDataSetMessages arbitration — an oversize drop ticks both, an
+ * encode failure ticks failedDataSetMessages only.
  */
 class SendFailureDiagnosticsTest {
 

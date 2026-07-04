@@ -80,10 +80,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * Information model node values per pinned decision S8: every exposed value comes from one {@code
- * PubSubConfig.toDataType} pass over the attach-time configuration, so the nodes show the
- * mapper-normalized values (transport profile URI, empty LocaleIds, "" HeaderLayoutUri, derived
- * DataSetMetaData, defaulted KeyFrameCount, ...).
+ * Information model node values: every exposed value comes from one {@code PubSubConfig.toDataType}
+ * pass over the attach-time configuration, so the nodes show the mapper-normalized values
+ * (transport profile URI, empty LocaleIds, "" HeaderLayoutUri, derived DataSetMetaData, defaulted
+ * KeyFrameCount, ...).
  *
  * <p>The tests compare node values against an equivalent {@code toDataType} pass made over the same
  * configuration, plus explicit literals where the assignment pins them.
@@ -336,7 +336,7 @@ class PubSubInfoModelValuesTest {
 
   @Test
   void internalReadOfStructValuedPropertiesReturnsWellFormedDataValues() {
-    // WP-L open issue: verify a ReadContext/AddressSpaceManager.read round-trip of a
+    // TODO: verify a ReadContext/AddressSpaceManager.read round-trip of a
     // struct-valued property served by the fragment
     NodeId metaDataNodeId =
         fragmentNodeId("PubSub/PublishedDataSets/" + DATA_SET + "/DataSetMetaData");

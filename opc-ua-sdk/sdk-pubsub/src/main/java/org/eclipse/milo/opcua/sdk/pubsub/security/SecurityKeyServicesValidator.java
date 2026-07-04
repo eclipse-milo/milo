@@ -28,8 +28,7 @@ import org.jspecify.annotations.Nullable;
  * Bad_ConfigurationError} naming the entry index; soft non-conformances are returned as warning
  * strings for the caller to log at WARN. Config builders and mappers never call this — foreign
  * configs with non-conformant entries must survive a lossless round trip; validation happens where
- * entries are consumed: SKS pull-provider construction now, and the Phase 5 remote-configuration
- * write path later.
+ * entries are consumed: SKS pull-provider construction and remote-configuration writes.
  *
  * <p>Rules:
  *

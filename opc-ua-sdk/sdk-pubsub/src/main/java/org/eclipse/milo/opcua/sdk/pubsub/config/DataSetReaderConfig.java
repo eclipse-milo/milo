@@ -170,10 +170,10 @@ public final class DataSetReaderConfig {
    * reader inherits from its group. An override with mode {@code None} is a legal active override
    * to unsecured operation.
    *
-   * <p>The Phase 4 runtime resolves message security at the group level only: this override is
+   * <p>The runtime resolves message security at the reader-group level: this override is
    * configuration-complete (it round-trips through the Part 14 model and its {@link
-   * SecurityGroupRef} is validated), but it is not consumed by the runtime's key management or
-   * message routing.
+   * SecurityGroupRef} is validated), but it is not consumed by runtime key management or message
+   * routing.
    *
    * @return the {@link MessageSecurityConfig} override, or {@code null} to inherit from the reader
    *     group.

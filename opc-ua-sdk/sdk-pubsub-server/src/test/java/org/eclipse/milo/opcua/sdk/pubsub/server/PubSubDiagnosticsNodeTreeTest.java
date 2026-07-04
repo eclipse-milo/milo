@@ -54,10 +54,10 @@ import org.junit.jupiter.api.Test;
 
 /**
  * The §9.1.11 per-component Diagnostics subtree structure minted by {@link
- * PubSubDiagnosticsExposure} (R13/R18): type definitions per subtype, counter nodes typed
+ * PubSubDiagnosticsExposure}: type definitions per subtype, counter nodes typed
  * PubSubDiagnosticsCounterType ({@code i=19725}) with the §4.3 Active/Classification/
- * DiagnosticsLevel properties, the LiveValue presence rules (token nodes only on secured groups —
- * D47; no StatusCode, no ReceivedInvalidNetworkMessages — R14), deterministic {@code
+ * DiagnosticsLevel properties, the LiveValue presence rules (token nodes only on secured groups, no
+ * StatusCode, no ReceivedInvalidNetworkMessages), deterministic {@code
  * "PubSub/<path>/Diagnostics/..."} NodeId strings, and the {@code diagnosticsEnabled=false} gate
  * (no Diagnostics nodes, ns0 root untouched, {@code i=17421} stays {@code Bad_NotImplemented}).
  *
@@ -159,7 +159,7 @@ class PubSubDiagnosticsNodeTreeTest {
             PubSubDiagnosticsCounterClassification.Error,
             nodeValue(server, idx, failed + "/Classification"));
 
-        // Advanced-level rows are served Active=true as documented surplus (D36)
+        // Advanced-level counters are served Active=true as documented surplus
         String encryption = securedGroupDiagnostics + "/Counters/EncryptionErrors";
         assertEquals(
             DiagnosticsLevel.Advanced, nodeValue(server, idx, encryption + "/DiagnosticsLevel"));
@@ -187,7 +187,7 @@ class PubSubDiagnosticsNodeTreeTest {
             nodeValue(
                 server, idx, "PubSub/" + CONNECTION + "/Diagnostics/Counters/StatePausedByParent"));
 
-        // token LiveValues only on secured groups (D47)
+        // token LiveValues only on secured groups
         assertNodePresent(
             server, new NodeId(idx, securedGroupDiagnostics + "/LiveValues/SecurityTokenID"));
         assertNodePresent(
@@ -211,7 +211,7 @@ class PubSubDiagnosticsNodeTreeTest {
         assertNodeAbsent(
             server, new NodeId(idx, plainReaderDiagnostics + "/LiveValues/SecurityTokenID"));
 
-        // DSW LiveValues: MessageSequenceNumber + Major/MinorVersion always minted (D47/D4);
+        // DSW LiveValues: MessageSequenceNumber + Major/MinorVersion always minted;
         // the version values are static from the referenced PublishedDataSet's metadata
         String writerDiagnostics =
             "PubSub/" + CONNECTION + "/" + SECURED_WRITER_GROUP + "/" + WRITER + "/Diagnostics";
@@ -227,7 +227,7 @@ class PubSubDiagnosticsNodeTreeTest {
             nodeValue(server, idx, writerDiagnostics + "/LiveValues/MinorVersion"));
 
         // omitted Optional rows stay omitted: StatusCode has no feed, and
-        // ReceivedInvalidNetworkMessages cannot be attributed to a group (R14)
+        // ReceivedInvalidNetworkMessages cannot be attributed to a group
         assertNodeAbsent(server, new NodeId(idx, writerDiagnostics + "/LiveValues/StatusCode"));
         assertNodeAbsent(
             server, new NodeId(idx, plainReaderDiagnostics + "/LiveValues/StatusCode"));

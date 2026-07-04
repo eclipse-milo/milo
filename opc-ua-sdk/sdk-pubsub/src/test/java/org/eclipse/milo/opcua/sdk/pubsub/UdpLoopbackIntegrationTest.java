@@ -427,9 +427,9 @@ class UdpLoopbackIntegrationTest {
   }
 
   /**
-   * A secured mode is configuration, not an unsupported feature (K3): a Sign group with no
-   * SecurityGroup reference (and no bound key provider) fails startup with {@code
-   * Bad_ConfigurationError} naming the missing piece.
+   * A secured mode is configuration, not an unsupported feature: a Sign group with no SecurityGroup
+   * reference (and no bound key provider) fails startup with {@code Bad_ConfigurationError} naming
+   * the missing piece.
    */
   @Test
   void startupFailsWhenSecurityModeIsSign() throws Exception {

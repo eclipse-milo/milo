@@ -44,12 +44,12 @@ import org.junit.jupiter.api.Test;
 
 /**
  * The ns0 halves of the diagnostics exposure: the loader-built root Diagnostics subtree ({@code
- * i=17409}) backed with values/filters and restored at shutdown (R18 — never minted, values and
- * behavior only; the loader omits the Optional TimeFirstChange counter properties, asserted
- * absent), the fragment-local root State* counters (D10; ticked through the test seam — nothing
- * ticks them in production because the root Status Enable/Disable pair is not minted, D23), and the
- * {@code PubSubCapablities} population (R20/D15/D16) — which is gated by {@code
- * exposeInformationModel} alone, independent of {@code diagnosticsEnabled}.
+ * i=17409}) backed with values/filters and restored at shutdown (never minted, values and behavior
+ * only; the loader omits the Optional TimeFirstChange counter properties, asserted absent), the
+ * fragment-local root State* counters (ticked through the test seam — nothing ticks them in
+ * production because the root Status Enable/Disable pair is not minted), and the {@code
+ * PubSubCapablities} population, which is gated by {@code exposeInformationModel} alone,
+ * independent of {@code diagnosticsEnabled}.
  *
  * <p>Root LiveValues here cover the Configured* counts on a never-published fixture; the
  * go-Operational-with-a-loopback-publisher half of that row is hosted in {@link
@@ -79,12 +79,12 @@ class PubSubDiagnosticsNs0Test {
       try {
         serverPubSub.startup().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
-        // object-level DiagnosticsLevel is read-only Basic (R13)
+        // object-level DiagnosticsLevel is read-only Basic
         assertEquals(
             DiagnosticsLevel.Basic,
             ns0Value(server, NodeIds.PublishSubscribe_Diagnostics_DiagnosticsLevel));
 
-        // the root counters serve zero with the D37/Table 311 properties
+        // the root counters serve zero with the Table 311 properties
         assertEquals(
             uint(0), ns0Value(server, NodeIds.PublishSubscribe_Diagnostics_TotalInformation));
         assertEquals(uint(0), ns0Value(server, NodeIds.PublishSubscribe_Diagnostics_TotalError));
@@ -105,7 +105,7 @@ class PubSubDiagnosticsNs0Test {
             ns0Value(
                 server, NodeIds.PublishSubscribe_Diagnostics_Counters_StateError_DiagnosticsLevel));
         // the loader-built ns0 Diagnostics instance omits the Optional TimeFirstChange counter
-        // properties; R18 forbids minting them, so they have no ns0 surface (the fragment-minted
+        // properties; they have no ns0 surface (the fragment-minted
         // per-component counters still expose TimeFirstChange)
         assertTrue(
             server
@@ -141,7 +141,7 @@ class PubSubDiagnosticsNs0Test {
         assertNotSame(MethodInvocationHandler.NOT_IMPLEMENTED, resetNode.getInvocationHandler());
 
         // a fragment-local root tick surfaces on the ns0 counter and the root TotalError
-        // roll-up (D10; the seam exists for tests and future S8 wiring)
+        // roll-up
         PubSubInfoModelFragment fragment = serverPubSub.infoModelFragment();
         assertNotNull(fragment);
         PubSubDiagnosticsExposure exposure = fragment.diagnosticsExposure();
@@ -175,7 +175,7 @@ class PubSubDiagnosticsNs0Test {
     try (TestPubSubServer testServer = TestPubSubServer.create()) {
       OpcUaServer server = testServer.getServer();
 
-      // diagnosticsEnabled is deliberately FALSE: R20 rides exposeInformationModel alone
+      // diagnosticsEnabled is deliberately FALSE: capabilities ride exposeInformationModel alone
       ServerPubSub serverPubSub =
           ServerPubSub.attach(
               server,
@@ -184,7 +184,7 @@ class PubSubDiagnosticsNs0Test {
       try {
         serverPubSub.startup().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
-        // every Max* is 0 = no limit (D15: the ReserveIds allocator bounds ids, not counts)
+        // every Max* is 0 = no limit; the ReserveIds allocator bounds ids, not counts
         NodeId[] maxProperties = {
           NodeIds.PublishSubscribe_PubSubCapablities_MaxPubSubConnections,
           NodeIds.PublishSubscribe_PubSubCapablities_MaxWriterGroups,
@@ -204,8 +204,8 @@ class PubSubDiagnosticsNs0Test {
           assertEquals(uint(0), ns0Value(server, nodeId), nodeId.toString());
         }
 
-        // pull support exists engine-side regardless of the SKS face; push is CUT (K16);
-        // Server tracks the securityKeyServerEnabled option (false here, per K15)
+        // pull support exists engine-side regardless of the SKS helper; push is not implemented;
+        // Server tracks the securityKeyServerEnabled option (false here)
         assertEquals(
             true,
             ns0Value(server, NodeIds.PublishSubscribe_PubSubCapablities_SupportSecurityKeyPull));

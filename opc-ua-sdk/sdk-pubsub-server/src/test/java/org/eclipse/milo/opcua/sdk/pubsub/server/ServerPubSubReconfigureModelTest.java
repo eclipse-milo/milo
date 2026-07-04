@@ -68,11 +68,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * Incremental info model rebuild per pinned decision R10: reconfiguring through {@code
- * ServerPubSub.runtime()} deletes and rebuilds exactly the affected config-derived subtrees, keyed
- * by name path, with path-stable NodeIds, live Status/State wiring on rebuilt nodes, the maintained
- * ns0 values (ConfigurationVersion from the mediator-owned single source, D26), the {@link
- * ConfigurationObjectIds} answers (R4/R11), and the {@link ComponentNodeListener} seam (S14).
+ * Incremental info model rebuild: reconfiguring through {@code ServerPubSub.runtime()} deletes and
+ * rebuilds exactly the affected config-derived subtrees, keyed by name path, with path-stable
+ * NodeIds, live Status/State wiring on rebuilt nodes, the maintained ns0 values
+ * (ConfigurationVersion from the mediator-owned single source), the {@link ConfigurationObjectIds}
+ * answers, and the {@link ComponentNodeListener} integration point.
  *
  * <p>Network safety: connections use unicast 127.0.0.1 with ephemeral ports and an explicit
  * loopback {@code discoveryAddress}, so the engine's discovery channels never touch the default
@@ -331,7 +331,7 @@ class ServerPubSubReconfigureModelTest {
     assertNull(objectIds.connectionObjectId("no-such-connection"));
     assertNull(objectIds.publishedDataSetObjectId("no-such-dataset"));
 
-    // no fragment => no supplier (the R4 "or empty" arm)
+    // no fragment => no supplier (empty output)
     ServerPubSub unexposed =
         attach(
             config(Ports.pick(), Shape.base()),

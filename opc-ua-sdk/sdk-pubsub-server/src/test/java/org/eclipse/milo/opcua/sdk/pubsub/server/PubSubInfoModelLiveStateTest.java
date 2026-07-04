@@ -62,10 +62,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * Live State tracking per pinned decision S8: the fragment's Status/State variables follow the
- * runtime's PubSubState through {@code PubSubService.addStateListener}, keyed by component name
- * path. A standalone loopback publisher drives the exposed reader to Operational, and disabling
- * components through {@code runtime()} moves their State variables to Disabled.
+ * Live State tracking: the fragment's Status/State variables follow the runtime's PubSubState
+ * through {@code PubSubService.addStateListener}, keyed by component name path. A standalone
+ * loopback publisher drives the exposed reader to Operational, and disabling components through
+ * {@code runtime()} moves their State variables to Disabled.
  *
  * <p>Network safety: connections use unicast 127.0.0.1 with ephemeral ports and an explicit
  * loopback {@code discoveryAddress}, so the engine's discovery channels never touch the default

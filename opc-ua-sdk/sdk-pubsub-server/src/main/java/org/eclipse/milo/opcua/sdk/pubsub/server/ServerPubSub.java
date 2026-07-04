@@ -106,10 +106,10 @@ public final class ServerPubSub implements AutoCloseable {
   private final ConcurrentMap<String, AtomicLong> writeErrorCounters = new ConcurrentHashMap<>();
 
   /**
-   * Guards the lifecycle state of the optional faces (fragment, SKS): one state machine per face
-   * (D27), so a {@code close()} racing {@code startup()} marks the face {@code STOPPED} before
-   * startup can register it — the fix for the Phase 2 CAS-vs-close race. Leaf lock: face
-   * startup/shutdown is synchronous node-manager work and never touches the engine lock.
+   * Guards the lifecycle state of the optional server-side integrations: one state machine per
+   * integration, so a {@code close()} racing {@code startup()} marks it {@code STOPPED} before
+   * startup can register it. Leaf lock: startup/shutdown is synchronous node-manager work and never
+   * touches the engine lock.
    */
   private final Object lifecycleLock = new Object();
 
@@ -139,14 +139,14 @@ public final class ServerPubSub implements AutoCloseable {
 
   /**
    * The SecurityGroups of the current configuration, by SecurityGroupId; the default authorizer's
-   * {@code checkKeyAccess} group lookup reads this so remote-edited groups govern (S15). Swapped
-   * per apply by {@link #onMediatorApplied}.
+   * {@code checkKeyAccess} group lookup reads this so remote-edited groups govern. Swapped per
+   * apply by {@link #onMediatorApplied}.
    */
   private volatile Map<String, SecurityGroupConfig> securityGroupsById;
 
   /**
-   * The last {@link PubSubConfigurationStore#save} failure, cleared on the next successful save
-   * (D14); see {@link #lastConfigurationSaveError()}.
+   * The last {@link PubSubConfigurationStore#save} failure, cleared on the next successful save see
+   * {@link #lastConfigurationSaveError()}.
    */
   private volatile @Nullable Exception lastConfigurationSaveError;
 
@@ -221,9 +221,9 @@ public final class ServerPubSub implements AutoCloseable {
           }
         });
 
-    // one effective authorizer per attachment (S13): the options-configured instance, else the
-    // shared default; every PubSub Method handler (the SKS face, the fragment's Enable/Disable
-    // handlers, the remote-configuration face, and the diagnostics Reset handlers) consults
+    // one effective authorizer per attachment: the options-configured instance, else the
+    // shared default; every PubSub Method handler (the SKS helper, the fragment's Enable/Disable
+    // handlers, the remote-configuration helper, and the diagnostics Reset handlers) consults
     // this same instance
     this.securityGroupsById = securityGroupsById(config);
 
@@ -232,7 +232,7 @@ public final class ServerPubSub implements AutoCloseable {
       this.methodAuthorizer = configuredAuthorizer;
     } else {
       // the lookup reads the volatile current-config index, not an attach-time snapshot, so
-      // checkKeyAccess decisions see remotely edited SecurityGroups (S15)
+      // checkKeyAccess decisions see remotely edited SecurityGroups
       this.methodAuthorizer = new DefaultPubSubMethodAuthorizer(id -> securityGroupsById.get(id));
     }
 
@@ -244,7 +244,7 @@ public final class ServerPubSub implements AutoCloseable {
                 service,
                 options,
                 methodAuthorizer,
-                // deferred read of the mediator-owned ConfigurationVersion (D26): managedService
+                // deferred read of the mediator-owned ConfigurationVersion: managedService
                 // is assigned below, before this supplier can ever be invoked (fragment startup)
                 this::currentConfigurationVersion)
             : null;
@@ -254,7 +254,7 @@ public final class ServerPubSub implements AutoCloseable {
             ? new SksServerFace(server, config, methodAuthorizer)
             : null;
 
-    // the remote-configuration face (WP-X): all remote mutations are applied through the
+    // the remote-configuration file helper: all remote mutations are applied through the
     // mediator, never the raw service; the mediator-dependent collaborators are supplied
     // deferred (managedService is assigned below, before any handler can run)
     this.configurationStore = options.getConfigurationStore();
@@ -263,7 +263,7 @@ public final class ServerPubSub implements AutoCloseable {
             ? new PubSubConfigurationFace(
                 server,
                 config,
-                // seeds the face's atomically-swapped (config, version) pair with the same
+                // seeds the helper's atomically-swapped (config, version) pair with the same
                 // value the mediator is seeded with below
                 initialConfigurationVersion,
                 methodAuthorizer,
@@ -272,19 +272,19 @@ public final class ServerPubSub implements AutoCloseable {
                 this::managedService)
             : null;
 
-    // the R17 status-event bridge: engine state changes and send failures become OPC UA events
-    // fired with Server-object semantics; independent of the exposed information model (D32)
+    // the status-event bridge: engine state changes and send failures become OPC UA events
+    // fired with Server-object semantics; independent of the exposed information model
     this.statusEventBridge =
         options.isStatusEventsEnabled() ? new PubSubStatusEventBridge(server, service) : null;
 
-    // Post-apply hooks, in FIXED registration order (S11); registered before the mediator is
+    // Post-apply hooks, in fixed registration order; registered before the mediator is
     // constructed because the hook list is fixed at construction:
     //   1. fragment rebuild         — PubSubInfoModelFragment.applyReconfigure keeps the exposed
-    //      model in sync with the engine (R10)
+    //      model in sync with the engine
     //   2. bindings re-derivation   — TargetVariables writers + automatic dataset sources
-    //      (deliverable G)
-    //   3. SKS key-store refresh    — SksServerFace.onConfigurationApplied (S15)
-    //   4. face refresh + configuration store save — R8 persistence (S16); registered LAST so a
+    //      after configuration changes
+    //   3. SKS key-store refresh    — SksServerFace.onConfigurationApplied
+    //   4. remote file refresh + persistence; registered LAST so a
     //      save failure never blocks the key refresh or the model rebuild
     var hooks = new ArrayList<ManagedPubSubService.ReconfigureHook>();
 
@@ -368,7 +368,7 @@ public final class ServerPubSub implements AutoCloseable {
 
     validateNodeFieldAddresses(effectiveConfig, namespaceTable);
 
-    // seed the ConfigurationVersion single source (D26): a non-zero store-loaded version is
+    // seed the ConfigurationVersion single source: a non-zero store-loaded version is
     // authoritative, otherwise the attach instant
     UInteger initialConfigurationVersion =
         storedVersion != null && storedVersion.longValue() != 0L
@@ -380,7 +380,7 @@ public final class ServerPubSub implements AutoCloseable {
 
     if (store != null && !loaded) {
       // the attach-time save carries the seeded version too: the uint(0) mapper placeholder is
-      // retired from every observable surface (D26)
+      // retired from every observable surface
       serverPubSub.persistWireConfiguration(
           PubSubConfigurationFace.withConfigurationVersion(
               effectiveConfig.toDataType(namespaceTable), initialConfigurationVersion));
@@ -406,7 +406,7 @@ public final class ServerPubSub implements AutoCloseable {
    */
   public CompletableFuture<ServerPubSub> startup() {
     synchronized (lifecycleLock) {
-      // faces start only from NEW: a face already STOPPED lost a close()-vs-startup() race
+      // optional components start only from NEW: STOPPED means close won the close-vs-startup race
       // (close ran first and marked it STOPPED) and must never register
       if (fragment != null && fragmentState == FaceState.NEW) {
         try {
@@ -445,7 +445,7 @@ public final class ServerPubSub implements AutoCloseable {
       }
 
       if (statusEventBridge != null && statusEventBridgeState == FaceState.NEW) {
-        // registers the engine listeners (removed again at shutdown, S4); event emission
+        // registers the engine listeners (removed again at shutdown); event emission
         // additionally expects a STARTED server — the EventFactory lifecycle — and drops
         // events with a WARN otherwise (documented on statusEventsEnabled)
         statusEventBridge.startup();
@@ -487,7 +487,7 @@ public final class ServerPubSub implements AutoCloseable {
               shutdownSksServerFace();
               shutdownConfigurationFace();
               // after the queue drain: shutdown-induced dispose events have reached the bridge
-              // (and were silenced by cause, D33) before its listeners are deregistered
+              // (and were silenced by cause) before its listeners are deregistered
               shutdownStatusEventBridge();
             });
   }
@@ -576,13 +576,12 @@ public final class ServerPubSub implements AutoCloseable {
 
   /**
    * Get the {@link ConfigurationObjectIds} lookup backed by the exposed information model fragment,
-   * used to assemble the {@code CloseAndUpdate} ConfigurationObjects output (R4).
+   * used to assemble the {@code CloseAndUpdate} ConfigurationObjects output.
    *
-   * <p>Slot policy (D25): the ConfigurationObjects array is length-matched to the update's
-   * references; {@link NodeId#NULL_VALUE} fills the slots of Remove references, failed references,
-   * and element kinds the fragment never materializes (SecurityGroups, standalone
-   * SubscribedDataSets, PushTargets); the EMPTY array is returned only when this accessor returns
-   * {@code null}.
+   * <p>Slot policy: the ConfigurationObjects array is length-matched to the update's references;
+   * {@link NodeId#NULL_VALUE} fills the slots of Remove references, failed references, and element
+   * kinds the fragment never materializes (SecurityGroups, standalone SubscribedDataSets,
+   * PushTargets); the EMPTY array is returned only when this accessor returns {@code null}.
    *
    * @return the fragment-backed lookup, or {@code null} when the information model is not exposed.
    */
@@ -592,15 +591,15 @@ public final class ServerPubSub implements AutoCloseable {
 
   /**
    * Get the info model fragment, or {@code null} when the information model is not exposed.
-   * Package-private for the diagnostics exposure wiring (WP-Z) and tests — e.g. registering a
-   * {@link ComponentNodeListener} before {@link #startup()}.
+   * Package-private for diagnostics exposure wiring and tests — e.g. registering a {@link
+   * ComponentNodeListener} before {@link #startup()}.
    */
   @Nullable PubSubInfoModelFragment infoModelFragment() {
     return fragment;
   }
 
   /**
-   * Get the remote-configuration face, or {@code null} when {@link
+   * Get the remote-configuration helper, or {@code null} when {@link
    * ServerPubSubOptions#isAllowRemoteConfiguration()} is {@code false}. Package-private for tests.
    */
   @Nullable PubSubConfigurationFace configurationFace() {
@@ -616,9 +615,9 @@ public final class ServerPubSub implements AutoCloseable {
   }
 
   /**
-   * Get the effective {@link PubSubMethodAuthorizer} of this attachment (S13): the
-   * options-configured authorizer, else the shared default instance. One instance is consulted by
-   * every PubSub Method handler.
+   * Get the effective {@link PubSubMethodAuthorizer} of this attachment: the options-configured
+   * authorizer, else the shared default instance. One instance is consulted by every PubSub Method
+   * handler.
    *
    * @return the effective {@link PubSubMethodAuthorizer}.
    */
@@ -627,15 +626,15 @@ public final class ServerPubSub implements AutoCloseable {
   }
 
   /**
-   * The mediator-owned ConfigurationVersion (D26), read deferred by the fragment's ns0 refresh.
-   * Never invoked before construction completes (fragment startup and post-apply hooks).
+   * The mediator-owned ConfigurationVersion, read deferred by the fragment's ns0 refresh. Never
+   * invoked before construction completes (fragment startup and post-apply hooks).
    */
   private UInteger currentConfigurationVersion() {
     return managedService.configurationVersion();
   }
 
   /**
-   * The mediator, read deferred by the remote-configuration face (assigned in the constructor
+   * The mediator, read deferred by the remote-configuration helper (assigned in the constructor
    * before any handler can run).
    */
   private ManagedPubSubService managedService() {
@@ -643,12 +642,12 @@ public final class ServerPubSub implements AutoCloseable {
   }
 
   /**
-   * The last post-apply hook (S16): rebind the default authorizer's SecurityGroup index, refresh
-   * the remote-configuration face (its retained config, the file {@code Size}, and {@code
+   * The last post-apply hook: rebind the default authorizer's SecurityGroup index, refresh the
+   * remote-configuration helper (its retained config, the file {@code Size}, and {@code
    * LastModifiedTime}), and persist the applied configuration.
    *
-   * <p>Persistence contract (R8): with a {@link PubSubConfigurationStore} configured, {@code save}
-   * runs after EVERY successful configuration apply through the managed runtime — a remote {@code
+   * <p>Persistence contract: with a {@link PubSubConfigurationStore} configured, {@code save} runs
+   * after EVERY successful configuration apply through the managed runtime — a remote {@code
    * CloseAndUpdate} with changes applied and an owner {@code runtime()} reconfigure alike.
    * Enable/Disable, ReserveIds, and match-only CloseAndUpdate calls never reach the mediator's
    * apply path, so they never save. The saved wire form carries the mediator-owned
@@ -695,8 +694,7 @@ public final class ServerPubSub implements AutoCloseable {
    *
    * <p>A save failure never fails the operation that triggered it — the configuration change was
    * already applied and its results reported; the failed save is WARN-logged, surfaced here, and
-   * retried at the next successful configuration apply (pinned decision R8/D14). Cleared by the
-   * next successful save.
+   * retried at the next successful configuration apply. Cleared by the next successful save.
    *
    * @return the last save failure, or {@code null}.
    */
@@ -1086,10 +1084,10 @@ public final class ServerPubSub implements AutoCloseable {
   }
 
   /**
-   * Lifecycle of an optional server-side face (the info model fragment, the SKS face, the
-   * remote-configuration face, the status-event bridge); guarded by {@link #lifecycleLock}. {@code
-   * STOPPED} is terminal: a face never restarts, and a face marked {@code STOPPED} before it
-   * started (close won the race) never starts at all.
+   * Lifecycle of an optional server-side component (the info model fragment, the SKS helper, the
+   * remote-configuration helper, the status-event bridge); guarded by {@link #lifecycleLock}.
+   * {@code STOPPED} is terminal: a component never restarts, and a component marked {@code STOPPED}
+   * before it started (close won the race) never starts at all.
    */
   private enum FaceState {
     NEW,

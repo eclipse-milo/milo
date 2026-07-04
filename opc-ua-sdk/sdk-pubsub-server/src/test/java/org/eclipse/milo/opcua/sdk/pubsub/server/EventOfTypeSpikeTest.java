@@ -54,26 +54,24 @@ import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 /**
- * The D35/D46 spike gating wave 3 (R17): are ABSTRACT-typed events — PubSubStatusEventType {@code
- * i=15535} is abstract — deliverable end-to-end through Milo's server-side {@code OfType} where
- * clause and the Milo client?
+ * Coverage for abstract-typed events: PubSubStatusEventType {@code i=15535} is abstract, and this
+ * test verifies that such events can be delivered end to end through Milo's server-side {@code
+ * OfType} where clause and the Milo client.
  *
- * <p>Design per the WP-T5 brief §12.1, using Phase 4-era machinery only: a started {@link
- * SksTestServer}, events created by {@code EventFactory} (whose NodeFactory has no IsAbstract
- * check) and fired via {@code server.getEventNotifier().fire(...)}, and a client monitored item on
- * the Server object ({@code i=2253}) with an {@code OfType(i=15535)} where clause.
+ * <p>The test uses a started {@link SksTestServer}, events created by {@code EventFactory} (whose
+ * NodeFactory has no IsAbstract check) and fired via {@code server.getEventNotifier().fire(...)},
+ * and a client monitored item on the Server object ({@code i=2253}) with an {@code OfType(i=15535)}
+ * where clause.
  *
  * <ul>
- *   <li>SP1 — a fired {@code i=15535} event is RECEIVED (abstract type reportable end-to-end).
- *   <li>SP2 — a fired {@code i=15563} (PubSubCommunicationFailureEventType) event is RECEIVED
- *       through the SAME {@code OfType(i=15535)} filter (subtype matching, the R17 open question;
- *       if this row fails, WP-Z falls back to a concrete event type — the bridge keeps its type id
- *       as one constant, D35).
- *   <li>SP3 — a fired unrelated BaseEventType event is NOT received (the filter actually filters);
+ *   <li>A fired {@code i=15535} event is received (abstract type reportable end-to-end).
+ *   <li>A fired {@code i=15563} (PubSubCommunicationFailureEventType) event is received through the
+ *       same {@code OfType(i=15535)} filter, proving subtype matching.
+ *   <li>A fired unrelated BaseEventType event is not received (the filter actually filters);
  *       determinism via a follow-up marker event on the same FIFO pipeline.
- *   <li>SP4 — select-clause fidelity: ConnectionId/GroupId/State/Error arrive in select-clause
- *       order with correct types (the Error clause, typed {@code i=15563}, is null-filled for
- *       {@code i=15535} events).
+ *   <li>Select-clause fidelity: ConnectionId/GroupId/State/Error arrive in select-clause order with
+ *       correct types (the Error clause, typed {@code i=15563}, is null-filled for {@code i=15535}
+ *       events).
  * </ul>
  */
 class EventOfTypeSpikeTest {
@@ -121,26 +119,25 @@ class EventOfTypeSpikeTest {
         subscription.synchronizeMonitoredItems();
 
         try {
-          // SP1: an abstract i=15535-typed event flows end-to-end
+          // an abstract i=15535-typed event flows end-to-end
           fireEvent(server, NodeIds.PubSubStatusEventType, CONNECTION_ID, null);
 
           Variant[] statusEvent = received.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS);
           assertNotNull(
-              statusEvent,
-              "SP1 FAILED: abstract i=15535 event not delivered through OfType(i=15535)");
+              statusEvent, "abstract i=15535 event not delivered through OfType(i=15535)");
 
-          // SP4: select-clause order and types
+          // select-clause order and types
           assertEquals(NodeIds.PubSubStatusEventType, statusEvent[EVENT_TYPE].getValue());
           assertEquals(CONNECTION_ID, statusEvent[CONNECTION].getValue());
           assertEquals(GROUP_ID, statusEvent[GROUP].getValue());
           Object state = statusEvent[STATE].getValue();
-          assertNotNull(state, "SP4: State field missing");
+          assertNotNull(state, "State field missing");
           assertEquals(
-              PubSubState.Operational.getValue(), ((Number) state).intValue(), "SP4: State value");
+              PubSubState.Operational.getValue(), ((Number) state).intValue(), "State value");
           // the Error clause is typed i=15563; on an i=15535 event it is null-filled
-          assertNull(statusEvent[ERROR].getValue(), "SP4: Error must be null on i=15535 events");
+          assertNull(statusEvent[ERROR].getValue(), "Error must be null on i=15535 events");
 
-          // SP2: a concrete i=15563-typed event flows through the SAME OfType(i=15535) filter
+          // a concrete i=15563-typed event flows through the SAME OfType(i=15535) filter
           fireEvent(
               server,
               NodeIds.PubSubCommunicationFailureEventType,
@@ -149,24 +146,23 @@ class EventOfTypeSpikeTest {
 
           Variant[] failureEvent = received.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS);
           assertNotNull(
-              failureEvent,
-              "SP2 FAILED: i=15563 subtype event not delivered through OfType(i=15535)");
+              failureEvent, "i=15563 subtype event not delivered through OfType(i=15535)");
           assertEquals(
               NodeIds.PubSubCommunicationFailureEventType, failureEvent[EVENT_TYPE].getValue());
-          assertInstanceOf(StatusCode.class, failureEvent[ERROR].getValue(), "SP4: Error type");
+          assertInstanceOf(StatusCode.class, failureEvent[ERROR].getValue(), "Error type");
           assertEquals(new StatusCode(StatusCodes.Bad_Disconnect), failureEvent[ERROR].getValue());
 
-          // SP3: an unrelated BaseEventType event is filtered out; the marker event fired
+          // an unrelated BaseEventType event is filtered out; the marker event fired
           // right after it on the same FIFO pipeline must be the NEXT delivery
           fireBaseEvent(server);
           fireEvent(server, NodeIds.PubSubStatusEventType, MARKER_CONNECTION_ID, null);
 
           Variant[] next = received.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS);
-          assertNotNull(next, "SP3: the marker event was not delivered");
+          assertNotNull(next, "the marker event was not delivered");
           assertEquals(
               MARKER_CONNECTION_ID,
               next[CONNECTION].getValue(),
-              "SP3 FAILED: the BaseEventType event leaked through OfType(i=15535)");
+              "the BaseEventType event leaked through OfType(i=15535)");
         } finally {
           subscription.delete();
         }
@@ -250,7 +246,7 @@ class EventOfTypeSpikeTest {
     }
   }
 
-  /** Create, fire, and delete an unrelated BaseEventType event (the SP3 negative). */
+  /** Create, fire, and delete an unrelated BaseEventType event for the negative case. */
   private static void fireBaseEvent(OpcUaServer server) throws UaException {
     BaseEventTypeNode eventNode =
         server

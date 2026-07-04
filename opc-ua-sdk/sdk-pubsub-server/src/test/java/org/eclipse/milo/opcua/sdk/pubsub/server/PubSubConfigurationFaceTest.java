@@ -75,14 +75,14 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * The remote-configuration face against a real server and runtime: attach/startup with {@code
- * allowRemoteConfiguration} (no throw), handler attachment and shutdown restore, the three D19
- * optional properties created in ns0's node manager and readable through the composite (a real Read
- * — trap 1: in-process {@code getManagedNode} lookups would deceive), the mandatory property
- * values, the untouched-ns0 contract when the flag is off (D20), the full
+ * The remote-configuration helper against a real server and runtime: attach/startup with {@code
+ * allowRemoteConfiguration} (no throw), handler attachment and shutdown restore, the three optional
+ * properties created in ns0's node manager and readable through the composite (a real Read — trap
+ * 1: in-process {@code getManagedNode} lookups would deceive), the mandatory property values, the
+ * untouched-ns0 contract when the flag is off, the full
  * Open&rarr;Read&rarr;Write&rarr;CloseAndUpdate flow with wire-shaped Variants mutating a real
  * {@link org.eclipse.milo.opcua.sdk.pubsub.PubSubService}, the {@code Bad_NothingToDo}
- * handle-closure rule (D40), ReserveIds output typing, and session-close eviction.
+ * handle-closure rule, ReserveIds output typing, and session-close eviction.
  */
 class PubSubConfigurationFaceTest {
 
@@ -176,7 +176,7 @@ class PubSubConfigurationFaceTest {
 
   @Test
   void disabledFlagLeavesNs0Untouched() throws Exception {
-    // allowRemoteConfiguration defaults to FALSE: no face, loader defaults everywhere (D20)
+    // allowRemoteConfiguration defaults to FALSE: no helper, loader defaults everywhere
     ServerPubSub serverPubSub =
         ServerPubSub.attach(
             testServer.getServer(), config(15877, 15879), ServerPubSubOptions.builder().build());
@@ -274,7 +274,7 @@ class PubSubConfigurationFaceTest {
     assertGood(position);
     assertEquals(ULong.valueOf(fileBytes.length), position.getOutputArguments()[0].getValue());
 
-    // wire-shaped input: the ConfigurationReferences arrive as ExtensionObject[] and the D0
+    // wire-shaped input: the ConfigurationReferences arrive as ExtensionObject[] and the
     // base-class fix decodes and substitutes them
     var addGroupRef =
         new PubSubConfigurationRefDataType(
@@ -331,7 +331,7 @@ class PubSubConfigurationFaceTest {
             new Variant[] {new Variant(handle), new Variant(true), Variant.NULL_VALUE});
 
     assertEquals(new StatusCode(StatusCodes.Bad_NothingToDo), result.getStatusCode());
-    // D40: the handle closed anyway; a subsequent Close answers Bad_InvalidArgument
+    // the handle closed anyway; a subsequent Close answers Bad_InvalidArgument
     assertEquals(ushort(0), ns0Value(NodeIds.PublishSubscribe_PubSubConfiguration_OpenCount));
     CallMethodResult close =
         invoke(

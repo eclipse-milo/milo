@@ -298,7 +298,7 @@ Expected output over roughly 15 seconds — note the visibly higher rate of phas
 
 There is no gap between the phases: a path-stable group restart preserves the writers' sequence numbering, so the reader — untouched by the reconfigure and still holding phase 1's sequence window — accepts the restarted stream's first message as the next in sequence, and the reader's `staleSequenceMessages` counter stays at zero. (Earlier revisions restarted the sequence at 0 here, and this example demonstrated the resulting drop window; that window is gone.)
 
-The summary also reports diagnostics: both the writer's sent counter and the reader's received counter span both phases — restarted components keep their counters across a path-stable restart, another face of the same preservation rule. See [Operations](operations.md) for what restarts when, the preservation rules and the cases that still reset, and how subscribers recover when a reset does happen.
+The summary also reports diagnostics: both the writer's sent counter and the reader's received counter span both phases — restarted components keep their counters across a path-stable restart, another consequence of the same preservation rule. See [Operations](operations.md) for what restarts when, the preservation rules and the cases that still reset, and how subscribers recover when a reset does happen.
 
 ## Troubleshooting
 

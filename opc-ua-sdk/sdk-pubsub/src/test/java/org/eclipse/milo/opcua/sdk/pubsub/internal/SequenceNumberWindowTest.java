@@ -203,7 +203,7 @@ class SequenceNumberWindowTest {
     assertFalse(window.isSeeded());
     assertEquals(NEW, window.classify(5000));
 
-    // the Phase 4 AES-CTR nonce stream shape (§7.2.4.4.3.2): reset, then expect 1 — re-seed via
+    // the AES-CTR nonce stream shape (§7.2.4.4.3.2): reset, then expect 1 — re-seed via
     // an explicit accept of 0 so the next observation of 1 is NEW
     window.accept(0, 1L);
     assertEquals(NEW, window.classify(1));

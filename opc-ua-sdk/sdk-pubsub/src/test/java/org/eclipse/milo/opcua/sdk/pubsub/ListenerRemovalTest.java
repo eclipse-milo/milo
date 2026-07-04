@@ -58,9 +58,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * The R12 {@code remove*Listener} surface of {@link PubSubService}: removed listeners receive
- * nothing further, listeners still registered are unaffected, and removing a never-added listener
- * is a no-op — for all five listener kinds. Runs against a stub in-memory transport with injected
+ * The {@code remove*Listener} surface of {@link PubSubService}: removed listeners receive nothing
+ * further, listeners still registered are unaffected, and removing a never-added listener is a
+ * no-op — for all five listener kinds. Runs against a stub in-memory transport with injected
  * datagrams; no network.
  */
 class ListenerRemovalTest {

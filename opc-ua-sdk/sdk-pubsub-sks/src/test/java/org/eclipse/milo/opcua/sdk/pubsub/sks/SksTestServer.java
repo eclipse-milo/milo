@@ -46,16 +46,16 @@ import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransportConfig;
 
 /**
- * The rung-2 SKS harness: a REAL {@link OpcUaServer} with None, Sign, and SignAndEncrypt TCP
- * endpoints and a {@link ServerPubSub} attached with {@code securityKeyServerEnabled(true)}, so
- * {@code GetSecurityKeys} (ns=0;i=15215) is served by the real WP-V face — the real {@code
+ * The SKS harness: a REAL {@link OpcUaServer} with None, Sign, and SignAndEncrypt TCP endpoints and
+ * a {@link ServerPubSub} attached with {@code securityKeyServerEnabled(true)}, so {@code
+ * GetSecurityKeys} (ns=0;i=15215) is served by the real SKS helper — the real {@code
  * SecurityGroupKeyStore} rotation arithmetic, the real default-posture authorizer, and the real
- * access-controller path in front of it (including the K17.1 {@code Bad_SecurityModeInsufficient}
+ * access-controller path in front of it (including the {@code Bad_SecurityModeInsufficient}
  * propagation for the AccessRestrictions the ns0 loader ships on i=15215).
  *
  * <p>Certificate and endpoint machinery is the {@link StubSksServer} shape (itself modeled on
  * integration-tests' {@code TestServer}), extended with a Sign endpoint and a test-fixture {@link
- * RoleMapper} (K17 non-goal: no shipped RoleMapper) granting:
+ * RoleMapper} granting:
  *
  * <ul>
  *   <li>{@link #AUTHORIZED_USERNAME} → {@code WellKnownRole_SecurityKeyServerAccess} (i=25603)
@@ -102,7 +102,7 @@ final class SksTestServer implements AutoCloseable {
 
   /**
    * Create and start a server on {@code port}, trusting {@code trustedClientCertificate}, with the
-   * SKS face serving the SecurityGroups of {@code pubSubConfig}.
+   * SKS helper serving the SecurityGroups of {@code pubSubConfig}.
    */
   static SksTestServer create(
       int port, X509Certificate trustedClientCertificate, PubSubConfig pubSubConfig)

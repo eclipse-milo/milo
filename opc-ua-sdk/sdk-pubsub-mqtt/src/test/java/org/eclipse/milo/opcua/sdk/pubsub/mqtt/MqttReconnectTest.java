@@ -68,7 +68,7 @@ import org.junit.jupiter.api.io.TempDir;
  * transport-down edge fails the connections to {@code Error} ({@code Bad_ServerNotConnected}); the
  * HiveMQ clients reconnect automatically, the subscriber session re-issues its subscriptions, the
  * up edge recovers the connections to {@code Operational}, data flow resumes, and the reactivated
- * writer republishes its retained metadata to the fresh broker (R16).
+ * writer republishes its retained metadata to the fresh broker.
  *
  * <p>Timing: HiveMQ reconnect backoff starts at 1 s and doubles (±25% jitter, capped at 120 s), and
  * a broker boot takes roughly 1.5-8 s, so resumption is awaited with a generous timeout.
@@ -129,7 +129,7 @@ class MqttReconnectTest {
     }
 
     // stop the broker: the transport-down edge fails both connections to Error with
-    // Bad_ServerNotConnected (R16); the children pause and publishing stops
+    // Bad_ServerNotConnected; the children pause and publishing stops
     firstBroker.stop();
 
     awaitTrue(

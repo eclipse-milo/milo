@@ -15,13 +15,12 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The deterministic {@link NodeId} scheme of the PubSub information model fragment (pinned decision
- * R11): string NodeIds in the server application namespace <em>are</em> component name paths with
- * the {@value #PREFIX} prefix — {@code "PubSub/<connection>[/<group>[/<writer|reader>]]"} for
- * runtime components, {@code "PubSub/PublishedDataSets/<name>"} for published datasets, and member
- * children appended as further {@code "/"}-separated segments (e.g. {@code
- * "PubSub/conn/Status/State"}, {@code "PubSub/conn/Status/Enable"}, {@code
- * "PubSub/conn/Diagnostics"}).
+ * The deterministic {@link NodeId} scheme of the PubSub information model fragment: string NodeIds
+ * in the server application namespace <em>are</em> component name paths with the {@value #PREFIX}
+ * prefix — {@code "PubSub/<connection>[/<group>[/<writer|reader>]]"} for runtime components, {@code
+ * "PubSub/PublishedDataSets/<name>"} for published datasets, and member children appended as
+ * further {@code "/"}-separated segments (e.g. {@code "PubSub/conn/Status/State"}, {@code
+ * "PubSub/conn/Status/Enable"}, {@code "PubSub/conn/Diagnostics"}).
  *
  * <p>Pure functions only — this is a naming rule, not a registry; ids are stable across rebuilds
  * and server restarts for an unchanged configuration.

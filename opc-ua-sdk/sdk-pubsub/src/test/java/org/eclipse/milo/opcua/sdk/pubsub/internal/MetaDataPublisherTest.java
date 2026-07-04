@@ -76,7 +76,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for the engine's DataSetMetaData publication on broker connections (E5): retained metadata
+ * Tests for the engine's DataSetMetaData publication on broker connections: retained metadata
  * published at writer activation before the writer's first data NetworkMessage (Part 14 §5.2.3
  * best-effort), addressed per the resolved metadata queue and QoS (Table 204: retain true, QoS 1
  * default), republished on reconfiguration when the derived metadata changed, published
@@ -375,7 +375,7 @@ class MetaDataPublisherTest {
     assertTrue(address.retain());
     assertEquals(MessageAddress.CONTENT_TYPE_UADP, address.contentTypeHint());
 
-    // the payload is a Phase 2 UADP metadata announcement for this writer
+    // the payload is a UADP metadata announcement for this writer
     UadpMetaDataAnnouncement announcement = decodeAnnouncement(first.payload());
     assertEquals(PublisherId.string("line-7"), announcement.publisherId());
     assertEquals(ushort(1), announcement.dataSetWriterId());

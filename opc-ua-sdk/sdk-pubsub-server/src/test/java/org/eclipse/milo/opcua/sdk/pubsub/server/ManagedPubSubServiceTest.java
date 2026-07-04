@@ -55,9 +55,9 @@ import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 /**
- * {@link ManagedPubSubService} mediation per seam S11: full delegation (without ever leaking the
- * raw delegate), pre-validation before any change is applied, ConfigurationVersion single-source
- * maintenance (D26), and ordered, isolated {@link ManagedPubSubService.ReconfigureHook} execution.
+ * {@link ManagedPubSubService} mediation: full delegation (without ever leaking the raw delegate),
+ * pre-validation before any change is applied, ConfigurationVersion single-source maintenance, and
+ * ordered, isolated {@link ManagedPubSubService.ReconfigureHook} execution.
  */
 class ManagedPubSubServiceTest {
 

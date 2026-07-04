@@ -64,11 +64,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * The R13 public feed accessors on {@link PubSubService}: {@code securityKeyInfo(handle)} (null
- * while the group holds no key state, token metadata once attached and fetched, null again after
- * detach) and {@code nextDataSetMessageSequenceNumber(handle)} (the NEXT value, advancing with
- * publishes); foreign and wrong-type handles are rejected with {@link IllegalArgumentException}.
- * Runs against a stub transport with a {@link StaticSecurityKeyProvider}; no network.
+ * Public feed accessors on {@link PubSubService}: {@code securityKeyInfo(handle)} (null while the
+ * group holds no key state, token metadata once attached and fetched, null again after detach) and
+ * {@code nextDataSetMessageSequenceNumber(handle)} (the NEXT value, advancing with publishes);
+ * foreign and wrong-type handles are rejected with {@link IllegalArgumentException}. Runs against a
+ * stub transport with a {@link StaticSecurityKeyProvider}; no network.
  */
 class SecurityKeyInfoAccessorTest {
 

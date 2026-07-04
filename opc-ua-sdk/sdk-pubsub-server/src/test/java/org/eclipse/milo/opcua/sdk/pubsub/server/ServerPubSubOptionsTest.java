@@ -53,7 +53,7 @@ class ServerPubSubOptionsTest {
   void statusEventsDefaultToDisabledAndAreIndependentlySettable() {
     assertFalse(ServerPubSubOptions.builder().build().isStatusEventsEnabled());
 
-    // D32: statusEventsEnabled is independent of both exposeInformationModel and
+    // statusEventsEnabled is independent of both exposeInformationModel and
     // diagnosticsEnabled — settable on its own
     ServerPubSubOptions options = ServerPubSubOptions.builder().statusEventsEnabled(true).build();
 

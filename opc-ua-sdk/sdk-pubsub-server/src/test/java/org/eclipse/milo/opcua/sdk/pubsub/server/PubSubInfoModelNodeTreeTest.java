@@ -65,9 +65,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * Information model node tree per pinned decision S8: with {@code exposeInformationModel(true)},
- * {@link ServerPubSub#startup()} grafts deterministic string-id subtrees for connections, groups,
- * writers, readers, and published datasets onto the existing ns0 PublishSubscribe nodes.
+ * Information model node tree: with {@code exposeInformationModel(true)}, {@link
+ * ServerPubSub#startup()} grafts deterministic string-id subtrees for connections, groups, writers,
+ * readers, and published datasets onto the existing ns0 PublishSubscribe nodes.
  *
  * <p>Node construction happens at {@code ServerPubSub.startup()} (the fragment lifecycle builds the
  * nodes and registers its node manager); {@code attach} alone builds nothing, and {@code shutdown}
@@ -244,7 +244,7 @@ class PubSubInfoModelNodeTreeTest {
           PubSubState.class, stateNode.getValue().value().value(), path + ": State value");
     }
 
-    // S9: PublishedDataSet nodes carry no Status child (Part 14 defines none)
+    // PublishedDataSet nodes carry no Status child (Part 14 defines none)
     Optional<UaNode> dataSetStatus =
         testServer
             .getServer()

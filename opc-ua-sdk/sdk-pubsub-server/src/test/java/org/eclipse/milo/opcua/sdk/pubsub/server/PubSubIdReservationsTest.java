@@ -37,9 +37,9 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.junit.jupiter.api.Test;
 
 /**
- * The R5 ReserveIds registry: grant range and uniqueness (live config + ALL outstanding
- * reservations), consume-on-use, release-on-session-close, the unsupported-profile and
- * id-space-exhaustion codes, and the §6.2.7.1 DefaultPublisherId derivation/typing (S17 seams).
+ * The ReserveIds registry: grant range and uniqueness (live config + ALL outstanding reservations),
+ * consume-on-use, release-on-session-close, the unsupported-profile and id-space-exhaustion codes,
+ * and the §6.2.7.1 DefaultPublisherId derivation/typing.
  */
 class PubSubIdReservationsTest {
 
@@ -146,7 +146,7 @@ class PubSubIdReservationsTest {
 
   @Test
   void theThreeConfigModelProfilesAreAcceptedRegardlessOfProviderPresence() throws Exception {
-    // D45: reservations are id currency, not runnability
+    // reservations are id currency, not runnability
     for (String profile :
         List.of(
             PubSubIdReservations.PROFILE_UDP_UADP,

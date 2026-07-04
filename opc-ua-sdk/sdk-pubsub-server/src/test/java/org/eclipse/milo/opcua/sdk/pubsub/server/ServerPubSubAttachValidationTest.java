@@ -38,12 +38,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * Attach-time validation per pinned decision S4: every {@link NodeFieldAddress} in the effective
- * configuration — published dataset field sources, direct reader TargetVariables targets, and
- * standalone subscribed dataset TargetVariables targets — must resolve against the server's
- * NamespaceTable, and TargetVariables index ranges must parse. {@code
- * allowRemoteConfiguration(true)} attaches (the Phase 5 remote-configuration surfaces replaced the
- * reserved-flag rejection).
+ * Attach-time validation: every {@link NodeFieldAddress} in the effective configuration — published
+ * dataset field sources, direct reader TargetVariables targets, and standalone subscribed dataset
+ * TargetVariables targets — must resolve against the server's NamespaceTable, and TargetVariables
+ * index ranges must parse. {@code allowRemoteConfiguration(true)} attaches because remote
+ * configuration is now implemented.
  */
 class ServerPubSubAttachValidationTest {
 

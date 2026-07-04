@@ -28,12 +28,12 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.junit.jupiter.api.Test;
 
 /**
- * The R7/S15 SKS-side key invalidation (Part 14 §6.2.12.2): {@link
- * SksServerFace#invalidatedGroupIds} computes the invalidated set (SecurityPolicyUri or KeyLifetime
- * changed, group removed), {@link SecurityGroupKeyStore#replaceGroups} keeps retained groups'
- * rotation state and served keys undisturbed while invalidated groups get a fresh rotation base and
- * regenerated keys, replacement-set violations keep the old state (never throw from a hook), and
- * {@link SksServerFace#onConfigurationApplied} wires the two together.
+ * SKS-side key invalidation (Part 14 §6.2.12.2): {@link SksServerFace#invalidatedGroupIds} computes
+ * the invalidated set (SecurityPolicyUri or KeyLifetime changed, group removed), {@link
+ * SecurityGroupKeyStore#replaceGroups} keeps retained groups' rotation state and served keys
+ * undisturbed while invalidated groups get a fresh rotation base and regenerated keys,
+ * replacement-set violations keep the old state (never throw from a hook), and {@link
+ * SksServerFace#onConfigurationApplied} wires the two together.
  */
 class SksInvalidationTest {
 
@@ -190,7 +190,7 @@ class SksInvalidationTest {
   void onConfigurationAppliedRefreshesTheFaceKeyStore() {
     PubSubConfig initial = configWith(group("stable", LIFETIME), group("edited", LIFETIME));
 
-    // the face is never started: onConfigurationApplied touches only the key store
+    // the helper is never started: onConfigurationApplied touches only the key store
     var face = new SksServerFace(TestPubSubServerHolder.server().getServer(), initial, allowAll());
 
     ByteString stableBefore =
@@ -242,7 +242,7 @@ class SksInvalidationTest {
     };
   }
 
-  /** One shared never-started server for the face-construction row. */
+  /** One shared never-started server for the helper-construction case. */
   private static final class TestPubSubServerHolder {
 
     private static final TestPubSubServer SERVER = TestPubSubServer.create();

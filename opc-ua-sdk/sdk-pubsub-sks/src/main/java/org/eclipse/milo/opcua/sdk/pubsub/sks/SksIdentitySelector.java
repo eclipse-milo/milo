@@ -43,11 +43,11 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>An empty/null array means Anonymous — authorization is then by application identity. A
  * non-empty array lists the token types that should be used: they are tried in listed order,
- * constrained to types the selected endpoint actually offers, and the entry FAILS if none is usable
- * (K12: never silently downgrade past the list).
+ * constrained to types the selected endpoint actually offers, and the entry fails if none is usable
+ * so the implementation never silently downgrades past the configured list.
  *
  * <p>USERNAME resolves credentials through the {@link KeyCredentialStore} keyed by the SKS
- * ApplicationUri (the Part 12 KeyCredential ResourceUri rule, K13).
+ * ApplicationUri, following the Part 12 KeyCredential ResourceUri rule.
  */
 final class SksIdentitySelector {
 

@@ -43,9 +43,9 @@ import org.jspecify.annotations.Nullable;
  * the whole request/response — including the {@code ConfigurationReferences} struct-array input,
  * packed exactly as a real configuration tool packs it: {@code new
  * Variant(ExtensionObject.encodeArray(...))} — crosses the wire and the sdk-server argument
- * decoding path. This deliberately exercises the Phase 5 struct-array decode fix end-to-end (the
- * pre-fix {@code AbstractMethodInvocationHandler} cast a {@code ExtensionObject[]} value to scalar
- * {@code ExtensionObject} and answered {@code Bad_InternalError}).
+ * decoding path. This deliberately exercises struct-array decoding end-to-end (the pre-fix {@code
+ * AbstractMethodInvocationHandler} cast a {@code ExtensionObject[]} value to scalar {@code
+ * ExtensionObject} and answered {@code Bad_InternalError}).
  *
  * <p>Shared test fixture (no {@code @Test} methods), precedented by {@link TestPubSubServer}/{@link
  * SksTestServer}; the per-class helper-duplication convention does not apply here.

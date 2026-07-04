@@ -68,10 +68,10 @@ import org.junit.jupiter.params.provider.MethodSource;
  * <p>{@link UadpSecurityGoldenVectorTest} is the source of truth for these vectors (it proves the
  * encoder against a fully hand-derived worked example and an independent {@code javax.crypto}
  * recompute); the fixtures exist so the out-of-JVM recompute harness {@code
- * security-vectors/check_security_vectors.py} (K20, manually run — see {@code
- * security-vectors/README.md}) has committed inputs. This test replays that test's exact encoding
- * context — same fixed {@link MessageNonceSupplier} nonce, token id, sequential key data, and
- * 2-writer worked layout — so neither side of the fixture pair can drift from the in-test vectors.
+ * security-vectors/check_security_vectors.py} has committed inputs. This test replays that test's
+ * exact encoding context — same fixed {@link MessageNonceSupplier} nonce, token id, sequential key
+ * data, and 2-writer worked layout — so neither side of the fixture pair can drift from the in-test
+ * vectors.
  */
 class UadpSecurityVectorFixturesTest {
 

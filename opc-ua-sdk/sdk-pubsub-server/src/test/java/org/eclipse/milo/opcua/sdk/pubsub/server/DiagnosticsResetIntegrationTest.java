@@ -49,16 +49,15 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * The client-driven Reset round-trip (T5 §11.2): a real Call on a per-component Diagnostics Reset
- * zeroes exactly THAT object's counters — node values and collector snapshot alike — clears
+ * The client-driven Reset round-trip: a real Call on a per-component Diagnostics Reset zeroes
+ * exactly THAT object's counters — node values and collector snapshot alike — clears
  * TimeFirstChange, leaves the child layer untouched (per-object scope), and the counters
  * re-accumulate with a FRESH TimeFirstChange afterwards. The counter ticks are produced
- * deterministically through the minted Status Enable/Disable methods (a WP-Y × WP-Z interaction: no
- * traffic needed).
+ * deterministically through the minted Status Enable/Disable methods (no traffic needed).
  *
- * <p>The Reset authorization deny rows live in {@link RemoteConfigAuthorizationIntegrationTest}
- * (AUTH12); the direct per-object-scope unit rows live in {@code PubSubDiagnosticsResetTest} — this
- * class adds the real-wire layer.
+ * <p>The Reset authorization deny coverage lives in {@link
+ * RemoteConfigAuthorizationIntegrationTest}; the direct per-object-scope unit coverage lives in
+ * {@code PubSubDiagnosticsResetTest} — this class adds the real-wire layer.
  */
 class DiagnosticsResetIntegrationTest {
 

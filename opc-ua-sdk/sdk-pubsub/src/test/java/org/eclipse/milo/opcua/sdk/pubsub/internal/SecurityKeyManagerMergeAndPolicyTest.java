@@ -53,11 +53,11 @@ import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 /**
- * Companion to {@link SecurityKeyManagerTest} covering the remaining FirstTokenId merge rows (Part
- * 14 §8.3.2 / K6), the K8 policy-precedence rows, and the unknown-token trigger edges: a connected
+ * Companion to {@link SecurityKeyManagerTest} covering the remaining FirstTokenId merge behavior
+ * from Part 14 §8.3.2, policy-precedence behavior, and unknown-token trigger edges: a connected
  * response ahead of the local current token advances the window (evicted material retired and
- * zeroized after the destroy grace, C4), a response still reporting the pre-switch token dedups
- * without discarding, a disconnected FirstTokenId behind the window discards and replaces, a null
+ * zeroized after the destroy grace), a response still reporting the pre-switch token dedups without
+ * discarding, a disconnected FirstTokenId behind the window discards and replaces, a null
  * configured policy URI accepts any supported policy, {@code MessageSecurityConfig} takes
  * precedence over {@code SecurityGroupConfig} and conflicting pins fail every fetch, a zero
  * KeyLifetime with a non-zero TimeToNextKey is malformed, and an unknown-token burst collapses into
@@ -247,7 +247,7 @@ class SecurityKeyManagerMergeAndPolicyTest {
     assertNotNull(after.keyFor(5));
     assertNull(after.keyFor(6));
 
-    // token 1 left the {prev, current, futures} window: retired (C4), zeroized only after the
+    // token 1 left the {prev, current, futures} window: retired, zeroized only after the
     // destroy grace so an in-flight decode never races the wipe; the rest is live
     assertFalse(key1.isDestroyed());
     scheduler.advanceTo(clock.get() + SecurityKeyManager.RETIRED_KEY_DESTROY_DELAY_NANOS);
@@ -330,7 +330,7 @@ class SecurityKeyManagerMergeAndPolicyTest {
     assertNotNull(key6);
     assertNotNull(key7);
 
-    // FirstTokenId 2 does not connect to {5, 6, 7}: discard and replace (K6/§8.3.2)
+    // FirstTokenId 2 does not connect to {5, 6, 7}: discard and replace per §8.3.2
     manager.onUnknownToken(REF, 2);
     scheduler.runPending();
     provider.futures.get(1).complete(keySet(2, 2, Duration.ofHours(1), Duration.ofHours(2)));
@@ -343,7 +343,7 @@ class SecurityKeyManagerMergeAndPolicyTest {
     assertNotNull(replaced.keyFor(3));
     assertNull(replaced.keyFor(5));
 
-    // every entry of the discarded window was retired (C4): zeroized after the destroy grace
+    // every entry of the discarded window was retired: zeroized after the destroy grace
     assertFalse(key5.isDestroyed());
     assertFalse(key6.isDestroyed());
     assertFalse(key7.isDestroyed());
@@ -355,7 +355,7 @@ class SecurityKeyManagerMergeAndPolicyTest {
 
   @Test
   void nullConfiguredPolicyUriAcceptsAnySupportedPolicy() throws Exception {
-    // neither the group MessageSecurityConfig nor the SecurityGroup pins a policy URI (K8)
+    // neither the group MessageSecurityConfig nor the SecurityGroup pins a policy URI
     TestComponent component = attachSubscriber(securityGroup(Duration.ofSeconds(60)));
     scheduler.runPending();
     provider
@@ -402,7 +402,7 @@ class SecurityKeyManagerMergeAndPolicyTest {
     assertNotNull(view);
     assertEquals(AES128_URI, view.securityPolicyUri());
 
-    // a refresh response that switches to another policy is a failed fetch (K8: never swap)
+    // a refresh response that switches to another policy is a failed fetch
     scheduler.advanceTo(seconds(2));
     manager.onUnknownToken(REF, 99);
     scheduler.runPending();
@@ -436,7 +436,7 @@ class SecurityKeyManagerMergeAndPolicyTest {
     scheduler.runPending();
     assertEquals(1, provider.requests.size()); // one shared fetch loop per SecurityGroupRef
 
-    // an Aes128 response mismatches the subscriber's pin: FAILED for everyone (K8, no downgrade)
+    // an Aes128 response mismatches the subscriber's pin: FAILED for everyone, no downgrade
     provider
         .futures
         .get(0)
@@ -498,7 +498,7 @@ class SecurityKeyManagerMergeAndPolicyTest {
     assertEquals(pendingTasks, scheduler.pendingTaskCount());
     assertEquals(2, provider.requests.size());
 
-    // StartingTokenId is pinned to 0 on every fetch: past tokens are never re-fetched (K6)
+    // StartingTokenId is 0 on every fetch: past tokens are never re-fetched.
     for (ScriptedProvider.Request request : provider.requests) {
       assertEquals(uint(0), request.startingTokenId());
     }
@@ -584,15 +584,14 @@ class SecurityKeyManagerMergeAndPolicyTest {
     @Override
     public ScheduledFuture<?> scheduleAtFixedRate(
         Runnable command, long initialDelay, long period, TimeUnit unit) {
-      throw new UnsupportedOperationException(
-          "the key manager must not use fixed-rate scheduling (K6: one-shot + reschedule)");
+      throw new UnsupportedOperationException("the key manager must not use fixed-rate scheduling");
     }
 
     @Override
     public ScheduledFuture<?> scheduleWithFixedDelay(
         Runnable command, long initialDelay, long delay, TimeUnit unit) {
       throw new UnsupportedOperationException(
-          "the key manager must not use fixed-delay scheduling (K6: one-shot + reschedule)");
+          "the key manager must not use fixed-delay scheduling");
     }
 
     @Override

@@ -41,64 +41,61 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The Part 14 §9.1.13 PubSub status-event bridge (pinned decision R17): bridges the runtime's
- * {@link PubSubStateListener} and {@link PubSubDiagnosticsListener} feeds to OPC UA events fired
- * through the server's {@code EventFactory} and event notifier.
+ * The Part 14 §9.1.13 PubSub status-event bridge: bridges the runtime's {@link PubSubStateListener}
+ * and {@link PubSubDiagnosticsListener} feeds to OPC UA events fired through the server's {@code
+ * EventFactory} and event notifier.
  *
  * <p><b>Event types.</b> State changes of the §9.1.13.1 source set — connections, writer/reader
  * groups, and dataset writers/readers; never the PublishSubscribe root, PublishedDataSets,
  * standalone SubscribedDataSets, or SecurityGroups — fire events typed {@code
  * PubSubStatusEventType} ({@code i=15535}). The type is abstract; abstract EventTypes are
- * reportable (Part 3 §4.7.2, only address-space instantiation is forbidden) and the D35 spike
- * verified end-to-end delivery through server-side {@code OfType} filters. NetworkMessage
- * transmission failures — {@link PubSubDiagnosticsEvent}s of kind {@link
- * PubSubDiagnosticsEvent.Kind#SEND_FAILURE} only (D6); transport-down edges arrive as state
- * transitions, not diagnostics events — fire {@code PubSubCommunicationFailureEventType} ({@code
- * i=15563}) events carrying the real channel status code. Both type ids are single constants
- * ({@link #STATE_CHANGE_EVENT_TYPE_ID}, {@link #COMMUNICATION_FAILURE_EVENT_TYPE_ID}) so the
- * concrete-vendor-subtype fallback, should a client ever reject abstract-typed notifications, is a
- * one-line flip (D35).
+ * reportable (Part 3 §4.7.2, only address-space instantiation is forbidden) and work with
+ * server-side {@code OfType} filters. NetworkMessage transmission failures — {@link
+ * PubSubDiagnosticsEvent}s of kind {@link PubSubDiagnosticsEvent.Kind#SEND_FAILURE} only;
+ * transport-down edges arrive as state transitions, not diagnostics events — fire {@code
+ * PubSubCommunicationFailureEventType} ({@code i=15563}) events carrying the real channel status
+ * code. Both type ids are single constants ({@link #STATE_CHANGE_EVENT_TYPE_ID}, {@link
+ * #COMMUNICATION_FAILURE_EVENT_TYPE_ID}) so the concrete-vendor-subtype fallback, should a client
+ * ever reject abstract-typed notifications, is a one-line flip.
  *
  * <p><b>Field derivation.</b> {@code SourceNode}, {@code ConnectionId}, and {@code GroupId} carry
  * the deterministic {@link PubSubNodeIds} scheme ids ({@code "PubSub/<path>"} in the server
- * application namespace) whether or not the information model is exposed (D32 — without the exposed
- * model they reference non-materialized NodeIds, documented on {@link
+ * application namespace) whether or not the information model is exposed (without the exposed model
+ * they reference non-materialized NodeIds, documented on {@link
  * ServerPubSubOptions.Builder#statusEventsEnabled}). {@code GroupId} is {@link NodeId#NULL_VALUE}
  * for connection-sourced events (spec rule). {@code SourceName} is the last path segment and {@code
  * ConnectionId}/{@code GroupId} take the first one/two segments — a best-effort split; component
  * names containing {@code '/'} make segment derivation approximate (the {@link PubSubNodeIds}
  * caveat).
  *
- * <p><b>Severity bands</b> (R17): informational transitions (newState Operational, PreOperational,
+ * <p><b>Severity bands</b>: informational transitions (newState Operational, PreOperational,
  * Paused, Disabled) carry {@link #SEVERITY_INFORMATIONAL} (100, within the &le;333 band); Error
  * entries and communication failures carry {@link #SEVERITY_ERROR} (500, within the 334-666 band).
  *
- * <p><b>Suppression</b> (first-failure-per-Error-episode, D34): the first send failure for a path
- * emits; subsequent failures for the same path are suppressed until a state-change event for the
- * path <em>or an ancestor</em> (connection-level restarts) arrives with newState Operational —
- * covering Error&rarr;Operational recovery, broker-reconnect recovery, enable-after-disable, and
- * reconfigure restarts. A non-dispose Disabled transition of the path also closes its episode (the
- * bookkeeping-drop rule below); for future sends that is behavior-neutral because any path from
- * Disabled back to sending passes through Operational, which re-arms anyway — with one accepted
- * straggler race: an asynchronous send failure that passed the runtime's generation check just
- * before a Disable can be enqueued behind the Disabled state-change event, land after the drop, and
- * emit a second (truthful, benign) event for the same outage episode. Consequence: a component that
- * fails every publish cycle while remaining Operational emits exactly one event per outage episode
- * (deliberate anti-storm posture). The engine's own event postures compose: {@code
- * encryptionErrors} events are already edge-triggered and the signature/token drop counters emit no
- * events at all.
+ * <p><b>Suppression</b>: the first send failure for a path emits; subsequent failures for the same
+ * path are suppressed until a state-change event for the path <em>or an ancestor</em>
+ * (connection-level restarts) arrives with newState Operational — covering Error&rarr;Operational
+ * recovery, broker-reconnect recovery, enable-after-disable, and reconfigure restarts. A
+ * non-dispose Disabled transition of the path also closes its episode (the bookkeeping-drop rule
+ * below); for future sends that is behavior-neutral because any path from Disabled back to sending
+ * passes through Operational, which re-arms anyway — with one accepted straggler race: an
+ * asynchronous send failure that passed the runtime's generation check just before a Disable can be
+ * enqueued behind the Disabled state-change event, land after the drop, and emit a second
+ * (truthful, benign) event for the same outage episode. Consequence: a component that fails every
+ * publish cycle while remaining Operational emits exactly one event per outage episode (deliberate
+ * anti-storm posture). The engine's own event postures compose: {@code encryptionErrors} events are
+ * already edge-triggered and the signature/token drop counters emit no events at all.
  *
- * <p><b>Dispose silence and the leak guard</b> (D33): transitions with cause {@link
+ * <p><b>Dispose silence and the leak guard</b>: transitions with cause {@link
  * PubSubStateChangeEvent.Cause#DISPOSE} (shutdown, reconfigure removal) emit nothing and drop the
- * path's bookkeeping — teardown is not reportable state news, symmetric with R12's
+ * path's bookkeeping — teardown is not reportable state news, symmetric with the diagnostics
  * dispose&ne;ByMethod counter rule. The dispose drop alone does NOT guard reconfigure-heavy servers
  * against bookkeeping leaks, because the engine emits no dispose-cause event for a component
  * removed while already Disabled (the state machine skips the notification when the state is
- * unchanged) — a deviation from the WP-Z brief's trap-7 assumption that dispose events arrive for
- * every removed path. The bridge therefore also drops bookkeeping on every non-dispose Disabled
- * transition (which still emits its informational event): a Disabled component cannot send, so the
- * entries carry no information, and together the two drop rules cover all removals — a component
- * removed in any other state gets a dispose-cause event.
+ * unchanged). The bridge therefore also drops bookkeeping on every non-dispose Disabled transition
+ * (which still emits its informational event): a Disabled component cannot send, so the entries
+ * carry no information, and together the two drop rules cover all removals — a component removed in
+ * any other state gets a dispose-cause event.
  *
  * <p><b>State field of communication failures.</b> The mandatory {@code State} field serves the
  * last state observed for the path by this bridge (both listeners ride the same serialized queue,
@@ -106,46 +103,46 @@ import org.slf4j.LoggerFactory;
  * observed, a best-effort {@code components()} lookup runs, defaulting to {@code Operational} (a
  * component attempting transmission was enabled; exact event-time state is unobtainable).
  *
- * <p><b>Emission target</b> (D42): events fire with Server-object semantics via {@code
+ * <p><b>Emission target</b>: events fire with Server-object semantics via {@code
  * server.getEventNotifier().fire(...)}; clients monitor the Server object {@code i=2253}. No
  * EventNotifier bit is minted or mutated on PublishSubscribe {@code i=14443} (Part 14 mandates no
  * component-level notifier hierarchy).
  *
  * <p><b>Threading and lifecycle.</b> Owned by {@link ServerPubSub}, created iff {@link
  * ServerPubSubOptions#isStatusEventsEnabled()}. {@link #startup()} registers the two listeners;
- * {@link #shutdown()} deregisters them (R12 removal API) and clears the bookkeeping — {@code
- * ServerPubSub.shutdown()} runs it after the engine's event queue has drained, so shutdown-induced
- * dispose events reach (and are silenced by) the bridge first. Listener deliveries ride the
- * engine's serialized {@code ExecutionQueue} on the transport executor, in emission order and NOT
- * under the engine lock: {@code createEvent} + {@code fire} are safe there, the per-path maps need
- * no synchronization, and the bridge stays allocation-light (no I/O, no engine mutators). A
- * volatile {@code active} flag guards in-flight deliveries after shutdown. Event construction
- * failures (e.g. the server not yet started — the {@code EventFactory} lifecycle requires {@code
- * OpcUaServer.startup()}) are caught and WARN-logged so the dispatch queue is never disturbed.
+ * {@link #shutdown()} deregisters them and clears the bookkeeping — {@code ServerPubSub.shutdown()}
+ * runs it after the engine's event queue has drained, so shutdown-induced dispose events reach (and
+ * are silenced by) the bridge first. Listener deliveries ride the engine's serialized {@code
+ * ExecutionQueue} on the transport executor, in emission order and NOT under the engine lock:
+ * {@code createEvent} + {@code fire} are safe there, the per-path maps need no synchronization, and
+ * the bridge stays allocation-light (no I/O, no engine mutators). A volatile {@code active} flag
+ * guards in-flight deliveries after shutdown. Event construction failures (e.g. the server not yet
+ * started — the {@code EventFactory} lifecycle requires {@code OpcUaServer.startup()}) are caught
+ * and WARN-logged so the dispatch queue is never disturbed.
  *
  * <p>The package-private {@link #onStateChange} / {@link #onDiagnosticsEvent} entry points are the
- * S17 test seams: tests drive deterministic stimuli directly, bypassing the engine.
+ * package-private test entry points: tests drive deterministic stimuli directly, bypassing the
+ * engine.
  */
 final class PubSubStatusEventBridge {
 
   /**
    * The EventType of state-change events: abstract {@code PubSubStatusEventType} ({@code i=15535}),
-   * fired directly (spike-verified). Kept as a single constant so the concrete-subtype fallback is
-   * a one-line flip (D35).
+   * fired directly. Kept as a single constant so the concrete-subtype fallback is a one-line flip.
    */
   static final NodeId STATE_CHANGE_EVENT_TYPE_ID = NodeIds.PubSubStatusEventType;
 
   /**
    * The EventType of send-failure events: {@code PubSubCommunicationFailureEventType} ({@code
-   * i=15563}). Kept as a single constant per D35.
+   * i=15563}). Kept as a single constant.
    */
   static final NodeId COMMUNICATION_FAILURE_EVENT_TYPE_ID =
       NodeIds.PubSubCommunicationFailureEventType;
 
-  /** Severity of informational state transitions (the &le;333 band, pinned value). */
+  /** Severity of informational state transitions (the &le;333 band). */
   static final UShort SEVERITY_INFORMATIONAL = ushort(100);
 
-  /** Severity of Error entries and communication failures (the 334-666 band, pinned value). */
+  /** Severity of Error entries and communication failures (the 334-666 band). */
   static final UShort SEVERITY_ERROR = ushort(500);
 
   private static final Logger LOGGER = LoggerFactory.getLogger(PubSubStatusEventBridge.class);
@@ -159,15 +156,15 @@ final class PubSubStatusEventBridge {
 
   /**
    * Last observed state per tracked component path, for the mandatory {@code State} field of
-   * communication-failure events. Touched only on the serialized listener queue (or the S17 test
-   * seams) — no synchronization needed; entries dropped on dispose-cause and Disabled transitions
+   * communication-failure events. Touched only on the serialized listener queue (or direct test
+   * calls) — no synchronization needed; entries dropped on dispose-cause and Disabled transitions
    * (the class-level leak-guard rule).
    */
   private final Map<String, PubSubState> lastState = new HashMap<>();
 
   /**
-   * Paths whose current outage episode has already emitted a communication-failure event (D34).
-   * Same single-threaded discipline as {@link #lastState}.
+   * Paths whose current outage episode has already emitted a communication-failure event. Same
+   * single-threaded discipline as {@link #lastState}.
    */
   private final Set<String> suppressed = new HashSet<>();
 
@@ -189,9 +186,9 @@ final class PubSubStatusEventBridge {
   }
 
   /**
-   * Deregister the engine listeners (R12 removal API) and clear the bookkeeping. Called after the
-   * engine's event queue has drained, so no delivery races the map clears; the {@code active} guard
-   * silences any straggler.
+   * Deregister the engine listeners and clear the bookkeeping. Called after the engine's event
+   * queue has drained, so no delivery races the map clears; the {@code active} guard silences any
+   * straggler.
    */
   void shutdown() {
     active = false;
@@ -202,10 +199,10 @@ final class PubSubStatusEventBridge {
   }
 
   /**
-   * State-change delivery (S17 entry point): fire an {@code i=15535} event for tracked component
-   * types, silence dispose-cause transitions (D33), maintain the last-state map (dropping the
-   * path's bookkeeping on Disabled transitions — the class-level leak-guard rule), and re-arm the
-   * send-failure suppression of the path and its descendants on Operational transitions (D34).
+   * State-change delivery: fire an {@code i=15535} event for tracked component types, silence
+   * dispose-cause transitions, maintain the last-state map (dropping the path's bookkeeping on
+   * Disabled transitions — the class-level leak-guard rule), and re-arm the send-failure
+   * suppression of the path and its descendants on Operational transitions.
    */
   void onStateChange(PubSubStateChangeEvent event) {
     if (!active || !isTracked(event.component().componentType())) {
@@ -246,9 +243,9 @@ final class PubSubStatusEventBridge {
   }
 
   /**
-   * Diagnostics delivery (S17 entry point): fire an {@code i=15563} event for the first {@link
-   * PubSubDiagnosticsEvent.Kind#SEND_FAILURE} of the path's outage episode (D6/D34); everything
-   * else is not a communication failure.
+   * Diagnostics delivery: fire an {@code i=15563} event for the first {@link
+   * PubSubDiagnosticsEvent.Kind#SEND_FAILURE} of the path's outage episode; everything else is not
+   * a communication failure.
    */
   void onDiagnosticsEvent(PubSubDiagnosticsEvent event) {
     if (!active || event.kind() != PubSubDiagnosticsEvent.Kind.SEND_FAILURE) {

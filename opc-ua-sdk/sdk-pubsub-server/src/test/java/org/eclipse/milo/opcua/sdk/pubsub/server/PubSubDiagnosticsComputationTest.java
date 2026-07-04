@@ -30,11 +30,11 @@ import org.junit.jupiter.api.Test;
 
 /**
  * The pure §9.1.11 value-computation layer of {@link PubSubDiagnosticsExposure}: the UInt32
- * saturation clamp with SourceTimestamp-advances-at-cap (§9.1.11.5, the S17 test seam), the UInt16
- * count clamp, the 16-bit DataSetMessage sequence narrowing (D12), the per-subtype Total*
- * classification sums over spec-exposed counters only (R14: vendor counters never participate), the
- * D37 earliest-contributor TimeFirstChange, and the SubError direct-child rule (§9.1.11.2 "the next
- * PubSub layer" — a grandchild never sets the parent's SubError).
+ * saturation clamp with SourceTimestamp-advances-at-cap (§9.1.11.5), the UInt16 count clamp, the
+ * 16-bit DataSetMessage sequence narrowing, the per-subtype Total* classification sums over
+ * spec-exposed counters only (vendor counters never participate), the earliest-contributor
+ * TimeFirstChange, and the SubError direct-child rule (§9.1.11.2 "the next PubSub layer" — a
+ * grandchild never sets the parent's SubError).
  */
 class PubSubDiagnosticsComputationTest {
 
@@ -71,7 +71,7 @@ class PubSubDiagnosticsComputationTest {
 
   @Test
   void sequenceNumberNarrowsToSixteenBits() {
-    // JSON mappings count 32-bit on the wire; the UInt16 LiveValue serves the low 16 bits (D12)
+    // JSON mappings count 32-bit on the wire; the UInt16 LiveValue serves the low 16 bits
     assertEquals(
         ushort(7), PubSubDiagnosticsExposure.sequenceNumberValue(uint(7)).getValue().getValue());
     assertEquals(
@@ -109,7 +109,7 @@ class PubSubDiagnosticsComputationTest {
             PubSubDiagnosticsCounterClassification.Information));
 
     // Error: StateError plus the per-subtype error counters; vendor counters (sourceErrors,
-    // sequence/security drops, dataSetMessages*) never participate (R14)
+    // sequence/security drops, dataSetMessages*) never participate
     assertEquals(
         2,
         PubSubDiagnosticsExposure.classificationSum(

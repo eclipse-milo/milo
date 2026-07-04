@@ -28,9 +28,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * {@link PubSubConfigurationStore} precedence per pinned decision S7: a non-null {@code load()}
- * result wins over the attach configuration; a null {@code load()} result means the attach
- * configuration is used and saved exactly once; {@code save()} failures are non-fatal.
+ * {@link PubSubConfigurationStore} precedence: a non-null {@code load()} result wins over the
+ * attach configuration; a null {@code load()} result means the attach configuration is used and
+ * saved exactly once; {@code save()} failures are non-fatal.
  */
 class ServerPubSubConfigurationStoreTest {
 
@@ -83,7 +83,7 @@ class ServerPubSubConfigurationStoreTest {
       assertEquals(1, store.saved.size(), "save() called exactly once");
 
       // the saved wire form carries the seeded VersionTime, never the mapper's uint(0)
-      // placeholder (D26/R8); everything else is the mapped attach configuration
+      // placeholder; everything else is the mapped attach configuration
       PubSubConfiguration2DataType saved = store.saved.get(0);
       assertTrue(saved.getConfigurationVersion().longValue() != 0L, "seeded VersionTime");
       assertEquals(

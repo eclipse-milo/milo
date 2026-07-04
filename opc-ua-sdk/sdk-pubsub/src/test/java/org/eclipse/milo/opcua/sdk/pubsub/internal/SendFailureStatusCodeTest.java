@@ -62,14 +62,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Un-flattened send-failure status codes at the D1 sites {@code SendFailureDiagnosticsTest} does
- * not reach: the {@code MetaDataPublisher} async/sync sends (real code at the writer path, {@code
+ * Un-flattened send-failure status codes at the sites {@code SendFailureDiagnosticsTest} does not
+ * reach: the {@code MetaDataPublisher} async/sync sends (real code at the writer path, {@code
  * networkMessagesSent} ticked at the connection path at HAND-OFF, before the async outcome — the
- * R14 outlier fix) and the {@code statusCodeOf} fallback: a failure carrying no {@code UaException}
+ * outlier fix) and the {@code statusCodeOf} fallback: a failure carrying no {@code UaException}
  * anywhere in its chain surfaces as {@code Bad_InternalError}, never a blanket {@code
  * Bad_CommunicationError}. Metadata failures never charge the WriterGroup failure counters. The two
  * {@code DiscoveryRuntime} sites are covered through the shared un-flatten helper only — discovery
- * channels bypass the transport SPI, so no fake can fail their sends (see the row's Javadoc).
+ * channels bypass the transport SPI, so no fake can fail their sends (see the test Javadoc).
  */
 class SendFailureStatusCodeTest {
 
@@ -157,14 +157,13 @@ class SendFailureStatusCodeTest {
   }
 
   /**
-   * The D1 discovery sites ({@code DiscoveryRuntime} announcement and probe sends) are NOT
-   * reachable through a transport fake: discovery channels deliberately bypass the transport SPI
-   * and always open on the built-in UDP provider ({@code PubSubServiceImpl.getUdpTransportProvider}
-   * — "zero transport-SPI change"), and a real loopback UDP send cannot be failed
-   * deterministically. This row covers those sites as far as they can go: both route their
-   * throwable through the same shared {@code DiagnosticsCollector.statusCodeOf} un-flatten helper
-   * asserted here directly — nested {@code UaException} extraction and the {@code
-   * Bad_InternalError} fallback.
+   * The discovery sites ({@code DiscoveryRuntime} announcement and probe sends) are NOT reachable
+   * through a transport fake: discovery channels deliberately bypass the transport SPI and always
+   * open on the built-in UDP provider ({@code PubSubServiceImpl.getUdpTransportProvider} — "zero
+   * transport-SPI change"), and a real loopback UDP send cannot be failed deterministically. This
+   * test covers those sites as far as they can go: both route their throwable through the same
+   * shared {@code DiagnosticsCollector.statusCodeOf} un-flatten helper asserted here directly —
+   * nested {@code UaException} extraction and the {@code Bad_InternalError} fallback.
    */
   @Test
   void statusCodeOfUnFlattensNestedUaExceptionsAndFallsBackToInternalError() {

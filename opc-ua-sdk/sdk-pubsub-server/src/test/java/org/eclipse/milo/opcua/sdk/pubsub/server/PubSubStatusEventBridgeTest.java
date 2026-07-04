@@ -43,7 +43,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * {@link PubSubStatusEventBridge} unit rows, driven through the package-private S17 entry points
+ * {@link PubSubStatusEventBridge} unit coverage, driven through the package-private entry points
  * ({@code onStateChange} / {@code onDiagnosticsEvent}) against a STARTED server (the {@code
  * EventFactory} lifecycle requires one) with events captured synchronously via a registered {@link
  * EventListener} on the server's event notifier:
@@ -51,16 +51,15 @@ import org.junit.jupiter.api.Test;
  * <ul>
  *   <li>the §6.2 field set of state-change events, including {@code GroupId == NodeId.NULL_VALUE}
  *       for connection-sourced events (spec rule);
- *   <li>the pinned severity bands (100 informational / 500 Error-entry and comm-failure);
- *   <li>send-failure discrimination (Kind=SEND_FAILURE only, D6) and the real un-flattened Error
- *       code;
+ *   <li>the severity bands (100 informational / 500 Error-entry and comm-failure);
+ *   <li>send-failure discrimination (Kind=SEND_FAILURE only) and the real un-flattened Error code;
  *   <li>first-failure-per-Error-episode suppression with re-arm on an (ancestor) Operational
- *       transition (D34);
- *   <li>dispose-cause silence (D33);
+ *       transition;
+ *   <li>dispose-cause silence;
  *   <li>the leak-guard bookkeeping drop on non-dispose Disabled transitions (components removed
  *       while already Disabled get no dispose-cause event from the engine);
  *   <li>the source-set filter (untracked component types emit nothing);
- *   <li>gating: no bridge without {@code statusEventsEnabled}, and D32 independence from {@code
+ *   <li>gating: no bridge without {@code statusEventsEnabled}, and independence from {@code
  *       exposeInformationModel}.
  * </ul>
  */
@@ -185,7 +184,7 @@ class PubSubStatusEventBridgeTest {
             StatusCode.GOOD,
             PubSubStateChangeEvent.Cause.DISPOSE));
 
-    assertTrue(captured.isEmpty(), "dispose-cause transitions must emit no events (D33)");
+    assertTrue(captured.isEmpty(), "dispose-cause transitions must emit no events");
   }
 
   @Test
@@ -305,7 +304,7 @@ class PubSubStatusEventBridgeTest {
             null,
             PubSubDiagnosticsEvent.Kind.OTHER_ERROR));
 
-    assertTrue(captured.isEmpty(), "only Kind=SEND_FAILURE feeds i=15563 (D6)");
+    assertTrue(captured.isEmpty(), "only Kind=SEND_FAILURE feeds i=15563");
   }
 
   @Test
@@ -379,7 +378,7 @@ class PubSubStatusEventBridgeTest {
         assertNull(disabled.statusEventBridge(), "default options must not construct the bridge");
       }
 
-      // D32: statusEventsEnabled is independent of exposeInformationModel
+      // statusEventsEnabled is independent of exposeInformationModel
       ServerPubSubOptions options = ServerPubSubOptions.builder().statusEventsEnabled(true).build();
       try (ServerPubSub enabled = ServerPubSub.attach(server, config, options)) {
         assertNotNull(enabled.statusEventBridge(), "statusEventsEnabled constructs the bridge");

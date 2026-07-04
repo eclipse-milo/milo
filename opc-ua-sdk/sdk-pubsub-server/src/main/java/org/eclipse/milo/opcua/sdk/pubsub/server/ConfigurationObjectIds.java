@@ -15,19 +15,17 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Lookup of the information model object NodeIds for configuration elements, used to assemble the
- * {@code CloseAndUpdate} ConfigurationObjects output (pinned decision R4: "ConfigurationObjects
- * from the fragment's deterministic NodeIds or empty").
+ * {@code CloseAndUpdate} ConfigurationObjects output.
  *
- * <p>Implemented by the info model fragment: each lookup computes the deterministic R11 id (see
- * {@link PubSubNodeIds}) and returns it only if the node currently exists in the fragment's node
- * manager, so answers stay truthful during and after rebuilds. Obtained via {@link
+ * <p>Implemented by the info model fragment: each lookup computes the deterministic id (see {@link
+ * PubSubNodeIds}) and returns it only if the node currently exists in the fragment's node manager,
+ * so answers stay truthful during and after rebuilds. Obtained via {@link
  * ServerPubSub#configurationObjectIds()}, which returns {@code null} when the information model is
- * not exposed — the caller then returns the empty ConfigurationObjects array (the pin's "or empty"
- * arm).
+ * not exposed — the caller then returns the empty ConfigurationObjects array.
  *
  * <p>Element kinds the fragment never materializes — SecurityGroups, standalone SubscribedDataSets,
  * and PushTargets — have no lookup here by design; callers fill their slots with {@link
- * NodeId#NULL_VALUE} per the D25 slot policy (see {@link ServerPubSub#configurationObjectIds()}).
+ * NodeId#NULL_VALUE} per the slot policy (see {@link ServerPubSub#configurationObjectIds()}).
  *
  * <p>Ordering contract: {@link ManagedPubSubService}'s post-apply hooks run synchronously inside
  * the mediator call, so when a remote-configuration handler regains control after {@code

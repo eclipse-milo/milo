@@ -188,8 +188,8 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>All three UDP modes additionally accept the secured-UDP options ({@code --security-mode},
  * {@code --security-policy}, {@code --static-keys}, {@code --static-keys-hex}) for Part 14 UADP
- * message security with pre-shared static keys (K2 subset: {@code Sign}/{@code SignAndEncrypt}
- * {@code x} PubSub-Aes128-CTR/PubSub-Aes256-CTR). {@code publish}/{@code subscribe} wire a {@link
+ * message security with pre-shared static keys ({@code Sign}/{@code SignAndEncrypt} {@code x}
+ * PubSub-Aes128-CTR/PubSub-Aes256-CTR). {@code publish}/{@code subscribe} wire a {@link
  * StaticSecurityKeyProvider} and a SecurityGroup into the engine config, or — with {@code --sks
  * <opc.tcp url> --security-group <id> [--sks-user u:p]} instead of the static-key flags — pull
  * rotating keys from a live Security Key Service via {@link SksSecurityKeyProvider} ({@code
@@ -543,7 +543,7 @@ public final class PubSubInteropTool {
     PubSubConfig.Builder configBuilder = PubSubConfig.builder();
 
     if (security != null) {
-      // K7 receive gate: messages below the configured mode are dropped and counted; messages
+      // Receive-mode gate: messages below the configured mode are dropped and counted; messages
       // above it are processed because this group's SecurityGroup can supply the keys.
       readerGroup.messageSecurity(messageSecurity(security));
       configBuilder.securityGroup(securityGroup(security));
@@ -1408,13 +1408,13 @@ public final class PubSubInteropTool {
 
   // endregion
 
-  // region SKS pull (--sks; runbook rows R5/R6)
+  // region SKS pull (--sks)
 
   /**
    * The resolved {@code --sks} options: keys are pulled from a live Security Key Service instead of
    * pre-shared, so there is no local key material — only the SKS URL, the SecurityGroupId to
-   * request, an optional policy constraint (K8: a served-policy mismatch fails the fetch, no
-   * downgrade; {@code null} accepts any supported policy), and an optional username identity.
+   * request, an optional policy constraint (a served-policy mismatch fails the fetch, no downgrade;
+   * {@code null} accepts any supported policy), and an optional username identity.
    */
   private record SksSettings(
       MessageSecurityMode mode,
@@ -1544,8 +1544,8 @@ public final class PubSubInteropTool {
 
   /**
    * The client-side SecurityGroup for {@code --sks}, named by the SecurityGroupId requested from
-   * the SKS. The policy URI is set only when {@code --security-policy} was given (K8 constraint);
-   * the window counts size the key manager's requested and retained keys.
+   * the SKS. The policy URI is set only when {@code --security-policy} was given; the window counts
+   * size the key manager's requested and retained keys.
    */
   private static SecurityGroupConfig sksSecurityGroup(SksSettings sks) {
     SecurityGroupConfig.Builder group =

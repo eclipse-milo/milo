@@ -343,7 +343,7 @@ class BrokerTopicsTest {
   }
 
   /**
-   * E7: a configured queue name ALWAYS wins — a group-level data queue resolves through the
+   * A configured queue name ALWAYS wins — a group-level data queue resolves through the
    * writer-arity overload without requiring a PublisherId, like the metadata sibling.
    */
   @Test

@@ -403,9 +403,9 @@ class PubSubConfigMapperFromDataTypeTest {
   }
 
   /**
-   * The K16 documented mapper loss: {@code pubSubKeyPushTargets} is a datatype field with no config
-   * slot — a configuration carrying push targets maps WITHOUT throwing, the targets are dropped,
-   * and the reverse mapping emits none (push-model distribution is CUT; see the PubSubConfigMapper
+   * Documented mapper loss: {@code pubSubKeyPushTargets} is a datatype field with no config slot —
+   * a configuration carrying push targets maps WITHOUT throwing, the targets are dropped, and the
+   * reverse mapping emits none (push-model distribution is CUT; see the PubSubConfigMapper
    * "Documented losses" contract).
    */
   @Test

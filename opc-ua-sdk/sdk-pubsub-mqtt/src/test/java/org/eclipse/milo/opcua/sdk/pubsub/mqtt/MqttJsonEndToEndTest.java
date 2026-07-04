@@ -79,7 +79,7 @@ import org.junit.jupiter.api.io.TempDir;
  * metadata = {@code opcua/json/metadata/<publisherId>/<writerGroupName>/<dataSetWriterName>}.
  *
  * <p>The publisher uses a UInt16 PublisherId while JSON carries publisher ids as strings; the
- * subscriber's UInt16 filter matches via the canonical string form (E6), exercised end-to-end here.
+ * subscriber's UInt16 filter matches via the canonical string form, exercised end-to-end here.
  */
 class MqttJsonEndToEndTest {
 

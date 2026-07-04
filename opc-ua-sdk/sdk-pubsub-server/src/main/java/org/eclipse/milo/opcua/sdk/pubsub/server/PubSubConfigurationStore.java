@@ -17,7 +17,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * Persistence for a PubSub configuration, in its Part 14 wire representation, consulted by {@link
  * ServerPubSub#attach(OpcUaServer, org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfig,
- * ServerPubSubOptions)} (pinned decision R8).
+ * ServerPubSubOptions)}.
  *
  * <p>Precedence at attach: if {@link #load()} returns a non-null value, the loaded configuration
  * wins and the configuration passed to {@code attach} is ignored; otherwise the attach

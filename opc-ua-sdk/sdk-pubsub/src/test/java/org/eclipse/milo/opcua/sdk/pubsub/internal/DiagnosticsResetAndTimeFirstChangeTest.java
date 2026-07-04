@@ -26,9 +26,9 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for the {@link DiagnosticsCollector} Phase 5 additions: per-counter TimeFirstChange,
- * per-object {@code reset(path)} (lastError untouched, unknown paths no-op), the State* transition
- * ticks, and the pending-restart counter preservation used by path-stable reconfigure restarts.
+ * Unit tests for the {@link DiagnosticsCollector} per-counter TimeFirstChange, per-object {@code
+ * reset(path)} (lastError untouched, unknown paths no-op), the State* transition ticks, and the
+ * pending-restart counter preservation used by path-stable reconfigure restarts.
  */
 class DiagnosticsResetAndTimeFirstChangeTest {
 

@@ -109,24 +109,25 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * Rung-2 integration test: SKS-distributed keys end to end. A {@link SksTestServer} hosts the real
- * WP-V {@code GetSecurityKeys} face; {@link SksSecurityKeyProvider}s pull from it over real
+ * Integration test for SKS-distributed keys end to end. A {@link SksTestServer} hosts the real
+ * {@code GetSecurityKeys} service; {@link SksSecurityKeyProvider}s pull from it over real
  * SignAndEncrypt sessions; two {@link PubSubService}s on loopback UDP secure a SignAndEncrypt
  * WriterGroup/ReaderGroup pair with the pulled keys.
  *
- * <p>Covered rows (WP-T4 §4.2 tier 2 + the K17.1-dependent real-session authorization rows the
- * direct-invoke matrix in sdk-pubsub-server's {@code SksServerFaceTest} cannot reach):
+ * <p>Coverage includes end-to-end key distribution, token rotation, and real-session authorization
+ * checks that the direct-invoke matrix in sdk-pubsub-server's {@code SksServerFaceTest} cannot
+ * reach:
  *
  * <ul>
  *   <li>happy path: end-to-end dataset delivery, reader Operational, zero security-drop counters;
- *   <li>rotation continuity: the server group's SHORT real KeyLifetime (the face's {@code
+ *   <li>rotation continuity: the server group's SHORT real KeyLifetime (the SKS helper's {@code
  *       InstantSource} seam is not reachable through {@code ServerPubSub}, so short-lifetime +
  *       bounded awaits it is — no raw sleeps as logic) rotates tokens while traffic flows; both
  *       providers observe a rotated FirstTokenId and delivery continues without any unknown-token
  *       or stale-key drops;
  *   <li>{@code GetSecurityKeys} over a None or Sign channel: {@code Bad_SecurityModeInsufficient}
  *       surfaces to the CLIENT's {@link CallMethodResult} (the ns0 loader ships
- *       AccessRestrictions(3) on i=15215; K17.1 propagates the real denial status);
+ *       AccessRestrictions(3) on i=15215, and the real denial status is propagated);
  *   <li>unauthorized identity over SignAndEncrypt: {@code Bad_UserAccessDenied} (RoleMapper
  *       configured, caller lacks the well-known pull roles); authorized identity: {@code Good} plus
  *       the five Part 14 §8.3.2 outputs;
@@ -138,14 +139,14 @@ import org.junit.jupiter.api.Test;
  * UdpLoopbackIntegrationTest}): ephemeral bind-probe ports, explicit loopback {@code
  * discoveryAddress} on every UDP connection, tracked shutdowns, deadline-polling awaits.
  *
- * <p><b>Accepted real-clock exposure (the wave's only one):</b> because the server face rotates on
- * {@code InstantSource.system()}, the rotation-continuity zero-drop assertions depend on the
- * subscriber's per-second full-session refreshes keeping within the token window (~1 past + 3
- * future keys ≈ 4 × {@link #SERVER_KEY_LIFETIME} ≈ 8 s of headroom) of the wall clock. A single
- * global stall (GC pause) self-heals — the publisher can only send tokens both sides already hold —
- * so a failure needs sustained asymmetric CPU starvation of the subscriber. If this ever flakes on
- * CI, the fix is to expose the {@code SecurityGroupKeyStore} {@code InstantSource} seam through
- * {@code ServerPubSubOptions} and drive rotation deterministically — do NOT loosen the zero-drop
+ * <p><b>Accepted real-clock exposure:</b> because the server face rotates on {@code
+ * InstantSource.system()}, the rotation-continuity zero-drop assertions depend on the subscriber's
+ * per-second full-session refreshes keeping within the token window (~1 past + 3 future keys ≈ 4 ×
+ * {@link #SERVER_KEY_LIFETIME} ≈ 8 s of headroom) of the wall clock. A single global stall (GC
+ * pause) self-heals — the publisher can only send tokens both sides already hold — so a failure
+ * needs sustained asymmetric CPU starvation of the subscriber. If this ever flakes on CI, the fix
+ * is to expose the {@code SecurityGroupKeyStore} {@code InstantSource} seam through {@code
+ * ServerPubSubOptions} and drive rotation deterministically — do NOT loosen the zero-drop
  * assertions.
  */
 class SksSecuredLoopbackIntegrationTest {
@@ -248,7 +249,7 @@ class SksSecuredLoopbackIntegrationTest {
   }
 
   /**
-   * The rung-2 happy path plus rotation continuity, one traffic run:
+   * Happy path plus rotation continuity, one traffic run:
    *
    * <ol>
    *   <li>both services pull keys for {@link #SECURITY_GROUP} from the real face over real
@@ -260,8 +261,8 @@ class SksSecuredLoopbackIntegrationTest {
    *       first fetch (the manager refreshes every KeyLifetime/2), a value published after the
    *       observed rotation still arrives, the publisher kept sending, and the security-drop
    *       counters are still zero — continuity across at least one token switch. (The publisher's
-   *       wire-token switch mechanics are pinned by the SecurityKeyManager unit suite; this test
-   *       pins the end-to-end effect over the real SKS.)
+   *       wire-token switch mechanics are covered by the SecurityKeyManager unit suite; this test
+   *       covers the end-to-end effect over the real SKS.)
    * </ol>
    */
   @Test
@@ -367,10 +368,10 @@ class SksSecuredLoopbackIntegrationTest {
   }
 
   /**
-   * The K17.1-dependent rows (WP-V §8 A1/A2): over a None or Sign channel the access controller
-   * denies the Call via i=15215's AccessRestrictions(3) before the handler runs, and the REAL
-   * denial status — {@code Bad_SecurityModeInsufficient}, not the pre-K17.1 {@code
-   * Bad_UserAccessDenied} collapse — reaches the client's {@link CallMethodResult}.
+   * Over a None or Sign channel the access controller denies the Call via i=15215's
+   * AccessRestrictions(3) before the handler runs, and the real denial status — {@code
+   * Bad_SecurityModeInsufficient}, not {@code Bad_UserAccessDenied} — reaches the client's {@link
+   * CallMethodResult}.
    */
   @Test
   void getSecurityKeysOverInsufficientChannelSurfacesToTheClient() throws Exception {
@@ -791,7 +792,7 @@ class SksSecuredLoopbackIntegrationTest {
     return diagnostics == null ? 0L : counter.applyAsLong(diagnostics);
   }
 
-  /** Every K6 security-drop counter — and {@code decodeErrors} — is zero at {@code groupPath}. */
+  /** Every security-drop counter — and {@code decodeErrors} — is zero at {@code groupPath}. */
   private static void assertZeroSecurityDrops(PubSubService subscriber, String groupPath) {
     assertEquals(
         0,

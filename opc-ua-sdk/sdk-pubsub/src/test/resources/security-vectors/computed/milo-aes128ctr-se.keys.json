@@ -20,5 +20,5 @@
     2
   ],
   "expectedPlaintext": "08000800010100062a000000010100062b000000",
-  "notes": "SecurityHeader at offset 28, payload region [42, 62), HMAC-SHA256 signature over [0, 62) in the trailing 32 bytes. Sign-only carries the real token id and the 8-byte MessageNonce (Annex A form, K4). The Sizes array at [42, 46) is inside the encrypted region (Table 161)."
+  "notes": "SecurityHeader at offset 28, payload region [42, 62), HMAC-SHA256 signature over [0, 62) in the trailing 32 bytes. Sign-only carries the real token id and the 8-byte MessageNonce (Annex A form). The Sizes array at [42, 46) is inside the encrypted region (Table 161)."
 }

@@ -53,12 +53,12 @@ import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 /**
- * Deterministic tests of the {@link SecurityKeyManager} key lifecycle (Part 14 §8.3.2, §6.2.12.2;
- * plan pins K6/K8): fetch-at-attach with deferred startup, refresh at KeyLifetime/2, switch at
- * TimeToNextKey then KeyLifetime, 2×KeyLifetime expiry into Error with recovery on the next
- * success, FirstTokenId merge/dedup/discard, the K8 policy-authority rule, the static ZERO/ZERO
- * sentinel, unknown-token single-flight refresh with its 1 s floor, and material retirement on
- * detach (zeroization deferred by the destroy grace so no in-flight borrow races the wipe).
+ * Deterministic tests of the {@link SecurityKeyManager} key lifecycle (Part 14 §8.3.2, §6.2.12.2):
+ * fetch-at-attach with deferred startup, refresh at KeyLifetime/2, switch at TimeToNextKey then
+ * KeyLifetime, 2×KeyLifetime expiry into Error with recovery on the next success, FirstTokenId
+ * merge/dedup/discard, policy-authority handling, the static ZERO/ZERO sentinel, unknown-token
+ * single-flight refresh with its 1 s floor, and material retirement on detach (zeroization deferred
+ * by the destroy grace so no in-flight borrow races the wipe).
  *
  * <p>Cadence is driven through the injectable clock + one-shot scheduler seams — no sleeping, no
  * real timers. The fake scheduler rejects {@code scheduleAtFixedRate}, implicitly pinning the
@@ -209,7 +209,7 @@ class SecurityKeyManagerTest {
     scheduler.runPending();
     assertEquals(1, provider.requests.size());
 
-    // StartingTokenId 0 (the current token); RequestedKeyCount defaults to 2 (D2)
+    // StartingTokenId 0 (the current token); RequestedKeyCount defaults to 2.
     assertEquals(new ScriptedProvider.Request("SG", uint(0), uint(2)), provider.requests.get(0));
 
     // still PreOperational until the fetch completes
@@ -352,7 +352,7 @@ class SecurityKeyManagerTest {
 
   @Test
   void policyMismatchWithConfiguredUriFailsFetch() throws Exception {
-    // the SecurityGroup pins Aes256; the provider returns Aes128 keys (K8: never downgrade)
+    // the SecurityGroup pins Aes256; the provider returns Aes128 keys and must not downgrade
     SecurityGroupConfig securityGroup =
         SecurityGroupConfig.builder("SG")
             .keyLifeTime(Duration.ofSeconds(60))
@@ -555,7 +555,7 @@ class SecurityKeyManagerTest {
 
     assertTrue(provider.requests.size() > 1, "expected retries before the startup deadline");
     assertEquals(PubSubState.Error, component.state());
-    // D15: the extracted fetch status, not a generic internal error
+    // the extracted fetch status, not a generic internal error
     assertEquals(
         new StatusCode(StatusCodes.Bad_CommunicationError),
         transitionStatuses.get(transitionStatuses.size() - 1));
@@ -691,15 +691,14 @@ class SecurityKeyManagerTest {
     @Override
     public ScheduledFuture<?> scheduleAtFixedRate(
         Runnable command, long initialDelay, long period, TimeUnit unit) {
-      throw new UnsupportedOperationException(
-          "the key manager must not use fixed-rate scheduling (K6: one-shot + reschedule)");
+      throw new UnsupportedOperationException("the key manager must not use fixed-rate scheduling");
     }
 
     @Override
     public ScheduledFuture<?> scheduleWithFixedDelay(
         Runnable command, long initialDelay, long delay, TimeUnit unit) {
       throw new UnsupportedOperationException(
-          "the key manager must not use fixed-delay scheduling (K6: one-shot + reschedule)");
+          "the key manager must not use fixed-delay scheduling");
     }
 
     @Override

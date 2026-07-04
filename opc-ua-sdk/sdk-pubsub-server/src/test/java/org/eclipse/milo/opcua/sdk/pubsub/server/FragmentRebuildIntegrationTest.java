@@ -58,24 +58,25 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * The T5 §10.1 rebuild rows NOT already landed by WP-Y's local tests (anti-duplication rule §15):
+ * Integration coverage for information-model rebuild behavior not already covered by local unit
+ * tests:
  *
  * <ul>
- *   <li>RB7/D27 — the raced startup/close loop: {@code startup()} and {@code close()} released by
- *       one latch on two threads, looped, must leave NO fragment registration, NO attached SKS or
- *       remote-configuration handler, and let no unexpected exception escape (the R10/D27 per-face
- *       lifecycle state machine — the concurrent regression coverage for the CAS-vs-close race fix;
- *       {@link ServerPubSubLifecycleTest} pins only the SEQUENTIAL orderings).
- *   <li>RB3 (node-layer cross-check with §11) — a path-stable Modify rebuild preserves the fragment
- *       Diagnostics counter values (R14 preservation visible at the node layer, not just in the
- *       engine snapshot as pinned by {@code CounterPreservationReconfigureTest}), and the surviving
- *       node keeps counting after the rebuild.
+ *   <li>Raced startup/close loop: {@code startup()} and {@code close()} released by one latch on
+ *       two threads, looped, must leave NO fragment registration, NO attached SKS or
+ *       remote-configuration handler, and let no unexpected exception escape (concurrent regression
+ *       coverage for the CAS-vs-close race fix; {@link ServerPubSubLifecycleTest} covers the
+ *       sequential orderings).
+ *   <li>A path-stable Modify rebuild preserves the fragment Diagnostics counter values at the node
+ *       layer, not just in the engine snapshot covered by {@code
+ *       CounterPreservationReconfigureTest}, and the surviving node keeps counting after the
+ *       rebuild.
  * </ul>
  *
- * <p>RB1/RB2/RB4/RB5 landed in {@code ServerPubSubReconfigureModelTest} and {@code
- * PubSubInfoModelLiveStateTest}; RB6 (rebuild under live subscriber fire) landed in {@code
- * ServerPubSubTargetVariablesReconfigureTest}. Network safety: unicast 127.0.0.1 with ephemeral
- * ports and explicit loopback {@code discoveryAddress} everywhere.
+ * <p>Adjacent rebuild scenarios are covered by {@code ServerPubSubReconfigureModelTest}, {@code
+ * PubSubInfoModelLiveStateTest}, and {@code ServerPubSubTargetVariablesReconfigureTest}. Network
+ * safety: unicast 127.0.0.1 with ephemeral ports and explicit loopback {@code discoveryAddress}
+ * everywhere.
  */
 class FragmentRebuildIntegrationTest {
 
@@ -100,10 +101,10 @@ class FragmentRebuildIntegrationTest {
   }
 
   /**
-   * RB7 + D27: loop N raced {@code startup()}/{@code close()} pairs (a {@link CountDownLatch}
-   * releases both threads together) and assert after every iteration that the world is residue-free
-   * — the per-face lifecycle state machine must serialize ANY interleaving into "never registered"
-   * or "registered, then fully torn down".
+   * Loop raced {@code startup()}/{@code close()} pairs (a {@link CountDownLatch} releases both
+   * threads together) and assert after every iteration that the world is residue-free — the
+   * lifecycle state machine must serialize ANY interleaving into "never registered" or "registered,
+   * then fully torn down".
    */
   @Test
   void racedStartupAndCloseLoopLeavesNoFaceResidue() throws Exception {
@@ -129,7 +130,8 @@ class FragmentRebuildIntegrationTest {
                   serverPubSub.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
                 } catch (ExecutionException e) {
                   // a startup that loses the race fails CLEANLY (the engine service was
-                  // already shut down; the faces were marked STOPPED) — tolerated, the
+                  // already shut down; the optional components were marked STOPPED) — tolerated,
+                  // the
                   // guarantee under test is registration hygiene, not startup success
                 } catch (Throwable t) {
                   failures.add(t);
@@ -175,21 +177,21 @@ class FragmentRebuildIntegrationTest {
               .isEmpty(),
           "iteration " + i + ": a fragment node survived the raced lifecycle");
 
-      // the D27 twins: the SKS face and the remote-configuration face restored the ns0
+      // the optional helpers restored the ns0
       // NOT_IMPLEMENTED handlers (never-attached and attached-then-detached look identical)
       assertSame(
           MethodInvocationHandler.NOT_IMPLEMENTED,
           methodNode(NodeIds.PublishSubscribe_GetSecurityKeys).getInvocationHandler(),
-          "iteration " + i + ": the SKS face left its GetSecurityKeys handler attached");
+          "iteration " + i + ": the SKS helper left its GetSecurityKeys handler attached");
       assertSame(
           MethodInvocationHandler.NOT_IMPLEMENTED,
           methodNode(NodeIds.PublishSubscribe_PubSubConfiguration_Open).getInvocationHandler(),
-          "iteration " + i + ": the configuration face left its Open handler attached");
+          "iteration " + i + ": the configuration helper left its Open handler attached");
     }
   }
 
   /**
-   * RB3, the §11 cross-check: after a path-stable Modify (group {@code publishingInterval} change),
+   * Node-layer cross-check: after a path-stable Modify (group {@code publishingInterval} change),
    * the SAME fragment Diagnostics counter node serves the PRESERVED value — read immediately after
    * the apply (the rebuild hooks run synchronously inside the reconfigure), a restarted counter
    * would still be near zero — and keeps counting live traffic afterwards.
@@ -246,7 +248,7 @@ class FragmentRebuildIntegrationTest {
                   PubSubService.ReconfigureMode.DISABLE_AFFECTED);
       assertEquals(List.of(RB3_CONNECTION + "/" + RB3_GROUP), result.restartedPaths());
 
-      // R14 at the NODE layer: the surviving node serves the preserved count right away
+      // at the NODE layer: the surviving node serves the preserved count right away
       Object immediately = fragmentNodeValue(counterId);
       assertTrue(
           immediately instanceof UInteger count && count.longValue() >= floor,
@@ -274,7 +276,7 @@ class FragmentRebuildIntegrationTest {
 
   // region fixtures
 
-  /** Reader-only connection plus one SecurityGroup: substance for the fragment AND SKS faces. */
+  /** Reader-only connection plus one SecurityGroup: substance for the fragment and SKS helper. */
   private static PubSubConfig raceConfig() throws SocketException {
     return PubSubConfig.builder()
         .securityGroup(

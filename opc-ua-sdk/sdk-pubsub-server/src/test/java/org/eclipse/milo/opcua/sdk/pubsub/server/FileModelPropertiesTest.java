@@ -54,17 +54,17 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * The i=25451 property rows over the REAL wire (T5 §5.4): the three D19-created optional properties
- * (MimeType/MaxByteStringLength/LastModifiedTime) answer real client Reads while the face is up and
- * are ABSENT ({@code Bad_NodeIdUnknown}) after shutdown; {@code Size} always serves the real
- * encoded file length (D43) and refreshes per apply; {@code Writable}/{@code UserWritable} are
- * capability values that stay {@code true} while a write lock is held; {@code OpenCount} (UInt16)
- * tracks opens/closes/CloseAndUpdate; {@code LastModifiedTime} strictly advances on a successful
- * apply; and the D20/AUTH11 disabled posture: with {@code allowRemoteConfiguration = false} the
- * loader property VALUES stay null and the D19 nodes are never created.
+ * The i=25451 property behavior over the REAL wire: the three optional properties
+ * (MimeType/MaxByteStringLength/LastModifiedTime) answer real client Reads while the helper is up
+ * and are ABSENT ({@code Bad_NodeIdUnknown}) after shutdown; {@code Size} always serves the real
+ * encoded file length and refreshes per apply; {@code Writable}/{@code UserWritable} are capability
+ * values that stay {@code true} while a write lock is held; {@code OpenCount} (UInt16) tracks
+ * opens/closes/CloseAndUpdate; {@code LastModifiedTime} strictly advances on a successful apply;
+ * and the disabled posture: with {@code allowRemoteConfiguration = false} the loader property
+ * VALUES stay null and the optional nodes are never created.
  *
- * <p>Per-test {@link ServerPubSub} attach (the lifecycle rows shut the face down), one class-level
- * started {@link SksTestServer} and one anonymous None-endpoint client.
+ * <p>Per-test {@link ServerPubSub} attach (the lifecycle tests shut the helper down), one
+ * class-level started {@link SksTestServer} and one anonymous None-endpoint client.
  */
 class FileModelPropertiesTest {
 
@@ -105,7 +105,7 @@ class FileModelPropertiesTest {
   void createdAndMandatoryPropertiesServeTheR3Values() throws Exception {
     ServerPubSub serverPubSub = attach(true);
 
-    // the three D19-created optional properties answer REAL Reads while the face is up
+    // the three optional properties answer REAL Reads while the helper is up
     assertEquals(
         PubSubConfigFiles.MIME_TYPE,
         goodValue(NodeIds.PublishSubscribe_PubSubConfiguration_MimeType));
@@ -120,7 +120,7 @@ class FileModelPropertiesTest {
         goodValue(NodeIds.PublishSubscribe_PubSubConfiguration_LastModifiedTime)
             instanceof DateTime);
 
-    // Size is the REAL encoded length of the current configuration file (D43)
+    // Size is the REAL encoded length of the current configuration file
     byte[] fileBytes = file.readWholeFile();
     assertEquals(
         ulong(fileBytes.length), goodValue(NodeIds.PublishSubscribe_PubSubConfiguration_Size));
@@ -193,7 +193,7 @@ class FileModelPropertiesTest {
 
     serverPubSub.close();
 
-    // the three created nodes are GONE from ns0 (structural carve-out reverted, D19)
+    // the three created nodes are GONE from ns0 (structural carve-out reverted)
     for (NodeId createdNodeId :
         List.of(
             NodeIds.PublishSubscribe_PubSubConfiguration_MimeType,
@@ -218,18 +218,18 @@ class FileModelPropertiesTest {
 
   @Test
   void disabledRemoteConfigurationKeepsNs0Untouched() throws Exception {
-    // D20/AUTH11: attach with allowRemoteConfiguration = false
+    // attach with allowRemoteConfiguration = false
     attach(false);
 
     // the methods keep the loader default over the wire
     assertEquals(new StatusCode(StatusCodes.Bad_NotImplemented), file.open(ubyte(0x01)).status());
 
-    // the D19 optional properties are never created
+    // the optional properties are never created
     assertEquals(
         new StatusCode(StatusCodes.Bad_NodeIdUnknown),
         file.readValue(NodeIds.PublishSubscribe_PubSubConfiguration_MimeType).getStatusCode());
 
-    // the loader property VALUES stay null (not false/zero — D20's amendment)
+    // the loader property VALUES stay null (not false/zero)
     assertNull(nullableValue(NodeIds.PublishSubscribe_PubSubConfiguration_Writable));
     assertNull(nullableValue(NodeIds.PublishSubscribe_PubSubConfiguration_UserWritable));
     assertNull(nullableValue(NodeIds.PublishSubscribe_PubSubConfiguration_Size));

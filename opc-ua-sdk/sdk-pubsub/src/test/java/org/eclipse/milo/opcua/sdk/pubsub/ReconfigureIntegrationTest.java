@@ -294,7 +294,8 @@ class ReconfigureIntegrationTest {
 
       publisher.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
 
-      // phase 1: the keyFrameCount = 3 cadence is live — key frames carry both fields, deltas
+      // before reconfigure: the keyFrameCount = 3 cadence is live — key frames carry both fields,
+      // deltas
       // carry only the changing field with its explicit index
       boolean sawKeyFrame = false;
       boolean sawDeltaFrame = false;
@@ -316,7 +317,8 @@ class ReconfigureIntegrationTest {
       assertTrue(sawKeyFrame, "no key frame observed before the reconfigure");
       assertTrue(sawDeltaFrame, "no delta frame observed before the reconfigure");
 
-      // phase 2: a writer-level change (keyFrameCount 3 -> 4) recreates the writer runtime;
+      // after reconfigure: a writer-level change (keyFrameCount 3 -> 4) recreates the writer
+      // runtime;
       // the path-stable restart PRESERVES the DataSetMessage sequence number, so the stream
       // continues seamlessly and the restart is visible only through the cadence change
       publisher.reconfigure(
@@ -369,10 +371,11 @@ class ReconfigureIntegrationTest {
   }
 
   /**
-   * R14 + sequence preservation for a path-stable group restart: a group-shell change restarts the
-   * group; its diagnostic counters, TimeFirstChange, the writer's DataSetMessage sequence number,
-   * and the group's NetworkMessage sequence number all continue where the replaced runtime left off
-   * (removal still zeroes: see {@link #removalAndReAddZeroesCountersAndRestartsSequenceAtZero}).
+   * Sequence and counter preservation for a path-stable group restart: a group-shell change
+   * restarts the group; its diagnostic counters, TimeFirstChange, the writer's DataSetMessage
+   * sequence number, and the group's NetworkMessage sequence number all continue where the replaced
+   * runtime left off (removal still zeroes: see {@link
+   * #removalAndReAddZeroesCountersAndRestartsSequenceAtZero}).
    */
   @Test
   void pathStableGroupRestartPreservesCountersAndSequenceNumbers() throws Exception {
@@ -432,7 +435,7 @@ class ReconfigureIntegrationTest {
       assertEquals("pub-conn", change.connectionName());
       assertEquals("grp-a", change.groupName());
 
-      // counters and TimeFirstChange survive the restart (restartedPaths preserve; R14)
+      // counters and TimeFirstChange survive the restart
       PubSubDiagnostics.ComponentDiagnostics after =
           publisher.diagnostics().component("pub-conn/grp-a").orElseThrow();
       assertTrue(after.networkMessagesSent() >= before.networkMessagesSent());

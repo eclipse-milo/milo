@@ -62,7 +62,7 @@ import org.junit.jupiter.params.provider.MethodSource;
  * Bad_InvalidArgument} with the method itself Good and full-length {@code ReferencesResults}.
  *
  * <p>Byte-level applier semantics are unit territory ({@code CloseAndUpdateApplierTest}); these
- * rows pin the wire-visible contract, including the D40 one-shot handle rule: a completed
+ * rows cover the wire-visible contract, including the one-shot handle rule: a completed
  * CloseAndUpdate — applied, element-failed, or method-failed on the buffer plane — closes the
  * handle and releases the write lock, while a handle/mode failure ({@code Bad_InvalidState}) leaves
  * the handle open.
@@ -333,7 +333,7 @@ class CloseAndUpdateRefValidationTest {
             });
     assertEquals(new StatusCode(StatusCodes.Bad_InvalidState), result.status());
 
-    // the handle/mode check failed BEFORE the D40 closure point: the handle is still open
+    // the handle/mode check failed BEFORE the closure point: the handle is still open
     assertTrue(file.close(handle).status().isGood());
   }
 
@@ -373,7 +373,7 @@ class CloseAndUpdateRefValidationTest {
     assertHandleClosedAndLockReleased(second);
   }
 
-  /** D40/FT §9.3: the completed call consumed the handle and released the write lock. */
+  /** A completed call consumes the handle and releases the write lock. */
   private static void assertHandleClosedAndLockReleased(UInteger handle) throws Exception {
     assertEquals(new StatusCode(StatusCodes.Bad_InvalidArgument), file.close(handle).status());
     assertEquals(

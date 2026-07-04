@@ -325,7 +325,7 @@ public final class PubSubServiceImpl implements PubSubService {
       // dispose the component tree FIRST: deactivation cancels the publish tasks and detaches
       // every secured group from the key manager, so key material is retired only after no new
       // secured cycle can start — an in-flight cycle (or decode) still borrowing retired material
-      // drains within the manager's deferred-destroy grace, never racing the wipe (S3)
+      // drains within the manager's deferred-destroy grace, never racing the wipe
       for (ConnectionRuntime connection : connections.values()) {
         stateMachine.disposeSubtree(connection);
         Future<?> disposeFuture = connection.dispose();
@@ -1037,7 +1037,7 @@ public final class PubSubServiceImpl implements PubSubService {
    * Unregister a component subtree. With {@code preserve} (path-stable CHANGED restarts and
    * STOP_AND_RESTART rebuilds) the diagnostics entries are parked for revival by the re-add's
    * {@link #registerTree}, so counters, {@code lastError}, and TimeFirstChange survive the restart
-   * (R14); without it (true removals) they are discarded. Handles always invalidate.
+   * without it (true removals) they are discarded. Handles always invalidate.
    */
   private void unregisterTree(AbstractComponentRuntime component, boolean preserve) {
     component.children().forEach(child -> unregisterTree(child, preserve));
@@ -1424,13 +1424,13 @@ public final class PubSubServiceImpl implements PubSubService {
   /**
    * Validate the subset of the {@link #validateStartup} conditions that reconfiguration must also
    * enforce, because the runtime cannot degrade gracefully on them: message security
-   * misconfiguration on enabled groups (K3 applies at startup AND reconfigure — a secured mode on a
-   * JSON-mapped group, or a secured group missing its SecurityGroup reference, a supported security
-   * policy, or a bound key provider; providers are fixed at creation, so such a group could only
-   * ever fail its activation), missing mapping providers for enabled components, enabled readers on
-   * broker connections without a configured data queueName, enabled writers on broker connections
-   * overriding requestedDeliveryGuarantee without a writer-level queueName (see {@link
-   * #writerQosOverrideLacksQueueName}), and enabled writer groups on UDP connections with a
+   * misconfiguration on enabled groups (the same rule applies at startup and reconfigure: a secured
+   * mode on a JSON-mapped group, or a secured group missing its SecurityGroup reference, a
+   * supported security policy, or a bound key provider; providers are fixed at creation, so such a
+   * group could only ever fail its activation), missing mapping providers for enabled components,
+   * enabled readers on broker connections without a configured data queueName, enabled writers on
+   * broker connections overriding requestedDeliveryGuarantee without a writer-level queueName (see
+   * {@link #writerQosOverrideLacksQueueName}), and enabled writer groups on UDP connections with a
    * maxNetworkMessageSize above the Part 14 §7.3.2.1 limit of 65535. Throws {@link
    * UaRuntimeException} with {@code Bad_ConfigurationError} (the reconfigure API has no
    * checked-exception surface). Startup-only conditions with a graceful runtime degradation path
@@ -1704,13 +1704,13 @@ public final class PubSubServiceImpl implements PubSubService {
   }
 
   /**
-   * Validate a writer group's message security (K3): a secured mode on a JSON-mapped group is
-   * rejected — JSON NetworkMessages have no message security in OPC UA 1.05 (Part 14 §7.3.4.1);
-   * transport security via {@code BrokerSecurityConfig} is the JSON-side substitute — and a secured
-   * mode on any other mapping (built-in UADP or a custom provider, which needs keys no matter who
-   * owns the wire format) requires a resolvable SecurityGroup reference, a supported security
-   * policy, and a bound {@link SecurityKeyProvider}. Group-level mode {@code Invalid} is treated
-   * like None. Enforced at startup, reconfigure, and group activation.
+   * Validate a writer group's message security: a secured mode on a JSON-mapped group is rejected —
+   * JSON NetworkMessages have no message security in OPC UA 1.05 (Part 14 §7.3.4.1); transport
+   * security via {@code BrokerSecurityConfig} is the JSON-side substitute — and a secured mode on
+   * any other mapping (built-in UADP or a custom provider, which needs keys no matter who owns the
+   * wire format) requires a resolvable SecurityGroup reference, a supported security policy, and a
+   * bound {@link SecurityKeyProvider}. Group-level mode {@code Invalid} is treated like None.
+   * Enforced at startup, reconfigure, and group activation.
    *
    * @throws UaException with {@code Bad_ConfigurationError} naming the missing piece.
    */
@@ -1728,11 +1728,11 @@ public final class PubSubServiceImpl implements PubSubService {
   }
 
   /**
-   * Validate a reader group's message security (K3): the reader-group counterpart of {@link
+   * Validate a reader group's message security: the reader-group counterpart of {@link
    * #checkWriterGroupMessageSecurity}. The mapping is a per-reader property here, so a secured
    * group is rejected when any enabled reader is JSON-mapped; otherwise the secured-keys
-   * requirements apply. The Phase 4 runtime resolves message security at GROUP level only; a
-   * reader-level {@code messageSecurity} override is config-complete but not consumed here.
+   * requirements apply. The runtime resolves message security at group level only; a reader-level
+   * {@code messageSecurity} override is config-complete but not consumed here.
    *
    * @throws UaException with {@code Bad_ConfigurationError} naming the missing piece.
    */
@@ -1764,10 +1764,10 @@ public final class PubSubServiceImpl implements PubSubService {
   }
 
   /**
-   * The secured-group key requirements (K3): a resolvable SecurityGroup reference, an effective
-   * security policy URI (group override, else the SecurityGroup's) that — when non-null — names a
-   * supported {@link PubSubSecurityPolicy} (a null URI passes: the provider's returned policy
-   * decides at fetch time, K8), and a bound {@link SecurityKeyProvider}.
+   * The secured-group key requirements: a resolvable SecurityGroup reference, an effective security
+   * policy URI (group override, else the SecurityGroup's) that — when non-null — names a supported
+   * {@link PubSubSecurityPolicy} (a null URI passes: the provider's returned policy decides at
+   * fetch time), and a bound {@link SecurityKeyProvider}.
    */
   private void checkSecuredGroupKeys(MessageSecurityConfig security, String path)
       throws UaException {

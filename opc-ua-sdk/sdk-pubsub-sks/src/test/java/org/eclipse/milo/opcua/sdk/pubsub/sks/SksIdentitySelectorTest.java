@@ -165,8 +165,8 @@ class SksIdentitySelectorTest {
     var store = new InMemoryKeyCredentialStore();
     store.put(SKS_URI, "user1", "password1".toCharArray());
 
-    // The entry lists UserName only, but the endpoint offers Anonymous only: K12 pins "try
-    // listed types in order, then fail the entry" — never downgrade past the list.
+    // The entry lists UserName only, but the endpoint offers Anonymous only: try listed types in
+    // order, then fail the entry; never downgrade past the list.
     UaException e =
         assertThrows(
             UaException.class,

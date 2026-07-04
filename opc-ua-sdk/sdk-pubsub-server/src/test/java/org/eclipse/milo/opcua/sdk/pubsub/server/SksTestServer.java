@@ -47,9 +47,9 @@ import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransportCo
 import org.jspecify.annotations.Nullable;
 
 /**
- * A STARTED {@link OpcUaServer} fixture with real opc.tcp endpoints for the K17 real-channel
- * authorization matrix — the deliberate opposite of {@link TestPubSubServer}, which is never
- * started and has no transports (and therefore cannot host GetSecurityKeys-over-channel tests).
+ * A STARTED {@link OpcUaServer} fixture with real opc.tcp endpoints for real-channel authorization
+ * matrix — the deliberate opposite of {@link TestPubSubServer}, which is never started and has no
+ * transports (and therefore cannot host GetSecurityKeys-over-channel tests).
  *
  * <p>Modeled on the integration-tests {@code TestServer} shape but self-contained: the server
  * certificate is generated in-memory with {@link SelfSignedCertificateBuilder} (no keystore

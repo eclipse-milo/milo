@@ -48,21 +48,20 @@ import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 /**
- * The K17 authorization matrix over a REAL secure channel and session: a started {@link
- * SksTestServer} hosts the K15 SKS face, and {@link OpcUaClient} connections at {@code None},
- * {@code Sign}, and {@code SignAndEncrypt} call {@code GetSecurityKeys} end-to-end.
+ * The authorization matrix over a REAL secure channel and session: a started {@link SksTestServer}
+ * hosts the SKS face, and {@link OpcUaClient} connections at {@code None}, {@code Sign}, and {@code
+ * SignAndEncrypt} call {@code GetSecurityKeys} end-to-end.
  *
- * <p>Rows covered (WP-T4 §5): A1/A2 — a None or Sign channel is denied {@code
- * Bad_SecurityModeInsufficient}, exercising the K17.1 status propagation (the ns0 GetSecurityKeys
- * node carries {@code AccessRestrictions = SigningRequired|EncryptionRequired}, so the ACCESS
- * CONTROLLER denies before the handler; the handler's own channel check is its backstop). A5 — an
- * encrypted caller with no RoleMapper configured is served keys for a group without explicit
- * RolePermissions. A3 — with a RoleMapper fixture granting the well-known SKS pull roles, the
- * mapped user is served keys over the encrypted channel while an unmapped user is denied {@code
- * Bad_UserAccessDenied}.
+ * <p>Coverage: a None or Sign channel is denied {@code Bad_SecurityModeInsufficient}, exercising
+ * real status propagation (the ns0 GetSecurityKeys node carries {@code AccessRestrictions =
+ * SigningRequired|EncryptionRequired}, so the ACCESS CONTROLLER denies before the handler; the
+ * handler's own channel check is its backstop). An encrypted caller with no RoleMapper configured
+ * is served keys for a group without explicit RolePermissions. With a RoleMapper fixture granting
+ * the well-known SKS pull roles, the mapped user is served keys over the encrypted channel while an
+ * unmapped user is denied {@code Bad_UserAccessDenied}.
  *
- * <p>The direct-invoke matrix (A6-A10 and friends) lives in {@link SksServerFaceTest}; this class
- * proves the channel-facing rows the mocked-session tests cannot.
+ * <p>The direct-invoke matrix lives in {@link SksServerFaceTest}; this class proves the
+ * channel-facing cases the mocked-session tests cannot.
  */
 class SksMethodAuthorizationIntegrationTest {
 
@@ -72,7 +71,7 @@ class SksMethodAuthorizationIntegrationTest {
 
   private static final Duration TIMEOUT = Duration.ofSeconds(10);
 
-  /** A1 + A2 + A5, against a server with NO RoleMapper. */
+  /** Channel checks and the no-RoleMapper allow path, against a server with NO RoleMapper. */
   @Test
   void channelSecurityModeIsEnforcedEndToEnd() throws Exception {
     try (SksTestServer testServer = SksTestServer.create(null)) {
@@ -82,7 +81,7 @@ class SksMethodAuthorizationIntegrationTest {
         X509Certificate clientCertificate = clientCertificate(clientKeyPair);
         testServer.trustClientCertificate(clientCertificate);
 
-        // A1: None channel — denied with the K17.1-propagated status, not a generic Bad
+        // None channel — denied with the propagated status, not a generic Bad
         OpcUaClient noneClient =
             connect(
                 testServer,
@@ -99,7 +98,7 @@ class SksMethodAuthorizationIntegrationTest {
           noneClient.disconnect();
         }
 
-        // A2: Sign channel — signing alone is insufficient, GetSecurityKeys needs encryption
+        // Sign channel — signing alone is insufficient, GetSecurityKeys needs encryption
         OpcUaClient signClient =
             connect(
                 testServer,
@@ -116,7 +115,7 @@ class SksMethodAuthorizationIntegrationTest {
           signClient.disconnect();
         }
 
-        // A5: SignAndEncrypt channel, no RoleMapper, group without explicit RolePermissions —
+        // SignAndEncrypt channel, no RoleMapper, group without explicit RolePermissions —
         // Good, and the keys arrive over the encrypted channel
         OpcUaClient encryptedClient =
             connect(
@@ -139,10 +138,10 @@ class SksMethodAuthorizationIntegrationTest {
     }
   }
 
-  /** A3 (grant) plus the unmapped-user deny, against a server WITH a RoleMapper fixture. */
+  /** Grant plus the unmapped-user deny, against a server WITH a RoleMapper fixture. */
   @Test
   void roleMapperGrantsTheSksPullRolesEndToEnd() throws Exception {
-    // the K17 test-fixture RoleMapper (a shipped RoleMapper is a non-goal): the "keys" user is
+    // the test-fixture RoleMapper (a shipped RoleMapper is a non-goal): the "keys" user is
     // granted the well-known SKS roles, every other identity gets none
     RoleMapper roleMapper =
         identity -> {
@@ -162,7 +161,7 @@ class SksMethodAuthorizationIntegrationTest {
         X509Certificate clientCertificate = clientCertificate(clientKeyPair);
         testServer.trustClientCertificate(clientCertificate);
 
-        // A3: the mapped user is served keys over the encrypted channel
+        // the mapped user is served keys over the encrypted channel
         OpcUaClient authorizedClient =
             connect(
                 testServer,
@@ -285,7 +284,7 @@ class SksMethodAuthorizationIntegrationTest {
     return results[0];
   }
 
-  /** The Good result actually carries key material in the K15 output shape. */
+  /** The Good result actually carries key material in the GetSecurityKeys output shape. */
   private static void assertServedKeys(CallMethodResult result) {
     Variant[] outputs = result.getOutputArguments();
     assertNotNull(outputs);

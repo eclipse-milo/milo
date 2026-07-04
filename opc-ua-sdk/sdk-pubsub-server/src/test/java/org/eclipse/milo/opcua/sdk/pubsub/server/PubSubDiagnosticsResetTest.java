@@ -56,11 +56,11 @@ import org.junit.jupiter.api.Test;
  * Session}s ({@code SksServerFaceTest} pattern — direct invocation bypasses the AccessController,
  * which is the point: the handler-side checks are the subject).
  *
- * <p>Rows: the D29/D41/D38 authorization matrix (session-less &rarr; {@code Bad_UserAccessDenied};
- * no RoleMapper &rarr; allowed; RoleMapper without ConfigureAdmin &rarr; denied; with &rarr;
- * allowed; no channel-security minimum — a None-mode session passes), the §9.1.11.3 per-object
- * scope (resetting a group leaves its readers' counters), and the root special case (D10: {@code
- * i=17421} zeroes only the fragment-local root counters, never touching engine counters or {@code
+ * <p>Coverage: the authorization matrix (session-less &rarr; {@code Bad_UserAccessDenied}; no
+ * RoleMapper &rarr; allowed; RoleMapper without ConfigureAdmin &rarr; denied; with &rarr; allowed;
+ * no channel-security minimum — a None-mode session passes), the §9.1.11.3 per-object scope
+ * (resetting a group leaves its readers' counters), and the root special case ({@code i=17421}
+ * zeroes only the fragment-local root counters, never touching engine counters or {@code
  * targetWriteErrors()}).
  *
  * <p>Counters are driven without traffic: {@code runtime().disable(group)} ticks the group's
@@ -104,7 +104,7 @@ class PubSubDiagnosticsResetTest {
         UaMethodNode resetNode =
             fragmentMethodNode(testServer, "PubSub/" + groupPath + "/Diagnostics/Reset");
 
-        // session-less invocations answer Bad_UserAccessDenied (D29)
+        // session-less invocations answer Bad_UserAccessDenied
         CallMethodResult sessionLess = invokeReset(resetNode, null);
         assertEquals(new StatusCode(StatusCodes.Bad_UserAccessDenied), sessionLess.getStatusCode());
         assertEquals(
@@ -117,7 +117,7 @@ class PubSubDiagnosticsResetTest {
             invokeReset(resetNode, mockSession(List.of(new NodeId(1, "unrelated-role"))));
         assertEquals(new StatusCode(StatusCodes.Bad_UserAccessDenied), denied.getStatusCode());
 
-        // no RoleMapper (empty roleIds Optional): allowed — the R9 opt-in posture
+        // no RoleMapper (empty roleIds Optional): allowed by the opt-in posture
         CallMethodResult allowed = invokeReset(resetNode, mockSession(null));
         assertEquals(StatusCode.GOOD, allowed.getStatusCode());
 
@@ -163,7 +163,7 @@ class PubSubDiagnosticsResetTest {
         awaitCounter(serverPubSub, groupPath, ComponentDiagnostics::stateDisabledByMethod, 1);
 
         // ...and the fragment-local root counters tick through the test seam (nothing ticks
-        // them in production: the root Status Enable/Disable pair is not minted, D23)
+        // them in production: the root Status Enable/Disable pair is not minted)
         PubSubInfoModelFragment fragment = serverPubSub.infoModelFragment();
         assertNotNull(fragment);
         PubSubDiagnosticsExposure exposure = fragment.diagnosticsExposure();
@@ -186,7 +186,7 @@ class PubSubDiagnosticsResetTest {
         CallMethodResult result = invokeReset(rootResetNode, mockSession(null));
         assertEquals(StatusCode.GOOD, result.getStatusCode());
 
-        // root Reset is fragment-local (D10): the ns0 counter zeroes...
+        // root Reset is fragment-local: the ns0 counter zeroes...
         assertEquals(
             uint(0),
             ns0CounterValue(
@@ -332,7 +332,7 @@ class PubSubDiagnosticsResetTest {
   /**
    * A session whose {@code getRoleIds()} reflects the RoleMapper posture: {@code null} = no
    * RoleMapper configured; a list = mapped roles. No channel-security stub: Reset has no
-   * channel-mode minimum (D38).
+   * channel-mode minimum.
    */
   private static Session mockSession(@Nullable List<NodeId> roleIds) {
     Session session = mock(Session.class);
