@@ -381,7 +381,13 @@ final class ReaderDispatcher {
       // a header-only security skip: nothing was decoded, so nothing can be delivered — count
       // the drop against the group whose keys were (or would have been) used and stop here.
       // These are security drops, never decodeErrors.
-      countSecuritySkip(security, securityResolvedGroup);
+      if (securityResolvedGroup != null) {
+        countSecuritySkip(security, securityResolvedGroup);
+      } else {
+        // the resolver refused to route (no secured group covers this traffic), so the message
+        // can never reach the receive-mode gate below — count its K7 drops here instead
+        countUnroutedSecuritySkip(connection, mappingName, decoded, oversizeGroups, security);
+      }
       return;
     }
 
@@ -796,20 +802,11 @@ final class ReaderDispatcher {
   /**
    * Count one header-only security skip against the reader group whose keys were used (or would
    * have been used): the group the resolver routed to by the C7/S7 declaration-order rule over the
-   * plaintext wire identity (PublisherId, WriterGroupId, DataSetWriterIds). Secured traffic the
-   * resolver refused to route counts nothing (no local group covers it — it is not ours), and no
-   * looser re-match is attempted here: matching without the DataSetWriterId dimension would
-   * attribute traffic to a group whose readers filter a different writer. One tick per
-   * NetworkMessage; security drops never tick {@code decodeErrors}.
+   * plaintext wire identity (PublisherId, WriterGroupId, DataSetWriterIds). One tick per
+   * NetworkMessage; security drops never tick {@code decodeErrors}. Secured traffic the resolver
+   * refused to route is counted by {@link #countUnroutedSecuritySkip} instead.
    */
-  private void countSecuritySkip(
-      ReceivedSecurity security, @Nullable ReaderGroupRuntime resolvedGroup) {
-
-    ReaderGroupRuntime group = resolvedGroup;
-    if (group == null) {
-      return;
-    }
-
+  private void countSecuritySkip(ReceivedSecurity security, ReaderGroupRuntime group) {
     switch (security.outcome()) {
       case UNKNOWN_TOKEN -> service.getDiagnostics().unknownTokenMessage(group.path());
 
@@ -833,6 +830,34 @@ final class ReaderDispatcher {
       case NO_RESOLVER, VERIFIED -> {
         // NO_RESOLVER cannot occur: dispatch always supplies a resolver; VERIFIED never routes
         // here
+      }
+    }
+  }
+
+  /**
+   * Count one header-only security skip the resolver refused to route: no receiving secured group
+   * matched the plaintext wire identity, so the message arrived payload-skipped and can never reach
+   * the receive-mode gate in {@code handleDecoded} — but K7 pins its drop counted, not silent.
+   * Applies the gate's own counting condition per group: {@code staleKeyMessages} ticks for each
+   * group whose configured mode rejects the received mode and whose readers the message would have
+   * matched (unrelated traffic is not counted). The canonical instance is a subscriber whose
+   * matching reader groups are all mode-None receiving a publisher's secured traffic: without this
+   * tick every security counter would sit at zero while its data silently drops.
+   */
+  private void countUnroutedSecuritySkip(
+      ConnectionRuntime connection,
+      String mappingName,
+      DecodedNetworkMessage decoded,
+      Set<ReaderGroupRuntime> oversizeGroups,
+      ReceivedSecurity security) {
+
+    for (ReaderGroupRuntime group : connection.readerGroupRuntimes()) {
+      if (oversizeGroups.contains(group)) {
+        continue;
+      }
+      if (!receiveModeAccepts(group.config().getMessageSecurity(), security.mode())
+          && anyReaderMatches(group, mappingName, decoded)) {
+        service.getDiagnostics().staleKeyMessage(group.path());
       }
     }
   }

@@ -32,7 +32,8 @@ public interface SecurityKeyProvider {
    *
    * @param securityGroupId the id of the SecurityGroup to get keys for.
    * @param startingTokenId the id of the first token to return; 0 requests the current token.
-   * @param requestedKeyCount the number of keys requested, including the starting token's key.
+   * @param requestedKeyCount the number of keys requested <em>beyond</em> the starting token's key;
+   *     {@code 0} requests just the starting token's key.
    * @return a {@link CompletableFuture} that completes with the requested {@link SecurityKeySet},
    *     or completes exceptionally if the keys could not be obtained.
    */
