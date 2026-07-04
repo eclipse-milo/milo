@@ -171,7 +171,12 @@ public final class ServerPubSub implements AutoCloseable {
    * (registering a new writer in {@link #writers}), so a reconfigure racing shutdown can never
    * register — and later seed — a writer the deactivation pass did not cover; that would issue
    * TargetVariables writes after the shutdown future resolved, breaking the {@link #shutdown()}
-   * contract. Leaf lock: never held across engine or address-space calls.
+   * contract. Ordering discipline (NOT a leaf lock): {@code writersLock} &rarr; writer monitor is
+   * permitted — the shutdown pass calls the synchronized {@code TargetVariablesWriter.deactivate()}
+   * under this lock and may transitively wait for an in-flight address-space write to finish — but
+   * the reverse order is forbidden: nothing may acquire {@code writersLock} while holding a writer
+   * monitor ({@code TargetVariablesWriter} never touches this lock, and the re-derivation
+   * deactivates a replaced writer <em>before</em> taking it).
    */
   private final Object writersLock = new Object();
 
@@ -258,6 +263,9 @@ public final class ServerPubSub implements AutoCloseable {
             ? new PubSubConfigurationFace(
                 server,
                 config,
+                // seeds the face's atomically-swapped (config, version) pair with the same
+                // value the mediator is seeded with below
+                initialConfigurationVersion,
                 methodAuthorizer,
                 fragment,
                 this::currentConfigurationVersion,

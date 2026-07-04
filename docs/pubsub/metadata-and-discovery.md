@@ -73,6 +73,7 @@ A few configuration facts worth knowing:
 
 - If you don't set `discoveryAddress(...)`, the engine uses the Part 14 default `opc.udp://224.0.2.14:4840` — binding well-known port 4840 and joining a multicast group. Always pin an explicit discovery address in development so demos and tests don't touch the default.
 - The discovery channel only opens when it's needed: the connection has writer groups (responder), or some reader uses `REQUEST_IF_MISSING` (probing). A subscriber-only connection whose readers are all `REQUIRE_CONFIGURED` or `ACCEPT_DISCOVERED` never binds its discovery address — but pin it anyway, so a later policy change can't silently bind 4840.
+- The channel also closes when it stops being needed: a reconfiguration that removes the connection's last writer group and last `REQUEST_IF_MISSING` reader releases the discovery sockets instead of holding them until the connection is disposed. A later reconfigure that re-adds a discovery-requiring component reopens them (and reseeds the responder's announcement baseline). One caveat carries over from [operations](operations.md#live-reconfiguration): a reconfigure that changes *only* the `discoveryAddress` restarts nothing, so a running discovery channel keeps its old address until the connection is rebuilt for another reason.
 - Discovery messages are capped at 4096 bytes (not configurable). A metadata document too large to encode within that is not announced; the failure lands in diagnostics.
 
 ### Walkthrough: the multicast discovery pair

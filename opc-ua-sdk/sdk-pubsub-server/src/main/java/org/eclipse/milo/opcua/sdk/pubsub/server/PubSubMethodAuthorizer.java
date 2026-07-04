@@ -14,7 +14,10 @@ import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 
 /**
- * Authorizes calls to the PubSub-related ns0 Methods handled by {@link ServerPubSub}.
+ * Authorizes calls to the PubSub-related Methods handled by {@link ServerPubSub}: the ns0
+ * file-model, {@code GetSecurityKeys}, and root Reset handlers, plus the per-component
+ * Enable/Disable and Reset handlers minted in the server namespace when the information model is
+ * exposed (see {@link #checkConfigure} for the full consumer set).
  *
  * <p>Contract: {@link StatusCode#GOOD} means the call is allowed; any bad code denies the call and
  * is surfaced verbatim as the {@code CallMethodResult} status. Channel security-mode checks (e.g.

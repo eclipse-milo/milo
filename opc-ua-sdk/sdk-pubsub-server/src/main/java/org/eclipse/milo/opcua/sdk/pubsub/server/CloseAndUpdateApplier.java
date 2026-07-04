@@ -131,14 +131,19 @@ import org.jspecify.annotations.Nullable;
  * null) is allocated from 0x8000–0xFFFF, preferring the calling session's outstanding reservations
  * for the element's transport profile (consumed only on successful apply). Explicit ids
  * 0x0001–0x7FFF are always accepted; explicit ids 0x8000–0xFFFF are accepted unless reserved by
- * another session ({@code Bad_InvalidArgument} — reservations are cross-session exclusive).
- * Auto-assignment applies to the referenced element only; nested children carrying null names or
- * zero ids fail their reference with {@code Bad_InvalidArgument}. A per-element {@code enabled}
- * flag in the payload is honored as ordinary payload (the top-level ignore rule covers only the
- * top-level Enable field): an element added enabled comes up through the §6.2.1 state machine — and
- * every applied change goes through {@code DISABLE_AFFECTED} (R6), so affected components bounce
- * visibly and restart their DataSetMessage sequence numbering per the documented engine rules; this
- * visibility is intended (do not switch modes; STOP_AND_RESTART is not exposed).
+ * another session ({@code Bad_InvalidArgument} — reservations are cross-session exclusive). The
+ * same exclusivity rule guards a <b>Modify</b> that introduces a server-range id the bound live
+ * element does not already carry: another session's reservation fails the reference per-element,
+ * while the calling session's own reservation is consumed on successful apply. Auto-assignment
+ * applies to the referenced element only; nested children carrying null names or zero ids fail
+ * their reference with {@code Bad_InvalidArgument}. A per-element {@code enabled} flag in the
+ * payload is honored as ordinary payload (the top-level ignore rule covers only the top-level
+ * Enable field): an element added enabled comes up through the §6.2.1 state machine — and every
+ * applied change goes through {@code DISABLE_AFFECTED} (R6), so affected components bounce visibly
+ * through the state machine; per the documented engine rules (D44) a path-stable restart — what a
+ * Modify produces — <em>preserves</em> DataSetMessage and NetworkMessage sequence numbering (added
+ * elements start at 0; only cross-call remove+re-add and a 16/32-bit mapping-width switch restart
+ * at 0); this visibility is intended (do not switch modes; STOP_AND_RESTART is not exposed).
  *
  * <p><b>Apply:</b> every reference is individually evaluated and ReferencesResults is full-length
  * and order-matched in BOTH RequireCompleteUpdate modes; the method-level result is Good even when
@@ -164,8 +169,12 @@ import org.jspecify.annotations.Nullable;
  * <p><b>Outputs:</b> ConfigurationValues entries exist only for Add/Match references where a name
  * or identifier was assigned (Add) or resolved (Match), self-correlating via their {@code
  * ConfigurationElement}; identifiers are typed per element kind (connection → PublisherId, writer
- * group → WriterGroupId, dataset writer → DataSetWriterId, null otherwise). ConfigurationObjects is
- * length-matched with {@link NodeId#NULL_VALUE} in the slots of Remove references, failed
+ * group → WriterGroupId, dataset writer → DataSetWriterId, null otherwise). Add-side assignments
+ * are reported only when the changes were applied: an aborted apply (atomic mode with a failed
+ * reference, or an engine-validation rejection) assigned nothing — the element does not exist and
+ * its reservation was not consumed, so a retry may legitimately assign different values — and only
+ * Match resolutions, which name elements that exist regardless, are reported. ConfigurationObjects
+ * is length-matched with {@link NodeId#NULL_VALUE} in the slots of Remove references, failed
  * references, and kinds the information model never materializes (SecurityGroups, standalone
  * SubscribedDataSets, PushTargets) — or EMPTY when the {@link ConfigurationObjectIds} seam is
  * absent (D25). The mediator's post-apply hooks run synchronously inside {@code update}, so the
@@ -293,7 +302,7 @@ final class CloseAndUpdateApplier {
     return new Outcome(
         applied[0] != null,
         results,
-        configurationValues(refs, results),
+        configurationValues(refs, results, applied[0] != null),
         configurationObjects(refs, results),
         applied[0],
         consumed);
@@ -697,11 +706,17 @@ final class CloseAndUpdateApplier {
                   .filter(g -> g.getName().equals(name))
                   .findFirst()
                   .orElseThrow(() -> noMatch("writer group", name));
+          UsedReservation introduced =
+              checkIntroducedId(
+                  IdKind.WRITER_GROUP, wire.getWriterGroupId(), existing.getWriterGroupId());
           WriterGroupConfig mapped =
               mapElement(
                   () -> PubSubConfigElements.mapWriterGroup(wire, namespaceTable, securityGroups));
           replaceWriterGroup(parent, existing, mapped);
           recordWriterGroup(ref, parent.name(), name);
+          if (introduced != null) {
+            consumed.add(introduced);
+          }
         }
         case READER_GROUP -> {
           PubSubConnectionConfig parent = bindParentConnection(ref);
@@ -724,9 +739,14 @@ final class CloseAndUpdateApplier {
           DataSetWriterDataType wire =
               file.dataSetWriters(ref.connectionIndex, ref.groupIndex)[ref.elementIndex];
           String name = requireBindingName(wire.getName());
-          if (group.getDataSetWriters().stream().noneMatch(w -> w.getName().equals(name))) {
-            throw noMatch("dataset writer", name);
-          }
+          DataSetWriterConfig existing =
+              group.getDataSetWriters().stream()
+                  .filter(w -> w.getName().equals(name))
+                  .findFirst()
+                  .orElseThrow(() -> noMatch("dataset writer", name));
+          UsedReservation introduced =
+              checkIntroducedId(
+                  IdKind.DATA_SET_WRITER, wire.getDataSetWriterId(), existing.getDataSetWriterId());
           DataSetWriterConfig mapped =
               mapElement(
                   () ->
@@ -737,6 +757,9 @@ final class CloseAndUpdateApplier {
           ref.resolvedConnectionName = parent.name();
           ref.resolvedGroupName = group.getName();
           ref.resolvedName = name;
+          if (introduced != null) {
+            consumed.add(introduced);
+          }
         }
         case DATA_SET_READER -> {
           PubSubConnectionConfig parent = bindParentConnection(ref);
@@ -1041,6 +1064,9 @@ final class CloseAndUpdateApplier {
         }
       }
       ref.mutationApplied = true;
+      // any value reported above is an Add-side ASSIGNMENT — speculative until the apply
+      // commits — unlike a Match resolution of an element that already exists
+      ref.assignedByAdd = ref.reportValue;
     }
 
     private void applyMatch(Ref ref) {
@@ -1073,17 +1099,28 @@ final class CloseAndUpdateApplier {
         case WRITER_GROUP -> {
           PubSubConnectionConfig parent = bindParentConnection(ref);
           WriterGroupDataType wire = file.writerGroups(ref.connectionIndex)[ref.groupIndex];
-          WriterGroupConfig pattern =
-              mapElement(
-                  () ->
-                      PubSubConfigElements.mapWriterGroup(
-                          sanitizedWriterGroupPattern(wire), namespaceTable, securityGroups));
 
-          WriterGroupConfig matched =
-              parent.writerGroups().stream()
-                  .filter(candidate -> writerGroupMatches(candidate, pattern))
-                  .findFirst()
-                  .orElse(null);
+          WriterGroupConfig matched;
+          if (wire.getHeaderLayoutUri() != null && !wire.getHeaderLayoutUri().isEmpty()) {
+            // HeaderLayoutUri is IN the pinned [CU §3.2] field set, but the config model
+            // cannot host a header layout (mapper-dropped), so a live group never carries
+            // one: a pattern demanding a non-empty HeaderLayoutUri differs in a pinned
+            // field and never matches. Checked on the wire element — the config-mapped
+            // comparison below cannot see the field.
+            matched = null;
+          } else {
+            WriterGroupConfig pattern =
+                mapElement(
+                    () ->
+                        PubSubConfigElements.mapWriterGroup(
+                            sanitizedWriterGroupPattern(wire), namespaceTable, securityGroups));
+
+            matched =
+                parent.writerGroups().stream()
+                    .filter(candidate -> writerGroupMatches(candidate, pattern))
+                    .findFirst()
+                    .orElse(null);
+          }
 
           if (matched == null) {
             if (ref.op == Op.ADD_MATCH) {
@@ -1256,6 +1293,33 @@ final class CloseAndUpdateApplier {
       return new IdAssignment(wireId, false, null);
     }
 
+    /**
+     * The Modify-side counterpart of {@link #assignId}'s explicit-id rule, applied to the
+     * referenced element's own wire id: a Modify that INTRODUCES a server-range id (0x8000–0xFFFF)
+     * the bound live element does not already carry is rejected per-element when that id is
+     * reserved by another session — reservations are cross-session exclusive (§9.1.3.7.5), and
+     * without this guard the foreign grant would silently go live, deadening the reservation until
+     * its session closes. An id the calling session itself reserved is accepted and its reservation
+     * returned for consumption (recorded only after the arm's commit succeeded, mirroring the Add
+     * flow). An unchanged id, a wire null/0, or an id below 0x8000 needs no reservation interplay.
+     */
+    private @Nullable UsedReservation checkIntroducedId(
+        IdKind kind, @Nullable UShort wireId, UShort liveId) {
+
+      int idValue = wireId == null ? 0 : wireId.intValue();
+      if (idValue < PubSubIdReservations.MIN_SERVER_ASSIGNED_ID || wireId.equals(liveId)) {
+        return null;
+      }
+      if (reservations.isReservedByOtherSession(sessionId, kind, wireId)) {
+        // reservations are cross-session exclusive (§9.1.3.7.5)
+        throw invalidRef("%s id %d is reserved by another session".formatted(kind, idValue));
+      }
+      if (reservations.isReservedBySession(sessionId, kind, wireId)) {
+        return new UsedReservation(kind, wireId);
+      }
+      return null;
+    }
+
     private Set<UShort> usedIdsInWorking(IdKind kind) {
       var ids = new HashSet<UShort>();
       for (PubSubConnectionConfig connection : connections) {
@@ -1412,11 +1476,17 @@ final class CloseAndUpdateApplier {
   // region outputs
 
   private static PubSubConfigurationValueDataType[] configurationValues(
-      Ref[] refs, StatusCode[] results) {
+      Ref[] refs, StatusCode[] results, boolean changesApplied) {
 
     var values = new ArrayList<PubSubConfigurationValueDataType>();
     for (Ref ref : refs) {
-      if (ref.reportValue && results[ref.index].isGood()) {
+      // an Add-side assignment is reported only if the apply committed ([CU §7.2] "where a
+      // name and identifier was assigned"): when the update aborted, nothing was assigned —
+      // the element does not exist and its reservation was not consumed. Match resolutions
+      // name elements that exist regardless of the abort and are always reported.
+      if (ref.reportValue
+          && results[ref.index].isGood()
+          && (changesApplied || !ref.assignedByAdd)) {
         values.add(
             new PubSubConfigurationValueDataType(
                 ref.wire,
@@ -1629,8 +1699,10 @@ final class CloseAndUpdateApplier {
   /**
    * The pinned writer group field set: SecurityMode/SecurityGroupId/SecurityKeyServices,
    * MaxNetworkMessageSize, PublishingInterval, KeepAliveTime, Priority, TransportSettings, and
-   * MessageSettings, plus the property keys present in the file element. HeaderLayoutUri has no
-   * config counterpart and is not compared; the local-only security-policy-URI override and the
+   * MessageSettings, plus the property keys present in the file element. HeaderLayoutUri — also in
+   * the pinned set — has no config counterpart and cannot be compared here; the match arm enforces
+   * it on the wire element instead (a non-empty pattern HeaderLayoutUri never matches, because a
+   * live Milo group can never carry a layout). The local-only security-policy-URI override and the
    * Milo-local group-level broker metadata fields are excluded (the wire cannot carry them).
    */
   private static boolean writerGroupMatches(
@@ -2097,6 +2169,7 @@ final class CloseAndUpdateApplier {
     private @Nullable String resolvedGroupName;
 
     private boolean reportValue;
+    private boolean assignedByAdd;
     private @Nullable Variant identifier;
 
     private Ref(int index, PubSubConfigurationRefDataType wire) {

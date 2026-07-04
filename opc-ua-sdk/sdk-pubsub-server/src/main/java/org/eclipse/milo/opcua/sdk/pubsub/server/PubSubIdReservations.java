@@ -296,19 +296,40 @@ final class PubSubIdReservations {
   }
 
   private List<UShort> allocate(IdKind kind, int count, Set<UShort> liveIds) throws UaException {
+    int idSpace = MAX_SERVER_ASSIGNED_ID - MIN_SERVER_ASSIGNED_ID + 1;
+    if (count > idSpace) {
+      // up-front bound: the request can never be satisfied (the wire count is a UInt16, up
+      // to 65535, but the space per kind holds 32768 ids), and rejecting it before any sweep
+      // keeps a hostile or mistaken max-count request from stalling the face lock — which
+      // session-close eviction shares — on pointless work. Still D15: id-space exhaustion.
+      throw new UaException(
+          StatusCodes.Bad_ResourceUnavailable,
+          "cannot reserve %d %s ids: the request exceeds the %d-id 0x8000-0xFFFF space"
+              .formatted(count, kind, idSpace));
+    }
+
     var allocated = new ArrayList<UShort>(count);
 
-    var excluded = new HashSet<>(liveIds);
-    for (int i = 0; i < count; i++) {
-      UShort id = allocateUnreserved(kind, excluded);
-      if (id == null) {
+    // one reserved-set build plus one rolling sweep of the range: O(range + count). The
+    // cursor never revisits an id, so freshly allocated ids need no exclusion bookkeeping.
+    Set<UShort> reserved = allReserved(kind);
+    int cursor = MIN_SERVER_ASSIGNED_ID;
+    while (allocated.size() < count) {
+      UShort candidate = null;
+      while (cursor <= MAX_SERVER_ASSIGNED_ID) {
+        UShort id = UShort.valueOf(cursor++);
+        if (!reserved.contains(id) && !liveIds.contains(id)) {
+          candidate = id;
+          break;
+        }
+      }
+      if (candidate == null) {
         throw new UaException(
             StatusCodes.Bad_ResourceUnavailable,
             "cannot reserve %d %s ids: the 0x8000-0xFFFF id space is exhausted"
                 .formatted(count, kind));
       }
-      allocated.add(id);
-      excluded.add(id);
+      allocated.add(candidate);
     }
 
     return allocated;

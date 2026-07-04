@@ -64,11 +64,15 @@ restarted by reconfiguration is invalidated, lookups stop returning it, and pass
 reconfigure.
 
 To observe transitions instead of polling, register a `PubSubStateListener` via
-`addStateListener`. Each `PubSubStateChangeEvent` carries the component handle, the old and new
-`PubSubState`, and a `StatusCode` giving the reason (for example `Bad_Timeout` when the receive
-watchdog fires). Events are delivered on the transport executor through a serializing queue: in
-emission order, one at a time, and exceptions thrown by your listener are caught and logged, not
-propagated into engine threads.
+`addStateListener` (and remove it with `removeStateListener` when you lose interest — every
+`add*Listener` method has a `remove*Listener` counterpart). Each `PubSubStateChangeEvent` carries
+the component handle, the old and new `PubSubState`, a `StatusCode` giving the reason (for example
+`Bad_Timeout` when the receive watchdog fires, or `Bad_ServerNotConnected` when an MQTT broker
+connection drops), and a `Cause` attributing the transition: an explicit enable/disable (the owner
+API or a remote Enable/Disable method), a parent cascade, an error or its recovery, service
+startup/reconfiguration, or disposal. Events are delivered on the transport executor through a
+serializing queue: in emission order, one at a time, and exceptions thrown by your listener are
+caught and logged, not propagated into engine threads.
 
 ## The receive-timeout watchdog
 
@@ -91,10 +95,13 @@ makes of them. A positive timeout also sets the window's record-discard clock (t
 timeout; see below), which is what lets a subscriber ride out a publisher restart.
 
 This watchdog is the subscriber's only staleness signal, so use it whenever silence matters.
-It is especially relevant over MQTT: a broker outage surfaces on the publisher side only as
-send-failure diagnostics (flattened to `Bad_CommunicationError`) and never changes publisher
-state, so subscriber-side `messageReceiveTimeout` is the one mechanism that turns an outage
-into a state transition.
+Over MQTT it is no longer the only outage signal in the system: a broker outage now fails the
+publisher's *connection* into `Error` with `Bad_ServerNotConnected` and recovers it on reconnect
+(see [the MQTT transport page](mqtt.md#broker-outages-and-reconnect)), and send failures carry
+their real status codes instead of a blanket `Bad_CommunicationError`. But none of that is visible
+on the subscriber, whose broker session may be perfectly healthy while the publisher's is down —
+subscriber-side `messageReceiveTimeout` remains the mechanism that turns publisher silence into a
+subscriber state transition.
 
 ## Sequence numbers and duplicate handling
 
@@ -128,8 +135,10 @@ its own counter. Whatever the window makes of one, a keep-alive always resets th
 timeout and refreshes the stream's record-discard clock.
 
 That reseed is one of three ways a subscriber recovers from a publisher whose numbering
-restarted at zero — a process restart, or a reconfigure on the publisher that recreated the
-writer (writer recreation restarts the DataSetMessage sequence):
+restarted at zero — a process restart, or a reconfigure on the publisher that removed and
+re-added the writer (a path-stable restart *preserves* the sequence — see
+[live reconfiguration](#live-reconfiguration) — but removal plus re-addition, or a restart that
+switches the mapping's sequence width, restarts it at 0):
 
 - **Keep-alive reseed** — the next keep-alive that arrives reseeds the stream on the spot. This
   is the steady-state path for delta-emitting writers with a `keepAliveTime` configured, whose
@@ -152,8 +161,9 @@ and `dataSetMessageSequenceNumber` (`UInteger`; null when absent on the wire).
 What the window does not do: rejects are dropped, never buffered and reordered — a message that
 arrives after a newer one is gone, not delivered late. JSON streams whose DataSetMessages carry
 no sequence numbers get no dedup at all (`MessageId`-based dedup is absent). And the two drop
-counters are Milo vendor counters on the SDK diagnostics API only — the spec-named Part 14
-diagnostics counters are not exposed. See
+counters are Milo vendor counters on the SDK diagnostics API only — Part 14 names no counter
+for sequence-window drops, so they have no ns0 counterpart in the
+[§9.1.11 exposure](#the-part-14-9111-diagnostics-exposure) either. See
 [sequence numbers](limitations-and-interop.md#sequence-numbers).
 
 ## Live reconfiguration
@@ -222,7 +232,8 @@ logger.info("[reconfigured] restartedPaths={}", result.restartedPaths());
 ```
 
 A run looks like this (each line carries a `[thread] INFO logger -` prefix under
-`mvn exec:java`; only the message portion is shown):
+`mvn exec:java`; only the message portion is shown, and the exact counts drift by one or two
+with timing):
 
 ```
 [received] phase=1 dataSet=demo temperature=20.99, tick=1
@@ -231,11 +242,11 @@ A run looks like this (each line carries a `[thread] INFO logger -` prefix under
 [reconfigured] addedPaths=[]
 [reconfigured] removedPaths=[]
 [reconfigured] restartedPaths=[pub-conn/group]
-[received] phase=2 dataSet=demo temperature=22.58, tick=13
+[received] phase=2 dataSet=demo temperature=22.58, tick=7
 ...
 [summary] phase 1: 6 DataSets received in ~5s at 1000ms
-[summary] phase 2: 14 DataSets received in ~5s at 250ms
-[summary] diagnostics: writer sent 20 DataSetMessages since the group restart, reader received 20 across both phases
+[summary] phase 2: 20 DataSets received in ~5s at 250ms
+[summary] diagnostics: writer sent 26 DataSetMessages and reader received 26 across both phases
 shutdown complete, exiting
 ```
 
@@ -244,11 +255,16 @@ interval is a group-level property and nothing at the connection level changed. 
 the minimal covering components; descendants (here `pub-conn/group/writer`) restart with their
 parent but are not listed separately.
 
-Note also where phase 2 starts: at tick=13, after a quiet ~1.5 seconds, not at tick=7. The
-restarted group restarted its sequence numbering, and the reader's
-[sequence-number window](#sequence-numbers-and-duplicate-handling) silently dropped the first
-post-restart messages as stale. The end of this section returns to that gap and to the summary
-arithmetic it produces.
+Note also where phase 2 starts: at tick=7, immediately after the reconfigure, with no gap. A
+path-stable restart — a component that appears in `restartedPaths` under the same name path —
+*preserves* the writer's DataSetMessage sequence numbering and the group's NetworkMessage
+sequence numbering, so the reader's
+[sequence-number window](#sequence-numbers-and-duplicate-handling) accepts the restarted
+stream's first message: to a subscriber, the restarted writer is the same
+(PublisherId, WriterGroupId, DataSetWriterId) stream, uninterrupted. (Earlier revisions of this
+module restarted the sequence at 0 here and paid for it with a window of silently dropped
+messages after every reconfigure.) The end of this section gives the exact preservation rules
+and the cases that still restart at 0.
 
 What escalates a change to a connection-level restart is the connection "shell": the enabled
 flag, the PublisherId, the data address, connection properties, and raw transport settings (for
@@ -282,66 +298,71 @@ Two `ReconfigureResult` reading caveats. First, `addedPaths` and `removedPaths` 
 vocabularies: runtime components appear as slash-joined paths (`pub-conn/grp-b/writer-b`) while
 added or removed PublishedDataSets appear as bare dataset names (`ds-b`). Component names may
 themselves contain `/`, so do not parse these strings — compare them against names you already
-know. Second, diagnostics counters do not survive a restart, which the example demonstrates
-deliberately:
+know. Second, diagnostics counters follow the same preservation rule as sequence numbers:
+components on `restartedPaths` *keep* their counters, `lastError`, and TimeFirstChange
+baselines across the restart, while components on `removedPaths` are zeroed — and a component
+removed by one reconfigure and re-added by a later one starts fresh. In the run above, both
+summary numbers span both phases: the restarted writer's `dataSetMessagesSent` counts phase 1's
+6 plus phase 2's ~20, and the untouched reader's `dataSetMessagesReceived` matches it. If you
+scrape counters into a monitoring system, treat paths in `removedPaths` as counter resets; paths
+in `restartedPaths` stay cumulative.
 
-```java
-// Diagnostics counters are keyed by component path, but a restarted component starts
-// fresh counters: the writer's count covers phase 2 only, while the reader, untouched by
-// the reconfigure, counts both phases. Capture the writer's count before shutdown.
-long dataSetsSent =
-    publisher
-        .diagnostics()
-        .component("pub-conn/group/writer")
-        .map(diagnostics -> diagnostics.dataSetMessagesSent())
-        .orElse(0L);
+The sequence-numbering preservation rules, exactly:
 
-// Stop the publisher before tallying so the summary is the last thing logged.
-publisher.shutdown().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+- **Path-stable restarts preserve.** A writer restarted under the same name path continues its
+  DataSetMessage sequence where the replaced runtime left off, and a group restarted under the
+  same name path continues its NetworkMessage sequence. Subscribers see one uninterrupted
+  stream; there is no drop window. (The delta-frame cadence is *not* preserved: a restarted
+  writer under a delta cadence re-baselines with a fresh key frame.)
+- **A width change resets.** The DataSetMessage sequence is UInt16-wide on the UADP wire and
+  UInt32-wide on JSON; a restart that switches the mapping (and with it the counter width)
+  restarts the writer's sequence at 0 rather than masking a 32-bit value into 16 bits.
+- **Removal plus re-addition resets.** A component that leaves the config in one reconfigure
+  and returns in a later one restarts at 0, like a process restart.
 
-int phase2Received = receivedCount.get() - phase1Received;
-
-long dataSetsReceived =
-    subscriber
-        .diagnostics()
-        .component("sub-conn/readers/reader")
-        .map(diagnostics -> diagnostics.dataSetMessagesReceived())
-        .orElse(0L);
-```
-
-That is why the verified summary line reads writer sent 20 and reader received 20 — equal
-numbers counting different things. The restarted writer's counter covers phase 2 only: 20
-DataSetMessages sent since the restart. The untouched reader's counter spans both phases but
-counts accepted messages only: the 6 from phase 1 plus the 14 from phase 2. The other 6 phase-2
-messages — the quiet ~1.5 seconds and the jump from tick=6 to tick=13 in the transcript — were
-dropped by the sequence-number window and ticked `staleSequenceMessages` instead. Restarted
-paths get fresh counters; components the reconfigure did not touch stay cumulative. If you
-scrape counters into a monitoring system, treat any path that appears in `restartedPaths` as a
-counter reset.
-
-A restarted writer also restarts its DataSetMessage sequence numbering at zero, and until the
-subscriber's window catches up, the restarted writer's messages are dropped as stale or
-invalid — expect a brief gap after a reconfigure that restarts a writer. The gap ends at
-whichever comes first: the restarted counter overtaking the reader's window on its own — the
-run above, where phase 1 was only 6 messages deep, so 6 silent drops and ~1.5 seconds covered
-it — or one of the recovery paths described in
-[sequence numbers and duplicate handling](#sequence-numbers-and-duplicate-handling): a
-keep-alive reseed when the writer emits keep-alives, otherwise the record discard or the
-16-rejection heuristic.
+Where a restart at 0 does occur, subscribers drop the restarted stream's messages as stale or
+invalid until their window recovers — by whichever of the recovery paths described in
+[sequence numbers and duplicate handling](#sequence-numbers-and-duplicate-handling) comes
+first: a keep-alive reseed when the writer emits keep-alives, otherwise the record discard or
+the 16-rejection heuristic.
 
 ## Diagnostics
 
-`PubSubService.diagnostics()` returns a `PubSubDiagnostics` view with two accessors:
-`snapshot()` returns an immutable `Map<String, ComponentDiagnostics>` of every component, and
-`component(path)` returns an `Optional` for one. Keys are the slash-joined config names you saw
-above (`"pub-conn/group/writer"`, `"sub-conn/readers/reader"`). Each `ComponentDiagnostics`
-carries `networkMessagesSent`, `networkMessagesReceived`, `dataSetMessagesSent`,
-`dataSetMessagesReceived`, `decodeErrors`, `sourceErrors`, the per-reader sequence-drop
-counters `staleSequenceMessages` and `invalidSequenceMessages`, the five security counters
-(`encryptionErrors` at writer-group paths; `decryptionErrors`, `invalidSignatureMessages`,
-`unknownTokenMessages`, and `staleKeyMessages` at reader-group paths — their exact semantics are
-tabulated on the [message security page](message-security-and-sks.md#the-key-lifecycle-at-runtime)),
-and a nullable `lastError` status code; counters that do not apply to a component type stay zero.
+`PubSubService.diagnostics()` returns a `PubSubDiagnostics` view with three operations:
+`snapshot()` returns an immutable `Map<String, ComponentDiagnostics>` of every component,
+`component(path)` returns an `Optional` for one, and `reset(path)` zeroes one component's
+counters (below). Keys are the slash-joined config names you saw above
+(`"pub-conn/group/writer"`, `"sub-conn/readers/reader"`). Each `ComponentDiagnostics` carries:
+
+- the traffic counters `networkMessagesSent`, `networkMessagesReceived`, `dataSetMessagesSent`,
+  `dataSetMessagesReceived`;
+- the error counters `decodeErrors` and `sourceErrors`, plus the transmission-failure pair:
+  `failedTransmissions` at writer-group paths (NetworkMessages never transmitted — send
+  failures and oversize skips; encode failures don't count, since no NetworkMessage existed)
+  and `failedDataSetMessages` at writer paths (DataSetMessages never sent due to encode *or*
+  send failure, attributed per contributing writer — an oversize skip ticks both counters, an
+  encode failure only this one);
+- the per-reader sequence-drop counters `staleSequenceMessages` and `invalidSequenceMessages`;
+- the five security counters (`encryptionErrors` at writer-group paths; `decryptionErrors`,
+  `invalidSignatureMessages`, `unknownTokenMessages`, and `staleKeyMessages` at reader-group
+  paths — their exact semantics are tabulated on the
+  [message security page](message-security-and-sks.md#the-key-lifecycle-at-runtime));
+- six state-transition counters mirroring Part 14 Table 311: `stateError` (every entry into
+  `Error`), `stateOperationalByMethod` (Operational entries caused by an explicit enable — the
+  owner API or a remote Enable method), `stateOperationalByParent` (Operational entries
+  cascaded from a parent), `stateOperationalFromError`, `statePausedByParent`, and
+  `stateDisabledByMethod` (explicit disables; dispose-caused Disabled transitions tick
+  nothing). Transitions caused by service startup or reconfiguration tick neither ByMethod nor
+  ByParent on the initiating component — only cascaded descendants tick ByParent;
+- a `timeFirstChange` map recording when each counter first left zero (the Part 14 §9.1.11.5
+  TimeFirstChange contract: no entry while a counter is 0), and a nullable `lastError` status
+  code.
+
+Counters that do not apply to a component type stay zero. `reset(path)` zeroes exactly that
+path's counters and TimeFirstChange baselines — per-object, so resetting a group does not touch
+its writers — and leaves `lastError` alone; increments concurrent with a reset may be lost
+(documented imprecision, not a bug). Counters survive path-stable reconfigure restarts and are
+zeroed by removal, as described [above](#live-reconfiguration).
 
 A few counters reward knowing exactly where they tick. `networkMessagesReceived` on a
 connection counts data-path arrivals — one tick per datagram or broker message, before decoding
@@ -364,17 +385,58 @@ tick without touching `lastError` and without emitting any diagnostics event —
 snapshots only. At a reader's path, `dataSetMessagesReceived` plus the two sequence-drop
 counters equals the total DataSetMessages matched to that reader.
 
-For push-style monitoring, `addDiagnosticsListener` registers a `PubSubDiagnosticsListener`. In
+For push-style monitoring, `addDiagnosticsListener` registers a `PubSubDiagnosticsListener`
+(removable via `removeDiagnosticsListener`). In
 this version only *error* events are delivered — decode failures, source read failures, send
 failures, receive timeouts, publish-side oversize skips (a NetworkMessage exceeding the
 writer group's non-zero `maxNetworkMessageSize` is skipped, not sent, and reported at the group
 path with `Bad_EncodingLimitsExceeded` and the actual and maximum sizes), decryption failures,
 and the *first* keyless-skipped publish cycle of a secured writer group after a successful one —
 each as a
-`PubSubDiagnosticsEvent` with the component path, a classifying `StatusCode`, a message, and
-the underlying exception when there is one. Happy-path activity is visible only through the
+`PubSubDiagnosticsEvent` with the component path, a classifying `StatusCode`, a message, the
+underlying exception when there is one, and a `Kind` discriminator separating `SEND_FAILURE`
+(a NetworkMessage that was not transmitted) from `OTHER_ERROR` (everything else). Happy-path
+activity is visible only through the
 counters; sequence-window drops and most [security drops](message-security-and-sks.md#the-key-lifecycle-at-runtime)
 emit no events at all; do not wait for informational events that will never come.
+
+Send-failure event behaviors worth pinning:
+
+- **The status codes are real.** A send failure carries the failure's own status code, not a
+  blanket one: `Bad_ServerNotConnected` from an MQTT publish while the broker is disconnected
+  (the fail-fast path), `Bad_InvalidState` from a closed channel, `Bad_ConfigurationError` from
+  a broker writer with no resolvable queue, `Bad_EncodingLimitsExceeded` from an oversize skip.
+  The code is extracted from the failure's cause chain; a failure that carries no OPC UA status
+  code anywhere in its chain — a raw `SocketException: Message too long` from a UDP send, say —
+  falls back to `Bad_InternalError`. Earlier revisions flattened every send failure to
+  `Bad_CommunicationError`; keying automation on that one code is now wrong.
+- **Shutdown and restarts are silent.** Send failures that surface while their component is
+  being torn down — service shutdown, disable, or a reconfigure-driven restart — are recognized
+  as teardown noise and suppressed: no event, no failure-counter tick (the hand-off
+  `networkMessagesSent`/`dataSetMessagesSent` ticks stand, since the messages were handed to
+  the channel). One benign residue remains: a failure that races the teardown in the same
+  instant may still be reported once; nothing is reported after `shutdown()` resolves beyond
+  events already enqueued, which are always delivered.
+
+### The Part 14 §9.1.11 diagnostics exposure
+
+Everything above is the SDK API. When the runtime is attached to an `OpcUaServer` via
+`ServerPubSub` with `exposeInformationModel(true)` and `diagnosticsEnabled(true)`, the same
+diagnostics are additionally served as the Part 14 §9.1.11 information model: the ns0 root
+`Diagnostics` object (`i=17409`) is backed with live values, and every exposed connection,
+group, writer, and reader gains a `Diagnostics` object whose spec-named counters and LiveValues
+are computed per read from the runtime. Values there follow the §9.1.11.5 numeric rules —
+counters are served as UInt32 and *saturate* at `0xFFFFFFFF` (the SourceTimestamp keeps
+advancing at the cap; the SDK's `long` counters do not saturate) — and `DiagnosticsLevel` is
+read-only `Basic`, with no level-switching machinery.
+
+Each exposed Diagnostics object carries a `Reset` method. Reset is authorization-gated (the
+attachment's `PubSubMethodAuthorizer.checkConfigure`; session-less calls get
+`Bad_UserAccessDenied`; no channel-security minimum is imposed) and delegates to
+`PubSubDiagnostics.reset(path)` with the per-object scope described above — except the
+PublishSubscribe *root* `Reset` (`i=17421`), which zeroes only the root object's fragment-local
+State* counters and never reaches the engine (the root has no engine path). See
+[server integration](server-integration.md#exposing-diagnostics) for wiring and options.
 
 ## Threading and shutdown
 
@@ -417,7 +479,7 @@ listener callback for the shutdown-induced `Disabled` transitions is still in fl
 future resolves. `close()` is the synchronous variant — it waits for `shutdown()` to complete —
 which makes the shutdown-hook lambda clean. Both are idempotent.
 
-One ordering note for final tallies, also visible in the snippet above: a received event can
+One ordering note for final tallies (`ReconfigureExample` does this): a received event can
 land between reading a counter and logging a summary. Shut the publisher down before tallying
 if you want deterministic last lines.
 
@@ -451,15 +513,17 @@ reads as publisher death.
 
 ## Known limits
 
-- There is no listener-removal API: `PubSubService` has `add*` methods only. Listeners live as
-  long as the service; embedders that outlive their interest in events must make their
-  listeners self-disabling.
 - Sequence-number rejects are dropped, never reordered: there is no reorder buffer, so a
   message that arrives after a newer one is gone, not delivered late. JSON streams whose
   DataSetMessages carry no sequence numbers get no dedup at all (`MessageId`-based dedup is
-  absent), and the sequence-drop counters exist only on the SDK diagnostics API — the
-  spec-named Part 14 diagnostics counters are not exposed.
+  absent). The sequence-drop counters are Milo vendor counters on the SDK diagnostics API;
+  Part 14 names no counter for sequence-window drops, so the
+  [§9.1.11 exposure](#the-part-14-9111-diagnostics-exposure) does not serve them either.
 - The diagnostics listener delivers error events only; there are no informational or
   recovery events.
 - A reconfigure that changes only a UDP connection's `discoveryAddress` is silently inert until
   that connection restarts for another reason (see above).
+- A reconfigure that removes everything a connection's *discovery* channels exist for (its
+  writer groups and `REQUEST_IF_MISSING` readers) closes them — but the connection's *data*
+  channels stay open until the connection itself is removed or the service shuts down, even
+  when no group remains to use them. An idle-socket leak, not a correctness problem.

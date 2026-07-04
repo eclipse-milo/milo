@@ -121,7 +121,9 @@ public final class ServerPubSubOptions {
   }
 
   /**
-   * Get the authorizer consulted by the PubSub-related ns0 Method handlers.
+   * Get the authorizer consulted by the PubSub-related Method handlers — the ns0 file-model, {@code
+   * GetSecurityKeys}, and root Reset handlers as well as the per-component Enable/Disable and Reset
+   * handlers minted in the server namespace by the exposed information model.
    *
    * @return the configured {@link PubSubMethodAuthorizer}, or {@code null} if the default posture
    *     applies.
@@ -333,8 +335,11 @@ public final class ServerPubSubOptions {
      * SupportSecurityKeyPush=false}, and {@code SupportSecurityKeyServer=true}. The face works
      * independently of {@link #exposeInformationModel(boolean)}.
      *
-     * <p>The served SecurityGroups reflect the attach-time configuration: reconfiguring via {@code
-     * ServerPubSub.runtime()} does not rebuild the key store.
+     * <p>The served SecurityGroups follow the applied configuration: each {@code
+     * ServerPubSub.runtime()} or remote-configuration apply refreshes the key store — retained
+     * groups keep serving their existing keys (with the applied MaxPastKeyCount/MaxFutureKeyCount
+     * window bounds), while groups whose SecurityPolicyUri or KeyLifetime changed have their keys
+     * invalidated and regenerated (Part 14 §6.2.12.2).
      *
      * @param value {@code true} to enable the SKS server face.
      * @return this {@link Builder}.
@@ -345,7 +350,10 @@ public final class ServerPubSubOptions {
     }
 
     /**
-     * Set the authorizer consulted by the PubSub-related ns0 Method handlers.
+     * Set the authorizer consulted by the PubSub-related Method handlers — not only the ns0
+     * file-model, {@code GetSecurityKeys}, and root Reset handlers, but also the per-component
+     * Enable/Disable and Reset handlers minted in the server namespace for every (including
+     * dynamically created) component when the information model is exposed.
      *
      * <p>When none is configured, the default posture described on {@link PubSubMethodAuthorizer}
      * applies.

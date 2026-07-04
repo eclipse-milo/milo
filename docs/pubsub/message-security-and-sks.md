@@ -280,8 +280,11 @@ At startup this attaches a `GetSecurityKeys` handler to the ns0 method node and 
 capability flags (`SupportSecurityKeyPull=true`, `SupportSecurityKeyPush=false`,
 `SupportSecurityKeyServer=true`). It works independently of `exposeInformationModel`, and at most
 one enabled face per `OpcUaServer` is supported. The served groups are the `SecurityGroupConfig`s
-of the attach-time configuration — like the information model, `runtime()` reconfiguration does
-not rebuild them. A SecurityGroup with no policy URI is served as PubSub-Aes256-CTR with a WARN;
+of the current configuration: seeded at attach and refreshed on every successful apply through
+`runtime()` or a remote `CloseAndUpdate` — retained groups keep serving their keys undisturbed,
+while a group whose `SecurityPolicyUri` or `KeyLifetime` changed has its existing keys
+invalidated and regenerated (Part 14 §6.2.12.2). A SecurityGroup with no policy URI is served as
+PubSub-Aes256-CTR with a WARN;
 an unsupported non-null URI fails attach with `PubSubConfigValidationException`.
 
 Keys are generated lazily from a store-owned `SecureRandom` and rotate by arithmetic, not by
@@ -304,9 +307,11 @@ SecurityGroup names. The default posture:
 | No RoleMapper, group has non-empty `rolePermissions` | **Denied** — explicit restrictions fail closed when no roles exist to satisfy them |
 
 To replace the posture wholesale, supply a `PubSubMethodAuthorizer` via
-`ServerPubSubOptions.methodAuthorizer(...)` — its `checkKeyAccess` is consulted per call (the
-`checkConfigure` and `checkSksAdmin` checks exist on the SPI for the remote-configuration and SKS
-management handlers, which are not implemented in this version).
+`ServerPubSubOptions.methodAuthorizer(...)` — its `checkKeyAccess` is consulted per
+`GetSecurityKeys` call. The same instance's `checkConfigure` gates the
+[remote-configuration](server-integration.md#remote-configuration) and diagnostics-`Reset`
+handlers, and `checkSksAdmin` gates SecurityGroup-touching `CloseAndUpdate` references; one
+posture governs every PubSub method of the attachment.
 
 A note for anyone running the face on a server built from an older Milo: the
 security-mode rejection depends on an sdk-server fix that ships in the same release —
@@ -334,8 +339,10 @@ The honest list, in the spirit of [limitations and interop](limitations-and-inte
   Part 14 wire config are a documented mapper loss.
 - **SKS management methods are not implemented.** `AddSecurityGroup`, `RemoveSecurityGroup`,
   SecurityGroupFolder management, and key invalidation/rotation methods return
-  `Bad_NotImplemented`; security groups are defined in the attached configuration only, and the
-  face serves an attach-time snapshot.
+  `Bad_NotImplemented`. Security groups are defined by the attached configuration — editable
+  through `runtime()` reconfiguration or a remote
+  [`CloseAndUpdate`](server-integration.md#remote-configuration) with SecurityGroup references,
+  which the face follows — but not through the management methods.
 - **Chunk emission is still absent.** Inbound chunked NetworkMessages — each chunk secured and
   verified individually, per spec — are now reassembled, with hard DoS caps (4 MiB reassembled
   payload, 64 concurrent streams, 10 s idle eviction). Outbound, an oversize message is still

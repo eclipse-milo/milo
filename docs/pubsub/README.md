@@ -42,11 +42,13 @@ The headline capabilities, at a glance:
 | Subscriber [sequence-number tracking](limitations-and-interop.md#sequence-numbers): duplicate, reordered-older, and out-of-window messages are dropped and counted | Works |
 | [UADP message security](message-security-and-sks.md) (Sign/SignAndEncrypt, PubSub-Aes128-CTR and PubSub-Aes256-CTR, both roles) | Works — JSON has no message security in OPC UA 1.05: secured JSON groups are rejected with `Bad_ConfigurationError` |
 | [SKS](message-security-and-sks.md) (Security Key Service) key distribution | Works — pull only: an `SksSecurityKeyProvider` client, a `StaticSecurityKeyProvider` for pre-shared keys, and an opt-in `GetSecurityKeys` server face; push (`SetSecurityKeys`) and the SKS management methods are not implemented |
+| Remote configuration over OPC UA: the Part 14 [file model](server-integration.md#remote-configuration) + Enable/Disable methods | Works — opt-in (`allowRemoteConfiguration`); the deprecated per-element methods (`AddConnection` et al.) remain `Bad_NotImplemented` |
+| [PubSub diagnostics](server-integration.md#exposing-diagnostics) in the server information model (Part 14 §9.1.11) | Works — opt-in (`diagnosticsEnabled`, with the exposed information model) |
+| [PubSub status events](server-integration.md#status-events) (Part 14 §9.1.13) | Works — opt-in (`statusEventsEnabled`); state changes and send failures fired through the Server object |
 | [Event](limitations-and-interop.md#events) publishing | Not yet — received event messages are decoded and delivered, but none are published |
 | [NetworkMessage chunking](limitations-and-interop.md#chunking-and-message-size) | Partial — inbound chunked messages are reassembled (with hard DoS caps); chunk *emission* is absent: a configured `maxNetworkMessageSize` is enforced, not chunked, and an oversized message is skipped with a `Bad_EncodingLimitsExceeded` diagnostics error |
 | UADP [`RawData` field encoding and PromotedFields](limitations-and-interop.md#rawdata-and-promoted-fields) | Not yet — rejected with `Bad_NotSupported` at startup, reconfigure, and activation |
 | Ethernet, AMQP, and MQTT-over-WebSocket [transports](limitations-and-interop.md#transports) | Not yet — rejected at config build or connection open |
-| Remote configuration over OPC UA | Not yet — the standard PubSub method nodes (ns0) return `Bad_NotImplemented`; the one exception is `GetSecurityKeys` when the SKS server face is enabled ([details](limitations-and-interop.md#server-integration-limits)) |
 | `ServerPubSub` over MQTT | Not yet — UDP/UADP only; rejected with `Bad_ConfigurationError` |
 
 A distinction that matters beyond this table: some unsupported configuration is rejected with a
@@ -72,8 +74,9 @@ Then branch by what you're building:
 - Publishing through a broker? [The MQTT transport](mqtt.md) — transport registration, broker
   URIs, the Part 14 topic tree, QoS, client identity, outage behavior, and TLS.
 - Attaching PubSub to an `OpcUaServer`? [Server integration](server-integration.md) —
-  `ServerPubSub.attach`, publishing node values with no source code, and writing received
-  datasets into nodes with TargetVariables.
+  `ServerPubSub.attach`, publishing node values with no source code, writing received
+  datasets into nodes with TargetVariables, and the opt-in server surfaces: the exposed
+  information model, remote configuration, diagnostics, and status events.
 - Signing or encrypting messages? [Message security and SKS](message-security-and-sks.md) —
   the two security policies and modes, configuring secured groups, static and SKS-pulled keys,
   the key lifecycle, and serving keys from an `OpcUaServer`.

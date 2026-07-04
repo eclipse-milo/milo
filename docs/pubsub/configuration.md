@@ -102,6 +102,11 @@ covers:
   MQTT connection without `MqttTransportProvider` registered on the `PubSubServiceConfig`
 - an enabled reader on a broker (MQTT) connection without a data `queueName` in its
   `BrokerTransportSettings`
+- an enabled writer on a broker connection whose `BrokerTransportSettings` override
+  `requestedDeliveryGuarantee` without also overriding `queueName` — Part 14 §6.4.2.5.4; a
+  writer without its own queue shares the group's NetworkMessage partition, which publishes at
+  the group-resolved QoS, so there is nothing the per-writer QoS could apply to (see
+  [the MQTT page](mqtt.md#delivery-guarantees-and-mqtt-qos))
 - a connection that has writer groups but no `publisherId`
 - an enabled writer group on a UDP connection whose `maxNetworkMessageSize` exceeds 65535, the
   Part 14 ceiling for UDP NetworkMessages (see
@@ -180,7 +185,11 @@ announcements) is sent and received. When it is unset, the runtime applies the P
 multicast group. A discovery channel actually opens only when the connection has writer groups
 (every publisher is automatically a discovery responder) or has a reader with
 `MetadataPolicy.REQUEST_IF_MISSING`; a subscriber whose readers are all `REQUIRE_CONFIGURED` or
-`ACCEPT_DISCOVERED` never binds its discovery address today, so a pin there is defensive. Discovery
+`ACCEPT_DISCOVERED` never binds its discovery address today, so a pin there is defensive. The
+channel is symmetric about need: a reconfiguration that removes the connection's last writer group
+and last `REQUEST_IF_MISSING` reader closes the discovery sockets, and a later reconfigure that
+re-adds a discovery-requiring component reopens them (see
+[metadata and discovery](metadata-and-discovery.md#udp-discovery)). Discovery
 channels always use the built-in UDP transport, independent of any custom transport provider on the
 data plane.
 
@@ -485,6 +494,36 @@ One deliberate one-way drop: `BrokerSecurityConfig` (TLS material and broker cre
 serialized by `toDataType` and comes back as defaults from `fromDataType`. Credentials and key
 paths do not belong in a Part 14 configuration document.
 
+### Binary configuration files: PubSubConfigFiles
+
+`PubSubConfigFiles` (in the same `.config` package) reads and writes the Part 14 *binary
+configuration file* form of a configuration: a `UABinaryFileDataType` container (Part 5 Table 88)
+whose `Body` carries the `PubSubConfiguration2DataType`, conventionally stored with the
+`.uabinary` extension (`PubSubConfigFiles.FILE_EXTENSION`; MIME type
+`application/opcua+uabinary`). `write(path, config, context)` / `read(path, context)` and the
+byte-array `encode`/`decode` pair operate at the `PubSubConfig` level: on encode, the encoding
+context's namespace table is written into the container's Table 88 namespaces header, and on
+decode a non-empty header supplies the decode-side namespace table — so namespace-URI field
+addresses survive a round trip between peers whose namespace tables are ordered differently. A
+lower-level `encodeDataType`/`decodeDataType` pair moves the raw container without config
+validation; it is the same codec the server module uses for remote-configuration file transfers
+(see [server integration](server-integration.md#remote-configuration)).
+
+The failure contract is two-typed: a malformed stream, a container that is not a
+`UABinaryFileDataType`, a `Body` that is not a `PubSubConfiguration2DataType` — including the
+*base* `PubSubConfigurationDataType` named by Table 88, which is deliberately rejected — or a
+namespaces header that does not match throws `UaException` with `Bad_TypeMismatch`; a container
+that decodes but does not map to a valid config throws `PubSubConfigValidationException`.
+
+### Remote configuration
+
+Everything on this page configures the runtime from Java. When the runtime is attached to an
+`OpcUaServer`, OPC UA clients can also reconfigure it remotely — reading and rewriting exactly
+this configuration as a binary configuration file through the ns0 `PubSubConfiguration` file
+object, and enabling or disabling components through per-component `Enable`/`Disable` methods.
+That surface is opt-in and lives in the server module; see
+[server integration](server-integration.md#remote-configuration).
+
 ## Knobs that exist but are inert or rejected today
 
 The config model carries the full Part 14 vocabulary so configs can round-trip, which means it can
@@ -499,7 +538,6 @@ into one of two camps: rejected (you get an error) or inert (silently ignored). 
 | `SecurityGroupConfig.securityGroupFolder` / `rolePermissions` | Inert in the runtime engine. They round-trip, and `rolePermissions` is enforced by the opt-in [SKS server face](message-security-and-sks.md#the-sks-server-face); nothing else reads them. |
 | UADP timing offsets (`SamplingOffset`, `PublishingOffset`, `ReceiveOffset`, `ProcessingOffset`) | Inert. No typed config fields exist; imported values are preserved in `rawMessageSettings` and never consulted by the publish or receive paths. |
 | `BrokerTransportSettings.resourceUri` / `authenticationProfileUri` | Inert. Round-trip only; never read by the runtime. |
-| Writer-level `BrokerTransportSettings` QoS without a `queueName` override | Inert for data messages — the writer stays in the group's shared partition. Writer QoS is honored when combined with a queue override. |
 
 Several former entries have graduated out of this list: `DataSetWriterConfig.keyFrameCount` is
 honored (see [key frames and delta frames](#key-frames-and-delta-frames-keyframecount)),
@@ -508,7 +546,9 @@ honored (see [key frames and delta frames](#key-frames-and-delta-frames-keyframe
 `MessageSecurityConfig`, `SecurityGroupConfig`, and the `SecurityKeyProvider` SPI now execute —
 UADP message security and SKS key distribution are implemented (see
 [message security and SKS](message-security-and-sks.md); note the secured-group validation added
-to the [startup checks](#when-validation-happens) above).
+to the [startup checks](#when-validation-happens) above). One former inert knob is now rejected
+instead: a writer-level `requestedDeliveryGuarantee` without a writer-level `queueName` override
+fails startup and reconfigure with `Bad_ConfigurationError` (also in the startup checks above).
 
 See [limitations](limitations-and-interop.md) for the full picture of what is and is not
 implemented, including the receive-side behavior for features that are emit-rejected here.

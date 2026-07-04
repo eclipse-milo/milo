@@ -97,7 +97,7 @@ A configured `queueName` always wins over derivation, on the publish side too: a
 
 ## Retained metadata
 
-On broker connections the engine automatically publishes each writer's DataSetMetaData to the derived metadata topic as a *retained*, QoS 1 message: once at writer activation, again whenever reconfiguration changes the metadata, and periodically if `metaDataUpdateTime` is configured. The publisher configures nothing for this — `MqttJsonPublisherExample` contains no metadata-related settings at all.
+On broker connections the engine automatically publishes each writer's DataSetMetaData to the derived metadata topic as a *retained*, QoS 1 message: once at writer activation (which includes reactivation after a [broker reconnect](#broker-outages-and-reconnect)), again whenever reconfiguration changes the metadata, and periodically if `metaDataUpdateTime` is configured. The publisher configures nothing for this — `MqttJsonPublisherExample` contains no metadata-related settings at all.
 
 Retained metadata is the broker-side substitute for UDP discovery probing: there is nothing to probe for, because the broker replays the retained document to any subscriber the moment it subscribes. The UDP `REQUEST_IF_MISSING` policy does not probe on MQTT connections (it silently degrades to accepting whatever metadata arrives), so the idiomatic broker subscriber uses `ACCEPT_DISCOVERED` with a `metaDataQueueName` and no locally configured field list. From `MqttJsonSubscriberExample`:
 
@@ -133,7 +133,7 @@ The metadata's ConfigurationVersion is auto-populated by the config builders (it
 
 Settings on a DataSetWriter or DataSetReader override settings on the WriterGroup. The defaults match what the examples produce: data published QoS 0 not retained, metadata QoS 1 retained.
 
-One caveat: a writer-level `requestedDeliveryGuarantee` *without* a writer-level `queueName` override is silently inert for data messages. Writers without a queue override share the group's NetworkMessage partition, and that shared partition publishes at the group-resolved QoS. Give the writer its own `queueName` if you need per-writer QoS.
+One caveat: a writer-level `requestedDeliveryGuarantee` requires a writer-level `queueName` override. Writers without a queue override share the group's NetworkMessage partition, and that shared partition publishes at the group-resolved QoS — there is nothing a per-writer QoS could apply to — so an enabled broker writer that overrides the delivery guarantee without overriding the queue name is rejected at `startup()` and reconfigure with `Bad_ConfigurationError` (Part 14 §6.4.2.5.4). Earlier revisions accepted the combination and silently ignored the QoS. Give the writer its own `queueName` if you need per-writer QoS.
 
 ## Client identity and connection properties
 
@@ -155,12 +155,12 @@ Connection-level knobs are set as properties on the MQTT connection builder, e.g
 
 The transport reconnects automatically and re-issues every subscription on reconnect; recovery across a full broker restart (data resumes, readers stay usable) is verified by test. The backoff schedule is the HiveMQ client default — 1 s initial, doubling per attempt, capped at 120 s, with jitter — and is not configurable.
 
-Be aware of what an outage does *not* do: PubSub component state does not change while the broker is down. Writers and readers stay Operational and no state-change events fire, so applications cannot observe a broker outage through state listeners. What you get instead:
+An outage is visible in PubSub component state. When a previously connected broker session is lost, the MQTT transport reports the down edge through the engine's transport-state listener and the *connection* fails into `Error` with `Bad_ServerNotConnected`; its groups, writers, and readers cascade to `Paused` per the ordinary state rules, state-change events fire, and the `stateError` diagnostics counter ticks. On reconnect the transport re-issues its subscriptions first, then reports the up edge: the connection returns to `Operational`, the children reactivate, and — because metadata publishing rides writer activation — every writer's retained metadata is re-published to the broker. Two edges of the edge-tracking are deliberate: the *initial* connect is not a recovery (a session that never connected is not an outage — first-connect retries and version-fallback churn stay silent, and sends simply fail fast until the session is up, the Phase 3 behavior), and a transport-up never "recovers" an `Error` the transport did not cause.
 
-- Publisher side: each failed publish surfaces as a diagnostics error (`Bad_CommunicationError`). Publishes fail fast with `Bad_ServerNotConnected` while disconnected, so QoS 1/2 messages are not buffered and replayed after reconnect — data published during an outage is lost.
-- Subscriber side: opt in to the `messageReceiveTimeout` watchdog on `DataSetReaderConfig` (default off). The reader then goes to Error/`Bad_Timeout` after the configured silence and returns to Operational on the next message it accepts — an indirect but observable outage signal. Sequence tracking applies here: a message dropped as a stale duplicate (a QoS 1 redelivery, for example) neither resets the watchdog nor recovers the reader; see [operations](operations.md).
+The per-cycle failure story while disconnected:
 
-Retained metadata is not re-published on reconnect; the broker's retained copy already covers late and reconnecting subscribers.
+- Publisher side: each failed publish surfaces as a `SEND_FAILURE` diagnostics event carrying `Bad_ServerNotConnected` (publishes fail fast while disconnected — no blanket `Bad_CommunicationError` anymore) and ticks the group's `failedTransmissions` and the writers' `failedDataSetMessages` counters. QoS 1/2 messages are not buffered and replayed after reconnect — data published during an outage is lost.
+- Subscriber side: a subscriber's own broker session failing produces the same connection-level `Error`/recovery on the subscriber. But the *publisher's* outage is invisible to a subscriber whose session is healthy, so still opt in to the `messageReceiveTimeout` watchdog on `DataSetReaderConfig` (default off) for end-to-end staleness: the reader goes to Error/`Bad_Timeout` after the configured silence and returns to Operational on the next message it accepts. Sequence tracking applies here: a message dropped as a stale duplicate (a QoS 1 redelivery, for example) neither resets the watchdog nor recovers the reader; see [operations](operations.md).
 
 ## TLS and authentication
 

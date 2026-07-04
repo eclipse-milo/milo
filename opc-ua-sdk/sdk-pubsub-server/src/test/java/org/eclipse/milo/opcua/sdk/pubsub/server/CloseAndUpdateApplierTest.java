@@ -87,8 +87,9 @@ import org.junit.jupiter.api.Test;
  * rebinding, cascades and {@code Bad_NotFound} propagation, Modify full-replacement, ElementAdd
  * auto-assignment (names, PublisherId, ids honoring reservations), atomic vs partial apply,
  * top-level field handling, bit-11 guarding, engine-validation attribution (D17), and the
- * ConfigurationValues/ConfigurationObjects outputs. DataSetReader references share the
- * writer-branch code paths exercised via the DataSetWriter rows.
+ * ConfigurationValues/ConfigurationObjects outputs. DataSetReader, ReaderGroup-Match,
+ * PublishedDataSet, and standalone SubscribedDataSet references have their own applier arms — their
+ * rows live in {@link CloseAndUpdateElementKindsTest}.
  */
 class CloseAndUpdateApplierTest {
 
@@ -912,6 +913,148 @@ class CloseAndUpdateApplierTest {
   }
 
   @Test
+  void writerGroupMatchWithNonEmptyHeaderLayoutUriNeverMatches() {
+    // a live UADP group without GroupHeader (so the Bad_InvalidState guard stays out of the way)
+    service.config =
+        PubSubConfig.builder()
+            .connection(
+                connection(CONN, 15001)
+                    .writerGroup(
+                        writerGroup(WRITER_GROUP, 10)
+                            .messageSettings(
+                                UadpWriterGroupSettings.builder()
+                                    .networkMessageContentMask(
+                                        UadpNetworkMessageContentMask.of(
+                                            UadpNetworkMessageContentMask.Field.PublisherId,
+                                            UadpNetworkMessageContentMask.Field.WriterGroupId,
+                                            UadpNetworkMessageContentMask.Field.PayloadHeader))
+                                    .build())
+                            .build())
+                    .build())
+            .build();
+
+    PubSubConfiguration2DataType file = fileOf(service.config);
+    file.getConnections()[0].getWriterGroups()[0] =
+        withNullNameAndId(file.getConnections()[0].getWriterGroups()[0]);
+
+    PubSubConfigurationRefDataType matchRef =
+        ref(
+            0,
+            0,
+            0,
+            PubSubConfigurationRefMask.Field.ElementMatch,
+            PubSubConfigurationRefMask.Field.ReferenceWriterGroup);
+
+    // control: without a HeaderLayoutUri the pattern matches the live group structurally
+    CloseAndUpdateApplier.Outcome control = apply(false, file, matchRef);
+    assertCode(StatusCodes.Good, control.referencesResults()[0]);
+
+    // HeaderLayoutUri is IN the pinned [CU §3.2] field set but has no config counterpart (the
+    // mapper drops it), so a live Milo group can never carry one: a pattern demanding a
+    // non-empty layout differs in a pinned field and must never match (wire-level guard)
+    file.getConnections()[0].getWriterGroups()[0] =
+        withHeaderLayoutUri(
+            file.getConnections()[0].getWriterGroups()[0],
+            "http://opcfoundation.org/UA/PubSub-Layouts/UADP-Dynamic");
+
+    CloseAndUpdateApplier.Outcome noMatch = apply(false, file, matchRef);
+    assertCode(StatusCodes.Bad_NoMatch, noMatch.referencesResults()[0]);
+    assertFalse(noMatch.changesApplied());
+
+    // Add+Match with the same pattern falls through to the Add arm (the mapper drops the
+    // layout, so the add is legal): a SECOND group is added instead of matching the live one
+    CloseAndUpdateApplier.Outcome addMatch =
+        apply(
+            false,
+            file,
+            ref(
+                0,
+                0,
+                0,
+                PubSubConfigurationRefMask.Field.ElementAdd,
+                PubSubConfigurationRefMask.Field.ElementMatch,
+                PubSubConfigurationRefMask.Field.ReferenceWriterGroup));
+
+    assertCode(StatusCodes.Good, addMatch.referencesResults()[0]);
+    assertTrue(addMatch.changesApplied());
+    PubSubConfig applied = addMatch.appliedConfig();
+    assertNotNull(applied);
+    assertEquals(2, applied.connection(CONN).orElseThrow().writerGroups().size());
+  }
+
+  @Test
+  void modifyIntroducingAServerRangeIdFollowsTheReservationExclusivityRule() throws Exception {
+    var grant =
+        reservations.reserve(SESSION, PubSubIdReservations.PROFILE_UDP_UADP, 1, 1, service.config);
+    var foreignGrant =
+        reservations.reserve(
+            OTHER_SESSION, PubSubIdReservations.PROFILE_UDP_UADP, 1, 1, service.config);
+
+    PubSubConfigurationRefDataType modifyWg =
+        ref(
+            0,
+            0,
+            0,
+            PubSubConfigurationRefMask.Field.ElementModify,
+            PubSubConfigurationRefMask.Field.ReferenceWriterGroup);
+
+    // a Modify introducing a WriterGroupId reserved by ANOTHER session is rejected per-ref
+    // (cross-session exclusivity, §9.1.3.7.5): accepting it would put the foreign grant's id
+    // into the live configuration and silently deaden that session's reservation
+    PubSubConfiguration2DataType file = fileOf(liveConfig());
+    file.getConnections()[0].getWriterGroups()[0] =
+        withWriterGroupId(
+            file.getConnections()[0].getWriterGroups()[0], foreignGrant.writerGroupIds()[0]);
+
+    CloseAndUpdateApplier.Outcome foreign = apply(true, file, modifyWg);
+    assertCode(StatusCodes.Bad_InvalidArgument, foreign.referencesResults()[0]);
+    assertFalse(foreign.changesApplied());
+    assertEquals(0, service.applyCount);
+
+    // the same Modify with an id from the calling session's OWN grant applies, and the
+    // reservation is reported consumed (it would otherwise dangle while its id is live)
+    UShort ownId = grant.writerGroupIds()[0];
+    file.getConnections()[0].getWriterGroups()[0] =
+        withWriterGroupId(file.getConnections()[0].getWriterGroups()[0], ownId);
+
+    CloseAndUpdateApplier.Outcome own = apply(true, file, modifyWg);
+    assertCode(StatusCodes.Good, own.referencesResults()[0]);
+    assertTrue(own.changesApplied());
+    assertEquals(
+        List.of(new UsedReservation(IdKind.WRITER_GROUP, ownId)),
+        List.copyOf(own.consumedReservations()));
+    PubSubConfig applied = own.appliedConfig();
+    assertNotNull(applied);
+    assertEquals(
+        ownId, applied.connection(CONN).orElseThrow().writerGroups().get(0).getWriterGroupId());
+
+    // a foreign-reserved DataSetWriterId introduced by a writer Modify is rejected the same way
+    service.config = liveConfig();
+    PubSubConfiguration2DataType writerFile = fileOf(liveConfig());
+    WriterGroupDataType wireGroup = writerFile.getConnections()[0].getWriterGroups()[0];
+    wireGroup.getDataSetWriters()[0] =
+        withDataSetWriterId(wireGroup.getDataSetWriters()[0], foreignGrant.dataSetWriterIds()[0]);
+
+    CloseAndUpdateApplier.Outcome writerOutcome =
+        apply(
+            true,
+            writerFile,
+            ref(
+                0,
+                0,
+                0,
+                PubSubConfigurationRefMask.Field.ElementModify,
+                PubSubConfigurationRefMask.Field.ReferenceWriter));
+    assertCode(StatusCodes.Bad_InvalidArgument, writerOutcome.referencesResults()[0]);
+    assertFalse(writerOutcome.changesApplied());
+
+    // a Modify keeping the element's current id needs no reservation interplay at all
+    CloseAndUpdateApplier.Outcome unchanged = apply(true, fileOf(liveConfig()), modifyWg);
+    assertCode(StatusCodes.Good, unchanged.referencesResults()[0]);
+    assertTrue(unchanged.consumedReservations().isEmpty());
+  }
+
+  @Test
   void atomicModeAppliesNothingOnAnyFailureWhilePartialAppliesSurvivors() {
     // ref 0: a valid remove of 'rg'; ref 1: a modify of a nonexistent connection
     PubSubConfig fileConfig =
@@ -955,6 +1098,61 @@ class CloseAndUpdateApplierTest {
     assertTrue(partial.changesApplied());
     assertEquals(1, service.applyCount);
     assertTrue(service.config.connection(CONN).orElseThrow().readerGroups().isEmpty());
+  }
+
+  @Test
+  void abortedAtomicApplyReportsOnlyMatchResolvedConfigurationValues() {
+    // ref 0: an Add connection with null name and PublisherId — its assignment is
+    // speculative; ref 1: a pure Match of the live connection; ref 2: a modify of a
+    // nonexistent connection (Bad_NoMatch) that aborts the atomic apply
+    PubSubConfig fileConfig =
+        PubSubConfig.builder()
+            .connection(
+                UdpConnectionConfig.builder("placeholder")
+                    .address(UdpDatagramAddress.unicast("127.0.0.1", 15002))
+                    .build())
+            .connection(connection(CONN, 15001).build())
+            .connection(connection("ghost", 15003).build())
+            .build();
+    PubSubConfiguration2DataType file = fileOf(fileConfig);
+    file.getConnections()[0] = withNullNameAndPublisherId(file.getConnections()[0]);
+    file.getConnections()[1] = withNullNameAndPublisherId(file.getConnections()[1]);
+
+    CloseAndUpdateApplier.Outcome outcome =
+        apply(
+            true,
+            file,
+            ref(
+                0,
+                0,
+                0,
+                PubSubConfigurationRefMask.Field.ElementAdd,
+                PubSubConfigurationRefMask.Field.ReferenceConnection),
+            ref(
+                0,
+                1,
+                0,
+                PubSubConfigurationRefMask.Field.ElementMatch,
+                PubSubConfigurationRefMask.Field.ReferenceConnection),
+            ref(
+                0,
+                2,
+                0,
+                PubSubConfigurationRefMask.Field.ElementModify,
+                PubSubConfigurationRefMask.Field.ReferenceConnection));
+
+    assertCode(StatusCodes.Good, outcome.referencesResults()[0]);
+    assertCode(StatusCodes.Good, outcome.referencesResults()[1]);
+    assertCode(StatusCodes.Bad_NoMatch, outcome.referencesResults()[2]);
+    assertFalse(outcome.changesApplied());
+    assertEquals(0, service.applyCount);
+    assertTrue(outcome.consumedReservations().isEmpty());
+
+    // nothing was assigned ([CU §7.2]): the aborted Add's speculative name/PublisherId is
+    // NOT reported — only the Match resolution, which names an element that exists anyway
+    assertEquals(1, outcome.configurationValues().length);
+    assertEquals(CONN, outcome.configurationValues()[0].getName());
+    assertEquals(ushort(7), outcome.configurationValues()[0].getIdentifier().value());
   }
 
   @Test
@@ -1281,6 +1479,43 @@ class CloseAndUpdateApplierTest {
         value.getTransportSettings(),
         value.getMessageSettings(),
         value.getDataSetWriters());
+  }
+
+  private static WriterGroupDataType withHeaderLayoutUri(
+      WriterGroupDataType value, String headerLayoutUri) {
+    return new WriterGroupDataType(
+        value.getName(),
+        value.getEnabled(),
+        value.getSecurityMode(),
+        value.getSecurityGroupId(),
+        value.getSecurityKeyServices(),
+        value.getMaxNetworkMessageSize(),
+        value.getGroupProperties(),
+        value.getWriterGroupId(),
+        value.getPublishingInterval(),
+        value.getKeepAliveTime(),
+        value.getPriority(),
+        value.getLocaleIds(),
+        headerLayoutUri,
+        value.getTransportSettings(),
+        value.getMessageSettings(),
+        value.getDataSetWriters());
+  }
+
+  private static org.eclipse.milo.opcua.stack.core.types.structured.DataSetWriterDataType
+      withDataSetWriterId(
+          org.eclipse.milo.opcua.stack.core.types.structured.DataSetWriterDataType value,
+          UShort id) {
+    return new org.eclipse.milo.opcua.stack.core.types.structured.DataSetWriterDataType(
+        value.getName(),
+        value.getEnabled(),
+        id,
+        value.getDataSetFieldContentMask(),
+        value.getKeyFrameCount(),
+        value.getDataSetName(),
+        value.getDataSetWriterProperties(),
+        value.getTransportSettings(),
+        value.getMessageSettings());
   }
 
   private static WriterGroupDataType withNullNameAndId(WriterGroupDataType value) {

@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
+import java.util.Set;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigValidationException;
 import org.eclipse.milo.opcua.sdk.pubsub.config.SecurityGroupConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.security.PubSubSecurityPolicy;
@@ -184,6 +185,37 @@ class SecurityGroupKeyStoreTest {
     NavigableSet<Long> cached = store.cachedTokenIds("g");
     assertFalse(cached.contains(1L));
     assertTrue(cached.first() >= 9L);
+  }
+
+  @Test
+  void replaceGroupsRefreshesTheServingWindowOnRetainedGroups() {
+    SecurityGroupKeyStore store =
+        newStore(group("g").maxPastKeyCount(uint(2)).maxFutureKeyCount(uint(3)).build());
+
+    clock.advance(LIFETIME.multipliedBy(9)); // currentTokenId = 10
+
+    // baseline: the construction-time window governs (past clamp at 10 - 2 = 8)
+    assertEquals(8, store.getSecurityKeys("g", 5, 0).orElseThrow().firstTokenId());
+    ByteString currentKeyBefore = store.getSecurityKeys("g", 0, 0).orElseThrow().keys().get(0);
+
+    // a count-only change on a RETAINED group (not in the invalidated set — count changes are
+    // deliberately not an invalidation trigger): the applied window governs from now on ...
+    store.replaceGroups(
+        List.of(group("g").maxPastKeyCount(uint(0)).maxFutureKeyCount(uint(1)).build()), Set.of());
+
+    SecurityGroupKeyStore.SecurityKeys past = store.getSecurityKeys("g", 5, 0).orElseThrow();
+    assertEquals(10, past.firstTokenId(), "the applied MaxPastKeyCount must clamp the window");
+
+    SecurityGroupKeyStore.SecurityKeys future = store.getSecurityKeys("g", 20, 5).orElseThrow();
+    assertEquals(11, future.firstTokenId(), "the applied MaxFutureKeyCount must cap the window");
+    assertEquals(1, future.keys().size());
+
+    // ... while the keys and the rotation base are untouched: the same token id serves the same
+    // byte-identical key, generated exactly once
+    SecurityGroupKeyStore.SecurityKeys current = store.getSecurityKeys("g", 0, 0).orElseThrow();
+    assertEquals(10, current.firstTokenId());
+    assertEquals(currentKeyBefore, current.keys().get(0));
+    assertEquals(1, keyGenerator.generateCount("g", 10));
   }
 
   @Test

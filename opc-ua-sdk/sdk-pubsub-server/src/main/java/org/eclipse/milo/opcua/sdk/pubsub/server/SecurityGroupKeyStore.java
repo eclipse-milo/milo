@@ -118,7 +118,9 @@ final class SecurityGroupKeyStore {
    * <ul>
    *   <li><b>Retained</b> groups — present before and after, id not in {@code invalidatedIds} —
    *       keep their existing {@link GroupState}: keys keep serving and the token arithmetic is
-   *       undisturbed.
+   *       undisturbed. Their serving-window bounds (MaxPastKeyCount/MaxFutureKeyCount) are
+   *       refreshed from the applied configuration, so a count-only change takes effect without
+   *       invalidating keys (count changes are deliberately not an invalidation trigger).
    *   <li><b>Invalidated</b> ids (SecurityPolicyUri or KeyLifetime modified — "all existing keys of
    *       the SecurityGroup are invalidated" — and removed groups) get a FRESH {@link GroupState}:
    *       a new rotation base recorded now and regenerated keys; so do ids new to the store.
@@ -153,6 +155,7 @@ final class SecurityGroupKeyStore {
       GroupState existing = old.get(securityGroupId);
 
       if (existing != null && !invalidatedIds.contains(securityGroupId)) {
+        existing.updateWindow(group);
         replacement.put(securityGroupId, existing);
       } else {
         try {
@@ -269,9 +272,13 @@ final class SecurityGroupKeyStore {
     private final String securityPolicyUri;
     private final int keyDataLength;
     private final long keyLifetimeMillis;
-    private final long maxPastKeyCount;
-    private final long maxFutureKeyCount;
     private final long baseMillis;
+
+    /** Serving-window bound; guarded by the instance monitor (refreshed on retained groups). */
+    private long maxPastKeyCount;
+
+    /** Serving-window bound; guarded by the instance monitor (refreshed on retained groups). */
+    private long maxFutureKeyCount;
 
     private final TreeMap<Long, ByteString> keysByTokenId = new TreeMap<>();
 
@@ -297,6 +304,19 @@ final class SecurityGroupKeyStore {
 
       this.maxPastKeyCount = config.getMaxPastKeyCount().longValue();
       this.maxFutureKeyCount = config.getMaxFutureKeyCount().longValue();
+    }
+
+    /**
+     * Refresh the serving-window bounds from {@code config} on a retained group: a change to only
+     * MaxPastKeyCount/MaxFutureKeyCount does not invalidate keys (the S15 invalidation triggers are
+     * SecurityPolicyUri and KeyLifetime), but the applied counts must govern the window served from
+     * now on. Keys and the rotation base are untouched.
+     */
+    private void updateWindow(SecurityGroupConfig config) {
+      synchronized (this) {
+        this.maxPastKeyCount = config.getMaxPastKeyCount().longValue();
+        this.maxFutureKeyCount = config.getMaxFutureKeyCount().longValue();
+      }
     }
 
     private static PubSubSecurityPolicy resolvePolicy(SecurityGroupConfig config) {

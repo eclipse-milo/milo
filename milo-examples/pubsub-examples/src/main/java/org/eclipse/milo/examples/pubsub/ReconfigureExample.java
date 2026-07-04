@@ -69,16 +69,18 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Expected output: about 6 {@code [received]} lines roughly 1 second apart (phase 1; the first
  * cycle fires immediately); three {@code [reconfigured]} lines reporting {@code
- * restartedPaths=[pub-conn/group]} with empty added and removed paths; a quiet ~1.5 seconds, then
- * about 14 {@code [received]} lines roughly 250ms apart (phase 2); and finally {@code [summary]}
- * lines comparing the per-phase message counts. Total runtime is about 15 seconds, then the process
- * exits 0.
+ * restartedPaths=[pub-conn/group]} with empty added and removed paths; then — beginning immediately
+ * at the next tick — about 20 {@code [received]} lines roughly 250ms apart (phase 2); and finally
+ * {@code [summary]} lines comparing the per-phase message counts. Total runtime is about 15
+ * seconds, then the process exits 0.
  *
- * <p>The quiet gap opening phase 2 is the subscriber's Part 14 §7.2.3 sequence-number tracking at
- * work: the restarted writer group also restarted its sequence numbers at 0, so the reader silently
- * drops the first post-restart messages as stale — as many as phase 1 sent — until the restarted
- * counters overtake its windows. The drops tick only the reader's {@code staleSequenceMessages}
- * diagnostics counter; nothing is logged.
+ * <p>There is no gap between the phases: a path-stable restart — the same component path, which is
+ * what an interval-only change produces — preserves the writer group's DataSetMessage and
+ * NetworkMessage sequence numbering. The reader, untouched by the reconfigure and still holding
+ * phase 1's Part 14 §7.2.3 sequence-number windows, accepts the restarted stream's first message as
+ * the next in sequence, and its {@code staleSequenceMessages} diagnostics counter stays at zero.
+ * (Removing and re-adding the group — a path change — would restart the numbering at 0 and open
+ * exactly that silent drop window.)
  */
 public class ReconfigureExample {
 
@@ -186,9 +188,9 @@ public class ReconfigureExample {
 
     Thread.sleep(PHASE_DURATION.toMillis());
 
-    // Diagnostics counters are keyed by component path, but a restarted component starts
-    // fresh counters: the writer's count covers phase 2 only, while the reader, untouched by
-    // the reconfigure, counts both phases. Capture the writer's count before shutdown.
+    // Diagnostics counters are keyed by component path and survive a path-stable restart:
+    // the restarted writer's count spans both phases, just like the count of the reader,
+    // which the reconfigure never touched. Capture the writer's count before shutdown.
     long dataSetsSent =
         publisher
             .diagnostics()
@@ -221,8 +223,8 @@ public class ReconfigureExample {
         PHASE_DURATION.toSeconds(),
         PHASE_2_INTERVAL.toMillis());
     logger.info(
-        "[summary] diagnostics: writer sent {} DataSetMessages since the group restart, "
-            + "reader received {} across both phases",
+        "[summary] diagnostics: writer sent {} DataSetMessages and reader received {} "
+            + "across both phases",
         dataSetsSent,
         dataSetsReceived);
 

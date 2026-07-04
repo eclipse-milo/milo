@@ -100,9 +100,11 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Snapshots and buffers are encoded/decoded with the {@link PubSubConfigFiles} DataType level;
  * the wire form always carries the mediator-owned ConfigurationVersion (D26) patched in via {@link
- * #withConfigurationVersion}. Decoding a CloseAndUpdate buffer enforces the §9.1.3.7.1 namespaces
- * rule: a non-empty header must match the server's NamespaceTable positionally, else {@code
- * Bad_TypeMismatch} (D18).
+ * #withConfigurationVersion} — read as one atomically-swapped (config, version) pair, so a snapshot
+ * racing an owner {@code runtime()} apply can never carry pre-apply content stamped with the
+ * post-apply version (see {@link #applied}). Decoding a CloseAndUpdate buffer enforces the
+ * §9.1.3.7.1 namespaces rule: a non-empty header must match the server's NamespaceTable
+ * positionally, else {@code Bad_TypeMismatch} (D18).
  *
  * <p>Threading: one face lock serializes the eight handlers and session eviction; lock order is
  * one-way face lock &rarr; mediator lock &rarr; engine lock (CloseAndUpdate applies inside the
@@ -146,8 +148,16 @@ final class PubSubConfigurationFace {
   /** The read/write clamp: the served MaxByteStringLength value (R3; 1 MiB Milo default). */
   private final long maxByteStringLength;
 
-  /** The configuration the file reflects; seeded at attach, swapped per mediator apply. */
-  private volatile PubSubConfig currentConfig;
+  /**
+   * The (configuration, ConfigurationVersion) pair the file reflects: seeded at attach, swapped as
+   * ONE volatile record per mediator apply by {@link #onConfigurationApplied}. The pair is
+   * published atomically because the mediator bumps its version BEFORE the hooks run: a pull path
+   * that does not go through a hook (an Open snapshot via {@link #currentWireConfig()}, or
+   * ReserveIds' live-id exclusion set) and races the hook window must observe the previous coherent
+   * pair — never pre-apply content stamped with the post-apply version (D26: one clock, one value
+   * per apply).
+   */
+  private volatile AppliedConfiguration applied;
 
   /**
    * Set under {@link #lock} by startup/shutdown (shutdown clears it under {@link #ns0WriteLock}
@@ -165,6 +175,11 @@ final class PubSubConfigurationFace {
   private @Nullable SessionListener sessionListener;
 
   /**
+   * @param initialConfigurationVersion the version the mediator is seeded with — the value its
+   *     supplier serves until the first apply — pairing the attach-time {@code config} coherently
+   *     from the start (the supplier itself cannot be read here: it is deferred until the owning
+   *     {@link ServerPubSub}'s construction completed, and reading it lazily on first use would
+   *     reintroduce the torn-pair window for the first apply).
    * @param configurationObjectIds the fragment-backed R11 lookup, or {@code null} when the
    *     information model is not exposed (CloseAndUpdate then returns the empty
    *     ConfigurationObjects array).
@@ -176,13 +191,14 @@ final class PubSubConfigurationFace {
   PubSubConfigurationFace(
       OpcUaServer server,
       PubSubConfig config,
+      UInteger initialConfigurationVersion,
       PubSubMethodAuthorizer authorizer,
       @Nullable ConfigurationObjectIds configurationObjectIds,
       Supplier<UInteger> configurationVersion,
       Supplier<PubSubService> managedService) {
 
     this.server = server;
-    this.currentConfig = config;
+    this.applied = new AppliedConfiguration(config, initialConfigurationVersion);
     this.authorizer = authorizer;
     this.configurationObjectIds = configurationObjectIds;
     this.configurationVersion = configurationVersion;
@@ -328,7 +344,10 @@ final class PubSubConfigurationFace {
    * {@link #active} re-checked inside it so a racing shutdown's restore cannot be overwritten.
    */
   void onConfigurationApplied(PubSubConfig newConfig) {
-    currentConfig = newConfig;
+    // ONE volatile swap publishes the coherent (config, version) pair: the hook runs after the
+    // mediator's version bump, inside the mediator's critical section (applies serialize), so
+    // the version read here is exactly the version of THIS apply
+    applied = new AppliedConfiguration(newConfig, configurationVersion.get());
 
     synchronized (ns0WriteLock) {
       if (!active) {
@@ -375,10 +394,16 @@ final class PubSubConfigurationFace {
 
   // region internals
 
-  /** The current configuration in its file wire form, carrying the mediator version (D26). */
+  /**
+   * The current configuration in its file wire form, carrying the mediator version (D26). The
+   * (config, version) pair is read atomically from {@link #applied}: reading the version supplier
+   * here instead could pair pre-apply content with a post-apply version while the mediator hooks
+   * are still running.
+   */
   private PubSubConfiguration2DataType currentWireConfig() {
-    PubSubConfiguration2DataType wire = currentConfig.toDataType(server.getNamespaceTable());
-    return withConfigurationVersion(wire, configurationVersion.get());
+    AppliedConfiguration current = applied;
+    PubSubConfiguration2DataType wire = current.config().toDataType(server.getNamespaceTable());
+    return withConfigurationVersion(wire, current.version());
   }
 
   /** Encode the current configuration file (the Open snapshot and the Size source). */
@@ -719,14 +744,16 @@ final class PubSubConfigurationFace {
       synchronized (lock) {
         checkActive();
 
-        // a reservation is NOT a configuration mutation: no store save, no version bump (R8)
+        // a reservation is NOT a configuration mutation: no store save, no version bump (R8);
+        // the live-id exclusion set is read from the same atomically-swapped pair the file
+        // snapshots use
         Grant grant =
             reservations.reserve(
                 session.getSessionId(),
                 transportProfileUri,
                 numReqWriterGroupIds != null ? numReqWriterGroupIds.intValue() : 0,
                 numReqDataSetWriterIds != null ? numReqDataSetWriterIds.intValue() : 0,
-                currentConfig);
+                applied.config());
 
         defaultPublisherId.set(grant.defaultPublisherId());
         writerGroupIds.set(grant.writerGroupIds());
@@ -822,4 +849,10 @@ final class PubSubConfigurationFace {
   }
 
   // endregion
+
+  /**
+   * One apply's coherent (configuration, ConfigurationVersion) pair, published as a single volatile
+   * swap so no pull path can pair one apply's content with another apply's version (D26).
+   */
+  private record AppliedConfiguration(PubSubConfig config, UInteger version) {}
 }

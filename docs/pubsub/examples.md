@@ -285,20 +285,20 @@ mvn -pl milo-examples/pubsub-examples exec:java \
   -Dexec.mainClass=org.eclipse.milo.examples.pubsub.ReconfigureExample
 ```
 
-Expected output over roughly 15 seconds — note the visibly higher rate of phase 2, and that only the writer group restarted:
+Expected output over roughly 15 seconds — note the visibly higher rate of phase 2, that only the writer group restarted, and that phase 2 begins immediately at the next tick (exact counts drift by one or two with timing):
 
 ```
 [received] phase=1 dataSet=demo temperature=20.99, tick=1
 [received] phase=1 dataSet=demo temperature=24.66, tick=6
 [reconfigured] restartedPaths=[pub-conn/group]
-[received] phase=2 dataSet=demo temperature=22.58, tick=13
+[received] phase=2 dataSet=demo temperature=22.58, tick=7
 [summary] phase 1: 6 DataSets received in ~5s at 1000ms
-[summary] phase 2: 14 DataSets received in ~5s at 250ms
+[summary] phase 2: 20 DataSets received in ~5s at 250ms
 ```
 
-Phase 2 receives fewer DataSets than the restarted writer sends — about 14 received against about 20 sent, visible in the run above as the tick jump from 6 to 13; the exact counts drift by one or two with timing. The group restart also restarts the writer's sequence numbers at 0, and the reader, untouched and still holding phase 1's sequence window, drops the restarted stream's first messages as stale duplicates — about as many as phase 1 received — until the new numbers pass the window. The drops land in the reader's `staleSequenceMessages` counter.
+There is no gap between the phases: a path-stable group restart preserves the writers' sequence numbering, so the reader — untouched by the reconfigure and still holding phase 1's sequence window — accepts the restarted stream's first message as the next in sequence, and the reader's `staleSequenceMessages` counter stays at zero. (Earlier revisions restarted the sequence at 0 here, and this example demonstrated the resulting drop window; that window is gone.)
 
-The summary also reports diagnostics: the writer's sent counter covers only phase 2 because restarted components start with fresh counters, while the untouched reader's received counter spans both phases — and counts only accepted messages, 6 + 14 = 20 in the run above. See [Operations](operations.md) for what restarts when, the sequence-tracking rules, and how subscribers recover from a publisher's sequence restart.
+The summary also reports diagnostics: both the writer's sent counter and the reader's received counter span both phases — restarted components keep their counters across a path-stable restart, another face of the same preservation rule. See [Operations](operations.md) for what restarts when, the preservation rules and the cases that still reset, and how subscribers recover when a reset does happen.
 
 ## Troubleshooting
 

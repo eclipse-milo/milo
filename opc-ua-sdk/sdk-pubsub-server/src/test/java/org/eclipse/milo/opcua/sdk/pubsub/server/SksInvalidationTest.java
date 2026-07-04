@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.pubsub.server;
 
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -89,6 +90,25 @@ class SksInvalidationTest {
     // changed policy/lifetime and removed groups are invalidated; unchanged and brand-new are
     // not (a new group has no existing keys to invalidate)
     assertEquals(Set.of("policy-changed", "lifetime-changed", "removed"), invalidated);
+  }
+
+  @Test
+  void countOnlyChangesAreNotAnInvalidationTrigger() {
+    // §6.2.12.2 names SecurityPolicyUri and KeyLifetime as the invalidation triggers; a group
+    // whose ONLY change is MaxPastKeyCount/MaxFutureKeyCount keeps its keys (the applied counts
+    // still govern the served window — the count-only replaceGroups row in
+    // SecurityGroupKeyStoreTest)
+    PubSubConfig oldConfig = configWith(group("counts-changed", LIFETIME));
+
+    PubSubConfig newConfig =
+        configWith(
+            SecurityGroupConfig.builder("counts-changed")
+                .keyLifeTime(LIFETIME)
+                .maxPastKeyCount(uint(7))
+                .maxFutureKeyCount(uint(9))
+                .build());
+
+    assertEquals(Set.of(), SksServerFace.invalidatedGroupIds(oldConfig, newConfig));
   }
 
   @Test

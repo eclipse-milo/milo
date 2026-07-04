@@ -78,8 +78,11 @@ import org.slf4j.LoggerFactory;
  * path <em>or an ancestor</em> (connection-level restarts) arrives with newState Operational —
  * covering Error&rarr;Operational recovery, broker-reconnect recovery, enable-after-disable, and
  * reconfigure restarts. A non-dispose Disabled transition of the path also closes its episode (the
- * bookkeeping-drop rule below); the emitted-event set is unchanged because any path from Disabled
- * back to sending passes through Operational, which re-arms anyway. Consequence: a component that
+ * bookkeeping-drop rule below); for future sends that is behavior-neutral because any path from
+ * Disabled back to sending passes through Operational, which re-arms anyway — with one accepted
+ * straggler race: an asynchronous send failure that passed the runtime's generation check just
+ * before a Disable can be enqueued behind the Disabled state-change event, land after the drop, and
+ * emit a second (truthful, benign) event for the same outage episode. Consequence: a component that
  * fails every publish cycle while remaining Operational emits exactly one event per outage episode
  * (deliberate anti-storm posture). The engine's own event postures compose: {@code
  * encryptionErrors} events are already edge-triggered and the signature/token drop counters emit no
@@ -221,9 +224,11 @@ final class PubSubStatusEventBridge {
     if (event.newState() == PubSubState.Disabled) {
       // drop bookkeeping instead of tracking Disabled: the engine emits NO dispose-cause
       // event for a component removed while already Disabled (the state machine skips the
-      // notification), so a retained entry would leak until shutdown. Behavior-neutral: a
-      // Disabled component cannot send, and any path back to sending passes through
-      // Operational, which re-seeds the state and re-arms suppression anyway.
+      // notification), so a retained entry would leak until shutdown. Behavior-neutral for
+      // future sends: a Disabled component cannot send, and any path back to sending passes
+      // through Operational, which re-seeds the state and re-arms suppression anyway. An
+      // in-flight send-failure straggler enqueued behind this Disabled event may re-emit for
+      // the same episode after the drop — accepted (see the class-level suppression note).
       lastState.remove(path);
       suppressed.remove(path);
     } else {
