@@ -10,9 +10,15 @@
 
 package org.eclipse.milo.opcua.sdk.pubsub.server;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import org.eclipse.milo.opcua.sdk.pubsub.ReconfigureResult;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigValidationException;
+import org.eclipse.milo.opcua.sdk.pubsub.config.SecurityGroupConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodInvocationHandler;
@@ -48,8 +54,13 @@ import org.slf4j.LoggerFactory;
  * still carries the handler this face attached.
  *
  * <p>Keys are generated and rotated by a {@link SecurityGroupKeyStore} seeded from the attach-time
- * {@link PubSubConfig#securityGroups()}; reconfiguring via {@code ServerPubSub.runtime()} does not
- * rebuild the store (the same documented v1 limitation as the information model fragment).
+ * {@link PubSubConfig#securityGroups()} and refreshed on every successful configuration apply
+ * through the managed runtime — remote CloseAndUpdate edits and owner {@code
+ * ServerPubSub.runtime()} reconfigures alike — via {@link #onConfigurationApplied}, registered as a
+ * post-apply hook (S15): retained groups keep serving their keys undisturbed, while groups whose
+ * SecurityPolicyUri or KeyLifetime changed have all existing keys invalidated and regenerated (Part
+ * 14 §6.2.12.2; the engine independently restarts every referencing writer/reader group so
+ * consumers re-fetch).
  *
  * <p>Created by {@link ServerPubSub} when {@link ServerPubSubOptions#isSecurityKeyServerEnabled()}
  * is {@code true}; {@link #startup()} and {@link #shutdown()} are driven by the owning {@link
@@ -62,6 +73,9 @@ final class SksServerFace {
   private final OpcUaServer server;
   private final SecurityGroupKeyStore keyStore;
   private final PubSubMethodAuthorizer authorizer;
+
+  /** The configuration whose SecurityGroups the store last observed; swapped per apply. */
+  private volatile PubSubConfig lastConfig;
 
   private @Nullable UaMethodNode methodNode;
   private @Nullable GetSecurityKeysMethodImpl attachedHandler;
@@ -79,6 +93,53 @@ final class SksServerFace {
     this.server = server;
     this.keyStore = new SecurityGroupKeyStore(config.securityGroups());
     this.authorizer = authorizer;
+    this.lastConfig = config;
+  }
+
+  /**
+   * Post-apply hook (S15, hook #3): refresh the key store from the applied configuration's
+   * SecurityGroups. The invalidated ids — groups whose SecurityPolicyUri or KeyLifetime changed
+   * relative to the last-seen configuration, plus removed groups — are computed here from the
+   * retained {@code lastConfig} (§6.2.12.2 "all existing keys of the SecurityGroup are
+   * invalidated"); retained groups keep their rotation state. Violations in the replacement set are
+   * logged inside {@link SecurityGroupKeyStore#replaceGroups} and never thrown — a post-apply hook
+   * must not fail the apply. Runs on the reconfiguring thread, serialized by the managed runtime.
+   */
+  void onConfigurationApplied(PubSubConfig newConfig, ReconfigureResult result) {
+    PubSubConfig oldConfig = this.lastConfig;
+    this.lastConfig = newConfig;
+
+    keyStore.replaceGroups(newConfig.securityGroups(), invalidatedGroupIds(oldConfig, newConfig));
+  }
+
+  /**
+   * The SecurityGroupIds whose existing keys are invalidated by replacing {@code oldConfig}'s
+   * groups with {@code newConfig}'s: ids whose SecurityPolicyUri or KeyLifetime changed, plus ids
+   * no longer present. Package-private static for tests.
+   */
+  static Set<String> invalidatedGroupIds(PubSubConfig oldConfig, PubSubConfig newConfig) {
+    var oldById = new HashMap<String, SecurityGroupConfig>();
+    for (SecurityGroupConfig group : oldConfig.securityGroups()) {
+      oldById.putIfAbsent(group.getSecurityGroupId(), group);
+    }
+
+    var invalidated = new HashSet<>(oldById.keySet());
+
+    for (SecurityGroupConfig group : newConfig.securityGroups()) {
+      SecurityGroupConfig old = oldById.get(group.getSecurityGroupId());
+      if (old != null
+          && Objects.equals(old.getSecurityPolicyUri(), group.getSecurityPolicyUri())
+          && old.getKeyLifeTime().equals(group.getKeyLifeTime())) {
+        invalidated.remove(group.getSecurityGroupId());
+      }
+    }
+
+    return invalidated;
+  }
+
+  /** The key store backing this face; package-private for tests. */
+  SecurityGroupKeyStore keyStore() {
+    return keyStore;
   }
 
   /**

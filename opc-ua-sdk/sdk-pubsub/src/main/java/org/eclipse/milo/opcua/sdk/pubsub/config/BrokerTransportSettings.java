@@ -108,9 +108,11 @@ public final class BrokerTransportSettings {
    * <p>For data NetworkMessages a writer-level value takes effect only when the writer also
    * overrides {@link #getQueueName() queueName} (Part 14 §6.4.2.5.4: a DataSetWriter-level delivery
    * guarantee is only valid alongside a QueueName override); without a queue override the writer
-   * publishes into the group's NetworkMessages and the group-level value applies — a writer-level
-   * value is silently ignored there. The writer's DataSetMetaData messages always honor a
-   * writer-level value.
+   * publishes into the group's NetworkMessages and the group-level value applies. A writer-level
+   * value without a queueName override is therefore rejected with {@code Bad_ConfigurationError}
+   * for enabled writers on broker connections when the service starts or reconfigures; on UDP
+   * connections, where these settings are inert config, the combination is tolerated for round-trip
+   * fidelity. The writer's DataSetMetaData messages always honor a writer-level value.
    *
    * @return the requested {@link BrokerTransportQualityOfService}.
    */
@@ -246,8 +248,9 @@ public final class BrokerTransportSettings {
     /**
      * Set the delivery guarantee (quality of service) requested from the broker.
      *
-     * <p>A writer-level value affects data NetworkMessages only when the writer also overrides
-     * {@code queueName} (Part 14 §6.4.2.5.4); see {@link
+     * <p>A writer-level value is only valid when the writer also overrides {@code queueName} (Part
+     * 14 §6.4.2.5.4): an enabled writer on a broker connection carrying a writer-level value
+     * without one is rejected when the service starts or reconfigures; see {@link
      * BrokerTransportSettings#getRequestedDeliveryGuarantee()}.
      *
      * @param requestedDeliveryGuarantee the requested {@link BrokerTransportQualityOfService};

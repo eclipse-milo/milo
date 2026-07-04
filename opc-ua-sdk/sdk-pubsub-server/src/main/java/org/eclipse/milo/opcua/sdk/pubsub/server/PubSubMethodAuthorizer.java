@@ -35,10 +35,14 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 public interface PubSubMethodAuthorizer {
 
   /**
-   * Authorize a PubSub configuration change (AddConnection, RemoveConnection, ...).
+   * Authorize a PubSub configuration operation.
    *
-   * <p>No Method handler shipped in this version consults this check; it is reserved for the remote
-   * configuration handlers.
+   * <p>Consulted — with any bad code surfaced verbatim as the Call result — by every
+   * remote-configuration Method handler when {@link
+   * ServerPubSubOptions#isAllowRemoteConfiguration()} is enabled: the eight {@code
+   * PubSubConfiguration} file-model handlers (Open, Close, Read, Write, GetPosition, SetPosition,
+   * ReserveIds, CloseAndUpdate — including the read-side methods; the whole file surface is
+   * configure-gated) and the Enable/Disable handlers on every component Status object.
    *
    * @param session the {@link Session} the Call arrived on.
    * @return {@link StatusCode#GOOD} to allow the call, or a bad code to deny it.
@@ -46,11 +50,12 @@ public interface PubSubMethodAuthorizer {
   StatusCode checkConfigure(Session session);
 
   /**
-   * Authorize a Security Key Service management operation (AddSecurityGroup, RemoveSecurityGroup,
-   * SecurityGroupFolder management, key invalidation/rotation).
+   * Authorize a Security Key Service management operation.
    *
-   * <p>No Method handler shipped in this version consults this check; the management Methods remain
-   * unimplemented.
+   * <p>Consulted by {@code CloseAndUpdate} — once per call, in addition to {@link #checkConfigure}
+   * — when the ConfigurationReferences contain SecurityGroup references (Part 14 Table 239 bit 11):
+   * denial fails each SecurityGroup reference per-element with the returned code, never the method.
+   * The SKS management Methods (AddSecurityGroup, RemoveSecurityGroup, ...) remain unimplemented.
    *
    * @param session the {@link Session} the Call arrived on.
    * @return {@link StatusCode#GOOD} to allow the call, or a bad code to deny it.

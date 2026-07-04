@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigValidationException;
@@ -49,8 +50,9 @@ import org.slf4j.LoggerFactory;
  * <p>Zeroization: keys are held as immutable {@link ByteString}s and are never wiped; the Phase 4
  * zeroization posture confines wiping to {@code SecurityKeyMaterial} on the consuming side.
  *
- * <p>Thread safety: the group map is immutable after construction and each group's mutable state is
- * synchronized, so concurrent Calls on the server's service threads are safe.
+ * <p>Thread safety: the group map is an immutable map held in a volatile field, swapped atomically
+ * by {@link #replaceGroups} (the SKS refresh hook, serialized by the managed runtime); each group's
+ * mutable state is synchronized, so concurrent Calls on the server's service threads are safe.
  */
 final class SecurityGroupKeyStore {
 
@@ -62,7 +64,7 @@ final class SecurityGroupKeyStore {
   /** The largest token id servable: FirstTokenId is a UInt32 on the wire. */
   private static final long MAX_TOKEN_ID = 0xFFFF_FFFFL;
 
-  private final Map<String, GroupState> groups;
+  private volatile Map<String, GroupState> groups;
   private final InstantSource instantSource;
   private final KeyGenerator keyGenerator;
 
@@ -110,6 +112,68 @@ final class SecurityGroupKeyStore {
   }
 
   /**
+   * Replace the served SecurityGroups after a configuration apply (Part 14 §6.2.12.2; pinned
+   * decision R7, seam S15).
+   *
+   * <ul>
+   *   <li><b>Retained</b> groups — present before and after, id not in {@code invalidatedIds} —
+   *       keep their existing {@link GroupState}: keys keep serving and the token arithmetic is
+   *       undisturbed.
+   *   <li><b>Invalidated</b> ids (SecurityPolicyUri or KeyLifetime modified — "all existing keys of
+   *       the SecurityGroup are invalidated" — and removed groups) get a FRESH {@link GroupState}:
+   *       a new rotation base recorded now and regenerated keys; so do ids new to the store.
+   *   <li><b>Removed</b> ids simply drop.
+   * </ul>
+   *
+   * <p>The construction validation rules (unsupported SecurityPolicy URI, duplicate
+   * SecurityGroupId) apply to the replacement set, but violations here log ERROR and keep the old
+   * state for the offending group (or skip a new group): the configuration was already applied
+   * engine-side, and a post-apply hook must never throw.
+   *
+   * @param securityGroups the applied configuration's SecurityGroups.
+   * @param invalidatedIds the SecurityGroupIds whose existing keys are invalidated.
+   */
+  void replaceGroups(List<SecurityGroupConfig> securityGroups, Set<String> invalidatedIds) {
+    long baseMillis = instantSource.millis();
+
+    Map<String, GroupState> old = this.groups;
+    var replacement = new HashMap<String, GroupState>();
+
+    for (SecurityGroupConfig group : securityGroups) {
+      String securityGroupId = group.getSecurityGroupId();
+
+      if (replacement.containsKey(securityGroupId)) {
+        LOGGER.error(
+            "SecurityGroupKeyStore: duplicate SecurityGroupId '{}' in replacement set; keeping"
+                + " the first",
+            securityGroupId);
+        continue;
+      }
+
+      GroupState existing = old.get(securityGroupId);
+
+      if (existing != null && !invalidatedIds.contains(securityGroupId)) {
+        replacement.put(securityGroupId, existing);
+      } else {
+        try {
+          replacement.put(securityGroupId, new GroupState(group, baseMillis));
+        } catch (PubSubConfigValidationException e) {
+          LOGGER.error(
+              "SecurityGroupKeyStore: invalid replacement SecurityGroup '{}'{}: {}",
+              securityGroupId,
+              existing != null ? "; keeping the previous state" : "; not served",
+              e.getMessage());
+          if (existing != null) {
+            replacement.put(securityGroupId, existing);
+          }
+        }
+      }
+    }
+
+    this.groups = Map.copyOf(replacement);
+  }
+
+  /**
    * Serve keys for one SecurityGroup.
    *
    * <p>Request semantics (uniform Phase 4 pin): {@code startingTokenId == 0} requests the current
@@ -137,6 +201,11 @@ final class SecurityGroupKeyStore {
     synchronized (state) {
       return Optional.of(state.serve(nowMillis, startingTokenId, requestedKeyCount, keyGenerator));
     }
+  }
+
+  /** The SecurityGroupIds currently served; a snapshot, for tests. */
+  Set<String> securityGroupIds() {
+    return Set.copyOf(groups.keySet());
   }
 
   /** The token ids currently cached for {@code securityGroupId}; a snapshot, for tests. */

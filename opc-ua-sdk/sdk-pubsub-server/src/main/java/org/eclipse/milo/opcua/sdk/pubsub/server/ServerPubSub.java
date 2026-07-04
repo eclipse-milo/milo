@@ -85,7 +85,9 @@ import org.slf4j.LoggerFactory;
  *   <li>If a {@link PubSubConfigurationStore} is configured and {@link
  *       PubSubConfigurationStore#load()} returns a stored configuration, the stored configuration
  *       wins and the attach configuration is ignored; otherwise the attach configuration is used
- *       and saved once. Changes made later via {@link #runtime()} are not saved automatically.
+ *       and saved once. Every later successful configuration apply through {@link #runtime()} —
+ *       including remote {@code CloseAndUpdate} edits — is saved too; a save failure is WARN-logged
+ *       and surfaced via {@link #lastConfigurationSaveError()}.
  * </ul>
  *
  * <p>Attach timing: {@code attach} is legal any time after {@link OpcUaServer} construction — the
@@ -114,6 +116,9 @@ public final class ServerPubSub implements AutoCloseable {
   /** Guarded by {@link #lifecycleLock}. */
   private FaceState sksFaceState = FaceState.NEW;
 
+  /** Guarded by {@link #lifecycleLock}. */
+  private FaceState configurationFaceState = FaceState.NEW;
+
   /** The raw engine service; internal use only — API callers get {@link #managedService}. */
   private final PubSubService service;
 
@@ -122,6 +127,21 @@ public final class ServerPubSub implements AutoCloseable {
   private final PubSubMethodAuthorizer methodAuthorizer;
   private final @Nullable PubSubInfoModelFragment fragment;
   private final @Nullable SksServerFace sksServerFace;
+  private final @Nullable PubSubConfigurationFace configurationFace;
+  private final @Nullable PubSubConfigurationStore configurationStore;
+
+  /**
+   * The SecurityGroups of the current configuration, by SecurityGroupId; the default authorizer's
+   * {@code checkKeyAccess} group lookup reads this so remote-edited groups govern (S15). Swapped
+   * per apply by {@link #onMediatorApplied}.
+   */
+  private volatile Map<String, SecurityGroupConfig> securityGroupsById;
+
+  /**
+   * The last {@link PubSubConfigurationStore#save} failure, cleared on the next successful save
+   * (D14); see {@link #lastConfigurationSaveError()}.
+   */
+  private volatile @Nullable Exception lastConfigurationSaveError;
 
   /** The shared address-space-backed source used for the automatic dataset bindings. */
   private final AddressSpacePublishedDataSetSource addressSpaceSource;
@@ -190,18 +210,18 @@ public final class ServerPubSub implements AutoCloseable {
         });
 
     // one effective authorizer per attachment (S13): the options-configured instance, else the
-    // shared default; every PubSub Method handler (the SKS face and, as they land, the fragment's
-    // Enable/Disable handlers, the remote-configuration face, and the diagnostics Reset handlers)
-    // consults this same instance
+    // shared default; every PubSub Method handler (the SKS face, the fragment's Enable/Disable
+    // handlers, the remote-configuration face, and — as they land — the diagnostics Reset
+    // handlers) consults this same instance
+    this.securityGroupsById = securityGroupsById(config);
+
     PubSubMethodAuthorizer configuredAuthorizer = options.getMethodAuthorizer();
     if (configuredAuthorizer != null) {
       this.methodAuthorizer = configuredAuthorizer;
     } else {
-      var groupsById = new HashMap<String, SecurityGroupConfig>();
-      for (SecurityGroupConfig group : config.securityGroups()) {
-        groupsById.put(group.getSecurityGroupId(), group);
-      }
-      this.methodAuthorizer = new DefaultPubSubMethodAuthorizer(groupsById::get);
+      // the lookup reads the volatile current-config index, not an attach-time snapshot, so
+      // checkKeyAccess decisions see remotely edited SecurityGroups (S15)
+      this.methodAuthorizer = new DefaultPubSubMethodAuthorizer(id -> securityGroupsById.get(id));
     }
 
     this.fragment =
@@ -222,10 +242,20 @@ public final class ServerPubSub implements AutoCloseable {
             ? new SksServerFace(server, config, methodAuthorizer)
             : null;
 
-    // WP-X construction slot (wave 2b): the remote-configuration face (PubSubConfigurationFace)
-    // is constructed HERE when options.isAllowRemoteConfiguration() is true, taking the managed
-    // service (all remote mutations MUST be applied through the mediator, never the raw service),
-    // configurationObjectIds(), the configuration store, and the effective methodAuthorizer.
+    // the remote-configuration face (WP-X): all remote mutations are applied through the
+    // mediator, never the raw service; the mediator-dependent collaborators are supplied
+    // deferred (managedService is assigned below, before any handler can run)
+    this.configurationStore = options.getConfigurationStore();
+    this.configurationFace =
+        options.isAllowRemoteConfiguration()
+            ? new PubSubConfigurationFace(
+                server,
+                config,
+                methodAuthorizer,
+                fragment,
+                this::currentConfigurationVersion,
+                this::managedService)
+            : null;
 
     // Post-apply hooks, in FIXED registration order (S11); registered before the mediator is
     // constructed because the hook list is fixed at construction:
@@ -233,15 +263,19 @@ public final class ServerPubSub implements AutoCloseable {
     //      model in sync with the engine (R10)
     //   2. bindings re-derivation   — TargetVariables writers + automatic dataset sources
     //      (deliverable G)
-    //   3. SKS key-store refresh    — SksServerFace.onConfigurationApplied (WP-X, wave 2b)
-    //   4. configuration store save — R8 persistence (WP-X, wave 2b); registered LAST so a save
-    //      failure never blocks the key refresh or the model rebuild
+    //   3. SKS key-store refresh    — SksServerFace.onConfigurationApplied (S15)
+    //   4. face refresh + configuration store save — R8 persistence (S16); registered LAST so a
+    //      save failure never blocks the key refresh or the model rebuild
     var hooks = new ArrayList<ManagedPubSubService.ReconfigureHook>();
 
     if (fragment != null) {
       hooks.add(fragment::applyReconfigure);
     }
     hooks.add(this::rederiveBindings);
+    if (sksServerFace != null) {
+      hooks.add(sksServerFace::onConfigurationApplied);
+    }
+    hooks.add(this::onMediatorApplied);
 
     this.managedService =
         new ManagedPubSubService(
@@ -317,11 +351,11 @@ public final class ServerPubSub implements AutoCloseable {
         new ServerPubSub(server, effectiveConfig, options, initialConfigurationVersion);
 
     if (store != null && !loaded) {
-      try {
-        store.save(effectiveConfig.toDataType(namespaceTable));
-      } catch (Exception e) {
-        LOGGER.warn("Error saving configuration to the configuration store", e);
-      }
+      // the attach-time save carries the seeded version too: the uint(0) mapper placeholder is
+      // retired from every observable surface (D26)
+      serverPubSub.persistWireConfiguration(
+          PubSubConfigurationFace.withConfigurationVersion(
+              effectiveConfig.toDataType(namespaceTable), initialConfigurationVersion));
     }
 
     return serverPubSub;
@@ -370,6 +404,17 @@ public final class ServerPubSub implements AutoCloseable {
           return CompletableFuture.failedFuture(e);
         }
       }
+
+      if (configurationFace != null && configurationFaceState == FaceState.NEW) {
+        try {
+          configurationFace.startup();
+          configurationFaceState = FaceState.STARTED;
+        } catch (Exception e) {
+          configurationFaceState = FaceState.STOPPED;
+          configurationFace.shutdown();
+          return CompletableFuture.failedFuture(e);
+        }
+      }
     }
 
     return service.startup().thenApply(s -> this);
@@ -404,6 +449,7 @@ public final class ServerPubSub implements AutoCloseable {
               }
               shutdownFragment();
               shutdownSksServerFace();
+              shutdownConfigurationFace();
             });
   }
 
@@ -430,6 +476,18 @@ public final class ServerPubSub implements AutoCloseable {
         sksServerFace.shutdown();
       }
       sksFaceState = FaceState.STOPPED;
+    }
+  }
+
+  private void shutdownConfigurationFace() {
+    if (configurationFace == null) {
+      return;
+    }
+    synchronized (lifecycleLock) {
+      if (configurationFaceState == FaceState.STARTED) {
+        configurationFace.shutdown();
+      }
+      configurationFaceState = FaceState.STOPPED;
     }
   }
 
@@ -491,6 +549,14 @@ public final class ServerPubSub implements AutoCloseable {
   }
 
   /**
+   * Get the remote-configuration face, or {@code null} when {@link
+   * ServerPubSubOptions#isAllowRemoteConfiguration()} is {@code false}. Package-private for tests.
+   */
+  @Nullable PubSubConfigurationFace configurationFace() {
+    return configurationFace;
+  }
+
+  /**
    * Get the effective {@link PubSubMethodAuthorizer} of this attachment (S13): the
    * options-configured authorizer, else the shared default instance. One instance is consulted by
    * every PubSub Method handler.
@@ -507,6 +573,84 @@ public final class ServerPubSub implements AutoCloseable {
    */
   private UInteger currentConfigurationVersion() {
     return managedService.configurationVersion();
+  }
+
+  /**
+   * The mediator, read deferred by the remote-configuration face (assigned in the constructor
+   * before any handler can run).
+   */
+  private ManagedPubSubService managedService() {
+    return managedService;
+  }
+
+  /**
+   * The last post-apply hook (S16): rebind the default authorizer's SecurityGroup index, refresh
+   * the remote-configuration face (its retained config, the file {@code Size}, and {@code
+   * LastModifiedTime}), and persist the applied configuration.
+   *
+   * <p>Persistence contract (R8): with a {@link PubSubConfigurationStore} configured, {@code save}
+   * runs after EVERY successful configuration apply through the managed runtime — a remote {@code
+   * CloseAndUpdate} with changes applied and an owner {@code runtime()} reconfigure alike.
+   * Enable/Disable, ReserveIds, and match-only CloseAndUpdate calls never reach the mediator's
+   * apply path, so they never save. The saved wire form carries the mediator-owned
+   * ConfigurationVersion. A save failure is isolated: the apply already happened and its results
+   * are still reported; the failure is WARN-logged, surfaced via {@link
+   * #lastConfigurationSaveError()}, and retried at the next successful apply.
+   */
+  private void onMediatorApplied(PubSubConfig newConfig, ReconfigureResult result) {
+    securityGroupsById = securityGroupsById(newConfig);
+
+    if (configurationFace != null) {
+      configurationFace.onConfigurationApplied(newConfig);
+    }
+
+    if (configurationStore != null) {
+      persistWireConfiguration(
+          PubSubConfigurationFace.withConfigurationVersion(
+              newConfig.toDataType(server.getNamespaceTable()),
+              managedService.configurationVersion()));
+    }
+  }
+
+  /**
+   * Save {@code wire} to the configured store, recording (or clearing) {@link
+   * #lastConfigurationSaveError()}; failures are WARN-logged, never thrown.
+   */
+  private void persistWireConfiguration(PubSubConfiguration2DataType wire) {
+    PubSubConfigurationStore store = this.configurationStore;
+    if (store == null) {
+      return;
+    }
+    try {
+      store.save(wire);
+      lastConfigurationSaveError = null;
+    } catch (Exception e) {
+      lastConfigurationSaveError = e;
+      LOGGER.warn("Error saving configuration to the configuration store", e);
+    }
+  }
+
+  /**
+   * Get the last {@link PubSubConfigurationStore#save} failure, or {@code null} if the most recent
+   * save succeeded (or none was attempted).
+   *
+   * <p>A save failure never fails the operation that triggered it — the configuration change was
+   * already applied and its results reported; the failed save is WARN-logged, surfaced here, and
+   * retried at the next successful configuration apply (pinned decision R8/D14). Cleared by the
+   * next successful save.
+   *
+   * @return the last save failure, or {@code null}.
+   */
+  public @Nullable Exception lastConfigurationSaveError() {
+    return lastConfigurationSaveError;
+  }
+
+  private static Map<String, SecurityGroupConfig> securityGroupsById(PubSubConfig config) {
+    var groupsById = new HashMap<String, SecurityGroupConfig>();
+    for (SecurityGroupConfig group : config.securityGroups()) {
+      groupsById.putIfAbsent(group.getSecurityGroupId(), group);
+    }
+    return groupsById;
   }
 
   /**

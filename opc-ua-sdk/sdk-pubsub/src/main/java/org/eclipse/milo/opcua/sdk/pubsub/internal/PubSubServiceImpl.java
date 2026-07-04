@@ -84,6 +84,7 @@ import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.BrokerTransportQualityOfService;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
@@ -1290,7 +1291,9 @@ public final class PubSubServiceImpl implements PubSubService {
    * #checkWriterGroupMessageSecurity} / {@link #checkReaderGroupMessageSecurity}) — missing
    * transport or mapping providers for enabled components, missing sources for enabled writers,
    * publisher-less connections with enabled writer groups, enabled readers on broker connections
-   * without a configured data queueName, enabled writer groups on UDP connections with a
+   * without a configured data queueName, enabled writers on broker connections overriding
+   * requestedDeliveryGuarantee without a writer-level queueName (see {@link
+   * #writerQosOverrideLacksQueueName}), enabled writer groups on UDP connections with a
    * maxNetworkMessageSize above the Part 14 §7.3.2.1 limit of 65535, enabled writers whose
    * keyFrameCount > 1 cannot be honored — JSON writers whose effective content masks cannot express
    * delta frames, and UADP writers with a non-zero ConfiguredSize; both only when the group's
@@ -1367,6 +1370,13 @@ public final class PubSubServiceImpl implements PubSubService {
           if (deltaConfigError != null) {
             throw new UaException(StatusCodes.Bad_ConfigurationError, deltaConfigError);
           }
+          if (broker && writerQosOverrideLacksQueueName(writer)) {
+            throw new UaException(
+                StatusCodes.Bad_ConfigurationError,
+                ("dataset writer '%s/%s' on broker connection '%s' overrides"
+                        + " requestedDeliveryGuarantee without a queueName (Part 14 §6.4.2.5.4)")
+                    .formatted(groupPath, writer.getName(), connection.name()));
+          }
         }
       }
 
@@ -1418,9 +1428,11 @@ public final class PubSubServiceImpl implements PubSubService {
    * JSON-mapped group, or a secured group missing its SecurityGroup reference, a supported security
    * policy, or a bound key provider; providers are fixed at creation, so such a group could only
    * ever fail its activation), missing mapping providers for enabled components, enabled readers on
-   * broker connections without a configured data queueName, and enabled writer groups on UDP
-   * connections with a maxNetworkMessageSize above the Part 14 §7.3.2.1 limit of 65535. Throws
-   * {@link UaRuntimeException} with {@code Bad_ConfigurationError} (the reconfigure API has no
+   * broker connections without a configured data queueName, enabled writers on broker connections
+   * overriding requestedDeliveryGuarantee without a writer-level queueName (see {@link
+   * #writerQosOverrideLacksQueueName}), and enabled writer groups on UDP connections with a
+   * maxNetworkMessageSize above the Part 14 §7.3.2.1 limit of 65535. Throws {@link
+   * UaRuntimeException} with {@code Bad_ConfigurationError} (the reconfigure API has no
    * checked-exception surface). Startup-only conditions with a graceful runtime degradation path
    * (e.g. unbound sources, which surface as source errors) are not re-checked here.
    *
@@ -1489,6 +1501,13 @@ public final class PubSubServiceImpl implements PubSubService {
           String deltaConfigError = deltaFrameConfigError(group, writer, groupPath);
           if (deltaConfigError != null) {
             throw new UaRuntimeException(StatusCodes.Bad_ConfigurationError, deltaConfigError);
+          }
+          if (broker && writerQosOverrideLacksQueueName(writer)) {
+            throw new UaRuntimeException(
+                StatusCodes.Bad_ConfigurationError,
+                ("dataset writer '%s/%s' on broker connection '%s' overrides"
+                        + " requestedDeliveryGuarantee without a queueName (Part 14 §6.4.2.5.4)")
+                    .formatted(groupPath, writer.getName(), connection.name()));
           }
         }
       }
@@ -1665,6 +1684,23 @@ public final class PubSubServiceImpl implements PubSubService {
   private static boolean lacksDataQueueName(DataSetReaderConfig reader) {
     BrokerTransportSettings settings = reader.getBrokerTransport();
     return settings == null || settings.getQueueName() == null || settings.getQueueName().isEmpty();
+  }
+
+  /**
+   * Whether {@code writer}'s broker transport settings request a delivery guarantee without also
+   * overriding the queue name: a writer-level requestedDeliveryGuarantee is only valid alongside a
+   * writer-level queueName (Part 14 §6.4.2.5.4) — without a queue override the writer publishes
+   * into the group's NetworkMessages, where the group-level value applies — so the combination is a
+   * contradiction, rejected for enabled writers on broker connections at startup ({@link
+   * #validateStartup}) and reconfigure ({@link #validateReconfigure}) rather than silently ignored.
+   * Disabled writers and writers on UDP connections (where broker settings are inert config) are
+   * tolerated so imported configs keep round-tripping.
+   */
+  private static boolean writerQosOverrideLacksQueueName(DataSetWriterConfig writer) {
+    BrokerTransportSettings settings = writer.getBrokerTransport();
+    return settings != null
+        && settings.getRequestedDeliveryGuarantee() != BrokerTransportQualityOfService.NotSpecified
+        && (settings.getQueueName() == null || settings.getQueueName().isEmpty());
   }
 
   /**

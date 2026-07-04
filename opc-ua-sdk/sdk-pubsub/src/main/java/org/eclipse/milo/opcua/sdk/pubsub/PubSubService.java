@@ -154,11 +154,13 @@ public interface PubSubService extends AutoCloseable {
    * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException, before any change is applied, if
    *     the new configuration fails a validation that {@code startup()} also enforces: {@code
    *     Bad_ConfigurationError} for a mapping name with no provider, an enabled DataSetReader on a
-   *     broker connection without a configured data queueName, an enabled writer group on a UDP
-   *     connection with a maxNetworkMessageSize above 65535, or an enabled writer asking for delta
-   *     frames ({@code keyFrameCount > 1}) its masks cannot express or safely carry; {@code
-   *     Bad_NotSupported} for an enabled UADP-mapped writer group configuring PromotedFields
-   *     emission, or an enabled writer in one configuring the RawData field encoding.
+   *     broker connection without a configured data queueName, an enabled DataSetWriter on a broker
+   *     connection overriding requestedDeliveryGuarantee without a writer-level queueName (Part 14
+   *     §6.4.2.5.4), an enabled writer group on a UDP connection with a maxNetworkMessageSize above
+   *     65535, or an enabled writer asking for delta frames ({@code keyFrameCount > 1}) its masks
+   *     cannot express or safely carry; {@code Bad_NotSupported} for an enabled UADP-mapped writer
+   *     group configuring PromotedFields emission, or an enabled writer in one configuring the
+   *     RawData field encoding.
    */
   ReconfigureResult reconfigure(PubSubConfig newConfig, ReconfigureMode mode);
 
@@ -171,12 +173,13 @@ public interface PubSubService extends AutoCloseable {
    * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException, before any change is applied, if
    *     the transformed configuration fails a validation that {@code startup()} also enforces:
    *     {@code Bad_ConfigurationError} for a mapping name with no provider, an enabled
-   *     DataSetReader on a broker connection without a configured data queueName, an enabled writer
-   *     group on a UDP connection with a maxNetworkMessageSize above 65535, or an enabled writer
-   *     asking for delta frames ({@code keyFrameCount > 1}) its masks cannot express or safely
-   *     carry; {@code Bad_NotSupported} for an enabled UADP-mapped writer group configuring
-   *     PromotedFields emission, or an enabled writer in one configuring the RawData field
-   *     encoding.
+   *     DataSetReader on a broker connection without a configured data queueName, an enabled
+   *     DataSetWriter on a broker connection overriding requestedDeliveryGuarantee without a
+   *     writer-level queueName (Part 14 §6.4.2.5.4), an enabled writer group on a UDP connection
+   *     with a maxNetworkMessageSize above 65535, or an enabled writer asking for delta frames
+   *     ({@code keyFrameCount > 1}) its masks cannot express or safely carry; {@code
+   *     Bad_NotSupported} for an enabled UADP-mapped writer group configuring PromotedFields
+   *     emission, or an enabled writer in one configuring the RawData field encoding.
    */
   ReconfigureResult update(UnaryOperator<PubSubConfig> transform);
 

@@ -105,6 +105,11 @@ import org.jspecify.annotations.Nullable;
  * component arrays (connections, groups, writers, readers, datasets, security groups), and null
  * boxed scalars; this mapper tolerates them. Settings structures with no typed config
  * representation are preserved in the raw escape hatches.
+ *
+ * <p>The per-element entry points are exposed publicly through {@link PubSubConfigElements}: an
+ * instance constructed with a caller-supplied security-group resolution context maps one element
+ * exactly like {@link #map(PubSubConfiguration2DataType, NamespaceTable)} maps the same element
+ * within a whole configuration.
  */
 final class DataTypeToConfigMapper {
 
@@ -121,13 +126,20 @@ final class DataTypeToConfigMapper {
   private final EncodingContext encodingContext;
   private final List<SecurityGroupConfig> securityGroups = new ArrayList<>();
 
-  private DataTypeToConfigMapper(NamespaceTable namespaceTable) {
+  /**
+   * @param namespaceTable the table NodeId namespace indices are resolved against.
+   * @param securityGroups the security groups wire {@code SecurityGroupId} references resolve
+   *     against (see {@link #resolveSecurityGroupRef}); empty for whole-config mapping, which
+   *     accumulates the configuration's own groups instead.
+   */
+  DataTypeToConfigMapper(NamespaceTable namespaceTable, List<SecurityGroupConfig> securityGroups) {
     this.namespaceTable = namespaceTable;
     this.encodingContext = newEncodingContext(namespaceTable);
+    this.securityGroups.addAll(securityGroups);
   }
 
   static PubSubConfig map(PubSubConfiguration2DataType value, NamespaceTable namespaceTable) {
-    return new DataTypeToConfigMapper(namespaceTable).map(value);
+    return new DataTypeToConfigMapper(namespaceTable, List.of()).map(value);
   }
 
   private PubSubConfig map(PubSubConfiguration2DataType value) {
@@ -181,7 +193,7 @@ final class DataTypeToConfigMapper {
 
   // region Connections
 
-  private PubSubConnectionConfig mapConnection(PubSubConnectionDataType connection) {
+  PubSubConnectionConfig mapConnection(PubSubConnectionDataType connection) {
     String name = requireName(connection.getName(), "connection");
     String path = "connection '%s'".formatted(name);
 
@@ -366,7 +378,7 @@ final class DataTypeToConfigMapper {
 
   // region Writer groups and dataset writers
 
-  private WriterGroupConfig mapWriterGroup(WriterGroupDataType group, String parentPath) {
+  WriterGroupConfig mapWriterGroup(WriterGroupDataType group, String parentPath) {
     String name = requireName(group.getName(), parentPath + " writerGroup");
     String path = parentPath + " writerGroup '%s'".formatted(name);
 
@@ -461,7 +473,7 @@ final class DataTypeToConfigMapper {
         && (publishingOffset == null || publishingOffset.length == 0);
   }
 
-  private DataSetWriterConfig mapDataSetWriter(DataSetWriterDataType writer, String parentPath) {
+  DataSetWriterConfig mapDataSetWriter(DataSetWriterDataType writer, String parentPath) {
     String name = requireName(writer.getName(), parentPath + " dataSetWriter");
     String path = parentPath + " dataSetWriter '%s'".formatted(name);
 
@@ -546,7 +558,7 @@ final class DataTypeToConfigMapper {
 
   // region Reader groups and dataset readers
 
-  private ReaderGroupConfig mapReaderGroup(ReaderGroupDataType group, String parentPath) {
+  ReaderGroupConfig mapReaderGroup(ReaderGroupDataType group, String parentPath) {
     String name = requireName(group.getName(), parentPath + " readerGroup");
     String path = parentPath + " readerGroup '%s'".formatted(name);
 
@@ -583,7 +595,7 @@ final class DataTypeToConfigMapper {
     return builder.build();
   }
 
-  private DataSetReaderConfig mapDataSetReader(DataSetReaderDataType reader, String parentPath) {
+  DataSetReaderConfig mapDataSetReader(DataSetReaderDataType reader, String parentPath) {
     String name = requireName(reader.getName(), parentPath + " dataSetReader");
     String path = parentPath + " dataSetReader '%s'".formatted(name);
 
@@ -764,7 +776,7 @@ final class DataTypeToConfigMapper {
 
   // region Published datasets, standalone subscribed datasets, security groups
 
-  private PublishedDataSetConfig mapPublishedDataSet(PublishedDataSetDataType dataSet) {
+  PublishedDataSetConfig mapPublishedDataSet(PublishedDataSetDataType dataSet) {
     String name = requireName(dataSet.getName(), "publishedDataSet");
     String path = "publishedDataSet '%s'".formatted(name);
 
@@ -854,7 +866,7 @@ final class DataTypeToConfigMapper {
     return builder.build();
   }
 
-  private StandaloneSubscribedDataSetConfig mapStandaloneSubscribedDataSet(
+  StandaloneSubscribedDataSetConfig mapStandaloneSubscribedDataSet(
       StandaloneSubscribedDataSetDataType dataSet) {
 
     String name = requireName(dataSet.getName(), "standaloneSubscribedDataSet");
@@ -926,7 +938,7 @@ final class DataTypeToConfigMapper {
     return builder.build();
   }
 
-  private static SecurityGroupConfig mapSecurityGroup(SecurityGroupDataType securityGroup) {
+  static SecurityGroupConfig mapSecurityGroup(SecurityGroupDataType securityGroup) {
     String name = requireName(securityGroup.getName(), "securityGroup");
 
     SecurityGroupConfig.Builder builder = SecurityGroupConfig.builder(name);

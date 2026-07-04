@@ -20,6 +20,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConnectionConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.UdpDatagramAddress;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfiguration2DataType;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterAll;
@@ -80,9 +81,14 @@ class ServerPubSubConfigurationStoreTest {
       assertTrue(serverPubSub.runtime().components().connection("attach-conn").isPresent());
 
       assertEquals(1, store.saved.size(), "save() called exactly once");
+
+      // the saved wire form carries the seeded VersionTime, never the mapper's uint(0)
+      // placeholder (D26/R8); everything else is the mapped attach configuration
+      PubSubConfiguration2DataType saved = store.saved.get(0);
+      assertTrue(saved.getConfigurationVersion().longValue() != 0L, "seeded VersionTime");
       assertEquals(
           attachConfig.toDataType(testServer.getServer().getNamespaceTable()),
-          store.saved.get(0),
+          PubSubConfigurationFace.withConfigurationVersion(saved, Unsigned.uint(0)),
           "save() received the mapped attach configuration");
     }
   }
