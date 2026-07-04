@@ -63,7 +63,8 @@ class PublisherNonceStateTest {
   private final TestScheduler scheduler = new TestScheduler(clock);
 
   private final PubSubStateMachine stateMachine =
-      new PubSubStateMachine(new Object(), (component, oldState, newState, statusCode) -> {});
+      new PubSubStateMachine(
+          new Object(), (component, oldState, newState, statusCode, cause) -> {});
 
   private final EventDispatcher eventDispatcher = new EventDispatcher(Runnable::run);
   private final DiagnosticsCollector diagnostics = new DiagnosticsCollector(eventDispatcher);

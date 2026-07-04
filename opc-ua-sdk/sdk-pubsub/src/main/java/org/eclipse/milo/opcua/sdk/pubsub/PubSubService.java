@@ -15,7 +15,9 @@ import java.util.function.UnaryOperator;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetRef;
 import org.eclipse.milo.opcua.sdk.pubsub.internal.PubSubServiceImpl;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The standalone OPC UA Part 14 PubSub runtime: publishes and subscribes to NetworkMessages
@@ -126,16 +128,25 @@ public interface PubSubService extends AutoCloseable {
    * added components) are stopped and replaced according to {@code mode}; handles for removed
    * components are invalidated.
    *
-   * <p>A replaced DataSetWriter restarts its DataSetMessage sequence number at 0 (Part 14 §7.2.3:
-   * the sequence "starts at 0"), so subscribers see a backward jump on that stream and drop its
-   * messages until their sequence-number records recover — by whichever of these comes first:
-   * immediately, when the replaced writer's first keep-alive arrives and its carried next-expected
-   * value reseeds the subscriber's window (§7.2.4.5.8 — the publisher is authoritative about its
-   * own counter; works in both timeout modes, but requires the group to emit keep-alives); after
-   * two times their {@code messageReceiveTimeout} of rejected traffic (the §7.2.3 record discard);
-   * or — when no timeout is configured — after 16 consecutively rejected messages (Milo's
-   * restart-recovery extension). The same applies to the NetworkMessage sequence number of a
-   * replaced WriterGroup, except that NetworkMessage streams carry no keep-alive reseed.
+   * <p>Path-stable restarts (the {@code CHANGED} entries of the result) preserve sequence
+   * numbering: a restarted DataSetWriter continues its DataSetMessage sequence where the replaced
+   * runtime left off, and a restarted WriterGroup continues its NetworkMessage sequence, so
+   * subscribers see one uninterrupted stream with no drop window — unless the change switches the
+   * mapping's sequence-number wire width (UInt16 for UADP, UInt32 for JSON), in which case the
+   * writer's sequence restarts at 0 (Part 14 §7.2.3: the sequence "starts at 0"). A component
+   * removed and re-added by later reconfigurations also restarts at 0. Where a restart at 0 occurs,
+   * subscribers see a backward jump on that stream and drop its messages until their
+   * sequence-number records recover — by whichever of these comes first: immediately, when the
+   * replaced writer's first keep-alive arrives and its carried next-expected value reseeds the
+   * subscriber's window (§7.2.4.5.8 — the publisher is authoritative about its own counter; works
+   * in both timeout modes, but requires the group to emit keep-alives); after two times their
+   * {@code messageReceiveTimeout} of rejected traffic (the §7.2.3 record discard); or — when no
+   * timeout is configured — after 16 consecutively rejected messages (Milo's restart-recovery
+   * extension). NetworkMessage streams carry no keep-alive reseed.
+   *
+   * <p>Diagnostic counters follow the same rule: components on {@code restartedPaths} keep their
+   * counters, {@code lastError}, and TimeFirstChange baselines; components on {@code removedPaths}
+   * are zeroed, and removal plus re-addition across two calls starts fresh.
    *
    * @param newConfig the new {@link PubSubConfig}.
    * @param mode the {@link ReconfigureMode} governing how affected components are restarted.
@@ -189,6 +200,14 @@ public interface PubSubService extends AutoCloseable {
   void addDataSetListener(DataSetListener listener);
 
   /**
+   * Remove a listener added via {@link #addDataSetListener(DataSetListener)}. Identity-based;
+   * removing a listener that was never added is a no-op.
+   *
+   * @param listener the listener to remove.
+   */
+  void removeDataSetListener(DataSetListener listener);
+
+  /**
    * Add a listener notified of every DataSet received by the DataSetReader identified by {@code
    * reader}.
    *
@@ -198,11 +217,30 @@ public interface PubSubService extends AutoCloseable {
   void addDataSetListener(DataSetReaderRef reader, DataSetListener listener);
 
   /**
+   * Remove a listener added via {@link #addDataSetListener(DataSetReaderRef, DataSetListener)} for
+   * {@code reader}. Identity-based; removing a listener that was never added is a no-op. Per-reader
+   * listeners registered through {@link PubSubBindings} share the same registry and are removable
+   * the same way.
+   *
+   * @param reader the reference the listener was added for.
+   * @param listener the listener to remove.
+   */
+  void removeDataSetListener(DataSetReaderRef reader, DataSetListener listener);
+
+  /**
    * Add a listener notified of component state changes.
    *
    * @param listener the listener to add.
    */
   void addStateListener(PubSubStateListener listener);
+
+  /**
+   * Remove a listener added via {@link #addStateListener(PubSubStateListener)}. Identity-based;
+   * removing a listener that was never added is a no-op.
+   *
+   * @param listener the listener to remove.
+   */
+  void removeStateListener(PubSubStateListener listener);
 
   /**
    * Add a listener notified of DataSetMetaData received from the wire.
@@ -212,6 +250,14 @@ public interface PubSubService extends AutoCloseable {
   void addMetaDataListener(MetaDataListener listener);
 
   /**
+   * Remove a listener added via {@link #addMetaDataListener(MetaDataListener)}. Identity-based;
+   * removing a listener that was never added is a no-op.
+   *
+   * @param listener the listener to remove.
+   */
+  void removeMetaDataListener(MetaDataListener listener);
+
+  /**
    * Add a listener notified of diagnostic events. In v1 only error events are delivered.
    *
    * @param listener the listener to add.
@@ -219,11 +265,47 @@ public interface PubSubService extends AutoCloseable {
   void addDiagnosticsListener(PubSubDiagnosticsListener listener);
 
   /**
+   * Remove a listener added via {@link #addDiagnosticsListener(PubSubDiagnosticsListener)}.
+   * Identity-based; removing a listener that was never added is a no-op.
+   *
+   * @param listener the listener to remove.
+   */
+  void removeDiagnosticsListener(PubSubDiagnosticsListener listener);
+
+  /**
    * Get the diagnostics view of this service.
    *
    * @return the {@link PubSubDiagnostics} for this service.
    */
   PubSubDiagnostics diagnostics();
+
+  /**
+   * Get the live security-key state of the secured writer or reader group identified by {@code
+   * group}: SecurityGroupId, negotiated policy URI, current SecurityTokenId, and time to the next
+   * key switch — token metadata only, never key material. Feeds the Part 14 §9.1.11 {@code
+   * SecurityTokenID}/{@code TimeToNextTokenID} LiveValues (Tables 322/331).
+   *
+   * @param group the handle of a WriterGroup or ReaderGroup.
+   * @return the current {@link SecurityKeyInfo}, or {@code null} while the group holds no key
+   *     state: not secured, keys not yet fetched, or currently detached (Disabled/Paused).
+   * @throws IllegalArgumentException if the handle is not a writer/reader group of this service or
+   *     has been invalidated by reconfiguration.
+   */
+  @Nullable SecurityKeyInfo securityKeyInfo(PubSubHandle group);
+
+  /**
+   * Get the next DataSetMessage sequence number of the DataSetWriter identified by {@code writer} —
+   * the value its next data message will carry and its keep-alives advertise (Part 14 §7.2.4.5.8).
+   * Feeds the Table 329 {@code MessageSequenceNumber} LiveValue; the wire width follows the group's
+   * mapping (UInt16 for UADP, UInt32 for JSON). A concurrent publish cycle may consume the returned
+   * value immediately.
+   *
+   * @param writer the handle of a DataSetWriter.
+   * @return the next DataSetMessage sequence number.
+   * @throws IllegalArgumentException if the handle is not a DataSetWriter of this service or has
+   *     been invalidated by reconfiguration.
+   */
+  UInteger nextDataSetMessageSequenceNumber(PubSubHandle writer);
 
   /** Shut down this service synchronously, waiting for {@link #shutdown()} to complete. */
   @Override

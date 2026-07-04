@@ -414,7 +414,7 @@ class ConfigDiffTest {
     ConfigDiff.Result result = ConfigDiff.diff(baseConfig(), changed);
 
     assertEquals(2, result.changes().size());
-    findChange(result, ConfigDiff.Kind.CHANGED, ConfigDiff.Level.OTHER, "PDS");
+    findChange(result, ConfigDiff.Kind.CHANGED, ConfigDiff.Level.PUBLISHED_DATA_SET, "PDS");
     findChange(result, ConfigDiff.Kind.CHANGED, ConfigDiff.Level.DATA_SET_WRITER, "C1/WG/W1");
   }
 
@@ -428,7 +428,7 @@ class ConfigDiffTest {
     ConfigDiff.Result result = ConfigDiff.diff(baseConfig(), changed);
 
     assertEquals(2, result.changes().size());
-    findChange(result, ConfigDiff.Kind.CHANGED, ConfigDiff.Level.OTHER, "PDS");
+    findChange(result, ConfigDiff.Kind.CHANGED, ConfigDiff.Level.PUBLISHED_DATA_SET, "PDS");
     findChange(result, ConfigDiff.Kind.CHANGED, ConfigDiff.Level.WRITER_GROUP, "C1/WG");
   }
 
@@ -469,7 +469,8 @@ class ConfigDiffTest {
     ConfigDiff.Result result = ConfigDiff.diff(oldConfig, newConfig);
 
     assertEquals(2, result.changes().size());
-    findChange(result, ConfigDiff.Kind.CHANGED, ConfigDiff.Level.OTHER, "SDS");
+    findChange(
+        result, ConfigDiff.Kind.CHANGED, ConfigDiff.Level.STANDALONE_SUBSCRIBED_DATA_SET, "SDS");
     // only R1 resolves its metadata through the standalone SubscribedDataSet
     findChange(result, ConfigDiff.Kind.CHANGED, ConfigDiff.Level.DATA_SET_READER, "C1/RG/R1");
   }
@@ -487,7 +488,7 @@ class ConfigDiffTest {
     ConfigDiff.Result result = ConfigDiff.diff(oldConfig, newConfig);
 
     assertEquals(1, result.changes().size());
-    findChange(result, ConfigDiff.Kind.CHANGED, ConfigDiff.Level.OTHER, "SG");
+    findChange(result, ConfigDiff.Kind.CHANGED, ConfigDiff.Level.SECURITY_GROUP, "SG");
   }
 
   @Test
@@ -496,11 +497,11 @@ class ConfigDiffTest {
 
     ConfigDiff.Result added = ConfigDiff.diff(baseConfig(), withExtra);
     assertEquals(1, added.changes().size());
-    findChange(added, ConfigDiff.Kind.ADDED, ConfigDiff.Level.OTHER, "PDS2");
+    findChange(added, ConfigDiff.Kind.ADDED, ConfigDiff.Level.PUBLISHED_DATA_SET, "PDS2");
 
     ConfigDiff.Result removed = ConfigDiff.diff(withExtra, baseConfig());
     assertEquals(1, removed.changes().size());
-    findChange(removed, ConfigDiff.Kind.REMOVED, ConfigDiff.Level.OTHER, "PDS2");
+    findChange(removed, ConfigDiff.Kind.REMOVED, ConfigDiff.Level.PUBLISHED_DATA_SET, "PDS2");
   }
 
   // endregion

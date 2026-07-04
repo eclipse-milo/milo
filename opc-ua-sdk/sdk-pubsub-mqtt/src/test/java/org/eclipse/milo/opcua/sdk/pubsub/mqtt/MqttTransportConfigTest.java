@@ -459,13 +459,15 @@ class MqttTransportConfigTest {
     service.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
 
     // every publish fails fast (Bad_ServerNotConnected from the channel) and is recorded by
-    // the engine as a send failure on the writer group path
+    // the engine as a send failure on the writer group path; the real channel code surfaces
+    // un-flattened. The session never connected, so no transport-down edge fires and the
+    // connection is never failed to Error.
     awaitTrue(
         () -> {
           var error = lastError(service, "pub-conn/grp");
-          return error != null && error.value() == StatusCodes.Bad_CommunicationError;
+          return error != null && error.value() == StatusCodes.Bad_ServerNotConnected;
         },
-        "Bad_CommunicationError diagnostics on the writer group");
+        "Bad_ServerNotConnected diagnostics on the writer group");
 
     // and shutdown completes promptly despite the broker never having been reachable
     service.shutdown().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);

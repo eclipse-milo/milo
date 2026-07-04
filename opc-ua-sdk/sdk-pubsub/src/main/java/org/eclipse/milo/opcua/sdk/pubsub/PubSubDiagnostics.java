@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.pubsub;
 
 import java.util.Map;
 import java.util.Optional;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.jspecify.annotations.Nullable;
 
@@ -41,6 +42,22 @@ public interface PubSubDiagnostics {
   default Optional<ComponentDiagnostics> component(String path) {
     return Optional.ofNullable(snapshot().get(path));
   }
+
+  /**
+   * Reset the diagnostic counters of the component at {@code path} to zero, clearing their
+   * TimeFirstChange baselines. Applies to exactly that path (per-object, Part 14 §9.1.11.3):
+   * resetting a group does not touch its writers/readers. All counters reset, spec-mapped and
+   * vendor alike; {@code lastError} is untouched. Unknown paths are a no-op.
+   *
+   * <p>Server-side vendor counters kept outside this view (e.g. {@code
+   * ServerPubSub.targetWriteErrors()} in the server integration module) are not affected.
+   *
+   * <p>Counter increments concurrent with a reset may be lost (the underlying adders reset
+   * lock-free); an explicit reset tolerates that imprecision.
+   *
+   * @param path the path of the component to reset, e.g. {@code "conn/group/writer"}.
+   */
+  void reset(String path);
 
   /**
    * An immutable snapshot of the diagnostic counters of one PubSub component.
@@ -106,6 +123,45 @@ public interface PubSubDiagnostics {
    *     configured with mode None. Ticks at ReaderGroup paths, once per (group, NetworkMessage); a
    *     normal-operation counter (no {@code lastError}, no event). Security drops never count in
    *     {@code decodeErrors}.
+   * @param failedTransmissions the number of NetworkMessages that were not transmitted: Part 14
+   *     Table 322 "Error on NetworkMessage transmission". Ticks at WriterGroup paths only, for the
+   *     group's data NetworkMessages: one per asynchronous send failure, one for the message whose
+   *     synchronous send threw plus one per never-handed remainder message of that cycle, and one
+   *     per oversize message skipped at the {@code maxNetworkMessageSize} gate ({@code
+   *     Bad_EncodingLimitsExceeded} — such a skip ticks both this counter and {@code
+   *     failedDataSetMessages}). Encode failures do not tick it (no NetworkMessage existed);
+   *     metadata and discovery sends never tick it (connection-scope traffic, not group data);
+   *     failures suppressed as shutdown/restart teardown noise never tick it.
+   * @param failedDataSetMessages the number of DataSetMessages never sent due to an encode or send
+   *     failure, attributed per contributing writer (Part 14 Table 329 FailedDataSetMessages).
+   *     Ticks at DataSetWriter paths: per contributing writer of an untransmitted NetworkMessage
+   *     (asynchronous send failure, synchronous send throw, oversize skip — attribution via the
+   *     encoded message's writer list), and per non-keep-alive draft of a partition whose encode
+   *     failed (an encode failure ticks this counter only, never {@code failedTransmissions}).
+   *     Source-read failures stay in {@code sourceErrors}; suppressed teardown noise never ticks.
+   * @param stateError the number of transitions into {@code PubSubState.Error} (Part 14 Table 311
+   *     StateError). Ticks whenever the component enters Error, whatever the cause.
+   * @param stateOperationalByMethod the number of transitions into {@code Operational} caused by an
+   *     explicit enable — the owner API or a remote Enable Method (Table 311 "Enable Method call").
+   *     Deferred startups tick on the final hop with the remembered enabling cause. Service
+   *     startup/reconfigure transitions ({@code STARTUP} cause) tick neither this counter nor
+   *     {@code stateOperationalByParent} on the initiating component.
+   * @param stateOperationalByParent the number of transitions into {@code Operational} cascaded
+   *     from a parent's state change (Table 311 "an operational parent"). Descendants of a starting
+   *     or recovering component transition via child cascades and tick here.
+   * @param stateOperationalFromError the number of transitions into {@code Operational} whose
+   *     previous state was {@code Error} (Table 311 StateOperationalFromError), whatever cleared
+   *     the error.
+   * @param statePausedByParent the number of transitions into {@code Paused}. A Paused entry is
+   *     definitionally parent-caused (Table 311 "triggered by a paused or disabled parent"); an
+   *     enable of a component under a non-operational parent lands here too.
+   * @param stateDisabledByMethod the number of transitions into {@code Disabled} caused by an
+   *     explicit disable — the owner API or a remote Disable Method. Dispose-caused Disabled
+   *     transitions (shutdown, removal by reconfiguration) tick nothing.
+   * @param timeFirstChange the first time each counter left zero, keyed by {@link PubSubCounter};
+   *     an entry exists only for counters that have left zero (the Part 14 §9.1.11.5
+   *     TimeFirstChange contract: null while the value is 0). Cleared by {@link #reset(String)};
+   *     preserved, like the counters, across path-stable reconfigure restarts. Unmodifiable.
    * @param lastError the status code of the most recent error, or {@code null} if no error has
    *     occurred.
    */
@@ -124,5 +180,26 @@ public interface PubSubDiagnostics {
       long invalidSignatureMessages,
       long unknownTokenMessages,
       long staleKeyMessages,
-      @Nullable StatusCode lastError) {}
+      long failedTransmissions,
+      long failedDataSetMessages,
+      long stateError,
+      long stateOperationalByMethod,
+      long stateOperationalByParent,
+      long stateOperationalFromError,
+      long statePausedByParent,
+      long stateDisabledByMethod,
+      Map<PubSubCounter, DateTime> timeFirstChange,
+      @Nullable StatusCode lastError) {
+
+    /**
+     * Get the first time {@code counter} left zero, or {@code null} if it has never left zero (Part
+     * 14 §9.1.11.5 TimeFirstChange).
+     *
+     * @param counter the counter identity.
+     * @return the first-change time, or {@code null} while the counter is 0.
+     */
+    public @Nullable DateTime timeFirstChange(PubSubCounter counter) {
+      return timeFirstChange.get(counter);
+    }
+  }
 }

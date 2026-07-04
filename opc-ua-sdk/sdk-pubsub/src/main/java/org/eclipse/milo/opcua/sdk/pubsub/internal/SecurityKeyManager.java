@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
+import org.eclipse.milo.opcua.sdk.pubsub.PubSubDiagnosticsEvent;
 import org.eclipse.milo.opcua.sdk.pubsub.config.MessageSecurityConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.SecurityGroupConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.SecurityGroupRef;
@@ -675,7 +676,7 @@ final class SecurityKeyManager {
     }
 
     for (AbstractComponentRuntime group : attached) {
-      diagnostics.error(group.path(), status, message, ex);
+      diagnostics.error(group.path(), status, message, ex, PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
     }
   }
 
@@ -699,7 +700,8 @@ final class SecurityKeyManager {
         "no security keys obtained for SecurityGroup '%s' within 2×KeyLifetime"
             .formatted(state.ref.name());
     for (AbstractComponentRuntime group : attached) {
-      diagnostics.error(group.path(), status, message, null);
+      diagnostics.error(
+          group.path(), status, message, null, PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
       stateMachine.fail(group, status);
     }
   }
@@ -763,7 +765,8 @@ final class SecurityKeyManager {
         "security keys for SecurityGroup '%s' expired without replacement (2×KeyLifetime)"
             .formatted(state.ref.name());
     for (AbstractComponentRuntime group : attached) {
-      diagnostics.error(group.path(), status, message, null);
+      diagnostics.error(
+          group.path(), status, message, null, PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
       stateMachine.fail(group, status);
     }
   }
@@ -975,7 +978,8 @@ final class SecurityKeyManager {
     scheduler.execute(
         () -> {
           for (AbstractComponentRuntime group : publishers) {
-            diagnostics.error(group.path(), status, message, null);
+            diagnostics.error(
+                group.path(), status, message, null, PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
             stateMachine.fail(group, status);
           }
         });

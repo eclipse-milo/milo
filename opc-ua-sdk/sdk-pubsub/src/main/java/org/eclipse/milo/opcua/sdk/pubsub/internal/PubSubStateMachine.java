@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.sdk.pubsub.internal;
 
 import java.util.Collection;
+import org.eclipse.milo.opcua.sdk.pubsub.PubSubStateChangeEvent.Cause;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
@@ -35,6 +36,13 @@ import org.slf4j.LoggerFactory;
  *   <li>a pending error moves an active component to {@code Error}; the error clearing moves it
  *       back to {@code Operational} via {@link #recover}.
  * </ul>
+ *
+ * <p>Every transition carries a {@link Cause}: entry points pass their trigger ({@code METHOD} for
+ * enable/disable, {@code STARTUP} for service startup/shutdown/reconfigure, {@code ERROR}/{@code
+ * ERROR_RECOVERY} for fail/recover, {@code DISPOSE} for teardown), child cascades always pass
+ * {@code PARENT}, and deferred startups replay the cause remembered on {@code PreOperational} entry
+ * ({@link AbstractComponentRuntime#pendingStartupCause()}) on their final hop to {@code
+ * Operational}.
  *
  * <p>All transitions happen under the engine lock; the state change listener is invoked while
  * holding it and must not run user code synchronously.
@@ -61,7 +69,8 @@ final class PubSubStateMachine {
         AbstractComponentRuntime component,
         PubSubState oldState,
         PubSubState newState,
-        StatusCode statusCode);
+        StatusCode statusCode,
+        Cause cause);
   }
 
   /**
@@ -73,14 +82,14 @@ final class PubSubStateMachine {
 
     synchronized (lock) {
       rootOperational = operational;
-      connections.forEach(this::recompute);
+      connections.forEach(connection -> recompute(connection, Cause.STARTUP));
     }
   }
 
   /** Compute the initial state of a newly registered component (and its descendants). */
   void initialize(AbstractComponentRuntime component) {
     synchronized (lock) {
-      recompute(component);
+      recompute(component, Cause.STARTUP);
     }
   }
 
@@ -91,7 +100,7 @@ final class PubSubStateMachine {
         return;
       }
       component.setEnabled(enabled);
-      recompute(component);
+      recompute(component, Cause.METHOD);
     }
   }
 
@@ -100,7 +109,7 @@ final class PubSubStateMachine {
     synchronized (lock) {
       PubSubState state = component.state();
       if (state == PubSubState.PreOperational || state == PubSubState.Operational) {
-        apply(component, PubSubState.Error, statusCode);
+        apply(component, PubSubState.Error, statusCode, Cause.ERROR);
       }
     }
   }
@@ -109,16 +118,22 @@ final class PubSubStateMachine {
   void recover(AbstractComponentRuntime component) {
     synchronized (lock) {
       if (component.state() == PubSubState.Error) {
-        apply(component, PubSubState.Operational, StatusCode.GOOD);
+        apply(component, PubSubState.Operational, StatusCode.GOOD, Cause.ERROR_RECOVERY);
       }
     }
   }
 
-  /** Complete the startup of a {@code PreOperational} component, moving it to Operational. */
+  /**
+   * Complete the startup of a {@code PreOperational} component, moving it to Operational. The
+   * transition carries the cause remembered when the component entered {@code PreOperational}, so a
+   * deferred startup is attributed to its original trigger.
+   */
   void startupCompleted(AbstractComponentRuntime component) {
     synchronized (lock) {
       if (component.state() == PubSubState.PreOperational) {
-        apply(component, PubSubState.Operational, StatusCode.GOOD);
+        Cause pending = component.pendingStartupCause();
+        Cause cause = pending != null ? pending : Cause.STARTUP;
+        apply(component, PubSubState.Operational, StatusCode.GOOD, cause);
       }
     }
   }
@@ -141,7 +156,8 @@ final class PubSubStateMachine {
     PubSubState oldState = component.state();
     if (oldState != PubSubState.Disabled) {
       component.setState(PubSubState.Disabled);
-      notifyListener(component, oldState, PubSubState.Disabled, StatusCode.GOOD);
+      component.setPendingStartupCause(null);
+      notifyListener(component, oldState, PubSubState.Disabled, StatusCode.GOOD, Cause.DISPOSE);
 
       if (isActive(oldState)) {
         deactivateQuietly(component);
@@ -149,7 +165,7 @@ final class PubSubStateMachine {
     }
   }
 
-  private void recompute(AbstractComponentRuntime component) {
+  private void recompute(AbstractComponentRuntime component, Cause cause) {
     PubSubState current = component.state();
 
     PubSubState target;
@@ -164,9 +180,9 @@ final class PubSubStateMachine {
     }
 
     if (target != current) {
-      apply(component, target, StatusCode.GOOD);
+      apply(component, target, StatusCode.GOOD, cause);
     } else {
-      component.children().forEach(this::recompute);
+      component.children().forEach(child -> recompute(child, Cause.PARENT));
     }
   }
 
@@ -175,14 +191,25 @@ final class PubSubStateMachine {
     return parent == null ? rootOperational : parent.state() == PubSubState.Operational;
   }
 
-  private void apply(AbstractComponentRuntime component, PubSubState newState, StatusCode status) {
+  private void apply(
+      AbstractComponentRuntime component, PubSubState newState, StatusCode status, Cause cause) {
+
     PubSubState oldState = component.state();
     if (oldState == newState) {
       return;
     }
 
     component.setState(newState);
-    notifyListener(component, oldState, newState, status);
+
+    // remember the trigger on PreOperational entry so a deferred startupCompleted can replay it
+    // on the final hop; clear it on any transition out of PreOperational
+    if (newState == PubSubState.PreOperational) {
+      component.setPendingStartupCause(cause);
+    } else if (oldState == PubSubState.PreOperational) {
+      component.setPendingStartupCause(null);
+    }
+
+    notifyListener(component, oldState, newState, status, cause);
 
     if (isActive(oldState) && !isActive(newState)) {
       deactivateQuietly(component);
@@ -195,16 +222,21 @@ final class PubSubStateMachine {
         if (component.state() == PubSubState.PreOperational
             && component.startupCompletesImmediately()) {
 
-          apply(component, PubSubState.Operational, StatusCode.GOOD);
+          // synchronous startup: the final hop carries the same cause PreOperational entry did
+          apply(component, PubSubState.Operational, StatusCode.GOOD, cause);
           return;
         }
       } catch (UaException e) {
         LOGGER.debug("Activation of '{}' failed: {}", component.path(), e.getMessage(), e);
-        apply(component, PubSubState.Error, e.getStatusCode());
+        apply(component, PubSubState.Error, e.getStatusCode(), Cause.ERROR);
         return;
       } catch (RuntimeException e) {
         LOGGER.warn("Activation of '{}' failed", component.path(), e);
-        apply(component, PubSubState.Error, new StatusCode(StatusCodes.Bad_InternalError));
+        apply(
+            component,
+            PubSubState.Error,
+            new StatusCode(StatusCodes.Bad_InternalError),
+            Cause.ERROR);
         return;
       }
     }
@@ -217,17 +249,18 @@ final class PubSubStateMachine {
       }
     }
 
-    component.children().forEach(this::recompute);
+    component.children().forEach(child -> recompute(child, Cause.PARENT));
   }
 
   private void notifyListener(
       AbstractComponentRuntime component,
       PubSubState oldState,
       PubSubState newState,
-      StatusCode status) {
+      StatusCode status,
+      Cause cause) {
 
     try {
-      listener.onStateChange(component, oldState, newState, status);
+      listener.onStateChange(component, oldState, newState, status, cause);
     } catch (RuntimeException e) {
       LOGGER.warn("State change listener failed for '{}'", component.path(), e);
     }

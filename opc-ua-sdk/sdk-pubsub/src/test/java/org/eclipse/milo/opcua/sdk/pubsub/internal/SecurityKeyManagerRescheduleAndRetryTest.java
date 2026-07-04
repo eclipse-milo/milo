@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.sdk.pubsub.ComponentType;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubDiagnostics.ComponentDiagnostics;
+import org.eclipse.milo.opcua.sdk.pubsub.PubSubStateChangeEvent;
 import org.eclipse.milo.opcua.sdk.pubsub.config.MessageSecurityConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.SecurityGroupConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.SecurityGroupRef;
@@ -108,7 +109,8 @@ class SecurityKeyManagerRescheduleAndRetryTest {
       AbstractComponentRuntime component,
       PubSubState oldState,
       PubSubState newState,
-      StatusCode statusCode) {
+      StatusCode statusCode,
+      PubSubStateChangeEvent.Cause cause) {
 
     if (newState == PubSubState.Error) {
       SecurityKeyManager.PublisherKeys watched = watchedKeys;

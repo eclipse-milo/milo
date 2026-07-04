@@ -20,7 +20,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.milo.opcua.sdk.pubsub.ComponentType;
+import org.eclipse.milo.opcua.sdk.pubsub.PubSubDiagnosticsEvent;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConnectionConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.ReaderGroupConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.UdpConnectionConfig;
@@ -30,9 +32,11 @@ import org.eclipse.milo.opcua.sdk.pubsub.transport.PublisherTransportContext;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.SubscriberChannel;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.SubscriberTransportContext;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.TransportProvider;
+import org.eclipse.milo.opcua.sdk.pubsub.transport.TransportStateListener;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.MessageMappingProvider;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.util.ExecutionQueue;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -69,6 +73,12 @@ final class ConnectionRuntime extends AbstractComponentRuntime {
    * #dispatchQueue} like all subscriber dispatch state.
    */
   private final ChunkReassembler chunkReassembler = new ChunkReassembler();
+
+  /**
+   * Maps the transport's liveness edges onto this connection's PubSubState; one edge-tracked
+   * handler shared by both data channels. Discovery channels never carry a listener.
+   */
+  private final TransportStateHandler transportStateHandler = new TransportStateHandler();
 
   private volatile List<WriterGroupRuntime> writerGroups;
   private volatile List<ReaderGroupRuntime> readerGroups;
@@ -223,7 +233,8 @@ final class ConnectionRuntime extends AbstractComponentRuntime {
 
     try {
       publisherChannel =
-          provider.openPublisher(PublisherTransportContext.of(config, eventLoopGroup()));
+          provider.openPublisher(
+              PublisherTransportContext.of(config, eventLoopGroup(), transportStateHandler));
     } catch (UaException e) {
       service
           .getDiagnostics()
@@ -232,7 +243,8 @@ final class ConnectionRuntime extends AbstractComponentRuntime {
               e.getStatusCode(),
               "failed to open publisher channel for connection '%s': %s"
                   .formatted(config.name(), e.getMessage()),
-              e);
+              e,
+              PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
       throw e;
     }
   }
@@ -261,7 +273,11 @@ final class ConnectionRuntime extends AbstractComponentRuntime {
       subscriberChannel =
           provider.openSubscriber(
               SubscriberTransportContext.of(
-                  config, eventLoopGroup(), this::onDatagram, this::onTopicMessage));
+                  config,
+                  eventLoopGroup(),
+                  this::onDatagram,
+                  this::onTopicMessage,
+                  transportStateHandler));
     } catch (UaException e) {
       service
           .getDiagnostics()
@@ -270,7 +286,8 @@ final class ConnectionRuntime extends AbstractComponentRuntime {
               e.getStatusCode(),
               "failed to open subscriber channel for connection '%s': %s"
                   .formatted(config.name(), e.getMessage()),
-              e);
+              e,
+              PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
       throw e;
     }
   }
@@ -420,7 +437,14 @@ final class ConnectionRuntime extends AbstractComponentRuntime {
               StatusCodes.Bad_ConfigurationError,
               "no TransportProvider supports connection '%s'".formatted(config.name()));
 
-      service.getDiagnostics().error(path(), e.getStatusCode(), e.getMessage(), e);
+      service
+          .getDiagnostics()
+          .error(
+              path(),
+              e.getStatusCode(),
+              e.getMessage(),
+              e,
+              PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
 
       throw e;
     }
@@ -460,6 +484,61 @@ final class ConnectionRuntime extends AbstractComponentRuntime {
           });
     } catch (RejectedExecutionException e) {
       buffer.release();
+    }
+  }
+
+  /**
+   * Maps transport liveness edges onto the connection's PubSubState: a down edge fails the
+   * connection ({@code Bad_ServerNotConnected} for broker transports) and a subsequent up edge
+   * recovers it, cascading to the child runtimes per the engine's state rules.
+   *
+   * <p>Edge tracking (CAS on {@link #transportDown}) makes duplicate notifications (both channels
+   * of a connection may share one session) and the initial connect (an up with no prior down)
+   * harmless, and prevents a transport-up from "recovering" an Error the transport did not cause —
+   * an activation-failure Error has no preceding down edge.
+   *
+   * <p>Threading: callbacks arrive on transport threads and only CAS + enqueue; the state machine
+   * runs on the serialized per-connection dispatch queue (order-preserving down→up), where {@code
+   * fail}/{@code recover} take the engine lock. A handler firing on a disposed runtime (reconfigure
+   * or shutdown race) is inert: the {@code disposed} check plus the state machine's no-op
+   * transitions leave a replaced runtime untouched.
+   */
+  private final class TransportStateHandler implements TransportStateListener {
+
+    private final AtomicBoolean transportDown = new AtomicBoolean(false);
+
+    @Override
+    public void onTransportDown(StatusCode statusCode) {
+      if (disposed || !transportDown.compareAndSet(false, true)) {
+        return;
+      }
+      submitSafely(
+          () -> {
+            if (!disposed) {
+              service.getStateMachine().fail(ConnectionRuntime.this, statusCode);
+            }
+          });
+    }
+
+    @Override
+    public void onTransportUp() {
+      if (disposed || !transportDown.compareAndSet(true, false)) {
+        return;
+      }
+      submitSafely(
+          () -> {
+            if (!disposed) {
+              service.getStateMachine().recover(ConnectionRuntime.this);
+            }
+          });
+    }
+
+    private void submitSafely(Runnable task) {
+      try {
+        submitToDispatchQueue(task);
+      } catch (RejectedExecutionException e) {
+        // the service is shutting down; the edge is moot
+      }
     }
   }
 }

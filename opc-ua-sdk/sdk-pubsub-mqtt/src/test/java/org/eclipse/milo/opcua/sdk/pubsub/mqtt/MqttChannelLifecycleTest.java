@@ -11,6 +11,8 @@
 package org.eclipse.milo.opcua.sdk.pubsub.mqtt;
 
 import static org.eclipse.milo.opcua.sdk.pubsub.mqtt.PubSubMqttTestSupport.TIMEOUT;
+import static org.eclipse.milo.opcua.sdk.pubsub.mqtt.PubSubMqttTestSupport.awaitTrue;
+import static org.eclipse.milo.opcua.sdk.pubsub.mqtt.PubSubMqttTestSupport.freeTcpPort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -26,6 +28,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.milo.opcua.sdk.pubsub.config.BrokerTransportSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetReaderConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.MqttConnectionConfig;
@@ -37,6 +40,8 @@ import org.eclipse.milo.opcua.sdk.pubsub.transport.PublisherChannel;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.PublisherTransportContext;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.SubscriberChannel;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.SubscriberTransportContext;
+import org.eclipse.milo.opcua.sdk.pubsub.transport.TransportStateListener;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrokerTransportQualityOfService;
 import org.junit.jupiter.api.AfterAll;
@@ -164,7 +169,81 @@ class MqttChannelLifecycleTest {
     }
   }
 
+  @Test
+  void transportStateListenerSeesUpOnConnectAndNothingAfterClose() throws Exception {
+    // the engine passes ONE listener instance in both channel contexts; each channel
+    // registers it with the shared session and removes it again on close
+    var listener = new RecordingStateListener();
+    MqttConnectionConfig connection =
+        connectionConfig("listener-conn", "milo/test/listener/data", null);
+
+    MqttTransportProvider provider = MqttTransportProvider.create();
+
+    PublisherChannel publisher =
+        provider.openPublisher(PublisherTransportContext.of(connection, eventLoopGroup, listener));
+    SubscriberChannel subscriber =
+        provider.openSubscriber(
+            SubscriberTransportContext.of(
+                connection, eventLoopGroup, buf -> {}, (topic, buf) -> {}, listener));
+
+    try {
+      // the initial connect delivers an up edge once the subscriptions have been issued
+      awaitTrue(() -> listener.ups.get() >= 1, "up edge on the initial connect");
+      assertEquals(0, listener.downs.get(), "no down edge while connected");
+    } finally {
+      subscriber.closeAsync().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+      publisher.closeAsync().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+    }
+
+    // closing the last channel disconnects the session via disconnect(): a deliberate close
+    // is not an outage, so no down edge is notified (and the listeners are deregistered)
+    Thread.sleep(500);
+    assertEquals(0, listener.downs.get(), "no down edge after a deliberate close");
+  }
+
+  @Test
+  void noDownNotificationForANeverConnectedSession() throws Exception {
+    // connect-refused broker: the session never establishes, so the repeated connect
+    // failures are first-connect retries, not an outage — the down edge is connected-gated
+    var listener = new RecordingStateListener();
+    MqttConnectionConfig connection =
+        PubSubConnectionConfig.mqtt("refused-conn")
+            .brokerUri(URI.create("mqtt://127.0.0.1:" + freeTcpPort()))
+            .publisherId(PublisherId.string("refused-conn"))
+            .build();
+
+    MqttTransportProvider provider = MqttTransportProvider.create();
+
+    PublisherChannel channel =
+        provider.openPublisher(PublisherTransportContext.of(connection, eventLoopGroup, listener));
+    try {
+      // cover the initial attempt plus at least one 1 s-backoff retry
+      Thread.sleep(2_500);
+      assertEquals(0, listener.downs.get(), "no down edge for a never-connected session");
+      assertEquals(0, listener.ups.get(), "no up edge for a never-connected session");
+    } finally {
+      channel.closeAsync().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+    }
+  }
+
   // region helpers
+
+  /** Counts the transport state edges delivered to it. */
+  private static final class RecordingStateListener implements TransportStateListener {
+
+    final AtomicInteger ups = new AtomicInteger();
+    final AtomicInteger downs = new AtomicInteger();
+
+    @Override
+    public void onTransportDown(StatusCode statusCode) {
+      downs.incrementAndGet();
+    }
+
+    @Override
+    public void onTransportUp() {
+      ups.incrementAndGet();
+    }
+  }
 
   /**
    * One full channel-level round trip: open a publisher and a subscriber channel on the same

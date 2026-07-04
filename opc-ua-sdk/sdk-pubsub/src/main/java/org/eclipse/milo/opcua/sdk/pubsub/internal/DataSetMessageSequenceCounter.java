@@ -30,20 +30,25 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
  * <p>Data messages consume the next value via {@link #next()}; keep-alives carry the next expected
  * value WITHOUT consuming it via {@link #peek()} (§7.2.4.5.8, Table 185).
  *
- * <p>Not thread safe; confine each instance to its writer group's publish task thread.
+ * <p>Mutation is confined to the writer group's publish task thread ({@link #seed(long)} runs
+ * before the runtime's first cycle only); {@code value} is volatile so cross-thread observers —
+ * restart-preservation snapshots and the {@code nextDataSetMessageSequenceNumber} LiveValue feed —
+ * read an exact current value.
  */
 final class DataSetMessageSequenceCounter {
 
+  private final int bitWidth;
   private final long valueMask;
 
   /** The next value {@link #next()} returns; always within {@code valueMask}. */
-  private long value = 0;
+  private volatile long value = 0;
 
   /**
    * @param bitWidth the wire width N of the mapping's DataSetMessage sequence number (16 or 32);
    *     the counter rolls over from 2^N - 1 to 0.
    */
   DataSetMessageSequenceCounter(int bitWidth) {
+    this.bitWidth = bitWidth;
     this.valueMask = (1L << bitWidth) - 1;
   }
 
@@ -60,5 +65,23 @@ final class DataSetMessageSequenceCounter {
    */
   UInteger peek() {
     return uint(value);
+  }
+
+  /** The next-to-be-consumed value, as a volatile cross-thread read. */
+  long currentValue() {
+    return value;
+  }
+
+  /** The wire width N of this counter (16 or 32). */
+  int bitWidth() {
+    return bitWidth;
+  }
+
+  /**
+   * Seed the counter with the next value to consume, masked into this counter's width. Only called
+   * before the owning runtime's first publish cycle (restart preservation).
+   */
+  void seed(long value) {
+    this.value = value & valueMask;
   }
 }

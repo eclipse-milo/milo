@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.sdk.pubsub.internal;
 import java.util.ArrayList;
 import java.util.List;
 import org.eclipse.milo.opcua.sdk.pubsub.ComponentType;
+import org.eclipse.milo.opcua.sdk.pubsub.PubSubDiagnosticsEvent;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetReaderConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.MessageSecurityConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.ReaderGroupConfig;
@@ -162,7 +163,14 @@ final class ReaderGroupRuntime extends AbstractComponentRuntime {
     try {
       service.checkReaderGroupMessageSecurity(config, path());
     } catch (UaException e) {
-      service.getDiagnostics().error(path(), e.getStatusCode(), e.getMessage(), e);
+      service
+          .getDiagnostics()
+          .error(
+              path(),
+              e.getStatusCode(),
+              e.getMessage(),
+              e,
+              PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
       throw e;
     }
   }

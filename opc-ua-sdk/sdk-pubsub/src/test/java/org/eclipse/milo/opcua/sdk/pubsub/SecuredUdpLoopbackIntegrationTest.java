@@ -687,9 +687,11 @@ class SecuredUdpLoopbackIntegrationTest {
    * traffic resumes SECURED — the SignAndEncrypt-configured reader group only ever accepts received
    * SignAndEncrypt messages, so post-reconfigure delivery proves the wire stayed encrypted.
    *
-   * <p>Sequence-window counters are deliberately NOT asserted here: a replaced WriterGroup restarts
-   * its NetworkMessage sequence at 0, so the subscriber drops a bounded run of messages until its
-   * §7.2.3 records recover (see {@link PubSubService#reconfigure}).
+   * <p>Sequence-window counters are deliberately NOT asserted here: this test's concern is that the
+   * restarted group's traffic stays secured. A path-stable group restart preserves the
+   * NetworkMessage and DataSetMessage sequence numbers, so there is no drop window (see {@link
+   * PubSubService#reconfigure}); that continuity is asserted by {@code
+   * ReconfigureIntegrationTest#pathStableGroupRestartPreservesCountersAndSequenceNumbers}.
    */
   @Test
   void reconfiguredSecuredGroupResumesSecuredTraffic() throws Exception {

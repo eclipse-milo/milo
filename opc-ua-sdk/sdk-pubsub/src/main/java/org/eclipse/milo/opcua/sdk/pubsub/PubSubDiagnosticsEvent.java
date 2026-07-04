@@ -22,6 +22,23 @@ import org.jspecify.annotations.Nullable;
  * @param statusCode a status code classifying the error.
  * @param message a human-readable description of the event.
  * @param error the underlying exception, or {@code null} if there is none.
+ * @param kind the coarse classification of the error: transmission failures of messages already
+ *     handed to (or destined for) a transport channel vs everything else.
  */
 public record PubSubDiagnosticsEvent(
-    String path, StatusCode statusCode, String message, @Nullable Throwable error) {}
+    String path, StatusCode statusCode, String message, @Nullable Throwable error, Kind kind) {
+
+  /** Coarse classification of a diagnostics error event. */
+  public enum Kind {
+    /**
+     * A NetworkMessage was not transmitted: an asynchronous or synchronous send failure, or an
+     * oversize message skipped at the {@code maxNetworkMessageSize} gate.
+     */
+    SEND_FAILURE,
+    /**
+     * Any other error: encode failures, source-read failures, decode errors, key-fetch failures,
+     * activation failures.
+     */
+    OTHER_ERROR
+  }
+}

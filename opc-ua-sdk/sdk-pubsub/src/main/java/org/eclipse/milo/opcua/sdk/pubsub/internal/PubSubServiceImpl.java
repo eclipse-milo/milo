@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.sdk.pubsub.internal;
 
 import static java.util.Objects.requireNonNull;
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 
 import io.netty.util.concurrent.Future;
@@ -44,6 +45,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.PubSubStateChangeEvent;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubStateListener;
 import org.eclipse.milo.opcua.sdk.pubsub.PublishedDataSetSource;
 import org.eclipse.milo.opcua.sdk.pubsub.ReconfigureResult;
+import org.eclipse.milo.opcua.sdk.pubsub.SecurityKeyInfo;
 import org.eclipse.milo.opcua.sdk.pubsub.config.BrokerTransportSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetReaderConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetReaderMessageSettings;
@@ -80,6 +82,7 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
@@ -334,6 +337,9 @@ public final class PubSubServiceImpl implements PubSubService {
       // attach/refresh attempts (cancellation only, no waiting)
       securityKeyManager.shutdown();
 
+      // defensive: no reconfigure can follow, so parked pending-restart entries are garbage
+      diagnostics.clearPendingRestart();
+
       // clear the root operational flag so a post-shutdown enable() can never transition a
       // component past Paused and reactivate disposed transport resources; handles themselves
       // stay valid (only reconfiguration invalidates them).
@@ -476,15 +482,17 @@ public final class PubSubServiceImpl implements PubSubService {
 
     config = newConfig;
 
-    var added = new ArrayList<String>();
-    var removed = new ArrayList<String>();
-    var restarted = new ArrayList<String>();
+    var changes = new ArrayList<ReconfigureResult.Change>();
 
     if (mode == ReconfigureMode.STOP_AND_RESTART) {
-      applyStopAndRestart(diff, added, removed, restarted, disposeFutures);
+      applyStopAndRestart(diff, changes, disposeFutures);
     } else {
-      applyDisableAffected(diff, added, removed, restarted, disposeFutures);
+      applyDisableAffected(diff, changes, disposeFutures);
     }
+
+    // discard preserved counters whose CHANGED path was never re-added (effectively a removal);
+    // successfully restarted paths were revived by registerTree already
+    diagnostics.clearPendingRestart();
 
     stateMachine.setRootOperational(started && config.isEnabled(), connections.values());
 
@@ -493,6 +501,11 @@ public final class PubSubServiceImpl implements PubSubService {
     for (ConnectionRuntime connection : connections.values()) {
       DiscoveryRuntime discovery = connection.discoveryRuntime();
       if (discovery != null) {
+        // a connection whose last discovery-requiring component (writer group / probing reader)
+        // was removed releases its discovery channels; closed BEFORE onConfigurationApplied so
+        // a no-longer-responder connection does not announce into a socket about to close
+        discovery.closeChannelsIfUnused();
+
         if (connection != previousRuntimes.get(connection.config().name())) {
           // rebuilt connection: restore the predecessor's baseline so the check below compares
           // against what was actually last announced rather than the post-change config
@@ -514,66 +527,85 @@ public final class PubSubServiceImpl implements PubSubService {
       }
     }
 
-    return new ReconfigureResult(added, removed, restarted);
+    return new ReconfigureResult(changes);
+  }
+
+  private static ReconfigureResult.Scope scopeOf(ConfigDiff.Level level) {
+    return switch (level) {
+      case CONNECTION -> ReconfigureResult.Scope.CONNECTION;
+      case WRITER_GROUP -> ReconfigureResult.Scope.WRITER_GROUP;
+      case READER_GROUP -> ReconfigureResult.Scope.READER_GROUP;
+      case DATA_SET_WRITER -> ReconfigureResult.Scope.DATA_SET_WRITER;
+      case DATA_SET_READER -> ReconfigureResult.Scope.DATA_SET_READER;
+      case PUBLISHED_DATA_SET -> ReconfigureResult.Scope.PUBLISHED_DATA_SET;
+      case STANDALONE_SUBSCRIBED_DATA_SET -> ReconfigureResult.Scope.STANDALONE_SUBSCRIBED_DATA_SET;
+      case SECURITY_GROUP -> ReconfigureResult.Scope.SECURITY_GROUP;
+    };
+  }
+
+  private static ReconfigureResult.Kind kindOf(ConfigDiff.Kind kind) {
+    return switch (kind) {
+      case ADDED -> ReconfigureResult.Kind.ADDED;
+      case REMOVED -> ReconfigureResult.Kind.REMOVED;
+      case CHANGED -> ReconfigureResult.Kind.CHANGED;
+    };
+  }
+
+  /** A result entry carrying the diff entry's scope, path, and name components verbatim. */
+  private static ReconfigureResult.Change resultChange(ConfigDiff.Change change) {
+    return new ReconfigureResult.Change(
+        kindOf(change.kind()),
+        scopeOf(change.level()),
+        change.path(),
+        change.connectionName(),
+        change.groupName(),
+        change.componentName());
   }
 
   private void applyDisableAffected(
       ConfigDiff.Result diff,
-      List<String> added,
-      List<String> removed,
-      List<String> restarted,
+      List<ReconfigureResult.Change> changes,
       List<Future<?>> disposeFutures) {
 
     for (ConfigDiff.Change change : diff.changes()) {
       if (change.kind() == ConfigDiff.Kind.REMOVED) {
-        applyChange(change, added, removed, restarted, disposeFutures);
+        applyChange(change, changes, disposeFutures);
       }
     }
     for (ConfigDiff.Change change : diff.changes()) {
       if (change.kind() == ConfigDiff.Kind.CHANGED) {
-        applyChange(change, added, removed, restarted, disposeFutures);
+        applyChange(change, changes, disposeFutures);
       }
     }
     for (ConfigDiff.Change change : diff.changes()) {
       if (change.kind() == ConfigDiff.Kind.ADDED) {
-        applyChange(change, added, removed, restarted, disposeFutures);
+        applyChange(change, changes, disposeFutures);
       }
     }
   }
 
   private void applyChange(
       ConfigDiff.Change change,
-      List<String> added,
-      List<String> removed,
-      List<String> restarted,
+      List<ReconfigureResult.Change> changes,
       List<Future<?>> disposeFutures) {
 
     switch (change.level()) {
-      case OTHER -> {
-        switch (change.kind()) {
-          case ADDED -> added.add(change.path());
-          case REMOVED -> removed.add(change.path());
-          case CHANGED -> {
-            // induced writer/reader restarts are separate entries in the diff
-          }
-        }
-      }
+      case PUBLISHED_DATA_SET, STANDALONE_SUBSCRIBED_DATA_SET, SECURITY_GROUP ->
+          // reported at their own scope, CHANGED included; the restarts a CHANGED definition
+          // induces on referencing components are separate entries in the diff
+          changes.add(resultChange(change));
 
       case CONNECTION -> {
         String name = requireNonNull(change.connectionName());
+        changes.add(resultChange(change));
         switch (change.kind()) {
-          case ADDED -> {
-            added.add(change.path());
-            rebuildConnection(name);
-          }
-          case REMOVED -> {
-            removed.add(change.path());
-            removeConnection(name, disposeFutures);
-          }
+          case ADDED -> rebuildConnection(name);
+          case REMOVED -> removeConnection(name, disposeFutures, false);
           case CHANGED -> {
-            restarted.add(change.path());
-            removeConnection(name, disposeFutures);
+            ConnectionRuntime previous = connections.get(name);
+            removeConnection(name, disposeFutures, true);
             rebuildConnection(name);
+            seedConnectionSequenceState(previous, connections.get(name));
           }
         }
       }
@@ -586,19 +618,24 @@ public final class PubSubServiceImpl implements PubSubService {
         boolean writerSide = change.level() == ConfigDiff.Level.WRITER_GROUP;
         String groupName = requireNonNull(change.groupName());
 
+        changes.add(resultChange(change));
         switch (change.kind()) {
-          case ADDED -> {
-            added.add(change.path());
-            addGroup(connection, groupName, writerSide);
-          }
-          case REMOVED -> {
-            removed.add(change.path());
-            removeGroup(connection, groupName, writerSide);
-          }
+          case ADDED -> addGroup(connection, groupName, writerSide);
+          case REMOVED -> removeGroup(connection, groupName, writerSide, false);
           case CHANGED -> {
-            restarted.add(change.path());
-            removeGroup(connection, groupName, writerSide);
+            WriterGroupRuntime previous =
+                writerSide ? connection.findWriterGroupRuntime(groupName) : null;
+            removeGroup(connection, groupName, writerSide, true);
             addGroup(connection, groupName, writerSide);
+            if (previous != null) {
+              WriterGroupRuntime replacement = connection.findWriterGroupRuntime(groupName);
+              if (replacement != null) {
+                // the previous runtime is deactivated (removeGroup bumped its generation), so
+                // the snapshot is quiesced-exact; the replacement is Disabled until the root
+                // recompute after the apply, so seeding is race-free
+                replacement.seedSequenceState(previous.snapshotSequenceState());
+              }
+            }
           }
         }
       }
@@ -612,19 +649,29 @@ public final class PubSubServiceImpl implements PubSubService {
         String groupName = requireNonNull(change.groupName());
         String componentName = requireNonNull(change.componentName());
 
+        changes.add(resultChange(change));
         switch (change.kind()) {
-          case ADDED -> {
-            added.add(change.path());
-            addLeaf(connection, groupName, componentName, writerSide);
-          }
-          case REMOVED -> {
-            removed.add(change.path());
-            removeLeaf(connection, groupName, componentName, writerSide);
-          }
+          case ADDED -> addLeaf(connection, groupName, componentName, writerSide);
+          case REMOVED -> removeLeaf(connection, groupName, componentName, writerSide, false);
           case CHANGED -> {
-            restarted.add(change.path());
-            removeLeaf(connection, groupName, componentName, writerSide);
+            WriterGroupRuntime group =
+                writerSide ? connection.findWriterGroupRuntime(groupName) : null;
+            DataSetWriterRuntime previous =
+                group != null ? group.findWriterRuntime(componentName) : null;
+            removeLeaf(connection, groupName, componentName, writerSide, true);
+            // the previous writer is out of the group's writer list now; snapshotting under
+            // the group's publish lock waits out any in-flight cycle, so the value is exact
+            DataSetWriterRuntime.WriterSequenceState sequenceState =
+                group != null && previous != null
+                    ? group.snapshotWriterSequenceState(previous)
+                    : null;
             addLeaf(connection, groupName, componentName, writerSide);
+            if (group != null && sequenceState != null) {
+              DataSetWriterRuntime replacement = group.findWriterRuntime(componentName);
+              if (replacement != null) {
+                group.seedWriterSequenceState(replacement, sequenceState);
+              }
+            }
           }
         }
       }
@@ -633,48 +680,68 @@ public final class PubSubServiceImpl implements PubSubService {
 
   private void applyStopAndRestart(
       ConfigDiff.Result diff,
-      List<String> added,
-      List<String> removed,
-      List<String> restarted,
+      List<ReconfigureResult.Change> changes,
       List<Future<?>> disposeFutures) {
 
     var connectionsToRestart = new LinkedHashSet<String>();
 
     for (ConfigDiff.Change change : diff.changes()) {
-      if (change.level() == ConfigDiff.Level.OTHER) {
-        switch (change.kind()) {
-          case ADDED -> added.add(change.path());
-          case REMOVED -> removed.add(change.path());
-          case CHANGED -> {
-            // induced restarts are separate entries
-          }
-        }
+      if (!change.level().isTreeLevel()) {
+        // reported at their own scope, CHANGED included (induced restarts are separate entries)
+        changes.add(resultChange(change));
       } else if (change.level() == ConfigDiff.Level.CONNECTION
           && change.kind() == ConfigDiff.Kind.ADDED) {
-        added.add(change.path());
+        changes.add(resultChange(change));
         rebuildConnection(requireNonNull(change.connectionName()));
       } else if (change.level() == ConfigDiff.Level.CONNECTION
           && change.kind() == ConfigDiff.Kind.REMOVED) {
-        removed.add(change.path());
-        removeConnection(requireNonNull(change.connectionName()), disposeFutures);
+        changes.add(resultChange(change));
+        removeConnection(requireNonNull(change.connectionName()), disposeFutures, false);
       } else {
         // any other change restarts the whole containing connection; nested adds/removes are
-        // realized by the rebuild but still reported
-        switch (change.kind()) {
-          case ADDED -> added.add(change.path());
-          case REMOVED -> removed.add(change.path());
-          case CHANGED -> {
-            // reported via the restarted connection
-          }
+        // realized by the rebuild but still reported — nested CHANGED entries are subsumed by
+        // the connection-level CHANGED entry (the minimal non-overlapping invariant)
+        if (change.kind() != ConfigDiff.Kind.CHANGED) {
+          changes.add(resultChange(change));
         }
         connectionsToRestart.add(requireNonNull(change.connectionName()));
       }
     }
 
     for (String name : connectionsToRestart) {
-      restarted.add(name);
-      removeConnection(name, disposeFutures);
+      changes.add(
+          new ReconfigureResult.Change(
+              ReconfigureResult.Kind.CHANGED,
+              ReconfigureResult.Scope.CONNECTION,
+              name,
+              name,
+              null,
+              null));
+      ConnectionRuntime previous = connections.get(name);
+      removeConnection(name, disposeFutures, true);
       rebuildConnection(name);
+      seedConnectionSequenceState(previous, connections.get(name));
+    }
+  }
+
+  /**
+   * Seed the sequence state of every writer group of a rebuilt connection from its path-stable
+   * predecessor: {@code previous} is already disposed (deactivated, generation bumped), so each
+   * group snapshot is quiesced-exact; the replacement components are Disabled until the root
+   * recompute after the apply, so seeding is race-free. Groups without a predecessor start at 0.
+   */
+  private void seedConnectionSequenceState(
+      @Nullable ConnectionRuntime previous, @Nullable ConnectionRuntime replacement) {
+
+    if (previous == null || replacement == null) {
+      return;
+    }
+    for (WriterGroupRuntime previousGroup : previous.writerGroupRuntimes()) {
+      WriterGroupRuntime replacementGroup =
+          replacement.findWriterGroupRuntime(previousGroup.config().getName());
+      if (replacementGroup != null) {
+        replacementGroup.seedSequenceState(previousGroup.snapshotSequenceState());
+      }
     }
   }
 
@@ -689,11 +756,11 @@ public final class PubSubServiceImpl implements PubSubService {
             });
   }
 
-  private void removeConnection(String name, List<Future<?>> disposeFutures) {
+  private void removeConnection(String name, List<Future<?>> disposeFutures, boolean preserve) {
     ConnectionRuntime runtime = connections.remove(name);
     if (runtime != null) {
       stateMachine.disposeSubtree(runtime);
-      unregisterTree(runtime);
+      unregisterTree(runtime, preserve);
       Future<?> disposeFuture = runtime.dispose();
       if (disposeFuture != null) {
         disposeFutures.add(disposeFuture);
@@ -731,13 +798,15 @@ public final class PubSubServiceImpl implements PubSubService {
     }
   }
 
-  private void removeGroup(ConnectionRuntime connection, String groupName, boolean writerSide) {
+  private void removeGroup(
+      ConnectionRuntime connection, String groupName, boolean writerSide, boolean preserve) {
+
     if (writerSide) {
       WriterGroupRuntime runtime = connection.findWriterGroupRuntime(groupName);
       if (runtime != null) {
         stateMachine.disposeSubtree(runtime);
         connection.removeWriterGroupRuntime(runtime);
-        unregisterTree(runtime);
+        unregisterTree(runtime, preserve);
         runtime.dispose();
       }
     } else {
@@ -745,7 +814,7 @@ public final class PubSubServiceImpl implements PubSubService {
       if (runtime != null) {
         stateMachine.disposeSubtree(runtime);
         connection.removeReaderGroupRuntime(runtime);
-        unregisterTree(runtime);
+        unregisterTree(runtime, preserve);
         runtime.dispose();
       }
     }
@@ -797,7 +866,11 @@ public final class PubSubServiceImpl implements PubSubService {
   }
 
   private void removeLeaf(
-      ConnectionRuntime connection, String groupName, String componentName, boolean writerSide) {
+      ConnectionRuntime connection,
+      String groupName,
+      String componentName,
+      boolean writerSide,
+      boolean preserve) {
 
     if (writerSide) {
       WriterGroupRuntime group = connection.findWriterGroupRuntime(groupName);
@@ -808,7 +881,7 @@ public final class PubSubServiceImpl implements PubSubService {
       if (runtime != null) {
         stateMachine.disposeSubtree(runtime);
         group.removeWriterRuntime(runtime);
-        unregisterTree(runtime);
+        unregisterTree(runtime, preserve);
         runtime.dispose();
       }
     } else {
@@ -820,7 +893,7 @@ public final class PubSubServiceImpl implements PubSubService {
       if (runtime != null) {
         stateMachine.disposeSubtree(runtime);
         group.removeReaderRuntime(runtime);
-        unregisterTree(runtime);
+        unregisterTree(runtime, preserve);
         runtime.dispose();
         connection.refreshSubscriberMappings();
       }
@@ -845,9 +918,20 @@ public final class PubSubServiceImpl implements PubSubService {
   }
 
   @Override
+  public void removeDataSetListener(DataSetListener listener) {
+    eventDispatcher.removeDataSetListener(requireNonNull(listener, "listener"));
+  }
+
+  @Override
   public void addDataSetListener(DataSetReaderRef reader, DataSetListener listener) {
     requireNonNull(reader, "reader");
     eventDispatcher.addDataSetListener(reader, requireNonNull(listener, "listener"));
+  }
+
+  @Override
+  public void removeDataSetListener(DataSetReaderRef reader, DataSetListener listener) {
+    requireNonNull(reader, "reader");
+    eventDispatcher.removeDataSetListener(reader, requireNonNull(listener, "listener"));
   }
 
   @Override
@@ -856,8 +940,18 @@ public final class PubSubServiceImpl implements PubSubService {
   }
 
   @Override
+  public void removeStateListener(PubSubStateListener listener) {
+    eventDispatcher.removeStateListener(requireNonNull(listener, "listener"));
+  }
+
+  @Override
   public void addMetaDataListener(MetaDataListener listener) {
     eventDispatcher.addMetaDataListener(requireNonNull(listener, "listener"));
+  }
+
+  @Override
+  public void removeMetaDataListener(MetaDataListener listener) {
+    eventDispatcher.removeMetaDataListener(requireNonNull(listener, "listener"));
   }
 
   @Override
@@ -866,8 +960,51 @@ public final class PubSubServiceImpl implements PubSubService {
   }
 
   @Override
+  public void removeDiagnosticsListener(PubSubDiagnosticsListener listener) {
+    eventDispatcher.removeDiagnosticsListener(requireNonNull(listener, "listener"));
+  }
+
+  @Override
   public PubSubDiagnostics diagnostics() {
     return diagnostics;
+  }
+
+  @Override
+  public @Nullable SecurityKeyInfo securityKeyInfo(PubSubHandle group) {
+    AbstractComponentRuntime component = requireComponent(group);
+
+    SecurityKeyManager.SecurityGroupKeyView view;
+    if (component instanceof WriterGroupRuntime writerGroup) {
+      view = writerGroup.securityKeyView();
+    } else if (component instanceof ReaderGroupRuntime readerGroup) {
+      view = readerGroup.securityKeyView();
+    } else {
+      throw new IllegalArgumentException(
+          "handle is not a WriterGroup or ReaderGroup of this service: " + group);
+    }
+
+    if (view == null || view.currentTokenId() == 0) {
+      // no key state: not secured/detached (null view) or attached but the first fetch has not
+      // completed (token id 0; real token ids start at 1)
+      return null;
+    }
+    return new SecurityKeyInfo(
+        view.securityGroupId(),
+        view.securityPolicyUri(),
+        uint(view.currentTokenId()),
+        view.timeToNextKey());
+  }
+
+  @Override
+  public UInteger nextDataSetMessageSequenceNumber(PubSubHandle writer) {
+    AbstractComponentRuntime component = requireComponent(writer);
+
+    if (component instanceof DataSetWriterRuntime writerRuntime) {
+      return uint(writerRuntime.sequenceSnapshot().nextValue());
+    } else {
+      throw new IllegalArgumentException(
+          "handle is not a DataSetWriter of this service: " + writer);
+    }
   }
 
   // endregion
@@ -878,10 +1015,15 @@ public final class PubSubServiceImpl implements PubSubService {
       AbstractComponentRuntime component,
       PubSubState oldState,
       PubSubState newState,
-      StatusCode statusCode) {
+      StatusCode statusCode,
+      PubSubStateChangeEvent.Cause cause) {
+
+    // tick the Table 311 State* counters before dispatching the event; runs under the engine
+    // lock, so the collector work must stay lock-free (it is: LongAdder ticks only)
+    diagnostics.stateTransition(component.path(), oldState, newState, cause);
 
     eventDispatcher.notifyStateChange(
-        new PubSubStateChangeEvent(component.handle(), oldState, newState, statusCode));
+        new PubSubStateChangeEvent(component.handle(), oldState, newState, statusCode, cause));
   }
 
   private void registerTree(AbstractComponentRuntime component) {
@@ -890,10 +1032,20 @@ public final class PubSubServiceImpl implements PubSubService {
     component.children().forEach(this::registerTree);
   }
 
-  private void unregisterTree(AbstractComponentRuntime component) {
-    component.children().forEach(this::unregisterTree);
+  /**
+   * Unregister a component subtree. With {@code preserve} (path-stable CHANGED restarts and
+   * STOP_AND_RESTART rebuilds) the diagnostics entries are parked for revival by the re-add's
+   * {@link #registerTree}, so counters, {@code lastError}, and TimeFirstChange survive the restart
+   * (R14); without it (true removals) they are discarded. Handles always invalidate.
+   */
+  private void unregisterTree(AbstractComponentRuntime component, boolean preserve) {
+    component.children().forEach(child -> unregisterTree(child, preserve));
     registry.unregister(component);
-    diagnostics.remove(component.path());
+    if (preserve) {
+      diagnostics.removePreserving(component.path());
+    } else {
+      diagnostics.remove(component.path());
+    }
   }
 
   PubSubConfig getConfig() {

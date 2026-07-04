@@ -17,8 +17,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.MessageAddress;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.PublisherChannel;
+import org.eclipse.milo.opcua.sdk.pubsub.transport.TransportStateListener;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +35,10 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Send failures (including sends attempted while the broker is unreachable) complete the
  * returned future exceptionally, which the engine records in diagnostics.
+ *
+ * <p>The context's {@code TransportStateListener}, when present, is registered with the shared
+ * session at open and removed at close, so the engine observes broker liveness edges for the
+ * channel's lifetime.
  */
 final class MqttPublisherChannel implements PublisherChannel {
 
@@ -42,10 +48,20 @@ final class MqttPublisherChannel implements PublisherChannel {
 
   private final MqttTransportProvider provider;
   private final MqttClientSession session;
+  private final @Nullable TransportStateListener transportStateListener;
 
-  MqttPublisherChannel(MqttTransportProvider provider, MqttClientSession session) {
+  MqttPublisherChannel(
+      MqttTransportProvider provider,
+      MqttClientSession session,
+      @Nullable TransportStateListener transportStateListener) {
+
     this.provider = provider;
     this.session = session;
+    this.transportStateListener = transportStateListener;
+
+    if (transportStateListener != null) {
+      session.addTransportStateListener(transportStateListener);
+    }
   }
 
   @Override
@@ -97,6 +113,9 @@ final class MqttPublisherChannel implements PublisherChannel {
   @Override
   public CompletableFuture<Void> closeAsync() {
     if (closed.compareAndSet(false, true)) {
+      if (transportStateListener != null) {
+        session.removeTransportStateListener(transportStateListener);
+      }
       return provider.releaseSession(session);
     } else {
       return CompletableFuture.completedFuture(null);

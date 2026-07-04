@@ -30,6 +30,8 @@ import org.eclipse.milo.opcua.sdk.pubsub.mqtt.MqttClientSession.SubscriptionEntr
 import org.eclipse.milo.opcua.sdk.pubsub.transport.BrokerQualityOfService;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.SubscriberChannel;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.SubscriberTransportContext;
+import org.eclipse.milo.opcua.sdk.pubsub.transport.TransportStateListener;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +49,10 @@ import org.slf4j.LoggerFactory;
  * context's group so arrival order is preserved — matching the UDP transport's delivery threading.
  * The buffer is released after the callback returns, per the {@link
  * SubscriberTransportContext#messageConsumer()} contract.
+ *
+ * <p>The context's {@code TransportStateListener}, when present, is registered with the shared
+ * session at open and removed at close, so the engine observes broker liveness edges for the
+ * channel's lifetime.
  */
 final class MqttSubscriberChannel implements SubscriberChannel {
 
@@ -57,13 +63,18 @@ final class MqttSubscriberChannel implements SubscriberChannel {
   private final MqttTransportProvider provider;
   private final MqttClientSession session;
   private final List<SubscriptionEntry> entries;
+  private final @Nullable TransportStateListener transportStateListener;
 
   private MqttSubscriberChannel(
-      MqttTransportProvider provider, MqttClientSession session, List<SubscriptionEntry> entries) {
+      MqttTransportProvider provider,
+      MqttClientSession session,
+      List<SubscriptionEntry> entries,
+      @Nullable TransportStateListener transportStateListener) {
 
     this.provider = provider;
     this.session = session;
     this.entries = entries;
+    this.transportStateListener = transportStateListener;
   }
 
   /**
@@ -82,8 +93,14 @@ final class MqttSubscriberChannel implements SubscriberChannel {
       MqttConnectionConfig connection,
       SubscriberTransportContext context) {
 
-    var channel = new MqttSubscriberChannel(provider, session, new ArrayList<>());
+    var channel =
+        new MqttSubscriberChannel(
+            provider, session, new ArrayList<>(), context.transportStateListener());
     channel.entries.addAll(channel.buildSubscriptions(connection, context));
+
+    if (channel.transportStateListener != null) {
+      session.addTransportStateListener(channel.transportStateListener);
+    }
 
     session.addSubscriptions(channel.entries);
 
@@ -174,6 +191,9 @@ final class MqttSubscriberChannel implements SubscriberChannel {
   @Override
   public CompletableFuture<Void> closeAsync() {
     if (closed.compareAndSet(false, true)) {
+      if (transportStateListener != null) {
+        session.removeTransportStateListener(transportStateListener);
+      }
       session.removeSubscriptions(entries);
       return provider.releaseSession(session);
     } else {

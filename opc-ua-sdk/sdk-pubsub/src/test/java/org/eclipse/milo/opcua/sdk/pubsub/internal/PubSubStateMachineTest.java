@@ -41,6 +41,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.PubSubBindings;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubHandle;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubService;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubServiceConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.PubSubStateChangeEvent;
 import org.eclipse.milo.opcua.sdk.pubsub.PublishedDataSetReadContext;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetReaderConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetWriterConfig;
@@ -96,15 +97,21 @@ class PubSubStateMachineTest {
 
   // region direct state machine tests
 
-  private record Transition(String path, PubSubState from, PubSubState to, StatusCode status) {}
+  private record Transition(
+      String path,
+      PubSubState from,
+      PubSubState to,
+      StatusCode status,
+      PubSubStateChangeEvent.Cause cause) {}
 
   private final List<Transition> transitions = new ArrayList<>();
 
   private final PubSubStateMachine machine =
       new PubSubStateMachine(
           new Object(),
-          (component, oldState, newState, statusCode) ->
-              transitions.add(new Transition(component.path(), oldState, newState, statusCode)));
+          (component, oldState, newState, statusCode, cause) ->
+              transitions.add(
+                  new Transition(component.path(), oldState, newState, statusCode, cause)));
 
   private static final class TestComponent extends AbstractComponentRuntime {
 
@@ -174,6 +181,14 @@ class PubSubStateMachineTest {
       assertEquals(PubSubState.PreOperational, observed.get(0).to());
       assertEquals(PubSubState.PreOperational, observed.get(1).from());
       assertEquals(PubSubState.Operational, observed.get(1).to());
+
+      // the initiating component carries STARTUP; descendants cascade with PARENT
+      PubSubStateChangeEvent.Cause expectedCause =
+          path.equals("conn")
+              ? PubSubStateChangeEvent.Cause.STARTUP
+              : PubSubStateChangeEvent.Cause.PARENT;
+      assertEquals(expectedCause, observed.get(0).cause(), path);
+      assertEquals(expectedCause, observed.get(1).cause(), path);
     }
 
     assertEquals(1, connection.activateCount);
@@ -224,6 +239,10 @@ class PubSubStateMachineTest {
     assertEquals(2, observed.size());
     assertEquals(PubSubState.PreOperational, observed.get(0).to());
     assertEquals(PubSubState.Operational, observed.get(1).to());
+
+    // an explicit enable carries METHOD through both hops (StateOperationalByMethod source)
+    assertEquals(PubSubStateChangeEvent.Cause.METHOD, observed.get(0).cause());
+    assertEquals(PubSubStateChangeEvent.Cause.METHOD, observed.get(1).cause());
   }
 
   @Test
@@ -303,6 +322,13 @@ class PubSubStateMachineTest {
     assertEquals(1, groupTransitions.size());
     assertEquals(PubSubState.Error, groupTransitions.get(0).to());
     assertEquals(statusCode, groupTransitions.get(0).status());
+    assertEquals(PubSubStateChangeEvent.Cause.ERROR, groupTransitions.get(0).cause());
+
+    // the child's Paused entry cascades with PARENT (StatePausedByParent source)
+    List<Transition> writerTransitions = transitionsOf("conn/group/writer");
+    assertEquals(1, writerTransitions.size());
+    assertEquals(PubSubState.Paused, writerTransitions.get(0).to());
+    assertEquals(PubSubStateChangeEvent.Cause.PARENT, writerTransitions.get(0).cause());
 
     // Operational -> Error stays in the active states: no deactivation of the failed component
     assertEquals(0, group.deactivateCount);
@@ -317,6 +343,7 @@ class PubSubStateMachineTest {
     var writer = new TestComponent("conn/group/writer", group, true);
     machine.setRootOperational(true, List.of(connection));
     machine.fail(group, new StatusCode(StatusCodes.Bad_CommunicationError));
+    transitions.clear();
 
     machine.recover(group);
 
@@ -324,6 +351,14 @@ class PubSubStateMachineTest {
     assertEquals(PubSubState.Operational, writer.state());
     // the child re-ran its startup steps after being lifted out of Paused
     assertEquals(2, writer.activateCount);
+
+    // the recovering component carries ERROR_RECOVERY; the lifted child cascades with PARENT
+    List<Transition> groupTransitions = transitionsOf("conn/group");
+    assertEquals(1, groupTransitions.size());
+    assertEquals(PubSubStateChangeEvent.Cause.ERROR_RECOVERY, groupTransitions.get(0).cause());
+    for (Transition transition : transitionsOf("conn/group/writer")) {
+      assertEquals(PubSubStateChangeEvent.Cause.PARENT, transition.cause());
+    }
   }
 
   @Test
@@ -454,6 +489,41 @@ class PubSubStateMachineTest {
     assertEquals(
         List.of("conn/group/writer", "conn/group", "conn"),
         transitions.stream().map(Transition::path).toList());
+
+    // every dispose transition carries DISPOSE (never METHOD: dispose != ByMethod)
+    for (Transition transition : transitions) {
+      assertEquals(PubSubStateChangeEvent.Cause.DISPOSE, transition.cause());
+    }
+  }
+
+  @Test
+  void deferredStartupFinalHopCarriesTheRememberedTrigger() {
+    // PARENT entry: the reader entered PreOperational via the connection's cascade, so the
+    // deferred final hop replays PARENT
+    var connection = new TestComponent("conn", null, true);
+    var reader = new TestComponent("conn/reader", connection, true);
+    reader.immediateStartup = false;
+    machine.setRootOperational(true, List.of(connection));
+
+    assertEquals(PubSubState.PreOperational, reader.state());
+    machine.startupCompleted(reader);
+
+    List<Transition> observed = transitionsOf("conn/reader");
+    assertEquals(PubSubState.Operational, observed.get(observed.size() - 1).to());
+    assertEquals(PubSubStateChangeEvent.Cause.PARENT, observed.get(observed.size() - 1).cause());
+
+    // METHOD entry: a disable + enable of the deferred component replays METHOD on the final hop
+    machine.setEnabled(reader, false);
+    machine.setEnabled(reader, true);
+    assertEquals(PubSubState.PreOperational, reader.state());
+    transitions.clear();
+
+    machine.startupCompleted(reader);
+
+    observed = transitionsOf("conn/reader");
+    assertEquals(1, observed.size());
+    assertEquals(PubSubState.Operational, observed.get(0).to());
+    assertEquals(PubSubStateChangeEvent.Cause.METHOD, observed.get(0).cause());
   }
 
   // endregion

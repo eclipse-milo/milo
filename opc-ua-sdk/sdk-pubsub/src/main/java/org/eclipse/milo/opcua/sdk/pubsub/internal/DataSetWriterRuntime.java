@@ -15,6 +15,7 @@ import java.util.Collections;
 import java.util.List;
 import org.eclipse.milo.opcua.sdk.pubsub.ComponentType;
 import org.eclipse.milo.opcua.sdk.pubsub.DataSetSnapshot;
+import org.eclipse.milo.opcua.sdk.pubsub.PubSubDiagnosticsEvent;
 import org.eclipse.milo.opcua.sdk.pubsub.PublishedDataSetReadContext;
 import org.eclipse.milo.opcua.sdk.pubsub.PublishedDataSetSource;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetMetaDataMapper;
@@ -106,14 +107,17 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>The DataSetMessage sequence counter (§7.2.3) wraps at the wire DataType maximum of the group's
  * mapping — 2^16 for UADP's UInt16, 2^32 for JSON's UInt32 and for custom mappings (see {@link
- * DataSetMessageSequenceCounter}). The counter is instance state, so writer recreation —
- * reconfigure, and the metadata/ConfigurationVersion changes that imply it — restarts the
- * DataSetMessage sequence at 0; subscribers recover from the apparent backward jump by whichever
- * comes first: the recreated writer's first keep-alive, whose carried next-expected value reseeds
- * the subscriber's window in both timeout modes (§7.2.4.5.8 — the publisher is authoritative about
- * its own counter; requires the group to emit keep-alives), the §7.2.3 two-times-receive-timeout
- * record discard when a messageReceiveTimeout is configured, or the 16-consecutive-rejection
- * restart heuristic of {@link ReaderSequenceTracker} when it is not.
+ * DataSetMessageSequenceCounter}). The counter is instance state, but path-stable reconfigure
+ * restarts reseed the replacement runtime from a quiesced snapshot of the replaced one ({@link
+ * #sequenceSnapshot()}/{@link #seedSequenceNumber(long)}), so the wire stream continues seamlessly
+ * — unless the restart changes the mapping's counter width (16 ↔ 32), which restarts the sequence
+ * at 0. A writer removed and re-added by later reconfigurations also restarts at 0; subscribers
+ * recover from that backward jump by whichever comes first: the recreated writer's first
+ * keep-alive, whose carried next-expected value reseeds the subscriber's window in both timeout
+ * modes (§7.2.4.5.8 — the publisher is authoritative about its own counter; requires the group to
+ * emit keep-alives), the §7.2.3 two-times-receive-timeout record discard when a
+ * messageReceiveTimeout is configured, or the 16-consecutive-rejection restart heuristic of {@link
+ * ReaderSequenceTracker} when it is not.
  *
  * <p>Draft creation, the DataSetMessage sequence counter, the cadence counter, and the delta
  * baseline are confined to the owning group's publish task thread; the two cross-thread inputs are
@@ -339,6 +343,31 @@ final class DataSetWriterRuntime extends AbstractComponentRuntime {
   }
 
   /**
+   * The DataSetMessage sequence state of this writer: the next value to consume and its wire width.
+   * Exact only while the owning group's publish cycles are quiescent (the counter value is a
+   * volatile read); {@code WriterGroupRuntime} snapshots under its publish lock.
+   */
+  WriterSequenceState sequenceSnapshot() {
+    return new WriterSequenceState(sequenceCounter.currentValue(), sequenceCounter.bitWidth());
+  }
+
+  /** The wire width of this writer's sequence counter (16 or 32). */
+  int sequenceBitWidth() {
+    return sequenceCounter.bitWidth();
+  }
+
+  /**
+   * Seed this writer's sequence counter with the next value to consume; only called before the
+   * runtime's first publish cycle (restart preservation).
+   */
+  void seedSequenceNumber(long value) {
+    sequenceCounter.seed(value);
+  }
+
+  /** A quiesced snapshot of one writer's DataSetMessage sequence state. */
+  record WriterSequenceState(long nextValue, int bitWidth) {}
+
+  /**
    * Reset the key frame cadence counter and discard the delta baseline, forcing the next data draft
    * to be a key frame. Publish task thread only; see {@link #requestFrameStateReset()} for the
    * activation handoff.
@@ -403,7 +432,14 @@ final class DataSetWriterRuntime extends AbstractComponentRuntime {
         service.unsupportedUadpFeatureError(group.config(), List.of(config), group.path());
     if (error != null) {
       var e = new UaException(StatusCodes.Bad_NotSupported, error);
-      service.getDiagnostics().error(path(), e.getStatusCode(), e.getMessage(), e);
+      service
+          .getDiagnostics()
+          .error(
+              path(),
+              e.getStatusCode(),
+              e.getMessage(),
+              e,
+              PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
       throw e;
     }
   }

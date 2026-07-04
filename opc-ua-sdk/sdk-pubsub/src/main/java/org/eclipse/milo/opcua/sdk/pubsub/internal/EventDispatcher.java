@@ -73,20 +73,63 @@ final class EventDispatcher {
     dataSetListeners.add(listener);
   }
 
+  /** Remove {@code listener} (identity-based, first occurrence); never-added is a no-op. */
+  void removeDataSetListener(DataSetListener listener) {
+    dataSetListeners.remove(listener);
+  }
+
   void addDataSetListener(DataSetReaderRef ref, DataSetListener listener) {
-    readerListeners.computeIfAbsent(ref, k -> new CopyOnWriteArrayList<>()).add(listener);
+    // a single compute keeps the add atomic with the empty-entry drop in the removal below:
+    // computeIfAbsent(...).add(...) could land the listener on a list a concurrent removal
+    // just unmapped, silently orphaning the registration
+    readerListeners.compute(
+        ref,
+        (k, listeners) -> {
+          List<DataSetListener> list = listeners != null ? listeners : new CopyOnWriteArrayList<>();
+          list.add(listener);
+          return list;
+        });
+  }
+
+  /**
+   * Remove {@code listener} from the per-reader list of {@code ref} (identity-based, first
+   * occurrence); never-added is a no-op. The map entry is dropped when its list empties; a racing
+   * {@link #notifyDataSet} iterating a just-emptied list is benign (it delivers to no one).
+   */
+  void removeDataSetListener(DataSetReaderRef ref, DataSetListener listener) {
+    readerListeners.computeIfPresent(
+        ref,
+        (k, listeners) -> {
+          listeners.remove(listener);
+          return listeners.isEmpty() ? null : listeners;
+        });
   }
 
   void addStateListener(PubSubStateListener listener) {
     stateListeners.add(listener);
   }
 
+  /** Remove {@code listener} (identity-based, first occurrence); never-added is a no-op. */
+  void removeStateListener(PubSubStateListener listener) {
+    stateListeners.remove(listener);
+  }
+
   void addMetaDataListener(MetaDataListener listener) {
     metaDataListeners.add(listener);
   }
 
+  /** Remove {@code listener} (identity-based, first occurrence); never-added is a no-op. */
+  void removeMetaDataListener(MetaDataListener listener) {
+    metaDataListeners.remove(listener);
+  }
+
   void addDiagnosticsListener(PubSubDiagnosticsListener listener) {
     diagnosticsListeners.add(listener);
+  }
+
+  /** Remove {@code listener} (identity-based, first occurrence); never-added is a no-op. */
+  void removeDiagnosticsListener(PubSubDiagnosticsListener listener) {
+    diagnosticsListeners.remove(listener);
   }
 
   /**

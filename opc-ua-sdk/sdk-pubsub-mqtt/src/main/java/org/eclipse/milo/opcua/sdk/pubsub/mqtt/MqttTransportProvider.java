@@ -56,8 +56,12 @@ import org.jspecify.annotations.Nullable;
  * {@code authenticationProfileUri} per-queue credential lookups are not consulted.
  *
  * <p>Reconnect: automatic with the HiveMQ default backoff; subscriptions are explicitly re-issued
- * on every reconnect. Broker outages surface as send failures in the engine's diagnostics (the
- * transport SPI has no connection-state callback in this version).
+ * on every reconnect. Broker liveness is reported through the context's {@code
+ * TransportStateListener}, when supplied: losing an established session notifies a down edge with
+ * {@code Bad_ServerNotConnected} (the engine fails the connection to {@code Error}), and a
+ * reconnect notifies an up edge after the subscriptions have been re-issued (the engine recovers
+ * the connection to {@code Operational}). Sends attempted while disconnected still surface as send
+ * failures in the engine's diagnostics.
  *
  * <p>Threading: channels perform network I/O on the HiveMQ client's Netty threads, which run on the
  * service event loop group supplied by the transport context (the client never shuts a
@@ -151,7 +155,7 @@ public final class MqttTransportProvider implements TransportProvider {
 
     MqttClientSession session = acquireSession(connection, context.eventLoopGroup());
     try {
-      return new MqttPublisherChannel(this, session);
+      return new MqttPublisherChannel(this, session, context.transportStateListener());
     } catch (RuntimeException e) {
       releaseSession(session);
       throw e;

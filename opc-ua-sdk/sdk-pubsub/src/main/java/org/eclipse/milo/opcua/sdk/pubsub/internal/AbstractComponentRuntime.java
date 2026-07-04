@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.sdk.pubsub.internal;
 import java.util.List;
 import org.eclipse.milo.opcua.sdk.pubsub.ComponentType;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubHandle;
+import org.eclipse.milo.opcua.sdk.pubsub.PubSubStateChangeEvent;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
 import org.jspecify.annotations.Nullable;
@@ -33,6 +34,14 @@ abstract class AbstractComponentRuntime {
 
   private volatile boolean enabled;
   private volatile PubSubState state = PubSubState.Disabled;
+
+  /**
+   * The cause of the transition that entered {@code PreOperational}, remembered so a deferred
+   * startup ({@link PubSubStateMachine#startupCompleted}) can attribute the final hop to {@code
+   * Operational} to its original trigger. Engine-lock confined, like {@link #enabled}/{@link
+   * #state} mutation: only read and written inside {@link PubSubStateMachine} methods.
+   */
+  private PubSubStateChangeEvent.@Nullable Cause pendingStartupCause;
 
   AbstractComponentRuntime(
       ComponentType componentType,
@@ -73,6 +82,18 @@ abstract class AbstractComponentRuntime {
   /** Set the current state. Only called by {@link PubSubStateMachine} under the engine lock. */
   final void setState(PubSubState state) {
     this.state = state;
+  }
+
+  final PubSubStateChangeEvent.@Nullable Cause pendingStartupCause() {
+    return pendingStartupCause;
+  }
+
+  /**
+   * Set the remembered startup cause. Only called by {@link PubSubStateMachine} under the engine
+   * lock.
+   */
+  final void setPendingStartupCause(PubSubStateChangeEvent.@Nullable Cause cause) {
+    this.pendingStartupCause = cause;
   }
 
   /** The direct children of this component; empty for leaves. */

@@ -24,6 +24,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import org.eclipse.milo.opcua.sdk.pubsub.PubSubDiagnosticsEvent;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubHandle;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetMetaDataMapper;
 import org.eclipse.milo.opcua.sdk.pubsub.config.MetadataPolicy;
@@ -207,11 +208,11 @@ final class DiscoveryRuntime {
               .getDiagnostics()
               .error(
                   connection.path(),
-                  UaException.extractStatusCode(e)
-                      .orElse(new StatusCode(StatusCodes.Bad_InternalError)),
+                  DiagnosticsCollector.statusCodeOf(e),
                   "failed to open discovery send channel for connection '%s': %s"
                       .formatted(config.name(), e.getMessage()),
-                  e);
+                  e,
+                  PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
         }
       }
 
@@ -228,11 +229,11 @@ final class DiscoveryRuntime {
               .getDiagnostics()
               .error(
                   connection.path(),
-                  UaException.extractStatusCode(e)
-                      .orElse(new StatusCode(StatusCodes.Bad_InternalError)),
+                  DiagnosticsCollector.statusCodeOf(e),
                   "failed to open discovery receive channel for connection '%s': %s"
                       .formatted(config.name(), e.getMessage()),
-                  e);
+                  e,
+                  PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
         }
       }
 
@@ -241,6 +242,20 @@ final class DiscoveryRuntime {
         announcedMetaData.clear();
         announcedMetaData.putAll(deriveLiveMetaData());
       }
+    }
+  }
+
+  /**
+   * Close the discovery channels if no live component requires them anymore; idempotent. Called
+   * under the engine lock after a reconfiguration was applied, so a connection whose last writer
+   * group (responder) and last {@code REQUEST_IF_MISSING} reader (prober) were removed releases its
+   * discovery sockets instead of holding them until dispose. A later reconfigure that re-adds a
+   * discovery-requiring component reopens through {@link #ensureChannels()}, which reseeds the
+   * responder announcement baseline.
+   */
+  void closeChannelsIfUnused() {
+    if (!discoveryRequired()) {
+      closeChannels();
     }
   }
 
@@ -567,7 +582,8 @@ final class DiscoveryRuntime {
               e.getStatusCode(),
               "failed to encode DataSetMetaData announcement (dataSetWriterId=%s): %s"
                   .formatted(dataSetWriterId, e.getMessage()),
-              e);
+              e,
+              PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
       return;
     }
 
@@ -589,7 +605,8 @@ final class DiscoveryRuntime {
               "DataSetMetaData announcement (dataSetWriterId=%s) exceeds DiscoveryMaxMessageSize"
                       .formatted(dataSetWriterId)
                   + " %d > %d".formatted(size, DISCOVERY_MAX_MESSAGE_SIZE),
-              null);
+              null,
+              PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
       return;
     }
 
@@ -612,17 +629,29 @@ final class DiscoveryRuntime {
         .send(data)
         .whenComplete(
             (v, ex) -> {
-              if (ex != null) {
+              if (ex != null && !suppressSendFailure()) {
                 service
                     .getDiagnostics()
                     .error(
                         connection.path(),
-                        new StatusCode(StatusCodes.Bad_CommunicationError),
+                        DiagnosticsCollector.statusCodeOf(ex),
                         "failed to send discovery NetworkMessage (%s leg): %s"
                             .formatted(leg, ex.getMessage()),
-                        ex);
+                        ex,
+                        PubSubDiagnosticsEvent.Kind.SEND_FAILURE);
               }
             });
+  }
+
+  /**
+   * Whether a discovery send failure is teardown noise: the runtime is disposed or the discovery
+   * send channel was nulled by {@link #closeChannels()} — channels are nulled before their close
+   * completes, so a failure surfacing after that is the teardown itself.
+   */
+  private boolean suppressSendFailure() {
+    synchronized (lock) {
+      return disposed || sendChannel == null;
+    }
   }
 
   /**
@@ -818,7 +847,8 @@ final class DiscoveryRuntime {
               announcement.statusCode(),
               "publisher denied DataSetMetaData for dataSetWriterId=%s: %s"
                   .formatted(announcement.dataSetWriterId(), announcement.statusCode()),
-              null);
+              null,
+              PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
     }
   }
 
@@ -877,7 +907,8 @@ final class DiscoveryRuntime {
               task.reader.path(),
               e.getStatusCode(),
               "failed to encode discovery probe: " + e.getMessage(),
-              e);
+              e,
+              PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
       synchronized (lock) {
         cancelTaskLocked(task);
         probeTasks.remove(task.reader.handle());
@@ -894,14 +925,15 @@ final class DiscoveryRuntime {
           .send(encoded.data())
           .whenComplete(
               (v, ex) -> {
-                if (ex != null) {
+                if (ex != null && !suppressSendFailure()) {
                   service
                       .getDiagnostics()
                       .error(
                           readerPath,
-                          new StatusCode(StatusCodes.Bad_CommunicationError),
+                          DiagnosticsCollector.statusCodeOf(ex),
                           "failed to send discovery probe: " + ex.getMessage(),
-                          ex);
+                          ex,
+                          PubSubDiagnosticsEvent.Kind.SEND_FAILURE);
                 }
               });
       service.getDiagnostics().networkMessageSent(connection.path());

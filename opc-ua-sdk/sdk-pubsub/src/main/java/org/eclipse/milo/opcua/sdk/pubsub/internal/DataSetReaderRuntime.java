@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.sdk.pubsub.ComponentType;
 import org.eclipse.milo.opcua.sdk.pubsub.DataSetReaderRef;
+import org.eclipse.milo.opcua.sdk.pubsub.PubSubDiagnosticsEvent;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetMetaDataConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetReaderConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.StandaloneSubscribedDataSetConfig;
@@ -160,7 +161,14 @@ final class DataSetReaderRuntime extends AbstractComponentRuntime {
               StatusCodes.Bad_ConfigurationError,
               "no MessageMappingProvider for mapping '%s' (dataset reader '%s')"
                   .formatted(mappingName, path()));
-      service.getDiagnostics().error(path(), e.getStatusCode(), e.getMessage(), e);
+      service
+          .getDiagnostics()
+          .error(
+              path(),
+              e.getStatusCode(),
+              e.getMessage(),
+              e,
+              PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
       throw e;
     }
 
@@ -272,7 +280,8 @@ final class DataSetReaderRuntime extends AbstractComponentRuntime {
               path(),
               new StatusCode(StatusCodes.Bad_Timeout),
               "messageReceiveTimeout expired",
-              null);
+              null,
+              PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
       service.getStateMachine().fail(this, new StatusCode(StatusCodes.Bad_Timeout));
     }
   }

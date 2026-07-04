@@ -15,12 +15,16 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.sdk.pubsub.ComponentType;
+import org.eclipse.milo.opcua.sdk.pubsub.PubSubDiagnosticsEvent;
 import org.eclipse.milo.opcua.sdk.pubsub.config.BrokerTransportSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetWriterConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.MessageSecurityConfig;
@@ -120,7 +124,10 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
   private volatile @Nullable MessageMappingProvider mapping;
   private volatile UInteger groupVersion = uint(0);
 
-  /** Only touched by the publish task, under {@link #publishLock}. */
+  /**
+   * Only touched under {@link #publishLock}: by the publish task, and by the quiesced restart
+   * snapshot/seed ({@link #snapshotSequenceState()}/{@link #seedSequenceState}).
+   */
   private int networkMessageSequenceNumber = 0;
 
   /** Serializes publish cycles across activation generations. */
@@ -220,7 +227,14 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
               StatusCodes.Bad_ConfigurationError,
               "no MessageMappingProvider for mapping '%s' (writer group '%s')"
                   .formatted(mappingName, path()));
-      service.getDiagnostics().error(path(), e.getStatusCode(), e.getMessage(), e);
+      service
+          .getDiagnostics()
+          .error(
+              path(),
+              e.getStatusCode(),
+              e.getMessage(),
+              e,
+              PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
       throw e;
     }
     mapping = provider;
@@ -318,7 +332,14 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
     try {
       service.checkWriterGroupMessageSecurity(config, path());
     } catch (UaException e) {
-      service.getDiagnostics().error(path(), e.getStatusCode(), e.getMessage(), e);
+      service
+          .getDiagnostics()
+          .error(
+              path(),
+              e.getStatusCode(),
+              e.getMessage(),
+              e,
+              PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
       throw e;
     }
   }
@@ -345,7 +366,14 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
     String error = service.unsupportedUadpFeatureError(config, enabledWriters, path());
     if (error != null) {
       var e = new UaException(StatusCodes.Bad_NotSupported, error);
-      service.getDiagnostics().error(path(), e.getStatusCode(), e.getMessage(), e);
+      service
+          .getDiagnostics()
+          .error(
+              path(),
+              e.getStatusCode(),
+              e.getMessage(),
+              e,
+              PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
       throw e;
     }
   }
@@ -370,7 +398,7 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
           // sequence counters now
           return;
         }
-        publish();
+        publish(generation);
       }
     } catch (Throwable t) {
       LOGGER.warn("Publish cycle of '{}' failed", path(), t);
@@ -380,11 +408,12 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
               path(),
               new StatusCode(StatusCodes.Bad_InternalError),
               "publish cycle failed: " + t.getMessage(),
-              t);
+              t,
+              PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
     }
   }
 
-  private void publish() {
+  private void publish(long generation) {
     if (state() != PubSubState.Operational) {
       return;
     }
@@ -457,6 +486,7 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
     for (Partition partition : partitions) {
       if (!partition.drafts.isEmpty()) {
         publishPartition(
+            generation,
             mapping,
             channel,
             publisherId,
@@ -471,6 +501,7 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
 
     if (keepAliveNanos != null && !notTransmitted.isEmpty()) {
       publishKeepAlivesForUntransmitted(
+          generation,
           mapping,
           channel,
           publisherId,
@@ -509,7 +540,8 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
                 new StatusCode(StatusCodes.Bad_SecurityChecksFailed),
                 "publish cycle skipped: no usable security keys for SecurityGroup '%s'"
                     .formatted(ref != null ? ref.name() : "<none>"),
-                null);
+                null,
+                PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
       }
       return null;
     }
@@ -542,6 +574,7 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
    * PubSubState.Error} are excluded, like in the regular keep-alive branch.
    */
   private void publishKeepAlivesForUntransmitted(
+      long generation,
       MessageMappingProvider mapping,
       PublisherChannel channel,
       PublisherId publisherId,
@@ -578,7 +611,16 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
         // null: a keep-alive that is itself not transmitted gets no further recovery this
         // cycle; lastSentNanos stays behind, so the next cycle simply tries again
         publishPartition(
-            mapping, channel, publisherId, now, nowNanos, broker, partition, security, null);
+            generation,
+            mapping,
+            channel,
+            publisherId,
+            now,
+            nowNanos,
+            broker,
+            partition,
+            security,
+            null);
       }
     }
   }
@@ -607,6 +649,7 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
    *     itself). Writers whose only loss was a keep-alive draft are not collected.
    */
   private void publishPartition(
+      long generation,
       MessageMappingProvider mapping,
       PublisherChannel channel,
       PublisherId publisherId,
@@ -635,7 +678,20 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
     } catch (Exception e) {
       service
           .getDiagnostics()
-          .error(path(), statusCodeOf(e), "failed to encode NetworkMessage: " + e.getMessage(), e);
+          .error(
+              path(),
+              DiagnosticsCollector.statusCodeOf(e),
+              "failed to encode NetworkMessage: " + e.getMessage(),
+              e,
+              PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
+      // an encode failure ticks failedDataSetMessages only, never failedTransmissions (no
+      // NetworkMessage existed); attribution predates encoding, so every non-keep-alive draft
+      // of the partition is charged (the conservative rule invalidateDeltaBaselines also uses)
+      for (int i = 0; i < partition.drafts.size(); i++) {
+        if (!partition.drafts.get(i).keepAlive()) {
+          service.getDiagnostics().failedDataSetMessages(partition.contributors.get(i).path(), 1);
+        }
+      }
       // nothing of this partition was transmitted
       invalidateDeltaBaselines(partition, List.of(), notTransmitted);
       return;
@@ -659,13 +715,21 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
             .whenComplete(
                 (v, ex) -> {
                   if (ex != null) {
-                    service
-                        .getDiagnostics()
-                        .error(
-                            path(),
-                            new StatusCode(StatusCodes.Bad_CommunicationError),
-                            "failed to send NetworkMessage: " + ex.getMessage(),
-                            ex);
+                    // suppressed when the cycle's generation is stale: the group was
+                    // deactivated (clean shutdown, disable, reconfigure restart) and its
+                    // channels are closing — the failure is teardown noise, not an outage
+                    if (generation == this.generation) {
+                      service
+                          .getDiagnostics()
+                          .error(
+                              path(),
+                              DiagnosticsCollector.statusCodeOf(ex),
+                              "failed to send NetworkMessage: " + ex.getMessage(),
+                              ex,
+                              PubSubDiagnosticsEvent.Kind.SEND_FAILURE);
+                      service.getDiagnostics().failedTransmissions(path(), 1);
+                      tickFailedDataSetMessages(encoded.writers());
+                    }
                     // not transmitted; may run on a transport thread, after later cycles —
                     // invalidateDeltaBaseline is the thread-safe seam and heals at the latest
                     // one cycle after it lands (lastSentNanos is NOT rewound: the message was
@@ -693,13 +757,23 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
       for (int i = index; i < encodedMessages.size(); i++) {
         invalidateDeltaBaselines(partition, encodedMessages.get(i).writers(), notTransmitted);
       }
-      service
-          .getDiagnostics()
-          .error(
-              path(),
-              new StatusCode(StatusCodes.Bad_CommunicationError),
-              "failed to send NetworkMessage: " + e.getMessage(),
-              e);
+      // suppressed when a concurrent deactivate bumped the generation mid-cycle (see the
+      // asynchronous branch above)
+      if (generation == this.generation) {
+        service
+            .getDiagnostics()
+            .error(
+                path(),
+                DiagnosticsCollector.statusCodeOf(e),
+                "failed to send NetworkMessage: " + e.getMessage(),
+                e,
+                PubSubDiagnosticsEvent.Kind.SEND_FAILURE);
+        // the message whose send threw plus the never-handed remainder
+        service.getDiagnostics().failedTransmissions(path(), encodedMessages.size() - index);
+        for (int i = index; i < encodedMessages.size(); i++) {
+          tickFailedDataSetMessages(encodedMessages.get(i).writers());
+        }
+      }
       return;
     }
 
@@ -759,7 +833,12 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
                 new StatusCode(StatusCodes.Bad_EncodingLimitsExceeded),
                 "NetworkMessage skipped: actual size %d exceeds maximum size %d"
                     .formatted(actualSize, maxNetworkMessageSize),
-                null);
+                null,
+                PubSubDiagnosticsEvent.Kind.SEND_FAILURE);
+        // an oversize skip ticks BOTH counters: the NetworkMessage was never transmitted and
+        // its DataSetMessages were never sent
+        service.getDiagnostics().failedTransmissions(path(), 1);
+        tickFailedDataSetMessages(encoded.writers());
       } else if (accepted != null) {
         accepted.add(encoded);
       }
@@ -831,6 +910,17 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
       }
     }
     return false;
+  }
+
+  /**
+   * Tick {@code failedDataSetMessages} for every contributing writer of an untransmitted
+   * NetworkMessage, per its {@link EncodedNetworkMessage#writers()} attribution (an empty
+   * attribution — e.g. a custom mapping — attributes nothing, mirroring the sent-side accounting).
+   */
+  private void tickFailedDataSetMessages(List<EncodedNetworkMessage.Writer> attribution) {
+    for (EncodedNetworkMessage.Writer writer : attribution) {
+      service.getDiagnostics().failedDataSetMessages(path() + "/" + writer.name(), 1);
+    }
   }
 
   /** The address of data NetworkMessages on transports without broker semantics. */
@@ -917,7 +1007,78 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
     return ushort(value);
   }
 
-  private static StatusCode statusCodeOf(Exception e) {
-    return UaException.extractStatusCode(e).orElse(new StatusCode(StatusCodes.Bad_InternalError));
+  // region sequence-state preservation (path-stable reconfigure restarts)
+
+  /**
+   * A quiesced snapshot of this group's sequence state: the NetworkMessage sequence number and the
+   * per-writer DataSetMessage sequence states, keyed by writer path. Call only after the group has
+   * been deactivated (its generation bumped): acquiring {@link #publishLock} then guarantees
+   * publish quiescence — an in-flight stale cycle completes first and any later cycle bails at its
+   * generation check — so the captured values are exact. Called under the engine lock; safe by the
+   * one-way engine-lock → publish-lock order (publish threads never take the engine lock).
+   */
+  GroupSequenceState snapshotSequenceState() {
+    synchronized (publishLock) {
+      var writerStates = new LinkedHashMap<String, DataSetWriterRuntime.WriterSequenceState>();
+      for (DataSetWriterRuntime writer : writers) {
+        writerStates.put(writer.path(), writer.sequenceSnapshot());
+      }
+      return new GroupSequenceState(
+          networkMessageSequenceNumber, Collections.unmodifiableMap(writerStates));
+    }
   }
+
+  /**
+   * Seed this group's sequence state from a predecessor's snapshot, before this runtime can
+   * activate: the NetworkMessage sequence number continues where the replaced runtime left off, and
+   * each writer matched by path continues its DataSetMessage sequence — unless its counter width
+   * changed (mapping switch, 16 ↔ 32), in which case that writer starts at 0 (the documented
+   * restart story; masking across widths would fabricate a backward jump with none of the recovery
+   * guarantees). Writers with no predecessor start at 0.
+   */
+  void seedSequenceState(GroupSequenceState state) {
+    synchronized (publishLock) {
+      networkMessageSequenceNumber = state.networkMessageSequenceNumber();
+      for (DataSetWriterRuntime writer : writers) {
+        DataSetWriterRuntime.WriterSequenceState writerState = state.writers().get(writer.path());
+        if (writerState != null && writerState.bitWidth() == writer.sequenceBitWidth()) {
+          writer.seedSequenceNumber(writerState.nextValue());
+        }
+      }
+    }
+  }
+
+  /**
+   * A quiesced snapshot of one writer's sequence state, for leaf-level restarts: the group stays
+   * active, so quiescence comes from holding {@link #publishLock} (the in-flight cycle completes
+   * first) after the writer has been removed from {@link #writers} — no later cycle touches its
+   * counter. Called under the engine lock.
+   */
+  DataSetWriterRuntime.WriterSequenceState snapshotWriterSequenceState(
+      DataSetWriterRuntime writer) {
+    synchronized (publishLock) {
+      return writer.sequenceSnapshot();
+    }
+  }
+
+  /**
+   * Seed one writer's sequence counter from a predecessor's snapshot, for leaf-level restarts;
+   * width mismatch (mapping switch) leaves the writer starting at 0.
+   */
+  void seedWriterSequenceState(
+      DataSetWriterRuntime writer, DataSetWriterRuntime.WriterSequenceState state) {
+
+    synchronized (publishLock) {
+      if (state.bitWidth() == writer.sequenceBitWidth()) {
+        writer.seedSequenceNumber(state.nextValue());
+      }
+    }
+  }
+
+  /** A quiesced snapshot of a group's NetworkMessage and per-writer sequence state. */
+  record GroupSequenceState(
+      int networkMessageSequenceNumber,
+      Map<String, DataSetWriterRuntime.WriterSequenceState> writers) {}
+
+  // endregion
 }

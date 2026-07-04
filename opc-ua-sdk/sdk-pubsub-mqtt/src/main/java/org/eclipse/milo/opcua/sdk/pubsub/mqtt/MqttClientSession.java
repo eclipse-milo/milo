@@ -35,13 +35,16 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
 import org.eclipse.milo.opcua.sdk.pubsub.config.BrokerSecurityConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.MqttConnectionConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
+import org.eclipse.milo.opcua.sdk.pubsub.transport.TransportStateListener;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrokerTransportQualityOfService;
 import org.jspecify.annotations.Nullable;
@@ -63,12 +66,21 @@ import org.slf4j.LoggerFactory;
  * expiry of 0 and MQTT 3.1.1 sessions with clean session, so explicit resubscription keeps both
  * versions uniform. HiveMQ's own resubscribe-on-reconnect is disabled: it would retain the previous
  * connection's subscribed-publish flows alongside the explicitly re-issued ones, delivering each
- * message once per flow. Disconnects are logged; sends while disconnected fail and surface through
- * the engine's send-failure diagnostics.
+ * message once per flow. Sends while disconnected fail fast and surface through the engine's
+ * send-failure diagnostics.
+ *
+ * <p>Transport state: channels register {@link TransportStateListener}s with the session. A
+ * disconnect of a previously connected session notifies {@code onTransportDown} with {@code
+ * Bad_ServerNotConnected} (a session that never connected is not an outage, so first-connect
+ * retries and the BestAvailable fallback churn stay silent); every (re)connect notifies {@code
+ * onTransportUp} once the re-issued subscriptions have settled. Nothing is notified after {@link
+ * #disconnect()}.
  *
  * <p>Threading: all client operations are asynchronous and non-blocking; mutable session state
  * (subscriptions, the active client adapter) is guarded by {@code lock}, which is never held across
- * I/O.
+ * I/O. Transport state notifications are delivered under a dedicated monitor ({@code
+ * notificationLock}) that keeps down and up edges in a consistent order across the HiveMQ callback
+ * threads: a stale up edge is never delivered after the down edge that made it stale.
  */
 final class MqttClientSession {
 
@@ -95,8 +107,27 @@ final class MqttClientSession {
 
   private final Object lock = new Object();
 
+  /**
+   * Serializes transport-state notification delivery and makes the up edge's stale-check atomic
+   * with its delivery: {@link #onDisconnected} clears {@code connected} (under {@link #lock})
+   * before taking this monitor to deliver the down edge, so an up edge that reads {@code connected}
+   * under this monitor either observes the clear and is dropped as stale, or is delivered before
+   * the racing down edge — never after it, which would "recover" a connection whose broker is still
+   * down. Lock ordering: this monitor may be taken around {@link #lock}, never the reverse;
+   * listeners are quick by contract (they only hand off to their own executor), so no I/O runs
+   * while it is held.
+   */
+  private final Object notificationLock = new Object();
+
   /** Subscriptions to (re-)issue on every connect. Guarded by {@link #lock}. */
   private final List<SubscriptionEntry> subscriptions = new ArrayList<>();
+
+  /**
+   * Transport state listeners registered by the channels; notified outside {@link #lock}. Both
+   * channels of a connection may register the same instance — removal drops one occurrence, giving
+   * refcount-like behavior, and duplicate notifications are listener-tolerated by contract.
+   */
+  private final List<TransportStateListener> transportStateListeners = new CopyOnWriteArrayList<>();
 
   /** The active client; swapped at most once, by the BestAvailable 3.1.1 fallback. */
   private volatile ClientAdapter adapter;
@@ -266,6 +297,19 @@ final class MqttClientSession {
   }
 
   /**
+   * Register a listener notified about the liveness of this session's broker connection. Channels
+   * register their context's listener on open and remove it on close.
+   */
+  void addTransportStateListener(TransportStateListener listener) {
+    transportStateListeners.add(listener);
+  }
+
+  /** Remove one registration of {@code listener}; removing a never-added listener is a no-op. */
+  void removeTransportStateListener(TransportStateListener listener) {
+    transportStateListeners.remove(listener);
+  }
+
+  /**
    * Disconnect from the broker and stop reconnecting. A failure to disconnect (e.g. the client was
    * never connected) completes the returned future normally.
    */
@@ -348,11 +392,62 @@ final class MqttClientSession {
         brokerAddress.port(),
         entries.size());
 
-    entries.forEach(entry -> subscribeEntry(adapter, entry));
+    // the up edge honors "reconnect => resubscribe => Operational" causally: it is notified
+    // once every re-issued subscription has settled (failures included, logged by
+    // subscribeEntry); with no entries it is notified immediately
+    CompletableFuture<?>[] resubscriptions =
+        entries.stream()
+            .map(entry -> subscribeEntry(adapter, entry).handle((v, ex) -> null))
+            .toArray(CompletableFuture[]::new);
+
+    CompletableFuture.allOf(resubscriptions)
+        .whenComplete(
+            (v, ex) -> {
+              // the up edge is connected-gated, symmetric with the down edge: if the broker
+              // dropped the session (or it was closed) while the resubscriptions were in
+              // flight, onDisconnected delivers the down edge and this pending up edge is
+              // stale — delivering it after the down edge would recover a connection whose
+              // broker is still down; notificationLock makes the gate atomic with delivery,
+              // so the up edge is either dropped here or delivered before the racing down
+              // edge, never after it; a later real reconnect produces its own edge
+              synchronized (notificationLock) {
+                boolean stillConnected;
+                synchronized (lock) {
+                  stillConnected = connected && !this.closed;
+                }
+                if (stillConnected) {
+                  notifyTransportUp();
+                } else {
+                  LOGGER.debug("connection '{}': dropping stale transport-up edge", config.name());
+                }
+              }
+            });
+  }
+
+  private void notifyTransportUp() {
+    for (TransportStateListener listener : transportStateListeners) {
+      try {
+        listener.onTransportUp();
+      } catch (RuntimeException e) {
+        LOGGER.warn("connection '{}': transport state listener failed", config.name(), e);
+      }
+    }
+  }
+
+  private void notifyTransportDown(StatusCode statusCode) {
+    for (TransportStateListener listener : transportStateListeners) {
+      try {
+        listener.onTransportDown(statusCode);
+      } catch (RuntimeException e) {
+        LOGGER.warn("connection '{}': transport state listener failed", config.name(), e);
+      }
+    }
   }
 
   private void onDisconnected(MqttClientDisconnectedContext context) {
+    boolean wasConnected;
     synchronized (lock) {
+      wasConnected = connected;
       connected = false;
     }
 
@@ -394,6 +489,16 @@ final class MqttClientSession {
         brokerAddress.port(),
         context.getSource(),
         cause.getMessage());
+
+    // the down edge is connected-gated: a session that never connected is not an outage,
+    // so first-connect retries stay silent; notified outside the session lock but under
+    // notificationLock — connected was cleared above, so a pending up edge that has not yet
+    // been delivered is guaranteed to observe the clear and drop itself as stale
+    if (wasConnected) {
+      synchronized (notificationLock) {
+        notifyTransportDown(new StatusCode(StatusCodes.Bad_ServerNotConnected));
+      }
+    }
   }
 
   private void fallBackToMqtt311() {
@@ -415,8 +520,8 @@ final class MqttClientSession {
     connectAdapter(newAdapter);
   }
 
-  private void subscribeEntry(ClientAdapter adapter, SubscriptionEntry entry) {
-    adapter
+  private CompletableFuture<Void> subscribeEntry(ClientAdapter adapter, SubscriptionEntry entry) {
+    return adapter
         .subscribe(entry)
         .whenComplete(
             (v, ex) -> {

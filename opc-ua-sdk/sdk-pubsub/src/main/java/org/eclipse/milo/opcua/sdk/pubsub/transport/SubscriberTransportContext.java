@@ -34,6 +34,9 @@ import org.jspecify.annotations.Nullable;
  *     topic, and via {@code messageConsumer} otherwise; transports without topics (e.g. UDP) always
  *     use {@code messageConsumer}. A message is delivered to exactly one of the two consumers. The
  *     buffer validity rules of {@code messageConsumer} apply unchanged.
+ * @param transportStateListener the listener the channel should notify about the liveness of its
+ *     underlying connection, or {@code null} when the engine did not supply one. Connectionless
+ *     transports (e.g. UDP) ignore it.
  * @apiNote Create instances via {@link #of(PubSubConnectionConfig, EventLoopGroup, Consumer,
  *     BiConsumer)} rather than the canonical constructor; the factory methods are stable while the
  *     canonical constructor is not.
@@ -42,7 +45,8 @@ public record SubscriberTransportContext(
     PubSubConnectionConfig connection,
     EventLoopGroup eventLoopGroup,
     Consumer<ByteBuf> messageConsumer,
-    @Nullable BiConsumer<String, ByteBuf> topicMessageConsumer) {
+    @Nullable BiConsumer<String, ByteBuf> topicMessageConsumer,
+    @Nullable TransportStateListener transportStateListener) {
 
   /**
    * Create a {@link SubscriberTransportContext} without a topic-aware consumer.
@@ -59,11 +63,11 @@ public record SubscriberTransportContext(
       EventLoopGroup eventLoopGroup,
       Consumer<ByteBuf> messageConsumer) {
 
-    return new SubscriberTransportContext(connection, eventLoopGroup, messageConsumer, null);
+    return new SubscriberTransportContext(connection, eventLoopGroup, messageConsumer, null, null);
   }
 
   /**
-   * Create a {@link SubscriberTransportContext}.
+   * Create a {@link SubscriberTransportContext} without a transport state listener.
    *
    * @param connection the config of the connection the channel is opened for.
    * @param eventLoopGroup the Netty {@link EventLoopGroup} the channel must use for I/O.
@@ -81,6 +85,31 @@ public record SubscriberTransportContext(
       @Nullable BiConsumer<String, ByteBuf> topicMessageConsumer) {
 
     return new SubscriberTransportContext(
-        connection, eventLoopGroup, messageConsumer, topicMessageConsumer);
+        connection, eventLoopGroup, messageConsumer, topicMessageConsumer, null);
+  }
+
+  /**
+   * Create a {@link SubscriberTransportContext}.
+   *
+   * @param connection the config of the connection the channel is opened for.
+   * @param eventLoopGroup the Netty {@link EventLoopGroup} the channel must use for I/O.
+   * @param messageConsumer the consumer every received message is delivered to. The buffer is only
+   *     valid for the duration of the callback; the consumer must {@code retain()} it to keep it
+   *     longer, and the channel releases it after the callback returns.
+   * @param topicMessageConsumer the topic-aware consumer for transports that know the source queue
+   *     (topic) of a received message, or {@code null} to supply none.
+   * @param transportStateListener the listener the channel should notify about the liveness of its
+   *     underlying connection, or {@code null} to supply none.
+   * @return a new {@link SubscriberTransportContext}.
+   */
+  public static SubscriberTransportContext of(
+      PubSubConnectionConfig connection,
+      EventLoopGroup eventLoopGroup,
+      Consumer<ByteBuf> messageConsumer,
+      @Nullable BiConsumer<String, ByteBuf> topicMessageConsumer,
+      @Nullable TransportStateListener transportStateListener) {
+
+    return new SubscriberTransportContext(
+        connection, eventLoopGroup, messageConsumer, topicMessageConsumer, transportStateListener);
   }
 }

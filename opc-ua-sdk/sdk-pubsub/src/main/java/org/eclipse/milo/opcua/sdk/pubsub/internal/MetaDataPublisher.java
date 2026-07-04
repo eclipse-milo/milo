@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import org.eclipse.milo.opcua.sdk.pubsub.PubSubDiagnosticsEvent;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubHandle;
 import org.eclipse.milo.opcua.sdk.pubsub.config.BrokerTransportSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
@@ -28,7 +29,6 @@ import org.eclipse.milo.opcua.sdk.pubsub.uadp.EncodedNetworkMessage;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.MessageMappingProvider;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.MetaDataEncodeContext;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
-import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
@@ -61,9 +61,11 @@ import org.slf4j.LoggerFactory;
  * send leaves the baseline untouched and is retried with bounded backoff until the first success,
  * covering the common case of the activation publish racing the transport's asynchronous broker
  * connect (broker channels fail fast until connected). After the bounded retries are exhausted the
- * periodic task and the reconfigure on-change check remain as retry opportunities; an unconditional
- * republish on broker reconnect needs a transport connection-state callback, a future SPI
- * extension.
+ * periodic task and the reconfigure on-change check remain as retry opportunities. Broker
+ * reconnects republish through the activation hook: a broker outage reported via {@code
+ * TransportStateListener} fails the connection, deactivating its writers (clearing their
+ * baselines), and the recovery on reconnect reactivates them, republishing every writer's retained
+ * metadata.
  *
  * <p>Sequence numbers come from the service's per-PublisherId announcement counter (Part 14
  * §7.2.4.6.3 Table 168 scope); a stream of one writer's metadata messages is strictly increasing
@@ -261,10 +263,10 @@ final class MetaDataPublisher {
           .getDiagnostics()
           .error(
               writerPath,
-              UaException.extractStatusCode(e)
-                  .orElse(new StatusCode(StatusCodes.Bad_InternalError)),
+              DiagnosticsCollector.statusCodeOf(e),
               "failed to encode DataSetMetaData message: " + e.getMessage(),
-              e);
+              e,
+              PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
       return;
     }
 
@@ -288,7 +290,8 @@ final class MetaDataPublisher {
               writerPath,
               new StatusCode(StatusCodes.Bad_ConfigurationError),
               "failed to resolve DataSetMetaData address: " + e.getMessage(),
-              e);
+              e,
+              PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
       return;
     }
 
@@ -298,16 +301,21 @@ final class MetaDataPublisher {
           .whenComplete(
               (v, ex) -> {
                 if (ex != null) {
-                  service
-                      .getDiagnostics()
-                      .error(
-                          writerPath,
-                          new StatusCode(StatusCodes.Bad_CommunicationError),
-                          "failed to send DataSetMetaData message: " + ex.getMessage(),
-                          ex);
-                  scheduleRetry(group, writer);
+                  // suppressed as teardown noise when the publisher is disposed or the writer
+                  // no longer active — the same guard scheduleRetry applies; the retry itself
+                  // is skipped too
+                  if (!suppressSendFailure(writer)) {
+                    service
+                        .getDiagnostics()
+                        .error(
+                            writerPath,
+                            DiagnosticsCollector.statusCodeOf(ex),
+                            "failed to send DataSetMetaData message: " + ex.getMessage(),
+                            ex,
+                            PubSubDiagnosticsEvent.Kind.SEND_FAILURE);
+                    scheduleRetry(group, writer);
+                  }
                 } else {
-                  service.getDiagnostics().networkMessageSent(connection.path());
                   synchronized (lock) {
                     if (!disposed) {
                       retryAttempts.remove(writerPath);
@@ -316,19 +324,36 @@ final class MetaDataPublisher {
                   }
                 }
               });
+
+      // the message was handed to the channel: count it sent at the connection path (the R14
+      // hand-off convention WriterGroupRuntime and DiscoveryRuntime already follow); metadata
+      // messages never tick writer-group counters
+      service.getDiagnostics().networkMessageSent(connection.path());
     } catch (RuntimeException e) {
       // a synchronous send failure leaves ownership of the in-flight buffer ambiguous (never
       // double-release it; conforming channels release on every path, see PublisherChannel#send);
       // diagnose and retry like an asynchronous failure — the retained publish is idempotent
-      service
-          .getDiagnostics()
-          .error(
-              writerPath,
-              new StatusCode(StatusCodes.Bad_CommunicationError),
-              "failed to send DataSetMetaData message: " + e.getMessage(),
-              e);
-      scheduleRetry(group, writer);
+      if (!suppressSendFailure(writer)) {
+        service
+            .getDiagnostics()
+            .error(
+                writerPath,
+                DiagnosticsCollector.statusCodeOf(e),
+                "failed to send DataSetMetaData message: " + e.getMessage(),
+                e,
+                PubSubDiagnosticsEvent.Kind.SEND_FAILURE);
+        scheduleRetry(group, writer);
+      }
     }
+  }
+
+  /**
+   * Whether a send failure is teardown noise: the publisher is disposed or the writer left the
+   * active states (clean shutdown, disable, reconfigure restart) — the exact guard {@link
+   * #scheduleRetry} uses. Suppression skips the diagnostics event AND the retry.
+   */
+  private boolean suppressSendFailure(DataSetWriterRuntime writer) {
+    return disposed || !isActive(writer.state());
   }
 
   /**

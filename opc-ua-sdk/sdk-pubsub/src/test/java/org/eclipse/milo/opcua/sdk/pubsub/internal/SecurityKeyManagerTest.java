@@ -80,7 +80,7 @@ class SecurityKeyManagerTest {
   private final PubSubStateMachine stateMachine =
       new PubSubStateMachine(
           new Object(),
-          (component, oldState, newState, statusCode) -> transitionStatuses.add(statusCode));
+          (component, oldState, newState, statusCode, cause) -> transitionStatuses.add(statusCode));
 
   private final EventDispatcher eventDispatcher = new EventDispatcher(Runnable::run);
   private final DiagnosticsCollector diagnostics = new DiagnosticsCollector(eventDispatcher);

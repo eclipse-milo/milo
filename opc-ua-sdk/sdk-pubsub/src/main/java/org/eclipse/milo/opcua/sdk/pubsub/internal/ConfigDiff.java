@@ -65,10 +65,28 @@ final class ConfigDiff {
     DATA_SET_WRITER,
     DATA_SET_READER,
     /**
-     * PublishedDataSets, standalone SubscribedDataSets, SecurityGroups: reported at this level;
-     * restarts of referencing components are induced as separate entries.
+     * PublishedDataSets: reported at this level; restarts of referencing writers are induced as
+     * separate entries.
      */
-    OTHER
+    PUBLISHED_DATA_SET,
+    /**
+     * Standalone SubscribedDataSets: reported at this level; restarts of referencing readers are
+     * induced as separate entries.
+     */
+    STANDALONE_SUBSCRIBED_DATA_SET,
+    /**
+     * SecurityGroups: reported at this level; restarts of referencing secured groups are induced as
+     * separate entries.
+     */
+    SECURITY_GROUP;
+
+    /** Whether this level is part of the runtime component tree. */
+    boolean isTreeLevel() {
+      return switch (this) {
+        case CONNECTION, WRITER_GROUP, READER_GROUP, DATA_SET_WRITER, DATA_SET_READER -> true;
+        case PUBLISHED_DATA_SET, STANDALONE_SUBSCRIBED_DATA_SET, SECURITY_GROUP -> false;
+      };
+    }
   }
 
   /**
@@ -93,6 +111,7 @@ final class ConfigDiff {
         diffOther(
             byName(oldConfig.publishedDataSets(), PublishedDataSetConfig::getName),
             byName(newConfig.publishedDataSets(), PublishedDataSetConfig::getName),
+            Level.PUBLISHED_DATA_SET,
             changes);
 
     Set<String> changedStandalone =
@@ -103,12 +122,14 @@ final class ConfigDiff {
             byName(
                 newConfig.standaloneSubscribedDataSets(),
                 StandaloneSubscribedDataSetConfig::getName),
+            Level.STANDALONE_SUBSCRIBED_DATA_SET,
             changes);
 
     Set<String> changedSecurityGroups =
         diffOther(
             byName(oldConfig.securityGroups(), SecurityGroupConfig::getName),
             byName(newConfig.securityGroups(), SecurityGroupConfig::getName),
+            Level.SECURITY_GROUP,
             changes);
 
     Map<String, PubSubConnectionConfig> oldConnections =
@@ -162,9 +183,9 @@ final class ConfigDiff {
     return map;
   }
 
-  /** Diff non-connection components by name; returns the set of changed names. */
+  /** Diff non-tree components by name at the given level; returns the set of changed names. */
   private static <T> Set<String> diffOther(
-      Map<String, T> oldValues, Map<String, T> newValues, List<Change> changes) {
+      Map<String, T> oldValues, Map<String, T> newValues, Level level, List<Change> changes) {
 
     var changed = new LinkedHashSet<String>();
 
@@ -177,11 +198,11 @@ final class ConfigDiff {
       T newValue = newValues.get(name);
 
       if (oldValue == null) {
-        changes.add(new Change(Kind.ADDED, Level.OTHER, name, null, null, null));
+        changes.add(new Change(Kind.ADDED, level, name, null, null, null));
       } else if (newValue == null) {
-        changes.add(new Change(Kind.REMOVED, Level.OTHER, name, null, null, null));
+        changes.add(new Change(Kind.REMOVED, level, name, null, null, null));
       } else if (!oldValue.equals(newValue)) {
-        changes.add(new Change(Kind.CHANGED, Level.OTHER, name, null, null, null));
+        changes.add(new Change(Kind.CHANGED, level, name, null, null, null));
         changed.add(name);
       }
     }
@@ -410,7 +431,7 @@ final class ConfigDiff {
   /** Add a change unless it (or an ancestor in the connection tree) is already present. */
   private static void addIfNotCovered(List<Change> changes, Change change) {
     for (Change existing : changes) {
-      if (existing.level() == Level.OTHER) {
+      if (!existing.level().isTreeLevel()) {
         continue;
       }
       if (existing.path().equals(change.path())
