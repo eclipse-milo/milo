@@ -56,6 +56,8 @@ public final class ServerPubSubOptions {
    * Get whether remote configuration of the PubSub runtime via the server's information model is
    * allowed.
    *
+   * <p>See {@link Builder#allowRemoteConfiguration(boolean)} for what {@code true} activates.
+   *
    * @return {@code true} if remote configuration is allowed; defaults to {@code false}.
    */
   public boolean isAllowRemoteConfiguration() {
@@ -195,8 +197,18 @@ public final class ServerPubSubOptions {
      * Set whether remote configuration of the PubSub runtime via the server's information model is
      * allowed.
      *
-     * <p>Not supported in this version: attaching with {@code true} throws {@link
-     * UnsupportedOperationException}.
+     * <p>When {@code true}, the writable PubSub surfaces are activated: the exposed information
+     * model (see {@link #exposeInformationModel(boolean)}) mints {@code Enable}/{@code Disable}
+     * Methods on every component Status object. Every handler consults the effective {@link
+     * PubSubMethodAuthorizer} (see {@link #methodAuthorizer(PubSubMethodAuthorizer)}) before
+     * acting. The ns0 {@code PubSubConfiguration} file model does not accept remote configuration
+     * updates in this version; its Methods answer {@code Bad_NotImplemented}.
+     *
+     * <p>Remote enable/disable is not a configuration mutation: it is never saved to a configured
+     * {@link PubSubConfigurationStore}.
+     *
+     * <p>Defaults to {@code false}: remote configuration is an explicit opt-in, which is also what
+     * justifies the default authorizer's allow-when-no-RoleMapper posture.
      *
      * @param value {@code true} to allow remote configuration.
      * @return this {@link Builder}.

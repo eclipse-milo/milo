@@ -41,8 +41,9 @@ import org.junit.jupiter.api.Test;
  * Attach-time validation per pinned decision S4: every {@link NodeFieldAddress} in the effective
  * configuration — published dataset field sources, direct reader TargetVariables targets, and
  * standalone subscribed dataset TargetVariables targets — must resolve against the server's
- * NamespaceTable, and TargetVariables index ranges must parse; {@code
- * allowRemoteConfiguration(true)} is rejected with {@link UnsupportedOperationException}.
+ * NamespaceTable, and TargetVariables index ranges must parse. {@code
+ * allowRemoteConfiguration(true)} attaches (the Phase 5 remote-configuration surfaces replaced the
+ * reserved-flag rejection).
  */
 class ServerPubSubAttachValidationTest {
 
@@ -220,15 +221,15 @@ class ServerPubSubAttachValidationTest {
   }
 
   @Test
-  void allowRemoteConfigurationFailsAttachWithUnsupportedOperationException() {
+  void allowRemoteConfigurationAttaches() {
     PubSubConfig config = PubSubConfig.builder().build();
 
     ServerPubSubOptions options =
         ServerPubSubOptions.builder().allowRemoteConfiguration(true).build();
 
-    assertThrows(
-        UnsupportedOperationException.class,
-        () -> ServerPubSub.attach(testServer.getServer(), config, options));
+    ServerPubSub serverPubSub = ServerPubSub.attach(testServer.getServer(), config, options);
+    assertNotNull(serverPubSub.runtime());
+    serverPubSub.close();
   }
 
   @Test

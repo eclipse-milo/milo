@@ -425,9 +425,9 @@ class SksServerFaceTest {
     UaMethodNode methodNode = getSecurityKeysNode();
     assertSame(MethodInvocationHandler.NOT_IMPLEMENTED, methodNode.getInvocationHandler());
 
-    ServerPubSubOptions options = ServerPubSubOptions.builder().build();
-    var olderFace = new SksServerFace(testServer.getServer(), securityGroupsConfig(), options);
-    var newerFace = new SksServerFace(testServer.getServer(), securityGroupsConfig(), options);
+    var authorizer = new DefaultPubSubMethodAuthorizer(groupId -> null);
+    var olderFace = new SksServerFace(testServer.getServer(), securityGroupsConfig(), authorizer);
+    var newerFace = new SksServerFace(testServer.getServer(), securityGroupsConfig(), authorizer);
 
     try {
       olderFace.startup();
@@ -451,7 +451,7 @@ class SksServerFaceTest {
 
   @Test
   void defaultAuthorizerConfigurePosture() {
-    var authorizer = new SksServerFace.DefaultAuthorizer(groupId -> null);
+    var authorizer = new DefaultPubSubMethodAuthorizer(groupId -> null);
 
     // no RoleMapper: allow, consistent with the core posture (D10)
     assertEquals(StatusCode.GOOD, authorizer.checkConfigure(encryptedSession(null)));
@@ -467,7 +467,7 @@ class SksServerFaceTest {
 
   @Test
   void defaultAuthorizerSksAdminPosture() {
-    var authorizer = new SksServerFace.DefaultAuthorizer(groupId -> null);
+    var authorizer = new DefaultPubSubMethodAuthorizer(groupId -> null);
 
     // no RoleMapper: allow, consistent with the core posture (D10)
     assertEquals(StatusCode.GOOD, authorizer.checkSksAdmin(encryptedSession(null)));

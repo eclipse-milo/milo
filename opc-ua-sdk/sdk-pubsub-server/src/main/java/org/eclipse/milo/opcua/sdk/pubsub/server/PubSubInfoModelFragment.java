@@ -12,21 +12,27 @@ package org.eclipse.milo.opcua.sdk.pubsub.server;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
-import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.IntFunction;
+import java.util.function.Supplier;
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.ValueRanks;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.sdk.pubsub.ComponentType;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubHandle;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubService;
+import org.eclipse.milo.opcua.sdk.pubsub.ReconfigureResult;
+import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetReaderConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetWriterConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.ReaderGroupConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.WriterGroupConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.udp.UdpTransportProvider;
 import org.eclipse.milo.opcua.sdk.server.AddressSpaceFilter;
 import org.eclipse.milo.opcua.sdk.server.Lifecycle;
@@ -52,6 +58,7 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.WriterGroupTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.BaseDataVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.SelectionListTypeNode;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectNode;
@@ -94,9 +101,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Exposes the read-only PublishSubscribe information model for an attached PubSub runtime:
- * populates and animates the ns0 PublishSubscribe subtree and grafts connection, group, writer,
- * reader, and published-dataset objects reflecting the attach-time configuration.
+ * Exposes the PublishSubscribe information model for an attached PubSub runtime: populates and
+ * animates the ns0 PublishSubscribe subtree and grafts connection, group, writer, reader, and
+ * published-dataset objects reflecting the current configuration.
  *
  * <p>The fragment is a {@link ManagedAddressSpaceFragmentWithLifecycle} with its own {@code
  * UaNodeManager} and {@link SubscriptionModel}, registered with the server's {@code
@@ -106,46 +113,52 @@ import org.slf4j.LoggerFactory;
  * this fragment's node manager only; ns0's node manager is never structurally modified.
  *
  * <p>Node identity: every node created by this fragment has a deterministic string {@link NodeId}
- * in the server application namespace, {@code "PubSub/<connection>[/<group>[/<writer|reader>]]"}
- * for runtime components and {@code "PubSub/PublishedDataSets/<name>"} for published datasets, with
- * member children appended as further {@code "/"}-separated segments (e.g. {@code
- * "PubSub/conn/Status/State"}). The ids are stable across server restarts for an unchanged
- * configuration.
+ * per {@link PubSubNodeIds} (pinned decision R11), stable across server restarts for an unchanged
+ * configuration and across rebuilds for restarted components — the path-stability guarantee the
+ * diagnostics exposure relies on ({@code "PubSub/<path>/Diagnostics/..."} ids never change while
+ * the component keeps its name path), matching the engine's path-stable counter preservation.
  *
  * <p>All variables are read-only ({@code AccessLevel.CurrentRead}, the {@code UaVariableNode}
- * default) and no method nodes are created. Pre-existing ns0 method nodes (AddConnection,
+ * default). Method nodes are created only when {@link
+ * ServerPubSubOptions#isAllowRemoteConfiguration()} is {@code true}: an {@code Enable} and {@code
+ * Disable} pair on every component Status object (see {@link PubSubStatusMethods}). The ns0 root
+ * Status object ({@code i=17405}) never gets the pair — its Enable/Disable members are Optional,
+ * the Foundation NodeSet omits them, and Call dispatch routes by objectId to the ns0 namespace,
+ * which cannot see fragment-held method nodes (D23). Pre-existing ns0 method nodes (AddConnection,
  * RemoveConnection, the SKS methods, ...) and unbacked optional ns0 components (Diagnostics,
  * PubSubConfiguration, PubSubCapablities, ...) are left exactly as the ns0 loader created them.
  * PublishedDataSet nodes carry no Status child (Part 14 defines none); published-dataset runtime
  * state is not surfaced.
  *
- * <p>Values are populated from the attach-time {@link PubSubConfig}, normalized through {@code
+ * <p>Values are populated from the current {@link PubSubConfig}, normalized through {@code
  * PubSubConfig.toDataType} so defaults, transport profile URIs, and derived DataSetMetaData match
  * what the runtime publishes. Existing ns0 children of PublishSubscribe (Status/State {@code
  * i=17406}, SupportedTransportProfiles {@code i=17481}, ConfigurationVersion, and
  * ConfigurationProperties) are populated by looking up the existing nodes and setting values only;
- * property create-on-set against ns0 parents is never triggered.
+ * property create-on-set against ns0 parents is never triggered. The ConfigurationVersion value is
+ * read from the mediator-owned single source (D26), never a locally sampled clock.
  *
  * <p>Live state: component Status/State variables are updated from {@link
  * PubSubService#addStateListener}, keyed by component name path so that reconfiguration (which
  * invalidates handles) does not break tracking; reader DataSetMetaData values are updated from
- * {@link PubSubService#addMetaDataListener}. Everything else reflects the attach-time configuration
- * only: reconfiguring via {@code ServerPubSub.runtime()} does <b>not</b> rebuild config-derived
- * nodes (a documented v1 limitation).
+ * {@link PubSubService#addMetaDataListener}. A state event emitted before a build's {@code
+ * initialState} read can be delivered after it, leaving a stale State value until the next
+ * transition — display-only and self-correcting; no locking against the event dispatcher.
+ *
+ * <p>Reconfiguration: {@link #applyReconfigure} — driven as the first {@link ManagedPubSubService}
+ * post-apply hook — incrementally deletes and rebuilds the config-derived subtrees affected by a
+ * successful apply (R10), keyed by name path, so {@code ServerPubSub.runtime()} reconfigures no
+ * longer desync the exposed model. {@link ComponentNodeListener}s observe the per-component subtree
+ * builds and removals.
  *
  * <p>Created by {@link ServerPubSub} when {@link ServerPubSubOptions#isExposeInformationModel()} is
  * {@code true}; {@link #startup()} and {@link #shutdown()} are driven by the owning {@link
  * ServerPubSub}'s lifecycle.
  */
-final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifecycle {
+final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifecycle
+    implements ConfigurationObjectIds {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(PubSubInfoModelFragment.class);
-
-  /** Prefix shared by every NodeId identifier minted by this fragment. */
-  private static final String NODE_ID_PREFIX = "PubSub";
-
-  /** The epoch of the OPC UA VersionTime data type: 2000-01-01T00:00:00 UTC. */
-  private static final Instant VERSION_TIME_EPOCH = Instant.parse("2000-01-01T00:00:00Z");
 
   private final AddressSpaceFilter filter =
       SimpleAddressSpaceFilter.create(getNodeManager()::containsNode);
@@ -165,17 +178,45 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
    */
   private volatile boolean active = false;
 
-  private final PubSubConfig config;
+  /**
+   * The {@link ComponentNodeListener}s observing per-component subtree builds and removals.
+   * Registration must complete before {@code ServerPubSub.startup()}.
+   */
+  private final List<ComponentNodeListener> componentNodeListeners = new CopyOnWriteArrayList<>();
+
+  /** The configuration the exposed model reflects; swapped by {@link #applyReconfigure}. */
+  private volatile PubSubConfig config;
+
   private final PubSubService service;
+  private final boolean allowRemoteConfiguration;
+  private final PubSubMethodAuthorizer authorizer;
+  private final Supplier<UInteger> configurationVersion;
   private final UShort namespaceIndex;
 
+  /**
+   * Create a fragment exposing {@code config}.
+   *
+   * @param authorizer the effective {@link PubSubMethodAuthorizer} resolved by {@link
+   *     ServerPubSub}, consulted by the Enable/Disable handlers.
+   * @param configurationVersion the mediator-owned ConfigurationVersion single source (D26), read
+   *     for the ns0 {@code ConfigurationVersion} property at startup and per apply. Deferred: only
+   *     invoked once the owning {@link ServerPubSub}'s construction has completed.
+   */
   PubSubInfoModelFragment(
-      OpcUaServer server, PubSubConfig config, PubSubService service, ServerPubSubOptions options) {
+      OpcUaServer server,
+      PubSubConfig config,
+      PubSubService service,
+      ServerPubSubOptions options,
+      PubSubMethodAuthorizer authorizer,
+      Supplier<UInteger> configurationVersion) {
 
     super(server);
 
     this.config = config;
     this.service = service;
+    this.allowRemoteConfiguration = options.isAllowRemoteConfiguration();
+    this.authorizer = authorizer;
+    this.configurationVersion = configurationVersion;
 
     namespaceIndex = server.getServerNamespace().getNamespaceIndex();
 
@@ -187,8 +228,11 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
             new Lifecycle() {
               @Override
               public void startup() {
+                // read the FIELD, not the shadowing constructor parameter: a reconfigure applied
+                // between attach and startup swaps the field (applyReconfigure's inactive path),
+                // and startup must build the configuration the engine actually runs
                 PubSubConfiguration2DataType configuration =
-                    config.toDataType(getServer().getNamespaceTable());
+                    PubSubInfoModelFragment.this.config.toDataType(getServer().getNamespaceTable());
 
                 buildNodes(configuration);
                 populateExistingNs0Nodes(configuration);
@@ -233,30 +277,25 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
   // region node construction
 
   private void buildNodes(PubSubConfiguration2DataType configuration) {
-    var dataSetNodeIds = new HashMap<String, NodeId>();
-
     PublishedDataSetDataType[] publishedDataSets =
         orEmpty(configuration.getPublishedDataSets(), PublishedDataSetDataType[]::new);
 
     for (PublishedDataSetDataType dataSet : publishedDataSets) {
-      NodeId nodeId = buildPublishedDataSetNodes(dataSet);
-      if (dataSet.getName() != null) {
-        dataSetNodeIds.put(dataSet.getName(), nodeId);
-      }
+      buildPublishedDataSetNodes(dataSet);
     }
 
     PubSubConnectionDataType[] connections =
         orEmpty(configuration.getConnections(), PubSubConnectionDataType[]::new);
 
     for (PubSubConnectionDataType connection : connections) {
-      buildConnectionNodes(connection, dataSetNodeIds);
+      buildConnectionNodes(connection);
     }
   }
 
-  private NodeId buildPublishedDataSetNodes(PublishedDataSetDataType dataSet) {
+  private void buildPublishedDataSetNodes(PublishedDataSetDataType dataSet) {
     String name = nullToEmpty(dataSet.getName());
 
-    var nodeId = new NodeId(namespaceIndex, NODE_ID_PREFIX + "/PublishedDataSets/" + name);
+    NodeId nodeId = PubSubNodeIds.publishedDataSetNodeId(namespaceIndex, name);
 
     PublishedDataItemsTypeNode node =
         addObjectNode(
@@ -303,16 +342,12 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
       addPropertyNode(
           node, "DataSetClassId", NodeIds.Guid, ValueRanks.Scalar, new Variant(dataSetClassId));
     }
-
-    return nodeId;
   }
 
-  private void buildConnectionNodes(
-      PubSubConnectionDataType connection, Map<String, NodeId> dataSetNodeIds) {
-
+  private void buildConnectionNodes(PubSubConnectionDataType connection) {
     String name = nullToEmpty(connection.getName());
 
-    var nodeId = new NodeId(namespaceIndex, NODE_ID_PREFIX + "/" + name);
+    NodeId nodeId = PubSubNodeIds.componentNodeId(namespaceIndex, name);
 
     PubSubConnectionTypeNode node =
         addObjectNode(
@@ -343,21 +378,23 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
 
     buildAddressNodes(node, connection.getAddress());
 
-    addStatusNodes(node, name, initialState(service.components().connection(name)));
+    addStatusNodes(node, name, () -> service.components().connection(name));
 
     WriterGroupDataType[] writerGroups =
         orEmpty(connection.getWriterGroups(), WriterGroupDataType[]::new);
 
     for (WriterGroupDataType group : writerGroups) {
-      buildWriterGroupNodes(node, name, group, dataSetNodeIds);
+      buildWriterGroupNodes(nodeId, name, group);
     }
 
     ReaderGroupDataType[] readerGroups =
         orEmpty(connection.getReaderGroups(), ReaderGroupDataType[]::new);
 
     for (ReaderGroupDataType group : readerGroups) {
-      buildReaderGroupNodes(node, name, group);
+      buildReaderGroupNodes(nodeId, name, group);
     }
+
+    notifyBuilt(ComponentType.CONNECTION, name, node);
   }
 
   /**
@@ -387,15 +424,12 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
   }
 
   private void buildWriterGroupNodes(
-      PubSubConnectionTypeNode connectionNode,
-      String connectionName,
-      WriterGroupDataType group,
-      Map<String, NodeId> dataSetNodeIds) {
+      NodeId connectionNodeId, String connectionName, WriterGroupDataType group) {
 
     String name = nullToEmpty(group.getName());
     String path = connectionName + "/" + name;
 
-    var nodeId = new NodeId(namespaceIndex, NODE_ID_PREFIX + "/" + path);
+    NodeId nodeId = PubSubNodeIds.componentNodeId(namespaceIndex, path);
 
     WriterGroupTypeNode node =
         addObjectNode(
@@ -404,7 +438,7 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
             new QualifiedName(namespaceIndex, name),
             NodeIds.WriterGroupType,
             NodeIds.HasWriterGroup,
-            connectionNode.getNodeId());
+            connectionNodeId);
 
     addGroupPropertyNodes(node, group);
 
@@ -446,8 +480,7 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
         ValueRanks.Scalar,
         new Variant(nullToEmpty(group.getHeaderLayoutUri())));
 
-    addStatusNodes(
-        node, path, initialState(service.components().writerGroup(connectionName, name)));
+    addStatusNodes(node, path, () -> service.components().writerGroup(connectionName, name));
 
     if (group.getMessageSettings() instanceof UadpWriterGroupMessageDataType uadp) {
       UadpWriterGroupMessageTypeNode messageSettings =
@@ -492,21 +525,19 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
         orEmpty(group.getDataSetWriters(), DataSetWriterDataType[]::new);
 
     for (DataSetWriterDataType writer : writers) {
-      buildDataSetWriterNodes(node, connectionName, name, writer, dataSetNodeIds);
+      buildDataSetWriterNodes(nodeId, connectionName, name, writer);
     }
+
+    notifyBuilt(ComponentType.WRITER_GROUP, path, node);
   }
 
   private void buildDataSetWriterNodes(
-      WriterGroupTypeNode groupNode,
-      String connectionName,
-      String groupName,
-      DataSetWriterDataType writer,
-      Map<String, NodeId> dataSetNodeIds) {
+      NodeId groupNodeId, String connectionName, String groupName, DataSetWriterDataType writer) {
 
     String name = nullToEmpty(writer.getName());
     String path = connectionName + "/" + groupName + "/" + name;
 
-    var nodeId = new NodeId(namespaceIndex, NODE_ID_PREFIX + "/" + path);
+    NodeId nodeId = PubSubNodeIds.componentNodeId(namespaceIndex, path);
 
     DataSetWriterTypeNode node =
         addObjectNode(
@@ -515,7 +546,7 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
             new QualifiedName(namespaceIndex, name),
             NodeIds.DataSetWriterType,
             NodeIds.HasDataSetWriter,
-            groupNode.getNodeId());
+            groupNodeId);
 
     addPropertyNode(
         node,
@@ -546,9 +577,7 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
         new Variant(orEmpty(writer.getDataSetWriterProperties(), KeyValuePair[]::new)));
 
     addStatusNodes(
-        node,
-        path,
-        initialState(service.components().dataSetWriter(connectionName, groupName, name)));
+        node, path, () -> service.components().dataSetWriter(connectionName, groupName, name));
 
     if (writer.getMessageSettings() instanceof UadpDataSetWriterMessageDataType uadp) {
       UadpDataSetWriterMessageTypeNode messageSettings =
@@ -590,7 +619,7 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
     }
 
     NodeId dataSetNodeId =
-        writer.getDataSetName() != null ? dataSetNodeIds.get(writer.getDataSetName()) : null;
+        writer.getDataSetName() != null ? publishedDataSetNodeId(writer.getDataSetName()) : null;
 
     if (dataSetNodeId != null) {
       // stored with its invert, so the dataset node browses a forward DataSetToWriter reference
@@ -601,15 +630,17 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
               dataSetNodeId.expanded(),
               Reference.Direction.INVERSE));
     }
+
+    notifyBuilt(ComponentType.DATA_SET_WRITER, path, node);
   }
 
   private void buildReaderGroupNodes(
-      PubSubConnectionTypeNode connectionNode, String connectionName, ReaderGroupDataType group) {
+      NodeId connectionNodeId, String connectionName, ReaderGroupDataType group) {
 
     String name = nullToEmpty(group.getName());
     String path = connectionName + "/" + name;
 
-    var nodeId = new NodeId(namespaceIndex, NODE_ID_PREFIX + "/" + path);
+    NodeId nodeId = PubSubNodeIds.componentNodeId(namespaceIndex, path);
 
     ReaderGroupTypeNode node =
         addObjectNode(
@@ -618,31 +649,29 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
             new QualifiedName(namespaceIndex, name),
             NodeIds.ReaderGroupType,
             NodeIds.HasReaderGroup,
-            connectionNode.getNodeId());
+            connectionNodeId);
 
     addGroupPropertyNodes(node, group);
 
-    addStatusNodes(
-        node, path, initialState(service.components().readerGroup(connectionName, name)));
+    addStatusNodes(node, path, () -> service.components().readerGroup(connectionName, name));
 
     DataSetReaderDataType[] readers =
         orEmpty(group.getDataSetReaders(), DataSetReaderDataType[]::new);
 
     for (DataSetReaderDataType reader : readers) {
-      buildDataSetReaderNodes(node, connectionName, name, reader);
+      buildDataSetReaderNodes(nodeId, connectionName, name, reader);
     }
+
+    notifyBuilt(ComponentType.READER_GROUP, path, node);
   }
 
   private void buildDataSetReaderNodes(
-      ReaderGroupTypeNode groupNode,
-      String connectionName,
-      String groupName,
-      DataSetReaderDataType reader) {
+      NodeId groupNodeId, String connectionName, String groupName, DataSetReaderDataType reader) {
 
     String name = nullToEmpty(reader.getName());
     String path = connectionName + "/" + groupName + "/" + name;
 
-    var nodeId = new NodeId(namespaceIndex, NODE_ID_PREFIX + "/" + path);
+    NodeId nodeId = PubSubNodeIds.componentNodeId(namespaceIndex, path);
 
     DataSetReaderTypeNode node =
         addObjectNode(
@@ -651,7 +680,7 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
             new QualifiedName(namespaceIndex, name),
             NodeIds.DataSetReaderType,
             NodeIds.HasDataSetReader,
-            groupNode.getNodeId());
+            groupNodeId);
 
     Variant publisherId =
         reader.getPublisherId() != null ? reader.getPublisherId() : Variant.NULL_VALUE;
@@ -750,15 +779,15 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
     }
 
     addStatusNodes(
-        node,
-        path,
-        initialState(service.components().dataSetReader(connectionName, groupName, name)));
+        node, path, () -> service.components().dataSetReader(connectionName, groupName, name));
 
     if (reader.getMessageSettings() instanceof UadpDataSetReaderMessageDataType uadp) {
       buildReaderMessageSettingsNodes(node, nodeId, uadp);
     }
 
     buildSubscribedDataSetNodes(node, nodeId, reader);
+
+    notifyBuilt(ComponentType.DATA_SET_READER, path, node);
   }
 
   private void buildReaderMessageSettingsNodes(
@@ -918,9 +947,15 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
 
   /**
    * Add a Status object with a State variable to {@code parent} and register the State variable
-   * under {@code componentPath} for live updates.
+   * under {@code componentPath} for live updates. When remote configuration is allowed, the
+   * Optional Enable/Disable Method pair is minted on the Status object (see {@link
+   * PubSubStatusMethods}); {@code handleLookup} resolves the component's handle per invocation
+   * (name components captured at mint time — handles are invalidated by reconfiguration and paths
+   * are never parsed, R11).
    */
-  private void addStatusNodes(UaNode parent, String componentPath, PubSubState initialState) {
+  private void addStatusNodes(
+      UaNode parent, String componentPath, Supplier<Optional<PubSubHandle>> handleLookup) {
+
     PubSubStatusTypeNode statusNode =
         addObjectNode(
             PubSubStatusTypeNode::new,
@@ -931,9 +966,53 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
             parent.getNodeId());
 
     BaseDataVariableTypeNode stateNode =
-        addVariableNode(statusNode, "State", NodeIds.PubSubState, new Variant(initialState));
+        addVariableNode(
+            statusNode, "State", NodeIds.PubSubState, new Variant(initialState(handleLookup)));
 
     stateVariables.put(componentPath, stateNode);
+
+    if (allowRemoteConfiguration) {
+      UaMethodNode enableNode = addMethodNode(statusNode, "Enable");
+      enableNode.setInvocationHandler(
+          new PubSubStatusMethods.EnableHandler(enableNode, service, authorizer, handleLookup));
+
+      UaMethodNode disableNode = addMethodNode(statusNode, "Disable");
+      disableNode.setInvocationHandler(
+          new PubSubStatusMethods.DisableHandler(disableNode, service, authorizer, handleLookup));
+    }
+  }
+
+  /**
+   * Create a no-argument method node under {@code parent} (HasComponent), matching the type
+   * declaration's BrowseName in ns0. No InputArguments/OutputArguments properties are created (both
+   * are empty), methods carry no HasTypeDefinition, and no RolePermissions are minted (the
+   * authorizer is the gate).
+   */
+  private UaMethodNode addMethodNode(UaNode parent, String name) {
+    NodeId nodeId = childNodeId(parent, name);
+
+    var node =
+        new UaMethodNode(
+            getNodeContext(),
+            nodeId,
+            new QualifiedName(0, name),
+            LocalizedText.english(name),
+            LocalizedText.NULL_VALUE,
+            uint(0),
+            uint(0),
+            true,
+            true);
+
+    getNodeManager().addNode(node);
+
+    node.addReference(
+        new Reference(
+            nodeId,
+            NodeIds.HasComponent,
+            parent.getNodeId().expanded(),
+            Reference.Direction.INVERSE));
+
+    return node;
   }
 
   // endregion
@@ -960,8 +1039,10 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
    * Create an object node, type-define it, add it to this fragment's node manager, and graft it
    * under {@code parentNodeId} with an inverse {@code referenceTypeId} reference (the node manager
    * stores both directions, so the parent browses the forward reference without being modified).
+   *
+   * <p>Package-private for the diagnostics exposure (WP-Z).
    */
-  private <T extends UaObjectNode> T addObjectNode(
+  <T extends UaObjectNode> T addObjectNode(
       ObjectNodeConstructor<T> constructor,
       NodeId nodeId,
       QualifiedName browseName,
@@ -1001,8 +1082,10 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
   /**
    * Create a PropertyType variable node under {@code parent} (HasProperty), pre-created explicitly
    * so the typed-setter create-on-set path is never exercised. Read-only by default.
+   *
+   * <p>Package-private for the diagnostics exposure (WP-Z).
    */
-  private PropertyTypeNode addPropertyNode(
+  PropertyTypeNode addPropertyNode(
       UaNode parent, String name, NodeId dataTypeId, int valueRank, Variant value) {
 
     NodeId nodeId = childNodeId(parent, name);
@@ -1045,8 +1128,10 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
 
   /**
    * Create a scalar BaseDataVariableType component variable under {@code parent} (HasComponent).
+   *
+   * <p>Package-private for the diagnostics exposure (WP-Z).
    */
-  private BaseDataVariableTypeNode addVariableNode(
+  BaseDataVariableTypeNode addVariableNode(
       UaNode parent, String name, NodeId dataTypeId, Variant value) {
 
     NodeId nodeId = childNodeId(parent, name);
@@ -1135,8 +1220,488 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
     return node;
   }
 
-  private NodeId childNodeId(UaNode parent, String name) {
-    return new NodeId(namespaceIndex, parent.getNodeId().getIdentifier().toString() + "/" + name);
+  /**
+   * The deterministic id of a member child of {@code parent} (see {@link PubSubNodeIds}).
+   *
+   * <p>Package-private for the diagnostics exposure (WP-Z).
+   */
+  NodeId childNodeId(UaNode parent, String name) {
+    return PubSubNodeIds.childNodeId(parent.getNodeId(), name);
+  }
+
+  // endregion
+
+  // region reconfiguration rebuild (R10)
+
+  /**
+   * Apply a successful reconfiguration to the exposed model: delete the subtrees of removed and
+   * restarted components, rebuild the subtrees of added and restarted components from {@code
+   * newConfig}, and refresh the maintained ns0 values.
+   *
+   * <p>Caller: the first {@link ManagedPubSubService.ReconfigureHook}, on the reconfiguring thread,
+   * inside the mediator's critical section. The engine apply has already completed, so {@code
+   * components()} lookups resolve the new handles. Restarted components keep their NodeIds (R11
+   * determinism); a client monitoring a removed component's node starts seeing {@code
+   * Bad_NodeIdUnknown}. A reconfigure applied while the fragment is not active — before startup, or
+   * racing fragment shutdown — records the new configuration without rebuilding: startup builds
+   * from the recorded configuration, so a pre-startup reconfigure is still reflected (a reconfigure
+   * concurrent with an in-progress startup build may still be built from the older snapshot — an
+   * accepted, momentary window; management-plane callers reconfigure before or after startup, not
+   * during). One racing service shutdown either throws in the engine before the hooks run or
+   * rebuilds into an already-unregistered node manager — harmless and invisible.
+   *
+   * <p>Coexisting entries are legal (see {@link ReconfigureResult}): under {@code
+   * STOP_AND_RESTART}, nested ADDED/REMOVED entries are reported alongside the containing
+   * connection's CHANGED entry, and a security-group-induced group-level CHANGED entry may coexist
+   * with entries for that group's descendants. Both phases de-duplicate against the ancestor:
+   * deletions run ancestors first, so a descendant entry finds its node already deleted and is
+   * skipped (its {@code onComponentRemoving} notification fires exactly once, from the ancestor's
+   * old-config walk); builds skip any component whose node already exists — every subtree being
+   * rebuilt was deleted first, so existence proves a coexisting ancestor entry's rebuild already
+   * covered it.
+   */
+  void applyReconfigure(PubSubConfig newConfig, ReconfigureResult result) {
+    if (!active) {
+      // no tree to rebuild, but the reflected config must still advance so a startup() that
+      // follows a pre-startup reconfigure builds the configuration the engine actually runs
+      this.config = newConfig;
+      LOGGER.debug("applyReconfigure: fragment not active; recorded the config without a rebuild");
+      return;
+    }
+
+    PubSubConfiguration2DataType configuration =
+        newConfig.toDataType(getServer().getNamespaceTable());
+
+    // 1. deletions: every removed and restarted subtree, ancestors before descendants so a
+    //    descendant entry coexisting with its ancestor's entry is skipped (node already gone)
+    removeChangedSubtrees(result, ReconfigureResult.Scope.CONNECTION);
+    removeChangedSubtrees(result, ReconfigureResult.Scope.WRITER_GROUP);
+    removeChangedSubtrees(result, ReconfigureResult.Scope.READER_GROUP);
+    removeChangedSubtrees(result, ReconfigureResult.Scope.DATA_SET_WRITER);
+    removeChangedSubtrees(result, ReconfigureResult.Scope.DATA_SET_READER);
+    removeChangedSubtrees(result, ReconfigureResult.Scope.PUBLISHED_DATA_SET);
+
+    // 2. builds, parents before children: dataset nodes must exist before writers re-add their
+    //    DataSetToWriter references, and group/leaf builders resolve their parents by id.
+    //    A restarted PublishedDataSet induces CHANGED entries for every referencing writer, so
+    //    the writers rebuild in this same pass and re-add their references.
+    for (ReconfigureResult.Change change : result.changes()) {
+      if (change.kind() != ReconfigureResult.Kind.REMOVED
+          && change.scope() == ReconfigureResult.Scope.PUBLISHED_DATA_SET
+          && !getNodeManager()
+              .containsNode(PubSubNodeIds.publishedDataSetNodeId(namespaceIndex, change.path()))) {
+        PublishedDataSetDataType dataSet = findPublishedDataSet(configuration, change.path());
+        if (dataSet != null) {
+          buildPublishedDataSetNodes(dataSet);
+        }
+      }
+    }
+
+    buildChangedComponents(result, configuration, ReconfigureResult.Scope.CONNECTION);
+    buildChangedComponents(result, configuration, ReconfigureResult.Scope.WRITER_GROUP);
+    buildChangedComponents(result, configuration, ReconfigureResult.Scope.READER_GROUP);
+    buildChangedComponents(result, configuration, ReconfigureResult.Scope.DATA_SET_WRITER);
+    buildChangedComponents(result, configuration, ReconfigureResult.Scope.DATA_SET_READER);
+
+    // 3. ns0 refresh, then swap the reflected config
+    refreshNs0Values(configuration, newConfig.isEnabled());
+
+    this.config = newConfig;
+  }
+
+  /**
+   * Register a listener observing per-component subtree builds and removals. Must be called before
+   * {@code ServerPubSub.startup()}.
+   */
+  void addComponentNodeListener(ComponentNodeListener listener) {
+    componentNodeListeners.add(listener);
+  }
+
+  /**
+   * Delete the subtree of every REMOVED and CHANGED (restarted) entry of {@code scope}. Invoked
+   * scope by scope, ancestors first, so a descendant entry coexisting with an ancestor's CHANGED
+   * entry (see {@link ReconfigureResult}) finds its node already deleted and is skipped by {@link
+   * #removeChangedSubtree} — listeners are notified exactly once per component, by the ancestor's
+   * old-config walk.
+   */
+  private void removeChangedSubtrees(ReconfigureResult result, ReconfigureResult.Scope scope) {
+    for (ReconfigureResult.Change change : result.changes()) {
+      if (change.scope() == scope
+          && (change.kind() == ReconfigureResult.Kind.REMOVED
+              || change.kind() == ReconfigureResult.Kind.CHANGED)) {
+        removeChangedSubtree(change);
+      }
+    }
+  }
+
+  /**
+   * Delete the subtree of a removed or restarted component: notify listeners (children before
+   * parents, walking the OLD config — never the node graph), delete the subtree root (recursion
+   * covers the HasChild-subtype references grafting every descendant), and prune the live-state
+   * registries by name-path prefix (safe because deletions always operate on whole subtrees keyed
+   * by the same join rule that built the keys). A no-op — no notifications — when the node is
+   * already gone (an ancestor's deletion covered it).
+   */
+  private void removeChangedSubtree(ReconfigureResult.Change change) {
+    NodeId nodeId =
+        switch (change.scope()) {
+          case CONNECTION, WRITER_GROUP, READER_GROUP, DATA_SET_WRITER, DATA_SET_READER ->
+              PubSubNodeIds.componentNodeId(namespaceIndex, change.path());
+          case PUBLISHED_DATA_SET ->
+              PubSubNodeIds.publishedDataSetNodeId(namespaceIndex, change.path());
+          // never materialized (matches the initial build); nothing to delete
+          case STANDALONE_SUBSCRIBED_DATA_SET, SECURITY_GROUP -> null;
+        };
+
+    if (nodeId == null) {
+      return;
+    }
+
+    UaNode node = getNodeManager().getNode(nodeId).orElse(null);
+    if (node == null) {
+      LOGGER.debug("no subtree to remove for change: {}", change);
+      return;
+    }
+
+    notifyRemoving(change);
+
+    node.delete();
+
+    if (change.scope() != ReconfigureResult.Scope.PUBLISHED_DATA_SET) {
+      pruneRegistry(stateVariables, change.path());
+      pruneRegistry(metaDataVariables, change.path());
+    }
+  }
+
+  /** Remove registry entries equal to {@code namePath} or under {@code namePath + "/"}. */
+  private static void pruneRegistry(Map<String, UaVariableNode> registry, String namePath) {
+    registry.keySet().removeIf(key -> key.equals(namePath) || key.startsWith(namePath + "/"));
+  }
+
+  /**
+   * Build the subtree of every non-removed change of {@code scope}, resolving parents by id. A
+   * change whose component node already exists is skipped: the deletion phase already removed
+   * everything being rebuilt, so an existing node proves a coexisting ancestor entry's rebuild
+   * (which builds all descendants from the new config) already covered this component.
+   */
+  private void buildChangedComponents(
+      ReconfigureResult result,
+      PubSubConfiguration2DataType configuration,
+      ReconfigureResult.Scope scope) {
+
+    for (ReconfigureResult.Change change : result.changes()) {
+      if (change.kind() == ReconfigureResult.Kind.REMOVED || change.scope() != scope) {
+        continue;
+      }
+
+      if (getNodeManager()
+          .containsNode(PubSubNodeIds.componentNodeId(namespaceIndex, change.path()))) {
+        LOGGER.debug("skipping change already covered by an ancestor rebuild: {}", change);
+        continue;
+      }
+
+      String connectionName = change.connectionName();
+      String groupName = change.groupName();
+      String componentName = change.componentName();
+      if (connectionName == null) {
+        continue; // tree scopes always carry a connection name
+      }
+
+      PubSubConnectionDataType connection = findConnection(configuration, connectionName);
+      if (connection == null) {
+        LOGGER.error("applied change refers to an unknown connection: {}", change);
+        continue;
+      }
+
+      switch (scope) {
+        case CONNECTION -> buildConnectionNodes(connection);
+        case WRITER_GROUP -> {
+          WriterGroupDataType group = findWriterGroup(connection, groupName);
+          NodeId parentId =
+              existingNodeId(PubSubNodeIds.componentNodeId(namespaceIndex, connectionName));
+          if (group != null && parentId != null) {
+            buildWriterGroupNodes(parentId, connectionName, group);
+          } else {
+            LOGGER.error("cannot rebuild writer group subtree for change: {}", change);
+          }
+        }
+        case READER_GROUP -> {
+          ReaderGroupDataType group = findReaderGroup(connection, groupName);
+          NodeId parentId =
+              existingNodeId(PubSubNodeIds.componentNodeId(namespaceIndex, connectionName));
+          if (group != null && parentId != null) {
+            buildReaderGroupNodes(parentId, connectionName, group);
+          } else {
+            LOGGER.error("cannot rebuild reader group subtree for change: {}", change);
+          }
+        }
+        case DATA_SET_WRITER -> {
+          WriterGroupDataType group = findWriterGroup(connection, groupName);
+          DataSetWriterDataType writer =
+              group != null ? findDataSetWriter(group, componentName) : null;
+          NodeId parentId =
+              groupName != null
+                  ? existingNodeId(
+                      PubSubNodeIds.componentNodeId(
+                          namespaceIndex, connectionName + "/" + groupName))
+                  : null;
+          if (writer != null && parentId != null && groupName != null) {
+            buildDataSetWriterNodes(parentId, connectionName, groupName, writer);
+          } else {
+            LOGGER.error("cannot rebuild dataset writer subtree for change: {}", change);
+          }
+        }
+        case DATA_SET_READER -> {
+          ReaderGroupDataType group = findReaderGroup(connection, groupName);
+          DataSetReaderDataType reader =
+              group != null ? findDataSetReader(group, componentName) : null;
+          NodeId parentId =
+              groupName != null
+                  ? existingNodeId(
+                      PubSubNodeIds.componentNodeId(
+                          namespaceIndex, connectionName + "/" + groupName))
+                  : null;
+          if (reader != null && parentId != null && groupName != null) {
+            buildDataSetReaderNodes(parentId, connectionName, groupName, reader);
+          } else {
+            LOGGER.error("cannot rebuild dataset reader subtree for change: {}", change);
+          }
+        }
+        default -> {}
+      }
+    }
+  }
+
+  /**
+   * Notify listeners of every component in the subtree being deleted, children before parents,
+   * walking the OLD config's component structure by the change's name components.
+   */
+  private void notifyRemoving(ReconfigureResult.Change change) {
+    PubSubConfig oldConfig = this.config;
+    String connectionName = change.connectionName();
+    String groupName = change.groupName();
+    String componentName = change.componentName();
+
+    switch (change.scope()) {
+      case CONNECTION -> {
+        if (connectionName == null) {
+          return;
+        }
+        oldConfig
+            .connection(connectionName)
+            .ifPresent(
+                connection -> {
+                  for (WriterGroupConfig group : connection.writerGroups()) {
+                    notifyRemovingWriterGroup(connectionName, group);
+                  }
+                  for (ReaderGroupConfig group : connection.readerGroups()) {
+                    notifyRemovingReaderGroup(connectionName, group);
+                  }
+                  notifyRemoving(ComponentType.CONNECTION, connectionName);
+                });
+      }
+      case WRITER_GROUP -> {
+        if (connectionName == null || groupName == null) {
+          return;
+        }
+        oldConfig
+            .connection(connectionName)
+            .flatMap(
+                connection ->
+                    connection.writerGroups().stream()
+                        .filter(group -> group.getName().equals(groupName))
+                        .findFirst())
+            .ifPresent(group -> notifyRemovingWriterGroup(connectionName, group));
+      }
+      case READER_GROUP -> {
+        if (connectionName == null || groupName == null) {
+          return;
+        }
+        oldConfig
+            .connection(connectionName)
+            .flatMap(
+                connection ->
+                    connection.readerGroups().stream()
+                        .filter(group -> group.getName().equals(groupName))
+                        .findFirst())
+            .ifPresent(group -> notifyRemovingReaderGroup(connectionName, group));
+      }
+      case DATA_SET_WRITER -> {
+        if (componentName != null) {
+          notifyRemoving(ComponentType.DATA_SET_WRITER, change.path());
+        }
+      }
+      case DATA_SET_READER -> {
+        if (componentName != null) {
+          notifyRemoving(ComponentType.DATA_SET_READER, change.path());
+        }
+      }
+      default -> {}
+    }
+  }
+
+  private void notifyRemovingWriterGroup(String connectionName, WriterGroupConfig group) {
+    String groupPath = connectionName + "/" + group.getName();
+    for (DataSetWriterConfig writer : group.getDataSetWriters()) {
+      notifyRemoving(ComponentType.DATA_SET_WRITER, groupPath + "/" + writer.getName());
+    }
+    notifyRemoving(ComponentType.WRITER_GROUP, groupPath);
+  }
+
+  private void notifyRemovingReaderGroup(String connectionName, ReaderGroupConfig group) {
+    String groupPath = connectionName + "/" + group.getName();
+    for (DataSetReaderConfig reader : group.getDataSetReaders()) {
+      notifyRemoving(ComponentType.DATA_SET_READER, groupPath + "/" + reader.getName());
+    }
+    notifyRemoving(ComponentType.READER_GROUP, groupPath);
+  }
+
+  private void notifyRemoving(ComponentType type, String namePath) {
+    for (ComponentNodeListener listener : componentNodeListeners) {
+      try {
+        listener.onComponentRemoving(type, namePath);
+      } catch (Exception e) {
+        LOGGER.error("ComponentNodeListener.onComponentRemoving failed: {}", namePath, e);
+      }
+    }
+  }
+
+  private void notifyBuilt(ComponentType type, String namePath, UaObjectNode componentNode) {
+    for (ComponentNodeListener listener : componentNodeListeners) {
+      try {
+        listener.onComponentBuilt(type, namePath, componentNode);
+      } catch (Exception e) {
+        LOGGER.error("ComponentNodeListener.onComponentBuilt failed: {}", namePath, e);
+      }
+    }
+  }
+
+  // region wire-form lookups (names are unique per scope, enforced by the config builder)
+
+  private static @Nullable PubSubConnectionDataType findConnection(
+      PubSubConfiguration2DataType configuration, String name) {
+
+    for (PubSubConnectionDataType connection :
+        orEmpty(configuration.getConnections(), PubSubConnectionDataType[]::new)) {
+      if (Objects.equals(connection.getName(), name)) {
+        return connection;
+      }
+    }
+    return null;
+  }
+
+  private static @Nullable PublishedDataSetDataType findPublishedDataSet(
+      PubSubConfiguration2DataType configuration, String name) {
+
+    for (PublishedDataSetDataType dataSet :
+        orEmpty(configuration.getPublishedDataSets(), PublishedDataSetDataType[]::new)) {
+      if (Objects.equals(dataSet.getName(), name)) {
+        return dataSet;
+      }
+    }
+    return null;
+  }
+
+  private static @Nullable WriterGroupDataType findWriterGroup(
+      PubSubConnectionDataType connection, @Nullable String name) {
+
+    for (WriterGroupDataType group :
+        orEmpty(connection.getWriterGroups(), WriterGroupDataType[]::new)) {
+      if (Objects.equals(group.getName(), name)) {
+        return group;
+      }
+    }
+    return null;
+  }
+
+  private static @Nullable ReaderGroupDataType findReaderGroup(
+      PubSubConnectionDataType connection, @Nullable String name) {
+
+    for (ReaderGroupDataType group :
+        orEmpty(connection.getReaderGroups(), ReaderGroupDataType[]::new)) {
+      if (Objects.equals(group.getName(), name)) {
+        return group;
+      }
+    }
+    return null;
+  }
+
+  private static @Nullable DataSetWriterDataType findDataSetWriter(
+      WriterGroupDataType group, @Nullable String name) {
+
+    for (DataSetWriterDataType writer :
+        orEmpty(group.getDataSetWriters(), DataSetWriterDataType[]::new)) {
+      if (Objects.equals(writer.getName(), name)) {
+        return writer;
+      }
+    }
+    return null;
+  }
+
+  private static @Nullable DataSetReaderDataType findDataSetReader(
+      ReaderGroupDataType group, @Nullable String name) {
+
+    for (DataSetReaderDataType reader :
+        orEmpty(group.getDataSetReaders(), DataSetReaderDataType[]::new)) {
+      if (Objects.equals(reader.getName(), name)) {
+        return reader;
+      }
+    }
+    return null;
+  }
+
+  // endregion
+
+  // endregion
+
+  // region ConfigurationObjectIds (R4/R11)
+
+  @Override
+  public @Nullable NodeId connectionObjectId(String connectionName) {
+    return existingNodeId(PubSubNodeIds.componentNodeId(namespaceIndex, connectionName));
+  }
+
+  @Override
+  public @Nullable NodeId writerGroupObjectId(String connectionName, String groupName) {
+    return existingNodeId(
+        PubSubNodeIds.componentNodeId(namespaceIndex, connectionName + "/" + groupName));
+  }
+
+  @Override
+  public @Nullable NodeId dataSetWriterObjectId(
+      String connectionName, String groupName, String writerName) {
+    return existingNodeId(
+        PubSubNodeIds.componentNodeId(
+            namespaceIndex, connectionName + "/" + groupName + "/" + writerName));
+  }
+
+  @Override
+  public @Nullable NodeId readerGroupObjectId(String connectionName, String groupName) {
+    return existingNodeId(
+        PubSubNodeIds.componentNodeId(namespaceIndex, connectionName + "/" + groupName));
+  }
+
+  @Override
+  public @Nullable NodeId dataSetReaderObjectId(
+      String connectionName, String groupName, String readerName) {
+    return existingNodeId(
+        PubSubNodeIds.componentNodeId(
+            namespaceIndex, connectionName + "/" + groupName + "/" + readerName));
+  }
+
+  @Override
+  public @Nullable NodeId publishedDataSetObjectId(String name) {
+    return existingNodeId(PubSubNodeIds.publishedDataSetNodeId(namespaceIndex, name));
+  }
+
+  /** {@code nodeId} iff the node currently exists in this fragment's node manager, else null. */
+  private @Nullable NodeId existingNodeId(NodeId nodeId) {
+    return getNodeManager().containsNode(nodeId) ? nodeId : null;
+  }
+
+  /** The deterministic id of a published dataset node, present-checked against the node manager. */
+  private @Nullable NodeId publishedDataSetNodeId(String name) {
+    return publishedDataSetObjectId(name);
   }
 
   // endregion
@@ -1164,17 +1729,33 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
         PublishSubscribeType.SUPPORTED_TRANSPORT_PROFILES.getBrowseName(),
         new Variant(new String[] {UdpTransportProvider.TRANSPORT_PROFILE_URI}));
 
-    setExistingPropertyValue(
-        node,
-        PublishSubscribeType.CONFIGURATION_VERSION.getBrowseName(),
-        new Variant(versionTimeNow()));
+    refreshNs0Values(configuration, config.isEnabled());
+  }
 
-    setExistingPropertyValue(
-        node,
-        PublishSubscribeType.CONFIGURATION_PROPERTIES.getBrowseName(),
-        new Variant(orEmpty(configuration.getConfigurationProperties(), KeyValuePair[]::new)));
+  /**
+   * Refresh the ns0 values maintained per apply (and set at startup): the ConfigurationVersion —
+   * read from the mediator-owned single source (D26) — the ConfigurationProperties, and the root
+   * Status/State.
+   */
+  private void refreshNs0Values(PubSubConfiguration2DataType configuration, boolean enabled) {
+    Optional<UaNode> publishSubscribeNode =
+        getServer().getAddressSpaceManager().getManagedNode(NodeIds.PublishSubscribe);
 
-    setRootState(config.isEnabled() ? PubSubState.Operational : PubSubState.Disabled);
+    publishSubscribeNode.ifPresent(
+        node -> {
+          setExistingPropertyValue(
+              node,
+              PublishSubscribeType.CONFIGURATION_VERSION.getBrowseName(),
+              new Variant(configurationVersion.get()));
+
+          setExistingPropertyValue(
+              node,
+              PublishSubscribeType.CONFIGURATION_PROPERTIES.getBrowseName(),
+              new Variant(
+                  orEmpty(configuration.getConfigurationProperties(), KeyValuePair[]::new)));
+        });
+
+    setRootState(enabled ? PubSubState.Operational : PubSubState.Disabled);
   }
 
   /** Set the value of an existing ns0 property node, by browse name; never creates. */
@@ -1245,18 +1826,12 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
   }
 
   /** Seed a Status/State value from the runtime, falling back to the Part 14 default Disabled. */
-  private PubSubState initialState(Optional<PubSubHandle> handle) {
+  private PubSubState initialState(Supplier<Optional<PubSubHandle>> handleLookup) {
     try {
-      return handle.map(service::state).orElse(PubSubState.Disabled);
+      return handleLookup.get().map(service::state).orElse(PubSubState.Disabled);
     } catch (IllegalArgumentException e) {
       return PubSubState.Disabled;
     }
-  }
-
-  /** The current time as an OPC UA VersionTime: seconds since 2000-01-01T00:00:00 UTC. */
-  private static UInteger versionTimeNow() {
-    long seconds = Instant.now().getEpochSecond() - VERSION_TIME_EPOCH.getEpochSecond();
-    return uint(seconds & 0xFFFFFFFFL);
   }
 
   // endregion

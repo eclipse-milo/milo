@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.pubsub.server;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -33,9 +34,12 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
 import org.eclipse.milo.opcua.sdk.pubsub.config.ReaderGroupConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.UdpDatagramAddress;
 import org.eclipse.milo.opcua.sdk.pubsub.config.WriterGroupConfig;
+import org.eclipse.milo.opcua.sdk.server.methods.MethodInvocationHandler;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -45,7 +49,8 @@ import org.junit.jupiter.api.Test;
  * {@link ServerPubSub} lifecycle behavior per pinned decisions S2 and S10: attach is legal any time
  * after {@link org.eclipse.milo.opcua.sdk.server.OpcUaServer} construction and startup never
  * requires {@code server.startup()}; startup, shutdown, and close are idempotent; close after a
- * failed startup is tolerated.
+ * failed startup is tolerated; a close that runs before startup marks the optional faces stopped so
+ * a later startup can never register them (the CAS-vs-close race fix, pinned decisions R10/D27).
  *
  * <p>Network safety: connections use unicast 127.0.0.1 with ephemeral ports and an explicit
  * loopback {@code discoveryAddress}, so the engine's discovery channels never touch the default
@@ -118,6 +123,65 @@ class ServerPubSubLifecycleTest {
     serverPubSub.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
 
     serverPubSub.close();
+    serverPubSub.close();
+  }
+
+  @Test
+  void closeBeforeStartupNeverRegistersTheFragment() throws Exception {
+    ServerPubSubOptions options =
+        ServerPubSubOptions.builder().exposeInformationModel(true).build();
+
+    ServerPubSub serverPubSub =
+        ServerPubSub.attach(testServer.getServer(), readerOnlyConfig(), options);
+
+    // close first: the lifecycle state machine marks the faces STOPPED, so the subsequent
+    // startup must not register them
+    serverPubSub.close();
+
+    // the startup future fails cleanly (the engine service was already shut down)
+    ExecutionException e =
+        assertThrows(
+            ExecutionException.class,
+            () -> serverPubSub.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS));
+    assertInstanceOf(IllegalStateException.class, e.getCause());
+
+    // the fragment never registered: no fragment-minted node is resolvable
+    NodeId connectionNodeId =
+        new NodeId(
+            testServer.getServer().getServerNamespace().getNamespaceIndex(), "PubSub/lc-conn");
+    assertTrue(
+        testServer.getServer().getAddressSpaceManager().getManagedNode(connectionNodeId).isEmpty());
+
+    // close stays idempotent after the failed startup
+    serverPubSub.close();
+  }
+
+  @Test
+  void closeBeforeStartupNeverAttachesTheSksFace() throws Exception {
+    ServerPubSubOptions options =
+        ServerPubSubOptions.builder().securityKeyServerEnabled(true).build();
+
+    ServerPubSub serverPubSub =
+        ServerPubSub.attach(testServer.getServer(), readerOnlyConfig(), options);
+
+    serverPubSub.close();
+
+    ExecutionException e =
+        assertThrows(
+            ExecutionException.class,
+            () -> serverPubSub.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS));
+    assertInstanceOf(IllegalStateException.class, e.getCause());
+
+    // the face never attached: the ns0 GetSecurityKeys node still has no handler
+    UaMethodNode methodNode =
+        (UaMethodNode)
+            testServer
+                .getServer()
+                .getAddressSpaceManager()
+                .getManagedNode(NodeIds.PublishSubscribe_GetSecurityKeys)
+                .orElseThrow();
+    assertSame(MethodInvocationHandler.NOT_IMPLEMENTED, methodNode.getInvocationHandler());
+
     serverPubSub.close();
   }
 

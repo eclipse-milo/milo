@@ -10,13 +10,9 @@
 
 package org.eclipse.milo.opcua.sdk.pubsub.server;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigValidationException;
-import org.eclipse.milo.opcua.sdk.pubsub.config.SecurityGroupConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodInvocationHandler;
@@ -35,8 +31,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
-import org.eclipse.milo.opcua.stack.core.types.structured.PermissionType;
-import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,20 +69,16 @@ final class SksServerFace {
   /**
    * Create a face for {@code server} serving keys for the SecurityGroups of {@code config}.
    *
+   * @param authorizer the effective {@link PubSubMethodAuthorizer} resolved by {@link
+   *     ServerPubSub}: the options-configured authorizer, else the shared {@link
+   *     DefaultPubSubMethodAuthorizer} instance.
    * @throws PubSubConfigValidationException if a SecurityGroup configures an unsupported non-null
    *     SecurityPolicy URI, or two SecurityGroups share a SecurityGroupId.
    */
-  SksServerFace(OpcUaServer server, PubSubConfig config, ServerPubSubOptions options) {
+  SksServerFace(OpcUaServer server, PubSubConfig config, PubSubMethodAuthorizer authorizer) {
     this.server = server;
     this.keyStore = new SecurityGroupKeyStore(config.securityGroups());
-
-    var groupsById = new HashMap<String, SecurityGroupConfig>();
-    for (SecurityGroupConfig group : config.securityGroups()) {
-      groupsById.put(group.getSecurityGroupId(), group);
-    }
-
-    PubSubMethodAuthorizer configured = options.getMethodAuthorizer();
-    this.authorizer = configured != null ? configured : new DefaultAuthorizer(groupsById::get);
+    this.authorizer = authorizer;
   }
 
   /**
@@ -214,89 +204,6 @@ final class SksServerFace {
       keys.set(served.keys().toArray(new ByteString[0]));
       timeToNextKey.set(served.timeToNextKeyMillis());
       keyLifetime.set(served.keyLifetimeMillis());
-    }
-  }
-
-  /**
-   * The default {@link PubSubMethodAuthorizer} posture (K17.3): with a {@code RoleMapper}
-   * configured the well-known roles apply; without one, encrypted callers are allowed unless a
-   * SecurityGroup carries explicit non-empty RolePermissions (fail closed on explicit
-   * restrictions).
-   */
-  static final class DefaultAuthorizer implements PubSubMethodAuthorizer {
-
-    private static final StatusCode DENIED = new StatusCode(StatusCodes.Bad_UserAccessDenied);
-
-    private final Function<String, @Nullable SecurityGroupConfig> groupLookup;
-
-    DefaultAuthorizer(Function<String, @Nullable SecurityGroupConfig> groupLookup) {
-      this.groupLookup = groupLookup;
-    }
-
-    @Override
-    public StatusCode checkConfigure(Session session) {
-      Optional<List<NodeId>> roleIds = session.getRoleIds();
-
-      // no RoleMapper: allow, consistent with the core posture (D10)
-      return roleIds
-          .map(ids -> ids.contains(NodeIds.WellKnownRole_ConfigureAdmin) ? StatusCode.GOOD : DENIED)
-          .orElse(StatusCode.GOOD);
-    }
-
-    @Override
-    public StatusCode checkSksAdmin(Session session) {
-      Optional<List<NodeId>> roleIds = session.getRoleIds();
-
-      // no RoleMapper: allow, consistent with the core posture (D10)
-      return roleIds
-          .map(
-              ids ->
-                  ids.contains(NodeIds.WellKnownRole_SecurityKeyServerAdmin)
-                      ? StatusCode.GOOD
-                      : DENIED)
-          .orElse(StatusCode.GOOD);
-    }
-
-    @Override
-    public StatusCode checkKeyAccess(Session session, String securityGroupId) {
-      // getRoleIds() is recomputed per call; call it exactly once per decision
-      Optional<List<NodeId>> maybeRoleIds = session.getRoleIds();
-
-      @Nullable SecurityGroupConfig group = groupLookup.apply(securityGroupId);
-      List<RolePermissionType> rolePermissions =
-          group != null ? group.getRolePermissions() : List.of();
-
-      if (maybeRoleIds.isEmpty()) {
-        // no RoleMapper configured: allow encrypted callers, but fail closed on groups
-        // carrying explicit restrictions; unknown groups are allowed through so the
-        // handler's existence check can return Bad_NotFound
-        return rolePermissions.isEmpty() ? StatusCode.GOOD : DENIED;
-      }
-
-      // a RoleMapper returning an empty list is still "mapper configured": the role rows
-      // apply and deny
-      List<NodeId> roleIds = maybeRoleIds.get();
-
-      if (!rolePermissions.isEmpty()) {
-        boolean allowed =
-            rolePermissions.stream()
-                .anyMatch(rp -> roleIds.contains(rp.getRoleId()) && canCall(rp));
-
-        return allowed ? StatusCode.GOOD : DENIED;
-      }
-
-      // no explicit per-group restrictions, or the group is unknown: require the default
-      // pull roles; unauthorized callers cannot distinguish unknown from denied groups
-      boolean allowed =
-          roleIds.contains(NodeIds.WellKnownRole_SecurityKeyServerAccess)
-              || roleIds.contains(NodeIds.WellKnownRole_SecurityKeyServerAdmin);
-
-      return allowed ? StatusCode.GOOD : DENIED;
-    }
-
-    private static boolean canCall(RolePermissionType rolePermission) {
-      PermissionType permissions = rolePermission.getPermissions();
-      return permissions != null && permissions.getCall();
     }
   }
 }
