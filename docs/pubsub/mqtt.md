@@ -69,7 +69,7 @@ JSON is broker-only: putting `Json*` settings anywhere on a UDP connection is re
 
 ## The topic tree
 
-Topics follow the Part 14 topic tree: `<prefix>/<mapping>/data/<publisherId>/<writerGroupName>` for data and `<prefix>/<mapping>/metadata/<publisherId>/<writerGroupName>/<dataSetWriterName>` for metadata. The prefix defaults to `opcua` (overridable per connection, see [connection properties](#client-identity-and-connection-properties)); the mapping level is `uadp` or `json`; numeric publisher ids are stringified.
+Topics follow the Part 14 topic tree: `<prefix>/<mapping>/data/<publisherId>/<writerGroupName>` for data, `<prefix>/<mapping>/metadata/<publisherId>/<writerGroupName>/<dataSetWriterName>` for metadata, and `<prefix>/<mapping>/status/<publisherId>` for publisher status. The prefix defaults to `opcua` (overridable per connection, see [connection properties](#client-identity-and-connection-properties)); the mapping level is `uadp` or `json`; numeric publisher ids are stringified.
 
 Publishers derive their topics automatically — there is nothing to configure. There is also no runtime API to ask a running writer group which topic it resolved to; the `BrokerTopics` helper re-derives it, which is how `MqttUadpPublisherExample` logs it:
 
@@ -120,6 +120,38 @@ DataSetReaderConfig.builder("reader")
 
 The metadata's ConfigurationVersion is auto-populated by the config builders (it appears as `1.1` in the example output below) — you don't have to set one for the version check to pass. The full metadata story, including the three `MetadataPolicy` values and UDP discovery, is in [metadata and discovery](metadata-and-discovery.md).
 
+## Retained publisher status and MQTT Will
+
+JSON-over-MQTT publishers with a PublisherId publish retained `ua-status` messages to `<prefix>/json/status/<publisherId>` at QoS 1. A late subscriber receives the last known remote PubSubConnection status immediately, just like retained metadata.
+
+`MqttConnectionConfig` exposes this as publisher-side runtime policy: `.publisherStatusMode(PublisherStatusMode.AUTO)` is the default; `DISABLED` suppresses retained status and Will, `WILL` requires a retained MQTT Will and fails startup if the connection cannot provide one, and `CYCLIC` forces cyclic retained status with no Will. The setting is Milo-local and does not round-trip through Part 14 configuration export/import.
+
+In `AUTO` and `WILL` mode, when every configured writer group on the connection uses the JSON mapping, the MQTT CONNECT includes a retained Last Will on that status topic. The Will payload is a non-cyclic JSON Status message with `IsCyclic=false` and `Status=Error`, so a broker can publish the remote publisher death notice without waiting for data silence. MQTT 5.0 carries the `application/json` Content Type; MQTT 3.1.1 carries the same payload and retain/QoS settings but has no Content Type property.
+
+When a single MQTT Will cannot cover the connection's configured status stream in `AUTO` mode, or when `CYCLIC` is selected, Milo publishes cyclic JSON status while the connection is Operational. Those retained reports include `Timestamp`, `IsCyclic=true`, and `NextReportTime`; if a subscriber sees `NextReportTime` elapse without a replacement, it synthesizes a remote `Error` status event. Milo currently uses a 1 s cyclic status interval. Non-Operational local connection states are still published as retained, non-cyclic status messages before graceful teardown unless status publishing is disabled.
+
+Subscribers with JSON readers subscribe to the matching status topics automatically. A reader with a PublisherId filter subscribes to its exact `<prefix>/json/status/<publisherId>` topic; a wildcard reader subscribes to `<prefix>/json/status/+`. Received `ua-status` documents are decoded and delivered through `PubSubService.addPublisherStatusListener(...)` as `PublisherStatusReceivedEvent`.
+
+The event reports the remote publisher's PubSubConnection status, the broker topic, the mapping name, the remote PublisherId, whether the event is a cyclic timeout, and the local DataSetReaders whose mapping and PublisherId filter correlate with it. It deliberately does not change local component state: a remote `Error` status is not the same thing as the local subscriber connection or DataSetReader failing. Use the event for remote-publisher health, and keep `messageReceiveTimeout` on readers when you also need data-plane silence detection.
+
+UADP-over-MQTT status messages are not implemented yet. UADP data and metadata continue to work over MQTT, but status topic publishing, status decoding, and MQTT Will payloads are JSON-only in this release.
+
+For manual broker testing, `PubSubInteropTool` has status-aware MQTT modes on the test classpath. Start a status monitor, start a JSON publisher, then terminate the publisher process without a clean MQTT disconnect (for example with `kill -9`) to see the retained Operational status followed by the broker-published retained Will Error:
+
+```bash
+mvn -q -pl opc-ua-sdk/sdk-pubsub-mqtt exec:java \
+  -Dexec.classpathScope=test \
+  -Dexec.mainClass=org.eclipse.milo.opcua.sdk.pubsub.mqtt.PubSubInteropTool \
+  -Dexec.args="mqtt-status mqtt://localhost:1883 --publisher-id uint16:62541"
+
+mvn -q -pl opc-ua-sdk/sdk-pubsub-mqtt exec:java \
+  -Dexec.classpathScope=test \
+  -Dexec.mainClass=org.eclipse.milo.opcua.sdk.pubsub.mqtt.PubSubInteropTool \
+  -Dexec.args="mqtt-publish mqtt://localhost:1883"
+```
+
+Use `mqtt-publish ... --status auto|disabled|will|cyclic` to select the same policy exposed by `PublisherStatusMode`, and use `--topic-prefix <prefix>` on both commands when testing a non-default topic tree.
+
 ## Delivery guarantees and MQTT QoS
 
 `BrokerTransportSettings.requestedDeliveryGuarantee` maps directly onto MQTT QoS:
@@ -160,7 +192,7 @@ An outage is visible in PubSub component state. When a previously connected brok
 The per-cycle failure story while disconnected:
 
 - Publisher side: each failed publish surfaces as a `SEND_FAILURE` diagnostics event carrying `Bad_ServerNotConnected` (publishes fail fast while disconnected — no blanket `Bad_CommunicationError` anymore) and ticks the group's `failedTransmissions` and the writers' `failedDataSetMessages` counters. QoS 1/2 messages are not buffered and replayed after reconnect — data published during an outage is lost.
-- Subscriber side: a subscriber's own broker session failing produces the same connection-level `Error`/recovery on the subscriber. But the *publisher's* outage is invisible to a subscriber whose session is healthy, so still opt in to the `messageReceiveTimeout` watchdog on `DataSetReaderConfig` (default off) for end-to-end staleness: the reader goes to Error/`Bad_Timeout` after the configured silence and returns to Operational on the next message it accepts. Sequence tracking applies here: a message dropped as a stale duplicate (a QoS 1 redelivery, for example) neither resets the watchdog nor recovers the reader; see [operations](operations.md).
+- Subscriber side: a subscriber's own broker session failing produces the same connection-level `Error`/recovery on the subscriber. A JSON publisher's outage can also be visible through the retained status topic and MQTT Will described above, reported as a remote publisher status event without mutating local reader state. Still opt in to the `messageReceiveTimeout` watchdog on `DataSetReaderConfig` (default off) when data-plane silence itself matters, or when talking to publishers that do not publish JSON status: the reader goes to Error/`Bad_Timeout` after the configured silence and returns to Operational on the next message it accepts. Sequence tracking applies here: a message dropped as a stale duplicate (a QoS 1 redelivery, for example) neither resets the watchdog nor recovers the reader; see [operations](operations.md).
 
 ## TLS and authentication
 

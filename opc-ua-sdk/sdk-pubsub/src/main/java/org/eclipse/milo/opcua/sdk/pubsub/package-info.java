@@ -12,7 +12,8 @@
  * Runtime API for OPC UA Part 14 PubSub: the {@code PubSubService} entry point and its service and
  * binding configuration, opaque component handles, data-flow types for publishing ({@code
  * PublishedDataSetSource}, {@code DataSetSnapshot}) and subscribing ({@code DataSetListener},
- * {@code DataSetReceivedEvent}), plus state, metadata, and diagnostics listeners and their events.
+ * {@code DataSetReceivedEvent}), plus state, metadata, remote publisher status, and diagnostics
+ * listeners and their events.
  */
 @NullMarked
 package org.eclipse.milo.opcua.sdk.pubsub;

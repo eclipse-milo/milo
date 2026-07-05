@@ -20,11 +20,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.milo.opcua.sdk.pubsub.DataSetFieldValue;
 import org.eclipse.milo.opcua.sdk.pubsub.DataSetReceivedEvent;
 import org.eclipse.milo.opcua.sdk.pubsub.MetaDataReceivedEvent;
+import org.eclipse.milo.opcua.sdk.pubsub.PubSubHandle;
+import org.eclipse.milo.opcua.sdk.pubsub.PublisherStatusReceivedEvent;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetMetaDataConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetReaderConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.MessageSecurityConfig;
@@ -39,6 +46,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedDataSetMessage;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedField;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedMetaData;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedNetworkMessage;
+import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedStatusMessage;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.MessageMappingProvider;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.ReceivedSecurity;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.SecurityContextResolver;
@@ -60,23 +68,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Subscriber-side dispatch: decodes received datagrams and routes the decoded DataSetMessages to
- * the matching DataSetReaders via the Part 14 filter chain (§6.2.9.x / §6.3.1.4.x), where null/0
- * filter values are wildcards.
+ * Subscriber-side dispatch: decodes received datagrams and routes decoded DataSetMessages,
+ * DataSetMetaData, discovery messages, and remote publisher status to their subscriber-side
+ * consumers. DataSetMessages are matched to DataSetReaders via the Part 14 filter chain (§6.2.9.x /
+ * §6.3.1.4.x), where null/0 filter values are wildcards; status messages are correlated to local
+ * readers by mapping and PublisherId but do not mutate reader state.
  *
  * <p>Runs entirely on the transport executor; decode and match failures are counted in diagnostics
  * and never thrown. The connection's {@code networkMessagesReceived} counter ticks once per
  * arrival, before any decode attempt; decode failures tick {@code decodeErrors} at the connection
- * path unless another of the connection's mappings decoded content — DataSetMessages, metadata, or
- * a discovery message — from the same buffer (on mixed-mapping broker connections every message is
- * offered to every mapping, so the "wrong" mapping's failure on a message the right mapping decoded
- * is expected and not an error). A mapping's own partial content never suppresses its own failure:
- * a truncated message that still delivered a decodable prefix ticks that mapping's failure once
- * while suppressing the other mappings' failures on the same bytes. A tolerated skip that decoded
- * nothing, such as the UADP decoder skipping foreign input by its version nibble, suppresses
- * nothing: a buffer no mapping could decode ticks {@code decodeErrors} once per failed mapping. A
- * reader group with a non-zero {@code maxNetworkMessageSize} never sees messages larger than it;
- * such messages tick {@code decodeErrors} at the group path with {@code
+ * path unless another of the connection's mappings decoded content — DataSetMessages, metadata,
+ * status, or a discovery message — from the same buffer (on mixed-mapping broker connections every
+ * message is offered to every mapping, so the "wrong" mapping's failure on a message the right
+ * mapping decoded is expected and not an error). A mapping's own partial content never suppresses
+ * its own failure: a truncated message that still delivered a decodable prefix ticks that mapping's
+ * failure once while suppressing the other mappings' failures on the same bytes. A tolerated skip
+ * that decoded nothing, such as the UADP decoder skipping foreign input by its version nibble,
+ * suppresses nothing: a buffer no mapping could decode ticks {@code decodeErrors} once per failed
+ * mapping. A reader group with a non-zero {@code maxNetworkMessageSize} never sees messages larger
+ * than it; such messages tick {@code decodeErrors} at the group path with {@code
  * Bad_EncodingLimitsExceeded}.
  *
  * <p>Data and event DataSetMessages that carry sequence numbers pass a per-reader, per-stream Part
@@ -130,10 +140,15 @@ final class ReaderDispatcher {
   /** Floor between invalid-signature WARN logs: forged traffic must not flood the log. */
   private static final long INVALID_SIGNATURE_WARN_INTERVAL_NANOS = TimeUnit.SECONDS.toNanos(10);
 
+  private static final long STATUS_TIMEOUT_GRACE_MILLIS = 250L;
+
   private final AtomicLong lastInvalidSignatureWarnNanos =
       new AtomicLong(System.nanoTime() - INVALID_SIGNATURE_WARN_INTERVAL_NANOS);
 
   private final PubSubServiceImpl service;
+  private final ConcurrentMap<StatusTimeoutKey, StatusTimeout> statusTimeouts =
+      new ConcurrentHashMap<>();
+  private final AtomicLong statusTimeoutSerial = new AtomicLong();
 
   ReaderDispatcher(PubSubServiceImpl service) {
     this.service = service;
@@ -148,6 +163,10 @@ final class ReaderDispatcher {
    * Bad-status denials — reach the metadata path regardless of which socket they arrived on.
    */
   void dispatch(ConnectionRuntime connection, ByteBuf buffer) {
+    dispatch(connection, null, buffer);
+  }
+
+  void dispatch(ConnectionRuntime connection, @Nullable String topic, ByteBuf buffer) {
     // "received" means "a message arrived and was offered to decode": tick once per arrival,
     // before any mapping runs, so the counter is independent of the decode outcome
     service.getDiagnostics().networkMessageReceived(connection.path());
@@ -226,7 +245,8 @@ final class ReaderDispatcher {
       }
 
       if (decoded instanceof DecodedNetworkMessage networkMessage) {
-        handleDecoded(connection, mappingName, networkMessage, oversizeGroups, securityGroup);
+        handleDecoded(
+            connection, mappingName, topic, networkMessage, oversizeGroups, securityGroup);
 
         // Chunk NetworkMessages: the normal handleDecoded pass above lets the per-reader
         // NetworkMessage windows observe the chunk NM (its empty messages list delivers
@@ -262,7 +282,8 @@ final class ReaderDispatcher {
               }
 
               // the reassembled message inherits the (VERIFIED) chunk security; no re-resolution
-              handleDecoded(connection, mappingName, decodedReassembled, oversizeGroups, null);
+              handleDecoded(
+                  connection, mappingName, null, decodedReassembled, oversizeGroups, null);
             } finally {
               payload.release();
             }
@@ -315,8 +336,8 @@ final class ReaderDispatcher {
   }
 
   /**
-   * Whether a decode actually decoded something from the buffer: DataSetMessages, metadata, or a
-   * discovery probe/announcement — including content decoded before a surfaced failure point.
+   * Whether a decode actually decoded something from the buffer: DataSetMessages, metadata, status,
+   * or a discovery probe/announcement — including content decoded before a surfaced failure point.
    *
    * <p>The distinction carries the mixed-mapping suppression guard: only a mapping that decoded
    * content from a buffer makes another mapping's failure on the same buffer expected. The tolerant
@@ -331,6 +352,7 @@ final class ReaderDispatcher {
       // mapping's genuine failure on the same bytes tick decodeErrors
       return !networkMessage.messages().isEmpty()
           || !networkMessage.metaData().isEmpty()
+          || networkMessage.status() != null
           || networkMessage.chunk() != null;
     }
     // a discovery probe or metadata announcement is decoded content by definition
@@ -372,6 +394,7 @@ final class ReaderDispatcher {
   private void handleDecoded(
       ConnectionRuntime connection,
       String mappingName,
+      @Nullable String topic,
       DecodedNetworkMessage decoded,
       Set<ReaderGroupRuntime> oversizeGroups,
       @Nullable ReaderGroupRuntime securityResolvedGroup) {
@@ -388,6 +411,12 @@ final class ReaderDispatcher {
         // can never reach the receive-mode gate below — count its receive-mode drops here instead
         countUnroutedSecuritySkip(connection, mappingName, decoded, oversizeGroups, security);
       }
+      return;
+    }
+
+    DecodedStatusMessage status = decoded.status();
+    if (status != null) {
+      handleStatus(connection, mappingName, topic, status);
       return;
     }
 
@@ -465,6 +494,173 @@ final class ReaderDispatcher {
       }
     }
   }
+
+  private void handleStatus(
+      ConnectionRuntime connection,
+      String mappingName,
+      @Nullable String topic,
+      DecodedStatusMessage status) {
+
+    List<PubSubHandle> readers = correlatedStatusReaders(connection, mappingName, status);
+
+    service
+        .getEventDispatcher()
+        .notifyPublisherStatus(
+            new PublisherStatusReceivedEvent(
+                connection.handle(),
+                mappingName,
+                topic,
+                status.messageId(),
+                status.publisherId(),
+                status.status(),
+                status.cyclic(),
+                status.timestamp(),
+                status.nextReportTime(),
+                false,
+                readers));
+
+    StatusTimeoutKey key =
+        new StatusTimeoutKey(connection.handle(), mappingName, status.publisherId());
+    if (status.cyclic() && status.nextReportTime() != null) {
+      scheduleStatusTimeout(connection, mappingName, topic, status, readers, key);
+    } else {
+      cancelStatusTimeout(key);
+    }
+  }
+
+  private List<PubSubHandle> correlatedStatusReaders(
+      ConnectionRuntime connection, String mappingName, DecodedStatusMessage status) {
+
+    var readers = new ArrayList<PubSubHandle>();
+    for (ReaderGroupRuntime group : connection.readerGroupRuntimes()) {
+      for (DataSetReaderRuntime reader : group.readerRuntimes()) {
+        if (!reader.mappingName().equals(mappingName)) {
+          continue;
+        }
+        if (isNotReceiving(reader.state())) {
+          continue;
+        }
+        if (publisherIdMatches(reader.config(), status.publisherId())) {
+          readers.add(reader.handle());
+        }
+      }
+    }
+    return List.copyOf(readers);
+  }
+
+  private void scheduleStatusTimeout(
+      ConnectionRuntime connection,
+      String mappingName,
+      @Nullable String topic,
+      DecodedStatusMessage status,
+      List<PubSubHandle> readers,
+      StatusTimeoutKey key) {
+
+    cancelStatusTimeout(key);
+
+    long serial = statusTimeoutSerial.incrementAndGet();
+    long delayMillis =
+        Math.max(
+            0L,
+            status.nextReportTime().getJavaTime()
+                - System.currentTimeMillis()
+                + STATUS_TIMEOUT_GRACE_MILLIS);
+
+    var timeout = new StatusTimeout(serial, new AtomicReference<>());
+    statusTimeouts.put(key, timeout);
+
+    ScheduledFuture<?> future =
+        service
+            .getScheduledExecutor()
+            .schedule(
+                () ->
+                    submitStatusTimeout(
+                        connection, mappingName, topic, status, readers, key, serial),
+                delayMillis,
+                TimeUnit.MILLISECONDS);
+
+    timeout.future().set(future);
+    if (statusTimeouts.get(key) != timeout) {
+      future.cancel(false);
+    }
+  }
+
+  private void cancelStatusTimeout(StatusTimeoutKey key) {
+    StatusTimeout timeout = statusTimeouts.remove(key);
+    if (timeout != null) {
+      ScheduledFuture<?> future = timeout.future().get();
+      if (future != null) {
+        future.cancel(false);
+      }
+    }
+  }
+
+  private void submitStatusTimeout(
+      ConnectionRuntime connection,
+      String mappingName,
+      @Nullable String topic,
+      DecodedStatusMessage status,
+      List<PubSubHandle> readers,
+      StatusTimeoutKey key,
+      long serial) {
+
+    try {
+      connection.submitToDispatchQueue(
+          () -> notifyStatusTimeout(connection, mappingName, topic, status, readers, key, serial));
+    } catch (RejectedExecutionException e) {
+      // service is shutting down; no listener can reliably observe the timeout
+    }
+  }
+
+  private void notifyStatusTimeout(
+      ConnectionRuntime connection,
+      String mappingName,
+      @Nullable String topic,
+      DecodedStatusMessage status,
+      List<PubSubHandle> readers,
+      StatusTimeoutKey key,
+      long serial) {
+
+    StatusTimeout currentTimeout = statusTimeouts.get(key);
+    if (currentTimeout == null || currentTimeout.serial() != serial) {
+      return;
+    }
+    statusTimeouts.remove(key, currentTimeout);
+
+    service
+        .getEventDispatcher()
+        .notifyPublisherStatus(
+            new PublisherStatusReceivedEvent(
+                connection.handle(),
+                mappingName,
+                topic,
+                status.messageId(),
+                status.publisherId(),
+                PubSubState.Error,
+                true,
+                status.timestamp(),
+                status.nextReportTime(),
+                true,
+                readers));
+  }
+
+  void cancelStatusTimeouts(PubSubHandle connection) {
+    for (Map.Entry<StatusTimeoutKey, StatusTimeout> entry : statusTimeouts.entrySet()) {
+      StatusTimeoutKey key = entry.getKey();
+      StatusTimeout timeout = entry.getValue();
+      if (key.connection().equals(connection) && statusTimeouts.remove(key, timeout)) {
+        ScheduledFuture<?> future = timeout.future().get();
+        if (future != null) {
+          future.cancel(false);
+        }
+      }
+    }
+  }
+
+  private record StatusTimeoutKey(
+      PubSubHandle connection, String mappingName, PublisherId publisherId) {}
+
+  private record StatusTimeout(long serial, AtomicReference<ScheduledFuture<?>> future) {}
 
   /**
    * Route one decoded DataSetMetaData announcement, received on either the data socket or the

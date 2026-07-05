@@ -26,6 +26,8 @@ import org.eclipse.milo.opcua.sdk.pubsub.PubSubDiagnosticsEvent;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubDiagnosticsListener;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubStateChangeEvent;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubStateListener;
+import org.eclipse.milo.opcua.sdk.pubsub.PublisherStatusListener;
+import org.eclipse.milo.opcua.sdk.pubsub.PublisherStatusReceivedEvent;
 import org.eclipse.milo.opcua.stack.core.util.ExecutionQueue;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -56,6 +58,8 @@ final class EventDispatcher {
       new ConcurrentHashMap<>();
   private final List<PubSubStateListener> stateListeners = new CopyOnWriteArrayList<>();
   private final List<MetaDataListener> metaDataListeners = new CopyOnWriteArrayList<>();
+  private final List<PublisherStatusListener> publisherStatusListeners =
+      new CopyOnWriteArrayList<>();
   private final List<PubSubDiagnosticsListener> diagnosticsListeners = new CopyOnWriteArrayList<>();
 
   private volatile @Nullable DiagnosticsCollector diagnostics;
@@ -123,6 +127,15 @@ final class EventDispatcher {
     metaDataListeners.remove(listener);
   }
 
+  void addPublisherStatusListener(PublisherStatusListener listener) {
+    publisherStatusListeners.add(listener);
+  }
+
+  /** Remove {@code listener} (identity-based, first occurrence); never-added is a no-op. */
+  void removePublisherStatusListener(PublisherStatusListener listener) {
+    publisherStatusListeners.remove(listener);
+  }
+
   void addDiagnosticsListener(PubSubDiagnosticsListener listener) {
     diagnosticsListeners.add(listener);
   }
@@ -161,6 +174,19 @@ final class EventDispatcher {
 
     for (MetaDataListener listener : metaDataListeners) {
       invokeSafely(path, () -> listener.onMetaData(event));
+    }
+  }
+
+  /**
+   * Dispatch a remote publisher status event to the status listeners.
+   *
+   * <p>Must be invoked on the transport executor (the subscriber dispatch path).
+   */
+  void notifyPublisherStatus(PublisherStatusReceivedEvent event) {
+    String path = event.connection().path();
+
+    for (PublisherStatusListener listener : publisherStatusListeners) {
+      invokeSafely(path, () -> listener.onPublisherStatus(event));
     }
   }
 

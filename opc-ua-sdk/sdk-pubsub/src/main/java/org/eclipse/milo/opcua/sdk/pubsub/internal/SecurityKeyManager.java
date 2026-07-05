@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -85,19 +86,19 @@ import org.slf4j.LoggerFactory;
  * {prev, current, futures} window, on last detach, and on shutdown. Retirement drops every manager
  * reference immediately but defers the zeroizing {@code destroy()} by {@link
  * #RETIRED_KEY_DESTROY_DELAY_NANOS}: the hot-path borrowers — a publish cycle mid-encode on a
- * scheduler thread, a decode on a transport dispatch thread — never coordinate with the manager, so
+ * transport thread, a decode on a transport dispatch thread — never coordinate with the manager, so
  * the grace period is what guarantees no {@code destroy()} races an active borrow. Material that
  * was never installed into a window (merge duplicates, responses arriving after close) has no
  * borrowers and is destroyed inline.
  *
  * <p>Threading: {@code attach*}/{@code detach}/{@code shutdown} are called under the engine lock
- * and only mutate maps and schedule tasks — the fetch itself always runs on the scheduler, never
- * synchronously under the engine lock. All mutable window state is guarded by the {@link
- * GroupKeyState} monitor; provider, state-machine, and diagnostics calls are NEVER made while
- * holding it (the {@code DataSetReaderRuntime.checkTimeout} one-way lock-ordering discipline).
- * Provider futures complete on arbitrary threads and are hopped to the scheduler via {@code
- * whenCompleteAsync}. Hot paths ({@link #currentPublisherKeys}, {@link #subscriberKeyWindow}) are
- * volatile snapshot reads.
+ * and only mutate maps and schedule tasks — the fetch itself always runs on the work executor,
+ * never synchronously under the engine lock or on the scheduled executor. All mutable window state
+ * is guarded by the {@link GroupKeyState} monitor; provider, state-machine, and diagnostics calls
+ * are NEVER made while holding it (the {@code DataSetReaderRuntime.checkTimeout} one-way
+ * lock-ordering discipline). Provider futures complete on arbitrary threads and are hopped to the
+ * work executor before touching state. Hot paths ({@link #currentPublisherKeys}, {@link
+ * #subscriberKeyWindow}) are volatile snapshot reads.
  */
 final class SecurityKeyManager {
 
@@ -132,6 +133,7 @@ final class SecurityKeyManager {
   private final PubSubStateMachine stateMachine;
   private final Map<SecurityGroupRef, SecurityKeyProvider> providers;
   private final ScheduledExecutorService scheduler;
+  private final Executor executor;
   private final LongSupplier nanoTime;
   private final Supplier<byte[]> nonceRandom;
 
@@ -148,6 +150,24 @@ final class SecurityKeyManager {
         stateMachine,
         providers,
         scheduler,
+        scheduler,
+        System::nanoTime,
+        () -> NonceUtil.generateNonce(4).bytesOrEmpty());
+  }
+
+  SecurityKeyManager(
+      DiagnosticsCollector diagnostics,
+      PubSubStateMachine stateMachine,
+      Map<SecurityGroupRef, SecurityKeyProvider> providers,
+      ScheduledExecutorService scheduler,
+      Executor executor) {
+
+    this(
+        diagnostics,
+        stateMachine,
+        providers,
+        scheduler,
+        executor,
         System::nanoTime,
         () -> NonceUtil.generateNonce(4).bytesOrEmpty());
   }
@@ -161,10 +181,24 @@ final class SecurityKeyManager {
       LongSupplier nanoTime,
       Supplier<byte[]> nonceRandom) {
 
+    this(diagnostics, stateMachine, providers, scheduler, scheduler, nanoTime, nonceRandom);
+  }
+
+  /** Test seam: injectable clock, executor, and 4-byte nonce random supplier. */
+  SecurityKeyManager(
+      DiagnosticsCollector diagnostics,
+      PubSubStateMachine stateMachine,
+      Map<SecurityGroupRef, SecurityKeyProvider> providers,
+      ScheduledExecutorService scheduler,
+      Executor executor,
+      LongSupplier nanoTime,
+      Supplier<byte[]> nonceRandom) {
+
     this.diagnostics = diagnostics;
     this.stateMachine = stateMachine;
     this.providers = Map.copyOf(providers);
     this.scheduler = scheduler;
+    this.executor = executor;
     this.nanoTime = nanoTime;
     this.nonceRandom = nonceRandom;
   }
@@ -250,7 +284,7 @@ final class SecurityKeyManager {
     state.attachments.put(group, new Attachment(publisher, configuredPolicyUri));
 
     GroupKeyState attachedState = state;
-    scheduler.execute(() -> onAttached(attachedState));
+    executeWork(() -> onAttached(attachedState));
   }
 
   /**
@@ -349,7 +383,7 @@ final class SecurityKeyManager {
       return;
     }
 
-    scheduler.execute(
+    executeWork(
         () -> {
           synchronized (state) {
             long n = nanoTime.getAsLong();
@@ -466,7 +500,7 @@ final class SecurityKeyManager {
 
   // endregion
 
-  // region state machine + fetch loop (scheduler threads)
+  // region state machine + fetch loop (work executor)
 
   private void onAttached(GroupKeyState state) {
     List<AbstractComponentRuntime> toComplete = List.of();
@@ -508,8 +542,8 @@ final class SecurityKeyManager {
       future = CompletableFuture.failedFuture(e);
     }
 
-    // the provider may complete on any thread: hop to the scheduler before touching state
-    future.whenCompleteAsync((keySet, ex) -> onFetchComplete(state, keySet, ex), scheduler);
+    // the provider may complete on any thread: hop to the work executor before touching state
+    future.whenComplete((keySet, ex) -> executeWork(() -> onFetchComplete(state, keySet, ex)));
   }
 
   private void onFetchComplete(
@@ -746,7 +780,10 @@ final class SecurityKeyManager {
         // the window grew since this task was scheduled; realign
         cancelTask(state.expiryTask);
         state.expiryTask =
-            scheduler.schedule(() -> onExpiryDeadline(state), deadline - now, TimeUnit.NANOSECONDS);
+            scheduler.schedule(
+                () -> executeWork(() -> onExpiryDeadline(state)),
+                deadline - now,
+                TimeUnit.NANOSECONDS);
         return;
       }
 
@@ -872,7 +909,10 @@ final class SecurityKeyManager {
    */
   private void retire(SecurityKeyMaterial material) {
     try {
-      scheduler.schedule(material::destroy, RETIRED_KEY_DESTROY_DELAY_NANOS, TimeUnit.NANOSECONDS);
+      scheduler.schedule(
+          () -> executeWorkOrRun(material::destroy),
+          RETIRED_KEY_DESTROY_DELAY_NANOS,
+          TimeUnit.NANOSECONDS);
     } catch (RejectedExecutionException e) {
       material.destroy();
     }
@@ -950,7 +990,7 @@ final class SecurityKeyManager {
     };
   }
 
-  /** Runs on a publish thread: stop first (drop the snapshot), then fail via the scheduler. */
+  /** Runs on a publish thread: stop first (drop the snapshot), then fail via the work executor. */
   private void onNonceExhausted(GroupKeyState state, long tokenId) {
     List<AbstractComponentRuntime> publishers = new ArrayList<>();
     synchronized (state) {
@@ -975,7 +1015,7 @@ final class SecurityKeyManager {
         "MessageNonce sequence exhausted for SecurityGroup '%s'; publishing stopped until the next"
                 .formatted(state.ref.name())
             + " key switch";
-    scheduler.execute(
+    executeWork(
         () -> {
           for (AbstractComponentRuntime group : publishers) {
             diagnostics.error(
@@ -992,7 +1032,7 @@ final class SecurityKeyManager {
   private void scheduleStartupDeadline(GroupKeyState state) {
     state.startupDeadlineTask =
         scheduler.schedule(
-            () -> onStartupDeadline(state),
+            () -> executeWork(() -> onStartupDeadline(state)),
             2 * state.configuredKeyLifetimeNanos,
             TimeUnit.NANOSECONDS);
   }
@@ -1000,14 +1040,15 @@ final class SecurityKeyManager {
   private void rescheduleRefresh(GroupKeyState state, long delayNanos) {
     cancelTask(state.refreshTask);
     state.refreshTask =
-        scheduler.schedule(() -> initiateFetch(state), delayNanos, TimeUnit.NANOSECONDS);
+        scheduler.schedule(
+            () -> executeWork(() -> initiateFetch(state)), delayNanos, TimeUnit.NANOSECONDS);
   }
 
   private void rescheduleSwitch(GroupKeyState state, long nowNanos) {
     cancelTask(state.switchTask);
     state.switchTask =
         scheduler.schedule(
-            () -> onSwitchDeadline(state),
+            () -> executeWork(() -> onSwitchDeadline(state)),
             Math.max(0L, state.switchDeadlineNanos - nowNanos),
             TimeUnit.NANOSECONDS);
   }
@@ -1016,9 +1057,25 @@ final class SecurityKeyManager {
     cancelTask(state.expiryTask);
     state.expiryTask =
         scheduler.schedule(
-            () -> onExpiryDeadline(state),
+            () -> executeWork(() -> onExpiryDeadline(state)),
             Math.max(0L, expiryDeadlineNanos(state) - nowNanos),
             TimeUnit.NANOSECONDS);
+  }
+
+  private void executeWork(Runnable command) {
+    try {
+      executor.execute(command);
+    } catch (RejectedExecutionException e) {
+      LOGGER.debug("Security key manager work rejected; executor is shut down", e);
+    }
+  }
+
+  private void executeWorkOrRun(Runnable command) {
+    try {
+      executor.execute(command);
+    } catch (RejectedExecutionException e) {
+      command.run();
+    }
   }
 
   /**

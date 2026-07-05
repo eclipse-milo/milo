@@ -34,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.nio.charset.StandardCharsets;
@@ -52,14 +53,17 @@ import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodeContext;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedDataSetMessage;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedField;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedNetworkMessage;
+import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedStatusMessage;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.EncodedNetworkMessage;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.MetaDataEncodeContext;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
 import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
@@ -392,9 +396,72 @@ class JsonMappingBehaviorTest {
   @Test
   void otherUaMessageTypesAreToleratedAndSkipped() throws Exception {
     DecodedNetworkMessage decoded =
-        decode("{\"MessageId\":\"x\",\"MessageType\":\"ua-status\",\"IsCyclic\":true}");
+        decode("{\"MessageId\":\"x\",\"MessageType\":\"ua-connection\",\"PublisherId\":\"p\"}");
     assertTrue(decoded.messages().isEmpty());
     assertTrue(decoded.metaData().isEmpty());
+    assertNull(decoded.status());
+  }
+
+  /** JSON {@code ua-status} messages surface as remote publisher status content. */
+  @Test
+  void statusMessageDecodes() throws Exception {
+    DecodedNetworkMessage decoded =
+        decode(
+            "{\"MessageId\":\"s1\",\"MessageType\":\"ua-status\","
+                + "\"PublisherId\":\"4242\","
+                + "\"Timestamp\":\"2026-07-05T12:00:00Z\","
+                + "\"IsCyclic\":true,"
+                + "\"Status\":2,"
+                + "\"NextReportTime\":\"2026-07-05T12:00:01Z\"}");
+
+    assertTrue(decoded.messages().isEmpty());
+    assertTrue(decoded.metaData().isEmpty());
+
+    DecodedStatusMessage status = decoded.status();
+    assertNotNull(status);
+    assertEquals("s1", status.messageId());
+    assertEquals("4242", status.publisherId().toCanonicalString());
+    assertTrue(status.cyclic());
+    assertEquals(PubSubState.Operational, status.status());
+    assertEquals(Instant.parse("2026-07-05T12:00:00Z"), status.timestamp().getJavaInstant());
+    assertEquals(Instant.parse("2026-07-05T12:00:01Z"), status.nextReportTime().getJavaInstant());
+  }
+
+  /** Non-cyclic JSON status payloads emit explicit {@code IsCyclic=false} for MQTT Will use. */
+  @Test
+  void statusCodecEncodesNonCyclicWillPayload() throws Exception {
+    byte[] payload =
+        JsonStatusCodec.encode("will", PUBLISHER_ID, PubSubState.Error, false, null, null);
+
+    JsonObject object =
+        JsonParser.parseString(new String(payload, StandardCharsets.UTF_8)).getAsJsonObject();
+
+    assertEquals("will", object.get("MessageId").getAsString());
+    assertEquals("ua-status", object.get("MessageType").getAsString());
+    assertEquals(PUBLISHER_ID.toCanonicalString(), object.get("PublisherId").getAsString());
+    assertFalse(object.get("IsCyclic").getAsBoolean());
+    assertEquals(PubSubState.Error.getValue(), object.get("Status").getAsInt());
+    assertFalse(object.has("Timestamp"));
+    assertFalse(object.has("NextReportTime"));
+  }
+
+  /** Cyclic JSON status payloads carry the report time and next expected report time. */
+  @Test
+  void statusCodecEncodesCyclicNextReportTime() throws Exception {
+    DateTime timestamp = new DateTime(Instant.parse("2026-07-05T12:00:00Z"));
+    DateTime nextReportTime = new DateTime(Instant.parse("2026-07-05T12:00:01Z"));
+
+    byte[] payload =
+        JsonStatusCodec.encode(
+            "cyclic", PUBLISHER_ID, PubSubState.Operational, true, timestamp, nextReportTime);
+
+    JsonObject object =
+        JsonParser.parseString(new String(payload, StandardCharsets.UTF_8)).getAsJsonObject();
+
+    assertTrue(object.get("IsCyclic").getAsBoolean());
+    assertEquals(PubSubState.Operational.getValue(), object.get("Status").getAsInt());
+    assertEquals("2026-07-05T12:00:00Z", object.get("Timestamp").getAsString());
+    assertEquals("2026-07-05T12:00:01Z", object.get("NextReportTime").getAsString());
   }
 
   /** An unknown DataSetMessage MessageType yields an invalid placeholder, like the UADP codec. */

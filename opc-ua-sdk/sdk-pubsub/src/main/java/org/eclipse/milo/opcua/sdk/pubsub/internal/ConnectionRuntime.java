@@ -37,6 +37,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.uadp.MessageMappingProvider;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
 import org.eclipse.milo.opcua.stack.core.util.ExecutionQueue;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -60,6 +61,7 @@ final class ConnectionRuntime extends AbstractComponentRuntime {
   private final @Nullable TransportProvider transportProvider;
   private final @Nullable DiscoveryRuntime discoveryRuntime;
   private final @Nullable MetaDataPublisher metaDataPublisher;
+  private final @Nullable BrokerStatusPublisher statusPublisher;
   private final @Nullable EventLoopGroup dedicatedEventLoop;
 
   /**
@@ -128,6 +130,8 @@ final class ConnectionRuntime extends AbstractComponentRuntime {
       // connections UADP discovery handles metadata instead
       this.metaDataPublisher =
           config instanceof UdpConnectionConfig ? null : new MetaDataPublisher(service, this);
+      this.statusPublisher =
+          config instanceof UdpConnectionConfig ? null : new BrokerStatusPublisher(service, this);
     } catch (RuntimeException | Error e) {
       if (dedicatedEventLoop != null) {
         dedicatedEventLoop.shutdownGracefully(0, 2, TimeUnit.SECONDS);
@@ -170,6 +174,11 @@ final class ConnectionRuntime extends AbstractComponentRuntime {
   /** The metadata publisher of this connection, or null when it is not a broker connection. */
   @Nullable MetaDataPublisher metaDataPublisher() {
     return metaDataPublisher;
+  }
+
+  /** The status publisher of this connection, or null when it is not a broker connection. */
+  @Nullable BrokerStatusPublisher statusPublisher() {
+    return statusPublisher;
   }
 
   /**
@@ -294,6 +303,8 @@ final class ConnectionRuntime extends AbstractComponentRuntime {
 
   /** Close any open channels; idempotent. */
   void closeChannels() {
+    service.getReaderDispatcher().cancelStatusTimeouts(handle());
+
     PublisherChannel publisherChannel = this.publisherChannel;
     this.publisherChannel = null;
     if (publisherChannel != null) {
@@ -347,6 +358,10 @@ final class ConnectionRuntime extends AbstractComponentRuntime {
 
     if (metaDataPublisher != null) {
       metaDataPublisher.dispose();
+    }
+
+    if (statusPublisher != null) {
+      statusPublisher.dispose();
     }
 
     writerGroups.forEach(WriterGroupRuntime::dispose);
@@ -454,11 +469,11 @@ final class ConnectionRuntime extends AbstractComponentRuntime {
 
   /**
    * Invoked by topic-aware transports for messages with a known source topic. Decode is
-   * content-based (every payload is offered to the connection's mappings), so the topic is not
-   * consulted yet; the surface exists so broker transports can deliver uniformly.
+   * content-based (every payload is offered to the connection's mappings), but the topic is
+   * preserved for broker status notifications.
    */
   private void onTopicMessage(String topic, ByteBuf buffer) {
-    onDatagram(buffer);
+    onDatagram(topic, buffer);
   }
 
   /**
@@ -466,6 +481,10 @@ final class ConnectionRuntime extends AbstractComponentRuntime {
    * per-connection {@link #dispatchQueue} so decode and listener delivery preserve arrival order.
    */
   private void onDatagram(ByteBuf buffer) {
+    onDatagram(null, buffer);
+  }
+
+  private void onDatagram(@Nullable String topic, ByteBuf buffer) {
     if (disposed) {
       return;
     }
@@ -475,7 +494,7 @@ final class ConnectionRuntime extends AbstractComponentRuntime {
       dispatchQueue.submit(
           () -> {
             try {
-              service.getReaderDispatcher().dispatch(this, buffer);
+              service.getReaderDispatcher().dispatch(this, topic, buffer);
             } catch (Throwable t) {
               LOGGER.warn("Error dispatching datagram on '{}'", path(), t);
             } finally {
@@ -493,9 +512,10 @@ final class ConnectionRuntime extends AbstractComponentRuntime {
    * recovers it, cascading to the child runtimes per the engine's state rules.
    *
    * <p>Edge tracking (CAS on {@link #transportDown}) makes duplicate notifications (both channels
-   * of a connection may share one session) and the initial connect (an up with no prior down)
-   * harmless, and prevents a transport-up from "recovering" an Error the transport did not cause —
-   * an activation-failure Error has no preceding down edge.
+   * of a connection may share one session) harmless, and prevents a transport-up from "recovering"
+   * an Error the transport did not cause — an activation-failure Error has no preceding down edge.
+   * The initial connect is state-neutral, but still gives broker status publishing a chance to
+   * write its retained Operational status after the async MQTT client is actually connected.
    *
    * <p>Threading: callbacks arrive on transport threads and only CAS + enqueue; the state machine
    * runs on the serialized per-connection dispatch queue (order-preserving down→up), where {@code
@@ -506,12 +526,14 @@ final class ConnectionRuntime extends AbstractComponentRuntime {
   private final class TransportStateHandler implements TransportStateListener {
 
     private final AtomicBoolean transportDown = new AtomicBoolean(false);
+    private final AtomicBoolean transportConnected = new AtomicBoolean(false);
 
     @Override
     public void onTransportDown(StatusCode statusCode) {
       if (disposed || !transportDown.compareAndSet(false, true)) {
         return;
       }
+      transportConnected.set(false);
       submitSafely(
           () -> {
             if (!disposed) {
@@ -522,13 +544,26 @@ final class ConnectionRuntime extends AbstractComponentRuntime {
 
     @Override
     public void onTransportUp() {
-      if (disposed || !transportDown.compareAndSet(true, false)) {
+      if (disposed) {
         return;
       }
+
+      boolean firstConnect = transportConnected.compareAndSet(false, true);
+      boolean recovering = transportDown.compareAndSet(true, false);
+      if (!firstConnect && !recovering) {
+        return;
+      }
+
       submitSafely(
           () -> {
-            if (!disposed) {
+            if (disposed) {
+              return;
+            }
+
+            if (recovering) {
               service.getStateMachine().recover(ConnectionRuntime.this);
+            } else if (state() == PubSubState.Operational && statusPublisher != null) {
+              statusPublisher.onConnectionState(PubSubState.Operational);
             }
           });
     }

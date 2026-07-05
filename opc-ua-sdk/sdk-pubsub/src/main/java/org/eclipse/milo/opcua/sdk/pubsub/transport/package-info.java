@@ -11,8 +11,10 @@
 /**
  * Transport extension SPI: {@code TransportProvider} identifies itself by transport profile URI and
  * opens {@code PublisherChannel}/{@code SubscriberChannel} instances from context records that
- * carry the connection config, resolved address, executors, and encoding context. Built-in
- * implementations live in subpackages; external modules (e.g. MQTT) plug in through this SPI.
+ * carry the connection config, resolved address, executors, and encoding context. For broker
+ * transports the engine resolves {@code MessageAddress} values for data, metadata, and status
+ * messages before handing payloads to the channel. Built-in implementations live in subpackages;
+ * external modules (e.g. MQTT) plug in through this SPI.
  */
 @NullMarked
 package org.eclipse.milo.opcua.sdk.pubsub.transport;

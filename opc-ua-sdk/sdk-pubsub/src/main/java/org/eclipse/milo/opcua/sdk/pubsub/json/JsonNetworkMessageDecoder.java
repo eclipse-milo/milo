@@ -54,8 +54,8 @@ import org.jspecify.annotations.Nullable;
  *   <li>Any other object is the bare name/value payload of a single DataSet; an empty object is a
  *       keep-alive (Table 185).
  *   <li>{@code MessageType} {@code "ua-metadata"} messages surface as {@link DecodedMetaData};
- *       other discovery message types ({@code ua-status}, {@code ua-connection}, ...) are tolerated
- *       and skipped.
+ *       {@code "ua-status"} messages surface as decoded PubSub status; other discovery message
+ *       types ({@code ua-connection}, ...) are tolerated and skipped.
  * </ul>
  *
  * <p>Unknown members are skipped in headers; payload values are decoded leniently by {@link
@@ -117,6 +117,10 @@ final class JsonNetworkMessageDecoder {
       return decodeMetaDataMessage(context, object);
     }
 
+    if ("ua-status".equals(messageType)) {
+      return DecodedNetworkMessage.status(JsonStatusCodec.decode(object));
+    }
+
     if ("ua-data".equals(messageType) || object.has("Messages")) {
       return decodeDataMessage(object, hoist, fieldDecoder);
     }
@@ -125,8 +129,8 @@ final class JsonNetworkMessageDecoder {
         && messageType.startsWith("ua-")
         && !MESSAGE_KINDS.containsKey(messageType)
         && !hasDataSetMessageMembers(object)) {
-      // optional discovery messages (ua-status, ua-connection, ua-application, ...) and Action
-      // messages are tolerated and skipped
+      // optional discovery messages (ua-connection, ua-application, ...) and Action messages are
+      // tolerated and skipped
       return networkMessage(null, List.of(), List.of());
     }
 

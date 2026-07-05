@@ -261,6 +261,24 @@ public interface PubSubService extends AutoCloseable {
   void removeMetaDataListener(MetaDataListener listener);
 
   /**
+   * Add a listener notified of remote publisher status messages received from the wire.
+   *
+   * <p>Remote publisher status is separate from local component state: these events do not imply
+   * any change to {@link #state(PubSubHandle)} for the receiving connection or its readers.
+   *
+   * @param listener the listener to add.
+   */
+  void addPublisherStatusListener(PublisherStatusListener listener);
+
+  /**
+   * Remove a listener added via {@link #addPublisherStatusListener(PublisherStatusListener)}.
+   * Identity-based; removing a listener that was never added is a no-op.
+   *
+   * @param listener the listener to remove.
+   */
+  void removePublisherStatusListener(PublisherStatusListener listener);
+
+  /**
    * Add a listener notified of diagnostic events. In v1 only error events are delivered.
    *
    * @param listener the listener to add.

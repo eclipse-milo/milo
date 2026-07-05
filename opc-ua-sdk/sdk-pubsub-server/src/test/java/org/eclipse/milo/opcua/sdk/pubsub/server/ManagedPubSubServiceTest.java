@@ -36,6 +36,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.PubSubService;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubService.ReconfigureMode;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubStateListener;
 import org.eclipse.milo.opcua.sdk.pubsub.PublishedDataSetSource;
+import org.eclipse.milo.opcua.sdk.pubsub.PublisherStatusListener;
 import org.eclipse.milo.opcua.sdk.pubsub.ReconfigureResult;
 import org.eclipse.milo.opcua.sdk.pubsub.SecurityKeyInfo;
 import org.eclipse.milo.opcua.sdk.pubsub.config.FieldDefinition;
@@ -74,6 +75,7 @@ class ManagedPubSubServiceTest {
     DataSetListener dataSetListener = event -> {};
     PubSubStateListener stateListener = event -> {};
     MetaDataListener metaDataListener = event -> {};
+    PublisherStatusListener publisherStatusListener = event -> {};
     PubSubDiagnosticsListener diagnosticsListener = event -> {};
     PublishedDataSetSource source =
         context -> {
@@ -98,6 +100,8 @@ class ManagedPubSubServiceTest {
     managed.removeStateListener(stateListener);
     managed.addMetaDataListener(metaDataListener);
     managed.removeMetaDataListener(metaDataListener);
+    managed.addPublisherStatusListener(publisherStatusListener);
+    managed.removePublisherStatusListener(publisherStatusListener);
     managed.addDiagnosticsListener(diagnosticsListener);
     managed.removeDiagnosticsListener(diagnosticsListener);
     managed.diagnostics();
@@ -124,6 +128,8 @@ class ManagedPubSubServiceTest {
             "removeStateListener",
             "addMetaDataListener",
             "removeMetaDataListener",
+            "addPublisherStatusListener",
+            "removePublisherStatusListener",
             "addDiagnosticsListener",
             "removeDiagnosticsListener",
             "diagnostics",
@@ -477,6 +483,16 @@ class ManagedPubSubServiceTest {
     @Override
     public void removeMetaDataListener(MetaDataListener listener) {
       calls.add("removeMetaDataListener");
+    }
+
+    @Override
+    public void addPublisherStatusListener(PublisherStatusListener listener) {
+      calls.add("addPublisherStatusListener");
+    }
+
+    @Override
+    public void removePublisherStatusListener(PublisherStatusListener listener) {
+      calls.add("removePublisherStatusListener");
     }
 
     @Override

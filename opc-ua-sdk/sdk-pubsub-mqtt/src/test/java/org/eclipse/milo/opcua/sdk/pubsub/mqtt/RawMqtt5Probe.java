@@ -80,6 +80,21 @@ final class RawMqtt5Probe implements AutoCloseable {
         .get(10, TimeUnit.SECONDS);
   }
 
+  /** Publish one raw MQTT 5 message. */
+  void publish(String topic, MqttQos qos, boolean retain, String contentType, byte[] payload)
+      throws Exception {
+
+    client
+        .publishWith()
+        .topic(topic)
+        .qos(qos)
+        .retain(retain)
+        .contentType(contentType)
+        .payload(payload)
+        .send()
+        .get(10, TimeUnit.SECONDS);
+  }
+
   /** Wait for the next received publish. */
   Mqtt5Publish awaitMessage(Duration timeout) throws InterruptedException {
     return awaitMessage(publish -> true, timeout);

@@ -29,6 +29,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.PubSubHandle;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubService;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubStateListener;
 import org.eclipse.milo.opcua.sdk.pubsub.PublishedDataSetSource;
+import org.eclipse.milo.opcua.sdk.pubsub.PublisherStatusListener;
 import org.eclipse.milo.opcua.sdk.pubsub.ReconfigureResult;
 import org.eclipse.milo.opcua.sdk.pubsub.SecurityKeyInfo;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfig;
@@ -296,6 +297,16 @@ final class ManagedPubSubService implements PubSubService {
   @Override
   public void removeMetaDataListener(MetaDataListener listener) {
     delegate.removeMetaDataListener(listener);
+  }
+
+  @Override
+  public void addPublisherStatusListener(PublisherStatusListener listener) {
+    delegate.addPublisherStatusListener(listener);
+  }
+
+  @Override
+  public void removePublisherStatusListener(PublisherStatusListener listener) {
+    delegate.removePublisherStatusListener(listener);
   }
 
   @Override

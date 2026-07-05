@@ -50,6 +50,7 @@ public final class BrokerTopics {
 
   private static final String DATA_LEVEL = "data";
   private static final String METADATA_LEVEL = "metadata";
+  private static final String STATUS_LEVEL = "status";
 
   private BrokerTopics() {}
 
@@ -144,6 +145,32 @@ public final class BrokerTopics {
         + writerGroupName
         + "/"
         + dataSetWriterName;
+  }
+
+  /**
+   * The §7.3.4.7.7 status topic: {@code <prefix>/<encoding>/status/<publisherId>}.
+   *
+   * @param prefix the {@code <Prefix>} level, see {@link #topicPrefix(PubSubConnectionConfig)}.
+   * @param mappingName the message mapping name, used as the {@code <Encoding>} level.
+   * @param publisherId the publisher id; numeric ids are stringified without leading zeros.
+   * @return the derived status topic.
+   */
+  public static String statusTopic(String prefix, String mappingName, PublisherId publisherId) {
+    return prefix + "/" + mappingName + "/" + STATUS_LEVEL + "/" + publisherId.toCanonicalString();
+  }
+
+  /**
+   * Resolve the status queue name for one connection and mapping.
+   *
+   * @param connection the connection config (topic prefix and PublisherId source).
+   * @param mappingName the message mapping name.
+   * @return the derived status queue name.
+   * @throws IllegalArgumentException if the connection has no publisher id to derive one from.
+   */
+  public static String resolveStatusQueueName(
+      PubSubConnectionConfig connection, String mappingName) {
+
+    return statusTopic(topicPrefix(connection), mappingName, requirePublisherId(connection));
   }
 
   /**

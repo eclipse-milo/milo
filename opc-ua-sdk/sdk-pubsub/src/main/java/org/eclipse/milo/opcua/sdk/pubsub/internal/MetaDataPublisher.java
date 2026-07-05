@@ -71,13 +71,14 @@ import org.slf4j.LoggerFactory;
  * §7.2.4.6.3 Table 168 scope); a stream of one writer's metadata messages is strictly increasing
  * but may have gaps where other writers consumed values.
  *
- * <p><b>Threading:</b> activation/deactivation hooks run under the engine lock; periodic tasks run
- * on the service scheduled executor and the reconfigure check on the connection's dispatch queue,
- * both without the engine lock. Mutable state is guarded by this publisher's own lock; the engine
- * lock is never acquired from inside it. Sends are initiated inline while holding these locks,
- * which is safe only because {@link PublisherChannel#send(io.netty.buffer.ByteBuf, MessageAddress)}
- * pins a non-blocking contract on implementations. Publication failures are recorded in
- * diagnostics, never thrown: metadata publication is auxiliary and must not fail the writer.
+ * <p><b>Threading:</b> activation/deactivation hooks run under the engine lock; periodic timers and
+ * retries are scheduled on the service scheduled executor but hop immediately to the connection's
+ * dispatch queue, matching the reconfigure check. Mutable state is guarded by this publisher's own
+ * lock; the engine lock is never acquired from inside it. Sends are initiated inline while holding
+ * these locks, which is safe only because {@link PublisherChannel#send(io.netty.buffer.ByteBuf,
+ * MessageAddress)} pins a non-blocking contract on implementations. Publication failures are
+ * recorded in diagnostics, never thrown: metadata publication is auxiliary and must not fail the
+ * writer.
  */
 final class MetaDataPublisher {
 
@@ -98,6 +99,12 @@ final class MetaDataPublisher {
   /** Periodic publication tasks per writer. Guarded by {@link #lock}. */
   private final Map<PubSubHandle, ScheduledFuture<?>> periodicTasks = new HashMap<>();
 
+  /** Periodic publication activation generation per writer path. Guarded by {@link #lock}. */
+  private final Map<String, Long> periodicGenerations = new HashMap<>();
+
+  /** Queued/running periodic publication generation per writer path. Guarded by {@link #lock}. */
+  private final Map<String, Long> periodicSubmissions = new HashMap<>();
+
   /**
    * The metadata last <i>successfully</i> published per writer path, by-change comparison. Updated
    * only when a send confirms success, so failed sends are retried rather than recorded. Guarded by
@@ -108,8 +115,14 @@ final class MetaDataPublisher {
   /** Pending failed-send retry tasks per writer path. Guarded by {@link #lock}. */
   private final Map<String, ScheduledFuture<?>> retryTasks = new HashMap<>();
 
+  /** Pending failed-send retry generation per writer path. Guarded by {@link #lock}. */
+  private final Map<String, Long> retryGenerations = new HashMap<>();
+
   /** Failed-send retries already scheduled per writer path. Guarded by {@link #lock}. */
   private final Map<String, Integer> retryAttempts = new HashMap<>();
+
+  /** Guarded by {@link #lock}. */
+  private long nextTimerGeneration = 0L;
 
   MetaDataPublisher(PubSubServiceImpl service, ConnectionRuntime connection) {
     this.service = service;
@@ -131,12 +144,14 @@ final class MetaDataPublisher {
 
       Duration updateTime = effectiveMetaDataUpdateTime(group, writer);
       if (updateTime.compareTo(Duration.ZERO) > 0 && !periodicTasks.containsKey(writer.handle())) {
+        long generation = ++nextTimerGeneration;
+        periodicGenerations.put(writer.path(), generation);
         long periodNanos = updateTime.toNanos();
         ScheduledFuture<?> task =
             service
                 .getScheduledExecutor()
                 .scheduleAtFixedRate(
-                    () -> publishPeriodic(group, writer),
+                    () -> submitPublishPeriodic(group, writer, generation),
                     periodNanos,
                     periodNanos,
                     TimeUnit.NANOSECONDS);
@@ -154,10 +169,13 @@ final class MetaDataPublisher {
       if (task != null) {
         task.cancel(false);
       }
+      periodicGenerations.remove(writer.path());
+      periodicSubmissions.remove(writer.path());
       ScheduledFuture<?> retryTask = retryTasks.remove(writer.path());
       if (retryTask != null) {
         retryTask.cancel(false);
       }
+      retryGenerations.remove(writer.path());
       retryAttempts.remove(writer.path());
       lastPublished.remove(writer.path());
     }
@@ -184,20 +202,64 @@ final class MetaDataPublisher {
 
       periodicTasks.values().forEach(task -> task.cancel(false));
       periodicTasks.clear();
+      periodicGenerations.clear();
+      periodicSubmissions.clear();
       retryTasks.values().forEach(task -> task.cancel(false));
       retryTasks.clear();
+      retryGenerations.clear();
       retryAttempts.clear();
       lastPublished.clear();
     }
   }
 
-  /** One periodic publication; runs on the scheduled executor. */
-  private void publishPeriodic(WriterGroupRuntime group, DataSetWriterRuntime writer) {
+  private void submitPublishPeriodic(
+      WriterGroupRuntime group, DataSetWriterRuntime writer, long generation) {
+
+    String writerPath = writer.path();
     synchronized (lock) {
-      if (disposed || !isActive(writer.state())) {
+      if (disposed
+          || !isActive(writer.state())
+          || periodicGenerations.getOrDefault(writerPath, 0L) != generation
+          || periodicSubmissions.containsKey(writerPath)) {
         return;
       }
-      publish(group, writer);
+      periodicSubmissions.put(writerPath, generation);
+    }
+
+    try {
+      connection.submitToDispatchQueue(() -> publishPeriodic(group, writer, generation));
+    } catch (RejectedExecutionException e) {
+      clearPeriodicSubmissionIfCurrent(writerPath, generation);
+    }
+  }
+
+  /** One periodic publication; runs on the connection's dispatch queue. */
+  private void publishPeriodic(
+      WriterGroupRuntime group, DataSetWriterRuntime writer, long generation) {
+
+    String writerPath = writer.path();
+    synchronized (lock) {
+      try {
+        if (!disposed
+            && isActive(writer.state())
+            && periodicGenerations.getOrDefault(writerPath, 0L) == generation) {
+          publish(group, writer);
+        }
+      } finally {
+        clearPeriodicSubmissionIfCurrentLocked(writerPath, generation);
+      }
+    }
+  }
+
+  private void clearPeriodicSubmissionIfCurrent(String writerPath, long generation) {
+    synchronized (lock) {
+      clearPeriodicSubmissionIfCurrentLocked(writerPath, generation);
+    }
+  }
+
+  private void clearPeriodicSubmissionIfCurrentLocked(String writerPath, long generation) {
+    if (periodicSubmissions.getOrDefault(writerPath, 0L) == generation) {
+      periodicSubmissions.remove(writerPath);
     }
   }
 
@@ -319,6 +381,8 @@ final class MetaDataPublisher {
                   synchronized (lock) {
                     if (!disposed) {
                       retryAttempts.remove(writerPath);
+                      retryGenerations.remove(writerPath);
+                      retryTasks.remove(writerPath);
                       lastPublished.put(writerPath, metaData);
                     }
                   }
@@ -376,29 +440,56 @@ final class MetaDataPublisher {
         return;
       }
       retryAttempts.put(writerPath, attempt + 1);
+      long generation = ++nextTimerGeneration;
+      retryGenerations.put(writerPath, generation);
       try {
         ScheduledFuture<?> task =
             service
                 .getScheduledExecutor()
                 .schedule(
-                    () -> retryPublish(group, writer),
+                    () -> submitRetryPublish(group, writer, generation),
                     RETRY_BASE_DELAY_MILLIS << attempt,
                     TimeUnit.MILLISECONDS);
         retryTasks.put(writerPath, task);
       } catch (RejectedExecutionException e) {
-        // executor shut down; nothing to retry
+        retryGenerations.remove(writerPath);
       }
     }
   }
 
-  /** One failed-send retry; runs on the scheduled executor. */
-  private void retryPublish(WriterGroupRuntime group, DataSetWriterRuntime writer) {
+  private void submitRetryPublish(
+      WriterGroupRuntime group, DataSetWriterRuntime writer, long generation) {
+
+    try {
+      connection.submitToDispatchQueue(() -> retryPublish(group, writer, generation));
+    } catch (RejectedExecutionException e) {
+      clearRetryIfCurrent(writer.path(), generation);
+    }
+  }
+
+  /** One failed-send retry; runs on the connection's dispatch queue. */
+  private void retryPublish(
+      WriterGroupRuntime group, DataSetWriterRuntime writer, long generation) {
     synchronized (lock) {
-      retryTasks.remove(writer.path());
+      String writerPath = writer.path();
+      if (retryGenerations.getOrDefault(writerPath, 0L) != generation) {
+        return;
+      }
+      retryTasks.remove(writerPath);
+      retryGenerations.remove(writerPath);
       if (disposed || !isActive(writer.state())) {
         return;
       }
       publish(group, writer);
+    }
+  }
+
+  private void clearRetryIfCurrent(String writerPath, long generation) {
+    synchronized (lock) {
+      if (retryGenerations.getOrDefault(writerPath, 0L) == generation) {
+        retryTasks.remove(writerPath);
+        retryGenerations.remove(writerPath);
+      }
     }
   }
 

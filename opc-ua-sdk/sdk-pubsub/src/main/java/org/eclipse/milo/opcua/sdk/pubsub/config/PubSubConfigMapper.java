@@ -107,6 +107,8 @@ import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfiguration2Da
  *   <li>{@link MqttConnectionConfig#getBrokerSecurity() BrokerSecurityConfig} is intentionally
  *       never mapped: it carries local credentials and key material paths that must not be
  *       serialized into the Part 14 configuration.
+ *   <li>{@link MqttConnectionConfig#getPublisherStatusMode() publisherStatusMode} is Milo-local
+ *       MQTT runtime policy; restored as {@link PublisherStatusMode#AUTO}.
  *   <li>{@code PublishedDataSetConfig.enabled} (Part 14 has no enabled flag on published datasets;
  *       restored as {@code true}).
  *   <li>{@code DataSetReaderConfig.metadataPolicy} (a Milo-local concept; restored as {@code

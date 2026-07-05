@@ -34,6 +34,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.PubSubHandle;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubService;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubStateListener;
 import org.eclipse.milo.opcua.sdk.pubsub.PublishedDataSetSource;
+import org.eclipse.milo.opcua.sdk.pubsub.PublisherStatusListener;
 import org.eclipse.milo.opcua.sdk.pubsub.ReconfigureResult;
 import org.eclipse.milo.opcua.sdk.pubsub.SecurityKeyInfo;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetMetaDataConfig;
@@ -992,6 +993,16 @@ class CloseAndUpdateElementKindsTest {
 
     @Override
     public void removeMetaDataListener(MetaDataListener listener) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void addPublisherStatusListener(PublisherStatusListener listener) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void removePublisherStatusListener(PublisherStatusListener listener) {
       throw new UnsupportedOperationException();
     }
 

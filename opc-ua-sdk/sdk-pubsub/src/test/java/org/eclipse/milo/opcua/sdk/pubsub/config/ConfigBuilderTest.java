@@ -290,6 +290,31 @@ class ConfigBuilderTest {
     }
 
     @Test
+    void mqttPublisherStatusModeDefaultsToAutoAndCopiesThroughBuilder() {
+      MqttConnectionConfig connection =
+          MqttConnectionConfig.builder("conn").brokerUri(URI.create("mqtt://broker:1883")).build();
+
+      assertEquals(PublisherStatusMode.AUTO, connection.getPublisherStatusMode());
+
+      MqttConnectionConfig disabled =
+          connection.toBuilder().publisherStatusMode(PublisherStatusMode.DISABLED).build();
+
+      assertEquals(PublisherStatusMode.DISABLED, disabled.getPublisherStatusMode());
+      assertEquals(
+          PublisherStatusMode.DISABLED, disabled.toBuilder().build().getPublisherStatusMode());
+    }
+
+    @Test
+    void mqttPublisherStatusModeRejectsNull() {
+      assertThrows(
+          NullPointerException.class,
+          () ->
+              MqttConnectionConfig.builder("conn")
+                  .brokerUri(URI.create("mqtt://broker:1883"))
+                  .publisherStatusMode(null));
+    }
+
+    @Test
     void fieldDefinitionRejectsEmptyName() {
       assertThrows(
           PubSubConfigValidationException.class, () -> FieldDefinition.builder("").build());

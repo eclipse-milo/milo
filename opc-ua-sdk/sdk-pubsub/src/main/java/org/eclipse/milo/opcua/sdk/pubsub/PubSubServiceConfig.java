@@ -70,7 +70,7 @@ public final class PubSubServiceConfig {
   }
 
   /**
-   * Get the executor on which publish cycles and other timed activities are scheduled.
+   * Get the executor on which publish-cycle and other timed deadlines are scheduled.
    *
    * @return the scheduled executor.
    */
@@ -221,7 +221,7 @@ public final class PubSubServiceConfig {
     }
 
     /**
-     * Set the executor on which publish cycles and other timed activities are scheduled.
+     * Set the executor on which publish-cycle and other timed deadlines are scheduled.
      *
      * <p>Defaults to {@link Stack#sharedScheduledExecutor()}.
      *

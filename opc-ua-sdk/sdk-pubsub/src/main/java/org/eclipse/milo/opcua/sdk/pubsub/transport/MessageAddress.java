@@ -34,7 +34,7 @@ import org.jspecify.annotations.Nullable;
  *     BestEffort}.
  * @param retain whether the message is published retained (Part 14 Table 204 defaults: data
  *     messages {@code false}, metadata messages {@code true}).
- * @param kind whether the message carries DataSetMessages or DataSetMetaData.
+ * @param kind whether the message carries DataSetMessages, DataSetMetaData, or PubSub status.
  * @param contentTypeHint the MIME content type of the payload for transports that can signal it
  *     (e.g. the MQTT 5.0 Content Type property), or {@code null} when the mapping has no defined
  *     content type. {@link #CONTENT_TYPE_UADP} and {@link #CONTENT_TYPE_JSON} are the Part 14
@@ -63,7 +63,10 @@ public record MessageAddress(
     DATA,
 
     /** A NetworkMessage carrying DataSetMetaData. */
-    METADATA
+    METADATA,
+
+    /** A PubSub Status message. */
+    STATUS
   }
 
   /**
@@ -74,7 +77,7 @@ public record MessageAddress(
    * @param deliveryGuarantee the resolved delivery guarantee; one of {@code AtMostOnce}, {@code
    *     AtLeastOnce}, or {@code ExactlyOnce}.
    * @param retain whether the message is published retained.
-   * @param kind whether the message carries DataSetMessages or DataSetMetaData.
+   * @param kind whether the message carries DataSetMessages, DataSetMetaData, or PubSub status.
    * @param contentTypeHint the MIME content type of the payload, or {@code null} when the mapping
    *     has no defined content type.
    * @return a new {@link MessageAddress}.

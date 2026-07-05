@@ -10,13 +10,26 @@
 
 package org.eclipse.milo.opcua.sdk.pubsub.mqtt;
 
+import com.hivemq.client.mqtt.datatypes.MqttQos;
 import io.netty.channel.EventLoopGroup;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import org.eclipse.milo.opcua.sdk.pubsub.config.JsonWriterGroupSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.MqttConnectionConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConnectionConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
+import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherStatusMode;
+import org.eclipse.milo.opcua.sdk.pubsub.config.UadpWriterGroupSettings;
+import org.eclipse.milo.opcua.sdk.pubsub.config.WriterGroupConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.WriterGroupMessageSettings;
+import org.eclipse.milo.opcua.sdk.pubsub.json.JsonStatusCodec;
+import org.eclipse.milo.opcua.sdk.pubsub.mqtt.MqttClientSession.Will;
+import org.eclipse.milo.opcua.sdk.pubsub.transport.BrokerTopics;
+import org.eclipse.milo.opcua.sdk.pubsub.transport.MessageAddress;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.PublisherChannel;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.PublisherTransportContext;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.SubscriberChannel;
@@ -25,6 +38,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.transport.TransportProvider;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -186,7 +200,7 @@ public final class MqttTransportProvider implements TransportProvider {
       SessionHolder holder = sessions.get(config);
       if (holder == null) {
         Executor executor = nettyExecutor != null ? nettyExecutor : eventLoopGroup;
-        MqttClientSession session = MqttClientSession.create(config, executor);
+        MqttClientSession session = MqttClientSession.create(config, executor, statusWill(config));
         holder = new SessionHolder(session);
         sessions.put(config, holder);
         session.start();
@@ -225,6 +239,53 @@ public final class MqttTransportProvider implements TransportProvider {
       throw new UaException(
           StatusCodes.Bad_InvalidArgument,
           "connection '" + connection.name() + "' is not a MqttConnectionConfig");
+    }
+  }
+
+  private static @Nullable Will statusWill(MqttConnectionConfig connection) throws UaException {
+    PublisherStatusMode mode = connection.getPublisherStatusMode();
+    if (mode == PublisherStatusMode.DISABLED || mode == PublisherStatusMode.CYCLIC) {
+      return null;
+    }
+
+    PublisherId publisherId = connection.publisherId();
+    if (publisherId == null) {
+      return null;
+    }
+
+    Set<String> mappings = writerGroupMappings(connection.writerGroups());
+    if (mappings.size() != 1 || !mappings.contains("json")) {
+      if (mode == PublisherStatusMode.WILL && !connection.writerGroups().isEmpty()) {
+        throw new UaException(
+            StatusCodes.Bad_ConfigurationError,
+            "connection '%s': publisherStatusMode WILL requires exactly one JSON writer group mapping"
+                .formatted(connection.name()));
+      }
+      return null;
+    }
+
+    String topic =
+        BrokerTopics.statusTopic(BrokerTopics.topicPrefix(connection), "json", publisherId);
+    byte[] payload = JsonStatusCodec.encode(publisherId, PubSubState.Error, false, null, null);
+
+    return new Will(topic, MqttQos.AT_LEAST_ONCE, true, MessageAddress.CONTENT_TYPE_JSON, payload);
+  }
+
+  private static Set<String> writerGroupMappings(Iterable<WriterGroupConfig> groups) {
+    var mappings = new LinkedHashSet<String>();
+    for (WriterGroupConfig group : groups) {
+      mappings.add(mappingNameOf(group.getMessageSettings()));
+    }
+    return Set.copyOf(mappings);
+  }
+
+  private static String mappingNameOf(WriterGroupMessageSettings settings) {
+    if (settings instanceof UadpWriterGroupSettings) {
+      return "uadp";
+    } else if (settings instanceof JsonWriterGroupSettings) {
+      return "json";
+    } else {
+      return settings.getClass().getSimpleName();
     }
   }
 

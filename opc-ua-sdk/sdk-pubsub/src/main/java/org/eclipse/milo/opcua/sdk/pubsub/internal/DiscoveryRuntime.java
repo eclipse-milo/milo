@@ -87,12 +87,13 @@ import org.slf4j.LoggerFactory;
  * DataSetWriterId filters defer probing until a first matching data NetworkMessage reveals the
  * identifiers.
  *
- * <p><b>Threading:</b> probe timers run on the service scheduled executor; received discovery
- * datagrams and the unsolicited announcement check hop to the connection's dispatch {@link
- * org.eclipse.milo.opcua.stack.core.util.ExecutionQueue}, serializing them with data-plane decode
- * and listener delivery. All mutable state is guarded by this runtime's own lock; the engine lock
- * is never acquired from inside it (engine-lock holders may call in — channel management and reader
- * lifecycle hooks run under the engine lock, matching the data-channel rules).
+ * <p><b>Threading:</b> probe timers run on the service scheduled executor and hop immediately to
+ * the connection's dispatch {@link org.eclipse.milo.opcua.stack.core.util.ExecutionQueue}, like
+ * received discovery datagrams and the unsolicited announcement check. This serializes discovery
+ * work with data-plane decode and listener delivery. All mutable state is guarded by this runtime's
+ * own lock; the engine lock is never acquired from inside it (engine-lock holders may call in —
+ * channel management and reader lifecycle hooks run under the engine lock, matching the
+ * data-channel rules).
  */
 final class DiscoveryRuntime {
 
@@ -863,10 +864,20 @@ final class DiscoveryRuntime {
     task.future =
         service
             .getScheduledExecutor()
-            .schedule(() -> runProbe(task), delayMillis, TimeUnit.MILLISECONDS);
+            .schedule(() -> submitProbe(task), delayMillis, TimeUnit.MILLISECONDS);
   }
 
-  /** One probe attempt; runs on the scheduled executor. */
+  private void submitProbe(ProbeTask task) {
+    try {
+      connection.submitToDispatchQueue(() -> runProbe(task));
+    } catch (RejectedExecutionException e) {
+      synchronized (lock) {
+        task.future = null;
+      }
+    }
+  }
+
+  /** One probe attempt; runs on the connection's dispatch queue. */
   private void runProbe(ProbeTask task) {
     PublisherId targetPublisherId;
     UShort targetDataSetWriterId;
@@ -955,7 +966,7 @@ final class DiscoveryRuntime {
       task.future =
           service
               .getScheduledExecutor()
-              .schedule(() -> runProbe(task), delayMillis, TimeUnit.MILLISECONDS);
+              .schedule(() -> submitProbe(task), delayMillis, TimeUnit.MILLISECONDS);
     }
   }
 

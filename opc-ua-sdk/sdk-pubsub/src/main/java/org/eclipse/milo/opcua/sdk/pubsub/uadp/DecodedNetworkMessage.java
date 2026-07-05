@@ -19,8 +19,8 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A decoded NetworkMessage: the header values present on the wire plus the decoded DataSetMessages
- * and any discovery metadata announcements it carried.
+ * A decoded NetworkMessage: the header values present on the wire plus decoded DataSetMessages,
+ * discovery metadata announcements, and optional PubSub status content it carried.
  *
  * <p>Header components are {@code null} when the corresponding header was not present on the wire;
  * the reader matching chain treats absent values as wildcards.
@@ -52,6 +52,8 @@ import org.jspecify.annotations.Nullable;
  * @param timestamp the NetworkMessage timestamp, or {@code null} if not present.
  * @param messages the decoded DataSetMessages, in payload order; possibly empty.
  * @param metaData the DataSetMetaData announcements carried by the message; possibly empty.
+ * @param status the decoded PubSub Status message, or {@code null} if the NetworkMessage did not
+ *     carry status content.
  * @param failure the decode failure, or {@code null} if decoding completed.
  * @param security the message security observed on the wire, or {@code null} if the message carried
  *     security mode None.
@@ -70,6 +72,7 @@ public record DecodedNetworkMessage(
     @Nullable DateTime timestamp,
     List<DecodedDataSetMessage> messages,
     List<DecodedMetaData> metaData,
+    @Nullable DecodedStatusMessage status,
     @Nullable Failure failure,
     @Nullable ReceivedSecurity security,
     @Nullable DecodedChunk chunk)
@@ -86,6 +89,7 @@ public record DecodedNetworkMessage(
    * @param timestamp the NetworkMessage timestamp, or {@code null} if not present.
    * @param messages the decoded DataSetMessages, in payload order; possibly empty.
    * @param metaData the DataSetMetaData announcements carried by the message; possibly empty.
+   * @param status the decoded PubSub Status message, or {@code null} if absent.
    * @param failure the decode failure, or {@code null} if decoding completed.
    * @param security the message security observed on the wire, or {@code null} for mode None.
    * @param chunk the chunk payload of a Chunk NetworkMessage, or {@code null} if not chunked.
@@ -127,6 +131,9 @@ public record DecodedNetworkMessage(
         timestamp,
         messages,
         metaData,
+        null,
+        null,
+        null,
         null);
   }
 
@@ -164,6 +171,7 @@ public record DecodedNetworkMessage(
         timestamp,
         messages,
         metaData,
+        null,
         failure,
         null,
         null);
@@ -198,6 +206,52 @@ public record DecodedNetworkMessage(
       @Nullable ReceivedSecurity security,
       @Nullable DecodedChunk chunk) {
 
+    return of(
+        publisherId,
+        writerGroupId,
+        groupVersion,
+        networkMessageNumber,
+        sequenceNumber,
+        timestamp,
+        messages,
+        metaData,
+        null,
+        failure,
+        security,
+        chunk);
+  }
+
+  /**
+   * Create a {@link DecodedNetworkMessage}.
+   *
+   * @param publisherId the publisher id, or {@code null} if not present.
+   * @param writerGroupId the WriterGroupId, or {@code null} if not present.
+   * @param groupVersion the GroupVersion, or {@code null} if not present.
+   * @param networkMessageNumber the NetworkMessageNumber, or {@code null} if not present.
+   * @param sequenceNumber the NetworkMessage SequenceNumber, or {@code null} if not present.
+   * @param timestamp the NetworkMessage timestamp, or {@code null} if not present.
+   * @param messages the decoded DataSetMessages, in payload order; possibly empty.
+   * @param metaData the DataSetMetaData announcements carried by the message; possibly empty.
+   * @param status the decoded PubSub Status message, or {@code null} if absent.
+   * @param failure the decode failure, or {@code null} if decoding completed.
+   * @param security the message security observed on the wire, or {@code null} for mode None.
+   * @param chunk the chunk payload of a Chunk NetworkMessage, or {@code null} if not chunked.
+   * @return a new {@link DecodedNetworkMessage}.
+   */
+  public static DecodedNetworkMessage of(
+      @Nullable PublisherId publisherId,
+      @Nullable UShort writerGroupId,
+      @Nullable UInteger groupVersion,
+      @Nullable UShort networkMessageNumber,
+      @Nullable UShort sequenceNumber,
+      @Nullable DateTime timestamp,
+      List<DecodedDataSetMessage> messages,
+      List<DecodedMetaData> metaData,
+      @Nullable DecodedStatusMessage status,
+      @Nullable Failure failure,
+      @Nullable ReceivedSecurity security,
+      @Nullable DecodedChunk chunk) {
+
     return new DecodedNetworkMessage(
         publisherId,
         writerGroupId,
@@ -207,9 +261,32 @@ public record DecodedNetworkMessage(
         timestamp,
         messages,
         metaData,
+        status,
         failure,
         security,
         chunk);
+  }
+
+  /**
+   * Create a {@link DecodedNetworkMessage} carrying PubSub Status content.
+   *
+   * @param status the decoded PubSub Status message.
+   * @return a new {@link DecodedNetworkMessage}.
+   */
+  public static DecodedNetworkMessage status(DecodedStatusMessage status) {
+    return new DecodedNetworkMessage(
+        status.publisherId(),
+        null,
+        null,
+        null,
+        null,
+        null,
+        List.of(),
+        List.of(),
+        status,
+        null,
+        null,
+        null);
   }
 
   /**

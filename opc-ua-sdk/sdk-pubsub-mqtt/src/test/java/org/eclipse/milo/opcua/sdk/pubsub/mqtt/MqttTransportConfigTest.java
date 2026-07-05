@@ -44,12 +44,15 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.BrokerTransportSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetReaderConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetWriterConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.FieldDefinition;
+import org.eclipse.milo.opcua.sdk.pubsub.config.JsonWriterGroupSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.MqttConnectionConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConnectionConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
+import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherStatusMode;
 import org.eclipse.milo.opcua.sdk.pubsub.config.ReaderGroupConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.UadpWriterGroupSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.UdpConnectionConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.UdpDatagramAddress;
 import org.eclipse.milo.opcua.sdk.pubsub.config.WriterGroupConfig;
@@ -334,6 +337,38 @@ class MqttTransportConfigTest {
                 provider.openPublisher(
                     PublisherTransportContext.of(udpConnection, eventLoopGroup)));
     assertEquals(StatusCodes.Bad_InvalidArgument, e.getStatusCode().value());
+  }
+
+  // endregion
+
+  // region publisher status mode
+
+  @Test
+  void willPublisherStatusModeRejectsMixedMappings() throws Exception {
+    MqttConnectionConfig connection =
+        connBuilder("will-mixed", freeTcpPort())
+            .publisherStatusMode(PublisherStatusMode.WILL)
+            .writerGroup(
+                WriterGroupConfig.builder("json")
+                    .writerGroupId(ushort(1))
+                    .messageSettings(JsonWriterGroupSettings.builder().build())
+                    .build())
+            .writerGroup(
+                WriterGroupConfig.builder("uadp")
+                    .writerGroupId(ushort(2))
+                    .messageSettings(UadpWriterGroupSettings.builder().build())
+                    .build())
+            .build();
+
+    MqttTransportProvider provider = MqttTransportProvider.create();
+
+    UaException e =
+        assertThrows(
+            UaException.class,
+            () -> provider.openPublisher(PublisherTransportContext.of(connection, eventLoopGroup)));
+
+    assertEquals(StatusCodes.Bad_ConfigurationError, e.getStatusCode().value());
+    assertTrue(e.getMessage().contains("publisherStatusMode WILL"), e.getMessage());
   }
 
   // endregion

@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.sdk.pubsub.internal;
 
 import java.util.List;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -60,6 +61,9 @@ final class DataSetReaderRuntime extends AbstractComponentRuntime {
 
   /** Guarded by {@code this}. */
   private @Nullable ScheduledFuture<?> watchdog;
+
+  /** Guarded by {@code this}; invalidates timeout checks queued by an older watchdog. */
+  private long watchdogSerial = 0L;
 
   private volatile boolean disposed = false;
 
@@ -239,6 +243,7 @@ final class DataSetReaderRuntime extends AbstractComponentRuntime {
 
   private void cancelWatchdog() {
     synchronized (this) {
+      watchdogSerial++;
       ScheduledFuture<?> watchdog = this.watchdog;
       this.watchdog = null;
       if (watchdog != null) {
@@ -248,16 +253,32 @@ final class DataSetReaderRuntime extends AbstractComponentRuntime {
   }
 
   private void schedule(long delayNanos) {
+    long serial = ++watchdogSerial;
     watchdog =
         service
             .getScheduledExecutor()
-            .schedule(this::checkTimeout, delayNanos, TimeUnit.NANOSECONDS);
+            .schedule(() -> submitCheckTimeout(serial), delayNanos, TimeUnit.NANOSECONDS);
   }
 
-  private void checkTimeout() {
+  private void submitCheckTimeout(long serial) {
+    try {
+      connection.submitToDispatchQueue(() -> checkTimeout(serial));
+    } catch (RejectedExecutionException e) {
+      synchronized (this) {
+        if (serial == watchdogSerial) {
+          watchdog = null;
+        }
+      }
+    }
+  }
+
+  private void checkTimeout(long serial) {
     boolean expired = false;
 
     synchronized (this) {
+      if (serial != watchdogSerial) {
+        return;
+      }
       watchdog = null;
 
       if (disposed || state() != PubSubState.Operational) {

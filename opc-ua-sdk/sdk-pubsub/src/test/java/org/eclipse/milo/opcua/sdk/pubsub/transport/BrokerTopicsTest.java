@@ -152,6 +152,23 @@ class BrokerTopicsTest {
   }
 
   @Test
+  void statusTopicStopsAtPublisherId() {
+    assertEquals(
+        "opcua/json/status/line-7", BrokerTopics.statusTopic("opcua", "json", PUBLISHER_ID));
+  }
+
+  @Test
+  void resolveStatusQueueNameUsesConnectionPrefixAndPublisherId() {
+    MqttConnectionConfig connection =
+        connectionBuilder()
+            .property(BrokerTopics.MQTT_TOPIC_PREFIX_PROPERTY, Variant.ofString("factory"))
+            .build();
+
+    assertEquals(
+        "factory/json/status/line-7", BrokerTopics.resolveStatusQueueName(connection, "json"));
+  }
+
+  @Test
   void numericPublisherIdsAreStringifiedCanonically() {
     // numeric ids are stringified as decimal without leading zeros (§6.2.7.1 / Table 184)
     assertEquals(

@@ -54,6 +54,9 @@ import org.slf4j.LoggerFactory;
  *       activation the engine publishes the dataset's DataSetMetaData as a retained QoS 1 {@code
  *       ua-metadata} document to {@code opcua/json/metadata/3001/demo/writer}, where late
  *       subscribers discover the field definitions (see {@code MqttJsonSubscriberExample}).
+ *   <li>retained publisher status for JSON-over-MQTT: the engine publishes {@code ua-status} to
+ *       {@code opcua/json/status/3001} and, because this connection uses only JSON writer groups,
+ *       configures the same topic as a retained MQTT Last Will for fast publisher-death detection.
  * </ul>
  *
  * <p>The PublisherId is UInt16 3001. JSON carries publisher ids as strings, so on the wire it
@@ -67,7 +70,7 @@ import org.slf4j.LoggerFactory;
  *       EmbeddedBrokerExample} from this package, or an external broker such as Mosquitto.
  *   <li>Terminal 2: this publisher.
  *   <li>Terminal 3: {@code MqttJsonSubscriberExample}. (Terminals 2 and 3 may be started in either
- *       order: the broker retains the metadata document.)
+ *       order: the broker retains the metadata and status documents.)
  * </ol>
  *
  * <p>Run from the repository root:
@@ -141,6 +144,7 @@ public class MqttJsonPublisherExample {
     // No queueName is configured anywhere, so the engine derives the Part 14 topic tree:
     //   data:     opcua/json/data/3001/demo            (QoS 0, not retained)
     //   metadata: opcua/json/metadata/3001/demo/writer (QoS 1, retained, sent automatically)
+    //   status:   opcua/json/status/3001               (QoS 1, retained, plus MQTT Will)
     PubSubService service =
         PubSubService.create(
             config,

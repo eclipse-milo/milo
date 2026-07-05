@@ -150,6 +150,7 @@ class UadpDiscoveryModelTest {
             metaData,
             null,
             null,
+            null,
             null),
         DecodedNetworkMessage.of(
             publisherId,
@@ -167,7 +168,7 @@ class UadpDiscoveryModelTest {
   void decodedNetworkMessageOfAcceptsAllNullHeaders() {
     assertEquals(
         new DecodedNetworkMessage(
-            null, null, null, null, null, null, List.of(), List.of(), null, null, null),
+            null, null, null, null, null, null, List.of(), List.of(), null, null, null, null),
         DecodedNetworkMessage.of(null, null, null, null, null, null, List.of(), List.of()));
   }
 

@@ -490,9 +490,11 @@ does not cover:
   properties: `0:MqttClientId`, `0:MqttVersion` (`"5.0"`, `"3.1.1"`, or `"BestAvailable"`), and
   `0:MqttTopicPrefix`.
 
-One deliberate one-way drop: `BrokerSecurityConfig` (TLS material and broker credentials) is never
-serialized by `toDataType` and comes back as defaults from `fromDataType`. Credentials and key
-paths do not belong in a Part 14 configuration document.
+Two deliberate one-way drops on MQTT connections are local runtime policy rather than Part 14
+configuration: `BrokerSecurityConfig` (TLS material and broker credentials) is never serialized by
+`toDataType` and comes back as defaults from `fromDataType`, and `PublisherStatusMode` comes back as
+`AUTO`. Credentials, key paths, and local status/Will policy do not belong in a Part 14
+configuration document.
 
 ### Binary configuration files: PubSubConfigFiles
 

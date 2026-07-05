@@ -13,11 +13,13 @@ package org.eclipse.milo.opcua.sdk.pubsub.internal;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -37,6 +39,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.PubSubBindings;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubHandle;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubService;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubServiceConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.PublisherStatusReceivedEvent;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetMetaDataConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetReaderConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfig;
@@ -55,6 +58,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodeContext;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedDataSetMessage;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedField;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedNetworkMessage;
+import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedStatusMessage;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.EncodeContext;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.EncodedNetworkMessage;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.MessageMappingProvider;
@@ -62,6 +66,7 @@ import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
 import org.jspecify.annotations.Nullable;
@@ -268,6 +273,18 @@ class NameKeyedDecodeDispatchTest {
         publisherId, null, null, null, null, null, List.of(message), List.of());
   }
 
+  private static DecodedNetworkMessage statusMessage(
+      String messageId,
+      PublisherId publisherId,
+      PubSubState state,
+      boolean cyclic,
+      @Nullable DateTime nextReportTime) {
+
+    DateTime timestamp = cyclic ? DateTime.now() : null;
+    return DecodedNetworkMessage.status(
+        new DecodedStatusMessage(messageId, publisherId, timestamp, cyclic, state, nextReportTime));
+  }
+
   private static DataSetMetaDataConfig metaDataAB() {
     return DataSetMetaDataConfig.builder("MD")
         .field("A", NodeIds.Int32, FIELD_ID_A)
@@ -379,5 +396,65 @@ class NameKeyedDecodeDispatchTest {
     assertEquals(0, eventCount("u16-6"));
     assertEquals(0, eventCount("str-pub"));
     assertEquals(1, eventCount("wild"));
+  }
+
+  @Test
+  void publisherStatusEventCorrelatesReadersWithoutDataDelivery() throws Exception {
+    startService(
+        DataSetReaderConfig.builder("u16-5").publisherId(PublisherId.uint16(ushort(5))).build(),
+        DataSetReaderConfig.builder("u16-6").publisherId(PublisherId.uint16(ushort(6))).build(),
+        DataSetReaderConfig.builder("wild").build());
+
+    var statusEvents = new LinkedBlockingQueue<PublisherStatusReceivedEvent>();
+    service.addPublisherStatusListener(statusEvents::add);
+
+    injectAndFlush(statusMessage("s1", PublisherId.string("5"), PubSubState.Error, false, null));
+
+    PublisherStatusReceivedEvent event = statusEvents.poll(5, TimeUnit.SECONDS);
+    assertNotNull(event, "no publisher status event delivered");
+
+    assertEquals("conn", event.connection().path());
+    assertEquals("uadp", event.mappingName());
+    assertEquals("s1", event.messageId());
+    assertEquals(PublisherId.string("5"), event.publisherId());
+    assertEquals(PubSubState.Error, event.status());
+    assertFalse(event.timeout());
+
+    PubSubHandle u16Five = service.components().dataSetReader("conn", "RG", "u16-5").orElseThrow();
+    PubSubHandle u16Six = service.components().dataSetReader("conn", "RG", "u16-6").orElseThrow();
+    PubSubHandle wild = service.components().dataSetReader("conn", "RG", "wild").orElseThrow();
+    assertTrue(event.readers().contains(u16Five));
+    assertFalse(event.readers().contains(u16Six));
+    assertTrue(event.readers().contains(wild));
+
+    assertEquals(0, eventCount("u16-5"));
+    assertEquals(0, eventCount("u16-6"));
+    assertEquals(0, eventCount("wild"));
+  }
+
+  @Test
+  void cyclicPublisherStatusTimeoutEmitsRemoteErrorEvent() throws Exception {
+    startService(
+        DataSetReaderConfig.builder("u16-5").publisherId(PublisherId.uint16(ushort(5))).build());
+
+    var statusEvents = new LinkedBlockingQueue<PublisherStatusReceivedEvent>();
+    service.addPublisherStatusListener(statusEvents::add);
+
+    DateTime expired = new DateTime(Instant.now().minusMillis(1_000));
+    injectAndFlush(
+        statusMessage("s2", PublisherId.string("5"), PubSubState.Operational, true, expired));
+
+    PublisherStatusReceivedEvent received = statusEvents.poll(5, TimeUnit.SECONDS);
+    assertNotNull(received, "no publisher status event delivered");
+    assertFalse(received.timeout());
+    assertEquals(PubSubState.Operational, received.status());
+
+    PublisherStatusReceivedEvent timeout = statusEvents.poll(5, TimeUnit.SECONDS);
+    assertNotNull(timeout, "no publisher status timeout delivered");
+    assertTrue(timeout.timeout());
+    assertEquals(PubSubState.Error, timeout.status());
+
+    PubSubHandle reader = service.components().dataSetReader("conn", "RG", "u16-5").orElseThrow();
+    assertEquals(PubSubState.PreOperational, service.state(reader));
   }
 }

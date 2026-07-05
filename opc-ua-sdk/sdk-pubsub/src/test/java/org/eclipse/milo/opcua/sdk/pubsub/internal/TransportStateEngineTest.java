@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import io.netty.buffer.ByteBuf;
 import java.net.DatagramSocket;
 import java.net.SocketException;
+import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
@@ -43,6 +44,8 @@ import org.eclipse.milo.opcua.sdk.pubsub.PubSubStateChangeEvent;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubStateChangeEvent.Cause;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetWriterConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.FieldDefinition;
+import org.eclipse.milo.opcua.sdk.pubsub.config.JsonDataSetWriterSettings;
+import org.eclipse.milo.opcua.sdk.pubsub.config.JsonWriterGroupSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConnectionConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetConfig;
@@ -50,6 +53,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetRef;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
 import org.eclipse.milo.opcua.sdk.pubsub.config.UdpDatagramAddress;
 import org.eclipse.milo.opcua.sdk.pubsub.config.WriterGroupConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.transport.MessageAddress;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.PublisherChannel;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.PublisherTransportContext;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.SubscriberChannel;
@@ -58,9 +62,11 @@ import org.eclipse.milo.opcua.sdk.pubsub.transport.TransportProvider;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.TransportStateListener;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.BrokerTransportQualityOfService;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
@@ -202,6 +208,67 @@ class TransportStateEngineTest {
   }
 
   @Test
+  void initialBrokerUpPublishesRetainedJsonStatusWithoutStateTransition() throws Exception {
+    var transport = new StubTransport();
+    startJsonMqttPublisher(transport);
+
+    TransportStateListener listener = transport.listener.get();
+    assertNotNull(listener);
+
+    PubSubHandle connection = service.components().connection("conn").orElseThrow();
+    awaitState(connection, PubSubState.Operational);
+    stateEvents.clear();
+    transport.sends.clear();
+
+    listener.onTransportUp();
+
+    Send statusSend = awaitSend(transport.sends, MessageAddress.Kind.STATUS);
+    MessageAddress address = statusSend.address();
+    assertNotNull(address);
+    assertEquals("opcua/json/status/1", address.queueName());
+    assertEquals(BrokerTransportQualityOfService.AtLeastOnce, address.deliveryGuarantee());
+    assertTrue(address.retain());
+    assertEquals(MessageAddress.CONTENT_TYPE_JSON, address.contentTypeHint());
+
+    assertNull(stateEvents.poll(SILENCE.toMillis(), TimeUnit.MILLISECONDS));
+    assertEquals(PubSubState.Operational, service.state(connection));
+  }
+
+  @Test
+  void staleStatusSendCompletionDoesNotCancelCurrentStateRetry() throws Exception {
+    var transport = new StubTransport();
+    transport.pendingStatusSends = true;
+    startJsonMqttPublisher(transport);
+
+    TransportStateListener listener = transport.listener.get();
+    assertNotNull(listener);
+
+    PubSubHandle connection = service.components().connection("conn").orElseThrow();
+    awaitState(connection, PubSubState.Operational);
+    transport.sends.clear();
+
+    listener.onTransportUp();
+    Send operational = awaitSend(transport.sends, MessageAddress.Kind.STATUS);
+    assertNotNull(operational.result());
+
+    listener.onTransportDown(new StatusCode(StatusCodes.Bad_ServerNotConnected));
+    awaitState(connection, PubSubState.Error);
+    Send error = awaitSend(transport.sends, MessageAddress.Kind.STATUS);
+    assertNotNull(error.result());
+
+    error
+        .result()
+        .completeExceptionally(new UaException(StatusCodes.Bad_ServerNotConnected, "offline"));
+    operational.result().complete(null);
+
+    Send retry = awaitSend(transport.sends, MessageAddress.Kind.STATUS);
+    MessageAddress retryAddress = retry.address();
+    assertNotNull(retryAddress);
+    assertEquals(MessageAddress.Kind.STATUS, retryAddress.kind());
+    assertEquals("opcua/json/status/1", retryAddress.queueName());
+  }
+
+  @Test
   void downAfterShutdownIsInert() throws Exception {
     var transport = new StubTransport();
     startPublisher(transport);
@@ -229,7 +296,8 @@ class TransportStateEngineTest {
   private static final class StubTransport implements TransportProvider {
 
     final AtomicReference<@Nullable TransportStateListener> listener = new AtomicReference<>();
-    final BlockingQueue<Object> sends = new LinkedBlockingQueue<>();
+    final BlockingQueue<Send> sends = new LinkedBlockingQueue<>();
+    volatile boolean pendingStatusSends = false;
 
     @Override
     public String transportProfileUri() {
@@ -251,8 +319,19 @@ class TransportStateEngineTest {
         @Override
         public CompletableFuture<Void> send(ByteBuf message) {
           message.release();
-          sends.add(Boolean.TRUE);
+          sends.add(new Send(null, null));
           return CompletableFuture.completedFuture(null);
+        }
+
+        @Override
+        public CompletableFuture<Void> send(ByteBuf message, MessageAddress address) {
+          message.release();
+          CompletableFuture<Void> result =
+              pendingStatusSends && address.kind() == MessageAddress.Kind.STATUS
+                  ? new CompletableFuture<>()
+                  : CompletableFuture.completedFuture(null);
+          sends.add(new Send(address, result));
+          return result;
         }
 
         @Override
@@ -271,6 +350,8 @@ class TransportStateEngineTest {
       return () -> CompletableFuture.completedFuture(null);
     }
   }
+
+  private record Send(@Nullable MessageAddress address, @Nullable CompletableFuture<Void> result) {}
 
   private void startPublisher(StubTransport transport) throws Exception {
     transportExecutor = Executors.newSingleThreadExecutor();
@@ -324,7 +405,71 @@ class TransportStateEngineTest {
     service.addStateListener(stateEvents::add);
     service.addDiagnosticsListener(diagnosticsEvents::add);
     service.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+    drainStartupEvents();
     diagnosticsEvents.clear();
+  }
+
+  private void startJsonMqttPublisher(StubTransport transport) throws Exception {
+    transportExecutor = Executors.newSingleThreadExecutor();
+
+    WriterGroupConfig group =
+        WriterGroupConfig.builder("WG")
+            .writerGroupId(ushort(1))
+            .publishingInterval(Duration.ofMillis(20))
+            .messageSettings(JsonWriterGroupSettings.builder().build())
+            .dataSetWriter(
+                DataSetWriterConfig.builder("W1")
+                    .dataSet(new PublishedDataSetRef("PDS"))
+                    .dataSetWriterId(ushort(1))
+                    .settings(JsonDataSetWriterSettings.builder().build())
+                    .build())
+            .build();
+
+    PubSubConfig config =
+        PubSubConfig.builder()
+            .publishedDataSet(
+                PublishedDataSetConfig.builder("PDS")
+                    .field(
+                        FieldDefinition.builder("F1")
+                            .dataType(NodeIds.Int32)
+                            .dataSetFieldId(FIELD_ID)
+                            .build())
+                    .build())
+            .connection(
+                PubSubConnectionConfig.mqtt("conn")
+                    .brokerUri(URI.create("mqtt://127.0.0.1:1883"))
+                    .publisherId(PublisherId.uint16(ushort(1)))
+                    .writerGroup(group)
+                    .build())
+            .build();
+
+    service =
+        PubSubService.create(
+            config,
+            PubSubBindings.builder()
+                .source(
+                    new PublishedDataSetRef("PDS"),
+                    context ->
+                        DataSetSnapshot.builder(context)
+                            .field("F1", new DataValue(Variant.ofInt32(42)))
+                            .build())
+                .build(),
+            PubSubServiceConfig.builder()
+                .transportProvider(transport)
+                .transportExecutor(transportExecutor)
+                .build());
+
+    service.addStateListener(stateEvents::add);
+    service.addDiagnosticsListener(diagnosticsEvents::add);
+    service.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+    drainStartupEvents();
+    diagnosticsEvents.clear();
+  }
+
+  private void drainStartupEvents() throws InterruptedException {
+    PubSubHandle writer = service.components().dataSetWriter("conn", "WG", "W1").orElseThrow();
+    awaitEvent(e -> e.component().equals(writer) && e.newState() == PubSubState.Operational);
+    stateEvents.clear();
   }
 
   private void awaitState(PubSubHandle handle, PubSubState expected) throws InterruptedException {
@@ -363,7 +508,7 @@ class TransportStateEngineTest {
   }
 
   /** Wait until the cancelled publish task quiesces: no send for a full silence window. */
-  private static void awaitPublishQuiescence(BlockingQueue<Object> sends)
+  private static void awaitPublishQuiescence(BlockingQueue<Send> sends)
       throws InterruptedException {
 
     long deadline = System.nanoTime() + TIMEOUT.toNanos();
@@ -373,6 +518,26 @@ class TransportStateEngineTest {
       }
     }
     fail("publishing did not stop after the transport-down edge");
+  }
+
+  private static Send awaitSend(BlockingQueue<Send> sends, MessageAddress.Kind kind)
+      throws InterruptedException {
+
+    var seen = new CopyOnWriteArrayList<Send>();
+    long deadline = System.nanoTime() + TIMEOUT.toNanos();
+    while (System.nanoTime() < deadline) {
+      Send send = sends.poll(100, TimeUnit.MILLISECONDS);
+      if (send == null) {
+        continue;
+      }
+
+      MessageAddress address = send.address();
+      if (address != null && address.kind() == kind) {
+        return send;
+      }
+      seen.add(send);
+    }
+    return fail("timed out waiting for " + kind + " send; saw " + List.copyOf(seen));
   }
 
   private static int freeUdpPort() throws SocketException {

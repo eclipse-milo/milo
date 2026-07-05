@@ -105,6 +105,18 @@ final class MqttClientSession {
   record SubscriptionEntry(
       String topicFilter, MqttQos qos, BiConsumer<String, byte[]> consumer, Executor executor) {}
 
+  /**
+   * MQTT Last Will payload configured on CONNECT.
+   *
+   * @param topic the Will topic.
+   * @param qos the Will QoS.
+   * @param retain whether the Will is retained.
+   * @param contentType the MQTT 5 content type, or {@code null}.
+   * @param payload the Will payload.
+   */
+  record Will(
+      String topic, MqttQos qos, boolean retain, @Nullable String contentType, byte[] payload) {}
+
   private final Object lock = new Object();
 
   /**
@@ -155,11 +167,13 @@ final class MqttClientSession {
   private final @Nullable MqttClientSslConfig sslConfig;
   private final @Nullable Mqtt5SimpleAuth simpleAuth5;
   private final @Nullable Mqtt3SimpleAuth simpleAuth3;
+  private final @Nullable Will will;
 
-  private MqttClientSession(MqttConnectionConfig config, Executor nettyExecutor)
-      throws UaException {
+  private MqttClientSession(
+      MqttConnectionConfig config, Executor nettyExecutor, @Nullable Will will) throws UaException {
 
     this.config = config;
+    this.will = will;
 
     brokerAddress = MqttBrokerAddress.parse(config);
     versionMode = versionMode(config);
@@ -198,7 +212,22 @@ final class MqttClientSession {
    */
   static MqttClientSession create(MqttConnectionConfig config, Executor nettyExecutor)
       throws UaException {
-    return new MqttClientSession(config, nettyExecutor);
+    return new MqttClientSession(config, nettyExecutor, null);
+  }
+
+  /**
+   * Create a session for {@code config} with an optional MQTT Last Will; the session is configured
+   * but not yet connected.
+   *
+   * @param config the connection config.
+   * @param nettyExecutor the executor HiveMQ uses for Netty I/O.
+   * @param will the Last Will to attach to CONNECT, or {@code null}.
+   * @return a new {@link MqttClientSession}.
+   * @throws UaException if the broker URI, connection properties, or security material are invalid.
+   */
+  static MqttClientSession create(
+      MqttConnectionConfig config, Executor nettyExecutor, @Nullable Will will) throws UaException {
+    return new MqttClientSession(config, nettyExecutor, will);
   }
 
   MqttConnectionConfig config() {
@@ -705,7 +734,25 @@ final class MqttClientSession {
 
     @Override
     public CompletableFuture<Void> connect() {
-      return client.connect().thenApply(connAck -> (Void) null);
+      Will will = MqttClientSession.this.will;
+      if (will == null) {
+        return client.connect().thenApply(connAck -> (Void) null);
+      }
+
+      var willBuilder =
+          client
+              .connectWith()
+              .willPublish()
+              .topic(will.topic())
+              .qos(will.qos())
+              .retain(will.retain())
+              .payload(will.payload());
+
+      if (will.contentType() != null) {
+        willBuilder = willBuilder.contentType(will.contentType());
+      }
+
+      return willBuilder.applyWillPublish().send().thenApply(connAck -> (Void) null);
     }
 
     @Override
@@ -779,7 +826,21 @@ final class MqttClientSession {
 
     @Override
     public CompletableFuture<Void> connect() {
-      return client.connect().thenApply(connAck -> (Void) null);
+      Will will = MqttClientSession.this.will;
+      if (will == null) {
+        return client.connect().thenApply(connAck -> (Void) null);
+      }
+
+      return client
+          .connectWith()
+          .willPublish()
+          .topic(will.topic())
+          .qos(will.qos())
+          .retain(will.retain())
+          .payload(will.payload())
+          .applyWillPublish()
+          .send()
+          .thenApply(connAck -> (Void) null);
     }
 
     @Override

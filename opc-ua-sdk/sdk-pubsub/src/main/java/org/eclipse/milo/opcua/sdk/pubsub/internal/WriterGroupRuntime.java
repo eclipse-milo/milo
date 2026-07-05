@@ -21,8 +21,10 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.sdk.pubsub.ComponentType;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubDiagnosticsEvent;
 import org.eclipse.milo.opcua.sdk.pubsub.config.BrokerTransportSettings;
@@ -97,6 +99,8 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
   /** Seconds between 1970-01-01T00:00:00Z and the spec VersionTime epoch 2000-01-01T00:00:00Z. */
   private static final long VERSION_TIME_EPOCH_SECONDS = 946_684_800L;
 
+  private static final long NO_SUBMITTED_PUBLISH = Long.MIN_VALUE;
+
   private static final Logger LOGGER = LoggerFactory.getLogger(WriterGroupRuntime.class);
 
   private final PubSubServiceImpl service;
@@ -141,6 +145,9 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
 
   /** Guarded by the engine lock. */
   private @Nullable ScheduledFuture<?> publishTask;
+
+  /** Coalesces fixed-rate timer ticks into at most one queued/running publish per generation. */
+  private final AtomicLong submittedPublishGeneration = new AtomicLong(NO_SUBMITTED_PUBLISH);
 
   WriterGroupRuntime(
       PubSubServiceImpl service, ConnectionRuntime connection, WriterGroupConfig config) {
@@ -272,16 +279,18 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
 
     long intervalNanos = config.getPublishingInterval().toNanos();
     long generation = ++this.generation;
+    submittedPublishGeneration.set(NO_SUBMITTED_PUBLISH);
     publishTask =
         service
             .getScheduledExecutor()
             .scheduleAtFixedRate(
-                () -> publishSafely(generation), 0, intervalNanos, TimeUnit.NANOSECONDS);
+                () -> submitPublish(generation), 0, intervalNanos, TimeUnit.NANOSECONDS);
   }
 
   @Override
   void deactivate() {
     generation++;
+    submittedPublishGeneration.set(NO_SUBMITTED_PUBLISH);
 
     ScheduledFuture<?> publishTask = this.publishTask;
     this.publishTask = null;
@@ -387,6 +396,29 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
       long versionTime =
           (System.currentTimeMillis() / 1000L - VERSION_TIME_EPOCH_SECONDS) & 0xFFFF_FFFFL;
       return uint(versionTime);
+    }
+  }
+
+  private void submitPublish(long generation) {
+    if (generation != this.generation
+        || !submittedPublishGeneration.compareAndSet(NO_SUBMITTED_PUBLISH, generation)) {
+      return;
+    }
+
+    try {
+      service
+          .getTransportExecutor()
+          .execute(
+              () -> {
+                try {
+                  publishSafely(generation);
+                } finally {
+                  submittedPublishGeneration.compareAndSet(generation, NO_SUBMITTED_PUBLISH);
+                }
+              });
+    } catch (RejectedExecutionException e) {
+      submittedPublishGeneration.compareAndSet(generation, NO_SUBMITTED_PUBLISH);
+      LOGGER.debug("Publish cycle of '{}' rejected; executor is shut down", path(), e);
     }
   }
 

@@ -44,6 +44,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.PubSubServiceConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubStateChangeEvent;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubStateListener;
 import org.eclipse.milo.opcua.sdk.pubsub.PublishedDataSetSource;
+import org.eclipse.milo.opcua.sdk.pubsub.PublisherStatusListener;
 import org.eclipse.milo.opcua.sdk.pubsub.ReconfigureResult;
 import org.eclipse.milo.opcua.sdk.pubsub.SecurityKeyInfo;
 import org.eclipse.milo.opcua.sdk.pubsub.config.BrokerTransportSettings;
@@ -97,9 +98,9 @@ import org.slf4j.LoggerFactory;
  * diagnostics, and the lifecycle.
  *
  * <p>Threading: the config tree is immutable; a single engine lock guards all lifecycle and state
- * mutation (startup, shutdown, enable/disable, reconfigure, state transitions). Publish cycles run
- * on the scheduled executor and read volatile snapshots; subscriber dispatch and all listener
- * delivery run on the transport executor, never on the publish scheduler.
+ * mutation (startup, shutdown, enable/disable, reconfigure, state transitions). Timed deadlines run
+ * on the scheduled executor and immediately hop to the transport executor for lifecycle, publish,
+ * subscriber dispatch, and listener work.
  */
 public final class PubSubServiceImpl implements PubSubService {
 
@@ -175,7 +176,11 @@ public final class PubSubServiceImpl implements PubSubService {
         bindings != null ? Map.copyOf(bindings.getSecurityKeyProviders()) : Map.of();
     securityKeyManager =
         new SecurityKeyManager(
-            diagnostics, stateMachine, securityKeyProviders, serviceConfig.getScheduledExecutor());
+            diagnostics,
+            stateMachine,
+            securityKeyProviders,
+            serviceConfig.getScheduledExecutor(),
+            serviceConfig.getTransportExecutor());
 
     if (bindings != null) {
       sources.putAll(bindings.getSources());
@@ -956,6 +961,16 @@ public final class PubSubServiceImpl implements PubSubService {
   }
 
   @Override
+  public void addPublisherStatusListener(PublisherStatusListener listener) {
+    eventDispatcher.addPublisherStatusListener(requireNonNull(listener, "listener"));
+  }
+
+  @Override
+  public void removePublisherStatusListener(PublisherStatusListener listener) {
+    eventDispatcher.removePublisherStatusListener(requireNonNull(listener, "listener"));
+  }
+
+  @Override
   public void addDiagnosticsListener(PubSubDiagnosticsListener listener) {
     eventDispatcher.addDiagnosticsListener(requireNonNull(listener, "listener"));
   }
@@ -1022,6 +1037,13 @@ public final class PubSubServiceImpl implements PubSubService {
     // tick the Table 311 State* counters before dispatching the event; runs under the engine
     // lock, so the collector work must stay lock-free (it is: LongAdder ticks only)
     diagnostics.stateTransition(component.path(), oldState, newState, cause);
+
+    if (component instanceof ConnectionRuntime connection) {
+      BrokerStatusPublisher statusPublisher = connection.statusPublisher();
+      if (statusPublisher != null) {
+        statusPublisher.onConnectionState(newState);
+      }
+    }
 
     eventDispatcher.notifyStateChange(
         new PubSubStateChangeEvent(component.handle(), oldState, newState, statusCode, cause));

@@ -38,6 +38,7 @@ public final class MqttConnectionConfig implements PubSubConnectionConfig {
   private final @Nullable PublisherId publisherId;
   private final URI brokerUri;
   private final @Nullable BrokerSecurityConfig brokerSecurity;
+  private final PublisherStatusMode publisherStatusMode;
   private final List<WriterGroupConfig> writerGroups;
   private final List<ReaderGroupConfig> readerGroups;
   private final Map<QualifiedName, Variant> properties;
@@ -49,6 +50,7 @@ public final class MqttConnectionConfig implements PubSubConnectionConfig {
     this.publisherId = builder.publisherId;
     this.brokerUri = brokerUri;
     this.brokerSecurity = builder.brokerSecurity;
+    this.publisherStatusMode = builder.publisherStatusMode;
     this.writerGroups = List.copyOf(builder.writerGroups);
     this.readerGroups = List.copyOf(builder.readerGroups);
     this.properties = Collections.unmodifiableMap(new LinkedHashMap<>(builder.properties));
@@ -88,6 +90,19 @@ public final class MqttConnectionConfig implements PubSubConnectionConfig {
     return brokerSecurity;
   }
 
+  /**
+   * Get the publisher-side JSON status policy for this MQTT connection.
+   *
+   * <p>The policy is only used by local MQTT publishers. Subscribers are tolerant of peers that do
+   * not publish status messages; they continue to rely on configured data-plane timeouts for data
+   * silence detection.
+   *
+   * @return the {@link PublisherStatusMode}; defaults to {@link PublisherStatusMode#AUTO}.
+   */
+  public PublisherStatusMode getPublisherStatusMode() {
+    return publisherStatusMode;
+  }
+
   @Override
   public List<WriterGroupConfig> writerGroups() {
     return writerGroups;
@@ -119,6 +134,7 @@ public final class MqttConnectionConfig implements PubSubConnectionConfig {
     builder.publisherId = publisherId;
     builder.brokerUri = brokerUri;
     builder.brokerSecurity = brokerSecurity;
+    builder.publisherStatusMode = publisherStatusMode;
     builder.writerGroups.addAll(writerGroups);
     builder.readerGroups.addAll(readerGroups);
     builder.properties.putAll(properties);
@@ -139,6 +155,7 @@ public final class MqttConnectionConfig implements PubSubConnectionConfig {
         && Objects.equals(publisherId, that.publisherId)
         && brokerUri.equals(that.brokerUri)
         && Objects.equals(brokerSecurity, that.brokerSecurity)
+        && publisherStatusMode == that.publisherStatusMode
         && writerGroups.equals(that.writerGroups)
         && readerGroups.equals(that.readerGroups)
         && properties.equals(that.properties)
@@ -153,6 +170,7 @@ public final class MqttConnectionConfig implements PubSubConnectionConfig {
         publisherId,
         brokerUri,
         brokerSecurity,
+        publisherStatusMode,
         writerGroups,
         readerGroups,
         properties,
@@ -177,6 +195,7 @@ public final class MqttConnectionConfig implements PubSubConnectionConfig {
     private @Nullable PublisherId publisherId;
     private @Nullable URI brokerUri;
     private @Nullable BrokerSecurityConfig brokerSecurity;
+    private PublisherStatusMode publisherStatusMode = PublisherStatusMode.AUTO;
     private final List<WriterGroupConfig> writerGroups = new ArrayList<>();
     private final List<ReaderGroupConfig> readerGroups = new ArrayList<>();
     private final Map<QualifiedName, Variant> properties = new LinkedHashMap<>();
@@ -227,6 +246,23 @@ public final class MqttConnectionConfig implements PubSubConnectionConfig {
      */
     public Builder brokerSecurity(BrokerSecurityConfig security) {
       this.brokerSecurity = security;
+      return this;
+    }
+
+    /**
+     * Set the publisher-side JSON status policy.
+     *
+     * <p>The default {@link PublisherStatusMode#AUTO} configures an MQTT Last Will when a single
+     * retained JSON status stream can represent the connection, and otherwise uses cyclic JSON
+     * status. Use {@link PublisherStatusMode#DISABLED} to opt out entirely, {@link
+     * PublisherStatusMode#WILL} to fail startup unless Will is possible, or {@link
+     * PublisherStatusMode#CYCLIC} to force cyclic status.
+     *
+     * @param mode the {@link PublisherStatusMode}; defaults to {@link PublisherStatusMode#AUTO}.
+     * @return this {@link Builder}.
+     */
+    public Builder publisherStatusMode(PublisherStatusMode mode) {
+      this.publisherStatusMode = Objects.requireNonNull(mode, "mode");
       return this;
     }
 

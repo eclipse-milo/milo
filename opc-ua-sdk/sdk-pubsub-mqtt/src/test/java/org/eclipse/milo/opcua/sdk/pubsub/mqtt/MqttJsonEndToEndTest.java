@@ -17,6 +17,7 @@ import static org.eclipse.milo.opcua.sdk.pubsub.mqtt.PubSubMqttTestSupport.mqttS
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -39,6 +40,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import org.eclipse.milo.opcua.sdk.pubsub.DataSetFieldValue;
 import org.eclipse.milo.opcua.sdk.pubsub.DataSetReaderRef;
 import org.eclipse.milo.opcua.sdk.pubsub.DataSetReceivedEvent;
@@ -46,6 +48,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.MetaDataReceivedEvent;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubBindings;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubHandle;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubService;
+import org.eclipse.milo.opcua.sdk.pubsub.PublisherStatusReceivedEvent;
 import org.eclipse.milo.opcua.sdk.pubsub.config.BrokerTransportSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetMetaDataConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetReaderConfig;
@@ -59,8 +62,10 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConnectionConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
+import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherStatusMode;
 import org.eclipse.milo.opcua.sdk.pubsub.config.ReaderGroupConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.WriterGroupConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.json.JsonStatusCodec;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
@@ -87,9 +92,13 @@ class MqttJsonEndToEndTest {
 
   private static final String DATA_TOPIC = "opcua/json/data/4242/grp";
   private static final String META_TOPIC = "opcua/json/metadata/4242/grp/writer-a";
+  private static final String STATUS_TOPIC = "opcua/json/status/4242";
+  private static final String DEDUPE_STATUS_TOPIC = "opcua/json/status/status-dedupe";
 
   private static final UUID TEMPERATURE_FIELD_ID = new UUID(0L, 0xC1L);
   private static final UUID STATUS_FIELD_ID = new UUID(0L, 0xC2L);
+
+  private static final Duration SILENCE = Duration.ofMillis(300);
 
   @TempDir static Path tempDir;
 
@@ -226,6 +235,199 @@ class MqttJsonEndToEndTest {
   }
 
   @Test
+  void jsonStatusIsRetainedUaStatusDocument() throws Exception {
+    startPublisher();
+
+    try (RawMqtt5Probe watcher = RawMqtt5Probe.connect(broker.port())) {
+      watcher.subscribe(STATUS_TOPIC, MqttQos.AT_LEAST_ONCE);
+      watcher.awaitMessage(
+          publish -> parse(publish).get("Status").getAsInt() == PubSubState.Operational.getValue(),
+          TIMEOUT);
+    }
+
+    try (RawMqtt5Probe lateProbe = RawMqtt5Probe.connect(broker.port())) {
+      lateProbe.subscribe(STATUS_TOPIC, MqttQos.EXACTLY_ONCE);
+
+      Mqtt5Publish publish =
+          lateProbe.awaitMessage(
+              message ->
+                  parse(message).get("Status").getAsInt() == PubSubState.Operational.getValue(),
+              TIMEOUT);
+
+      assertTrue(publish.isRetain(), "status must be retained");
+      assertEquals(MqttQos.AT_LEAST_ONCE, publish.getQos());
+      assertEquals("application/json", publish.getContentType().map(Object::toString).orElse(null));
+
+      JsonObject document = parse(publish);
+      assertEquals("ua-status", document.get("MessageType").getAsString());
+      assertEquals("4242", document.get("PublisherId").getAsString());
+      assertFalse(document.get("IsCyclic").getAsBoolean());
+      assertEquals(PubSubState.Operational.getValue(), document.get("Status").getAsInt());
+      assertFalse(document.has("Timestamp"));
+      assertFalse(document.has("NextReportTime"));
+    }
+  }
+
+  @Test
+  void subscriberConsumesJsonStatusAndCorrelatesReader() throws Exception {
+    var dataEvents = new LinkedBlockingQueue<DataSetReceivedEvent>();
+    PubSubService subscriber = startSubscriber(configuredMetaDataReader(), dataEvents);
+
+    var statusEvents = new LinkedBlockingQueue<PublisherStatusReceivedEvent>();
+    subscriber.addPublisherStatusListener(statusEvents::add);
+
+    try (RawMqtt5Probe publisher = RawMqtt5Probe.connect(broker.port())) {
+      publisher.publish(
+          STATUS_TOPIC,
+          MqttQos.AT_LEAST_ONCE,
+          true,
+          "application/json",
+          JsonStatusCodec.encode(PUBLISHER_ID, PubSubState.Error, false, null, null));
+    }
+
+    PublisherStatusReceivedEvent event =
+        awaitStatus(statusEvents, e -> e.status() == PubSubState.Error);
+    assertEquals("sub-conn", event.connection().path());
+    assertEquals("json", event.mappingName());
+    assertEquals(STATUS_TOPIC, event.topic());
+    assertEquals(PublisherId.string("4242"), event.publisherId());
+    assertEquals(PubSubState.Error, event.status());
+    assertFalse(event.timeout());
+
+    PubSubHandle reader =
+        subscriber.components().dataSetReader("sub-conn", "rgrp", "reader-a").orElseThrow();
+    assertTrue(event.readers().contains(reader));
+    assertTrue(dataEvents.isEmpty());
+  }
+
+  @Test
+  void overlappingStatusSubscriptionsDeliverOneEvent() throws Exception {
+    try (RawMqtt5Probe publisher = RawMqtt5Probe.connect(broker.port())) {
+      publisher.publish(
+          DEDUPE_STATUS_TOPIC,
+          MqttQos.AT_LEAST_ONCE,
+          true,
+          "application/json",
+          JsonStatusCodec.encode(
+              "dedupe", PublisherId.string("status-dedupe"), PubSubState.Error, false, null, null));
+    }
+
+    var dataEvents = new LinkedBlockingQueue<DataSetReceivedEvent>();
+    PubSubService subscriber =
+        newSubscriber(List.of(statusExactReader(), statusWildcardReader()), dataEvents);
+
+    var statusEvents = new LinkedBlockingQueue<PublisherStatusReceivedEvent>();
+    subscriber.addPublisherStatusListener(statusEvents::add);
+    subscriber.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+
+    Predicate<PublisherStatusReceivedEvent> matching = event -> "dedupe".equals(event.messageId());
+    PublisherStatusReceivedEvent event = awaitStatus(statusEvents, matching);
+    assertEquals(PublisherId.string("status-dedupe"), event.publisherId());
+
+    assertNoStatus(statusEvents, matching, SILENCE);
+  }
+
+  @Test
+  void mqttWillPublishesRetainedErrorStatusOnClientTakeover() throws Exception {
+    startPublisher();
+
+    try (RawMqtt5Probe watcher = RawMqtt5Probe.connect(broker.port())) {
+      watcher.subscribe(STATUS_TOPIC, MqttQos.AT_LEAST_ONCE);
+      watcher.awaitMessage(
+          publish -> parse(publish).get("Status").getAsInt() == PubSubState.Operational.getValue(),
+          TIMEOUT);
+
+      try (RawMqtt5Probe takeover = RawMqtt5Probe.connect(broker.port(), "4242")) {
+        watcher.awaitMessage(
+            publish -> parse(publish).get("Status").getAsInt() == PubSubState.Error.getValue(),
+            TIMEOUT);
+
+        try (RawMqtt5Probe lateProbe = RawMqtt5Probe.connect(broker.port())) {
+          lateProbe.subscribe(STATUS_TOPIC, MqttQos.AT_LEAST_ONCE);
+
+          Mqtt5Publish retainedWill =
+              lateProbe.awaitMessage(
+                  publish ->
+                      parse(publish).get("Status").getAsInt() == PubSubState.Error.getValue(),
+                  TIMEOUT);
+
+          assertTrue(retainedWill.isRetain(), "Will status must be retained for late subscribers");
+          JsonObject document = parse(retainedWill);
+          assertEquals("ua-status", document.get("MessageType").getAsString());
+          assertFalse(document.get("IsCyclic").getAsBoolean());
+          assertEquals(PubSubState.Error.getValue(), document.get("Status").getAsInt());
+        }
+      }
+    }
+  }
+
+  @Test
+  void publisherStatusDisabledSuppressesRetainedStatusAndWill() throws Exception {
+    PublisherId publisherId =
+        PublisherId.string("status-disabled-" + UUID.randomUUID().toString().substring(0, 8));
+    String dataTopic = dataTopic(publisherId);
+    String statusTopic = statusTopic(publisherId);
+
+    try (RawMqtt5Probe statusProbe = RawMqtt5Probe.connect(broker.port())) {
+      statusProbe.subscribe(statusTopic, MqttQos.AT_LEAST_ONCE);
+
+      startPublisher(publisherId, PublisherStatusMode.DISABLED);
+
+      try (RawMqtt5Probe dataProbe = RawMqtt5Probe.connect(broker.port())) {
+        dataProbe.subscribe(dataTopic, MqttQos.AT_MOST_ONCE);
+        dataProbe.awaitMessage(TIMEOUT);
+      }
+
+      assertEquals(0, statusProbe.countMessages(1, SILENCE));
+
+      try (RawMqtt5Probe takeover =
+          RawMqtt5Probe.connect(broker.port(), publisherId.toCanonicalString())) {
+        assertEquals(0, statusProbe.countMessages(1, SILENCE));
+      }
+    }
+  }
+
+  @Test
+  void publisherStatusCyclicPublishesRetainedStatusWithNextReportTime() throws Exception {
+    PublisherId publisherId =
+        PublisherId.string("status-cyclic-" + UUID.randomUUID().toString().substring(0, 8));
+    String statusTopic = statusTopic(publisherId);
+
+    try (RawMqtt5Probe statusProbe = RawMqtt5Probe.connect(broker.port())) {
+      statusProbe.subscribe(statusTopic, MqttQos.AT_LEAST_ONCE);
+
+      startPublisher(publisherId, PublisherStatusMode.CYCLIC);
+
+      Mqtt5Publish publish =
+          statusProbe.awaitMessage(
+              message -> parse(message).get("IsCyclic").getAsBoolean(), TIMEOUT);
+
+      assertEquals(MqttQos.AT_LEAST_ONCE, publish.getQos());
+
+      JsonObject document = parse(publish);
+      assertEquals("ua-status", document.get("MessageType").getAsString());
+      assertEquals(publisherId.toCanonicalString(), document.get("PublisherId").getAsString());
+      assertTrue(document.get("IsCyclic").getAsBoolean());
+      assertEquals(PubSubState.Operational.getValue(), document.get("Status").getAsInt());
+      assertTrue(document.has("Timestamp"));
+      assertTrue(document.has("NextReportTime"));
+
+      try (RawMqtt5Probe lateProbe = RawMqtt5Probe.connect(broker.port())) {
+        lateProbe.subscribe(statusTopic, MqttQos.AT_LEAST_ONCE);
+
+        Mqtt5Publish retained =
+            lateProbe.awaitMessage(
+                message -> message.isRetain() && parse(message).get("IsCyclic").getAsBoolean(),
+                TIMEOUT);
+
+        assertEquals(MqttQos.AT_LEAST_ONCE, retained.getQos());
+        assertEquals(
+            publisherId.toCanonicalString(), parse(retained).get("PublisherId").getAsString());
+      }
+    }
+  }
+
+  @Test
   void discoveredMetaDataNamesFieldsForAcceptDiscoveredReader() throws Exception {
     startPublisher();
 
@@ -301,11 +503,40 @@ class MqttJsonEndToEndTest {
         .build();
   }
 
+  private static DataSetReaderConfig statusExactReader() {
+    return DataSetReaderConfig.builder("reader-exact-status")
+        .publisherId(PublisherId.string("status-dedupe"))
+        .dataSetWriterId(ushort(1))
+        .settings(JsonDataSetReaderSettings.builder().build())
+        .brokerTransport(
+            BrokerTransportSettings.builder()
+                .queueName("opcua/json/data/status-dedupe/grp")
+                .build())
+        .build();
+  }
+
+  private static DataSetReaderConfig statusWildcardReader() {
+    return DataSetReaderConfig.builder("reader-wild-status")
+        .dataSetWriterId(ushort(1))
+        .settings(JsonDataSetReaderSettings.builder().build())
+        .brokerTransport(
+            BrokerTransportSettings.builder()
+                .queueName("opcua/json/data/status-dedupe/grp")
+                .build())
+        .build();
+  }
+
   /**
    * Start a publisher service: writer group "grp" at 100 ms with writer "writer-a" publishing
    * "ds-a" using the built-in "json" mapping with all-default (empty) content masks.
    */
   private PubSubService startPublisher() throws Exception {
+    return startPublisher(PUBLISHER_ID, PublisherStatusMode.AUTO);
+  }
+
+  private PubSubService startPublisher(PublisherId publisherId, PublisherStatusMode statusMode)
+      throws Exception {
+
     PublishedDataSetConfig dataSet =
         PublishedDataSetConfig.builder("ds-a")
             .field(
@@ -327,7 +558,8 @@ class MqttJsonEndToEndTest {
             .connection(
                 PubSubConnectionConfig.mqtt("pub-conn")
                     .brokerUri(brokerUri())
-                    .publisherId(PUBLISHER_ID)
+                    .publisherId(publisherId)
+                    .publisherStatusMode(statusMode)
                     .writerGroup(
                         WriterGroupConfig.builder("grp")
                             .writerGroupId(ushort(1))
@@ -364,32 +596,56 @@ class MqttJsonEndToEndTest {
       DataSetReaderConfig reader, LinkedBlockingQueue<DataSetReceivedEvent> events)
       throws Exception {
 
+    return startSubscriber(List.of(reader), events);
+  }
+
+  private PubSubService startSubscriber(
+      List<DataSetReaderConfig> readers, LinkedBlockingQueue<DataSetReceivedEvent> events)
+      throws Exception {
+
+    PubSubService subscriber = newSubscriber(readers, events);
+    subscriber.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+    return subscriber;
+  }
+
+  private PubSubService newSubscriber(
+      List<DataSetReaderConfig> readers, LinkedBlockingQueue<DataSetReceivedEvent> events) {
+
+    ReaderGroupConfig.Builder readerGroupBuilder = ReaderGroupConfig.builder("rgrp");
+    PubSubBindings.Builder bindingsBuilder = PubSubBindings.builder();
+
+    for (DataSetReaderConfig reader : readers) {
+      readerGroupBuilder.dataSetReader(reader);
+      bindingsBuilder.listener(
+          new DataSetReaderRef("sub-conn", "rgrp", reader.getName()), events::add);
+    }
+
     PubSubConfig config =
         PubSubConfig.builder()
             .connection(
                 PubSubConnectionConfig.mqtt("sub-conn")
                     .brokerUri(brokerUri())
-                    .readerGroup(ReaderGroupConfig.builder("rgrp").dataSetReader(reader).build())
+                    .readerGroup(readerGroupBuilder.build())
                     .build())
             .build();
 
     PubSubService subscriber =
-        track(
-            PubSubService.create(
-                config,
-                PubSubBindings.builder()
-                    .listener(
-                        new DataSetReaderRef("sub-conn", "rgrp", reader.getName()), events::add)
-                    .build(),
-                mqttServiceConfig()));
+        track(PubSubService.create(config, bindingsBuilder.build(), mqttServiceConfig()));
 
-    subscriber.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
     return subscriber;
   }
 
   private PubSubService track(PubSubService service) {
     services.add(service);
     return service;
+  }
+
+  private static String dataTopic(PublisherId publisherId) {
+    return "opcua/json/data/" + publisherId.toCanonicalString() + "/grp";
+  }
+
+  private static String statusTopic(PublisherId publisherId) {
+    return "opcua/json/status/" + publisherId.toCanonicalString();
   }
 
   private static JsonObject parse(Mqtt5Publish publish) {
@@ -405,6 +661,51 @@ class MqttJsonEndToEndTest {
       fail("timed out waiting for a MetaDataReceivedEvent");
     }
     return event;
+  }
+
+  private static PublisherStatusReceivedEvent awaitStatus(
+      LinkedBlockingQueue<PublisherStatusReceivedEvent> events) throws InterruptedException {
+
+    return awaitStatus(events, event -> true);
+  }
+
+  private static PublisherStatusReceivedEvent awaitStatus(
+      LinkedBlockingQueue<PublisherStatusReceivedEvent> events,
+      Predicate<PublisherStatusReceivedEvent> predicate)
+      throws InterruptedException {
+
+    long deadline = System.nanoTime() + TIMEOUT.toNanos();
+    while (true) {
+      long remaining = deadline - System.nanoTime();
+      if (remaining <= 0) {
+        fail("timed out waiting for a PublisherStatusReceivedEvent");
+      }
+      PublisherStatusReceivedEvent event =
+          events.poll(Math.min(remaining, 100_000_000L), TimeUnit.NANOSECONDS);
+      if (event != null && predicate.test(event)) {
+        return event;
+      }
+    }
+  }
+
+  private static void assertNoStatus(
+      LinkedBlockingQueue<PublisherStatusReceivedEvent> events,
+      Predicate<PublisherStatusReceivedEvent> predicate,
+      Duration window)
+      throws InterruptedException {
+
+    long deadline = System.nanoTime() + window.toNanos();
+    while (System.nanoTime() < deadline) {
+      long remaining = deadline - System.nanoTime();
+      if (remaining <= 0) {
+        break;
+      }
+      PublisherStatusReceivedEvent event =
+          events.poll(Math.min(remaining, 100_000_000L), TimeUnit.NANOSECONDS);
+      if (event != null && predicate.test(event)) {
+        fail("unexpected duplicate PublisherStatusReceivedEvent: " + event);
+      }
+    }
   }
 
   // endregion

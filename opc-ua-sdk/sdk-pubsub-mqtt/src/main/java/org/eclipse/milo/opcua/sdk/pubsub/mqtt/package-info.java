@@ -14,6 +14,13 @@
  * both the {@code pubsub-mqtt-uadp} and {@code pubsub-mqtt-json} transport profiles. Register it
  * via {@code PubSubServiceConfig.Builder#transportProvider(TransportProvider)} for connections
  * configured with {@code MqttConnectionConfig}.
+ *
+ * <p>The transport also owns MQTT broker behavior around retained publication: data uses the
+ * configured or derived data topics, metadata is published retained for broker discovery, and
+ * JSON-mapped publisher status is published retained on the status topic. Where a single JSON
+ * status stream can represent the connection, the MQTT CONNECT includes a retained Last Will so
+ * subscribers can observe remote publisher death through {@code PublisherStatusReceivedEvent}
+ * without waiting for data-plane silence.
  */
 @NullMarked
 package org.eclipse.milo.opcua.sdk.pubsub.mqtt;

@@ -83,6 +83,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConnectionConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
+import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherStatusMode;
 import org.eclipse.milo.opcua.sdk.pubsub.config.ReaderGroupConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.SecurityGroupConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.SecurityGroupRef;
@@ -209,7 +210,11 @@ import org.jspecify.annotations.Nullable;
  *       is published retained.
  *   <li>{@code mqtt-subscribe} — a DataSetReader on broker topics. The data topic is required (an
  *       MQTT reader cannot derive the publisher's topic names); field names come from {@code
- *       --field} metadata or from an optional metadata topic.
+ *       --field} metadata or from an optional metadata topic. JSON subscriptions also print remote
+ *       publisher status events from the standardized status topic.
+ *   <li>{@code mqtt-status} — a status-only engine subscriber for JSON {@code ua-status} messages,
+ *       useful for watching retained Operational status, broker-published Last Will Error status,
+ *       and cyclic status timeouts without subscribing to a data stream.
  *   <li>{@code mqtt-raw} — a plain MQTT 5 client on a topic filter, printing each message as pretty
  *       JSON or a hex dump.
  * </ul>
@@ -248,6 +253,26 @@ import org.jspecify.annotations.Nullable;
  *
  * <pre>{@code
  * mqtt-raw mqtt://localhost:1883 --topic "opcua/#"
+ * }</pre>
+ *
+ * <p>To test JSON status and Last Will behavior, start a status monitor in one terminal, start a
+ * JSON publisher in another, then terminate the publisher process without a clean MQTT disconnect
+ * (for example {@code kill -9 <pid>}). The monitor first sees the retained Operational status and
+ * then the broker-retained Error status published from the MQTT Will:
+ *
+ * <pre>{@code
+ * mqtt-status mqtt://localhost:1883 --publisher-id uint16:62541
+ *
+ * mqtt-publish mqtt://localhost:1883
+ * }</pre>
+ *
+ * <p>{@code mqtt-publish --status auto|disabled|will|cyclic} selects the same publisher status
+ * policy exposed by {@code MqttConnectionConfig}. Use {@code --status cyclic} to exercise cyclic
+ * status timeout handling explicitly; the status monitor will print cyclic Operational reports and
+ * a synthetic timeout if those reports stop arriving:
+ *
+ * <pre>{@code
+ * mqtt-publish mqtt://localhost:1883 --status cyclic
  * }</pre>
  */
 public final class PubSubInteropTool {
@@ -365,6 +390,7 @@ public final class PubSubInteropTool {
         mqtt-publish <brokerUri> [--mapping json|uadp] [--publisher-id <type:value>]
                      [--group <name>] [--topic <dataTopic>] [--metadata-topic <t>]
                      [--metadata-interval <ms>] [--qos 0|1|2] [--interval <ms>]
+                     [--topic-prefix <prefix>] [--status auto|disabled|will|cyclic]
             Publish the "MiloInterop" dataset (as above, Variant-encoded) through an
             MQTT broker. Defaults: mapping json, publisher-id uint16:62541, group
             "MiloInterop", writer-group-id 100, data-set-writer-id 1, interval 1000,
@@ -372,17 +398,28 @@ public final class PubSubInteropTool {
             opcua/<json|uadp>/data/<publisherId>/<group> (metadata:
             .../metadata/<publisherId>/<group>/writer); the resolved topics are
             printed at startup. Metadata is published retained at activation and on
-            change; --metadata-interval > 0 republishes it periodically.
+            change; --metadata-interval > 0 republishes it periodically. For JSON,
+            retained publisher status is published on
+            <prefix>/json/status/<publisherId>. The default status mode is "auto",
+            which configures an MQTT retained Last Will Error message when the status
+            stream can be represented by one Will, or cyclic Operational reports with
+            NextReportTime otherwise. Use --status disabled to suppress status
+            publishing, --status will to require Will, or --status cyclic to force
+            cyclic status.
 
         mqtt-subscribe <brokerUri> --topic <dataTopic> [--mapping json|uadp]
                        [--metadata-topic <t>] [--field <name>:<type>]...
                        [--publisher-id <type:value>] [--writer-group-id <n>]
                        [--data-set-writer-id <n>] [--receive-timeout <ms>]
+                       [--topic-prefix <prefix>]
             Run a PubSubService DataSetReader on broker topics, printing DataSets,
-            metadata, and state changes like the subscribe mode. --topic is REQUIRED
-            (MQTT readers cannot derive the publisher's topic names). Filters are
-            wildcards unless specified; a --publisher-id filter also matches JSON
-            string ids with the same canonical value. Repeatable --field entries
+            metadata, remote JSON publisher status, and state changes like the
+            subscribe mode. --topic is REQUIRED (MQTT readers cannot derive the
+            publisher's topic names). Filters are wildcards unless specified; a
+            --publisher-id filter also matches JSON string ids with the same canonical
+            value and narrows the status topic subscription to
+            <prefix>/json/status/<publisherId>. Without --publisher-id the status
+            subscription is <prefix>/json/status/+. Repeatable --field entries
             configure named metadata (REQUIRE_CONFIGURED, ConfigurationVersion 1.1,
             matching the publish modes); without --field the policy is
             ACCEPT_DISCOVERED and field names arrive via --metadata-topic or stay
@@ -393,6 +430,16 @@ public final class PubSubInteropTool {
             Error (Bad_Timeout), logged as a state change; keep-alives reset the
             window, messages dropped by the Part 14 7.2.3 sequence-number window do
             not. 0 (the default) disables the watchdog.
+
+        mqtt-status <brokerUri> [--publisher-id <type:value>] [--topic-prefix <prefix>]
+                    [--receive-timeout <ms>]
+            Status-only PubSubService subscriber for JSON ua-status messages. It
+            subscribes to <prefix>/json/status/<publisherId> when --publisher-id is
+            set, otherwise <prefix>/json/status/+, and prints retained Operational
+            status, broker-published Last Will Error status, cyclic reports, and
+            synthetic timeout events. A hidden inert data topic is configured only to
+            make the MQTT reader legal; no data stream is required. --receive-timeout
+            is accepted for symmetry but status timeout comes from NextReportTime.
 
         mqtt-raw <brokerUri> [--topic <filter>]
             No engine: a plain MQTT 5 client subscribed to --topic (default
@@ -412,6 +459,8 @@ public final class PubSubInteropTool {
         subscribe 224.0.0.22 4840 --security-mode sign-encrypt
             --sks opc.tcp://localhost:4840 --security-group DemoSecurityGroup
         mqtt-publish mqtt://localhost:1883 --metadata-interval 5000
+        mqtt-publish mqtt://localhost:1883 --status cyclic
+        mqtt-status mqtt://localhost:1883 --publisher-id uint16:62541
         mqtt-publish mqtt://localhost:1883 --mapping uadp --qos 1
         mqtt-subscribe mqtt://localhost:1883 --topic opcua/json/data/62541/MiloInterop
             --metadata-topic opcua/json/metadata/62541/MiloInterop/writer
@@ -486,6 +535,8 @@ public final class PubSubInteropTool {
                       "--metadata-interval",
                       "--qos",
                       "--interval",
+                      "--topic-prefix",
+                      "--status",
                       "--username",
                       "--password",
                       "--client-id",
@@ -502,6 +553,19 @@ public final class PubSubInteropTool {
                       "--publisher-id",
                       "--writer-group-id",
                       "--data-set-writer-id",
+                      "--receive-timeout",
+                      "--topic-prefix",
+                      "--username",
+                      "--password",
+                      "--client-id",
+                      "--mqtt-version")));
+      case "mqtt-status" ->
+          runMqttStatus(
+              parseMqttArgs(
+                  args,
+                  Set.of(
+                      "--publisher-id",
+                      "--topic-prefix",
                       "--receive-timeout",
                       "--username",
                       "--password",
@@ -962,10 +1026,19 @@ public final class PubSubInteropTool {
   // region mqtt-publish
 
   private static void runMqttPublish(Args args) throws Exception {
+    if (args.statusMode != null
+        && args.statusMode != PublisherStatusMode.AUTO
+        && args.statusMode != PublisherStatusMode.DISABLED
+        && !args.mapping.equals("json")) {
+      throw usageError("--status will|cyclic requires an MQTT/JSON publisher");
+    }
+
     PublisherId publisherId =
         args.publisherId != null ? args.publisherId : PublisherId.uint16(ushort(62541));
     int writerGroupId = args.writerGroupId != 0 ? args.writerGroupId : 100;
     int dataSetWriterId = args.dataSetWriterId != 0 ? args.dataSetWriterId : 1;
+    PublisherStatusMode statusMode =
+        args.statusMode != null ? args.statusMode : PublisherStatusMode.AUTO;
 
     PublishedDataSetConfig dataSet = miloInteropDataSet();
 
@@ -1012,8 +1085,12 @@ public final class PubSubInteropTool {
             .dataSetWriter(writer)
             .build();
 
-    MqttConnectionConfig connection =
-        mqttConnection(args).publisherId(publisherId).writerGroup(group).build();
+    MqttConnectionConfig.Builder connectionBuilder =
+        mqttConnection(args)
+            .publisherId(publisherId)
+            .publisherStatusMode(statusMode)
+            .writerGroup(group);
+    MqttConnectionConfig connection = connectionBuilder.build();
 
     PubSubConfig config =
         PubSubConfig.builder().publishedDataSet(dataSet).connection(connection).build();
@@ -1035,6 +1112,10 @@ public final class PubSubInteropTool {
         BrokerTopics.resolveDataQueueName(connection, args.mapping, publisherId, group);
     String metaDataTopic =
         BrokerTopics.resolveMetaDataQueueName(connection, args.mapping, group, writer);
+    String statusTopic =
+        args.mapping.equals("json")
+            ? BrokerTopics.resolveStatusQueueName(connection, "json")
+            : null;
 
     log(
         "publishing \"MiloInterop\" over MQTT/%s to %s: publisherId=%s writerGroupId=%d"
@@ -1055,6 +1136,20 @@ public final class PubSubInteropTool {
         args.metadataIntervalMs > 0
             ? "at activation/on change and every " + args.metadataIntervalMs + " ms"
             : "at activation/on change only");
+    if (statusTopic != null) {
+      log(
+          "status topic: %s (mode=%s, %s)",
+          statusTopic,
+          statusMode,
+          switch (statusMode) {
+            case DISABLED -> "status publishing disabled";
+            case CYCLIC -> "cyclic Operational reports with NextReportTime; no MQTT Will";
+            case WILL -> "MQTT Last Will required for ungraceful disconnect";
+            case AUTO -> "MQTT Last Will when possible, cyclic fallback otherwise";
+          });
+    } else {
+      log("status topic: - (JSON status is not published for mapping %s)", args.mapping);
+    }
 
     service.startup().get();
     log("service started; Ctrl-C to exit");
@@ -1135,6 +1230,7 @@ public final class PubSubInteropTool {
 
     addDataSetLogging(service);
     addMetaDataLogging(service);
+    addPublisherStatusLogging(service);
     addStateAndDiagnosticsLogging(service);
     closeOnShutdown(service);
 
@@ -1149,6 +1245,63 @@ public final class PubSubInteropTool {
             ? "ACCEPT_DISCOVERED"
             : "REQUIRE_CONFIGURED (" + args.fields.size() + " configured fields)",
         args.receiveTimeoutMs > 0 ? args.receiveTimeoutMs + " ms" : "disabled");
+    log(
+        "status topic: %s",
+        args.mapping.equals("json")
+            ? mqttStatusTopicFilter(connection, args.publisherId)
+            : "- (status subscription is JSON-only)");
+    service.startup().get();
+    log("service started; Ctrl-C to exit");
+
+    while (true) {
+      Thread.sleep(10_000);
+      dumpDiagnostics(service);
+    }
+  }
+
+  // endregion
+
+  // region mqtt-status
+
+  private static void runMqttStatus(Args args) throws Exception {
+    String prefix = args.topicPrefix != null ? args.topicPrefix : BrokerTopics.DEFAULT_TOPIC_PREFIX;
+    String probeTopic =
+        prefix + "/json/data/_milo_status_probe/" + UUID.randomUUID().toString().substring(0, 8);
+
+    DataSetReaderConfig.Builder reader =
+        DataSetReaderConfig.builder("status-reader")
+            .settings(JsonDataSetReaderSettings.builder().build())
+            .metadataPolicy(MetadataPolicy.ACCEPT_DISCOVERED)
+            .brokerTransport(BrokerTransportSettings.builder().queueName(probeTopic).build());
+
+    if (args.publisherId != null) {
+      reader.publisherId(args.publisherId);
+    }
+
+    MqttConnectionConfig connection =
+        mqttConnection(args)
+            .readerGroup(ReaderGroupConfig.builder("status").dataSetReader(reader.build()).build())
+            .build();
+
+    PubSubService service =
+        PubSubService.create(
+            PubSubConfig.builder().connection(connection).build(),
+            PubSubBindings.builder().build(),
+            mqttServiceConfig());
+
+    addPublisherStatusLogging(service);
+    addStateAndDiagnosticsLogging(service);
+    closeOnShutdown(service);
+
+    log(
+        "monitoring MQTT/JSON publisher status on %s: status topic=%s probeDataTopic=%s"
+            + " receiveTimeout=%s",
+        args.brokerUri,
+        mqttStatusTopicFilter(connection, args.publisherId),
+        probeTopic,
+        args.receiveTimeoutMs > 0
+            ? "ignored for status-only mode (status timeout uses NextReportTime)"
+            : "n/a");
     service.startup().get();
     log("service started; Ctrl-C to exit");
 
@@ -1680,6 +1833,25 @@ public final class PubSubInteropTool {
         });
   }
 
+  private static void addPublisherStatusLogging(PubSubService service) {
+    service.addPublisherStatusListener(
+        event ->
+            log(
+                "STATUS%s connection=%s mapping=%s topic=%s publisherId=%s state=%s cyclic=%s"
+                    + " timestamp=%s nextReportTime=%s readers=%s messageId=%s",
+                event.timeout() ? " TIMEOUT" : "",
+                event.connection().path(),
+                event.mappingName(),
+                orDash(event.topic()),
+                formatPublisherId(event.publisherId()),
+                event.status(),
+                event.cyclic(),
+                formatTime(event.timestamp()),
+                formatTime(event.nextReportTime()),
+                event.readers().isEmpty() ? "-" : event.readers(),
+                event.messageId()));
+  }
+
   private static void addStateAndDiagnosticsLogging(PubSubService service) {
     service.addStateListener(
         event ->
@@ -1730,6 +1902,10 @@ public final class PubSubInteropTool {
       connection.property(
           MqttTransportProvider.MQTT_VERSION_PROPERTY, Variant.ofString(args.mqttVersion));
     }
+    if (args.topicPrefix != null) {
+      connection.property(
+          BrokerTopics.MQTT_TOPIC_PREFIX_PROPERTY, Variant.ofString(args.topicPrefix));
+    }
     if (args.username != null || args.password != null) {
       BrokerSecurityConfig.Builder security = BrokerSecurityConfig.builder();
       if (args.username != null) {
@@ -1742,6 +1918,16 @@ public final class PubSubInteropTool {
     }
 
     return connection;
+  }
+
+  private static String mqttStatusTopicFilter(
+      MqttConnectionConfig connection, @Nullable PublisherId publisherId) {
+
+    String prefix = BrokerTopics.topicPrefix(connection);
+    if (publisherId != null) {
+      return BrokerTopics.statusTopic(prefix, "json", publisherId);
+    }
+    return prefix + "/json/status/+";
   }
 
   private static URI parseBrokerUri(String value) {
@@ -1833,6 +2019,8 @@ public final class PubSubInteropTool {
         case "--metadata-interval" -> parsed.metadataIntervalMs = parseInt(option, value);
         case "--qos" -> parsed.qos = parseQos(value);
         case "--interval" -> parsed.intervalMs = parseInt(option, value);
+        case "--topic-prefix" -> parsed.topicPrefix = parseTopicPrefix(value);
+        case "--status" -> parsed.statusMode = parseStatusMode(value);
         case "--field" -> parsed.fields.add(parseField(value));
         case "--writer-group-id" -> parsed.writerGroupId = parseInt(option, value);
         case "--data-set-writer-id" -> parsed.dataSetWriterId = parseInt(option, value);
@@ -1912,6 +2100,23 @@ public final class PubSubInteropTool {
       case 2 -> BrokerTransportQualityOfService.ExactlyOnce;
       default -> throw new IllegalArgumentException("qos: " + qos);
     };
+  }
+
+  private static PublisherStatusMode parseStatusMode(String value) {
+    return switch (value) {
+      case "auto" -> PublisherStatusMode.AUTO;
+      case "disabled" -> PublisherStatusMode.DISABLED;
+      case "will" -> PublisherStatusMode.WILL;
+      case "cyclic" -> PublisherStatusMode.CYCLIC;
+      default -> throw usageError("invalid --status, expected auto|disabled|will|cyclic: " + value);
+    };
+  }
+
+  private static String parseTopicPrefix(String value) {
+    if (value.isEmpty()) {
+      throw usageError("invalid --topic-prefix, expected a non-empty topic prefix");
+    }
+    return value;
   }
 
   private static @Nullable String parseMqttVersion(String value) {
@@ -2008,6 +2213,8 @@ public final class PubSubInteropTool {
     int metadataIntervalMs = 0;
     int qos = -1; // -1 = not specified: engine defaults (data QoS 0, metadata QoS 1)
     final List<DataSetMetaDataConfig.Field> fields = new ArrayList<>();
+    String topicPrefix;
+    PublisherStatusMode statusMode;
     String username;
     String password;
     String clientId;

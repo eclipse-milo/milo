@@ -102,7 +102,7 @@ final class ReaderGroupRuntime extends AbstractComponentRuntime {
             StatusCodes.Bad_ConfigurationError,
             "secured reader group '%s' has no SecurityGroup reference".formatted(path()));
       }
-      // non-blocking: the fetch runs on the scheduler and completes startup from its callback
+      // non-blocking: the fetch runs on the work executor and completes startup from its callback
       service
           .getSecurityKeyManager()
           .attachSubscriber(this, security, service.requireSecurityGroup(ref));

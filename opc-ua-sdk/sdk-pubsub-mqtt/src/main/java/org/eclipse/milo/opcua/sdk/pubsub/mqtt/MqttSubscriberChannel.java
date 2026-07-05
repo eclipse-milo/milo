@@ -15,8 +15,10 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -24,10 +26,15 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.eclipse.milo.opcua.sdk.pubsub.config.BrokerTransportSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetReaderConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetReaderMessageSettings;
+import org.eclipse.milo.opcua.sdk.pubsub.config.JsonDataSetReaderSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.MqttConnectionConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
 import org.eclipse.milo.opcua.sdk.pubsub.config.ReaderGroupConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.UadpDataSetReaderSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.mqtt.MqttClientSession.SubscriptionEntry;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.BrokerQualityOfService;
+import org.eclipse.milo.opcua.sdk.pubsub.transport.BrokerTopics;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.SubscriberChannel;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.SubscriberTransportContext;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.TransportStateListener;
@@ -39,10 +46,11 @@ import org.slf4j.LoggerFactory;
  * A {@link SubscriberChannel} that subscribes the connection's reader queues on the shared MQTT
  * client and delivers received payloads to the engine.
  *
- * <p>At open, the channel subscribes the de-duplicated set of every reader's data queue and (when
- * configured) metadata queue, taking the highest resolved QoS when readers share a queue. The
- * session re-issues these subscriptions on every reconnect. Decode is content-based in the engine,
- * so data and metadata payloads flow through the same consumer.
+ * <p>At open, the channel subscribes the de-duplicated set of every reader's data queue, configured
+ * metadata queue, and JSON status topic filter, taking the highest resolved QoS when readers share
+ * a queue or filter. The session re-issues these subscriptions on every reconnect. Decode is
+ * content-based in the engine, so data, metadata, and status payloads flow through the same
+ * topic-aware consumer; the topic is preserved for publisher-status events.
  *
  * <p>Delivery: payloads are wrapped in unpooled buffers and handed to the context's topic-aware
  * consumer (the source topic is always known on MQTT), on a single Netty event loop of the
@@ -108,13 +116,15 @@ final class MqttSubscriberChannel implements SubscriberChannel {
   }
 
   /**
-   * The de-duplicated reader data + metadata queue subscriptions of {@code connection}, merged at
-   * the highest QoS per topic filter.
+   * The de-duplicated reader data, metadata, and JSON status subscriptions of {@code connection},
+   * merged at the highest QoS per topic filter.
    */
   private List<SubscriptionEntry> buildSubscriptions(
       MqttConnectionConfig connection, SubscriberTransportContext context) {
 
     var topicQos = new LinkedHashMap<String, MqttQos>();
+    var exactStatusTopicFilters = new LinkedHashSet<String>();
+    String wildcardStatusTopicFilter = null;
 
     for (ReaderGroupConfig group : connection.readerGroups()) {
       for (DataSetReaderConfig reader : group.getDataSetReaders()) {
@@ -141,7 +151,22 @@ final class MqttSubscriberChannel implements SubscriberChannel {
               metaDataQueue,
               MqttClientSession.toMqttQos(BrokerQualityOfService.resolveMetaData(null, settings)));
         }
+
+        StatusSubscription statusSubscription = statusSubscription(connection, reader);
+        if (statusSubscription != null) {
+          if (statusSubscription.wildcard()) {
+            wildcardStatusTopicFilter = statusSubscription.topicFilter();
+          } else {
+            exactStatusTopicFilters.add(statusSubscription.topicFilter());
+          }
+        }
       }
+    }
+
+    if (wildcardStatusTopicFilter != null) {
+      mergeQos(topicQos, wildcardStatusTopicFilter, MqttQos.AT_LEAST_ONCE);
+    } else {
+      mergeStatusQos(topicQos, exactStatusTopicFilters);
     }
 
     // one event loop (not the group) so delivery preserves arrival order, as UDP channels do
@@ -187,6 +212,42 @@ final class MqttSubscriberChannel implements SubscriberChannel {
   private static void mergeQos(Map<String, MqttQos> topicQos, String topicFilter, MqttQos qos) {
     topicQos.merge(topicFilter, qos, (a, b) -> a.getCode() >= b.getCode() ? a : b);
   }
+
+  private static void mergeStatusQos(Map<String, MqttQos> topicQos, Set<String> topicFilters) {
+    for (String topicFilter : topicFilters) {
+      mergeQos(topicQos, topicFilter, MqttQos.AT_LEAST_ONCE);
+    }
+  }
+
+  private static @Nullable StatusSubscription statusSubscription(
+      MqttConnectionConfig connection, DataSetReaderConfig reader) {
+
+    String mappingName = mappingNameOf(reader.getSettings());
+    if (!"json".equals(mappingName)) {
+      return null;
+    }
+
+    PublisherId publisherId = reader.getPublisherId();
+    String prefix = BrokerTopics.topicPrefix(connection);
+    if (publisherId != null) {
+      return new StatusSubscription(
+          BrokerTopics.statusTopic(prefix, mappingName, publisherId), false);
+    } else {
+      return new StatusSubscription(prefix + "/" + mappingName + "/status/+", true);
+    }
+  }
+
+  private static String mappingNameOf(DataSetReaderMessageSettings settings) {
+    if (settings instanceof UadpDataSetReaderSettings) {
+      return "uadp";
+    } else if (settings instanceof JsonDataSetReaderSettings) {
+      return "json";
+    } else {
+      return settings.getClass().getSimpleName();
+    }
+  }
+
+  private record StatusSubscription(String topicFilter, boolean wildcard) {}
 
   @Override
   public CompletableFuture<Void> closeAsync() {
