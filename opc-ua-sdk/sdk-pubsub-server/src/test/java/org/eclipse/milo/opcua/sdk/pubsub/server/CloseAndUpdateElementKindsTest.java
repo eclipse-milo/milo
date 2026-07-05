@@ -14,6 +14,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -40,6 +41,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.SecurityKeyInfo;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetMetaDataConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetReaderConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetWriterConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.EventFieldDefinition;
 import org.eclipse.milo.opcua.sdk.pubsub.config.FieldDefinition;
 import org.eclipse.milo.opcua.sdk.pubsub.config.FieldSelector;
 import org.eclipse.milo.opcua.sdk.pubsub.config.MessageSecurityConfig;
@@ -48,6 +50,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConnectionConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetRef;
+import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedEventsConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
 import org.eclipse.milo.opcua.sdk.pubsub.config.ReaderGroupConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.SecurityGroupConfig;
@@ -63,6 +66,7 @@ import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -80,6 +84,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfigurationRef
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConnectionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataSetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReaderGroupDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.StandaloneSubscribedDataSetDataType;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
@@ -110,6 +115,7 @@ class CloseAndUpdateElementKindsTest {
   private static final String READER_GROUP = "rg";
   private static final String READER = "dsr";
   private static final String DATA_SET = "ds";
+  private static final String EVENT_DATA_SET = "evt-ds";
   private static final String STANDALONE = "sds";
   private static final String SECURITY_GROUP = "sg1";
 
@@ -134,6 +140,33 @@ class CloseAndUpdateElementKindsTest {
                 .source(NodeFieldAddress.of(NodeIds.Server, AttributeId.Value, NAMESPACE_TABLE))
                 .dataType(NodeIds.Double)
                 .dataSetFieldId(new UUID(0L, 0xE1L))
+                .build())
+        .build();
+  }
+
+  private static SimpleAttributeOperand baseEventOperand(String browseName) {
+    return new SimpleAttributeOperand(
+        NodeIds.BaseEventType,
+        new QualifiedName[] {new QualifiedName(0, browseName)},
+        AttributeId.Value.uid(),
+        null);
+  }
+
+  /**
+   * An event-source published dataset: a single field selecting {@code Severity} from the ns0
+   * Server notifier ({@code i=2253}), authored in the canonical namespace-URI form the import
+   * mapping produces so the file round trip through the applier is a fixed point.
+   */
+  private static PublishedDataSetConfig eventDataSet(String name, String fieldName) {
+    return PublishedDataSetConfig.builder(name)
+        .source(
+            PublishedEventsConfig.builder(NodeIds.Server.expanded(NAMESPACE_TABLE))
+                .field(
+                    EventFieldDefinition.builder(fieldName)
+                        .selectedField(baseEventOperand("Severity"))
+                        .dataType(NodeIds.UInt16)
+                        .dataSetFieldId(new UUID(0L, 0xE5L))
+                        .build())
                 .build())
         .build();
   }
@@ -551,6 +584,133 @@ class CloseAndUpdateElementKindsTest {
   }
 
   /**
+   * The PUBLISHED_DATA_SET arms carry an event-source dataset the same way as a data-items dataset:
+   * Modify replaces the {@link PublishedEventsConfig} source by name, Add materializes a new event
+   * dataset (no ConfigurationValues entry for an explicit name), and Remove of the UNREFERENCED
+   * event dataset applies — mirroring {@link #publishedDataSetAddModifyAndUnreferencedRemove}.
+   */
+  @Test
+  void publishedEventDataSetAddModifyAndUnreferencedRemove() {
+    // the live config gains an unreferenced event dataset so Modify has a by-name target
+    service.config =
+        liveConfig().toBuilder().publishedDataSet(eventDataSet(EVENT_DATA_SET, "severity")).build();
+
+    // Modify: same name, a different event field name
+    PubSubConfig modifyFile =
+        PubSubConfig.builder().publishedDataSet(eventDataSet(EVENT_DATA_SET, "severity2")).build();
+
+    CloseAndUpdateApplier.Outcome modified =
+        apply(
+            true,
+            fileOf(modifyFile),
+            ref(
+                0,
+                0,
+                0,
+                PubSubConfigurationRefMask.Field.ElementModify,
+                PubSubConfigurationRefMask.Field.ReferencePubDataset));
+
+    assertCode(StatusCodes.Good, modified.referencesResults()[0]);
+    PubSubConfig applied = modified.appliedConfig();
+    assertNotNull(applied);
+    PublishedEventsConfig modifiedSource =
+        assertInstanceOf(
+            PublishedEventsConfig.class,
+            applied.publishedDataSets().stream()
+                .filter(ds -> ds.getName().equals(EVENT_DATA_SET))
+                .findFirst()
+                .orElseThrow()
+                .getSource());
+    assertEquals("severity2", modifiedSource.getFields().get(0).getName());
+
+    // Add with an explicit name: applied, no ConfigurationValues entry, event source preserved
+    PubSubConfig addFile =
+        PubSubConfig.builder().publishedDataSet(eventDataSet("evt-ds2", "severity")).build();
+
+    CloseAndUpdateApplier.Outcome added =
+        apply(
+            true,
+            fileOf(addFile),
+            ref(
+                0,
+                0,
+                0,
+                PubSubConfigurationRefMask.Field.ElementAdd,
+                PubSubConfigurationRefMask.Field.ReferencePubDataset));
+
+    assertCode(StatusCodes.Good, added.referencesResults()[0]);
+    assertNotNull(added.appliedConfig());
+    PublishedDataSetConfig addedDs =
+        added.appliedConfig().publishedDataSets().stream()
+            .filter(ds -> ds.getName().equals("evt-ds2"))
+            .findFirst()
+            .orElseThrow();
+    assertInstanceOf(PublishedEventsConfig.class, addedDs.getSource());
+    assertEquals(0, added.configurationValues().length);
+
+    // Remove of the UNREFERENCED evt-ds2: applied
+    CloseAndUpdateApplier.Outcome removed =
+        apply(
+            true,
+            fileOf(addFile),
+            ref(
+                0,
+                0,
+                0,
+                PubSubConfigurationRefMask.Field.ElementRemove,
+                PubSubConfigurationRefMask.Field.ReferencePubDataset));
+
+    assertCode(StatusCodes.Good, removed.referencesResults()[0]);
+    assertNotNull(removed.appliedConfig());
+    assertTrue(
+        removed.appliedConfig().publishedDataSets().stream()
+            .noneMatch(ds -> ds.getName().equals("evt-ds2")));
+  }
+
+  /**
+   * Removing an event-source PublishedDataSet still referenced by a live writer fails per-ref with
+   * the config-validation code ({@code Bad_InvalidArgument} — a dangling reference) and nothing is
+   * applied, exactly as for a data-items dataset ({@link
+   * #removeOfAReferencedPublishedDataSetFailsPerRef}).
+   */
+  @Test
+  void removeOfAReferencedPublishedEventDataSetFailsPerRef() {
+    PublishedDataSetConfig eventDs = eventDataSet(EVENT_DATA_SET, "severity");
+    service.config =
+        PubSubConfig.builder()
+            .publishedDataSet(eventDs)
+            .connection(
+                connection(CONN, 15001)
+                    .writerGroup(
+                        writerGroup(WRITER_GROUP, 10)
+                            .dataSetWriter(writer(WRITER, 20, eventDs.ref()))
+                            .build())
+                    .build())
+            .build();
+
+    PubSubConfiguration2DataType file = fileOf(service.config);
+
+    CloseAndUpdateApplier.Outcome outcome =
+        apply(
+            false,
+            file,
+            ref(
+                0,
+                0,
+                0,
+                PubSubConfigurationRefMask.Field.ElementRemove,
+                PubSubConfigurationRefMask.Field.ReferencePubDataset));
+
+    assertCode(StatusCodes.Bad_InvalidArgument, outcome.referencesResults()[0]);
+    assertFalse(outcome.changesApplied());
+    assertEquals(0, service.applyCount);
+    // the live configuration keeps the referenced event dataset
+    assertTrue(
+        service.config.publishedDataSets().stream()
+            .anyMatch(ds -> ds.getName().equals(EVENT_DATA_SET)));
+  }
+
+  /**
    * Standalone SubscribedDataSet Add (explicit and auto-assigned names, identifier always NULL),
    * Modify as a by-name full replacement, and Remove.
    */
@@ -953,6 +1113,11 @@ class CloseAndUpdateElementKindsTest {
 
     @Override
     public void bindSource(PublishedDataSetRef dataSet, PublishedDataSetSource source) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void publishEvent(PublishedDataSetRef dataSet, List<Variant> fields) {
       throw new UnsupportedOperationException();
     }
 

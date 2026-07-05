@@ -1605,6 +1605,11 @@ class CloseAndUpdateApplierTest {
     }
 
     @Override
+    public void publishEvent(PublishedDataSetRef dataSet, List<Variant> fields) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void addDataSetListener(DataSetListener listener) {
       throw new UnsupportedOperationException();
     }

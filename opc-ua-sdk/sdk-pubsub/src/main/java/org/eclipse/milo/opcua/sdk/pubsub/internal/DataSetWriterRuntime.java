@@ -10,9 +10,14 @@
 
 package org.eclipse.milo.opcua.sdk.pubsub.internal;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.milo.opcua.sdk.pubsub.ComponentType;
 import org.eclipse.milo.opcua.sdk.pubsub.DataSetSnapshot;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubDiagnosticsEvent;
@@ -20,9 +25,11 @@ import org.eclipse.milo.opcua.sdk.pubsub.PublishedDataSetReadContext;
 import org.eclipse.milo.opcua.sdk.pubsub.PublishedDataSetSource;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetMetaDataMapper;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetWriterConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.EventFieldDefinition;
 import org.eclipse.milo.opcua.sdk.pubsub.config.JsonDataSetWriterSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.JsonWriterGroupSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedEventsConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.UadpDataSetWriterSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.WriterGroupConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.json.JsonContentMasks;
@@ -127,16 +134,74 @@ import org.jspecify.annotations.Nullable;
  * applied on the engine thread: a stale publish cycle that passed its activation-generation check
  * before the (re)activation may still be drafting, and would otherwise observe half-reset state and
  * emit a delta against the wrong baseline.
+ *
+ * <p><b>Event mode.</b> A writer whose PublishedDataSet is a {@link PublishedEventsConfig} source
+ * runs in event mode instead: it produces zero-to-many {@code EVENT} DataSetMessages per cycle
+ * (Part 14 §6.2.6.2), not one snapshot-pulled data DataSetMessage. Events are pushed from arbitrary
+ * threads into a bounded lock-free buffer ({@link #offerEvent}, a {@link ConcurrentLinkedQueue}
+ * bounded by an {@link AtomicInteger} against {@code eventQueueCapacity}) and drained on the
+ * publish task thread AFTER the group's per-cycle security gate ({@link #createEventDrafts}),
+ * mirroring the baseline-invalidated handoff seam: producers take neither the engine lock nor the
+ * group publish lock. On overflow the first dropped event of an episode enqueues a synthesized
+ * {@code EventQueueOverflowEventType} marker as the buffer's last entry (§6.2.6.2) and records one
+ * edge-triggered diagnostics error; the drain clears the latch when it dequeues the marker. Event
+ * mode has no delta baseline, no cadence counter, no read context, and ignores {@code
+ * keyFrameCount}; it still owns a §7.2.3 DataSetMessage sequence counter, consumed by {@link
+ * #createEventDrafts} on the publish thread (one {@link DataSetMessageSequenceCounter#next()} per
+ * transmitted event, none for events skipped by the drain-side arity guard), so the keep-alive
+ * {@link DataSetMessageSequenceCounter#peek()} contract holds unchanged. Buffered events, the
+ * overflow latch, and the sequence counter survive path-stable reconfigure restarts via {@link
+ * #snapshotRestartState()}/{@link #seedEvents} taken under the group publish lock; {@link #dispose}
+ * leaves the buffer intact (buffer lifetime = object lifetime) so a group/connection-level restart
+ * can snapshot it after disposal.
  */
 final class DataSetWriterRuntime extends AbstractComponentRuntime {
+
+  /** Per-cycle event drain budget, bounding publish-thread work regardless of buffer capacity. */
+  private static final int EVENT_DRAIN_LIMIT = 256;
 
   private final PubSubServiceImpl service;
   private final WriterGroupRuntime group;
   private final DataSetWriterConfig config;
   private final PublishedDataSetConfig dataSet;
-  private final PublishedDataSetReadContext readContext;
+
+  /** Data mode only; {@code null} in event mode (events carry no snapshot read context). */
+  private final @Nullable PublishedDataSetReadContext readContext;
+
   private final ConfigurationVersionDataType configurationVersion;
   private final DataSetMetaDataType metaData;
+
+  /** Whether this writer publishes events ({@link PublishedEventsConfig}) instead of data items. */
+  private final boolean eventMode;
+
+  /** Event mode only: the dataset's event field select clauses, for overflow-marker synthesis. */
+  private final List<EventFieldDefinition> eventFields;
+
+  /** Event mode only: the dataset's event field count, the drain-side arity guard target. */
+  private final int eventFieldCount;
+
+  /**
+   * Event mode only: the bounded lock-free event buffer (Part 14 §6.2.6.2). Producers enqueue from
+   * arbitrary threads via {@link #offerEvent}; the publish task drains via {@link
+   * #createEventDrafts}. {@code null} in data mode.
+   */
+  private final @Nullable ConcurrentLinkedQueue<QueuedEvent> eventQueue;
+
+  /**
+   * Event mode only: the current buffer size, held exactly at or below {@code eventQueueCapacity}
+   * (plus one admitted overflow marker) under concurrent producers via increment/decrement.
+   */
+  private final AtomicInteger eventQueueSize = new AtomicInteger(0);
+
+  /** Event mode only: the configured buffer capacity (Part 14 §6.2.6.2). */
+  private final int eventQueueCapacity;
+
+  /**
+   * Event mode only: the per-episode overflow latch. CAS false→true on the first drop of an episode
+   * synthesizes and enqueues the overflow marker and records the diagnostics error exactly once;
+   * the drain resets it to false when it dequeues the marker. Any thread.
+   */
+  private final AtomicBoolean overflowMarked = new AtomicBoolean(false);
 
   /** The effective key frame cadence: {@code keyFrameCount} clamped to at least 1. */
   private final long keyFrameCount;
@@ -204,8 +269,26 @@ final class DataSetWriterRuntime extends AbstractComponentRuntime {
     this.config = config;
 
     this.dataSet = service.requirePublishedDataSet(config.getDataSet());
-    this.readContext =
-        new PublishedDataSetReadContext(config.getDataSet(), dataSet.getFields(), null);
+
+    // event mode vs data mode is fixed at construction from the resolved source kind; a config
+    // change to the source flows through reconfigure, which recreates this runtime
+    if (dataSet.getSource() instanceof PublishedEventsConfig events) {
+      this.eventMode = true;
+      this.eventFields = events.getFields();
+      this.eventFieldCount = events.getFields().size();
+      this.readContext = null; // events are pushed, never snapshot-pulled
+      this.eventQueue = new ConcurrentLinkedQueue<>();
+      this.eventQueueCapacity = config.getEventQueueCapacity();
+    } else {
+      this.eventMode = false;
+      this.eventFields = List.of();
+      this.eventFieldCount = 0;
+      this.readContext =
+          new PublishedDataSetReadContext(config.getDataSet(), dataSet.getFields(), null);
+      this.eventQueue = null;
+      this.eventQueueCapacity = config.getEventQueueCapacity();
+    }
+
     this.configurationVersion =
         new ConfigurationVersionDataType(
             dataSet.getConfigurationVersionMajor(), dataSet.getConfigurationVersionMinor());
@@ -285,6 +368,16 @@ final class DataSetWriterRuntime extends AbstractComponentRuntime {
 
   DataSetWriterConfig config() {
     return config;
+  }
+
+  /** The group this writer belongs to; used by the service to fan out event-publish triggers. */
+  WriterGroupRuntime group() {
+    return group;
+  }
+
+  /** Whether this writer publishes events ({@link #createEventDrafts}) rather than data drafts. */
+  boolean eventMode() {
+    return eventMode;
   }
 
   /**
@@ -368,6 +461,67 @@ final class DataSetWriterRuntime extends AbstractComponentRuntime {
   record WriterSequenceState(long nextValue, int bitWidth) {}
 
   /**
+   * A quiesced restart snapshot of this writer: its DataSetMessage sequence state plus, in event
+   * mode, a drained copy of its buffered events and its overflow latch (the counterpart of the
+   * non-draining {@link #sequenceSnapshot()}, which feeds the lock-free diagnostics API and must
+   * not disturb the buffer). Taken ONLY under the group publish lock ({@link WriterGroupRuntime}),
+   * so no publish cycle drains concurrently; producers may still offer (lock-free), and events
+   * racing this window may be lost across the swap (best-effort reconfigure semantics). Draining
+   * the buffer here is safe because the snapshot is only taken on a runtime already removed from
+   * the tree and about to be discarded.
+   */
+  WriterRestartState snapshotRestartState() {
+    var events = new ArrayList<QueuedEvent>();
+    if (eventQueue != null) {
+      QueuedEvent event;
+      while ((event = eventQueue.poll()) != null) {
+        eventQueueSize.decrementAndGet();
+        events.add(event);
+      }
+    }
+    return new WriterRestartState(
+        sequenceCounter.currentValue(),
+        sequenceCounter.bitWidth(),
+        List.copyOf(events),
+        overflowMarked.get());
+  }
+
+  /**
+   * Re-enqueue a predecessor's buffered events into this event-mode successor before its first
+   * publish cycle (restart preservation); a data-mode successor drops them. Called under the group
+   * publish lock. Independent of sequence-counter seeding, which a bit-width mismatch (mapping
+   * switch) may skip: events transfer regardless.
+   *
+   * <p>The overflow latch is carried over only when a marker actually transferred with the events:
+   * {@link #snapshotRestartState()} runs under the publish lock but {@link #offerEvent} is
+   * lock-free, so a snapshot interleaving between the predecessor's {@code overflowMarked} CAS and
+   * its marker enqueue would capture {@code overflowMarked == true} while the marker lands in the
+   * discarded predecessor's buffer. Seeding the raw latch then would leave this successor latched
+   * with no marker to reset it, permanently suppressing its next overflow marker and diagnostic.
+   * Gating on a transferred marker resets the latch in that case so a fresh episode can synthesize
+   * one.
+   */
+  void seedEvents(WriterRestartState state) {
+    if (!eventMode || eventQueue == null) {
+      return; // a data-mode successor drops buffered events
+    }
+    boolean markerTransferred = false;
+    for (QueuedEvent event : state.bufferedEvents()) {
+      eventQueue.add(event);
+      eventQueueSize.incrementAndGet();
+      markerTransferred |= event.overflowMarker();
+    }
+    overflowMarked.set(state.overflowMarked() && markerTransferred);
+  }
+
+  /**
+   * A quiesced restart snapshot of one writer: its DataSetMessage sequence state, its buffered
+   * events (empty in data mode), and its overflow latch.
+   */
+  record WriterRestartState(
+      long nextValue, int bitWidth, List<QueuedEvent> bufferedEvents, boolean overflowMarked) {}
+
+  /**
    * Reset the key frame cadence counter and discard the delta baseline, forcing the next data draft
    * to be a key frame. Publish task thread only; see {@link #requestFrameStateReset()} for the
    * activation handoff.
@@ -399,6 +553,25 @@ final class DataSetWriterRuntime extends AbstractComponentRuntime {
   }
 
   /**
+   * Drain this writer's buffered events when it enters Operational within an event-triggered
+   * (PublishingInterval 0) group. An interval-0 group has no fixed-rate cycle, so events buffered
+   * while this writer was PreOperational, Error, or Disabled — including events preserved across a
+   * leaf-level path-stable restart and re-seeded into this runtime — would otherwise wait for the
+   * next {@code publishEvent} or keep-alive tick. Triggering on the writer's OWN Operational entry
+   * (rather than only the group's) covers leaf restarts and per-writer Error/Disabled recovery,
+   * which do not transition the already-Operational group; {@link PubSubStateMachine} sets this
+   * writer Operational before invoking this hook, so the coalesced cycle is guaranteed to observe
+   * it Operational and drain it. Coalesced with the group-level trigger via {@code triggerPending};
+   * a no-op for positive-interval groups (which drain on their next tick) and data-mode writers.
+   */
+  @Override
+  void onEnterOperational() {
+    if (eventMode && group.eventTriggered()) {
+      group.triggerEventPublish();
+    }
+  }
+
+  /**
    * Activate the writer: re-run the writer-level subset of the startup validation and publish
    * broker metadata. A throw is mapped by {@link PubSubStateMachine} to {@code PubSubState.Error}
    * with the exception's status code, leaving the group Operational.
@@ -406,12 +579,43 @@ final class DataSetWriterRuntime extends AbstractComponentRuntime {
   @Override
   void activate() throws UaException {
     checkUnsupportedUadpFeatures();
+    checkEventTriggeredGroupCompatibility();
+    checkEventWriterConfig();
 
     // broker connections publish this writer's (retained) metadata when the writer activates;
     // failures are recorded in diagnostics, never thrown: metadata publication is auxiliary
     MetaDataPublisher metaDataPublisher = group.connectionRuntime().metaDataPublisher();
     if (metaDataPublisher != null) {
       metaDataPublisher.onWriterActivated(group, this);
+    }
+  }
+
+  /**
+   * Re-check at activation that a data-items writer is not enabled into an event-triggered
+   * (PublishingInterval 0) writer group: such a group has no fixed-rate cycle to pull the writer's
+   * snapshot, so the writer could never publish. Startup/reconfigure validation rejects the whole
+   * group when any writer is data-items, but a writer disabled at that point and enabled after its
+   * group activated is first caught here — it fails into {@code PubSubState.Error} with {@code
+   * Bad_ConfigurationError} (mirroring {@link #checkUnsupportedUadpFeatures}). Event-mode writers
+   * are the intended members of such groups and pass.
+   */
+  private void checkEventTriggeredGroupCompatibility() throws UaException {
+    if (!eventMode && group.eventTriggered()) {
+      var e =
+          new UaException(
+              StatusCodes.Bad_ConfigurationError,
+              ("data-items DataSetWriter '%s' cannot belong to an event-triggered"
+                      + " (PublishingInterval 0) writer group")
+                  .formatted(path()));
+      service
+          .getDiagnostics()
+          .error(
+              path(),
+              e.getStatusCode(),
+              e.getMessage(),
+              e,
+              PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
+      throw e;
     }
   }
 
@@ -444,6 +648,30 @@ final class DataSetWriterRuntime extends AbstractComponentRuntime {
     }
   }
 
+  /**
+   * Re-check the event-writer expressibility rules ({@link
+   * PubSubServiceImpl#eventWriterConfigError}) at activation, covering an event writer disabled
+   * during startup/reconfigure validation and enabled after its group is already Operational.
+   */
+  private void checkEventWriterConfig() throws UaException {
+    if (!eventMode) {
+      return;
+    }
+    String error = service.eventWriterConfigError(group.config(), config, group.path());
+    if (error != null) {
+      var e = new UaException(StatusCodes.Bad_ConfigurationError, error);
+      service
+          .getDiagnostics()
+          .error(
+              path(),
+              e.getStatusCode(),
+              e.getMessage(),
+              e,
+              PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
+      throw e;
+    }
+  }
+
   @Override
   void deactivate() {
     MetaDataPublisher metaDataPublisher = group.connectionRuntime().metaDataPublisher();
@@ -452,7 +680,12 @@ final class DataSetWriterRuntime extends AbstractComponentRuntime {
     }
   }
 
-  /** Release all resources of this runtime. */
+  /**
+   * Release all resources of this runtime. The event buffer is intentionally left intact (buffer
+   * lifetime = object lifetime): a group- or connection-level path-stable restart snapshots the
+   * buffered events via {@link #snapshotRestartState()} AFTER disposal (the CHANGED apply disposes
+   * the predecessor before snapshotting), so clearing here would lose them.
+   */
   void dispose() {
     MetaDataPublisher metaDataPublisher = group.connectionRuntime().metaDataPublisher();
     if (metaDataPublisher != null) {
@@ -636,7 +869,115 @@ final class DataSetWriterRuntime extends AbstractComponentRuntime {
         metaData);
   }
 
+  /**
+   * Offer one event to this writer's bounded buffer (Part 14 §6.2.6.2). Called from arbitrary
+   * producer threads ({@code PubSubServiceImpl#publishEvent}); takes neither the engine lock nor
+   * the group publish lock, and never blocks — the producer/consumer handoff mirrors the
+   * baseline-invalidated flag.
+   *
+   * <p>The capacity bound is exact under concurrent producers: {@code incrementAndGet() > capacity}
+   * decrements back and drops. On the FIRST drop of an overflow episode ({@link #overflowMarked}
+   * CAS false→true) a synthesized {@code EventQueueOverflowEventType} marker is enqueued as the
+   * buffer's last entry — admitted beyond capacity, so the buffer may briefly hold {@code capacity
+   * + 1} — and one edge-triggered diagnostics error is recorded; further drops in the same episode
+   * are silent. The drain resets the latch when it dequeues the marker.
+   */
+  void offerEvent(QueuedEvent event) {
+    ConcurrentLinkedQueue<QueuedEvent> queue = requireNonNull(eventQueue);
+
+    if (eventQueueSize.incrementAndGet() > eventQueueCapacity) {
+      // over capacity: this event does not fit
+      eventQueueSize.decrementAndGet();
+
+      if (overflowMarked.compareAndSet(false, true)) {
+        // first drop of the episode: insert the overflow marker as the last entry, at overflow
+        // time (§6.2.6.2), admitting it beyond capacity (the buffer may hold capacity + 1)
+        eventQueueSize.incrementAndGet();
+        queue.add(
+            QueuedEvent.overflowMarker(OverflowEventFields.forFields(eventFields), DateTime.now()));
+        service
+            .getDiagnostics()
+            .error(
+                path(),
+                new StatusCode(StatusCodes.Bad_ResourceUnavailable),
+                "event queue overflow: capacity %d exceeded for DataSetWriter '%s'"
+                    .formatted(eventQueueCapacity, path()),
+                null,
+                PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
+      }
+      return;
+    }
+
+    queue.add(event);
+  }
+
+  /**
+   * Drain up to {@link #EVENT_DRAIN_LIMIT} buffered events into {@code EVENT} DataSetMessage drafts
+   * (Part 14 §6.2.6.2). Publish task thread only; called from the group publish loop AFTER the
+   * per-cycle security gate, so a secured cycle skipped for want of keys leaves events buffered for
+   * the next cycle rather than losing them.
+   *
+   * <p>Each drained entry decrements the buffer size. An overflow marker additionally resets the
+   * overflow latch (a new episode may begin). An event whose field count disagrees with the
+   * writer's metadata is skipped with a diagnostics source error and consumes NO sequence number —
+   * the drain-side arity guard, the correctness backstop that also covers reconfigure swap-window
+   * offers and seeded events whose dataset shape changed. Every other entry consumes one §7.2.3
+   * sequence number and becomes a draft. Any remainder beyond the drain limit is left for the next
+   * cycle.
+   */
+  List<DataSetMessageDraft> createEventDrafts(DateTime now) {
+    ConcurrentLinkedQueue<QueuedEvent> queue = requireNonNull(eventQueue);
+
+    var drafts = new ArrayList<DataSetMessageDraft>();
+    for (int drained = 0; drained < EVENT_DRAIN_LIMIT; drained++) {
+      QueuedEvent event = queue.poll();
+      if (event == null) {
+        break;
+      }
+      eventQueueSize.decrementAndGet();
+
+      if (event.overflowMarker()) {
+        // the marker has been dequeued: a subsequent drop starts a fresh overflow episode
+        overflowMarked.set(false);
+      }
+
+      if (event.fields().size() != eventFieldCount) {
+        service
+            .getDiagnostics()
+            .sourceError(
+                path(),
+                new StatusCode(StatusCodes.Bad_InternalError),
+                "event for DataSetWriter '%s' has %d fields, expected %d"
+                    .formatted(path(), event.fields().size(), eventFieldCount),
+                null);
+        continue; // arity guard: no sequence number consumed
+      }
+
+      drafts.add(
+          DataSetMessageDraft.ofEvent(
+              config,
+              sequenceCounter.next(),
+              includeTimestamp() ? event.timestamp() : null,
+              StatusCode.GOOD,
+              configurationVersion,
+              event.fields(),
+              metaData));
+    }
+    return drafts;
+  }
+
+  /**
+   * Whether this event-mode writer still has queued events after a bounded drain. Used by
+   * event-triggered groups to self-schedule follow-up cycles when a single burst exceeds the
+   * per-cycle drain budget.
+   */
+  boolean hasQueuedEvents() {
+    return eventQueueSize.get() > 0;
+  }
+
   private SnapshotRead readSnapshot() {
+    // data mode only: createDataDraft (its sole caller) is never invoked for event-mode writers
+    PublishedDataSetReadContext readContext = requireNonNull(this.readContext);
     int fieldCount = readContext.fields().size();
 
     PublishedDataSetSource source = service.getSource(config.getDataSet());

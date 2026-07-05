@@ -59,6 +59,23 @@ Two related notes on the version gate:
 - The major-version check only applies when the publisher's DataSetMessage content mask actually puts the major version on the wire. The default UADP masks carry only the minor version, so defaults-only configs deliver to a `REQUIRE_CONFIGURED` reader without any version configuration at all.
 - If you do set `configurationVersion(...)` explicitly, set it consistently on both sides (the publisher's `PublishedDataSetConfig` and the reader's `DataSetMetaDataConfig`), or mismatched messages will be silently dropped into diagnostics counters when the major version is on the wire.
 
+## Event dataset metadata
+
+Everything above assumes a data-items dataset, whose `DataSetMetaData` is derived straight from its
+`FieldDefinition` list. An
+[event dataset](configuration.md#the-published-dataset-source-data-items-or-events) has no
+`FieldDefinition`s; its metadata is derived instead from the `EventFieldDefinition`s of its
+`PublishedEventsConfig`. Each event field contributes one `FieldMetaData` entry — its name, its
+`dataType` / `valueRank` / `arrayDimensions`, its `promoted` flag, and its stable `dataSetFieldId` —
+in the dataset's configured wire order, aligned with the `SelectedFields` the Part 14
+`PublishedEventsDataType` carries (event fields carry no `0:MiloSourceKey` property). The
+`ConfigurationVersion` comes from the dataset like any other.
+
+Everything downstream is identical to a data dataset: the derived metadata flows through the same UDP
+discovery responder and retained-MQTT `ua-metadata` paths, and a subscriber resolves an event
+dataset's field names exactly as it resolves a data dataset's — decoding against configured metadata,
+or learning it from discovery or a retained document, works unchanged.
+
 ## UDP discovery
 
 On UDP connections, discovery is built in and largely automatic.

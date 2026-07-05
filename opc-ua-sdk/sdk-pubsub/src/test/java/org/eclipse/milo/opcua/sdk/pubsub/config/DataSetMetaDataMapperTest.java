@@ -36,14 +36,15 @@ import org.eclipse.milo.opcua.stack.core.types.structured.FieldMetaData;
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfiguration2DataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataSetDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.junit.jupiter.api.Test;
 
 /**
  * Tests for {@code DataSetMetaDataMapper}, the published dataset metadata derivation seam used by
  * the UADP discovery responder: identity with the metadata emitted inside whole-config {@code
  * PubSubConfig.toDataType}, the strip mode that removes only the reserved {@code 0:MiloSourceKey}
- * property, configuration version passthrough, empty-fields handling, and table-free derivation for
- * URI-form node addresses.
+ * property, configuration version passthrough, empty-fields handling, table-free derivation for
+ * URI-form node addresses, and event dataset field derivation.
  */
 class DataSetMetaDataMapperTest {
 
@@ -60,6 +61,9 @@ class DataSetMetaDataMapperTest {
   private static final UUID FIELD_MIXED_NODE_ID = new UUID(0xE3L, 1L);
   private static final UUID FIELD_MIXED_KEY_ID = new UUID(0xE3L, 2L);
   private static final UUID FIELD_REMOTE_ID = new UUID(0xE4L, 1L);
+  private static final UUID FIELD_EVENT_MESSAGE_ID = new UUID(0xE6L, 1L);
+  private static final UUID FIELD_EVENT_SEVERITY_ID = new UUID(0xE6L, 2L);
+  private static final UUID FIELD_EVENT_PAYLOAD_ID = new UUID(0xE6L, 3L);
 
   private static NamespaceTable table() {
     return new NamespaceTable(URI_1);
@@ -144,6 +148,39 @@ class DataSetMetaDataMapperTest {
         .build();
   }
 
+  /** Event source: promoted field, user properties, defaulted-dataType array field. */
+  private static PublishedDataSetConfig eventDataSet() {
+    return PublishedDataSetConfig.builder("event-ds")
+        .source(
+            PublishedEventsConfig.builder(ExpandedNodeId.of(URI_1, "Boiler.Notifier"))
+                .field(
+                    EventFieldDefinition.builder("message")
+                        .selectedField(select("Message"))
+                        .dataType(NodeIds.LocalizedText)
+                        .dataSetFieldId(FIELD_EVENT_MESSAGE_ID)
+                        .property(new QualifiedName(1, "origin"), Variant.ofString("event"))
+                        .property(new QualifiedName(2, "displayHint"), Variant.ofInt32(7))
+                        .build())
+                .field(
+                    EventFieldDefinition.builder("severity")
+                        .selectedField(select("Severity"))
+                        .dataType(NodeIds.UInt16)
+                        .dataSetFieldId(FIELD_EVENT_SEVERITY_ID)
+                        .promoted(true)
+                        .build())
+                .field(
+                    // No dataType: defaults to BaseDataType, i.e. builtin type Variant.
+                    EventFieldDefinition.builder("payload")
+                        .selectedField(select("Payload"))
+                        .dataSetFieldId(FIELD_EVENT_PAYLOAD_ID)
+                        .valueRank(1)
+                        .arrayDimensions(new UInteger[] {uint(3)})
+                        .build())
+                .build())
+        .configurationVersion(uint(7), uint(21))
+        .build();
+  }
+
   // endregion
 
   // region Helpers
@@ -178,6 +215,15 @@ class DataSetMetaDataMapperTest {
       }
     }
     return null;
+  }
+
+  /** A select clause for the BaseEventType field named {@code browseName}. */
+  private static SimpleAttributeOperand select(String browseName) {
+    return new SimpleAttributeOperand(
+        NodeIds.BaseEventType,
+        new QualifiedName[] {new QualifiedName(0, browseName)},
+        AttributeId.Value.uid(),
+        null);
   }
 
   /** Asserts every {@link FieldMetaData} slot except properties is identical. */
@@ -464,6 +510,102 @@ class DataSetMetaDataMapperTest {
       assertEquals(NodeIds.Int64, field.getDataType());
       assertEquals(FIELD_REMOTE_ID, field.getDataSetFieldId());
     }
+  }
+
+  // endregion
+
+  // region Event datasets
+
+  @Test
+  void seamMatchesWholeConfigMetadataForEventDataSet() {
+    PublishedDataSetConfig dataSet = eventDataSet();
+
+    DataSetMetaDataType metaData = DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false);
+
+    assertEquals(wholeConfigMetaData(dataSet), metaData);
+  }
+
+  @Test
+  void eventFieldMetaDataWireShape() {
+    DataSetMetaDataType metaData =
+        DataSetMetaDataMapper.toDataSetMetaDataType(eventDataSet(), false);
+
+    FieldMetaData[] fields = metaData.getFields();
+    assertNotNull(fields);
+    assertEquals(3, fields.length);
+
+    FieldMetaData message = fields[0];
+    assertEquals("message", message.getName());
+    assertEquals(LocalizedText.NULL_VALUE, message.getDescription());
+    assertFalse(message.getFieldFlags().getPromotedField());
+    assertEquals(ubyte(21), message.getBuiltInType()); // LocalizedText
+    assertEquals(NodeIds.LocalizedText, message.getDataType());
+    assertEquals(-1, message.getValueRank());
+    assertNull(message.getArrayDimensions());
+    assertEquals(uint(0), message.getMaxStringLength());
+    assertEquals(FIELD_EVENT_MESSAGE_ID, message.getDataSetFieldId());
+    // User properties pass through, in insertion order.
+    assertArrayEquals(
+        new KeyValuePair[] {
+          new KeyValuePair(new QualifiedName(1, "origin"), Variant.ofString("event")),
+          new KeyValuePair(new QualifiedName(2, "displayHint"), Variant.ofInt32(7))
+        },
+        message.getProperties());
+
+    FieldMetaData severity = fields[1];
+    assertEquals("severity", severity.getName());
+    assertEquals(LocalizedText.NULL_VALUE, severity.getDescription());
+    assertTrue(severity.getFieldFlags().getPromotedField());
+    assertEquals(ubyte(5), severity.getBuiltInType()); // UInt16
+    assertEquals(NodeIds.UInt16, severity.getDataType());
+    assertEquals(-1, severity.getValueRank());
+    assertNull(severity.getArrayDimensions());
+    assertEquals(uint(0), severity.getMaxStringLength());
+    assertEquals(FIELD_EVENT_SEVERITY_ID, severity.getDataSetFieldId());
+    assertNull(severity.getProperties());
+
+    FieldMetaData payload = fields[2];
+    assertEquals("payload", payload.getName());
+    assertFalse(payload.getFieldFlags().getPromotedField());
+    // The dataType default is BaseDataType, whose builtin type is Variant (24).
+    assertEquals(ubyte(24), payload.getBuiltInType());
+    assertEquals(NodeIds.BaseDataType, payload.getDataType());
+    assertEquals(1, payload.getValueRank());
+    assertArrayEquals(new UInteger[] {uint(3)}, payload.getArrayDimensions());
+    assertEquals(uint(0), payload.getMaxStringLength());
+    assertEquals(FIELD_EVENT_PAYLOAD_ID, payload.getDataSetFieldId());
+    assertNull(payload.getProperties());
+  }
+
+  @Test
+  void eventFieldsNeverCarryMiloSourceKeyAndStripIsIdentity() {
+    PublishedDataSetConfig dataSet = eventDataSet();
+
+    DataSetMetaDataType unstripped = DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false);
+    DataSetMetaDataType stripped = DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, true);
+
+    // Event fields have no field address source, so no reserved key property in unstripped
+    // mode...
+    for (FieldMetaData field : unstripped.getFields()) {
+      assertNull(propertyValue(field.getProperties(), MILO_SOURCE_KEY), field.getName());
+    }
+
+    // ...and strip mode is a no-op.
+    assertEquals(unstripped, stripped);
+  }
+
+  @Test
+  void configurationVersionPassesThroughInBothModesForEventDataSets() {
+    PublishedDataSetConfig dataSet = eventDataSet();
+
+    ConfigurationVersionDataType expected = new ConfigurationVersionDataType(uint(7), uint(21));
+
+    assertEquals(
+        expected,
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false).getConfigurationVersion());
+    assertEquals(
+        expected,
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, true).getConfigurationVersion());
   }
 
   // endregion

@@ -52,11 +52,13 @@ import org.jspecify.annotations.Nullable;
  * a single DataSetMessage object, an array of DataSetMessages, an array of bare payload objects, or
  * a single bare payload object.
  *
- * <p>Key frame, delta frame, and keep-alive drafts are supported; a delta frame emits MessageType
- * {@code "ua-deltaframe"} with a Payload containing only the changed fields, name-resolved from the
- * draft metadata by index (§7.2.5.4.1 Table 185), and requires the DataSetMessageHeader and the
- * MessageType member (Annex A.3.3.4: without them the wire shape is indistinguishable from a key
- * frame). Event message emission is not supported.
+ * <p>Key frame, delta frame, event, and keep-alive drafts are supported; a delta frame emits
+ * MessageType {@code "ua-deltaframe"} with a Payload containing only the changed fields,
+ * name-resolved from the draft metadata by index (§7.2.5.4.1 Table 185). An event emits MessageType
+ * {@code "ua-event"} with Variant-represented fields (§7.2.5.4.1: the DataValue field
+ * representation coerces to Variant). Delta and event frames each require the DataSetMessageHeader
+ * and the MessageType member (Annex A.3.3.4: without them the wire shape is indistinguishable from
+ * a key frame).
  */
 final class JsonNetworkMessageEncoder {
 
@@ -92,6 +94,8 @@ final class JsonNetworkMessageEncoder {
       validateDraft(draft);
       if (draft.kind() == DataSetMessageKind.DELTA_FRAME) {
         requireDeltaExpressible(networkMask, draft);
+      } else if (draft.kind() == DataSetMessageKind.EVENT) {
+        requireEventExpressible(networkMask, draft);
       }
     }
 
@@ -190,13 +194,6 @@ final class JsonNetworkMessageEncoder {
       return;
     }
 
-    if (draft.kind() == DataSetMessageKind.EVENT) {
-      throw new UaException(
-          StatusCodes.Bad_NotSupported,
-          "Event DataSetMessage emission is not supported (writer '%s')"
-              .formatted(draft.writer().getName()));
-    }
-
     DataSetMetaDataType metaData = draft.metaData();
     if (metaData == null) {
       throw new UaException(
@@ -252,6 +249,35 @@ final class JsonNetworkMessageEncoder {
       throw new UaException(
           StatusCodes.Bad_ConfigurationError,
           ("writer '%s' delta frame requires the MessageType member in the effective"
+                  + " JsonDataSetMessageContentMask (Part 14 A.3.3.4)")
+              .formatted(draft.writer().getName()));
+    }
+  }
+
+  /**
+   * Reject an event draft whose effective masks cannot represent it: without the
+   * DataSetMessageHeader, or without the MessageType member, a {@code ua-event} payload is
+   * indistinguishable from a key frame on the wire (the decoder defaults to key frame). Part 14
+   * Annex A.3.3.4: "If the KeyFrameCount is not 1, the MessageType bit shall be true."
+   */
+  private static void requireEventExpressible(
+      JsonNetworkMessageContentMask networkMask, DataSetMessageDraft draft) throws UaException {
+
+    if (!networkMask.getDataSetMessageHeader()) {
+      throw new UaException(
+          StatusCodes.Bad_ConfigurationError,
+          ("writer '%s' event requires the DataSetMessageHeader in the"
+                  + " JsonNetworkMessageContentMask (Part 14 A.3.3.4)")
+              .formatted(draft.writer().getName()));
+    }
+
+    var settings = (JsonDataSetWriterSettings) draft.writer().getSettings();
+    JsonDataSetMessageContentMask messageMask =
+        JsonContentMasks.effectiveDataSetMessageMask(settings.getDataSetMessageContentMask());
+    if (!messageMask.getMessageType()) {
+      throw new UaException(
+          StatusCodes.Bad_ConfigurationError,
+          ("writer '%s' event requires the MessageType member in the effective"
                   + " JsonDataSetMessageContentMask (Part 14 A.3.3.4)")
               .formatted(draft.writer().getName()));
     }
@@ -364,6 +390,17 @@ final class JsonNetworkMessageEncoder {
     OpcUaJsonEncoder.Encoding encoding = JsonContentMasks.resolveFieldEncoding(messageMask);
     DataSetFieldContentMask fieldMask = writerConfig.getFieldContentMask();
 
+    if (draft.kind() == DataSetMessageKind.EVENT
+        && JsonFieldEncoder.isDataValueRepresentation(fieldMask)) {
+      // §7.2.5.4.1: event fields use the Variant (or RawData) representation only; the DataValue
+      // representation coerces to Variant. Preserve only the RawData bit, before both the header
+      // status folding and the payload are written from this mask.
+      fieldMask =
+          fieldMask.getRawData()
+              ? DataSetFieldContentMask.of(DataSetFieldContentMask.Field.RawData)
+              : DataSetFieldContentMask.of();
+    }
+
     boolean networkMessageHeader = networkMask.getNetworkMessageHeader();
 
     if (!networkMask.getDataSetMessageHeader()) {
@@ -425,7 +462,7 @@ final class JsonNetworkMessageEncoder {
       }
     }
     if (messageMask.getMessageType()) {
-      // Table 185 MessageType values; event emission is rejected by validateDraft
+      // Table 185 MessageType values
       String messageType =
           switch (draft.kind()) {
             case KEY_FRAME -> "ua-keyframe";

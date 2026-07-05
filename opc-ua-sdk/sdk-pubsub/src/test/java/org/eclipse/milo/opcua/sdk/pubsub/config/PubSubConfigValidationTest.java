@@ -17,15 +17,19 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.UUID;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.junit.jupiter.api.Test;
 
 /**
  * Tests for the cross-element validation performed by {@link PubSubConfig.Builder#build()}: name
  * uniqueness scopes, wire-id uniqueness within a PublisherId scope, reference resolution,
- * publisherId presence, and JSON-settings-on-UDP rejection.
+ * publisherId presence, the interval-0 (event-triggered) all-event-writers rule, and
+ * JSON-settings-on-UDP rejection.
  */
 class PubSubConfigValidationTest {
 
@@ -36,6 +40,35 @@ class PubSubConfigValidationTest {
     return PublishedDataSetConfig.builder(name)
         .field(FieldDefinition.builder("f1").build())
         .build();
+  }
+
+  private static PublishedDataSetConfig eventDataSet(String name) {
+    SimpleAttributeOperand severity =
+        new SimpleAttributeOperand(
+            NodeIds.BaseEventType,
+            new QualifiedName[] {new QualifiedName(0, "Severity")},
+            AttributeId.Value.uid(),
+            null);
+
+    return PublishedDataSetConfig.builder(name)
+        .source(
+            PublishedEventsConfig.builder(NodeIds.Server.expanded())
+                .field(EventFieldDefinition.builder("Severity").selectedField(severity).build())
+                .build())
+        .build();
+  }
+
+  private static WriterGroupConfig eventTriggeredGroup(
+      String name, int groupId, DataSetWriterConfig... writers) {
+
+    WriterGroupConfig.Builder builder =
+        WriterGroupConfig.builder(name)
+            .writerGroupId(ushort(groupId))
+            .publishingInterval(Duration.ZERO);
+    for (DataSetWriterConfig writer : writers) {
+      builder.dataSetWriter(writer);
+    }
+    return builder.build();
   }
 
   private static DataSetWriterConfig writer(String name, int writerId, String dataSetName) {
@@ -451,6 +484,69 @@ class PubSubConfigValidationTest {
 
     assertTrue(e.getMessage().contains("PublishedDataSetRef"), e.getMessage());
     assertTrue(e.getMessage().contains("missing-ds"), e.getMessage());
+  }
+
+  @Test
+  void intervalZeroGroupWithDataItemsWriterRejected() {
+    PubSubConfig.Builder builder =
+        PubSubConfig.builder()
+            .connection(
+                udp("conn")
+                    .publisherId(PID_1)
+                    .writerGroup(eventTriggeredGroup("G", 1, writer("w1", 1, "ds")))
+                    .build())
+            .publishedDataSet(dataSet("ds"));
+
+    PubSubConfigValidationException e =
+        assertThrows(PubSubConfigValidationException.class, builder::build);
+
+    assertTrue(e.getMessage().contains("publishingInterval 0"), e.getMessage());
+    assertTrue(e.getMessage().contains("'w1'"), e.getMessage());
+    assertTrue(e.getMessage().contains("'ds'"), e.getMessage());
+  }
+
+  @Test
+  void intervalZeroGroupWithAllEventWritersAccepted() {
+    PubSubConfig config =
+        PubSubConfig.builder()
+            .connection(
+                udp("conn")
+                    .publisherId(PID_1)
+                    .writerGroup(
+                        eventTriggeredGroup(
+                            "G", 1, writer("w1", 1, "events"), writer("w2", 2, "events")))
+                    .build())
+            .publishedDataSet(eventDataSet("events"))
+            .build();
+
+    assertEquals(1, config.connections().size());
+  }
+
+  @Test
+  void disabledDataItemsWriterInIntervalZeroGroupRejected() {
+    // the all-event-writers rule applies regardless of the writer's enabled flag
+    DataSetWriterConfig disabledDataWriter =
+        DataSetWriterConfig.builder("w1")
+            .enabled(false)
+            .dataSet(new PublishedDataSetRef("ds"))
+            .dataSetWriterId(ushort(1))
+            .build();
+
+    PubSubConfig.Builder builder =
+        PubSubConfig.builder()
+            .connection(
+                udp("conn")
+                    .publisherId(PID_1)
+                    .writerGroup(
+                        eventTriggeredGroup("G", 1, disabledDataWriter, writer("w2", 2, "events")))
+                    .build())
+            .publishedDataSet(dataSet("ds"))
+            .publishedDataSet(eventDataSet("events"));
+
+    PubSubConfigValidationException e =
+        assertThrows(PubSubConfigValidationException.class, builder::build);
+
+    assertTrue(e.getMessage().contains("'w1'"), e.getMessage());
   }
 
   @Test

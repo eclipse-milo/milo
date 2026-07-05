@@ -55,6 +55,11 @@ public final class DataSetMetaDataMapper {
    * runs the Milo config mapping, and the reserved name is not a real namespace 0 property
    * BrowseName. User-authored field properties are included either way.
    *
+   * <p>Field metadata is derived from the dataset's source: {@link FieldDefinition}s for a {@link
+   * PublishedDataItemsConfig} source, {@link EventFieldDefinition}s for a {@link
+   * PublishedEventsConfig} source. Event fields carry no {@code 0:MiloSourceKey} property (they
+   * have no field address source), so {@code stripMiloSourceKey} has no effect on them.
+   *
    * <p>The metadata configuration version is the dataset's {@code (major, minor)} configuration
    * version. Per OPC UA 10000-14 §7.2.4.6.4 the ConfigurationVersion in DataSetMessage headers
    * shall match the ConfigurationVersion in the DataSetMetaData; the dataset writer runtime stamps
@@ -75,7 +80,29 @@ public final class DataSetMetaDataMapper {
   public static DataSetMetaDataType toDataSetMetaDataType(
       PublishedDataSetConfig dataSet, boolean stripMiloSourceKey) {
 
-    List<FieldDefinition> fields = dataSet.getFields();
+    FieldMetaData[] fieldMetaData;
+    if (dataSet.getSource() instanceof PublishedEventsConfig events) {
+      fieldMetaData = eventFieldMetaData(events.getFields());
+    } else {
+      fieldMetaData = dataItemsFieldMetaData(dataSet.getFields(), stripMiloSourceKey);
+    }
+
+    return new DataSetMetaDataType(
+        null,
+        null,
+        null,
+        null,
+        dataSet.getName(),
+        LocalizedText.NULL_VALUE,
+        fieldMetaData.length == 0 ? null : fieldMetaData,
+        NULL_UUID,
+        new ConfigurationVersionDataType(
+            dataSet.getConfigurationVersionMajor(), dataSet.getConfigurationVersionMinor()));
+  }
+
+  private static FieldMetaData[] dataItemsFieldMetaData(
+      List<FieldDefinition> fields, boolean stripMiloSourceKey) {
+
     FieldMetaData[] fieldMetaData = new FieldMetaData[fields.size()];
 
     for (int i = 0; i < fields.size(); i++) {
@@ -103,16 +130,31 @@ public final class DataSetMetaDataMapper {
               toKeyValuePairs(properties));
     }
 
-    return new DataSetMetaDataType(
-        null,
-        null,
-        null,
-        null,
-        dataSet.getName(),
-        LocalizedText.NULL_VALUE,
-        fieldMetaData.length == 0 ? null : fieldMetaData,
-        NULL_UUID,
-        new ConfigurationVersionDataType(
-            dataSet.getConfigurationVersionMajor(), dataSet.getConfigurationVersionMinor()));
+    return fieldMetaData;
+  }
+
+  private static FieldMetaData[] eventFieldMetaData(List<EventFieldDefinition> fields) {
+    FieldMetaData[] fieldMetaData = new FieldMetaData[fields.size()];
+
+    for (int i = 0; i < fields.size(); i++) {
+      EventFieldDefinition field = fields.get(i);
+
+      fieldMetaData[i] =
+          new FieldMetaData(
+              field.getName(),
+              LocalizedText.NULL_VALUE,
+              field.isPromoted()
+                  ? DataSetFieldFlags.of(DataSetFieldFlags.Field.PromotedField)
+                  : DataSetFieldFlags.of(),
+              deriveBuiltInType(field.getDataType()),
+              field.getDataType(),
+              field.getValueRank(),
+              field.getArrayDimensions(),
+              uint(0),
+              field.getDataSetFieldId(),
+              toKeyValuePairs(field.getProperties()));
+    }
+
+    return fieldMetaData;
   }
 }

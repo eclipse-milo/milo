@@ -16,6 +16,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ulong;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -34,18 +35,23 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrokerTransportQualityOfService;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.DataSetOrderingType;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.FilterOperator;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
+import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilter;
+import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilterElement;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetReaderDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetWriterDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DatagramConnectionTransport2DataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonDataSetMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonNetworkMessageContentMask;
+import org.eclipse.milo.opcua.stack.core.types.structured.LiteralOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.NetworkAddressUrlDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfiguration2DataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConnectionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReaderGroupDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SecurityGroupDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.StandaloneSubscribedDataSetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpDataSetMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpNetworkMessageContentMask;
@@ -67,6 +73,8 @@ class PubSubConfigElementsTest {
   private static final UUID FIELD_TEMP_ID = new UUID(0xA1L, 1L);
   private static final UUID FIELD_LABEL_ID = new UUID(0xA1L, 2L);
   private static final UUID FIELD_VALUE_ID = new UUID(0xA2L, 1L);
+  private static final UUID FIELD_EVT_SEVERITY_ID = new UUID(0xA3L, 1L);
+  private static final UUID FIELD_EVT_MESSAGE_ID = new UUID(0xA3L, 2L);
   private static final UUID MD_F1_ID = new UUID(0xB1L, 1L);
   private static final UUID MD_F2_ID = new UUID(0xB1L, 2L);
   private static final UUID MD_J1_ID = new UUID(0xB2L, 1L);
@@ -124,6 +132,47 @@ class PubSubConfigElementsTest {
                 .dataType(NodeIds.Double)
                 .dataSetFieldId(FIELD_VALUE_ID)
                 .build())
+        .build();
+  }
+
+  private static SimpleAttributeOperand baseEventOperand(String browseName) {
+    return new SimpleAttributeOperand(
+        NodeIds.BaseEventType,
+        new QualifiedName[] {new QualifiedName(0, browseName)},
+        AttributeId.Value.uid(),
+        null);
+  }
+
+  private static PublishedDataSetConfig publishedEventsDataSet() {
+    return PublishedDataSetConfig.builder("pds-events")
+        .source(
+            PublishedEventsConfig.builder(ExpandedNodeId.of(URI_1, "Events.Notifier"))
+                .field(
+                    EventFieldDefinition.builder("severity")
+                        .selectedField(baseEventOperand("Severity"))
+                        .dataType(NodeIds.UInt16)
+                        .dataSetFieldId(FIELD_EVT_SEVERITY_ID)
+                        .promoted(true)
+                        .build())
+                .field(
+                    EventFieldDefinition.builder("message")
+                        .selectedField(baseEventOperand("Message"))
+                        .dataType(NodeIds.LocalizedText)
+                        .dataSetFieldId(FIELD_EVT_MESSAGE_ID)
+                        .property(new QualifiedName(1, "evtFieldProp"), Variant.ofString("evtVal"))
+                        .build())
+                .filter(
+                    new ContentFilter(
+                        new ContentFilterElement[] {
+                          new ContentFilterElement(
+                              FilterOperator.OfType,
+                              new ExtensionObject[] {
+                                encode(new LiteralOperand(Variant.ofNodeId(NodeIds.BaseEventType)))
+                              })
+                        }))
+                .build())
+        .configurationVersion(uint(4), uint(13))
+        .property(new QualifiedName(1, "evtDsProp"), Variant.ofInt32(9))
         .build();
   }
 
@@ -352,8 +401,8 @@ class PubSubConfigElementsTest {
   /**
    * A representative authored config covering every element kind: UDP and MQTT connections, UADP
    * and JSON groups, secured groups with SecurityGroup references, a reader-level security
-   * override, broker transports at all three levels, a standalone subscribed dataset, a raw escape
-   * hatch, and properties at every level.
+   * override, broker transports at all three levels, a data-items and an event published dataset, a
+   * standalone subscribed dataset, a raw escape hatch, and properties at every level.
    */
   private static PubSubConfig representativeConfig() {
     SecurityGroupConfig sg = securityGroup();
@@ -363,6 +412,7 @@ class PubSubConfigElementsTest {
         .connection(mqttConnection())
         .publishedDataSet(publishedDataSet1())
         .publishedDataSet(publishedDataSet2())
+        .publishedDataSet(publishedEventsDataSet())
         .standaloneSubscribedDataSet(standalone1())
         .securityGroup(sg)
         .build();
@@ -474,13 +524,21 @@ class PubSubConfigElementsTest {
     List<SecurityGroupConfig> securityGroups = whole.securityGroups();
 
     var publishedDataSets = requireNonNull(dataType.getPublishedDataSets());
-    assertEquals(2, publishedDataSets.length);
+    // Two data-items datasets plus the event dataset (pds-events).
+    assertEquals(3, publishedDataSets.length);
     for (int i = 0; i < publishedDataSets.length; i++) {
       assertEquals(
           whole.publishedDataSets().get(i),
           PubSubConfigElements.mapPublishedDataSet(
               publishedDataSets[i], namespaceTable, securityGroups));
     }
+
+    // The event dataset is present and maps identically alone and within the whole config.
+    PublishedDataSetConfig event =
+        PubSubConfigElements.mapPublishedDataSet(
+            publishedDataSets[2], namespaceTable, securityGroups);
+    assertInstanceOf(PublishedEventsConfig.class, event.getSource());
+    assertEquals(whole.publishedDataSets().get(2), event);
   }
 
   @Test

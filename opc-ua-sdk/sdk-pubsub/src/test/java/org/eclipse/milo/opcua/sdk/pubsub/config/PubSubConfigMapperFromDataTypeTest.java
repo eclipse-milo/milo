@@ -13,7 +13,9 @@ package org.eclipse.milo.opcua.sdk.pubsub.config;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -22,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
@@ -33,10 +36,13 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrokerTransportQualityOfService;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.DataSetOrderingType;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.FilterOperator;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.OverrideValueHandling;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
@@ -46,6 +52,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.BrokerDataSetWriterTra
 import org.eclipse.milo.opcua.stack.core.types.structured.BrokerWriterGroupTransportDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilter;
+import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilterElement;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldFlags;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
@@ -57,6 +64,8 @@ import org.eclipse.milo.opcua.stack.core.types.structured.DatagramWriterGroupTra
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.FieldMetaData;
 import org.eclipse.milo.opcua.stack.core.types.structured.FieldTargetDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
+import org.eclipse.milo.opcua.stack.core.types.structured.LiteralOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.NetworkAddressUrlDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfiguration2DataType;
@@ -64,11 +73,13 @@ import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConnectionDataTy
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubKeyPushTargetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataItemsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataSetDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataSetSourceDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedEventsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedVariableDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReaderGroupDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SecurityGroupDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.StandaloneSubscribedDataSetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SubscribedDataSetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SubscribedDataSetMirrorDataType;
@@ -81,6 +92,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.UadpWriterGroupMessage
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriterGroupDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriterGroupMessageDataType;
+import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -102,6 +114,8 @@ class PubSubConfigMapperFromDataTypeTest {
   private static final UUID NULL_UUID = new UUID(0L, 0L);
   private static final UUID PUB_FIELD_ID = new UUID(0xD1L, 1L);
   private static final UUID READER_FIELD_ID = new UUID(0xD2L, 1L);
+  private static final UUID EVENT_FIELD_ID_1 = new UUID(0xE1L, 1L);
+  private static final UUID EVENT_FIELD_ID_2 = new UUID(0xE2L, 1L);
 
   /** The Part 14 Annex A.2.2 "UADP-Dynamic" network message content mask. */
   private static final UadpNetworkMessageContentMask NM_DYNAMIC =
@@ -194,6 +208,99 @@ class PubSubConfigMapperFromDataTypeTest {
         new PublishedDataItemsDataType(new PublishedVariableDataType[] {publishedData}));
   }
 
+  /**
+   * A canonical two-field event-source dataset: a promoted scalar "Severity" field carrying a
+   * property and an array "Samples" field, with matching selected-field operands, a non-trivial
+   * where clause, and an eventNotifier in namespace 1.
+   */
+  private static PublishedDataSetDataType wirePublishedEventsDataSet(String name) {
+    return wirePublishedEventsDataSet(
+        name,
+        new NodeId(1, "notifier"),
+        new FieldMetaData[] {severityFieldMetaData(), samplesFieldMetaData()},
+        new SimpleAttributeOperand[] {selectOperand("Severity"), selectOperand("Samples")},
+        ofTypeFilter());
+  }
+
+  private static PublishedDataSetDataType wirePublishedEventsDataSet(
+      String name,
+      NodeId eventNotifier,
+      FieldMetaData[] fields,
+      SimpleAttributeOperand[] selectedFields,
+      ContentFilter filter) {
+
+    DataSetMetaDataType metaData =
+        new DataSetMetaDataType(
+            null,
+            null,
+            null,
+            null,
+            name,
+            LocalizedText.NULL_VALUE,
+            fields,
+            NULL_UUID,
+            new ConfigurationVersionDataType(uint(1), uint(1)));
+
+    return new PublishedDataSetDataType(
+        name,
+        null,
+        metaData,
+        null,
+        new PublishedEventsDataType(eventNotifier, selectedFields, filter));
+  }
+
+  private static FieldMetaData severityFieldMetaData() {
+    return new FieldMetaData(
+        "Severity",
+        LocalizedText.NULL_VALUE,
+        DataSetFieldFlags.of(DataSetFieldFlags.Field.PromotedField),
+        ubyte(5),
+        NodeIds.UInt16,
+        -1,
+        null,
+        uint(0),
+        EVENT_FIELD_ID_1,
+        new KeyValuePair[] {
+          new KeyValuePair(new QualifiedName(1, "hint"), Variant.ofString("severity"))
+        });
+  }
+
+  private static FieldMetaData samplesFieldMetaData() {
+    return new FieldMetaData(
+        "Samples",
+        LocalizedText.NULL_VALUE,
+        DataSetFieldFlags.of(),
+        ubyte(11),
+        NodeIds.Double,
+        1,
+        new UInteger[] {uint(4)},
+        uint(0),
+        EVENT_FIELD_ID_2,
+        null);
+  }
+
+  private static SimpleAttributeOperand selectOperand(String browseName) {
+    return new SimpleAttributeOperand(
+        NodeIds.BaseEventType,
+        new QualifiedName[] {new QualifiedName(0, browseName)},
+        uint(13),
+        null);
+  }
+
+  /** A non-trivial where clause, {@code OfType(BaseEventType)}; carried verbatim by the mapping. */
+  private static ContentFilter ofTypeFilter() {
+    return new ContentFilter(
+        new ContentFilterElement[] {
+          new ContentFilterElement(
+              FilterOperator.OfType,
+              new ExtensionObject[] {
+                ExtensionObject.encode(
+                    new DefaultEncodingContext(),
+                    new LiteralOperand(Variant.ofNodeId(NodeIds.BaseEventType)))
+              })
+        });
+  }
+
   private static PubSubConnectionDataType wireUdpConnection(
       String name,
       Variant publisherId,
@@ -240,6 +347,12 @@ class PubSubConfigMapperFromDataTypeTest {
   }
 
   private static DataSetWriterDataType wireWriter(String name, String dataSetName) {
+    return wireWriter(name, dataSetName, null);
+  }
+
+  private static DataSetWriterDataType wireWriter(
+      String name, String dataSetName, KeyValuePair[] writerProperties) {
+
     return new DataSetWriterDataType(
         name,
         true,
@@ -247,7 +360,7 @@ class PubSubConfigMapperFromDataTypeTest {
         DataSetFieldContentMask.of(),
         uint(1),
         dataSetName,
-        null,
+        writerProperties,
         null,
         canonicalUadpWriterMessage());
   }
@@ -380,6 +493,51 @@ class PubSubConfigMapperFromDataTypeTest {
 
   private static DataSetReaderConfig onlyReader(PubSubConfig config) {
     return config.connection("c").orElseThrow().readerGroups().get(0).getDataSetReaders().get(0);
+  }
+
+  /** A single-writer, writer-only UDP configuration wrapping {@code writer} over dataset "ds1". */
+  private static PubSubConfiguration2DataType writerOnlyConfig(DataSetWriterDataType writer) {
+    WriterGroupDataType writerGroup =
+        wireWriterGroup(
+            "wg",
+            1000.0,
+            MessageSecurityMode.None,
+            null,
+            canonicalUadpGroupMessage(),
+            new DataSetWriterDataType[] {writer});
+
+    return wireConfig(
+        new PublishedDataSetDataType[] {wirePublishedDataSet("ds1", PUB_FIELD_ID)},
+        new PubSubConnectionDataType[] {
+          wireUdpConnection(
+              "c", Variant.ofUInt16(ushort(9)), new WriterGroupDataType[] {writerGroup}, null)
+        });
+  }
+
+  private static DataSetWriterConfig onlyWriter(PubSubConfig config) {
+    return config.connection("c").orElseThrow().writerGroups().get(0).getDataSetWriters().get(0);
+  }
+
+  /**
+   * A configuration whose only writer group publishes the canonical event-source dataset at {@code
+   * publishingInterval}.
+   */
+  private static PubSubConfiguration2DataType eventWriterConfig(Double publishingInterval) {
+    WriterGroupDataType writerGroup =
+        wireWriterGroup(
+            "wg",
+            publishingInterval,
+            MessageSecurityMode.None,
+            null,
+            canonicalUadpGroupMessage(),
+            new DataSetWriterDataType[] {wireWriter("w", "events")});
+
+    return wireConfig(
+        new PublishedDataSetDataType[] {wirePublishedEventsDataSet("events")},
+        new PubSubConnectionDataType[] {
+          wireUdpConnection(
+              "c", Variant.ofUInt16(ushort(9)), new WriterGroupDataType[] {writerGroup}, null)
+        });
   }
 
   // endregion
@@ -594,7 +752,11 @@ class PubSubConfigMapperFromDataTypeTest {
     assertEquals(uint(0), r.getKeyFrameCount());
     assertEquals(UadpDataSetReaderSettings.builder().build(), r.getSettings());
 
+    // A null dataSetSource imports as an EMPTY data-items source, not an event source.
     PublishedDataSetConfig pds = config.publishedDataSet("pds").orElseThrow();
+    PublishedDataItemsConfig dataItems =
+        assertInstanceOf(PublishedDataItemsConfig.class, pds.getSource());
+    assertTrue(dataItems.getFields().isEmpty());
     assertTrue(pds.getFields().isEmpty());
     assertEquals(uint(1), pds.getConfigurationVersionMajor());
     assertEquals(uint(1), pds.getConfigurationVersionMinor());
@@ -740,20 +902,21 @@ class PubSubConfigMapperFromDataTypeTest {
   }
 
   @Test
-  void nonPublishedDataItemsSourceThrows() {
+  void unsupportedDataSetSourceSubtypeThrows() {
     PublishedDataSetDataType publishedDataSet =
         new PublishedDataSetDataType(
-            "events",
-            null,
-            null,
-            null,
-            new PublishedEventsDataType(new NodeId(0, 0), null, new ContentFilter(null)));
+            "ds", null, null, null, new PublishedDataSetSourceDataType() {});
 
     PubSubConfiguration2DataType dataType =
         wireConfig(new PublishedDataSetDataType[] {publishedDataSet}, null);
 
-    assertThrows(
-        PubSubConfigValidationException.class, () -> PubSubConfig.fromDataType(dataType, table()));
+    PubSubConfigValidationException e =
+        assertThrows(
+            PubSubConfigValidationException.class,
+            () -> PubSubConfig.fromDataType(dataType, table()));
+    assertTrue(
+        e.getMessage()
+            .contains("only PublishedDataItems and PublishedEvents dataset sources are supported"));
   }
 
   @Test
@@ -840,7 +1003,7 @@ class PubSubConfigMapperFromDataTypeTest {
   }
 
   @Test
-  void nonPositivePublishingIntervalThrows() {
+  void zeroPublishingIntervalWithDataItemsWriterThrows() {
     WriterGroupDataType writerGroup =
         wireWriterGroup(
             "wg",
@@ -858,8 +1021,16 @@ class PubSubConfigMapperFromDataTypeTest {
                   "c", Variant.ofUInt16(ushort(9)), new WriterGroupDataType[] {writerGroup}, null)
             });
 
-    assertThrows(
-        PubSubConfigValidationException.class, () -> PubSubConfig.fromDataType(dataType, table()));
+    // Interval zero is a legal group shape (event-triggered publishing); the rejection is the
+    // cross-rule requiring every writer in such a group to reference an event-source dataset.
+    PubSubConfigValidationException e =
+        assertThrows(
+            PubSubConfigValidationException.class,
+            () -> PubSubConfig.fromDataType(dataType, table()));
+    assertTrue(
+        e.getMessage()
+            .contains("publishingInterval 0 requires all writers to reference event-source"));
+    assertTrue(e.getMessage().contains("dataSetWriter 'w' references data-items dataset 'ds1'"));
   }
 
   @Test
@@ -916,6 +1087,252 @@ class PubSubConfigMapperFromDataTypeTest {
 
     assertThrows(
         PubSubConfigValidationException.class, () -> PubSubConfig.fromDataType(dataType, table()));
+  }
+
+  // endregion
+
+  // region Event-source datasets
+
+  @Test
+  void publishedEventsDataSetImportsStructurally() {
+    PubSubConfiguration2DataType dataType =
+        wireConfig(new PublishedDataSetDataType[] {wirePublishedEventsDataSet("events")}, null);
+
+    PubSubConfig config = PubSubConfig.fromDataType(dataType, table());
+
+    PublishedDataSetConfig pds = config.publishedDataSet("events").orElseThrow();
+    assertEquals(uint(1), pds.getConfigurationVersionMajor());
+    assertEquals(uint(1), pds.getConfigurationVersionMinor());
+    // getFields() is data-items sugar; event-source datasets report no data-items fields
+    assertTrue(pds.getFields().isEmpty());
+
+    PublishedEventsConfig events = assertInstanceOf(PublishedEventsConfig.class, pds.getSource());
+    // the wire NodeId maps to its canonical namespace-URI ExpandedNodeId form
+    assertEquals(ExpandedNodeId.of(URI_1, "notifier"), events.getEventNotifier());
+    assertEquals(ofTypeFilter(), events.getFilter());
+    assertEquals(2, events.getFields().size());
+
+    EventFieldDefinition severity = events.getFields().get(0);
+    assertEquals("Severity", severity.getName());
+    assertEquals(selectOperand("Severity"), severity.getSelectedField());
+    assertEquals(NodeIds.UInt16, severity.getDataType());
+    assertEquals(-1, severity.getValueRank());
+    assertNull(severity.getArrayDimensions());
+    assertTrue(severity.isPromoted());
+    assertEquals(EVENT_FIELD_ID_1, severity.getDataSetFieldId());
+    assertEquals(
+        Map.of(new QualifiedName(1, "hint"), Variant.ofString("severity")),
+        severity.getProperties());
+
+    EventFieldDefinition samples = events.getFields().get(1);
+    assertEquals("Samples", samples.getName());
+    assertEquals(selectOperand("Samples"), samples.getSelectedField());
+    assertEquals(NodeIds.Double, samples.getDataType());
+    assertEquals(1, samples.getValueRank());
+    assertArrayEquals(new UInteger[] {uint(4)}, samples.getArrayDimensions());
+    assertFalse(samples.isPromoted());
+    assertEquals(EVENT_FIELD_ID_2, samples.getDataSetFieldId());
+    assertTrue(samples.getProperties().isEmpty());
+  }
+
+  @Test
+  void publishedEventsSourceWithoutMetadataImportsAsZeroFieldEventDataSet() {
+    PublishedDataSetDataType publishedDataSet =
+        new PublishedDataSetDataType(
+            "events",
+            null,
+            null,
+            null,
+            new PublishedEventsDataType(new NodeId(0, 0), null, new ContentFilter(null)));
+
+    PubSubConfiguration2DataType dataType =
+        wireConfig(new PublishedDataSetDataType[] {publishedDataSet}, null);
+
+    PubSubConfig config = PubSubConfig.fromDataType(dataType, table());
+
+    PublishedDataSetConfig pds = config.publishedDataSet("events").orElseThrow();
+    // absent metadata keeps the builder-default configuration version
+    assertEquals(uint(1), pds.getConfigurationVersionMajor());
+    assertEquals(uint(1), pds.getConfigurationVersionMinor());
+
+    PublishedEventsConfig events = assertInstanceOf(PublishedEventsConfig.class, pds.getSource());
+    assertEquals(ExpandedNodeId.of(Namespaces.OPC_UA, uint(0)), events.getEventNotifier());
+    assertTrue(events.getFields().isEmpty());
+    assertEquals(new ContentFilter(null), events.getFilter());
+  }
+
+  @Test
+  void nullSelectedFieldsWithZeroMetadataFieldsImportsAsZeroFieldEventDataSet() {
+    PublishedDataSetDataType publishedDataSet =
+        wirePublishedEventsDataSet(
+            "events", new NodeId(1, "notifier"), new FieldMetaData[0], null, ofTypeFilter());
+
+    PubSubConfiguration2DataType dataType =
+        wireConfig(new PublishedDataSetDataType[] {publishedDataSet}, null);
+
+    PubSubConfig config = PubSubConfig.fromDataType(dataType, table());
+
+    PublishedEventsConfig events =
+        assertInstanceOf(
+            PublishedEventsConfig.class,
+            config.publishedDataSet("events").orElseThrow().getSource());
+    assertEquals(ExpandedNodeId.of(URI_1, "notifier"), events.getEventNotifier());
+    assertTrue(events.getFields().isEmpty());
+    assertEquals(ofTypeFilter(), events.getFilter());
+  }
+
+  @Test
+  void selectedFieldsFewerThanMetadataFieldsThrows() {
+    PublishedDataSetDataType publishedDataSet =
+        wirePublishedEventsDataSet(
+            "events",
+            new NodeId(1, "notifier"),
+            new FieldMetaData[] {severityFieldMetaData(), samplesFieldMetaData()},
+            new SimpleAttributeOperand[] {selectOperand("Severity")},
+            ofTypeFilter());
+
+    PubSubConfiguration2DataType dataType =
+        wireConfig(new PublishedDataSetDataType[] {publishedDataSet}, null);
+
+    PubSubConfigValidationException e =
+        assertThrows(
+            PubSubConfigValidationException.class,
+            () -> PubSubConfig.fromDataType(dataType, table()));
+    assertTrue(
+        e.getMessage().contains("selectedFields length 1 does not match metadata field count 2"));
+  }
+
+  @Test
+  void selectedFieldsMoreThanMetadataFieldsThrows() {
+    PublishedDataSetDataType publishedDataSet =
+        wirePublishedEventsDataSet(
+            "events",
+            new NodeId(1, "notifier"),
+            new FieldMetaData[] {severityFieldMetaData()},
+            new SimpleAttributeOperand[] {selectOperand("Severity"), selectOperand("Samples")},
+            ofTypeFilter());
+
+    PubSubConfiguration2DataType dataType =
+        wireConfig(new PublishedDataSetDataType[] {publishedDataSet}, null);
+
+    PubSubConfigValidationException e =
+        assertThrows(
+            PubSubConfigValidationException.class,
+            () -> PubSubConfig.fromDataType(dataType, table()));
+    assertTrue(
+        e.getMessage().contains("selectedFields length 2 does not match metadata field count 1"));
+  }
+
+  @Test
+  void nullSelectedFieldsWithNonZeroMetadataFieldsThrows() {
+    PublishedDataSetDataType publishedDataSet =
+        wirePublishedEventsDataSet(
+            "events",
+            new NodeId(1, "notifier"),
+            new FieldMetaData[] {severityFieldMetaData(), samplesFieldMetaData()},
+            null,
+            ofTypeFilter());
+
+    PubSubConfiguration2DataType dataType =
+        wireConfig(new PublishedDataSetDataType[] {publishedDataSet}, null);
+
+    PubSubConfigValidationException e =
+        assertThrows(
+            PubSubConfigValidationException.class,
+            () -> PubSubConfig.fromDataType(dataType, table()));
+    assertTrue(
+        e.getMessage().contains("selectedFields length 0 does not match metadata field count 2"));
+  }
+
+  @Test
+  void zeroWireIntervalWithOnlyEventWritersImportsAsEventTriggeredGroup() {
+    PubSubConfig config = PubSubConfig.fromDataType(eventWriterConfig(0.0), table());
+
+    WriterGroupConfig wg = config.connection("c").orElseThrow().writerGroups().get(0);
+    assertEquals(Duration.ZERO, wg.getPublishingInterval());
+  }
+
+  @Test
+  void negativeAndNaNWireIntervalsNormalizeToZeroForEventTriggeredGroups() {
+    for (double interval : new double[] {-250.0, Double.NaN}) {
+      PubSubConfig config = PubSubConfig.fromDataType(eventWriterConfig(interval), table());
+
+      WriterGroupConfig wg = config.connection("c").orElseThrow().writerGroups().get(0);
+      assertEquals(Duration.ZERO, wg.getPublishingInterval());
+    }
+  }
+
+  // endregion
+
+  // region MiloEventQueueCapacity writer property
+
+  @Test
+  void miloEventQueueCapacityPropertyIsConsumedIntoWriterConfig() {
+    DataSetWriterDataType writer =
+        wireWriter(
+            "w",
+            "ds1",
+            new KeyValuePair[] {
+              new KeyValuePair(new QualifiedName(0, "MiloEventQueueCapacity"), Variant.ofInt32(55)),
+              new KeyValuePair(new QualifiedName(1, "other"), Variant.ofString("kept"))
+            });
+
+    PubSubConfig config = PubSubConfig.fromDataType(writerOnlyConfig(writer), table());
+
+    DataSetWriterConfig w = onlyWriter(config);
+    assertEquals(55, w.getEventQueueCapacity());
+    // the reserved pair is consumed into the typed slot, not carried as an opaque property...
+    assertFalse(w.getProperties().containsKey(new QualifiedName(0, "MiloEventQueueCapacity")));
+    // ...while other writer properties are untouched
+    assertEquals(
+        Map.of(new QualifiedName(1, "other"), Variant.ofString("kept")), w.getProperties());
+  }
+
+  @Test
+  void absentMiloEventQueueCapacityDefaultsTo100() {
+    PubSubConfig config =
+        PubSubConfig.fromDataType(writerOnlyConfig(wireWriter("w", "ds1")), table());
+
+    assertEquals(100, onlyWriter(config).getEventQueueCapacity());
+  }
+
+  @Test
+  void zeroMiloEventQueueCapacityThrows() {
+    DataSetWriterDataType writer =
+        wireWriter(
+            "w",
+            "ds1",
+            new KeyValuePair[] {
+              new KeyValuePair(new QualifiedName(0, "MiloEventQueueCapacity"), Variant.ofInt32(0))
+            });
+
+    PubSubConfiguration2DataType dataType = writerOnlyConfig(writer);
+
+    PubSubConfigValidationException e =
+        assertThrows(
+            PubSubConfigValidationException.class,
+            () -> PubSubConfig.fromDataType(dataType, table()));
+    assertTrue(e.getMessage().contains("MiloEventQueueCapacity must be between 1 and 2147483647"));
+  }
+
+  @Test
+  void nonIntegerMiloEventQueueCapacityThrows() {
+    DataSetWriterDataType writer =
+        wireWriter(
+            "w",
+            "ds1",
+            new KeyValuePair[] {
+              new KeyValuePair(
+                  new QualifiedName(0, "MiloEventQueueCapacity"), Variant.ofDouble(55.0))
+            });
+
+    PubSubConfiguration2DataType dataType = writerOnlyConfig(writer);
+
+    PubSubConfigValidationException e =
+        assertThrows(
+            PubSubConfigValidationException.class,
+            () -> PubSubConfig.fromDataType(dataType, table()));
+    assertTrue(e.getMessage().contains("MiloEventQueueCapacity must be an Int32 or UInt32 value"));
   }
 
   // endregion

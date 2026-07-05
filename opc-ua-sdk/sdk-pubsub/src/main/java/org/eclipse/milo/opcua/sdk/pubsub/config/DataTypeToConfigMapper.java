@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.pubsub.config;
 
+import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.MILO_EVENT_QUEUE_CAPACITY;
 import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.MILO_SOURCE_KEY;
 import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.PROFILE_MQTT_JSON;
 import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.PROFILE_MQTT_UADP;
@@ -40,6 +41,7 @@ import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
@@ -53,6 +55,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.BrokerDataSetWriterTra
 import org.eclipse.milo.opcua.stack.core.types.structured.BrokerWriterGroupTransportDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ConnectionTransportDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetReaderDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetReaderMessageDataType;
@@ -77,12 +80,14 @@ import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConnectionDataTy
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataItemsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataSetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataSetSourceDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.PublishedEventsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedVariableDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReaderGroupDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReaderGroupMessageDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReaderGroupTransportDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SecurityGroupDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.StandaloneSubscribedDataSetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.StandaloneSubscribedDataSetRefDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SubscribedDataSetDataType;
@@ -497,7 +502,12 @@ final class DataTypeToConfigMapper {
       builder.fieldContentMask(writer.getDataSetFieldContentMask());
     }
 
-    fromKeyValuePairs(writer.getDataSetWriterProperties()).forEach(builder::property);
+    Map<QualifiedName, Variant> properties = fromKeyValuePairs(writer.getDataSetWriterProperties());
+    Variant eventQueueCapacity = properties.remove(MILO_EVENT_QUEUE_CAPACITY);
+    if (eventQueueCapacity != null) {
+      builder.eventQueueCapacity(eventQueueCapacity(eventQueueCapacity, path));
+    }
+    properties.forEach(builder::property);
 
     DataSetWriterTransportDataType transportSettings = writer.getTransportSettings();
     if (transportSettings != null) {
@@ -552,6 +562,29 @@ final class DataTypeToConfigMapper {
     }
 
     return builder.build();
+  }
+
+  /**
+   * Decode the reserved {@code 0:MiloEventQueueCapacity} writer property consumed from {@code
+   * DataSetWriterProperties}.
+   */
+  private static int eventQueueCapacity(Variant value, String path) {
+    long capacity;
+    if (value.value() instanceof Integer i) {
+      capacity = i;
+    } else if (value.value() instanceof UInteger u) {
+      capacity = u.longValue();
+    } else {
+      throw new PubSubConfigValidationException(
+          path + ": MiloEventQueueCapacity must be an Int32 or UInt32 value, found " + value);
+    }
+
+    if (capacity < 1 || capacity > Integer.MAX_VALUE) {
+      throw new PubSubConfigValidationException(
+          path + ": MiloEventQueueCapacity must be between 1 and 2147483647, found " + capacity);
+    }
+
+    return (int) capacity;
   }
 
   // endregion
@@ -792,34 +825,103 @@ final class DataTypeToConfigMapper {
           version.getMinorVersion() != null ? version.getMinorVersion() : uint(0));
     }
 
-    PublishedVariableDataType[] publishedData;
-    PublishedDataSetSourceDataType source = dataSet.getDataSetSource();
-    if (source == null) {
-      publishedData = new PublishedVariableDataType[0];
-    } else if (source instanceof PublishedDataItemsDataType items) {
-      publishedData =
-          items.getPublishedData() != null
-              ? items.getPublishedData()
-              : new PublishedVariableDataType[0];
-    } else {
-      throw new PubSubConfigValidationException(
-          path
-              + ": only PublishedDataItems dataset sources are supported, found "
-              + source.getClass().getName());
-    }
-
     FieldMetaData[] fields =
         metaData != null && metaData.getFields() != null
             ? metaData.getFields()
             : new FieldMetaData[0];
 
-    for (int i = 0; i < fields.length; i++) {
-      FieldMetaData fieldMetaData = fields[i];
-      PublishedVariableDataType variable = i < publishedData.length ? publishedData[i] : null;
-      builder.field(mapFieldDefinition(fieldMetaData, variable, path));
+    PublishedDataSetSourceDataType source = dataSet.getDataSetSource();
+    if (source == null || source instanceof PublishedDataItemsDataType) {
+      PublishedVariableDataType[] publishedData = new PublishedVariableDataType[0];
+      if (source instanceof PublishedDataItemsDataType items && items.getPublishedData() != null) {
+        publishedData = items.getPublishedData();
+      }
+
+      for (int i = 0; i < fields.length; i++) {
+        FieldMetaData fieldMetaData = fields[i];
+        PublishedVariableDataType variable = i < publishedData.length ? publishedData[i] : null;
+        builder.field(mapFieldDefinition(fieldMetaData, variable, path));
+      }
+    } else if (source instanceof PublishedEventsDataType events) {
+      builder.source(mapPublishedEvents(events, fields, path));
+    } else {
+      throw new PubSubConfigValidationException(
+          path
+              + ": only PublishedDataItems and PublishedEvents dataset sources are supported,"
+              + " found "
+              + source.getClass().getName());
     }
 
     fromKeyValuePairs(dataSet.getExtensionFields()).forEach(builder::property);
+
+    return builder.build();
+  }
+
+  private PublishedEventsConfig mapPublishedEvents(
+      PublishedEventsDataType events, FieldMetaData[] fields, String path) {
+
+    NodeId eventNotifier = events.getEventNotifier();
+
+    ExpandedNodeId notifier;
+    try {
+      // Mirror NodeFieldAddress.of so the canonical namespace-URI form of authored and imported
+      // eventNotifiers agrees.
+      notifier = eventNotifier.expanded(namespaceTable);
+    } catch (IllegalStateException e) {
+      throw new PubSubConfigValidationException(
+          path + ": namespace of NodeId " + eventNotifier + " not present in the namespace table",
+          e);
+    }
+
+    PublishedEventsConfig.Builder builder = PublishedEventsConfig.builder(notifier);
+
+    SimpleAttributeOperand[] selectedFields =
+        Objects.requireNonNullElse(events.getSelectedFields(), new SimpleAttributeOperand[0]);
+
+    if (selectedFields.length != fields.length) {
+      throw new PubSubConfigValidationException(
+          "%s: selectedFields length %d does not match metadata field count %d"
+              .formatted(path, selectedFields.length, fields.length));
+    }
+
+    for (int i = 0; i < fields.length; i++) {
+      builder.field(mapEventFieldDefinition(fields[i], selectedFields[i], path));
+    }
+
+    ContentFilter filter = events.getFilter();
+    builder.filter(filter != null ? filter : new ContentFilter(null));
+
+    return builder.build();
+  }
+
+  private static EventFieldDefinition mapEventFieldDefinition(
+      FieldMetaData fieldMetaData, @Nullable SimpleAttributeOperand selectedField, String path) {
+
+    String fieldName = requireName(fieldMetaData.getName(), path + " field");
+    String fieldPath = path + " field '%s'".formatted(fieldName);
+
+    if (selectedField == null) {
+      throw new PubSubConfigValidationException(fieldPath + ": selectedField is required");
+    }
+
+    EventFieldDefinition.Builder builder = EventFieldDefinition.builder(fieldName);
+
+    builder.selectedField(selectedField);
+
+    if (fieldMetaData.getDataType() != null) {
+      builder.dataType(fieldMetaData.getDataType());
+    }
+    if (fieldMetaData.getDataSetFieldId() != null) {
+      builder.dataSetFieldId(fieldMetaData.getDataSetFieldId());
+    }
+    builder.promoted(
+        fieldMetaData.getFieldFlags() != null && fieldMetaData.getFieldFlags().getPromotedField());
+    if (fieldMetaData.getValueRank() != null) {
+      builder.valueRank(fieldMetaData.getValueRank());
+    }
+    builder.arrayDimensions(fieldMetaData.getArrayDimensions());
+
+    fromKeyValuePairs(fieldMetaData.getProperties()).forEach(builder::property);
 
     return builder.build();
   }

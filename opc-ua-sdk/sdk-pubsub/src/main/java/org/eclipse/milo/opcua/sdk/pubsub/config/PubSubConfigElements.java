@@ -161,8 +161,9 @@ public final class PubSubConfigElements {
    *     for call-site uniformity.
    * @return the mapped {@link PublishedDataSetConfig}.
    * @throws PubSubConfigValidationException if the element cannot be mapped, e.g. its dataset
-   *     source is not {@code PublishedDataItems} or a NodeId namespace index is not present in
-   *     {@code namespaceTable}.
+   *     source is neither {@code PublishedDataItems} nor {@code PublishedEvents}, its {@code
+   *     selectedFields} do not match its metadata fields, or a NodeId namespace index is not
+   *     present in {@code namespaceTable}.
    */
   public static PublishedDataSetConfig mapPublishedDataSet(
       PublishedDataSetDataType value,

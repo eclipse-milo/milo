@@ -224,8 +224,9 @@ public final class ServerPubSubOptions {
      * model (see {@link #exposeInformationModel(boolean)}) mints {@code Enable}/{@code Disable}
      * Methods on every component Status object. Every handler consults the effective {@link
      * PubSubMethodAuthorizer} (see {@link #methodAuthorizer(PubSubMethodAuthorizer)}) before
-     * acting. The ns0 {@code PubSubConfiguration} file model does not accept remote configuration
-     * updates in this version; its Methods answer {@code Bad_NotImplemented}.
+     * acting. The ns0 {@code PubSubConfiguration} file model ({@code i=25451}) is also served: its
+     * FileType Methods together with {@code ReserveIds} and {@code CloseAndUpdate} accept remote
+     * configuration edits, each applied through the same authorized, validated apply path.
      *
      * <p>Remote enable/disable is not a configuration mutation: it is never saved to a configured
      * {@link PubSubConfigurationStore}.

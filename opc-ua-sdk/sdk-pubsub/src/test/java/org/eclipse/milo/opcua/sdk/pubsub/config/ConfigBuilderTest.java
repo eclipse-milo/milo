@@ -37,12 +37,16 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.DataSetOrderingType;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.FilterOperator;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilter;
+import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilterElement;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.PermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpDataSetMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpNetworkMessageContentMask;
 import org.junit.jupiter.api.Nested;
@@ -86,6 +90,45 @@ class ConfigBuilderTest {
 
   private static DataSetMetaDataConfig metaData(String name) {
     return DataSetMetaDataConfig.builder(name).field("f1", NodeIds.Int32, new UUID(0L, 1L)).build();
+  }
+
+  private static SimpleAttributeOperand selectOperand(String browseName) {
+    return new SimpleAttributeOperand(
+        NodeIds.BaseEventType,
+        new QualifiedName[] {new QualifiedName(0, browseName)},
+        AttributeId.Value.uid(),
+        null);
+  }
+
+  /** An {@link EventFieldDefinition} with a deterministic DataSetFieldId derived from its name. */
+  private static EventFieldDefinition eventField(String name) {
+    return EventFieldDefinition.builder(name)
+        .selectedField(selectOperand(name))
+        .dataSetFieldId(new UUID(0L, name.hashCode()))
+        .build();
+  }
+
+  /** An {@link EventFieldDefinition.Builder} with every field set to a non-default value. */
+  private static EventFieldDefinition.Builder fullEventFieldBuilder(String name) {
+    return EventFieldDefinition.builder(name)
+        .selectedField(selectOperand("Severity"))
+        .dataType(NodeIds.UInt16)
+        .dataSetFieldId(new UUID(1L, 2L))
+        .promoted(true)
+        .valueRank(1)
+        .arrayDimensions(new UInteger[] {uint(3)})
+        .property(new QualifiedName(1, "ep"), Variant.ofInt32(1));
+  }
+
+  private static PublishedEventsConfig eventsSource() {
+    return PublishedEventsConfig.builder(NodeIds.Server.expanded())
+        .field(eventField("EventId"))
+        .build();
+  }
+
+  private static ContentFilter ofTypeFilter() {
+    return new ContentFilter(
+        new ContentFilterElement[] {new ContentFilterElement(FilterOperator.OfType, null)});
   }
 
   private static TargetVariablesConfig targetVariables() {
@@ -157,14 +200,7 @@ class ConfigBuilderTest {
     }
 
     @Test
-    void writerGroupRejectsNonPositivePublishingInterval() {
-      assertThrows(
-          PubSubConfigValidationException.class,
-          () ->
-              WriterGroupConfig.builder("wg")
-                  .writerGroupId(ushort(1))
-                  .publishingInterval(Duration.ZERO)
-                  .build());
+    void writerGroupRejectsNegativePublishingInterval() {
       assertThrows(
           PubSubConfigValidationException.class,
           () ->
@@ -172,6 +208,19 @@ class ConfigBuilderTest {
                   .writerGroupId(ushort(1))
                   .publishingInterval(Duration.ofMillis(-1))
                   .build());
+    }
+
+    @Test
+    void writerGroupAcceptsZeroPublishingInterval() {
+      // interval 0 is the event-triggered publishing mode; the cross-element rule requiring
+      // all-event writers in such a group is enforced by PubSubConfig.Builder.build()
+      WriterGroupConfig group =
+          WriterGroupConfig.builder("wg")
+              .writerGroupId(ushort(1))
+              .publishingInterval(Duration.ZERO)
+              .build();
+
+      assertEquals(Duration.ZERO, group.getPublishingInterval());
     }
 
     @Test
@@ -228,6 +277,29 @@ class ConfigBuilderTest {
               DataSetWriterConfig.builder("w")
                   .dataSet(new PublishedDataSetRef("ds"))
                   .dataSetWriterId(ushort(0))
+                  .build());
+    }
+
+    @Test
+    void dataSetWriterRejectsEventQueueCapacityLessThanOne() {
+      PubSubConfigValidationException e =
+          assertThrows(
+              PubSubConfigValidationException.class,
+              () ->
+                  DataSetWriterConfig.builder("w")
+                      .dataSet(new PublishedDataSetRef("ds"))
+                      .dataSetWriterId(ushort(1))
+                      .eventQueueCapacity(0)
+                      .build());
+      assertTrue(e.getMessage().contains("eventQueueCapacity"), e.getMessage());
+
+      assertThrows(
+          PubSubConfigValidationException.class,
+          () ->
+              DataSetWriterConfig.builder("w")
+                  .dataSet(new PublishedDataSetRef("ds"))
+                  .dataSetWriterId(ushort(1))
+                  .eventQueueCapacity(-1)
                   .build());
     }
 
@@ -354,6 +426,111 @@ class ConfigBuilderTest {
     }
 
     @Test
+    void publishedDataSetRejectsFieldCombinedWithExplicitSource() {
+      // field(...) sugar combined with an explicit data-items source is ambiguous
+      PubSubConfigValidationException e =
+          assertThrows(
+              PubSubConfigValidationException.class,
+              () ->
+                  PublishedDataSetConfig.builder("ds")
+                      .field(FieldDefinition.builder("f1").build())
+                      .source(PublishedDataItemsConfig.builder().build())
+                      .build());
+      assertTrue(e.getMessage().contains("mutually exclusive"), e.getMessage());
+
+      // ... and so is field(...) combined with an events source
+      assertThrows(
+          PubSubConfigValidationException.class,
+          () ->
+              PublishedDataSetConfig.builder("ds")
+                  .field(FieldDefinition.builder("f1").build())
+                  .source(eventsSource())
+                  .build());
+    }
+
+    @Test
+    void publishedDataItemsRejectsDuplicateFieldName() {
+      PubSubConfigValidationException e =
+          assertThrows(
+              PubSubConfigValidationException.class,
+              () ->
+                  PublishedDataItemsConfig.builder()
+                      .field(FieldDefinition.builder("f1").build())
+                      .field(FieldDefinition.builder("f1").build())
+                      .build());
+
+      assertTrue(e.getMessage().contains("f1"), e.getMessage());
+    }
+
+    @Test
+    void publishedDataItemsRejectsDuplicateDataSetFieldId() {
+      UUID fieldId = new UUID(0L, 1L);
+
+      assertThrows(
+          PubSubConfigValidationException.class,
+          () ->
+              PublishedDataItemsConfig.builder()
+                  .field(FieldDefinition.builder("f1").dataSetFieldId(fieldId).build())
+                  .field(FieldDefinition.builder("f2").dataSetFieldId(fieldId).build())
+                  .build());
+    }
+
+    @Test
+    void publishedEventsRejectsDuplicateFieldName() {
+      PubSubConfigValidationException e =
+          assertThrows(
+              PubSubConfigValidationException.class,
+              () ->
+                  PublishedEventsConfig.builder(NodeIds.Server.expanded())
+                      .field(eventField("f1"))
+                      .field(
+                          EventFieldDefinition.builder("f1")
+                              .selectedField(selectOperand("f1"))
+                              .build())
+                      .build());
+
+      assertTrue(e.getMessage().contains("f1"), e.getMessage());
+    }
+
+    @Test
+    void publishedEventsRejectsDuplicateDataSetFieldId() {
+      UUID fieldId = new UUID(0L, 1L);
+
+      assertThrows(
+          PubSubConfigValidationException.class,
+          () ->
+              PublishedEventsConfig.builder(NodeIds.Server.expanded())
+                  .field(
+                      EventFieldDefinition.builder("f1")
+                          .selectedField(selectOperand("f1"))
+                          .dataSetFieldId(fieldId)
+                          .build())
+                  .field(
+                      EventFieldDefinition.builder("f2")
+                          .selectedField(selectOperand("f2"))
+                          .dataSetFieldId(fieldId)
+                          .build())
+                  .build());
+    }
+
+    @Test
+    void eventFieldDefinitionRejectsEmptyName() {
+      assertThrows(
+          PubSubConfigValidationException.class,
+          () -> EventFieldDefinition.builder("").selectedField(selectOperand("Severity")).build());
+    }
+
+    @Test
+    void eventFieldDefinitionRequiresSelectedField() {
+      PubSubConfigValidationException e =
+          assertThrows(
+              PubSubConfigValidationException.class,
+              () -> EventFieldDefinition.builder("f").build());
+
+      assertTrue(e.getMessage().contains("selectedField"), e.getMessage());
+    }
+
+    @Test
     void dataSetMetaDataRejectsDuplicateFieldName() {
       assertThrows(
           PubSubConfigValidationException.class,
@@ -460,6 +637,7 @@ class ConfigBuilderTest {
 
       assertTrue(dataSetWriter.isEnabled());
       assertEquals(uint(1), dataSetWriter.getKeyFrameCount());
+      assertEquals(100, dataSetWriter.getEventQueueCapacity());
       assertEquals(DataSetFieldContentMask.of(), dataSetWriter.getFieldContentMask());
       assertEquals(UadpDataSetWriterSettings.builder().build(), dataSetWriter.getSettings());
       assertNull(dataSetWriter.getBrokerTransport());
@@ -632,6 +810,84 @@ class ConfigBuilderTest {
       FieldDefinition field = FieldDefinition.builder("f").source(source).build();
 
       assertEquals(source, field.getSource());
+    }
+
+    @Test
+    void eventFieldDefinitionDefaults() {
+      EventFieldDefinition field =
+          EventFieldDefinition.builder("Severity").selectedField(selectOperand("Severity")).build();
+
+      assertEquals("Severity", field.getName());
+      assertEquals(selectOperand("Severity"), field.getSelectedField());
+      assertEquals(NodeIds.BaseDataType, field.getDataType());
+      assertEquals(-1, field.getValueRank());
+      assertNull(field.getArrayDimensions());
+      assertFalse(field.isPromoted());
+      assertTrue(field.getProperties().isEmpty());
+    }
+
+    @Test
+    void eventFieldDefinitionGeneratesRandomDataSetFieldIdPerBuild() {
+      EventFieldDefinition first =
+          EventFieldDefinition.builder("f").selectedField(selectOperand("f")).build();
+      EventFieldDefinition second =
+          EventFieldDefinition.builder("f").selectedField(selectOperand("f")).build();
+
+      assertNotEquals(first.getDataSetFieldId(), second.getDataSetFieldId());
+    }
+
+    @Test
+    void publishedEventsConfigDefaults() {
+      PublishedEventsConfig events =
+          PublishedEventsConfig.builder(NodeIds.Server.expanded()).build();
+
+      assertEquals(NodeIds.Server.expanded(), events.getEventNotifier());
+      assertTrue(events.getFields().isEmpty());
+      assertEquals(new ContentFilter(null), events.getFilter());
+    }
+
+    @Test
+    void publishedDataItemsConfigWrapsFieldsInOrder() {
+      FieldDefinition f1 = FieldDefinition.builder("f1").build();
+      FieldDefinition f2 = FieldDefinition.builder("f2").build();
+
+      PublishedDataItemsConfig dataItems =
+          PublishedDataItemsConfig.builder().field(f1).field(f2).build();
+
+      assertEquals(List.of(f1, f2), dataItems.getFields());
+    }
+
+    @Test
+    void publishedDataSetSourceDefaultsToEmptyDataItems() {
+      PublishedDataSetConfig dataSet = PublishedDataSetConfig.builder("ds").build();
+
+      PublishedDataItemsConfig source =
+          assertInstanceOf(PublishedDataItemsConfig.class, dataSet.getSource());
+      assertTrue(source.getFields().isEmpty());
+      assertTrue(dataSet.getFields().isEmpty());
+    }
+
+    @Test
+    void publishedDataSetFieldSugarBuildsDataItemsSource() {
+      FieldDefinition f1 = FieldDefinition.builder("f1").build();
+      FieldDefinition f2 = FieldDefinition.builder("f2").build();
+
+      PublishedDataSetConfig dataSet =
+          PublishedDataSetConfig.builder("ds").field(f1).field(f2).build();
+
+      PublishedDataItemsConfig source =
+          assertInstanceOf(PublishedDataItemsConfig.class, dataSet.getSource());
+      assertEquals(List.of(f1, f2), source.getFields());
+      assertEquals(List.of(f1, f2), dataSet.getFields());
+    }
+
+    @Test
+    void publishedDataSetGetFieldsIsEmptyForEventsSource() {
+      PublishedDataSetConfig dataSet =
+          PublishedDataSetConfig.builder("ds").source(eventsSource()).build();
+
+      assertInstanceOf(PublishedEventsConfig.class, dataSet.getSource());
+      assertEquals(List.of(), dataSet.getFields());
     }
 
     @Test
@@ -810,6 +1066,85 @@ class ConfigBuilderTest {
       assertEquals(field.hashCode(), copy.hashCode());
       assertArrayEquals(field.getArrayDimensions(), copy.getArrayDimensions());
     }
+
+    @Test
+    void dataSetWriterToBuilderRoundTrip() {
+      DataSetWriterConfig writer =
+          DataSetWriterConfig.builder("w")
+              .enabled(false)
+              .dataSet(new PublishedDataSetRef("ds"))
+              .dataSetWriterId(ushort(1))
+              .keyFrameCount(uint(4))
+              .eventQueueCapacity(32)
+              .fieldContentMask(DataSetFieldContentMask.of(DataSetFieldContentMask.Field.RawData))
+              .settings(JsonDataSetWriterSettings.builder().build())
+              .brokerTransport(BrokerTransportSettings.builder().queueName("q").build())
+              .rawTransportSettings(extensionObject(8))
+              .rawMessageSettings(extensionObject(9))
+              .property(new QualifiedName(1, "wp"), Variant.ofInt32(1))
+              .build();
+
+      DataSetWriterConfig copy = writer.toBuilder().build();
+
+      assertEquals(writer, copy);
+      assertEquals(writer.hashCode(), copy.hashCode());
+      assertEquals(32, copy.getEventQueueCapacity());
+    }
+
+    @Test
+    void eventFieldDefinitionToBuilderRoundTrip() {
+      EventFieldDefinition field = fullEventFieldBuilder("f").build();
+      EventFieldDefinition copy = field.toBuilder().build();
+
+      assertEquals(field, copy);
+      assertEquals(field.hashCode(), copy.hashCode());
+      assertArrayEquals(field.getArrayDimensions(), copy.getArrayDimensions());
+    }
+
+    @Test
+    void publishedDataItemsConfigToBuilderRoundTrip() {
+      PublishedDataItemsConfig dataItems =
+          PublishedDataItemsConfig.builder()
+              .field(FieldDefinition.builder("f1").build())
+              .field(FieldDefinition.builder("f2").build())
+              .build();
+
+      PublishedDataItemsConfig copy = dataItems.toBuilder().build();
+
+      assertEquals(dataItems, copy);
+      assertEquals(dataItems.hashCode(), copy.hashCode());
+    }
+
+    @Test
+    void publishedEventsConfigToBuilderRoundTrip() {
+      PublishedEventsConfig events =
+          PublishedEventsConfig.builder(NodeIds.Server.expanded())
+              .field(fullEventFieldBuilder("f").build())
+              .filter(ofTypeFilter())
+              .build();
+
+      PublishedEventsConfig copy = events.toBuilder().build();
+
+      assertEquals(events, copy);
+      assertEquals(events.hashCode(), copy.hashCode());
+    }
+
+    @Test
+    void publishedDataSetWithEventsSourceToBuilderRoundTrip() {
+      PublishedDataSetConfig dataSet =
+          PublishedDataSetConfig.builder("ds")
+              .enabled(false)
+              .source(eventsSource())
+              .configurationVersion(uint(2), uint(3))
+              .property(new QualifiedName(1, "dp"), Variant.ofInt32(1))
+              .build();
+
+      PublishedDataSetConfig copy = dataSet.toBuilder().build();
+
+      assertEquals(dataSet, copy);
+      assertEquals(dataSet.hashCode(), copy.hashCode());
+      assertEquals(dataSet.getSource(), copy.getSource());
+    }
   }
 
   @Nested
@@ -979,6 +1314,114 @@ class ConfigBuilderTest {
       assertEquals(field, same);
       assertEquals(field.hashCode(), same.hashCode());
       assertNotEquals(field, different);
+    }
+
+    @Test
+    void eventFieldDefinitionInequalityOnEachVariedField() {
+      EventFieldDefinition base = fullEventFieldBuilder("f").build();
+
+      // name
+      assertNotEquals(base, fullEventFieldBuilder("other").build());
+      // selectedField
+      assertNotEquals(
+          base, fullEventFieldBuilder("f").selectedField(selectOperand("Message")).build());
+      // dataType
+      assertNotEquals(base, fullEventFieldBuilder("f").dataType(NodeIds.Int32).build());
+      // dataSetFieldId
+      assertNotEquals(base, fullEventFieldBuilder("f").dataSetFieldId(new UUID(3L, 4L)).build());
+      // promoted
+      assertNotEquals(base, fullEventFieldBuilder("f").promoted(false).build());
+      // valueRank
+      assertNotEquals(base, fullEventFieldBuilder("f").valueRank(-1).build());
+      // arrayDimensions
+      assertNotEquals(
+          base, fullEventFieldBuilder("f").arrayDimensions(new UInteger[] {uint(4)}).build());
+      // properties (an additional property changes the map)
+      assertNotEquals(
+          base,
+          fullEventFieldBuilder("f")
+              .property(new QualifiedName(1, "ep2"), Variant.ofInt32(2))
+              .build());
+
+      EventFieldDefinition same = fullEventFieldBuilder("f").build();
+      assertEquals(base, same);
+      assertEquals(base.hashCode(), same.hashCode());
+    }
+
+    @Test
+    void publishedEventsConfigInequalityOnEachVariedField() {
+      PublishedEventsConfig base =
+          PublishedEventsConfig.builder(NodeIds.Server.expanded())
+              .field(fullEventFieldBuilder("f").build())
+              .build();
+
+      // eventNotifier
+      assertNotEquals(
+          base,
+          PublishedEventsConfig.builder(NodeIds.ObjectsFolder.expanded())
+              .field(fullEventFieldBuilder("f").build())
+              .build());
+      // fields
+      assertNotEquals(
+          base,
+          PublishedEventsConfig.builder(NodeIds.Server.expanded())
+              .field(fullEventFieldBuilder("other").build())
+              .build());
+      // filter
+      assertNotEquals(
+          base,
+          PublishedEventsConfig.builder(NodeIds.Server.expanded())
+              .field(fullEventFieldBuilder("f").build())
+              .filter(ofTypeFilter())
+              .build());
+
+      PublishedEventsConfig same =
+          PublishedEventsConfig.builder(NodeIds.Server.expanded())
+              .field(fullEventFieldBuilder("f").build())
+              .build();
+      assertEquals(base, same);
+      assertEquals(base.hashCode(), same.hashCode());
+    }
+
+    @Test
+    void publishedDataSetInequalityOnSource() {
+      PublishedDataSetConfig events =
+          PublishedDataSetConfig.builder("ds").source(eventsSource()).build();
+      PublishedDataSetConfig sameEvents =
+          PublishedDataSetConfig.builder("ds").source(eventsSource()).build();
+
+      assertEquals(events, sameEvents);
+      assertEquals(events.hashCode(), sameEvents.hashCode());
+
+      // source kind: data-items vs events
+      PublishedDataSetConfig dataItems =
+          PublishedDataSetConfig.builder("ds")
+              .field(FieldDefinition.builder("f1").dataSetFieldId(new UUID(0L, 1L)).build())
+              .build();
+      assertNotEquals(dataItems, events);
+
+      // two events sources differing only in the notifier
+      assertNotEquals(
+          events,
+          PublishedDataSetConfig.builder("ds")
+              .source(
+                  PublishedEventsConfig.builder(NodeIds.ObjectsFolder.expanded())
+                      .field(eventField("EventId"))
+                      .build())
+              .build());
+    }
+
+    @Test
+    void dataSetWriterInequalityOnEventQueueCapacity() {
+      DataSetWriterConfig base = writer("w", 1, "ds");
+      DataSetWriterConfig larger =
+          DataSetWriterConfig.builder("w")
+              .dataSet(new PublishedDataSetRef("ds"))
+              .dataSetWriterId(ushort(1))
+              .eventQueueCapacity(200)
+              .build();
+
+      assertNotEquals(base, larger);
     }
   }
 

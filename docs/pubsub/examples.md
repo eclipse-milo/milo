@@ -41,6 +41,7 @@ All classes are under `org.eclipse.milo.examples.pubsub`.
 | Embedded MQTT broker | `mqtt.EmbeddedBrokerExample` | An in-process HiveMQ CE broker so the MQTT examples need no external infrastructure | [MQTT transport](mqtt.md) |
 | Server publish (auto-source) | `server.ServerSourcePublisherExample`, `server.ServerSourceSubscriberExample` | `ServerPubSub` publishing live address-space node values via `NodeFieldAddress` auto-binding | [Server integration](server-integration.md) |
 | Server subscribe (TargetVariables) | `server.ServerTargetPublisherExample`, `server.ServerTargetSubscriberExample` | `ServerPubSub` writing received fields into address-space nodes, with status and timestamp pass-through | [Server integration](server-integration.md) |
+| Event publishing | `mqtt.MqttJsonEventPublisherExample`, `server.ServerEventPublisherExample` | Publishing events instead of cyclic data: a `PublishedEventsConfig` source drained on a publish cycle, over MQTT/JSON and via the `ServerPubSub` event-notifier binding | [Events](limitations-and-interop.md#events) |
 | Live reconfigure | `ReconfigureExample` | `service.update(...)` changing the publishing interval at runtime; restart scoping and diagnostics | [Operations](operations.md) |
 
 ## Ports and identifiers
@@ -275,6 +276,55 @@ ServerPubSub started, reader listening on opc.udp://127.0.0.1:15130
 ```
 
 The `sourceTime` on the `[node]` lines is the publisher's publish-time timestamp, not the write time — that is the pass-through working. The publisher logs `Publishing "demo-ds" to opc.udp://127.0.0.1:15130 every 500 ms as publisherId=UInt16Id[value=5001]`. Optional args on both sides: `-Dexec.args="<dataPort> <discoveryPort>"`.
+
+## Event publishing
+
+Two examples publish *events* rather than a cyclic dataset (see
+[Events](limitations-and-interop.md#events)): a standalone MQTT/JSON publisher and a `ServerPubSub`
+publisher driven by the server's event bus. Both build a `PublishedDataSetConfig` with a
+`PublishedEventsConfig` source in a positive-interval writer group, and each event goes out as its
+own event DataSetMessage on the next publish cycle.
+
+### MQTT, JSON events
+
+`MqttJsonEventPublisherExample` publishes JSON `ua-event` messages to an MQTT broker: it builds an
+event dataset, then calls `PubSubService.publishEvent(...)` on a timer to emit events. Start a broker
+first (`EmbeddedBrokerExample`, or any external broker on `mqtt://127.0.0.1:1883`), then run the
+publisher. To watch the events arrive, subscribe with any JSON subscriber, or use the
+`PubSubInteropTool` `mqtt-subscribe` mode, which labels each delivered DataSetMessage `EVENT` or
+`DATA`.
+
+```sh
+mvn -q -pl milo-examples/pubsub-examples -am install -DskipTests
+```
+
+```sh
+mvn -pl milo-examples/pubsub-examples exec:java \
+  -Dexec.mainClass=org.eclipse.milo.examples.pubsub.mqtt.MqttJsonEventPublisherExample
+```
+
+The publisher logs a startup line naming its broker and event topic, then one line per event it
+emits. As with the other MQTT examples, this one needs a broker and runs on any JDK when pointed at
+an external one (the embedded broker needs JDK 17 or 21).
+
+### Server event publishing
+
+`ServerEventPublisherExample` attaches `ServerPubSub` to an `OpcUaServer` and lets the
+[event-notifier binding](server-integration.md#publishing-events-the-event-notifier-binding) do the
+publishing: it fires events into the server's address space, and the binding evaluates the event
+dataset's filter and pushes the selected fields to the runtime automatically — there is no
+`publishEvent` call in the example. The events are published over UDP/UADP; observe them with a UDP
+subscriber or the `PubSubInteropTool` subscribe/raw modes, which mark each DataSetMessage `EVENT`.
+
+```sh
+mvn -pl milo-examples/pubsub-examples exec:java \
+  -Dexec.mainClass=org.eclipse.milo.examples.pubsub.server.ServerEventPublisherExample
+```
+
+Both examples run until Ctrl-C with a shutdown hook, and — like the rest of the page — must be run
+without `-q` on the `exec:java` step (keep `-q` on the build). The `ServerPubSub` variant does not
+need a started server; attach and the event bus work on an endpoint-less server exactly as the
+[auto-source examples](#server-publish-auto-source) do.
 
 ## Live reconfigure
 

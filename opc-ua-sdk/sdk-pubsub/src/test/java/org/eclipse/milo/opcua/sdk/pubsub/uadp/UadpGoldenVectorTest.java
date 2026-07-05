@@ -619,6 +619,44 @@ class UadpGoldenVectorTest {
         message.fields());
   }
 
+  /**
+   * Event DataSetMessage (§7.2.4.5.7): the message type is signaled in the DataSetFlags2 type bits
+   * ({@code 0010}, §7.2.4.5.4 Table 162) and the fields are Variant-encoded with the DataSetFlags1
+   * field-encoding bits (1,2) clear. Bare NetworkMessage, one event DataSetMessage with a single
+   * Variant String field — the same wire bytes the decode-side {@code eventDecode} fixture in
+   * {@code UadpRoundTripTest} pins.
+   */
+  @Test
+  void eventDataSetMessage() throws UaException {
+    // NM mask 0x00: bare NetworkMessage, every optional header off. DSM mask 0x00: Variant fields.
+    DataSetWriterConfig writer = writer(1, DSM_NONE, VARIANT_FIELDS, 0);
+    WriterGroupConfig group = group(uint(0x00), writer);
+
+    DataSetMessageDraft draft = event(writer, 0, goodValue(Variant.ofString("evt")));
+
+    EncodeContext context = encodeContext(PublisherId.ubyte(ubyte(1)), group, null, draft);
+
+    byte[] expected =
+        bytes(
+            0x01, // byte 0: version 1, all optional NetworkMessage headers off
+            0x81, // DataSetFlags1: valid 0x01 | Variant encoding 00 (bits 1,2) | Flags2 0x80
+            0x02, // DataSetFlags2: type 0010 = Event (Table 162)
+            0x01, 0x00, // FieldCount = 1 (UInt16 LE)
+            0x0C, 0x03, 0x00, 0x00, 0x00, 0x65, 0x76, 0x74); // FieldValue: Variant String "evt"
+
+    assertArrayEquals(expected, encodeToBytes(context));
+
+    DecodedNetworkMessage decoded = decode(expected);
+
+    assertEquals(1, decoded.messages().size());
+    DecodedDataSetMessage message = decoded.messages().get(0);
+
+    assertEquals(DataSetMessageKind.EVENT, message.kind());
+    assertTrue(message.valid());
+    assertEquals(
+        List.of(new DecodedField(0, goodValue(Variant.ofString("evt")))), message.fields());
+  }
+
   /** ConfiguredSize larger than the encoded message: zero-padding (Part 14 §6.3.1.3.3). */
   @Test
   void configuredSizePadsWithZeroBytes() throws UaException {
@@ -908,6 +946,19 @@ class UadpGoldenVectorTest {
       DataSetWriterConfig writer, int sequenceNumber, DataSetMessageDraft.DeltaField... fields) {
 
     return DataSetMessageDraft.ofDeltaFrame(
+        writer,
+        uint(sequenceNumber),
+        null,
+        null,
+        new ConfigurationVersionDataType(uint(0), uint(0)),
+        List.of(fields),
+        null);
+  }
+
+  private static DataSetMessageDraft event(
+      DataSetWriterConfig writer, int sequenceNumber, DataValue... fields) {
+
+    return DataSetMessageDraft.ofEvent(
         writer,
         uint(sequenceNumber),
         null,

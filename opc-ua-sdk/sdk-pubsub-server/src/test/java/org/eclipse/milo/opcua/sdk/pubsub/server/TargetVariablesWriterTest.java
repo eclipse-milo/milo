@@ -34,6 +34,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigValidationException;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
 import org.eclipse.milo.opcua.sdk.pubsub.config.TargetVariableConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.TargetVariablesConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.uadp.DataSetMessageKind;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -547,6 +548,7 @@ class TargetVariablesWriterTest {
         null,
         "ds",
         null,
+        DataSetMessageKind.KEY_FRAME,
         List.of(fields));
   }
 

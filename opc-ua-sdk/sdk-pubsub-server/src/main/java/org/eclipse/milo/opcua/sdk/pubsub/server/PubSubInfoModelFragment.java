@@ -50,6 +50,7 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.PubSubConnectionTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.PubSubStatusTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.PublishSubscribeType;
 import org.eclipse.milo.opcua.sdk.server.model.objects.PublishedDataItemsTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.PublishedEventsTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ReaderGroupTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.SubscribedDataSetTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.TargetVariablesTypeNode;
@@ -94,9 +95,11 @@ import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConnectionDataTy
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubGroupDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataItemsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataSetDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.PublishedEventsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedVariableDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReaderGroupDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.TargetVariablesDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpDataSetReaderMessageDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpDataSetWriterMessageDataType;
@@ -345,17 +348,74 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
     String name = nullToEmpty(dataSet.getName());
 
     NodeId nodeId = PubSubNodeIds.publishedDataSetNodeId(namespaceIndex, name);
-
-    PublishedDataItemsTypeNode node =
-        addObjectNode(
-            PublishedDataItemsTypeNode::new,
-            nodeId,
-            new QualifiedName(namespaceIndex, name),
-            NodeIds.PublishedDataItemsType,
-            NodeIds.HasComponent,
-            NodeIds.PublishSubscribe_PublishedDataSets);
-
+    QualifiedName browseName = new QualifiedName(namespaceIndex, name);
     DataSetMetaDataType metaData = dataSet.getDataSetMetaData();
+
+    UaObjectNode node;
+
+    if (dataSet.getDataSetSource() instanceof PublishedEventsDataType events) {
+      node =
+          addObjectNode(
+              PublishedEventsTypeNode::new,
+              nodeId,
+              browseName,
+              NodeIds.PublishedEventsType,
+              NodeIds.HasComponent,
+              NodeIds.PublishSubscribe_PublishedDataSets);
+
+      addConfigurationVersionAndMetaData(node, metaData);
+
+      addPropertyNode(
+          node,
+          "EventNotifier",
+          NodeIds.NodeId,
+          ValueRanks.Scalar,
+          new Variant(events.getEventNotifier()));
+
+      addPropertyNode(
+          node,
+          "SelectedFields",
+          NodeIds.SimpleAttributeOperand,
+          ValueRanks.OneDimension,
+          new Variant(orEmpty(events.getSelectedFields(), SimpleAttributeOperand[]::new)));
+
+      addPropertyNode(
+          node,
+          "Filter",
+          NodeIds.ContentFilter,
+          ValueRanks.Scalar,
+          new Variant(events.getFilter()));
+    } else {
+      node =
+          addObjectNode(
+              PublishedDataItemsTypeNode::new,
+              nodeId,
+              browseName,
+              NodeIds.PublishedDataItemsType,
+              NodeIds.HasComponent,
+              NodeIds.PublishSubscribe_PublishedDataSets);
+
+      addConfigurationVersionAndMetaData(node, metaData);
+
+      PublishedVariableDataType[] publishedData =
+          dataSet.getDataSetSource() instanceof PublishedDataItemsDataType items
+              ? orEmpty(items.getPublishedData(), PublishedVariableDataType[]::new)
+              : new PublishedVariableDataType[0];
+
+      addPropertyNode(
+          node,
+          "PublishedData",
+          NodeIds.PublishedVariableDataType,
+          ValueRanks.OneDimension,
+          new Variant(publishedData));
+    }
+
+    addDataSetClassId(node, metaData);
+  }
+
+  /** Add the shared ConfigurationVersion and DataSetMetaData property nodes. */
+  private void addConfigurationVersionAndMetaData(
+      UaNode node, @Nullable DataSetMetaDataType metaData) {
 
     addPropertyNode(
         node,
@@ -370,19 +430,10 @@ final class PubSubInfoModelFragment extends ManagedAddressSpaceFragmentWithLifec
         NodeIds.DataSetMetaDataType,
         ValueRanks.Scalar,
         new Variant(metaData));
+  }
 
-    PublishedVariableDataType[] publishedData =
-        dataSet.getDataSetSource() instanceof PublishedDataItemsDataType items
-            ? orEmpty(items.getPublishedData(), PublishedVariableDataType[]::new)
-            : new PublishedVariableDataType[0];
-
-    addPropertyNode(
-        node,
-        "PublishedData",
-        NodeIds.PublishedVariableDataType,
-        ValueRanks.OneDimension,
-        new Variant(publishedData));
-
+  /** Add the shared DataSetClassId property node, but only for a non-zero Guid. */
+  private void addDataSetClassId(UaNode node, @Nullable DataSetMetaDataType metaData) {
     UUID dataSetClassId = metaData != null ? metaData.getDataSetClassId() : null;
     if (dataSetClassId != null
         && (dataSetClassId.getMostSignificantBits() != 0L

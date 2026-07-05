@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.pubsub.config;
 
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,14 +34,20 @@ import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryEncoder;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.FilterOperator;
+import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilter;
+import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilterElement;
+import org.eclipse.milo.opcua.stack.core.types.structured.LiteralOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.NetworkAddressUrlDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfiguration2DataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfigurationDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConnectionDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.UABinaryFileDataType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -58,6 +65,8 @@ class PubSubConfigFilesTest {
 
   private static final UUID FIELD_TEMP_ID = new UUID(0xA1L, 1L);
   private static final UUID FIELD_COUNT_ID = new UUID(0xA1L, 2L);
+  private static final UUID FIELD_EVT_SEVERITY_ID = new UUID(0xA3L, 1L);
+  private static final UUID FIELD_EVT_MESSAGE_ID = new UUID(0xA3L, 2L);
   private static final UUID MD_F1_ID = new UUID(0xB1L, 1L);
 
   private static EncodingContext contextWith(String... uris) {
@@ -66,6 +75,49 @@ class PubSubConfigFilesTest {
       context.getNamespaceTable().add(uri);
     }
     return context;
+  }
+
+  private static ExtensionObject encode(UaStructuredType struct) {
+    return ExtensionObject.encode(new DefaultEncodingContext(), struct);
+  }
+
+  private static SimpleAttributeOperand baseEventOperand(String browseName) {
+    return new SimpleAttributeOperand(
+        NodeIds.BaseEventType,
+        new QualifiedName[] {new QualifiedName(0, browseName)},
+        AttributeId.Value.uid(),
+        null);
+  }
+
+  private static PublishedDataSetConfig publishedEventsDataSet() {
+    return PublishedDataSetConfig.builder("pds-events")
+        .source(
+            PublishedEventsConfig.builder(ExpandedNodeId.of(URI_1, "Events.Notifier"))
+                .field(
+                    EventFieldDefinition.builder("severity")
+                        .selectedField(baseEventOperand("Severity"))
+                        .dataType(NodeIds.UInt16)
+                        .dataSetFieldId(FIELD_EVT_SEVERITY_ID)
+                        .promoted(true)
+                        .build())
+                .field(
+                    EventFieldDefinition.builder("message")
+                        .selectedField(baseEventOperand("Message"))
+                        .dataType(NodeIds.LocalizedText)
+                        .dataSetFieldId(FIELD_EVT_MESSAGE_ID)
+                        .build())
+                .filter(
+                    new ContentFilter(
+                        new ContentFilterElement[] {
+                          new ContentFilterElement(
+                              FilterOperator.OfType,
+                              new ExtensionObject[] {
+                                encode(new LiteralOperand(Variant.ofNodeId(NodeIds.BaseEventType)))
+                              })
+                        }))
+                .build())
+        .configurationVersion(uint(4), uint(13))
+        .build();
   }
 
   /** A config whose field addresses span two non-zero namespaces (URI-based portability rows). */
@@ -98,6 +150,13 @@ class PubSubConfigFilesTest {
                 DataSetWriterConfig.builder("dsw-1")
                     .dataSet(new PublishedDataSetRef("pds-1"))
                     .dataSetWriterId(ushort(11))
+                    .build())
+            .dataSetWriter(
+                DataSetWriterConfig.builder("dsw-events")
+                    .dataSet(new PublishedDataSetRef("pds-events"))
+                    .dataSetWriterId(ushort(12))
+                    .keyFrameCount(uint(0))
+                    .eventQueueCapacity(500)
                     .build())
             .build();
 
@@ -135,6 +194,7 @@ class PubSubConfigFilesTest {
                 .readerGroup(rg)
                 .build())
         .publishedDataSet(pds)
+        .publishedDataSet(publishedEventsDataSet())
         .securityGroup(SecurityGroupConfig.builder("sg-1").securityGroupId("SG-001").build())
         .property(new QualifiedName(1, "cfgProp"), Variant.ofString("cfgVal"))
         .build();

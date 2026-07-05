@@ -55,6 +55,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.sdk.client.DiscoveryClient;
@@ -72,6 +75,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetReaderConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetReaderMessageSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetWriterConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetWriterMessageSettings;
+import org.eclipse.milo.opcua.sdk.pubsub.config.EventFieldDefinition;
 import org.eclipse.milo.opcua.sdk.pubsub.config.FieldDefinition;
 import org.eclipse.milo.opcua.sdk.pubsub.config.JsonDataSetReaderSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.config.JsonDataSetWriterSettings;
@@ -82,6 +86,8 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.MqttConnectionConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConnectionConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetRef;
+import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedEventsConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherStatusMode;
 import org.eclipse.milo.opcua.sdk.pubsub.config.ReaderGroupConfig;
@@ -100,6 +106,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.security.SecurityKeySet;
 import org.eclipse.milo.opcua.sdk.pubsub.security.StaticSecurityKeyProvider;
 import org.eclipse.milo.opcua.sdk.pubsub.sks.SksSecurityKeyProvider;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.BrokerTopics;
+import org.eclipse.milo.opcua.sdk.pubsub.uadp.DataSetMessageKind;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodeContext;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedDataSetMessage;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedField;
@@ -108,6 +115,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedNetworkMessage;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.ReceivedSecurity;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.SecurityContextResolver;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.UadpMessageMapping;
+import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
@@ -117,6 +125,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
@@ -127,6 +136,9 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.FieldMetaData;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonDataSetMessageContentMask;
+import org.eclipse.milo.opcua.stack.core.types.structured.JsonNetworkMessageContentMask;
+import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpDataSetMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpNetworkMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
@@ -173,13 +185,17 @@ import org.jspecify.annotations.Nullable;
  * publish and subscribe modes run a real {@link PubSubService}; the raw modes use a bare socket or
  * MQTT client and do no PubSub processing, so they still work against a misconfigured or unknown
  * peer. The publishers all emit the same built-in "MiloInterop" dataset: Ramp (Double sawtooth),
- * Counter (Int32), Message (String), and Toggle (Boolean).
+ * Counter (Int32), Message (String), and Toggle (Boolean). With {@code --events} the {@code
+ * publish} and {@code mqtt-publish} modes instead emit the "MiloInteropEvents" event dataset — the
+ * standard BaseEventType fields (EventId, EventType, SourceName, Time, Message, Severity) — pushing
+ * one synthetic event per interval as an EVENT DataSetMessage.
  *
  * <p>UDP/UADP modes take {@code <address> <port>} (multicast if the address is a multicast IP, else
  * unicast):
  *
  * <ul>
- *   <li>{@code publish} — publishes "MiloInterop" with interop-friendly header masks.
+ *   <li>{@code publish} — publishes "MiloInterop" with interop-friendly header masks, or, with
+ *       {@code --events}, the "MiloInteropEvents" event dataset.
  *   <li>{@code subscribe} — a DataSetReader with wildcard filters and {@link
  *       MetadataPolicy#ACCEPT_DISCOVERED}, printing each received DataSet, metadata announcement,
  *       and state change, plus a periodic diagnostics dump.
@@ -205,9 +221,9 @@ import org.jspecify.annotations.Nullable;
  * TLS):
  *
  * <ul>
- *   <li>{@code mqtt-publish} — publishes "MiloInterop" with the "json" (default) or "uadp" mapping;
- *       topics default to the Part 14 §7.3.4.7 standardized tree (printed at startup) and metadata
- *       is published retained.
+ *   <li>{@code mqtt-publish} — publishes "MiloInterop" with the "json" (default) or "uadp" mapping,
+ *       or the "MiloInteropEvents" event dataset with {@code --events}; topics default to the Part
+ *       14 §7.3.4.7 standardized tree (printed at startup) and metadata is published retained.
  *   <li>{@code mqtt-subscribe} — a DataSetReader on broker topics. The data topic is required (an
  *       MQTT reader cannot derive the publisher's topic names); field names come from {@code
  *       --field} metadata or from an optional metadata topic. JSON subscriptions also print remote
@@ -274,6 +290,27 @@ import org.jspecify.annotations.Nullable;
  * <pre>{@code
  * mqtt-publish mqtt://localhost:1883 --status cyclic
  * }</pre>
+ *
+ * <p>Publish events instead of data with {@code --events}. Over MQTT/JSON the retained event
+ * metadata names the fields, so the subscriber needs only the derived data and metadata topics; the
+ * received DataSets are logged with {@code kind=EVENT}:
+ *
+ * <pre>{@code
+ * mqtt-publish mqtt://localhost:1883 --events
+ *
+ * mqtt-subscribe mqtt://localhost:1883 \
+ *     --topic opcua/json/data/62541/MiloInteropEvents \
+ *     --metadata-topic opcua/json/metadata/62541/MiloInteropEvents/writer
+ * }</pre>
+ *
+ * <p>Over UDP/UADP the raw mode captures the event NetworkMessages — it prints {@code kind=EVENT}
+ * per DataSetMessage and saves each packet under /tmp/pubsub-capture as a golden fixture:
+ *
+ * <pre>{@code
+ * publish 239.0.0.1 4840 --events
+ *
+ * raw 239.0.0.1 4840
+ * }</pre>
  */
 public final class PubSubInteropTool {
 
@@ -329,13 +366,16 @@ public final class PubSubInteropTool {
 
         publish <address> <port> [--interface <name>] [--publisher-id <type:value>]
                 [--writer-group-id <n>] [--data-set-writer-id <n>]
-                [--interval-ms <n>] [--datavalue] [secured-UDP options]
+                [--interval-ms <n>] [--datavalue] [--events] [secured-UDP options]
             Publish the "MiloInterop" dataset: Ramp (Double sawtooth 0..100),
             Counter (Int32), Message (String "milo-<counter>"), Toggle (Boolean).
             Defaults: publisher-id uint16:62541, writer-group-id 100,
             data-set-writer-id 1, interval-ms 100. Fields are Variant-encoded by
             default; --datavalue switches to DataValue with StatusCode and
-            SourceTimestamp.
+            SourceTimestamp. --events instead publishes the "MiloInteropEvents"
+            event dataset (BaseEventType fields EventId, EventType, SourceName,
+            Time, Message, Severity), pushing one synthetic event per interval as
+            an EVENT DataSetMessage; --datavalue does not apply to events.
 
         <address> is treated as multicast if it is a multicast IP, unicast otherwise.
 
@@ -391,6 +431,7 @@ public final class PubSubInteropTool {
                      [--group <name>] [--topic <dataTopic>] [--metadata-topic <t>]
                      [--metadata-interval <ms>] [--qos 0|1|2] [--interval <ms>]
                      [--topic-prefix <prefix>] [--status auto|disabled|will|cyclic]
+                     [--events]
             Publish the "MiloInterop" dataset (as above, Variant-encoded) through an
             MQTT broker. Defaults: mapping json, publisher-id uint16:62541, group
             "MiloInterop", writer-group-id 100, data-set-writer-id 1, interval 1000,
@@ -405,7 +446,10 @@ public final class PubSubInteropTool {
             stream can be represented by one Will, or cyclic Operational reports with
             NextReportTime otherwise. Use --status disabled to suppress status
             publishing, --status will to require Will, or --status cyclic to force
-            cyclic status.
+            cyclic status. --events instead publishes the "MiloInteropEvents" event
+            dataset (BaseEventType fields; one synthetic ua-event per interval); with
+            the json mapping the DataSetMessageHeader and MessageType members
+            required to make ua-event wire-expressible are added automatically.
 
         mqtt-subscribe <brokerUri> --topic <dataTopic> [--mapping json|uadp]
                        [--metadata-topic <t>] [--field <name>:<type>]...
@@ -453,6 +497,8 @@ public final class PubSubInteropTool {
       examples:
         subscribe 224.0.2.14 4840
         publish 127.0.0.1 4840 --interval-ms 500 --datavalue
+        publish 239.0.0.1 4840 --events
+        raw 239.0.0.1 4840
         publish 239.0.0.1 4840 --security-mode sign-encrypt --static-keys-hex <52B|68B hex>
         subscribe 239.0.0.1 4840 --security-mode sign --static-keys /path/to/keydir
         raw 239.0.0.1 4840 --static-keys /path/to/keydir
@@ -462,8 +508,11 @@ public final class PubSubInteropTool {
         mqtt-publish mqtt://localhost:1883 --status cyclic
         mqtt-status mqtt://localhost:1883 --publisher-id uint16:62541
         mqtt-publish mqtt://localhost:1883 --mapping uadp --qos 1
+        mqtt-publish mqtt://localhost:1883 --events
         mqtt-subscribe mqtt://localhost:1883 --topic opcua/json/data/62541/MiloInterop
             --metadata-topic opcua/json/metadata/62541/MiloInterop/writer
+        mqtt-subscribe mqtt://localhost:1883 --topic opcua/json/data/62541/MiloInteropEvents
+            --metadata-topic opcua/json/metadata/62541/MiloInteropEvents/writer
         mqtt-subscribe mqtt://localhost:1883 --topic opcua/uadp/data/62541/MiloInterop
             --mapping uadp --field Ramp:double --field Counter:int32
         mqtt-raw mqtt://localhost:1883 --topic "opcua/#"\
@@ -515,6 +564,7 @@ public final class PubSubInteropTool {
                       "--data-set-writer-id",
                       "--interval-ms",
                       "--datavalue",
+                      "--events",
                       "--security-mode",
                       "--security-policy",
                       "--static-keys",
@@ -537,6 +587,7 @@ public final class PubSubInteropTool {
                       "--interval",
                       "--topic-prefix",
                       "--status",
+                      "--events",
                       "--username",
                       "--password",
                       "--client-id",
@@ -899,8 +950,12 @@ public final class PubSubInteropTool {
         args.publisherId != null ? args.publisherId : PublisherId.uint16(ushort(62541));
     int writerGroupId = args.writerGroupId != 0 ? args.writerGroupId : 100;
     int dataSetWriterId = args.dataSetWriterId != 0 ? args.dataSetWriterId : 1;
+    boolean events = args.events;
 
-    PublishedDataSetConfig dataSet = miloInteropDataSet();
+    // --events emits the "MiloInteropEvents" event dataset (pushed via publishEvent) instead of the
+    // pull-model "MiloInterop" data dataset; the writer group and UADP masks are shared (an EVENT
+    // DataSetMessage carries its type in the UADP DataSetFlags2, so no extra mask is needed).
+    PublishedDataSetConfig dataSet = events ? miloInteropEventsDataSet() : miloInteropDataSet();
 
     // Interop-friendly explicit masks: full group header plus payload header on the
     // NetworkMessage; version, sequence number, timestamp, and status on the DataSetMessage.
@@ -975,8 +1030,11 @@ public final class PubSubInteropTool {
     var counter = new AtomicLong();
     boolean asDataValue = args.dataValue;
 
-    PubSubBindings.Builder bindings =
-        PubSubBindings.builder().source(dataSet.ref(), miloInteropSource(counter, asDataValue));
+    // Event datasets have no pull source: field values are pushed via publishEvent (below).
+    PubSubBindings.Builder bindings = PubSubBindings.builder();
+    if (!events) {
+      bindings.source(dataSet.ref(), miloInteropSource(counter, asDataValue));
+    }
     if (security != null) {
       bindings.securityKeys(SECURITY_GROUP_REF, security.provider());
     }
@@ -990,18 +1048,26 @@ public final class PubSubInteropTool {
     closeOnShutdown(service);
 
     log(
-        "publishing \"MiloInterop\" to %s: publisherId=%s writerGroupId=%d dataSetWriterId=%d"
-            + " intervalMs=%d fieldEncoding=%s",
+        "publishing \"%s\" to %s: publisherId=%s writerGroupId=%d dataSetWriterId=%d"
+            + " intervalMs=%d %s",
+        events ? "MiloInteropEvents" : "MiloInterop",
         address,
         formatPublisherId(publisherId),
         writerGroupId,
         dataSetWriterId,
         args.intervalMs,
-        asDataValue ? "DataValue (StatusCode|SourceTimestamp)" : "Variant");
+        events
+            ? "mode=events (one synthetic BaseEventType event per interval)"
+            : "fieldEncoding="
+                + (asDataValue ? "DataValue (StatusCode|SourceTimestamp)" : "Variant"));
     logSecurity(security);
     logSks(sks);
     service.startup().get();
     log("service started; Ctrl-C to exit");
+
+    if (events) {
+      startEventPublishing(service, dataSet.ref(), args.intervalMs, counter);
+    }
 
     while (true) {
       Thread.sleep(5_000);
@@ -1039,19 +1105,47 @@ public final class PubSubInteropTool {
     int dataSetWriterId = args.dataSetWriterId != 0 ? args.dataSetWriterId : 1;
     PublisherStatusMode statusMode =
         args.statusMode != null ? args.statusMode : PublisherStatusMode.AUTO;
+    boolean events = args.events;
 
-    PublishedDataSetConfig dataSet = miloInteropDataSet();
+    // --events emits the "MiloInteropEvents" event dataset (pushed via publishEvent) instead of the
+    // pull-model "MiloInterop" data dataset.
+    PublishedDataSetConfig dataSet = events ? miloInteropEventsDataSet() : miloInteropDataSet();
 
     // Mapping-default content masks: JSON's empty masks resolve to the recommended ua-data
-    // header/Verbose defaults, UADP's to the Annex A UADP-Dynamic profile.
-    WriterGroupMessageSettings groupSettings =
-        args.mapping.equals("uadp")
-            ? UadpWriterGroupSettings.builder().build()
-            : JsonWriterGroupSettings.builder().build();
-    DataSetWriterMessageSettings writerSettings =
-        args.mapping.equals("uadp")
-            ? UadpDataSetWriterSettings.builder().build()
-            : JsonDataSetWriterSettings.builder().build();
+    // header/Verbose defaults, UADP's to the Annex A UADP-Dynamic profile. For --events over JSON
+    // the empty masks are not enough: a ua-event payload is only wire-expressible when the
+    // NetworkMessage carries the DataSetMessageHeader and the DataSetMessage carries the
+    // MessageType
+    // member (Part 14 Annex A.3.3.4), so explicit event masks are used; UADP carries the EVENT type
+    // in the DataSetFlags2 and needs no extra mask.
+    WriterGroupMessageSettings groupSettings;
+    DataSetWriterMessageSettings writerSettings;
+    if (args.mapping.equals("uadp")) {
+      groupSettings = UadpWriterGroupSettings.builder().build();
+      writerSettings = UadpDataSetWriterSettings.builder().build();
+    } else if (events) {
+      groupSettings =
+          JsonWriterGroupSettings.builder()
+              .networkMessageContentMask(
+                  JsonNetworkMessageContentMask.of(
+                      JsonNetworkMessageContentMask.Field.NetworkMessageHeader,
+                      JsonNetworkMessageContentMask.Field.DataSetMessageHeader,
+                      JsonNetworkMessageContentMask.Field.PublisherId))
+              .build();
+      writerSettings =
+          JsonDataSetWriterSettings.builder()
+              .dataSetMessageContentMask(
+                  JsonDataSetMessageContentMask.of(
+                      JsonDataSetMessageContentMask.Field.DataSetWriterId,
+                      JsonDataSetMessageContentMask.Field.SequenceNumber,
+                      JsonDataSetMessageContentMask.Field.MetaDataVersion,
+                      JsonDataSetMessageContentMask.Field.MessageType,
+                      JsonDataSetMessageContentMask.Field.FieldEncoding2))
+              .build();
+    } else {
+      groupSettings = JsonWriterGroupSettings.builder().build();
+      writerSettings = JsonDataSetWriterSettings.builder().build();
+    }
 
     // Unset queue names stay null so the engine derives the §7.3.4.7 standardized topic tree;
     // metaDataUpdateTime 0 means metadata is published at activation and on change only.
@@ -1097,13 +1191,13 @@ public final class PubSubInteropTool {
 
     var counter = new AtomicLong();
 
-    PubSubService service =
-        PubSubService.create(
-            config,
-            PubSubBindings.builder()
-                .source(dataSet.ref(), miloInteropSource(counter, false))
-                .build(),
-            mqttServiceConfig());
+    // Event datasets have no pull source: field values are pushed via publishEvent (below).
+    PubSubBindings.Builder bindings = PubSubBindings.builder();
+    if (!events) {
+      bindings.source(dataSet.ref(), miloInteropSource(counter, false));
+    }
+
+    PubSubService service = PubSubService.create(config, bindings.build(), mqttServiceConfig());
 
     addStateAndDiagnosticsLogging(service);
     closeOnShutdown(service);
@@ -1118,8 +1212,9 @@ public final class PubSubInteropTool {
             : null;
 
     log(
-        "publishing \"MiloInterop\" over MQTT/%s to %s: publisherId=%s writerGroupId=%d"
+        "publishing \"%s\" over MQTT/%s to %s: publisherId=%s writerGroupId=%d"
             + " dataSetWriterId=%d intervalMs=%d qos=%d mqttVersion=%s",
+        events ? "MiloInteropEvents" : "MiloInterop",
         args.mapping,
         args.brokerUri,
         formatPublisherId(publisherId),
@@ -1153,6 +1248,10 @@ public final class PubSubInteropTool {
 
     service.startup().get();
     log("service started; Ctrl-C to exit");
+
+    if (events) {
+      startEventPublishing(service, dataSet.ref(), args.intervalMs, counter);
+    }
 
     while (true) {
       Thread.sleep(5_000);
@@ -1780,6 +1879,83 @@ public final class PubSubInteropTool {
     };
   }
 
+  /**
+   * The "MiloInteropEvents" event dataset selecting the six standard BaseEventType fields, with
+   * stable dataSetFieldIds so captures stay reproducible. The event notifier is the Server object
+   * in canonical (namespace-URI) ExpandedNodeId form; the where-clause filter is empty (matches
+   * every event).
+   */
+  private static PublishedDataSetConfig miloInteropEventsDataSet() {
+    PublishedEventsConfig events =
+        PublishedEventsConfig.builder(NodeIds.Server.expanded())
+            .field(eventField("EventId", NodeIds.ByteString, 1L))
+            .field(eventField("EventType", NodeIds.NodeId, 2L))
+            .field(eventField("SourceName", NodeIds.String, 3L))
+            .field(eventField("Time", NodeIds.DateTime, 4L))
+            .field(eventField("Message", NodeIds.LocalizedText, 5L))
+            .field(eventField("Severity", NodeIds.UInt16, 6L))
+            .build();
+    return PublishedDataSetConfig.builder("MiloInteropEvents").source(events).build();
+  }
+
+  /** A BaseEventType event field: a Value operand on the single-element browse path. */
+  private static EventFieldDefinition eventField(String name, NodeId dataType, long fieldId) {
+    return EventFieldDefinition.builder(name)
+        .dataType(dataType)
+        .dataSetFieldId(new UUID(0L, fieldId))
+        .selectedField(
+            new SimpleAttributeOperand(
+                NodeIds.BaseEventType,
+                new QualifiedName[] {new QualifiedName(0, name)},
+                AttributeId.Value.uid(),
+                null))
+        .build();
+  }
+
+  /**
+   * Push one synthetic "MiloInteropEvents" event per {@code intervalMs} to every event-source
+   * writer referencing {@code ref} via {@link PubSubService#publishEvent}, on a daemon scheduler
+   * that runs until the JVM exits.
+   */
+  private static void startEventPublishing(
+      PubSubService service, PublishedDataSetRef ref, long intervalMs, AtomicLong counter) {
+    ScheduledExecutorService scheduler =
+        Executors.newSingleThreadScheduledExecutor(
+            runnable -> {
+              Thread thread = new Thread(runnable, "milo-interop-events");
+              thread.setDaemon(true);
+              return thread;
+            });
+    scheduler.scheduleAtFixedRate(
+        () -> {
+          try {
+            service.publishEvent(ref, miloInteropEventFields(counter.getAndIncrement()));
+          } catch (RuntimeException e) {
+            log("publishEvent failed: %s", e);
+          }
+        },
+        0,
+        intervalMs,
+        TimeUnit.MILLISECONDS);
+  }
+
+  /**
+   * One synthetic event's field values, in the "MiloInteropEvents" wire order: a fresh random
+   * EventId, the BaseEventType EventType, a constant SourceName, the current Time, a varying
+   * Message, and a Severity that increments each event.
+   */
+  private static List<Variant> miloInteropEventFields(long n) {
+    byte[] eventId = new byte[16];
+    ThreadLocalRandom.current().nextBytes(eventId);
+    return List.of(
+        Variant.ofByteString(ByteString.of(eventId)),
+        Variant.ofNodeId(NodeIds.BaseEventType),
+        Variant.ofString("MiloInterop"),
+        Variant.ofDateTime(DateTime.now()),
+        Variant.ofLocalizedText(LocalizedText.english("milo-event-" + n)),
+        Variant.ofUInt16(ushort((int) (n % 1000) + 1)));
+  }
+
   private static void addDataSetLogging(PubSubService service) {
     // nmSeq/dsmSeq are the Part 14 7.2.3 sequence numbers as present on the wire: nmSeq comes
     // from the UADP GroupHeader (absent for JSON and when the GroupHeader is off), dsmSeq from
@@ -1787,8 +1963,9 @@ public final class PubSubInteropTool {
     service.addDataSetListener(
         event -> {
           log(
-              "DATA publisherId=%s writerGroupId=%s dataSetWriterId=%s dataSet=%s fields=%d"
+              "DATA kind=%s publisherId=%s writerGroupId=%s dataSetWriterId=%s dataSet=%s fields=%d"
                   + " nmSeq=%s dsmSeq=%s",
+              event.kind() == DataSetMessageKind.EVENT ? "EVENT" : "DATA",
               formatPublisherId(event.publisherId()),
               event.writerGroupId(),
               event.dataSetWriterId(),
@@ -1965,6 +2142,11 @@ public final class PubSubInteropTool {
         i += 1;
         continue;
       }
+      if (option.equals("--events")) {
+        parsed.events = true;
+        i += 1;
+        continue;
+      }
       if (i + 1 >= args.length) {
         throw usageError("missing value for " + option);
       }
@@ -2005,6 +2187,11 @@ public final class PubSubInteropTool {
       String option = args[i];
       if (!allowedOptions.contains(option)) {
         throw usageError("unknown or inapplicable option for mode '" + args[0] + "': " + option);
+      }
+      if (option.equals("--events")) {
+        parsed.events = true;
+        i += 1;
+        continue;
       }
       if (i + 1 >= args.length) {
         throw usageError("missing value for " + option);
@@ -2190,6 +2377,7 @@ public final class PubSubInteropTool {
     int dataSetWriterId;
     int intervalMs = 100;
     boolean dataValue;
+    boolean events; // publish, mqtt-publish: emit the "MiloInteropEvents" event dataset instead
     int receiveTimeoutMs =
         0; // subscribe modes: 0 = MessageReceiveTimeout disabled (engine default)
 

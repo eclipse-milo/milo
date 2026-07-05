@@ -50,6 +50,7 @@ import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
 import org.jspecify.annotations.Nullable;
@@ -443,6 +444,11 @@ class ManagedPubSubServiceTest {
     @Override
     public void bindSource(PublishedDataSetRef dataSet, PublishedDataSetSource source) {
       calls.add("bindSource");
+    }
+
+    @Override
+    public void publishEvent(PublishedDataSetRef dataSet, List<Variant> fields) {
+      calls.add("publishEvent");
     }
 
     @Override

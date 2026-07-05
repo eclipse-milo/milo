@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.sdk.pubsub.ComponentType;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubDiagnosticsEvent;
@@ -40,6 +41,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.transport.BrokerTopics;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.MessageAddress;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.PublisherChannel;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DataSetMessageDraft;
+import org.eclipse.milo.opcua.sdk.pubsub.uadp.DataSetMessageKind;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.EncodeContext;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.EncodedNetworkMessage;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.MessageMappingProvider;
@@ -116,6 +118,30 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
   private final @Nullable SecurityGroupRef securityGroupRef;
 
   /**
+   * Whether this group is event-triggered (Part 14 PublishingInterval 0): it runs no fixed-rate
+   * publish cycle. Publishes are driven by {@link #triggerEventPublish()} (one coalesced cycle per
+   * burst of pushed events) and by {@link #onEnterOperational()}; an optional keepAliveTime timer
+   * runs the same cycle to bound silence. Derived from immutable config, so it is stable for the
+   * runtime's lifetime.
+   */
+  private final boolean eventTriggered;
+
+  /**
+   * Coalesces scheduled trigger callbacks of an {@link #eventTriggered} group: CAS false→true
+   * submits one lightweight task to the scheduler. The task only hands publish work to the
+   * transport executor, so the scheduler never does encode/send work. Any thread.
+   */
+  private final AtomicBoolean triggerPending = new AtomicBoolean(false);
+
+  /**
+   * Records that an event-triggered publish was requested while one is already queued or running on
+   * the transport executor. The running publish drains all events already queued when it reaches
+   * each writer; this flag asks for one follow-up cycle for events that arrived after that drain
+   * point.
+   */
+  private final AtomicBoolean eventPublishRerun = new AtomicBoolean(false);
+
+  /**
    * Whether the current run of key-unavailable cycle skips has emitted its edge-triggered
    * diagnostics event: the first skip after a successful cycle records an error event, further
    * skips tick {@code encryptionErrors} quietly. Effectively publish-thread confined; the reset in
@@ -163,6 +189,7 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
     this.config = config;
     this.keepAliveTime = config.getKeepAliveTime();
     this.mappingName = PubSubServiceImpl.mappingNameOf(config.getMessageSettings());
+    this.eventTriggered = config.getPublishingInterval().isZero();
 
     MessageSecurityConfig security = config.getMessageSecurity();
     this.secured = PubSubServiceImpl.isSecured(security);
@@ -213,10 +240,10 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
 
   /**
    * Activate the group: re-run the activation-time subset of the startup validation (message
-   * security, unsupported UADP emission features, mapping-provider resolution) and schedule the
-   * publish task. Validation only ever sees enabled components, so a group configured disabled at
-   * startup and enabled later is first checked here; a throw is mapped by {@link
-   * PubSubStateMachine} to {@code PubSubState.Error} with the exception's status code.
+   * security, unsupported UADP emission features, event-writer expressibility, mapping-provider
+   * resolution) and schedule the publish task. Validation only ever sees enabled components, so a
+   * group configured disabled at startup and enabled later is first checked here; a throw is mapped
+   * by {@link PubSubStateMachine} to {@code PubSubState.Error} with the exception's status code.
    *
    * <p>A secured group additionally attaches to the {@link SecurityKeyManager}, which initiates the
    * (asynchronous — never awaited under the engine lock) first key fetch and completes this group's
@@ -226,6 +253,7 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
   void activate() throws UaException {
     checkMessageSecurity();
     checkUnsupportedUadpFeatures();
+    checkEventWriterConfig();
 
     MessageMappingProvider provider = service.resolveMappingProvider(mappingName);
     if (provider == null) {
@@ -277,20 +305,101 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
           w.requestFrameStateReset();
         });
 
-    long intervalNanos = config.getPublishingInterval().toNanos();
     long generation = ++this.generation;
     submittedPublishGeneration.set(NO_SUBMITTED_PUBLISH);
-    publishTask =
+    eventPublishRerun.set(false);
+    if (eventTriggered) {
+      // Part 14 PublishingInterval 0: no fixed-rate cycle (scheduleAtFixedRate cannot express a
+      // zero period). Publishes are driven by triggerEventPublish()/onEnterOperational(). An
+      // optional keepAliveTime timer submits the same publish cycle to the transport executor so
+      // the
+      // group is not silent between events — draining keep-alives and any events queued during a
+      // keyless secured skip.
+      if (keepAliveTime != null) {
+        long keepAliveNanos = keepAliveTime.toNanos();
+        publishTask =
+            service
+                .getScheduledExecutor()
+                .scheduleAtFixedRate(
+                    () -> submitEventPublish(generation),
+                    keepAliveNanos,
+                    keepAliveNanos,
+                    TimeUnit.NANOSECONDS);
+      }
+    } else {
+      long intervalNanos = config.getPublishingInterval().toNanos();
+      publishTask =
+          service
+              .getScheduledExecutor()
+              .scheduleAtFixedRate(
+                  () -> submitPublish(generation), 0, intervalNanos, TimeUnit.NANOSECONDS);
+    }
+  }
+
+  /**
+   * Whether this group is event-triggered (Part 14 PublishingInterval 0). Data-items writers are
+   * rejected from such groups; {@link DataSetWriterRuntime#activate} enforces it per writer.
+   */
+  boolean eventTriggered() {
+    return eventTriggered;
+  }
+
+  /**
+   * Request one publish cycle after events were pushed to this group's event writers. A no-op
+   * unless the group is {@link #eventTriggered}; positive-interval groups drain queued events on
+   * their next fixed-rate tick, so triggers there are unnecessary.
+   *
+   * <p>Coalesces via {@link #triggerPending} and {@link #eventPublishRerun}: at most one
+   * lightweight scheduler callback and one transport-executor follow-up are pending per burst. The
+   * activation generation is read INSIDE the submitted task, not captured at trigger time — a
+   * capture would strand events across a deactivate/reactivate (the captured generation would be
+   * stale and the cycle would bail). Correctness instead rests on the {@code state() ==
+   * Operational} gate under {@link #publishLock}: {@link PubSubStateMachine} sets a leaving state
+   * BEFORE calling {@code deactivate()}, and sequence counters are only mutated under the publish
+   * lock, so a cycle that races deactivation either sees a non-Operational state and returns, or
+   * completes cleanly before the counters are snapshotted. {@link RejectedExecutionException} (the
+   * scheduler shutting down during teardown) is swallowed after resetting the latch.
+   */
+  void triggerEventPublish() {
+    if (!eventTriggered) {
+      return;
+    }
+    if (triggerPending.compareAndSet(false, true)) {
+      try {
         service
             .getScheduledExecutor()
-            .scheduleAtFixedRate(
-                () -> submitPublish(generation), 0, intervalNanos, TimeUnit.NANOSECONDS);
+            .execute(
+                () -> {
+                  triggerPending.set(false);
+                  submitEventPublish(this.generation);
+                });
+      } catch (RejectedExecutionException e) {
+        // teardown: the scheduler is shutting down. Reset so a later trigger can re-submit.
+        triggerPending.set(false);
+      }
+    }
+  }
+
+  /**
+   * On entering {@code Operational}, an event-triggered group submits one coalesced publish. This
+   * fires on activation completion (including a secured group's deferred key-fetch completion) and
+   * on {@code Error}→{@code Operational} recovery ({@link PubSubStateMachine} calls this hook from
+   * both {@code apply(..., Operational, ...)} paths), draining events queued while the group was
+   * PreOperational or preserved across a restart, and closing the window where a trigger fired
+   * before the group was Operational (and its cycle bailed at the state gate).
+   */
+  @Override
+  void onEnterOperational() {
+    if (eventTriggered) {
+      triggerEventPublish();
+    }
   }
 
   @Override
   void deactivate() {
     generation++;
     submittedPublishGeneration.set(NO_SUBMITTED_PUBLISH);
+    eventPublishRerun.set(false);
 
     ScheduledFuture<?> publishTask = this.publishTask;
     this.publishTask = null;
@@ -387,6 +496,32 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
     }
   }
 
+  /**
+   * Re-check the event-writer expressibility rules ({@link
+   * PubSubServiceImpl#eventWriterConfigError}) at activation, covering writer groups disabled
+   * during startup/reconfigure validation and enabled later.
+   */
+  private void checkEventWriterConfig() throws UaException {
+    for (DataSetWriterRuntime writer : writers) {
+      if (!writer.isEnabled() || !writer.eventMode()) {
+        continue;
+      }
+      String error = service.eventWriterConfigError(config, writer.config(), path());
+      if (error != null) {
+        var e = new UaException(StatusCodes.Bad_ConfigurationError, error);
+        service
+            .getDiagnostics()
+            .error(
+                path(),
+                e.getStatusCode(),
+                e.getMessage(),
+                e,
+                PubSubDiagnosticsEvent.Kind.OTHER_ERROR);
+        throw e;
+      }
+    }
+  }
+
   private UInteger resolveGroupVersion() {
     if (config.getMessageSettings() instanceof UadpWriterGroupSettings settings
         && settings.getGroupVersion().longValue() != 0L) {
@@ -419,6 +554,38 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
     } catch (RejectedExecutionException e) {
       submittedPublishGeneration.compareAndSet(generation, NO_SUBMITTED_PUBLISH);
       LOGGER.debug("Publish cycle of '{}' rejected; executor is shut down", path(), e);
+    }
+  }
+
+  private void submitEventPublish(long generation) {
+    if (generation != this.generation) {
+      return;
+    }
+
+    if (!submittedPublishGeneration.compareAndSet(NO_SUBMITTED_PUBLISH, generation)) {
+      eventPublishRerun.set(true);
+      return;
+    }
+
+    try {
+      service
+          .getTransportExecutor()
+          .execute(
+              () -> {
+                try {
+                  publishSafely(generation);
+                } finally {
+                  submittedPublishGeneration.compareAndSet(generation, NO_SUBMITTED_PUBLISH);
+                  if (eventPublishRerun.getAndSet(false) && generation == this.generation) {
+                    submitEventPublish(generation);
+                  }
+                }
+              });
+    } catch (RejectedExecutionException e) {
+      submittedPublishGeneration.compareAndSet(generation, NO_SUBMITTED_PUBLISH);
+      eventPublishRerun.set(false);
+      LOGGER.debug(
+          "Event-triggered publish cycle of '{}' rejected; executor is shut down", path(), e);
     }
   }
 
@@ -486,34 +653,57 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
     partitions.add(sharedPartition);
 
     for (DataSetWriterRuntime writer : writers) {
-      DataSetMessageDraft draft = null;
-      if (writer.state() == PubSubState.Operational) {
+      boolean operational = writer.state() == PubSubState.Operational;
+
+      if (writer.eventMode()) {
+        // an operational event writer produces 0..N EVENT DataSetMessages this cycle, each in its
+        // OWN NetworkMessage (Part 14 §6.2.6.2 one DataSetMessage per event): a broker writer with
+        // a
+        // queue override publishes to its queue, everyone else to the group default. Events are
+        // drained AFTER the security gate above, so a keyless secured cycle leaves them queued.
+        List<DataSetMessageDraft> eventDrafts =
+            operational ? writer.createEventDrafts(now) : List.of();
+        if (eventTriggered && operational && writer.hasQueuedEvents()) {
+          // The writer drains a bounded number of events per cycle. If a single coalesced burst
+          // was larger than that budget, no later publishEvent call may arrive to trigger the
+          // remainder, so ask submitEventPublish() for one follow-up cycle after this publish
+          // exits.
+          eventPublishRerun.set(true);
+        }
+        for (DataSetMessageDraft eventDraft : eventDrafts) {
+          var partition =
+              new Partition(broker && hasQueueOverride(writer.config()) ? writer.config() : null);
+          partitions.add(partition);
+          partition.add(writer, eventDraft);
+        }
+        if (!eventDrafts.isEmpty()) {
+          continue;
+        }
+        // produced nothing this cycle: fall into the keep-alive branch like a suppressed data
+        // writer
+      } else if (operational) {
         // null = suppressed no-change delta cycle, nothing is sent (Part 14 §6.2.4.3); the
         // suppressed writer falls through to the keep-alive check like a non-operational one
-        draft = writer.createDataDraft(now);
+        DataSetMessageDraft draft = writer.createDataDraft(now);
+        if (draft != null) {
+          partitionFor(writer, broker, sharedPartition, partitions).add(writer, draft);
+          continue;
+        }
       }
-      if (draft == null
-          && writer.state() != PubSubState.Error
+
+      if (writer.state() != PubSubState.Error
           && keepAliveNanos != null
           && nowNanos - writer.lastSentNanos() >= keepAliveNanos) {
         // an Error writer emits no keep-alives: a keep-alive asserts the writer is still active
         // (§6.2.6.3), and emitting one would mask e.g. an activation failure from subscribers
-        draft = writer.createKeepAliveDraft(now);
+        DataSetMessageDraft draft = writer.createKeepAliveDraft(now);
+        partitionFor(writer, broker, sharedPartition, partitions).add(writer, draft);
       }
-      if (draft == null) {
-        continue;
-      }
-
-      Partition partition;
-      if (broker && hasQueueOverride(writer.config())) {
-        partition = new Partition(writer.config());
-        partitions.add(partition);
-      } else {
-        partition = sharedPartition;
-      }
-      partition.add(writer, draft);
     }
 
+    // number the NetworkMessages of this cycle sequentially (Part 14 §7.2.4.4.2): with per-event
+    // partitions a cycle emits several, so the hardcoded 1 no longer holds
+    int networkMessageNumber = 1;
     var notTransmitted = new LinkedHashSet<DataSetWriterRuntime>();
     for (Partition partition : partitions) {
       if (!partition.drafts.isEmpty()) {
@@ -527,7 +717,8 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
             broker,
             partition,
             security,
-            notTransmitted);
+            notTransmitted,
+            networkMessageNumber++);
       }
     }
 
@@ -542,8 +733,28 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
           keepAliveNanos,
           broker,
           security,
-          notTransmitted);
+          notTransmitted,
+          networkMessageNumber);
     }
+  }
+
+  /**
+   * The partition a data or keep-alive draft of {@code writer} joins: the writer's own
+   * queue-override partition on a broker connection (created and appended to {@code partitions}),
+   * or the shared partition otherwise. Event drafts do not use this — each takes its own partition.
+   */
+  private static Partition partitionFor(
+      DataSetWriterRuntime writer,
+      boolean broker,
+      Partition sharedPartition,
+      List<Partition> partitions) {
+
+    if (broker && hasQueueOverride(writer.config())) {
+      var partition = new Partition(writer.config());
+      partitions.add(partition);
+      return partition;
+    }
+    return sharedPartition;
   }
 
   /**
@@ -615,7 +826,8 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
       long keepAliveNanos,
       boolean broker,
       @Nullable MessageSecurityContext security,
-      Set<DataSetWriterRuntime> notTransmitted) {
+      Set<DataSetWriterRuntime> notTransmitted,
+      int firstNetworkMessageNumber) {
 
     var sharedPartition = new Partition(null);
     var partitions = new ArrayList<Partition>(1 + notTransmitted.size());
@@ -627,17 +839,11 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
         continue;
       }
       DataSetMessageDraft draft = writer.createKeepAliveDraft(now);
-
-      Partition partition;
-      if (broker && hasQueueOverride(writer.config())) {
-        partition = new Partition(writer.config());
-        partitions.add(partition);
-      } else {
-        partition = sharedPartition;
-      }
-      partition.add(writer, draft);
+      partitionFor(writer, broker, sharedPartition, partitions).add(writer, draft);
     }
 
+    // continue the cycle's NetworkMessage numbering where the data pass left off (§7.2.4.4.2)
+    int networkMessageNumber = firstNetworkMessageNumber;
     for (Partition partition : partitions) {
       if (!partition.drafts.isEmpty()) {
         // null: a keep-alive that is itself not transmitted gets no further recovery this
@@ -652,7 +858,8 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
             broker,
             partition,
             security,
-            null);
+            null,
+            networkMessageNumber++);
       }
     }
   }
@@ -690,7 +897,8 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
       boolean broker,
       Partition partition,
       @Nullable MessageSecurityContext security,
-      @Nullable Set<DataSetWriterRuntime> notTransmitted) {
+      @Nullable Set<DataSetWriterRuntime> notTransmitted,
+      int networkMessageNumber) {
 
     var encodeContext =
         EncodeContext.of(
@@ -698,7 +906,7 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
             publisherId,
             config,
             groupVersion,
-            ushort(1),
+            ushort(networkMessageNumber & 0xFFFF),
             nextNetworkMessageSequenceNumber(),
             networkMessageTimestamp(now),
             partition.drafts,
@@ -882,9 +1090,15 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
   /**
    * Invalidate the delta baselines of the partition writers whose data DataSetMessages were carried
    * by a NetworkMessage that was not transmitted, so their next data draft is a key frame (the
-   * §5.3.3 baseline is the last TRANSMITTED values). Keep-alive drafts are skipped: they carry no
-   * field values, so losing one leaves the baseline accurate (and the writer's {@code
+   * §5.3.3 baseline is the last TRANSMITTED values). Keep-alive drafts are skipped entirely: they
+   * carry no field values, so losing one leaves the baseline accurate (and the writer's {@code
    * lastSentNanos} not advancing already retries the keep-alive on the next cycle).
+   *
+   * <p>EVENT drafts have no delta baseline, so the {@code invalidateDeltaBaseline()} call is
+   * skipped for them too — but they ARE still added to {@code notTransmitted}, so the caller's
+   * keep-alive recovery pass remains reachable for an event writer whose only event NetworkMessage
+   * failed (unlike keep-alive drafts, which skip both). A dropped event is not requeued: the loss
+   * is wire-indistinguishable from network loss, which subscribers already tolerate (§7.2.3).
    *
    * @param attribution the {@link EncodedNetworkMessage#writers()} of the dropped message; empty
    *     means unattributed (e.g. a custom mapping), conservatively treated as carrying every data
@@ -903,9 +1117,12 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
         continue;
       }
       if (attribution.isEmpty() || attributionContains(attribution, draft.writer().getName())) {
-        partition.contributors.get(i).invalidateDeltaBaseline();
+        DataSetWriterRuntime contributor = partition.contributors.get(i);
+        if (draft.kind() != DataSetMessageKind.EVENT) {
+          contributor.invalidateDeltaBaseline();
+        }
         if (notTransmitted != null) {
-          notTransmitted.add(partition.contributors.get(i));
+          notTransmitted.add(contributor);
         }
       }
     }
@@ -1042,18 +1259,20 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
   // region sequence-state preservation (path-stable reconfigure restarts)
 
   /**
-   * A quiesced snapshot of this group's sequence state: the NetworkMessage sequence number and the
-   * per-writer DataSetMessage sequence states, keyed by writer path. Call only after the group has
-   * been deactivated (its generation bumped): acquiring {@link #publishLock} then guarantees
+   * A quiesced restart snapshot of this group's sequence state: the NetworkMessage sequence number
+   * and, per writer keyed by path, the DataSetMessage sequence state plus any buffered events and
+   * overflow latch ({@link DataSetWriterRuntime#snapshotRestartState()}). Call only after the group
+   * has been deactivated (its generation bumped): acquiring {@link #publishLock} then guarantees
    * publish quiescence — an in-flight stale cycle completes first and any later cycle bails at its
-   * generation check — so the captured values are exact. Called under the engine lock; safe by the
-   * one-way engine-lock → publish-lock order (publish threads never take the engine lock).
+   * generation check — so the captured values are exact and the event buffers are not being
+   * drained. Called under the engine lock; safe by the one-way engine-lock → publish-lock order
+   * (publish threads never take the engine lock).
    */
   GroupSequenceState snapshotSequenceState() {
     synchronized (publishLock) {
-      var writerStates = new LinkedHashMap<String, DataSetWriterRuntime.WriterSequenceState>();
+      var writerStates = new LinkedHashMap<String, DataSetWriterRuntime.WriterRestartState>();
       for (DataSetWriterRuntime writer : writers) {
-        writerStates.put(writer.path(), writer.sequenceSnapshot());
+        writerStates.put(writer.path(), writer.snapshotRestartState());
       }
       return new GroupSequenceState(
           networkMessageSequenceNumber, Collections.unmodifiableMap(writerStates));
@@ -1062,55 +1281,62 @@ final class WriterGroupRuntime extends AbstractComponentRuntime {
 
   /**
    * Seed this group's sequence state from a predecessor's snapshot, before this runtime can
-   * activate: the NetworkMessage sequence number continues where the replaced runtime left off, and
+   * activate: the NetworkMessage sequence number continues where the replaced runtime left off,
    * each writer matched by path continues its DataSetMessage sequence — unless its counter width
    * changed (mapping switch, 16 ↔ 32), in which case that writer starts at 0 (the documented
    * restart story; masking across widths would fabricate a backward jump with none of the recovery
-   * guarantees). Writers with no predecessor start at 0.
+   * guarantees) — and an event-mode writer's buffered events transfer regardless of the
+   * counter-width match ({@link DataSetWriterRuntime#seedEvents}). Writers with no predecessor
+   * start empty at 0.
    */
   void seedSequenceState(GroupSequenceState state) {
     synchronized (publishLock) {
       networkMessageSequenceNumber = state.networkMessageSequenceNumber();
       for (DataSetWriterRuntime writer : writers) {
-        DataSetWriterRuntime.WriterSequenceState writerState = state.writers().get(writer.path());
-        if (writerState != null && writerState.bitWidth() == writer.sequenceBitWidth()) {
-          writer.seedSequenceNumber(writerState.nextValue());
+        DataSetWriterRuntime.WriterRestartState writerState = state.writers().get(writer.path());
+        if (writerState != null) {
+          if (writerState.bitWidth() == writer.sequenceBitWidth()) {
+            writer.seedSequenceNumber(writerState.nextValue());
+          }
+          writer.seedEvents(writerState);
         }
       }
     }
   }
 
   /**
-   * A quiesced snapshot of one writer's sequence state, for leaf-level restarts: the group stays
-   * active, so quiescence comes from holding {@link #publishLock} (the in-flight cycle completes
-   * first) after the writer has been removed from {@link #writers} — no later cycle touches its
-   * counter. Called under the engine lock.
+   * A quiesced restart snapshot of one writer, for leaf-level restarts: the group stays active, so
+   * quiescence comes from holding {@link #publishLock} (the in-flight cycle completes first) after
+   * the writer has been removed from {@link #writers} — no later cycle touches its counter or
+   * drains its event buffer. Carries the sequence state plus any buffered events and overflow
+   * latch. Called under the engine lock.
    */
-  DataSetWriterRuntime.WriterSequenceState snapshotWriterSequenceState(
-      DataSetWriterRuntime writer) {
+  DataSetWriterRuntime.WriterRestartState snapshotWriterSequenceState(DataSetWriterRuntime writer) {
     synchronized (publishLock) {
-      return writer.sequenceSnapshot();
+      return writer.snapshotRestartState();
     }
   }
 
   /**
-   * Seed one writer's sequence counter from a predecessor's snapshot, for leaf-level restarts;
-   * width mismatch (mapping switch) leaves the writer starting at 0.
+   * Seed one writer from a predecessor's snapshot, for leaf-level restarts: the sequence counter
+   * continues (a width mismatch leaves it starting at 0) and, for an event-mode successor, buffered
+   * events transfer regardless of the width match.
    */
   void seedWriterSequenceState(
-      DataSetWriterRuntime writer, DataSetWriterRuntime.WriterSequenceState state) {
+      DataSetWriterRuntime writer, DataSetWriterRuntime.WriterRestartState state) {
 
     synchronized (publishLock) {
       if (state.bitWidth() == writer.sequenceBitWidth()) {
         writer.seedSequenceNumber(state.nextValue());
       }
+      writer.seedEvents(state);
     }
   }
 
-  /** A quiesced snapshot of a group's NetworkMessage and per-writer sequence state. */
+  /** A quiesced restart snapshot of a group's NetworkMessage and per-writer restart state. */
   record GroupSequenceState(
       int networkMessageSequenceNumber,
-      Map<String, DataSetWriterRuntime.WriterSequenceState> writers) {}
+      Map<String, DataSetWriterRuntime.WriterRestartState> writers) {}
 
   // endregion
 }

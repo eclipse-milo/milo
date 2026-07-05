@@ -35,6 +35,7 @@ public final class DataSetWriterConfig {
   private final PublishedDataSetRef dataSet;
   private final UShort dataSetWriterId;
   private final UInteger keyFrameCount;
+  private final int eventQueueCapacity;
   private final DataSetFieldContentMask fieldContentMask;
   private final DataSetWriterMessageSettings settings;
   private final @Nullable BrokerTransportSettings brokerTransport;
@@ -50,6 +51,7 @@ public final class DataSetWriterConfig {
     this.dataSet = dataSet;
     this.dataSetWriterId = dataSetWriterId;
     this.keyFrameCount = builder.keyFrameCount;
+    this.eventQueueCapacity = builder.eventQueueCapacity;
     this.fieldContentMask = builder.fieldContentMask;
     this.settings = builder.settings;
     this.brokerTransport = builder.brokerTransport;
@@ -99,15 +101,29 @@ public final class DataSetWriterConfig {
    * key frame with values for all fields is sent (Part 14 §6.2.4.3); the cycles in between send
    * delta frames of the changed fields, and a no-change cycle sends nothing.
    *
-   * @return the key frame count; 1 means every message is a key frame. 0 (the spec's
-   *     non-cyclic/event value, which Milo does not model) is clamped to 1 at runtime, so configs
-   *     round-trip unmodified. For JSON writers a value greater than 1 requires the
-   *     DataSetMessageHeader and MessageType content-mask members (Part 14 Annex A.3.3.4); for UADP
-   *     writers it cannot be combined with a non-zero ConfiguredSize (fixed-size layouts are
-   *     key-frame-only, Annex A.2.1.7); both enforced at startup and reconfigure.
+   * @return the key frame count; 1 means every message is a key frame. For writers referencing a
+   *     data-items dataset the value is clamped to a minimum of 1 at runtime. For writers
+   *     referencing an event-source dataset the value is ignored (event datasets are non-cyclic)
+   *     and normalized to the spec's non-cyclic value 0 on Part 14 export. For JSON writers a value
+   *     greater than 1 requires the DataSetMessageHeader and MessageType content-mask members (Part
+   *     14 Annex A.3.3.4); for UADP writers it cannot be combined with a non-zero ConfiguredSize
+   *     (fixed-size layouts are key-frame-only, Annex A.2.1.7); both enforced at startup and
+   *     reconfigure.
    */
   public UInteger getKeyFrameCount() {
     return keyFrameCount;
+  }
+
+  /**
+   * Get the capacity of the event buffer used when this writer references an event-source dataset:
+   * the maximum number of events buffered between publishes before overflow handling discards
+   * events (Part 14 §6.2.6.2).
+   *
+   * @return the event queue capacity; defaults to 100. Ignored by writers referencing a data-items
+   *     dataset.
+   */
+  public int getEventQueueCapacity() {
+    return eventQueueCapacity;
   }
 
   /**
@@ -180,6 +196,7 @@ public final class DataSetWriterConfig {
     builder.dataSet = dataSet;
     builder.dataSetWriterId = dataSetWriterId;
     builder.keyFrameCount = keyFrameCount;
+    builder.eventQueueCapacity = eventQueueCapacity;
     builder.fieldContentMask = fieldContentMask;
     builder.settings = settings;
     builder.brokerTransport = brokerTransport;
@@ -202,6 +219,7 @@ public final class DataSetWriterConfig {
         && dataSet.equals(that.dataSet)
         && dataSetWriterId.equals(that.dataSetWriterId)
         && keyFrameCount.equals(that.keyFrameCount)
+        && eventQueueCapacity == that.eventQueueCapacity
         && fieldContentMask.equals(that.fieldContentMask)
         && settings.equals(that.settings)
         && Objects.equals(brokerTransport, that.brokerTransport)
@@ -218,6 +236,7 @@ public final class DataSetWriterConfig {
         dataSet,
         dataSetWriterId,
         keyFrameCount,
+        eventQueueCapacity,
         fieldContentMask,
         settings,
         brokerTransport,
@@ -244,6 +263,7 @@ public final class DataSetWriterConfig {
     private @Nullable PublishedDataSetRef dataSet;
     private @Nullable UShort dataSetWriterId;
     private UInteger keyFrameCount = uint(1);
+    private int eventQueueCapacity = 100;
     private DataSetFieldContentMask fieldContentMask = DataSetFieldContentMask.of();
     private DataSetWriterMessageSettings settings = UadpDataSetWriterSettings.builder().build();
     private @Nullable BrokerTransportSettings brokerTransport;
@@ -294,15 +314,30 @@ public final class DataSetWriterConfig {
      * key frame with values for all fields is sent (Part 14 §6.2.4.3); the cycles in between send
      * delta frames of the changed fields, and a no-change cycle sends nothing.
      *
-     * @param keyFrameCount the key frame count; defaults to 1 (every message is a key frame). 0 is
-     *     clamped to 1 at runtime. For JSON writers a value greater than 1 requires the
-     *     DataSetMessageHeader and MessageType content-mask members (Part 14 Annex A.3.3.4); for
-     *     UADP writers it cannot be combined with a non-zero ConfiguredSize (fixed-size layouts are
-     *     key-frame-only, Annex A.2.1.7); both enforced at startup and reconfigure.
+     * @param keyFrameCount the key frame count; defaults to 1 (every message is a key frame). For
+     *     writers referencing a data-items dataset the value is clamped to a minimum of 1 at
+     *     runtime; for writers referencing an event-source dataset the value is ignored (event
+     *     datasets are non-cyclic) and normalized to the spec's non-cyclic value 0 on Part 14
+     *     export. For JSON writers a value greater than 1 requires the DataSetMessageHeader and
+     *     MessageType content-mask members (Part 14 Annex A.3.3.4); for UADP writers it cannot be
+     *     combined with a non-zero ConfiguredSize (fixed-size layouts are key-frame-only, Annex
+     *     A.2.1.7); both enforced at startup and reconfigure.
      * @return this {@link Builder}.
      */
     public Builder keyFrameCount(UInteger keyFrameCount) {
       this.keyFrameCount = keyFrameCount;
+      return this;
+    }
+
+    /**
+     * Set the capacity of the event buffer used when the writer references an event-source dataset.
+     *
+     * @param eventQueueCapacity the event queue capacity; must be at least 1 and defaults to 100.
+     *     Ignored by writers referencing a data-items dataset.
+     * @return this {@link Builder}.
+     */
+    public Builder eventQueueCapacity(int eventQueueCapacity) {
+      this.eventQueueCapacity = eventQueueCapacity;
       return this;
     }
 
@@ -384,7 +419,8 @@ public final class DataSetWriterConfig {
      *
      * @return a new {@link DataSetWriterConfig}.
      * @throws PubSubConfigValidationException if the name is blank, no dataset reference is
-     *     configured, or the DataSetWriterId is missing or zero.
+     *     configured, the DataSetWriterId is missing or zero, or the event queue capacity is less
+     *     than 1.
      */
     public DataSetWriterConfig build() {
       if (name.isBlank()) {
@@ -401,6 +437,10 @@ public final class DataSetWriterConfig {
       if (dataSetWriterId.intValue() == 0) {
         throw new PubSubConfigValidationException(
             "dataset writer '" + name + "': dataSetWriterId must be non-zero");
+      }
+      if (eventQueueCapacity < 1) {
+        throw new PubSubConfigValidationException(
+            "DataSetWriterConfig '%s': eventQueueCapacity must be >= 1".formatted(name));
       }
 
       return new DataSetWriterConfig(this, dataSet, dataSetWriterId);

@@ -16,6 +16,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 
 import io.netty.util.concurrent.Future;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -60,6 +61,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConnectionConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetRef;
+import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedEventsConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
 import org.eclipse.milo.opcua.sdk.pubsub.config.ReaderGroupConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.SecurityGroupConfig;
@@ -82,7 +84,10 @@ import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrokerTransportQualityOfService;
@@ -125,6 +130,18 @@ public final class PubSubServiceImpl implements PubSubService {
 
   private final ConcurrentMap<PublishedDataSetRef, PublishedDataSetSource> sources =
       new ConcurrentHashMap<>();
+
+  /**
+   * Fan-out index for {@link #publishEvent}: every EVENT-mode DataSetWriter runtime keyed by its
+   * PublishedDataSet ref. An immutable snapshot rebuilt under the engine lock after any
+   * runtime-tree mutation (startup, reconfigure apply) by {@link #rebuildEventWriterIndex()};
+   * {@code publishEvent} reads it VOLATILE and never touches the engine-lock-guarded {@link
+   * #connections} map, so a producer thread never contends the engine lock (the one-way engine →
+   * publish lock discipline). Enable/disable via handles does not mutate the tree, so the index
+   * stays valid: {@code publishEvent} re-reads each writer's volatile state to skip inactive
+   * writers.
+   */
+  private volatile Map<PublishedDataSetRef, List<DataSetWriterRuntime>> eventWriterIndex = Map.of();
 
   /**
    * Discovery announcement sequence counters, one per PublisherId: Part 14 §7.2.4.6.3 Table 168
@@ -296,6 +313,7 @@ public final class PubSubServiceImpl implements PubSubService {
 
         started = true;
         stateMachine.setRootOperational(config.isEnabled(), connections.values());
+        rebuildEventWriterIndex();
       } catch (UaException e) {
         throw new CompletionException(e);
       }
@@ -502,6 +520,11 @@ public final class PubSubServiceImpl implements PubSubService {
 
     stateMachine.setRootOperational(started && config.isEnabled(), connections.values());
 
+    // rebuild the event-writer fan-out index after the runtime-tree mutations of this apply: a
+    // single wholesale rebuild is simpler and safer than incremental edits, and publishEvent reads
+    // only the resulting volatile snapshot
+    rebuildEventWriterIndex();
+
     // discovery responders push an unsolicited DataSetMetaData announcement for live writers
     // whose dataset metadata changed (Part 14 §7.2.4.6.4); the check runs off the engine lock
     for (ConnectionRuntime connection : connections.values()) {
@@ -667,7 +690,8 @@ public final class PubSubServiceImpl implements PubSubService {
             removeLeaf(connection, groupName, componentName, writerSide, true);
             // the previous writer is out of the group's writer list now; snapshotting under
             // the group's publish lock waits out any in-flight cycle, so the value is exact
-            DataSetWriterRuntime.WriterSequenceState sequenceState =
+            // (it also drains the predecessor's buffered events for transfer to the successor)
+            DataSetWriterRuntime.WriterRestartState sequenceState =
                 group != null && previous != null
                     ? group.snapshotWriterSequenceState(previous)
                     : null;
@@ -915,7 +939,79 @@ public final class PubSubServiceImpl implements PubSubService {
     requireNonNull(dataSet, "dataSet");
     requireNonNull(source, "source");
 
+    PublishedDataSetConfig dataSetConfig = config.publishedDataSet(dataSet.name()).orElse(null);
+    if (dataSetConfig != null && dataSetConfig.getSource() instanceof PublishedEventsConfig) {
+      throw new IllegalArgumentException(
+          ("cannot bind a PublishedDataSetSource to event-source PublishedDataSet '%s';"
+                  + " use publishEvent")
+              .formatted(dataSet.name()));
+    }
+
     sources.put(dataSet, source);
+  }
+
+  @Override
+  public void publishEvent(PublishedDataSetRef dataSet, List<Variant> fields) {
+    requireNonNull(dataSet, "dataSet");
+    requireNonNull(fields, "fields");
+
+    // validate best-effort against the CURRENT config via the volatile snapshot; this path never
+    // takes the engine lock or a publish lock (the drain-side arity guard is the correctness
+    // backstop against a racing reconfigure)
+    PublishedDataSetConfig dataSetConfig = config.publishedDataSet(dataSet.name()).orElse(null);
+    if (dataSetConfig == null) {
+      throw new IllegalArgumentException("unknown PublishedDataSet '%s'".formatted(dataSet.name()));
+    }
+    if (!(dataSetConfig.getSource() instanceof PublishedEventsConfig events)) {
+      throw new IllegalArgumentException(
+          "PublishedDataSet '%s' is not an event source".formatted(dataSet.name()));
+    }
+    int fieldCount = events.getFields().size();
+    if (fields.size() != fieldCount) {
+      throw new IllegalArgumentException(
+          "event for PublishedDataSet '%s' has %d fields, expected %d"
+              .formatted(dataSet.name(), fields.size(), fieldCount));
+    }
+
+    var values = new ArrayList<DataValue>(fields.size());
+    for (Variant field : fields) {
+      values.add(new DataValue(field));
+    }
+    var event = QueuedEvent.of(values, DateTime.now());
+
+    // read ONLY the volatile fan-out index, never the engine-lock-guarded connections map
+    List<DataSetWriterRuntime> writers = eventWriterIndex.get(dataSet);
+    if (writers == null || writers.isEmpty()) {
+      // no EVENT-mode writer references this dataset, or none is constructed yet (pre-startup or a
+      // mid-reconfigure swap window): the event is dropped
+      return;
+    }
+
+    var groups = new LinkedHashSet<WriterGroupRuntime>();
+    for (DataSetWriterRuntime writer : writers) {
+      PubSubState state = writer.state();
+      if (state == PubSubState.Disabled
+          || (state == PubSubState.Paused && !acceptsEventsWhilePaused(writer))) {
+        // Administratively-off writers drop. Enabled writers paused under an active writer group
+        // still accumulate: secured groups hold their children Paused while the first key fetch is
+        // pending, and Error groups may later recover and drain the buffered events.
+        continue;
+      }
+      writer.offerEvent(event);
+      groups.add(writer.group());
+    }
+    for (WriterGroupRuntime group : groups) {
+      group.triggerEventPublish();
+    }
+  }
+
+  private static boolean acceptsEventsWhilePaused(DataSetWriterRuntime writer) {
+    if (!writer.isEnabled()) {
+      return false;
+    }
+
+    PubSubState groupState = writer.group().state();
+    return groupState == PubSubState.PreOperational || groupState == PubSubState.Error;
   }
 
   @Override
@@ -1047,6 +1143,29 @@ public final class PubSubServiceImpl implements PubSubService {
 
     eventDispatcher.notifyStateChange(
         new PubSubStateChangeEvent(component.handle(), oldState, newState, statusCode, cause));
+  }
+
+  /**
+   * Rebuild the {@link #eventWriterIndex} from the current runtime tree: every EVENT-mode writer
+   * runtime indexed by its PublishedDataSet ref, published as an immutable volatile snapshot. Must
+   * be called under the engine lock, after any runtime-tree mutation (startup, reconfigure apply).
+   * A wholesale rebuild is intentional — simpler and safer than incremental edits across the
+   * connection/group/writer add/remove/restart paths.
+   */
+  private void rebuildEventWriterIndex() {
+    var index = new LinkedHashMap<PublishedDataSetRef, List<DataSetWriterRuntime>>();
+    for (ConnectionRuntime connection : connections.values()) {
+      for (WriterGroupRuntime group : connection.writerGroupRuntimes()) {
+        for (DataSetWriterRuntime writer : group.writerRuntimes()) {
+          if (writer.eventMode()) {
+            index.computeIfAbsent(writer.config().getDataSet(), k -> new ArrayList<>()).add(writer);
+          }
+        }
+      }
+    }
+    var snapshot = new LinkedHashMap<PublishedDataSetRef, List<DataSetWriterRuntime>>(index.size());
+    index.forEach((ref, list) -> snapshot.put(ref, List.copyOf(list)));
+    eventWriterIndex = Collections.unmodifiableMap(snapshot);
   }
 
   private void registerTree(AbstractComponentRuntime component) {
@@ -1270,9 +1389,16 @@ public final class PubSubServiceImpl implements PubSubService {
 
   private static void validateBindings(PubSubConfig config, PubSubBindings bindings) {
     for (PublishedDataSetRef ref : bindings.getSources().keySet()) {
-      if (config.publishedDataSet(ref.name()).isEmpty()) {
+      PublishedDataSetConfig dataSet = config.publishedDataSet(ref.name()).orElse(null);
+      if (dataSet == null) {
         throw new IllegalArgumentException(
             "source bound to unknown PublishedDataSet '%s'".formatted(ref.name()));
+      }
+      if (dataSet.getSource() instanceof PublishedEventsConfig) {
+        throw new IllegalArgumentException(
+            ("cannot bind a PublishedDataSetSource to event-source PublishedDataSet '%s';"
+                    + " use publishEvent")
+                .formatted(ref.name()));
       }
     }
 
@@ -1381,16 +1507,25 @@ public final class PubSubServiceImpl implements PubSubService {
           if (!writer.isEnabled()) {
             continue;
           }
-          if (!sources.containsKey(writer.getDataSet())) {
-            throw new UaException(
-                StatusCodes.Bad_ConfigurationError,
-                "no PublishedDataSetSource bound for PublishedDataSet '%s' (dataset writer"
-                        .formatted(writer.getDataSet().name())
-                    + " '%s/%s')".formatted(groupPath, writer.getName()));
-          }
-          String deltaConfigError = deltaFrameConfigError(group, writer, groupPath);
-          if (deltaConfigError != null) {
-            throw new UaException(StatusCodes.Bad_ConfigurationError, deltaConfigError);
+          if (isEventSource(config, writer.getDataSet())) {
+            // event-source writers need no bound PublishedDataSetSource (events are pushed via
+            // publishEvent) and ignore keyFrameCount; their event expressibility is checked instead
+            String eventConfigError = eventWriterConfigError(group, writer, groupPath);
+            if (eventConfigError != null) {
+              throw new UaException(StatusCodes.Bad_ConfigurationError, eventConfigError);
+            }
+          } else {
+            if (!sources.containsKey(writer.getDataSet())) {
+              throw new UaException(
+                  StatusCodes.Bad_ConfigurationError,
+                  "no PublishedDataSetSource bound for PublishedDataSet '%s' (dataset writer"
+                          .formatted(writer.getDataSet().name())
+                      + " '%s/%s')".formatted(groupPath, writer.getName()));
+            }
+            String deltaConfigError = deltaFrameConfigError(group, writer, groupPath);
+            if (deltaConfigError != null) {
+              throw new UaException(StatusCodes.Bad_ConfigurationError, deltaConfigError);
+            }
           }
           if (broker && writerQosOverrideLacksQueueName(writer)) {
             throw new UaException(
@@ -1520,9 +1655,16 @@ public final class PubSubServiceImpl implements PubSubService {
           if (!writer.isEnabled()) {
             continue;
           }
-          String deltaConfigError = deltaFrameConfigError(group, writer, groupPath);
-          if (deltaConfigError != null) {
-            throw new UaRuntimeException(StatusCodes.Bad_ConfigurationError, deltaConfigError);
+          if (isEventSource(config, writer.getDataSet())) {
+            String eventConfigError = eventWriterConfigError(group, writer, groupPath);
+            if (eventConfigError != null) {
+              throw new UaRuntimeException(StatusCodes.Bad_ConfigurationError, eventConfigError);
+            }
+          } else {
+            String deltaConfigError = deltaFrameConfigError(group, writer, groupPath);
+            if (deltaConfigError != null) {
+              throw new UaRuntimeException(StatusCodes.Bad_ConfigurationError, deltaConfigError);
+            }
           }
           if (broker && writerQosOverrideLacksQueueName(writer)) {
             throw new UaRuntimeException(
@@ -1647,6 +1789,78 @@ public final class PubSubServiceImpl implements PubSubService {
     }
 
     return null;
+  }
+
+  /**
+   * The event-expressibility configuration error for an enabled writer whose PublishedDataSet is an
+   * event source, or {@code null} when the configuration can carry events. Callers determine the
+   * event-source-ness ({@link #isEventSource}) and reject a non-null result with {@code
+   * Bad_ConfigurationError}; enforced at startup ({@link #validateStartup}), reconfigure ({@link
+   * #validateReconfigure}), group activation ({@link WriterGroupRuntime#activate}), and writer
+   * activation ({@link DataSetWriterRuntime#activate}), and mirrored per publish cycle by the
+   * encoder backstop.
+   *
+   * <p>Like {@link #deltaFrameConfigError} these are capabilities of the BUILT-IN mappings, applied
+   * only when the group's mapping name resolves to the built-in UADP or JSON provider; a custom
+   * {@link MessageMappingProvider} owns its wire format and is never second-guessed.
+   *
+   * <p>A JSON writer requires the DataSetMessageHeader in the group's effective
+   * JsonNetworkMessageContentMask and the MessageType member in its effective
+   * JsonDataSetMessageContentMask: an event ({@code ua-event}) is otherwise wire-indistinguishable
+   * from a key frame (Part 14 §7.2.5.4.1, Annex A.3.3.4 — a non-cyclic dataset has KeyFrameCount 0,
+   * so the MessageType member is required). A UADP writer requires ConfiguredSize 0: a fixed-size
+   * layout re-encodes an over-budget DataSetMessage header-only with the valid bit clear and still
+   * sends, silently discarding the event forever (§6.3.1.3.3), so events cannot be carried in one
+   * (§7.2.4.5.7).
+   */
+  @Nullable String eventWriterConfigError(
+      WriterGroupConfig group, DataSetWriterConfig writer, String groupPath) {
+
+    if (!isBuiltinMapping(mappingNameOf(group.getMessageSettings()))) {
+      // a custom provider owns the wire format; its event expressibility is its own concern
+      return null;
+    }
+
+    if (writer.getSettings() instanceof UadpDataSetWriterSettings uadpSettings) {
+      if (uadpSettings.getConfiguredSize().intValue() > 0) {
+        return ("event dataset writer '%s/%s' cannot use a non-zero ConfiguredSize %s: fixed-size"
+                + " UADP layouts cannot carry events (Part 14 §7.2.4.5.7)")
+            .formatted(groupPath, writer.getName(), uadpSettings.getConfiguredSize());
+      }
+      return null;
+    }
+
+    if (!(writer.getSettings() instanceof JsonDataSetWriterSettings writerSettings)) {
+      return null;
+    }
+    if (!(group.getMessageSettings() instanceof JsonWriterGroupSettings groupSettings)) {
+      // mixed JSON writer settings in a non-JSON group are rejected per publish cycle
+      return null;
+    }
+
+    if (!JsonContentMasks.effectiveNetworkMessageMask(groupSettings.getNetworkMessageContentMask())
+        .getDataSetMessageHeader()) {
+      return ("event dataset writer '%s/%s' requires the DataSetMessageHeader in the effective"
+              + " JsonNetworkMessageContentMask (Part 14 A.3.3.4)")
+          .formatted(groupPath, writer.getName());
+    }
+
+    if (!JsonContentMasks.effectiveDataSetMessageMask(writerSettings.getDataSetMessageContentMask())
+        .getMessageType()) {
+      return ("event dataset writer '%s/%s' requires the MessageType member in the effective"
+              + " JsonDataSetMessageContentMask (Part 14 A.3.3.4)")
+          .formatted(groupPath, writer.getName());
+    }
+
+    return null;
+  }
+
+  /** Whether the PublishedDataSet referenced by {@code ref} is an event source. */
+  private static boolean isEventSource(PubSubConfig config, PublishedDataSetRef ref) {
+    return config
+        .publishedDataSet(ref.name())
+        .map(dataSet -> dataSet.getSource() instanceof PublishedEventsConfig)
+        .orElse(false);
   }
 
   /**

@@ -47,8 +47,8 @@ There are two exceptions. A [secured](message-security-and-sks.md) writer or rea
 into `Error` if no fetch succeeds within twice the configured key lifetime. And a DataSetReader
 stays `PreOperational` until it accepts a first key
 frame (including a zero-field heartbeat key frame — a key frame with no fields, which some
-stacks send as a liveness signal) or an event DataSetMessage (Milo decodes event messages from
-peers but never publishes them; see [events](limitations-and-interop.md#events)). A keep-alive
+stacks send as a liveness signal) or an event DataSetMessage (Milo now both publishes and
+decodes event messages; see [events](limitations-and-interop.md#events)). A keep-alive
 resets the receive watchdog but is never delivered as a data event; a delta frame — a partial
 update carrying only changed fields, which Milo decodes from any peer and emits when a writer's
 `keyFrameCount` exceeds 1 (see [delta frames](limitations-and-interop.md#delta-frames)) — is
@@ -510,6 +510,20 @@ subscribers. So for default configs, build subscriber liveness on `messageReceiv
 which data frames reset just as well; but if you raise `keyFrameCount` above 1, set
 `keepAliveTime` below your subscribers' `messageReceiveTimeout`, or a no-change quiet spell
 reads as publisher death.
+
+[Event-triggered groups](configuration.md#publishing-events-the-push-api-and-event-triggered-groups)
+— writer groups with a zero `publishingInterval` — run no fixed-rate publish task at all: each
+`publishEvent` schedules an immediate drain, so events go out promptly, but nothing periodic happens
+between events. A `keepAliveTime` is the only periodic tick such a group has; when set, the group's
+keep-alive task runs the normal publish cycle every `keepAliveTime`, so the worst-case silence a
+subscriber sees before a keep-alive is roughly *twice* `keepAliveTime` (an event or keep-alive can
+land just after a tick, pushing the next tick a full period out) — size a subscriber's
+`messageReceiveTimeout` above that bound, and do not assume an exact cadence. This matters most for a
+[secured](message-security-and-sks.md) interval-0 group: a publish cycle skipped at the security
+gate (no current key) leaves its events queued, and the group recovers only on the next event,
+keep-alive tick, or return to `Operational`. A secured interval-0 group *without* a `keepAliveTime`
+therefore cannot recover from a mid-life security skip until the next event arrives — configure a
+`keepAliveTime` to bound that delay.
 
 ## Known limits
 
