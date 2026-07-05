@@ -10,11 +10,13 @@
 
 package org.eclipse.milo.opcua.sdk.pubsub;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.UnaryOperator;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetRef;
 import org.eclipse.milo.opcua.sdk.pubsub.internal.PubSubServiceImpl;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
 import org.jspecify.annotations.Nullable;
@@ -194,6 +196,23 @@ public interface PubSubService extends AutoCloseable {
    * @param source the source pulled for a snapshot each publish cycle.
    */
   void bindSource(PublishedDataSetRef dataSet, PublishedDataSetSource source);
+
+  /**
+   * Push one event to every event-source DataSetWriter referencing {@code dataSet} (Part 14
+   * §6.2.6.2). Each such writer buffers the event and publishes it as its own {@code EVENT}
+   * DataSetMessage; an event-triggered writer group (PublishingInterval 0) is scheduled to publish
+   * immediately, a positive-interval group drains it on its next cycle.
+   *
+   * <p>Validation is best-effort against the current configuration — the drain-side field-count
+   * guard is the correctness backstop against a racing reconfiguration. An event whose referencing
+   * writers are all Disabled or Paused, or not yet constructed, is dropped.
+   *
+   * @param dataSet the reference to an event-source PublishedDataSet.
+   * @param fields the event field values, in the dataset's configured event-field order.
+   * @throws IllegalArgumentException if {@code dataSet} is unknown, is not an event source, or
+   *     {@code fields.size()} differs from the dataset's configured event field count.
+   */
+  void publishEvent(PublishedDataSetRef dataSet, List<Variant> fields);
 
   /**
    * Add a listener notified of every DataSet received by any DataSetReader.

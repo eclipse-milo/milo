@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetMetaDataConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
+import org.eclipse.milo.opcua.sdk.pubsub.uadp.DataSetMessageKind;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
@@ -37,6 +38,8 @@ import org.jspecify.annotations.Nullable;
  *     UInt16 values, JSON UInt32).
  * @param dataSetName the name of the DataSet, if known from metadata, otherwise {@code null}.
  * @param metaData the metadata the DataSet was decoded against, or {@code null} if none.
+ * @param kind the kind of the DataSetMessage that carried the DataSet (Part 14 §7.2.3), e.g. a key
+ *     frame, delta frame, or event.
  * @param fields the decoded field values, in wire order.
  */
 public record DataSetReceivedEvent(
@@ -48,6 +51,7 @@ public record DataSetReceivedEvent(
     @Nullable UInteger dataSetMessageSequenceNumber,
     @Nullable String dataSetName,
     @Nullable DataSetMetaDataConfig metaData,
+    DataSetMessageKind kind,
     List<DataSetFieldValue> fields) {
 
   /**
@@ -63,6 +67,8 @@ public record DataSetReceivedEvent(
    *     when absent on the wire.
    * @param dataSetName the name of the DataSet, if known from metadata, otherwise {@code null}.
    * @param metaData the metadata the DataSet was decoded against, or {@code null} if none.
+   * @param kind the kind of the DataSetMessage that carried the DataSet, e.g. a key frame, delta
+   *     frame, or event.
    * @param fields the decoded field values, in wire order.
    */
   public DataSetReceivedEvent {

@@ -41,15 +41,19 @@ import org.jspecify.annotations.Nullable;
 /**
  * Encodes one UADP NetworkMessage (OPC UA Part 14 §7.2.4) from an {@link EncodeContext}.
  *
- * <p>Scope: Data Key Frame, Data Delta Frame, and Keep Alive DataSetMessages with Variant or
- * DataValue field encoding, security modes None, Sign, and SignAndEncrypt. Event message emission,
- * the RawData field encoding, PromotedFields, and chunk emission are not supported and are rejected
- * with {@code Bad_NotSupported}. (The blanket RawData rejection also covers §7.2.4.5.11's "RawField
- * encoding shall only be applied to Data Key Frame DataSetMessages".) The RawData and
- * PromotedFields rejections are backstops: for the built-in mapping, service validation and the
- * group- and writer-level activation re-checks reject those configurations with the same status
- * code before a publish cycle ever runs, whatever the enablement order, so the encode-time throws
- * are reachable only via direct invocation.
+ * <p>Scope: Data Key Frame, Data Delta Frame, Event, and Keep Alive DataSetMessages with Variant or
+ * DataValue field encoding, security modes None, Sign, and SignAndEncrypt. Event fields are always
+ * Variant-encoded (§7.2.4.5.7; the writer's DataSetFieldContentMask DataValue bits are ignored and
+ * the DataSetFlags1 field-encoding bits stay clear). The RawData field encoding, PromotedFields,
+ * and chunk emission are not supported and are rejected with {@code Bad_NotSupported}. (The blanket
+ * RawData rejection also covers §7.2.4.5.11's "RawField encoding shall only be applied to Data Key
+ * Frame DataSetMessages".) The RawData and PromotedFields rejections are backstops: for the
+ * built-in mapping, service validation and the group- and writer-level activation re-checks reject
+ * those configurations with the same status code before a publish cycle ever runs, whatever the
+ * enablement order, so the encode-time throws are reachable only via direct invocation. An event
+ * draft whose writer carries a non-zero ConfiguredSize is rejected with {@code
+ * Bad_ConfigurationError}: the fixed-size valid-bit-clear resend path (§6.3.1.3.3) would silently
+ * discard the event forever, since events are not re-drafted.
  *
  * <p>Message security (§7.2.4.4.3) is applied only when the {@link EncodeContext} carries a
  * non-null {@link MessageSecurityContext} — a null context is security mode None and produces
@@ -85,11 +89,12 @@ final class UadpNetworkMessageEncoder {
    * @return the encoded NetworkMessage; the caller assumes ownership of its buffer.
    * @throws UaException if the message could not be encoded; {@code Bad_NotSupported} if the
    *     configuration requires a feature that is out of scope (RawData field encoding,
-   *     PromotedFields, event message emission), {@code Bad_ConfigurationError} if the group or a
-   *     writer does not carry UADP message settings, the group's configured security mode disagrees
-   *     with the context's {@link MessageSecurityContext} (a secured mode requires a matching
-   *     non-null context, mode None or Invalid requires a null one), or a delta frame draft carries
-   *     a non-zero ConfiguredSize (fixed-size layouts are key-frame-only, Part 14 Annex A.2.1.7),
+   *     PromotedFields), {@code Bad_ConfigurationError} if the group or a writer does not carry
+   *     UADP message settings, the group's configured security mode disagrees with the context's
+   *     {@link MessageSecurityContext} (a secured mode requires a matching non-null context, mode
+   *     None or Invalid requires a null one), a delta frame draft carries a non-zero ConfiguredSize
+   *     (fixed-size layouts are key-frame-only, Part 14 Annex A.2.1.7), or an event draft carries a
+   *     non-zero ConfiguredSize (the fixed-size resend path would silently discard the event),
    *     {@code Bad_EncodingLimitsExceeded} if a draft's sequence number would be transmitted but
    *     exceeds the UInt16 wire range (Part 14 Table 162) or a count/size limit of the wire format
    *     is exceeded.
@@ -148,13 +153,6 @@ final class UadpNetworkMessageEncoder {
             StatusCodes.Bad_NotSupported,
             "RawData field encoding is not supported (DataSetWriter \"" + writer.getName() + "\")");
       }
-      if (draft.kind() == DataSetMessageKind.EVENT) {
-        throw new UaException(
-            StatusCodes.Bad_NotSupported,
-            "Event DataSetMessage emission is not supported (DataSetWriter \""
-                + writer.getName()
-                + "\")");
-      }
       if (writerSettings.getDataSetMessageContentMask().getSequenceNumber()
           && draft.sequenceNumber().longValue() > 0xFFFFL) {
         // The DataSetMessageSequenceNumber is UInt16 on the wire (Part 14 §7.2.4.5.4 Table
@@ -180,6 +178,18 @@ final class UadpNetworkMessageEncoder {
             StatusCodes.Bad_ConfigurationError,
             "delta frame DataSetMessage with a non-zero ConfiguredSize is not supported:"
                 + " fixed-size layouts are key-frame-only (Part 14 A.2.1.7) (DataSetWriter \""
+                + writer.getName()
+                + "\")");
+      }
+      if (draft.kind() == DataSetMessageKind.EVENT
+          && writerSettings.getConfiguredSize().intValue() > 0) {
+        // The fixed-size valid-bit-clear resend path (§6.3.1.3.3) would discard an overflowing
+        // event forever — events are not re-drafted — so an event writer with a non-zero
+        // ConfiguredSize is rejected up front, mirroring the delta frame rejection above.
+        throw new UaException(
+            StatusCodes.Bad_ConfigurationError,
+            "Event DataSetMessage emission is not supported with a non-zero ConfiguredSize"
+                + " (DataSetWriter \""
                 + writer.getName()
                 + "\")");
       }
@@ -510,13 +520,15 @@ final class UadpNetworkMessageEncoder {
 
     UadpDataSetMessageContentMask mask = settings.getDataSetMessageContentMask();
     DataSetFieldContentMask fieldMask = draft.writer().getFieldContentMask();
-    boolean dataValueEncoding = isDataValueEncoding(fieldMask);
+    // §7.2.4.5.7: event fields are always Variant-encoded (the DataSetFlags1 field-encoding bits
+    // stay clear), regardless of the writer's DataSetFieldContentMask DataValue bits.
+    boolean dataValueEncoding =
+        draft.kind() != DataSetMessageKind.EVENT && isDataValueEncoding(fieldMask);
 
     boolean timestampEnabled = mask.getTimestamp();
     boolean picoSecondsEnabled = timestampEnabled && mask.getPicoSeconds();
 
-    // DataSetFlags2 type bits, §7.2.4.5.4 Table 162; EVENT is rejected by encode() and listed
-    // here only for exhaustiveness
+    // DataSetFlags2 type bits, §7.2.4.5.4 Table 162
     int flags2 =
         switch (draft.kind()) {
           case KEY_FRAME -> 0x00;

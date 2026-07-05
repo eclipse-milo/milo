@@ -698,6 +698,7 @@ final class ReaderDispatcher {
             dataSetMessageSequence,
             dataSetName,
             metaData,
+            message.kind(),
             fields);
 
     service.getEventDispatcher().notifyDataSet(reader.readerRef(), event);

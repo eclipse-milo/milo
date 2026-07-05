@@ -96,7 +96,10 @@ public final class WriterGroupConfig {
   /**
    * Get the interval at which this group publishes NetworkMessages.
    *
-   * @return the publishing interval.
+   * @return the publishing interval. {@link Duration#ZERO} selects the event-triggered publishing
+   *     mode: NetworkMessages are published as events arrive instead of cyclically, valid only when
+   *     every writer in the group references an event-source dataset (cross-checked when the full
+   *     {@code PubSubConfig} is assembled).
    */
   public Duration getPublishingInterval() {
     return publishingInterval;
@@ -329,7 +332,10 @@ public final class WriterGroupConfig {
     /**
      * Set the interval at which this group publishes NetworkMessages.
      *
-     * @param interval the publishing interval; defaults to 1000 ms.
+     * @param interval the publishing interval; defaults to 1000 ms. {@link Duration#ZERO} selects
+     *     the event-triggered publishing mode and is valid only when every writer in the group
+     *     references an event-source dataset (cross-checked when the full {@code PubSubConfig} is
+     *     assembled).
      * @return this {@link Builder}.
      */
     public Builder publishingInterval(Duration interval) {
@@ -463,8 +469,8 @@ public final class WriterGroupConfig {
      *
      * @return a new {@link WriterGroupConfig}.
      * @throws PubSubConfigValidationException if the name is blank, the WriterGroupId is missing or
-     *     zero, the publishing interval is not positive, or the keep-alive time is configured but
-     *     not positive.
+     *     zero, the publishing interval is negative, or the keep-alive time is configured but not
+     *     positive.
      */
     public WriterGroupConfig build() {
       if (name.isBlank()) {
@@ -478,9 +484,9 @@ public final class WriterGroupConfig {
         throw new PubSubConfigValidationException(
             "writer group '" + name + "': writerGroupId must be non-zero");
       }
-      if (publishingInterval.isZero() || publishingInterval.isNegative()) {
+      if (publishingInterval.isNegative()) {
         throw new PubSubConfigValidationException(
-            "writer group '" + name + "': publishingInterval must be positive");
+            "writer group '" + name + "': publishingInterval must not be negative");
       }
       if (keepAliveTime != null && (keepAliveTime.isZero() || keepAliveTime.isNegative())) {
         throw new PubSubConfigValidationException(

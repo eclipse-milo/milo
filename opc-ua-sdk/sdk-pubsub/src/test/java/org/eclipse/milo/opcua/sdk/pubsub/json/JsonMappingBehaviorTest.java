@@ -58,6 +58,7 @@ import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
@@ -282,6 +283,209 @@ class JsonMappingBehaviorTest {
         decode("{\"DataSetWriterId\":9,\"MessageType\":\"ua-event\",\"Payload\":{\"E\":true}}");
     assertEquals(DataSetMessageKind.EVENT, decoded.messages().get(0).kind());
     assertEquals("E", decoded.messages().get(0).fields().get(0).fieldName());
+  }
+
+  private static DataSetMessageDraft eventDraft(
+      DataSetWriterConfig writer,
+      long sequenceNumber,
+      StatusCode status,
+      List<DataValue> fields,
+      DataSetMetaDataType metaData) {
+
+    return DataSetMessageDraft.ofEvent(
+        writer,
+        uint(sequenceNumber),
+        null,
+        status,
+        new ConfigurationVersionDataType(uint(1), uint(1)),
+        fields,
+        metaData);
+  }
+
+  /**
+   * An event draft (SelectedFields-derived metadata, matching field count) encodes to MessageType
+   * {@code "ua-event"} with a name-keyed Variant Payload; it decodes back with kind {@link
+   * DataSetMessageKind#EVENT} (Part 14 §7.2.5.4.1).
+   */
+  @Test
+  void uaEventEncodesVariantPayloadAndRoundTrips() throws Exception {
+    var draft =
+        eventDraft(
+            writer("w", 17, DELTA_DSM_MASK, DataSetFieldContentMask.of()),
+            7,
+            null,
+            List.of(
+                new DataValue(Variant.of(1230.5), StatusCode.GOOD, null, null),
+                new DataValue(Variant.of(2), StatusCode.GOOD, null, null)),
+            TWO_FIELD_META);
+
+    var encoded = encodeSingle(group(JsonNetworkMessageContentMask.of()), List.of(draft));
+    JsonObject message = firstMessage(encoded);
+
+    assertEquals("ua-event", message.get("MessageType").getAsString());
+
+    JsonObject payload = message.get("Payload").getAsJsonObject();
+    assertEquals(List.of("Speed", "Mode"), List.copyOf(payload.keySet()));
+    // Variant-form fields: bare values, not per-field DataValue objects
+    assertTrue(payload.get("Speed").isJsonPrimitive());
+    assertTrue(payload.get("Mode").isJsonPrimitive());
+    assertEquals(1230.5, payload.get("Speed").getAsDouble());
+    assertEquals(2, payload.get("Mode").getAsInt());
+
+    DecodedNetworkMessage decoded = decode(encoded.toString());
+    DecodedDataSetMessage decodedMessage = decoded.messages().get(0);
+    assertEquals(DataSetMessageKind.EVENT, decodedMessage.kind());
+    assertEquals(2, decodedMessage.fields().size());
+    assertEquals("Speed", decodedMessage.fields().get(0).fieldName());
+    assertEquals(1230.5, decodedMessage.fields().get(0).value().value().value());
+    assertEquals("Mode", decodedMessage.fields().get(1).fieldName());
+    assertEquals(2, ((Number) decodedMessage.fields().get(1).value().value().value()).intValue());
+  }
+
+  /**
+   * §7.2.5.4.1: an event writer whose field mask selects the DataValue representation still emits
+   * Variant-form payload fields (the DataValue members are dropped), and the coerced Variant
+   * representation folds the first Uncertain field status into the DataSetMessage header status
+   * (Table 35) — proving the coercion reaches both the payload and resolveHeaderStatus.
+   */
+  @Test
+  void eventDataValueMaskCoercesToVariantAndFoldsHeaderStatus() throws Exception {
+    var dsmMask =
+        JsonDataSetMessageContentMask.of(
+            JsonDataSetMessageContentMask.Field.DataSetWriterId,
+            JsonDataSetMessageContentMask.Field.SequenceNumber,
+            JsonDataSetMessageContentMask.Field.Status,
+            JsonDataSetMessageContentMask.Field.MessageType,
+            JsonDataSetMessageContentMask.Field.FieldEncoding2);
+
+    var fieldMask =
+        DataSetFieldContentMask.of(
+            DataSetFieldContentMask.Field.StatusCode,
+            DataSetFieldContentMask.Field.SourceTimestamp);
+
+    DateTime sourceTime = new DateTime(Instant.parse("2026-06-11T18:45:19.502Z"));
+    var draft =
+        eventDraft(
+            writer("w", 17, dsmMask, fieldMask),
+            3,
+            null, // draft status null: the header status folds from the fields
+            List.of(
+                new DataValue(Variant.of(1230.5), StatusCode.GOOD, sourceTime, null),
+                new DataValue(Variant.of(2), new StatusCode(0x40000000L), sourceTime, null)),
+            TWO_FIELD_META);
+
+    var encoded = encodeSingle(group(JsonNetworkMessageContentMask.of()), List.of(draft));
+    JsonObject message = firstMessage(encoded);
+
+    JsonObject payload = message.get("Payload").getAsJsonObject();
+    assertEquals(List.of("Speed", "Mode"), List.copyOf(payload.keySet()));
+    // no per-field DataValue object wrapper survives the coercion (bare Variant values)
+    assertTrue(payload.get("Speed").isJsonPrimitive());
+    assertTrue(payload.get("Mode").isJsonPrimitive());
+    assertEquals(1230.5, payload.get("Speed").getAsDouble());
+    assertEquals(2, payload.get("Mode").getAsInt());
+
+    // the Uncertain field status folds into the header per the coerced Variant representation
+    assertTrue(message.has("Status"));
+    DecodedNetworkMessage decoded = decode(encoded.toString());
+    StatusCode headerStatus = decoded.messages().get(0).status();
+    assertNotNull(headerStatus);
+    assertTrue(headerStatus.isUncertain());
+    assertEquals(new StatusCode(0x40000000L), headerStatus);
+  }
+
+  /**
+   * requireEventExpressible: an event on a JSON writer whose effective DataSetMessage mask lacks
+   * the MessageType member is rejected — the {@code ua-event} wire shape would be indistinguishable
+   * from a key frame (Annex A.3.3.4).
+   */
+  @Test
+  void eventWithoutMessageTypeMaskRejected() {
+    var draft =
+        eventDraft(
+            writer("w", 17, JsonDataSetMessageContentMask.of(), DataSetFieldContentMask.of()),
+            9,
+            null,
+            List.of(new DataValue(Variant.of(1.5), StatusCode.GOOD, null, null)),
+            META);
+
+    UaException e =
+        assertThrows(
+            UaException.class,
+            () ->
+                MAPPING.encode(
+                    encodeContext(group(JsonNetworkMessageContentMask.of()), List.of(draft))));
+    assertEquals(StatusCodes.Bad_ConfigurationError, e.getStatusCode().value());
+  }
+
+  /**
+   * requireEventExpressible: an event with the DataSetMessageHeader disabled in the effective
+   * network mask is rejected for the same reason.
+   */
+  @Test
+  void eventWithoutDataSetMessageHeaderRejected() {
+    var nmMask =
+        JsonNetworkMessageContentMask.of(
+            JsonNetworkMessageContentMask.Field.NetworkMessageHeader,
+            JsonNetworkMessageContentMask.Field.PublisherId);
+
+    var draft =
+        eventDraft(
+            writer("w", 17, DELTA_DSM_MASK, DataSetFieldContentMask.of()),
+            9,
+            null,
+            List.of(new DataValue(Variant.of(1.5), StatusCode.GOOD, null, null)),
+            META);
+
+    UaException e =
+        assertThrows(
+            UaException.class, () -> MAPPING.encode(encodeContext(group(nmMask), List.of(draft))));
+    assertEquals(StatusCodes.Bad_ConfigurationError, e.getStatusCode().value());
+  }
+
+  /**
+   * metadata inheritance: an event draft with null metaData is rejected (the JSON metadata-required
+   * check applies to events, which need resolved field names).
+   */
+  @Test
+  void eventWithNullMetaDataRejected() {
+    var draft =
+        eventDraft(
+            writer("w", 17, DELTA_DSM_MASK, DataSetFieldContentMask.of()),
+            1,
+            null,
+            List.of(new DataValue(Variant.of(1.5), StatusCode.GOOD, null, null)),
+            null);
+
+    UaException e =
+        assertThrows(
+            UaException.class,
+            () ->
+                MAPPING.encode(
+                    encodeContext(group(JsonNetworkMessageContentMask.of()), List.of(draft))));
+    assertEquals(StatusCodes.Bad_ConfigurationError, e.getStatusCode().value());
+  }
+
+  /** metadata inheritance: an event whose field count disagrees with its metadata is rejected. */
+  @Test
+  void eventFieldCountMetaDataMismatchRejected() {
+    var draft =
+        eventDraft(
+            writer("w", 17, DELTA_DSM_MASK, DataSetFieldContentMask.of()),
+            1,
+            null,
+            List.of(
+                new DataValue(Variant.of(1.0), StatusCode.GOOD, null, null),
+                new DataValue(Variant.of(2.0), StatusCode.GOOD, null, null)), // two values...
+            META); // ...one field of metadata
+
+    UaException e =
+        assertThrows(
+            UaException.class,
+            () ->
+                MAPPING.encode(
+                    encodeContext(group(JsonNetworkMessageContentMask.of()), List.of(draft))));
+    assertEquals(StatusCodes.Bad_ConfigurationError, e.getStatusCode().value());
   }
 
   // endregion

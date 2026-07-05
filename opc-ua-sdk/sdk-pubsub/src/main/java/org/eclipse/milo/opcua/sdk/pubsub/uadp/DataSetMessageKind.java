@@ -14,9 +14,8 @@ package org.eclipse.milo.opcua.sdk.pubsub.uadp;
  * The kind of a DataSetMessage, used on both sides of the codec: decode surfaces it on {@link
  * DecodedDataSetMessage#kind()}, and encode consumes it from {@link DataSetMessageDraft#kind()} to
  * select the wire shape (the UADP DataSetFlags2 type bits of Part 14 §7.2.4.5.4 Table 162, the JSON
- * MessageType member of §7.2.5.4.1 Table 185). The built-in mappings decode all four kinds but emit
- * only {@link #KEY_FRAME}, {@link #DELTA_FRAME}, and {@link #KEEP_ALIVE}; {@link #EVENT} drafts are
- * rejected at encode.
+ * MessageType member of §7.2.5.4.1 Table 185). The built-in mappings decode and emit all four
+ * kinds, including {@link #EVENT}.
  */
 public enum DataSetMessageKind {
 

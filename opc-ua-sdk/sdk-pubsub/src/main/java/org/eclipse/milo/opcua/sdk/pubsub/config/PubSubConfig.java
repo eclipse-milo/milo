@@ -348,6 +348,8 @@ public final class PubSubConfig {
      *   <li>non-zero WriterGroupId/DataSetWriterId, unique within the same publisher id scope
      *   <li>resolvable {@link PublishedDataSetRef} / {@link SecurityGroupRef} / {@link
      *       StandaloneSubscribedDataSetRef} links
+     *   <li>a writer group with publishing interval zero (the event-triggered publishing mode)
+     *       contains only writers referencing event-source datasets
      *   <li>a publisher id is configured on every connection that has writer groups
      *   <li>no JSON message settings on a UDP connection
      * </ul>
@@ -375,10 +377,9 @@ public final class PubSubConfig {
       checkUniqueNames(
           securityGroups.stream().map(SecurityGroupConfig::getName).toList(), "securityGroup");
 
-      Set<String> publishedDataSetNames =
+      Map<String, PublishedDataSetConfig> publishedDataSetsByName =
           publishedDataSets.stream()
-              .map(PublishedDataSetConfig::getName)
-              .collect(Collectors.toSet());
+              .collect(Collectors.toMap(PublishedDataSetConfig::getName, dataSet -> dataSet));
       Set<String> standaloneNames =
           standaloneSubscribedDataSets.stream()
               .map(StandaloneSubscribedDataSetConfig::getName)
@@ -396,7 +397,8 @@ public final class PubSubConfig {
       }
 
       for (PubSubConnectionConfig connection : connections) {
-        validateConnection(connection, publishedDataSetNames, standaloneNames, securityGroupNames);
+        validateConnection(
+            connection, publishedDataSetsByName, standaloneNames, securityGroupNames);
       }
 
       validatePublisherIdScopes();
@@ -414,7 +416,7 @@ public final class PubSubConfig {
 
     private static void validateConnection(
         PubSubConnectionConfig connection,
-        Set<String> publishedDataSetNames,
+        Map<String, PublishedDataSetConfig> publishedDataSetsByName,
         Set<String> standaloneNames,
         Set<String> securityGroupNames) {
 
@@ -464,11 +466,19 @@ public final class PubSubConfig {
             throw new PubSubConfigValidationException(
                 writerPath + ": JSON message settings are not allowed on a UDP connection");
           }
-          if (!publishedDataSetNames.contains(writer.getDataSet().name())) {
+          PublishedDataSetConfig dataSet = publishedDataSetsByName.get(writer.getDataSet().name());
+          if (dataSet == null) {
             throw new PubSubConfigValidationException(
                 writerPath
                     + ": unresolved PublishedDataSetRef '%s'"
                         .formatted(writer.getDataSet().name()));
+          }
+          if (writerGroup.getPublishingInterval().isZero()
+              && !(dataSet.getSource() instanceof PublishedEventsConfig)) {
+            throw new PubSubConfigValidationException(
+                path
+                    + ": publishingInterval 0 requires all writers to reference event-source datasets, but dataSetWriter '%s' references data-items dataset '%s'"
+                        .formatted(writer.getName(), dataSet.getName()));
           }
         }
       }

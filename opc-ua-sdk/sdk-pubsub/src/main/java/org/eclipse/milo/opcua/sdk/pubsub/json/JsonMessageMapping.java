@@ -55,10 +55,10 @@ import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
  * and per distinct DataSetClassId when {@code DataSetClassId} is set; otherwise all drafts of a
  * call share one NetworkMessage. {@code MessageId} is a random UUID per NetworkMessage; {@code
  * ReplyTo} is never emitted; the DataSetMessage {@code Status} header is omitted when Good. Key
- * frame, delta frame, and keep-alive DataSetMessages are emitted ({@code ua-keyframe}/{@code
- * ua-deltaframe}/{@code ua-keepalive}); a delta frame carries only the changed fields and requires
- * the DataSetMessageHeader and the MessageType member in the effective masks (Part 14 Annex
- * A.3.3.4). Event emission is not supported in this version.
+ * frame, delta frame, event, and keep-alive DataSetMessages are emitted ({@code ua-keyframe}/{@code
+ * ua-deltaframe}/{@code ua-event}/{@code ua-keepalive}); a delta frame carries only the changed
+ * fields, an event carries Variant-represented fields (Part 14 §7.2.5.4.1), and both require the
+ * DataSetMessageHeader and the MessageType member in the effective masks (Part 14 Annex A.3.3.4).
  *
  * <p><b>Decoding</b> is tolerant across all eight structural layouts of §7.2.5.3 and all four field
  * encodings (current Compact/Verbose plus the deprecated Reversible/NonReversible spellings),
@@ -80,10 +80,10 @@ public final class JsonMessageMapping {
    * @return the encoded NetworkMessages, in send order; the caller assumes ownership of every
    *     returned buffer.
    * @throws UaException with {@code Bad_ConfigurationError} if the group or writer settings are not
-   *     JSON settings, a draft carries no resolved metadata, or a delta frame draft's effective
-   *     masks omit the DataSetMessageHeader or the MessageType member (Part 14 Annex A.3.3.4);
-   *     {@code Bad_NotSupported} if a draft is an event message; {@code Bad_InvalidArgument} if
-   *     {@code context} carries no drafts; {@code Bad_EncodingError} if encoding fails.
+   *     JSON settings, a draft carries no resolved metadata, or a delta frame or event draft's
+   *     effective masks omit the DataSetMessageHeader or the MessageType member (Part 14 Annex
+   *     A.3.3.4); {@code Bad_InvalidArgument} if {@code context} carries no drafts; {@code
+   *     Bad_EncodingError} if encoding fails.
    */
   public List<EncodedNetworkMessage> encode(EncodeContext context) throws UaException {
     return JsonNetworkMessageEncoder.encode(context);

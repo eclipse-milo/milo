@@ -44,6 +44,14 @@ final class PubSubConfigMapperUtil {
    */
   static final QualifiedName MILO_SOURCE_KEY = new QualifiedName(0, "MiloSourceKey");
 
+  /**
+   * The reserved DataSetWriter property under which a non-default {@link
+   * DataSetWriterConfig#getEventQueueCapacity() eventQueueCapacity} round-trips through the Part 14
+   * configuration model.
+   */
+  static final QualifiedName MILO_EVENT_QUEUE_CAPACITY =
+      new QualifiedName(0, "MiloEventQueueCapacity");
+
   /** The all-zero Guid used where the config model has no DataSetClassId to contribute. */
   static final UUID NULL_UUID = new UUID(0L, 0L);
 

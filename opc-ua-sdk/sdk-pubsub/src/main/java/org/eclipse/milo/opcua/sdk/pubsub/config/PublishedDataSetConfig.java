@@ -14,40 +14,38 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Configuration of a published dataset: an ordered list of {@link FieldDefinition}s plus a
+ * Configuration of a published dataset: a named {@link PublishedDataSetSourceConfig} plus a
  * configuration version.
  *
- * <p>Published datasets are referenced by DataSetWriters via {@link PublishedDataSetRef} and
- * supplied with values at runtime by a {@code PublishedDataSetSource} bound to the same ref.
- * Corresponds to the Part 14 {@code PublishedDataSetDataType} with a {@code
- * PublishedDataItemsDataType} source.
+ * <p>The source is either a {@link PublishedDataItemsConfig} (an ordered list of {@link
+ * FieldDefinition}s supplied with snapshots at runtime by a {@code PublishedDataSetSource} bound to
+ * the same ref) or a {@link PublishedEventsConfig} (event fields selected from events emitted by an
+ * event notifier Node). Published datasets are referenced by DataSetWriters via {@link
+ * PublishedDataSetRef}. Corresponds to the Part 14 {@code PublishedDataSetDataType}.
  */
 public final class PublishedDataSetConfig {
 
   private final String name;
   private final boolean enabled;
-  private final List<FieldDefinition> fields;
+  private final PublishedDataSetSourceConfig source;
   private final UInteger configurationVersionMajor;
   private final UInteger configurationVersionMinor;
   private final Map<QualifiedName, Variant> properties;
 
-  private PublishedDataSetConfig(Builder builder) {
+  private PublishedDataSetConfig(Builder builder, PublishedDataSetSourceConfig source) {
     this.name = builder.name;
     this.enabled = builder.enabled;
-    this.fields = List.copyOf(builder.fields);
+    this.source = source;
     this.configurationVersionMajor = builder.configurationVersionMajor;
     this.configurationVersionMinor = builder.configurationVersionMinor;
     this.properties = Collections.unmodifiableMap(new LinkedHashMap<>(builder.properties));
@@ -72,12 +70,26 @@ public final class PublishedDataSetConfig {
   }
 
   /**
-   * Get the field definitions, in dataset (wire) order.
+   * Get the source of this published dataset.
    *
-   * @return the field definitions.
+   * @return the {@link PublishedDataSetSourceConfig}.
+   */
+  public PublishedDataSetSourceConfig getSource() {
+    return source;
+  }
+
+  /**
+   * Get the field definitions of a data-items source, in dataset (wire) order.
+   *
+   * @return the field definitions when {@link #getSource()} is a {@link PublishedDataItemsConfig};
+   *     an empty list for any other source kind.
    */
   public List<FieldDefinition> getFields() {
-    return fields;
+    if (source instanceof PublishedDataItemsConfig dataItems) {
+      return dataItems.getFields();
+    } else {
+      return List.of();
+    }
   }
 
   /**
@@ -124,7 +136,7 @@ public final class PublishedDataSetConfig {
   public Builder toBuilder() {
     Builder builder = new Builder(name);
     builder.enabled = enabled;
-    builder.fields.addAll(fields);
+    builder.source = source;
     builder.configurationVersionMajor = configurationVersionMajor;
     builder.configurationVersionMinor = configurationVersionMinor;
     builder.properties.putAll(properties);
@@ -141,7 +153,7 @@ public final class PublishedDataSetConfig {
     }
     return enabled == that.enabled
         && name.equals(that.name)
-        && fields.equals(that.fields)
+        && source.equals(that.source)
         && configurationVersionMajor.equals(that.configurationVersionMajor)
         && configurationVersionMinor.equals(that.configurationVersionMinor)
         && properties.equals(that.properties);
@@ -150,16 +162,16 @@ public final class PublishedDataSetConfig {
   @Override
   public int hashCode() {
     return Objects.hash(
-        name, enabled, fields, configurationVersionMajor, configurationVersionMinor, properties);
+        name, enabled, source, configurationVersionMajor, configurationVersionMinor, properties);
   }
 
   @Override
   public String toString() {
-    return "PublishedDataSetConfig{name='%s', enabled=%s, fields=%s, configurationVersion=(%s, %s), properties=%s}"
+    return "PublishedDataSetConfig{name='%s', enabled=%s, source=%s, configurationVersion=(%s, %s), properties=%s}"
         .formatted(
             name,
             enabled,
-            fields,
+            source,
             configurationVersionMajor,
             configurationVersionMinor,
             properties);
@@ -180,6 +192,7 @@ public final class PublishedDataSetConfig {
 
     private final String name;
     private boolean enabled = true;
+    private @Nullable PublishedDataSetSourceConfig source;
     private final List<FieldDefinition> fields = new ArrayList<>();
     private UInteger configurationVersionMajor = uint(1);
     private UInteger configurationVersionMinor = uint(1);
@@ -201,13 +214,30 @@ public final class PublishedDataSetConfig {
     }
 
     /**
-     * Add a field definition. Field order defines wire order.
+     * Add a field definition to an implicit {@link PublishedDataItemsConfig} source, built when
+     * {@link #build()} is called. Field order defines wire order.
+     *
+     * <p>Cannot be combined with {@link #source(PublishedDataSetSourceConfig)}.
      *
      * @param field the field definition to add.
      * @return this {@link Builder}.
      */
     public Builder field(FieldDefinition field) {
       fields.add(field);
+      return this;
+    }
+
+    /**
+     * Set the source of the published dataset.
+     *
+     * <p>Cannot be combined with {@link #field(FieldDefinition)}. If no source is set, an implicit
+     * {@link PublishedDataItemsConfig} is built from the added field definitions.
+     *
+     * @param source the {@link PublishedDataSetSourceConfig}.
+     * @return this {@link Builder}.
+     */
+    public Builder source(PublishedDataSetSourceConfig source) {
+      this.source = source;
       return this;
     }
 
@@ -240,30 +270,28 @@ public final class PublishedDataSetConfig {
      * Build a {@link PublishedDataSetConfig} from the configured values.
      *
      * @return a new {@link PublishedDataSetConfig}.
-     * @throws PubSubConfigValidationException if the name is empty or two fields share a name or a
-     *     DataSetFieldId.
+     * @throws PubSubConfigValidationException if the name is empty, both {@link
+     *     #field(FieldDefinition)} and {@link #source(PublishedDataSetSourceConfig)} were used, or
+     *     the implicit data-items source contains two fields sharing a name or a DataSetFieldId.
      */
     public PublishedDataSetConfig build() {
       if (name.isEmpty()) {
         throw new PubSubConfigValidationException("PublishedDataSetConfig: name must not be empty");
       }
-
-      Set<String> fieldNames = new HashSet<>();
-      Set<UUID> fieldIds = new HashSet<>();
-      for (FieldDefinition field : fields) {
-        if (!fieldNames.add(field.getName())) {
-          throw new PubSubConfigValidationException(
-              "PublishedDataSetConfig '%s': duplicate field name '%s'"
-                  .formatted(name, field.getName()));
-        }
-        if (!fieldIds.add(field.getDataSetFieldId())) {
-          throw new PubSubConfigValidationException(
-              "PublishedDataSetConfig '%s': duplicate dataSetFieldId %s on field '%s'"
-                  .formatted(name, field.getDataSetFieldId(), field.getName()));
-        }
+      if (source != null && !fields.isEmpty()) {
+        throw new PubSubConfigValidationException(
+            "PublishedDataSetConfig '%s': field(...) and source(...) are mutually exclusive"
+                .formatted(name));
       }
 
-      return new PublishedDataSetConfig(this);
+      PublishedDataSetSourceConfig source = this.source;
+      if (source == null) {
+        PublishedDataItemsConfig.Builder dataItems = PublishedDataItemsConfig.builder();
+        fields.forEach(dataItems::field);
+        source = dataItems.build();
+      }
+
+      return new PublishedDataSetConfig(this, source);
     }
   }
 }

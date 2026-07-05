@@ -652,28 +652,118 @@ class UadpRoundTripTest {
     assertEquals(List.of(new DecodedField(0, goodValue(Variant.ofInt32(2)))), decodedKey.fields());
   }
 
-  /** Event DataSetMessage drafts are rejected: emission is out of scope. */
+  /**
+   * Event DataSetMessage (type 0010) round trip: the encoder emits the DataSetFlags2 event type bit
+   * (0x02, §7.2.4.5.4 Table 162) with the fields Variant-encoded — the DataSetFlags1 field-encoding
+   * bits (1,2) stay clear (§7.2.4.5.7) — and the message decodes back to a {@code kind=EVENT}
+   * DataSetMessage with the field value intact. The encoded bytes match the {@link #eventDecode}
+   * fixture.
+   */
   @Test
-  void encodeRejectsEventDrafts() {
+  void encodeEventDraftAsVariantFields() throws UaException {
     DataSetWriterConfig writer = variantWriter(1);
-    WriterGroupConfig group = group(new UadpNetworkMessageContentMask(uint(0x41)), List.of(writer));
+    WriterGroupConfig group = group(new UadpNetworkMessageContentMask(uint(0)), List.of(writer));
 
     DataSetMessageDraft draft =
-        new DataSetMessageDraft(
+        DataSetMessageDraft.ofEvent(
             writer,
             uint(1),
             null,
             null,
             new ConfigurationVersionDataType(uint(0), uint(0)),
-            DataSetMessageKind.EVENT,
-            List.of(goodValue(Variant.ofInt32(1))),
-            List.of(),
+            List.of(goodValue(Variant.ofString("evt"))),
             null);
 
-    EncodeContext context = encodeContext(group, List.of(draft));
+    byte[] expected =
+        bytes(
+            0x01, // byte 0: version 1, all optional NetworkMessage headers off
+            0x81, // DataSetFlags1: valid | Variant encoding (bits 1,2 clear) | DataSetFlags2
+            // present
+            0x02, // DataSetFlags2: type 0010 = Event
+            0x01,
+            0x00, // FieldCount = 1
+            0x0C,
+            0x03,
+            0x00,
+            0x00,
+            0x00,
+            0x65,
+            0x76,
+            0x74); // Variant String "evt"
 
-    UaException e = assertThrows(UaException.class, () -> new UadpMessageMapping().encode(context));
-    assertEquals(StatusCodes.Bad_NotSupported, e.getStatusCode().value());
+    byte[] encoded = encodeToBytes(encodeContext(group, List.of(draft)));
+
+    // Cross-check against the hand-derived eventDecode fixture, then assert the flag bits directly.
+    assertArrayEquals(expected, encoded);
+    assertEquals(0x02, encoded[2] & 0x0F, "DataSetFlags2 event type bits");
+    assertEquals(0x00, encoded[1] & 0x06, "DataSetFlags1 field-encoding bits (1,2) must be clear");
+
+    DecodedNetworkMessage decoded = decode(encoded);
+
+    assertEquals(1, decoded.messages().size());
+    DecodedDataSetMessage dsm = decoded.messages().get(0);
+    assertEquals(DataSetMessageKind.EVENT, dsm.kind());
+    assertTrue(dsm.valid());
+    assertEquals(List.of(new DecodedField(0, goodValue(Variant.ofString("evt")))), dsm.fields());
+  }
+
+  /**
+   * Event fields are always Variant-encoded (§7.2.4.5.7): even when the writer's
+   * DataSetFieldContentMask selects DataValue members (here StatusCode | SourceTimestamp), the
+   * event path ignores them — the DataSetFlags1 field-encoding bits (1,2) stay clear and the
+   * DataValue members never reach the wire. The bare value round-trips (coercion pin).
+   */
+  @Test
+  void encodeEventDraftIgnoresDataValueFieldMask() throws UaException {
+    DataSetWriterConfig writer =
+        writer(
+            1, new UadpDataSetMessageContentMask(uint(0)), new DataSetFieldContentMask(uint(0x03)));
+    WriterGroupConfig group = group(new UadpNetworkMessageContentMask(uint(0)), List.of(writer));
+
+    DataValue field =
+        new DataValue(
+            Variant.ofInt32(42),
+            StatusCode.GOOD,
+            new DateTime(10L), // SourceTimestamp: selected by the mask, but events force Variant
+            ushort(3),
+            new DateTime(20L),
+            ushort(4));
+
+    DataSetMessageDraft draft =
+        DataSetMessageDraft.ofEvent(
+            writer,
+            uint(1),
+            null,
+            null,
+            new ConfigurationVersionDataType(uint(0), uint(0)),
+            List.of(field),
+            null);
+
+    byte[] expected =
+        bytes(
+            0x01, // byte 0: version 1, all optional NetworkMessage headers off
+            0x81, // DataSetFlags1: valid | Variant encoding (bits 1,2 clear) | DataSetFlags2
+            // present
+            0x02, // DataSetFlags2: type 0010 = Event
+            0x01,
+            0x00, // FieldCount = 1
+            0x06,
+            0x2A,
+            0x00,
+            0x00,
+            0x00); // Variant Int32 = 42, NO DataValue members on the wire
+
+    byte[] encoded = encodeToBytes(encodeContext(group, List.of(draft)));
+
+    assertArrayEquals(expected, encoded);
+    assertEquals(0x00, encoded[1] & 0x06, "DataSetFlags1 field-encoding bits (1,2) must be clear");
+
+    DecodedNetworkMessage decoded = decode(encoded);
+
+    assertEquals(1, decoded.messages().size());
+    DecodedDataSetMessage dsm = decoded.messages().get(0);
+    assertEquals(DataSetMessageKind.EVENT, dsm.kind());
+    assertEquals(List.of(new DecodedField(0, goodValue(Variant.ofInt32(42)))), dsm.fields());
   }
 
   /** Event DataSetMessage (type 0010), fields encoded as Variants (§7.2.4.5.7 Table 165). */
@@ -746,6 +836,34 @@ class UadpRoundTripTest {
 
     EncodeContext context =
         encodeContext(group, List.of(keyFrame(writer, 1, List.of(goodValue(Variant.ofInt32(1))))));
+
+    UaException e = assertThrows(UaException.class, () -> new UadpMessageMapping().encode(context));
+    assertEquals(StatusCodes.Bad_NotSupported, e.getStatusCode().value());
+  }
+
+  /**
+   * RawData field encoding is rejected for events too: the blanket rejection (§7.2.4.5.11 confines
+   * RawField to key frames) fires before the event Variant path.
+   */
+  @Test
+  void encodeRejectsEventDraftWithRawDataFieldMask() {
+    // DataSetFieldContentMask bit 5 = RawData.
+    DataSetWriterConfig writer =
+        writer(
+            1, new UadpDataSetMessageContentMask(uint(0)), new DataSetFieldContentMask(uint(0x20)));
+    WriterGroupConfig group = group(new UadpNetworkMessageContentMask(uint(0x41)), List.of(writer));
+
+    DataSetMessageDraft draft =
+        DataSetMessageDraft.ofEvent(
+            writer,
+            uint(1),
+            null,
+            null,
+            new ConfigurationVersionDataType(uint(0), uint(0)),
+            List.of(goodValue(Variant.ofInt32(1))),
+            null);
+
+    EncodeContext context = encodeContext(group, List.of(draft));
 
     UaException e = assertThrows(UaException.class, () -> new UadpMessageMapping().encode(context));
     assertEquals(StatusCodes.Bad_NotSupported, e.getStatusCode().value());
@@ -892,6 +1010,40 @@ class UadpRoundTripTest {
                     writer,
                     1,
                     new DataSetMessageDraft.DeltaField(0, goodValue(Variant.ofInt32(1))))));
+
+    UaException e = assertThrows(UaException.class, () -> new UadpMessageMapping().encode(context));
+    assertEquals(StatusCodes.Bad_ConfigurationError, e.getStatusCode().value());
+  }
+
+  /**
+   * Event drafts combined with a non-zero ConfiguredSize are rejected (mirrors the delta frame
+   * rejection): the fixed-size valid-bit-clear resend path (§6.3.1.3.3) would silently discard an
+   * overflowing event forever, since events are never re-drafted. The engine never produces the
+   * combination (startup/reconfigure validation); this pins the backstop for external mapping
+   * users.
+   */
+  @Test
+  void encodeRejectsEventFrameWithConfiguredSize() {
+    DataSetWriterConfig writer =
+        DataSetWriterConfig.builder("writer-1")
+            .dataSet(new PublishedDataSetRef("ds"))
+            .dataSetWriterId(ushort(1))
+            .settings(UadpDataSetWriterSettings.builder().configuredSize(ushort(64)).build())
+            .build();
+    WriterGroupConfig group = group(new UadpNetworkMessageContentMask(uint(0x41)), List.of(writer));
+
+    EncodeContext context =
+        encodeContext(
+            group,
+            List.of(
+                DataSetMessageDraft.ofEvent(
+                    writer,
+                    uint(1),
+                    null,
+                    null,
+                    new ConfigurationVersionDataType(uint(0), uint(0)),
+                    List.of(goodValue(Variant.ofInt32(1))),
+                    null)));
 
     UaException e = assertThrows(UaException.class, () -> new UadpMessageMapping().encode(context));
     assertEquals(StatusCodes.Bad_ConfigurationError, e.getStatusCode().value());

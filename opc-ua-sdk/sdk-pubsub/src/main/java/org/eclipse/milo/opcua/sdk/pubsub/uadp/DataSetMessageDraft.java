@@ -24,10 +24,10 @@ import org.jspecify.annotations.Nullable;
 /**
  * One DataSetMessage to be encoded into a NetworkMessage.
  *
- * <p>Key frame drafts carry one value per metadata field in {@link #fields()}; delta frame drafts
- * carry only the changed fields as explicit {@code (index, value)} pairs in {@link #deltaFields()}
- * (Part 14 §7.2.4.5.6 Table 164 for UADP, §7.2.5.4.1 Table 185 for JSON); keep-alive drafts carry
- * no fields at all.
+ * <p>Key frame and event drafts carry one value per metadata field in {@link #fields()}; delta
+ * frame drafts carry only the changed fields as explicit {@code (index, value)} pairs in {@link
+ * #deltaFields()} (Part 14 §7.2.4.5.6 Table 164 for UADP, §7.2.5.4.1 Table 185 for JSON);
+ * keep-alive drafts carry no fields at all.
  *
  * @param writer the config of the DataSetWriter producing the message.
  * @param sequenceNumber the DataSetMessage sequence number. The slot spans both wire widths of Part
@@ -40,11 +40,11 @@ import org.jspecify.annotations.Nullable;
  * @param timestamp the DataSetMessage timestamp, or {@code null} if not included.
  * @param status the DataSetMessage status, or {@code null} if not included.
  * @param configurationVersion the configuration version of the dataset.
- * @param kind the kind of DataSetMessage this draft encodes to. The built-in mappings emit {@link
- *     DataSetMessageKind#KEY_FRAME}, {@link DataSetMessageKind#DELTA_FRAME}, and {@link
- *     DataSetMessageKind#KEEP_ALIVE}; {@link DataSetMessageKind#EVENT} emission is not supported.
- * @param fields the field values of a key frame, in wire order; empty for keep-alive and delta
- *     frame messages.
+ * @param kind the kind of DataSetMessage this draft encodes to. The built-in mappings emit all four
+ *     kinds: {@link DataSetMessageKind#KEY_FRAME}, {@link DataSetMessageKind#DELTA_FRAME}, {@link
+ *     DataSetMessageKind#KEEP_ALIVE}, and {@link DataSetMessageKind#EVENT}.
+ * @param fields the field values of a key frame or event, in wire order; empty for keep-alive and
+ *     delta frame messages.
  * @param deltaFields the changed fields of a delta frame, each carrying its explicit metadata
  *     position; empty for every other kind.
  * @param metaData the resolved metadata of the writer's PublishedDataSet — the wire-bound surface
@@ -53,10 +53,12 @@ import org.jspecify.annotations.Nullable;
  *     The {@code fields} are in the order of {@code metaData}'s fields, and {@code deltaFields}
  *     indices are positions into them. The UADP mapping ignores it.
  * @apiNote Create instances via {@link #of(DataSetWriterConfig, UInteger, DateTime, StatusCode,
- *     ConfigurationVersionDataType, boolean, List, DataSetMetaDataType)} or {@link
+ *     ConfigurationVersionDataType, boolean, List, DataSetMetaDataType)}, {@link
  *     #ofDeltaFrame(DataSetWriterConfig, UInteger, DateTime, StatusCode,
- *     ConfigurationVersionDataType, List, DataSetMetaDataType)} rather than the canonical
- *     constructor; the factory methods are stable while the canonical constructor is not.
+ *     ConfigurationVersionDataType, List, DataSetMetaDataType)}, or {@link
+ *     #ofEvent(DataSetWriterConfig, UInteger, DateTime, StatusCode, ConfigurationVersionDataType,
+ *     List, DataSetMetaDataType)} rather than the canonical constructor; the factory methods are
+ *     stable while the canonical constructor is not.
  */
 public record DataSetMessageDraft(
     DataSetWriterConfig writer,
@@ -229,6 +231,42 @@ public record DataSetMessageDraft(
         DataSetMessageKind.DELTA_FRAME,
         List.of(),
         deltaFields,
+        metaData);
+  }
+
+  /**
+   * Create an event {@link DataSetMessageDraft} carrying the fields of one event (Part 14
+   * §7.2.4.5.7 for UADP, §7.2.5.4.1 for JSON).
+   *
+   * @param writer the config of the DataSetWriter producing the message.
+   * @param sequenceNumber the DataSetMessage sequence number.
+   * @param timestamp the DataSetMessage timestamp, or {@code null} if not included.
+   * @param status the DataSetMessage status, or {@code null} if not included.
+   * @param configurationVersion the configuration version of the dataset.
+   * @param fields the event field values, in wire order; the fields are in the order of {@code
+   *     metaData}'s fields.
+   * @param metaData the resolved metadata of the writer's PublishedDataSet, or {@code null} when
+   *     not available; the JSON mapping requires it to resolve field names.
+   * @return a new event {@link DataSetMessageDraft}.
+   */
+  public static DataSetMessageDraft ofEvent(
+      DataSetWriterConfig writer,
+      UInteger sequenceNumber,
+      @Nullable DateTime timestamp,
+      @Nullable StatusCode status,
+      ConfigurationVersionDataType configurationVersion,
+      List<DataValue> fields,
+      @Nullable DataSetMetaDataType metaData) {
+
+    return new DataSetMessageDraft(
+        writer,
+        sequenceNumber,
+        timestamp,
+        status,
+        configurationVersion,
+        DataSetMessageKind.EVENT,
+        fields,
+        List.of(),
         metaData);
   }
 }

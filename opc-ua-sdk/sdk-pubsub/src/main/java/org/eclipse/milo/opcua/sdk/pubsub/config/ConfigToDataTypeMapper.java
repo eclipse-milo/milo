@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.pubsub.config;
 
+import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.MILO_EVENT_QUEUE_CAPACITY;
 import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.NULL_UUID;
 import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.PROFILE_MQTT_JSON;
 import static org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigMapperUtil.PROFILE_MQTT_UADP;
@@ -26,7 +27,9 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
@@ -34,6 +37,7 @@ import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrokerTransportQualityOfService;
@@ -66,12 +70,15 @@ import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfiguration2Da
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConnectionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataItemsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataSetDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataSetSourceDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.PublishedEventsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedVariableDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReaderGroupDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReaderGroupMessageDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReaderGroupTransportDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SecurityGroupDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.StandaloneSubscribedDataSetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.StandaloneSubscribedDataSetRefDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SubscribedDataSetDataType;
@@ -90,6 +97,9 @@ import org.jspecify.annotations.Nullable;
  * documented losses.
  */
 final class ConfigToDataTypeMapper {
+
+  /** The {@link DataSetWriterConfig.Builder} eventQueueCapacity default; must stay in sync. */
+  private static final int DEFAULT_EVENT_QUEUE_CAPACITY = 100;
 
   private final PubSubConfig config;
   private final NamespaceTable namespaceTable;
@@ -361,16 +371,37 @@ final class ConfigToDataTypeMapper {
           path + ": unsupported message settings " + writer.getSettings().getClass());
     }
 
+    // Event datasets are non-cyclic: Part 14 §6.2.4.3 requires KeyFrameCount 0 on their writers,
+    // regardless of the configured value.
+    boolean eventWriter = dataSetSource(writer) instanceof PublishedEventsConfig;
+
+    Map<QualifiedName, Variant> properties = new LinkedHashMap<>(writer.getProperties());
+    if (writer.getEventQueueCapacity() != DEFAULT_EVENT_QUEUE_CAPACITY) {
+      properties.put(MILO_EVENT_QUEUE_CAPACITY, Variant.ofInt32(writer.getEventQueueCapacity()));
+    }
+
     return new DataSetWriterDataType(
         writer.getName(),
         writer.isEnabled(),
         writer.getDataSetWriterId(),
         writer.getFieldContentMask(),
-        writer.getKeyFrameCount(),
+        eventWriter ? uint(0) : writer.getKeyFrameCount(),
         writer.getDataSet().name(),
-        toKeyValuePairs(writer.getProperties()),
+        toKeyValuePairs(properties),
         transportSettings,
         messageSettings);
+  }
+
+  /**
+   * Resolve a writer's dataset reference to the referenced dataset's source config, or null when
+   * the reference is dangling.
+   */
+  private @Nullable PublishedDataSetSourceConfig dataSetSource(DataSetWriterConfig writer) {
+    return config.publishedDataSets().stream()
+        .filter(dataSet -> dataSet.getName().equals(writer.getDataSet().name()))
+        .findFirst()
+        .map(PublishedDataSetConfig::getSource)
+        .orElse(null);
   }
 
   // endregion
@@ -596,6 +627,29 @@ final class ConfigToDataTypeMapper {
   private PublishedDataSetDataType mapPublishedDataSet(PublishedDataSetConfig dataSet) {
     String path = "publishedDataSet '%s'".formatted(dataSet.getName());
 
+    PublishedDataSetSourceDataType dataSetSource;
+    PublishedDataSetSourceConfig source = dataSet.getSource();
+    if (source instanceof PublishedDataItemsConfig) {
+      dataSetSource = mapPublishedDataItems(dataSet, path);
+    } else if (source instanceof PublishedEventsConfig events) {
+      dataSetSource = mapPublishedEvents(events, path);
+    } else {
+      // Default branch: the sealed source interface may gain permits in future versions.
+      throw new PubSubConfigValidationException(
+          path + ": unsupported dataset source " + source.getClass().getName());
+    }
+
+    // KeyFieldAddress keys ride along in FieldMetaData properties (MiloSourceKey); the discovery
+    // responder derives announcement metadata through the same seam with stripMiloSourceKey=true.
+    DataSetMetaDataType metaData = DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false);
+
+    return new PublishedDataSetDataType(
+        dataSet.getName(), null, metaData, toKeyValuePairs(dataSet.getProperties()), dataSetSource);
+  }
+
+  private PublishedDataItemsDataType mapPublishedDataItems(
+      PublishedDataSetConfig dataSet, String path) {
+
     List<FieldDefinition> fields = dataSet.getFields();
     PublishedVariableDataType[] publishedData = new PublishedVariableDataType[fields.size()];
 
@@ -630,16 +684,28 @@ final class ConfigToDataTypeMapper {
               publishedVariable, attributeId, 0.0, uint(0), 0.0, null, Variant.ofNull(), null);
     }
 
-    // KeyFieldAddress keys ride along in FieldMetaData properties (MiloSourceKey); the discovery
-    // responder derives announcement metadata through the same seam with stripMiloSourceKey=true.
-    DataSetMetaDataType metaData = DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false);
+    return new PublishedDataItemsDataType(publishedData);
+  }
 
-    return new PublishedDataSetDataType(
-        dataSet.getName(),
-        null,
-        metaData,
-        toKeyValuePairs(dataSet.getProperties()),
-        new PublishedDataItemsDataType(publishedData));
+  private PublishedEventsDataType mapPublishedEvents(PublishedEventsConfig events, String path) {
+    NodeId eventNotifier =
+        events
+            .getEventNotifier()
+            .toNodeId(namespaceTable)
+            .orElseThrow(
+                () ->
+                    new PubSubConfigValidationException(
+                        "%s: eventNotifier %s: namespace not present in the namespace table"
+                            .formatted(path, events.getEventNotifier())));
+
+    // Canonical shape: a zero-field dataset emits an empty (non-null) selectedFields array,
+    // matching the empty publishedData sibling convention.
+    SimpleAttributeOperand[] selectedFields =
+        events.getFields().stream()
+            .map(EventFieldDefinition::getSelectedField)
+            .toArray(SimpleAttributeOperand[]::new);
+
+    return new PublishedEventsDataType(eventNotifier, selectedFields, events.getFilter());
   }
 
   private StandaloneSubscribedDataSetDataType mapStandaloneSubscribedDataSet(

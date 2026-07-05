@@ -16,6 +16,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -45,10 +46,14 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrokerTransportQualityOfService;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.DataSetOrderingType;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.FilterOperator;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.OverrideValueHandling;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.BrokerConnectionTransportDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilter;
+import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilterElement;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetReaderDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetWriterDataType;
@@ -60,15 +65,18 @@ import org.eclipse.milo.opcua.stack.core.types.structured.FieldTargetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonDataSetMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonNetworkMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
+import org.eclipse.milo.opcua.stack.core.types.structured.LiteralOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.NetworkAddressUrlDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfiguration2DataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConnectionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataItemsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataSetDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.PublishedEventsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedVariableDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SecurityGroupDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.StandaloneSubscribedDataSetRefDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.TargetVariablesDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpDataSetMessageContentMask;
@@ -95,6 +103,9 @@ class PubSubConfigMapperRoundTripTest {
 
   private static final QualifiedName MILO_SOURCE_KEY = new QualifiedName(0, "MiloSourceKey");
 
+  private static final QualifiedName MILO_EVENT_QUEUE_CAPACITY =
+      new QualifiedName(0, "MiloEventQueueCapacity");
+
   private static final RolePermissionType ROLE_PERMISSION =
       new RolePermissionType(
           NodeIds.WellKnownRole_SecurityAdmin, PermissionType.of(PermissionType.Field.Call));
@@ -104,6 +115,8 @@ class PubSubConfigMapperRoundTripTest {
   private static final UUID FIELD_LABEL_ID = new UUID(0xA1L, 3L);
   private static final UUID FIELD_ENVELOPE_ID = new UUID(0xA1L, 4L);
   private static final UUID FIELD_VALUE_ID = new UUID(0xA2L, 1L);
+  private static final UUID FIELD_EVT_SEVERITY_ID = new UUID(0xA3L, 1L);
+  private static final UUID FIELD_EVT_MESSAGE_ID = new UUID(0xA3L, 2L);
   private static final UUID MD_F1_ID = new UUID(0xB1L, 1L);
   private static final UUID MD_F2_ID = new UUID(0xB1L, 2L);
   private static final UUID MD_CLASS_ID = new UUID(0xB1L, 99L);
@@ -233,6 +246,52 @@ class PubSubConfigMapperRoundTripTest {
         .build();
   }
 
+  private static SimpleAttributeOperand baseEventOperand(String browseName) {
+    return new SimpleAttributeOperand(
+        NodeIds.BaseEventType,
+        new QualifiedName[] {new QualifiedName(0, browseName)},
+        AttributeId.Value.uid(),
+        null);
+  }
+
+  private static ContentFilter eventFilter() {
+    return new ContentFilter(
+        new ContentFilterElement[] {
+          new ContentFilterElement(
+              FilterOperator.OfType,
+              new ExtensionObject[] {
+                encode(new LiteralOperand(Variant.ofNodeId(NodeIds.BaseEventType)))
+              })
+        });
+  }
+
+  private static PublishedDataSetConfig publishedEventsDataSet() {
+    return PublishedDataSetConfig.builder("pds-events")
+        .source(
+            // The eventNotifier is authored in the canonical namespace-URI ExpandedNodeId form
+            // that the Part 14 import mapping produces, so the round trip is a fixed point.
+            PublishedEventsConfig.builder(ExpandedNodeId.of(URI_1, "Events.Notifier"))
+                .field(
+                    EventFieldDefinition.builder("severity")
+                        .selectedField(baseEventOperand("Severity"))
+                        .dataType(NodeIds.UInt16)
+                        .dataSetFieldId(FIELD_EVT_SEVERITY_ID)
+                        .promoted(true)
+                        .build())
+                .field(
+                    EventFieldDefinition.builder("message")
+                        .selectedField(baseEventOperand("Message"))
+                        .dataType(NodeIds.LocalizedText)
+                        .dataSetFieldId(FIELD_EVT_MESSAGE_ID)
+                        .property(new QualifiedName(1, "evtFieldProp"), Variant.ofString("evtVal"))
+                        .build())
+                .filter(eventFilter())
+                .build())
+        .configurationVersion(uint(4), uint(13))
+        .property(new QualifiedName(1, "evtDsProp"), Variant.ofInt32(9))
+        .build();
+  }
+
   private static DataSetMetaDataConfig readerMetaData() {
     return DataSetMetaDataConfig.builder("md-1")
         .field("f1", NodeIds.Double, MD_F1_ID)
@@ -302,6 +361,14 @@ class PubSubConfigMapperRoundTripTest {
                     .enabled(false)
                     .dataSet(new PublishedDataSetRef("pds-2"))
                     .dataSetWriterId(ushort(12))
+                    .build())
+            .dataSetWriter(
+                DataSetWriterConfig.builder("dsw-events")
+                    .dataSet(new PublishedDataSetRef("pds-events"))
+                    .dataSetWriterId(ushort(13))
+                    // Part 14 §6.2.4.3: event datasets are non-cyclic, KeyFrameCount 0.
+                    .keyFrameCount(uint(0))
+                    .eventQueueCapacity(500)
                     .build())
             .build();
 
@@ -506,9 +573,10 @@ class PubSubConfigMapperRoundTripTest {
    * UADP and JSON settings, all five PublisherId types, message security with a security group
    * reference, reader-level security overrides (including an explicit override to None), a security
    * group with a folder path and role permissions, config-level default Security Key Services,
-   * broker transports at all three levels, node and key field addresses, promoted fields,
-   * standalone subscribed datasets, target variables, properties at every level, and raw escape
-   * hatches built from namespace 0 types.
+   * broker transports at all three levels, node and key field addresses, promoted fields, an event
+   * published dataset with a content filter referenced by an event writer with a non-default event
+   * queue capacity, standalone subscribed datasets, target variables, properties at every level,
+   * and raw escape hatches built from namespace 0 types.
    */
   private static PubSubConfig maximalConfig() {
     SecurityGroupConfig sg = securityGroup();
@@ -518,6 +586,7 @@ class PubSubConfigMapperRoundTripTest {
         .connection(mqttConnection())
         .publishedDataSet(publishedDataSet1())
         .publishedDataSet(publishedDataSet2())
+        .publishedDataSet(publishedEventsDataSet())
         .standaloneSubscribedDataSet(standalone1())
         .standaloneSubscribedDataSet(standalone2())
         .securityGroup(sg)
@@ -1013,6 +1082,314 @@ class PubSubConfigMapperRoundTripTest {
 
   // endregion
 
+  // region Event datasets
+
+  @Test
+  void publishedEventsWireForm() {
+    PubSubConfiguration2DataType dataType = maximalConfig().toDataType(namespaceTable());
+
+    PublishedDataSetDataType pdsEvents = dataType.getPublishedDataSets()[2];
+    assertEquals("pds-events", pdsEvents.getName());
+
+    PublishedEventsDataType source =
+        assertInstanceOf(PublishedEventsDataType.class, pdsEvents.getDataSetSource());
+    // The canonical URI-form eventNotifier resolves to a local NodeId on export.
+    assertEquals(new NodeId(1, "Events.Notifier"), source.getEventNotifier());
+    assertArrayEquals(
+        new SimpleAttributeOperand[] {baseEventOperand("Severity"), baseEventOperand("Message")},
+        source.getSelectedFields());
+    assertEquals(eventFilter(), source.getFilter());
+
+    DataSetWriterDataType writer =
+        dataType.getConnections()[0].getWriterGroups()[0].getDataSetWriters()[2];
+    assertEquals("dsw-events", writer.getName());
+    assertEquals(uint(0), writer.getKeyFrameCount());
+    assertEquals(
+        Variant.ofInt32(500),
+        propertyValue(writer.getDataSetWriterProperties(), MILO_EVENT_QUEUE_CAPACITY));
+  }
+
+  @Test
+  void eventWriterKeyFrameCountNormalizesToZeroOnExport() {
+    PublishedDataSetConfig eventDataSet = publishedEventsDataSet();
+    PublishedDataSetConfig dataDataSet = publishedDataSet2();
+
+    PubSubConfig config =
+        PubSubConfig.builder()
+            .publishedDataSet(eventDataSet)
+            .publishedDataSet(dataDataSet)
+            .connection(
+                PubSubConnectionConfig.udp("c")
+                    .publisherId(PublisherId.uint16(ushort(1)))
+                    .address(UdpDatagramAddress.unicast("127.0.0.1", 4840))
+                    .writerGroup(
+                        WriterGroupConfig.builder("wg")
+                            .writerGroupId(ushort(1))
+                            .dataSetWriter(
+                                DataSetWriterConfig.builder("w-event")
+                                    .dataSet(eventDataSet.ref())
+                                    .dataSetWriterId(ushort(1))
+                                    .keyFrameCount(uint(3))
+                                    .build())
+                            .dataSetWriter(
+                                DataSetWriterConfig.builder("w-data")
+                                    .dataSet(dataDataSet.ref())
+                                    .dataSetWriterId(ushort(2))
+                                    .keyFrameCount(uint(3))
+                                    .build())
+                            .build())
+                    .build())
+            .build();
+
+    DataSetWriterDataType[] writers =
+        config
+            .toDataType(namespaceTable())
+            .getConnections()[0]
+            .getWriterGroups()[0]
+            .getDataSetWriters();
+
+    // Part 14 §6.2.4.3: event datasets are non-cyclic; export normalizes KeyFrameCount to 0
+    // regardless of the authored value.
+    assertEquals(uint(0), writers[0].getKeyFrameCount());
+    // Writers referencing a data-items dataset keep their authored value.
+    assertEquals(uint(3), writers[1].getKeyFrameCount());
+  }
+
+  @Test
+  void eventQueueCapacityEmittedOnlyWhenNonDefault() {
+    PublishedDataSetConfig eventDataSet = publishedEventsDataSet();
+
+    PubSubConfig config =
+        PubSubConfig.builder()
+            .publishedDataSet(eventDataSet)
+            .connection(
+                PubSubConnectionConfig.udp("c")
+                    .publisherId(PublisherId.uint16(ushort(1)))
+                    .address(UdpDatagramAddress.unicast("127.0.0.1", 4840))
+                    .writerGroup(
+                        WriterGroupConfig.builder("wg")
+                            .writerGroupId(ushort(1))
+                            .dataSetWriter(
+                                DataSetWriterConfig.builder("w-default")
+                                    .dataSet(eventDataSet.ref())
+                                    .dataSetWriterId(ushort(1))
+                                    .keyFrameCount(uint(0))
+                                    .build())
+                            .dataSetWriter(
+                                DataSetWriterConfig.builder("w-bounded")
+                                    .dataSet(eventDataSet.ref())
+                                    .dataSetWriterId(ushort(2))
+                                    .keyFrameCount(uint(0))
+                                    .eventQueueCapacity(7)
+                                    .build())
+                            .build())
+                    .build())
+            .build();
+
+    DataSetWriterDataType[] writers =
+        config
+            .toDataType(namespaceTable())
+            .getConnections()[0]
+            .getWriterGroups()[0]
+            .getDataSetWriters();
+
+    // The default capacity emits no reserved MiloEventQueueCapacity pair at all.
+    assertEquals(
+        0, propertyCount(writers[0].getDataSetWriterProperties(), MILO_EVENT_QUEUE_CAPACITY));
+
+    // A non-default capacity emits exactly one pair carrying an Int32 Variant.
+    assertEquals(
+        1, propertyCount(writers[1].getDataSetWriterProperties(), MILO_EVENT_QUEUE_CAPACITY));
+    Variant capacity =
+        propertyValue(writers[1].getDataSetWriterProperties(), MILO_EVENT_QUEUE_CAPACITY);
+    assertInstanceOf(Integer.class, capacity.value());
+    assertEquals(Variant.ofInt32(7), capacity);
+  }
+
+  @Test
+  void explicitDefaultEventQueueCapacityDroppedOnReExport() {
+    NamespaceTable table = namespaceTable();
+
+    var wireDataSet =
+        new PublishedDataSetDataType(
+            "pds-events",
+            null,
+            null,
+            null,
+            new PublishedEventsDataType(new NodeId(1, "Events.Notifier"), null, null));
+    var wireWriter =
+        new DataSetWriterDataType(
+            "w",
+            true,
+            ushort(1),
+            null,
+            uint(0),
+            "pds-events",
+            new KeyValuePair[] {new KeyValuePair(MILO_EVENT_QUEUE_CAPACITY, Variant.ofInt32(100))},
+            null,
+            null);
+    var wireGroup =
+        new WriterGroupDataType(
+            "wg",
+            true,
+            MessageSecurityMode.None,
+            null,
+            null,
+            uint(0),
+            null,
+            ushort(1),
+            250.0,
+            0.0,
+            ubyte(0),
+            null,
+            null,
+            null,
+            null,
+            new DataSetWriterDataType[] {wireWriter});
+    var wireConnection =
+        new PubSubConnectionDataType(
+            "c",
+            true,
+            Variant.ofUInt16(ushort(9)),
+            PROFILE_UDP_UADP,
+            new NetworkAddressUrlDataType(null, "opc.udp://239.0.0.5:4841"),
+            null,
+            null,
+            new WriterGroupDataType[] {wireGroup},
+            null);
+    var wireConfig =
+        new PubSubConfiguration2DataType(
+            new PublishedDataSetDataType[] {wireDataSet},
+            new PubSubConnectionDataType[] {wireConnection},
+            true,
+            null,
+            null,
+            null,
+            null,
+            null,
+            uint(0),
+            null);
+
+    PubSubConfig imported = PubSubConfig.fromDataType(wireConfig, table);
+
+    // The reserved pair is consumed into eventQueueCapacity, not kept as a user property.
+    DataSetWriterConfig writer =
+        imported.connection("c").orElseThrow().writerGroups().get(0).getDataSetWriters().get(0);
+    assertEquals(100, writer.getEventQueueCapacity());
+    assertTrue(writer.getProperties().isEmpty());
+
+    // An explicit wire value equal to the default is dropped on re-export.
+    DataSetWriterDataType reExported =
+        imported.toDataType(table).getConnections()[0].getWriterGroups()[0].getDataSetWriters()[0];
+    assertNull(propertyValue(reExported.getDataSetWriterProperties(), MILO_EVENT_QUEUE_CAPACITY));
+  }
+
+  @Test
+  void zeroFieldEventDataSetExportsEmptySelectedFields() {
+    NamespaceTable table = namespaceTable();
+
+    PubSubConfig config =
+        PubSubConfig.builder()
+            .publishedDataSet(
+                PublishedDataSetConfig.builder("pds-empty-events")
+                    .source(
+                        PublishedEventsConfig.builder(ExpandedNodeId.of(URI_1, "Events.Notifier"))
+                            .build())
+                    .build())
+            .build();
+
+    PublishedEventsDataType exported =
+        assertInstanceOf(
+            PublishedEventsDataType.class,
+            config.toDataType(table).getPublishedDataSets()[0].getDataSetSource());
+
+    // Canonical shape: an empty (non-null) array, matching the publishedData sibling convention.
+    assertNotNull(exported.getSelectedFields());
+    assertEquals(0, exported.getSelectedFields().length);
+  }
+
+  @Test
+  void nullSelectedFieldsImportAsZeroFieldsAndReExportAsEmpty() {
+    NamespaceTable table = namespaceTable();
+
+    var wireConfig =
+        new PubSubConfiguration2DataType(
+            new PublishedDataSetDataType[] {
+              new PublishedDataSetDataType(
+                  "pds-null-events",
+                  null,
+                  null,
+                  null,
+                  new PublishedEventsDataType(new NodeId(1, "Events.Notifier"), null, null))
+            },
+            null,
+            true,
+            null,
+            null,
+            null,
+            null,
+            null,
+            uint(0),
+            null);
+
+    PubSubConfig imported = PubSubConfig.fromDataType(wireConfig, table);
+
+    PublishedEventsConfig source =
+        assertInstanceOf(
+            PublishedEventsConfig.class, imported.publishedDataSets().get(0).getSource());
+    assertTrue(source.getFields().isEmpty());
+    // A null wire filter imports as the canonical empty filter.
+    assertEquals(new ContentFilter(null), source.getFilter());
+
+    PublishedEventsDataType reExported =
+        assertInstanceOf(
+            PublishedEventsDataType.class,
+            imported.toDataType(table).getPublishedDataSets()[0].getDataSetSource());
+    assertNotNull(reExported.getSelectedFields());
+    assertEquals(0, reExported.getSelectedFields().length);
+  }
+
+  @Test
+  void eventDataSetMetaDataMatchesDataSetMetaDataMapperOutput() {
+    PubSubConfiguration2DataType dataType = maximalConfig().toDataType(namespaceTable());
+
+    PublishedDataSetDataType pdsEvents = dataType.getPublishedDataSets()[2];
+
+    // The emitted metadata is exactly the DataSetMetaDataMapper derivation.
+    assertEquals(
+        DataSetMetaDataMapper.toDataSetMetaDataType(publishedEventsDataSet(), false),
+        pdsEvents.getDataSetMetaData());
+
+    FieldMetaData[] fields = pdsEvents.getDataSetMetaData().getFields();
+    assertNotNull(fields);
+    assertEquals(2, fields.length);
+
+    assertEquals("severity", fields[0].getName());
+    assertTrue(fields[0].getFieldFlags().getPromotedField());
+    assertEquals(ubyte(5), fields[0].getBuiltInType()); // UInt16
+    assertEquals(NodeIds.UInt16, fields[0].getDataType());
+    assertEquals(FIELD_EVT_SEVERITY_ID, fields[0].getDataSetFieldId());
+
+    assertEquals("message", fields[1].getName());
+    assertFalse(fields[1].getFieldFlags().getPromotedField());
+    assertEquals(ubyte(21), fields[1].getBuiltInType()); // LocalizedText
+    assertEquals(NodeIds.LocalizedText, fields[1].getDataType());
+    assertEquals(FIELD_EVT_MESSAGE_ID, fields[1].getDataSetFieldId());
+    assertEquals(
+        Variant.ofString("evtVal"),
+        propertyValue(fields[1].getProperties(), new QualifiedName(1, "evtFieldProp")));
+
+    // Event fields have no field address: no MiloSourceKey property is emitted.
+    assertNull(propertyValue(fields[0].getProperties(), MILO_SOURCE_KEY));
+    assertNull(propertyValue(fields[1].getProperties(), MILO_SOURCE_KEY));
+
+    ConfigurationVersionDataType version = pdsEvents.getDataSetMetaData().getConfigurationVersion();
+    assertEquals(uint(4), version.getMajorVersion());
+    assertEquals(uint(13), version.getMinorVersion());
+  }
+
+  // endregion
+
   // region Namespace handling
 
   @Test
@@ -1192,5 +1569,18 @@ class PubSubConfigMapperRoundTripTest {
       }
     }
     return null;
+  }
+
+  private static int propertyCount(KeyValuePair[] pairs, QualifiedName key) {
+    if (pairs == null) {
+      return 0;
+    }
+    int count = 0;
+    for (KeyValuePair pair : pairs) {
+      if (pair != null && key.equals(pair.getKey())) {
+        count++;
+      }
+    }
+    return count;
   }
 }

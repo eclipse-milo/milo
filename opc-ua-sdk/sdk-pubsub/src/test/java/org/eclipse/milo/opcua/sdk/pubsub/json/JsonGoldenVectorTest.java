@@ -396,6 +396,78 @@ class JsonGoldenVectorTest {
         List.of("CommandedSpeed"), List.copyOf(actual.get("Payload").getAsJsonObject().keySet()));
   }
 
+  /**
+   * Encoding an event draft produces a worked {@code ua-event} example: a headerless single-DSM
+   * {@code ua-event} whose Payload carries the event fields in the Variant representation,
+   * name-keyed from the draft metadata (Part 14 §7.2.5.4.1 Table 185). Member order is pinned to
+   * the Table 185 order.
+   */
+  @Test
+  void encodeWorkedExampleEvent() throws Exception {
+    // headerless single DataSetMessage: DataSetMessageHeader + SingleDataSetMessage, no
+    // NetworkMessageHeader (§7.2.5.3 collapse)
+    var nmMask =
+        JsonNetworkMessageContentMask.of(
+            JsonNetworkMessageContentMask.Field.DataSetMessageHeader,
+            JsonNetworkMessageContentMask.Field.SingleDataSetMessage);
+
+    var dsmMask =
+        JsonDataSetMessageContentMask.of(
+            JsonDataSetMessageContentMask.Field.DataSetWriterId,
+            JsonDataSetMessageContentMask.Field.SequenceNumber,
+            JsonDataSetMessageContentMask.Field.Timestamp,
+            JsonDataSetMessageContentMask.Field.MessageType,
+            JsonDataSetMessageContentMask.Field.FieldEncoding2);
+
+    DataSetMetaDataType eventMetaData =
+        metaData(
+            "Events",
+            null,
+            EXAMPLE_VERSION,
+            field("Severity", 5, NodeIds.UInt16, -1),
+            field("SourceName", 12, NodeIds.String, -1));
+
+    var draft =
+        DataSetMessageDraft.ofEvent(
+            writer("events-writer", 22, dsmMask, DataSetFieldContentMask.of()),
+            uint(1044),
+            new DateTime(Instant.parse("2026-06-11T18:45:19.555Z")),
+            StatusCode.GOOD,
+            EXAMPLE_VERSION,
+            List.of(
+                new DataValue(Variant.of(ushort(500)), StatusCode.GOOD, null, null),
+                new DataValue(Variant.of("Boiler #1"), StatusCode.GOOD, null, null)),
+            eventMetaData);
+
+    JsonObject actual = encodeSingle(group(nmMask), List.of(draft)).getAsJsonObject();
+
+    JsonObject expected =
+        JsonParser.parseString(
+                """
+                {
+                  "DataSetWriterId": 22,
+                  "SequenceNumber": 1044,
+                  "Timestamp": "2026-06-11T18:45:19.555Z",
+                  "MessageType": "ua-event",
+                  "Payload": {
+                    "Severity": 500,
+                    "SourceName": "Boiler #1"
+                  }
+                }
+                """)
+            .getAsJsonObject();
+
+    assertEquals(expected, actual);
+
+    // member order pinned to Table 185
+    assertEquals(
+        List.of("DataSetWriterId", "SequenceNumber", "Timestamp", "MessageType", "Payload"),
+        List.copyOf(actual.keySet()));
+    assertEquals(
+        List.of("Severity", "SourceName"),
+        List.copyOf(actual.get("Payload").getAsJsonObject().keySet()));
+  }
+
   /** The spec's own §7.2.5.4.2 example 1, verbatim: collapsed Verbose fields, no field status. */
   @Test
   void decodeSpecExampleWithoutFieldStatus() throws Exception {

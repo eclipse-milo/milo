@@ -41,6 +41,23 @@ import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfiguration2Da
  *   <li>{@link KeyFieldAddress} round-trips through {@code FieldMetaData.properties} under the
  *       reserved name {@code 0:MiloSourceKey}, with {@code publishedVariable = NodeId.NULL_VALUE};
  *       that property name must not be used for user field properties.
+ *   <li>{@link PublishedEventsConfig} ↔ {@code PublishedEventsDataType}: the {@code eventNotifier}
+ *       ({@code ExpandedNodeId}, canonically the namespace-URI form produced by {@code
+ *       NodeId.expanded(NamespaceTable)}, as for {@link NodeFieldAddress}) ↔ local {@code NodeId}
+ *       via the supplied {@link NamespaceTable}; an unresolvable namespace URI or index throws
+ *       {@link PubSubConfigValidationException}. Event fields zip {@code FieldMetaData} with the
+ *       {@code selectedFields} operand at the same index; a length mismatch between {@code
+ *       selectedFields} and the metadata fields is rejected. NodeIds inside selected-field operands
+ *       (e.g. {@code SimpleAttributeOperand.typeDefinitionId}) and ContentFilter operands are
+ *       carried verbatim and NOT remapped through the {@link NamespaceTable}, so filters and
+ *       selected fields referencing namespace indices other than 0 are only portable between peers
+ *       with identical namespace tables.
+ *   <li>{@code DataSetWriterConfig.eventQueueCapacity} round-trips through {@code
+ *       DataSetWriterProperties} under the reserved name {@code 0:MiloEventQueueCapacity} (an Int32
+ *       Variant); that property name must not be used for user writer properties. {@code
+ *       fromDataType} consumes the pair wherever it sits — it never surfaces in the config's writer
+ *       properties — and rejects values below 1 and non-integer Variants; {@code toDataType} emits
+ *       the pair only when the capacity differs from the default (100).
  *   <li>Transport profile URIs are derived, not stored: UDP connections map to {@code
  *       .../pubsub-udp-uadp}; MQTT connections map to {@code .../pubsub-mqtt-json} if any of their
  *       groups, writers, or readers use JSON message settings, else {@code .../pubsub-mqtt-uadp}.
@@ -97,6 +114,18 @@ import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfiguration2Da
  *       services emitted by earlier Milo versions — maps to an absent reader override; an absent
  *       override is emitted as {@code Invalid}/null/null. A {@code None} override <em>with</em> a
  *       group id or key services survives as an active override.
+ *   <li>A dataset writer whose dataset has a {@link PublishedEventsConfig} source is emitted with
+ *       {@code KeyFrameCount = 0} regardless of the configured value (event datasets are
+ *       non-cyclic, Part 14 §6.2.4.3), so the configured key frame count of an event writer does
+ *       not survive a round trip.
+ *   <li>An explicit wire {@code 0:MiloEventQueueCapacity} equal to the default (100) imports
+ *       cleanly but is dropped on re-export, and the pair's position is canonicalized: it is
+ *       emitted after the writer's own properties.
+ *   <li>A published events source with zero fields is emitted with an empty (non-null) {@code
+ *       selectedFields} array, matching the empty {@code publishedData} sibling convention; an
+ *       incoming null {@code selectedFields} array is tolerated only when the metadata has zero
+ *       fields and normalizes to the empty array on re-export. A non-null {@code filter} is always
+ *       emitted; an incoming null filter maps to the canonical empty {@code ContentFilter}.
  * </ul>
  *
  * <h3>Documented losses</h3>
@@ -135,7 +164,8 @@ import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfiguration2Da
  *       dataSetClassId} (emitted as the all-zero Guid), the DataTypeSchemaHeader arrays, and the
  *       {@code PublishedVariableDataType} sampling/deadband/index-range/substitute-value fields
  *       (emitted as defaults). {@code PublishedDataSetConfig.properties} maps to {@code
- *       extensionFields}. Non-{@code PublishedDataItems} dataset sources are rejected.
+ *       extensionFields}. Dataset sources other than {@code PublishedDataItems} and {@code
+ *       PublishedEvents} are rejected.
  *   <li>Standalone subscribed dataset: {@code dataSetFolder}. {@code SubscribedDataSetMirror} and
  *       inline standalone subscribed datasets are rejected.
  *   <li>MQTT connection address: {@code networkInterface}.

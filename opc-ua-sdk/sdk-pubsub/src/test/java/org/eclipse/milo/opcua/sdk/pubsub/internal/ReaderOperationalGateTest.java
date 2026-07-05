@@ -55,6 +55,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.transport.SubscriberChannel;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.SubscriberTransportContext;
 import org.eclipse.milo.opcua.sdk.pubsub.transport.TransportProvider;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DataSetMessageDraft;
+import org.eclipse.milo.opcua.sdk.pubsub.uadp.DataSetMessageKind;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.EncodeContext;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.EncodedNetworkMessage;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.UadpMessageMapping;
@@ -448,6 +449,31 @@ class ReaderOperationalGateTest {
     assertNotNull(event);
     assertEquals("Field_0", event.fields().get(0).name());
     assertEquals(Variant.ofInt32(11), event.fields().get(0).value().getValue());
+  }
+
+  /**
+   * The DataSetMessage kind decoded from the wire (§7.2.4.5.4 Table 162 DataSetFlags2 type bits) is
+   * surfaced on the delivered {@link DataSetReceivedEvent#kind()}: a key frame delivers {@link
+   * DataSetMessageKind#KEY_FRAME}, an event DataSetMessage delivers {@link
+   * DataSetMessageKind#EVENT}. Both are driven through the real decode-and-dispatch path (the codec
+   * round-trip tests pin the byte-level kind decode; this pins the dispatcher wiring {@code
+   * message.kind()} into the event).
+   */
+  @Test
+  void deliveredEventCarriesDecodedDataSetMessageKind() throws Exception {
+    startReaderService(DataSetReaderConfig.builder("R1").build());
+
+    // a key frame (default masks: no sequence number, so it bypasses the §7.2.3 window)
+    injectAndFlush(encodeKeyFrameMessage(10, 7));
+    DataSetReceivedEvent keyFrame = events.poll();
+    assertNotNull(keyFrame);
+    assertEquals(DataSetMessageKind.KEY_FRAME, keyFrame.kind());
+
+    // an event DataSetMessage (DataSetFlags2 type bits = 0x02) on the same reader
+    injectAndFlush(eventFrameWithInt32Field(11));
+    DataSetReceivedEvent event = events.poll();
+    assertNotNull(event);
+    assertEquals(DataSetMessageKind.EVENT, event.kind());
   }
 
   @Test

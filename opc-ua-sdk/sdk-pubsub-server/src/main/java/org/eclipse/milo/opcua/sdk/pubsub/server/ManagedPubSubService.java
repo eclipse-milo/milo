@@ -35,6 +35,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigValidationException;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetRef;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
 import org.jspecify.annotations.Nullable;
@@ -256,6 +257,11 @@ final class ManagedPubSubService implements PubSubService {
   public void bindSource(PublishedDataSetRef dataSet, PublishedDataSetSource source) {
     delegate.bindSource(dataSet, source);
     bindSourceObserver.accept(dataSet);
+  }
+
+  @Override
+  public void publishEvent(PublishedDataSetRef dataSet, List<Variant> fields) {
+    delegate.publishEvent(dataSet, fields);
   }
 
   @Override
