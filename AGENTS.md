@@ -42,12 +42,14 @@ Use these steps to verify any completed work. Implementation plans should includ
     - `mvn -q spotless:apply` - Format code
     - `mvn -q clean compile` - Compile (skip tests)
 
-2. **Request code review** from the `preflight` agent, which will:
-    - Review changes for correctness, style, and adherence to project conventions
-    - Report **APPROVED** or **CHANGES REQUESTED**
+No separate review-agent gate is required. Reviews are handled manually or by workflow-specific
+gates when requested.
 
-Before committing, ensure all verification steps pass and preflight approval is received.
+Before committing, ensure all verification steps pass.
 
 ---
 
 > **Build Rule:** ALWAYS use the `maven-command-runner` agent for Maven commands.
+> - Codex: delegate Maven commands to a worker subagent using
+>   `.codex/agents/maven-command-runner.md`.
+> - Claude: use `.claude/agents/maven-command-runner.md`.
