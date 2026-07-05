@@ -203,6 +203,70 @@ not a captured snapshot. Both connections pin `discoveryAddress` to distinct loo
 (15121 and 15122) — without an explicit discovery address the engine binds UDP 4840 and joins
 multicast group 224.0.2.14, and two processes on one host cannot share a discovery port.
 
+## Publishing events: the event-notifier binding
+
+The auto-source publishes *node values* on a cycle; the event-notifier binding publishes *events*
+as they fire. When an attached configuration contains an
+[event dataset](configuration.md#the-published-dataset-source-data-items-or-events) — a
+`PublishedDataSetConfig` whose source is a `PublishedEventsConfig` — `ServerPubSub` bridges the
+server's event bus into the runtime automatically, so you never call `publishEvent` yourself.
+
+A single `EventListener` is registered with the server's event notifier for the whole `ServerPubSub`
+lifetime — one listener, not one per dataset. For every event the server fires, it evaluates each
+event dataset's filter against the event and, on a match, pushes the selected fields to
+`PubSubService.publishEvent(...)`. The set of datasets it serves is a map rebuilt wholesale from the
+applied configuration at `startup()` and after every successful reconfigure, so reconfiguring
+through `runtime()` keeps the event bindings in sync alongside the auto-source, TargetVariables
+writers, and the exposed information model.
+
+How each event dataset becomes an *active* binding:
+
+- **Notifier resolution.** The dataset's `eventNotifier` `ExpandedNodeId` is resolved against the
+  server's `NamespaceTable`, and the resolved Node must be a managed `Object` whose `EventNotifier`
+  attribute has the `SubscribeToEvents` bit set — the same rule the `SubscriptionManager` applies to
+  event monitored items. The `Server` object (`i=2253`) is the usual choice, since it observes every
+  event the server fires.
+- **The filter.** An `EventFilter` is assembled from the dataset's `EventFieldDefinition` selected
+  fields (the select clauses) and its `ContentFilter` (the where clause), then validated exactly as a
+  monitored item's filter is. The binding activates only if the filter validates *fully Good*: every
+  select-clause and where-clause `StatusCode` Good, every `ElementOperand` index in bounds, and the
+  where-clause root operator Boolean-producing.
+- **Scope.** A binding whose notifier is the `Server` object is *unscoped* — every event passes,
+  because every Milo event producer fires with Server-object semantics. A binding on any other
+  notifier is scoped to that notifier's event-source subtree: the nodes reachable by walking forward
+  references whose type is a subtype of `HasEventSource` (which covers `HasNotifier`), recursively,
+  plus the notifier node itself. An event is then published only when its `SourceNode` falls in that
+  set. The walk sees managed address spaces only, and topology changes are picked up on the next
+  reconfigure.
+
+The posture is **degrade-to-inactive**, mirroring the auto-source's tolerance of missing nodes: a
+dataset whose notifier or filter cannot be honored yields an *inactive* binding (logged once),
+retained in the map but skipped by delivery — it never fails `startup()` or a reconfigure. A
+**zero-field** event dataset is likewise inactive (its empty select clause cannot validate), not an
+error. And because the event bus has no error isolation, a binding whose filter evaluation throws at
+runtime is deactivated after a single WARN (no per-event log spam) and revived by the next
+reconfigure's rebuild. Delivery runs synchronously on whatever thread fired the event: it catches
+`Throwable`, never blocks, and reads the selected fields while the transient event node is still
+valid before handing off to the lock-free `publishEvent`.
+
+Two ordering caveats:
+
+- **The notifier must exist at startup.** Attach eagerly validates that every event dataset's
+  `eventNotifier` resolves against the server `NamespaceTable` — an unresolvable notifier URI fails
+  `attach` outright. But the notifier *node* (and any custom event types) must live in a namespace
+  registered *before* `ServerPubSub.startup()`; a namespace added afterward is invisible to the
+  startup build, so its bindings stay inactive until the next reconfigure rebuilds them. Register
+  such namespaces first, or reconfigure after adding them.
+- **Firing requires a started server.** Selecting and firing event fields uses the server's
+  `EventFactory`, which needs a *started* server — the same requirement as [status
+  events](#status-events). On a never-started server the event bindings build, but no events flow.
+
+The event dataset's `DataSetMetaData` (field names and types the subscriber decodes against) is
+derived from the `EventFieldDefinition`s and published on the usual metadata paths (see
+[metadata and discovery](metadata-and-discovery.md#event-dataset-metadata)). The event push API and
+the interval-0 group rules that pair with this binding are in the
+[configuration model](configuration.md#publishing-events-the-push-api-and-event-triggered-groups).
+
 ## Writing received values into nodes: TargetVariables
 
 The reverse direction: `ServerTargetSubscriberExample` is an `OpcUaServer` whose Temperature and
@@ -601,8 +665,10 @@ them:
 - **The deprecated imperative configuration methods.** Remote configuration is the
   [file model](#remote-configuration); the per-element ns0 methods (`AddConnection`,
   `RemoveConnection`, and friends) and the SKS management methods remain unbacked and answer
-  `Bad_NotImplemented`. The dataset-level binding methods (`CreateTargetVariables`,
-  `CreateDataSetMirror`, ...) are likewise not implemented.
+  `Bad_NotImplemented`. This includes the imperative *event*-dataset methods
+  (`AddPublishedEvents`, `AddPublishedEventsTemplate`, `ModifyFieldSelection`) — event datasets are
+  configured in Java or through the file model, not through these. The dataset-level binding
+  methods (`CreateTargetVariables`, `CreateDataSetMirror`, ...) are likewise not implemented.
 - **Standalone SubscribedDataSet references.** A reader whose SubscribedDataSet is a
   `StandaloneSubscribedDataSetRef` carrying TargetVariables gets no automatic writes: attach
   succeeds, the targets are still validated, a WARN is logged, and nothing is written at runtime.
