@@ -40,6 +40,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigValidationException;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConnectionConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetRef;
+import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedEventsConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.ReaderGroupConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.SecurityGroupConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.StandaloneSubscribedDataSetConfig;
@@ -49,6 +50,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.TargetVariablesConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfiguration2DataType;
@@ -125,6 +127,9 @@ public final class ServerPubSub implements AutoCloseable {
   /** Guarded by {@link #lifecycleLock}. */
   private FaceState statusEventBridgeState = FaceState.NEW;
 
+  /** Guarded by {@link #lifecycleLock}. */
+  private FaceState eventNotifierBindingState = FaceState.NEW;
+
   /** The raw engine service; internal use only — API callers get {@link #managedService}. */
   private final PubSubService service;
 
@@ -136,6 +141,13 @@ public final class ServerPubSub implements AutoCloseable {
   private final @Nullable PubSubConfigurationFace configurationFace;
   private final @Nullable PubSubConfigurationStore configurationStore;
   private final @Nullable PubSubStatusEventBridge statusEventBridge;
+
+  /**
+   * Bridges the server's event bus into the PubSub runtime, publishing configured {@code
+   * PublishedEvents} datasets. Constructed unconditionally (its binding map is empty when no event
+   * datasets are configured); registered as a server event listener from {@link #startup()}.
+   */
+  private final PubSubEventNotifierBinding eventNotifierBinding;
 
   /**
    * The SecurityGroups of the current configuration, by SecurityGroupId; the default authorizer's
@@ -277,14 +289,21 @@ public final class ServerPubSub implements AutoCloseable {
     this.statusEventBridge =
         options.isStatusEventsEnabled() ? new PubSubStatusEventBridge(server, service) : null;
 
+    // the event-notifier binding: server events matching a PublishedEvents dataset's filter are
+    // pushed to the runtime. Constructed unconditionally — its binding map is empty (and its
+    // listener a no-op) until an event dataset is configured
+    this.eventNotifierBinding = new PubSubEventNotifierBinding(server, service);
+
     // Post-apply hooks, in fixed registration order; registered before the mediator is
     // constructed because the hook list is fixed at construction:
     //   1. fragment rebuild         — PubSubInfoModelFragment.applyReconfigure keeps the exposed
     //      model in sync with the engine
     //   2. bindings re-derivation   — TargetVariables writers + automatic dataset sources
     //      after configuration changes
-    //   3. SKS key-store refresh    — SksServerFace.onConfigurationApplied
-    //   4. remote file refresh + persistence; registered LAST so a
+    //   3. event-notifier rebuild   — PubSubEventNotifierBinding re-derives its PublishedEvents
+    //      bindings from the applied config (right after bindings re-derivation)
+    //   4. SKS key-store refresh    — SksServerFace.onConfigurationApplied
+    //   5. remote file refresh + persistence; registered LAST so a
     //      save failure never blocks the key refresh or the model rebuild
     var hooks = new ArrayList<ManagedPubSubService.ReconfigureHook>();
 
@@ -292,6 +311,7 @@ public final class ServerPubSub implements AutoCloseable {
       hooks.add(fragment::applyReconfigure);
     }
     hooks.add(this::rederiveBindings);
+    hooks.add(eventNotifierBinding::onConfigurationApplied);
     if (sksServerFace != null) {
       hooks.add(sksServerFace::onConfigurationApplied);
     }
@@ -451,6 +471,14 @@ public final class ServerPubSub implements AutoCloseable {
         statusEventBridge.startup();
         statusEventBridgeState = FaceState.STARTED;
       }
+
+      if (eventNotifierBindingState == FaceState.NEW) {
+        // builds the initial PublishedEvents bindings from the attach-time config and registers
+        // the server event listener; notifier nodes in namespaces registered after this point
+        // stay inactive until the next reconfigure (documented on PubSubEventNotifierBinding)
+        eventNotifierBinding.startup(currentConfig);
+        eventNotifierBindingState = FaceState.STARTED;
+      }
     }
 
     return service.startup().thenApply(s -> this);
@@ -483,6 +511,9 @@ public final class ServerPubSub implements AutoCloseable {
                 writersShutdown = true;
                 writers.values().forEach(TargetVariablesWriter::deactivate);
               }
+              // no drain dependency: deregister the event listener and clear its bindings so no
+              // further server event is dispatched to the runtime
+              shutdownEventNotifierBinding();
               shutdownFragment();
               shutdownSksServerFace();
               shutdownConfigurationFace();
@@ -539,6 +570,17 @@ public final class ServerPubSub implements AutoCloseable {
         statusEventBridge.shutdown();
       }
       statusEventBridgeState = FaceState.STOPPED;
+    }
+  }
+
+  private void shutdownEventNotifierBinding() {
+    synchronized (lifecycleLock) {
+      // idempotent: shut down only from STARTED, but always leave STOPPED behind so a close()
+      // that runs before startup() prevents the listener from ever registering
+      if (eventNotifierBindingState == FaceState.STARTED) {
+        eventNotifierBinding.shutdown();
+      }
+      eventNotifierBindingState = FaceState.STOPPED;
     }
   }
 
@@ -612,6 +654,11 @@ public final class ServerPubSub implements AutoCloseable {
    */
   @Nullable PubSubStatusEventBridge statusEventBridge() {
     return statusEventBridge;
+  }
+
+  /** Get the PubSub event-notifier binding. Package-private for tests. */
+  PubSubEventNotifierBinding eventNotifierBinding() {
+    return eventNotifierBinding;
   }
 
   /**
@@ -1012,6 +1059,13 @@ public final class ServerPubSub implements AutoCloseable {
    * against the server's {@link NamespaceTable}, and eagerly parse every TargetVariables receiver
    * and write index range.
    *
+   * <p>Every {@code PublishedEvents} dataset's {@code EventNotifier} {@link ExpandedNodeId} is
+   * resolved too: an unresolvable notifier URI attaches fine but then makes the {@code
+   * PubSubConfiguration} file surface throw on every Open/Read (the wire export resolves it to a
+   * local NodeId), so it is rejected here at attach and per reconfigure. Notifier node
+   * <em>existence</em> and its {@code SubscribeToEvents} bit are not checked here — the adapter
+   * degrades to an inactive binding for those (see {@link PubSubEventNotifierBinding}).
+   *
    * <p>Package-private: also enforced per reconfigure by {@link ManagedPubSubService}'s
    * pre-validation.
    */
@@ -1025,6 +1079,13 @@ public final class ServerPubSub implements AutoCloseable {
               namespaceTable,
               "PublishedDataSet '%s' field '%s'".formatted(dataSet.getName(), field.getName()));
         }
+      }
+
+      if (dataSet.getSource() instanceof PublishedEventsConfig events) {
+        requireResolvableNotifier(
+            events.getEventNotifier(),
+            namespaceTable,
+            "PublishedDataSet '%s'".formatted(dataSet.getName()));
       }
     }
 
@@ -1080,6 +1141,16 @@ public final class ServerPubSub implements AutoCloseable {
       throw new PubSubConfigValidationException(
           "%s: cannot resolve %s against the server NamespaceTable"
               .formatted(element, address.nodeId()));
+    }
+  }
+
+  private static void requireResolvableNotifier(
+      ExpandedNodeId eventNotifier, NamespaceTable namespaceTable, String element) {
+
+    if (eventNotifier.toNodeId(namespaceTable).isEmpty()) {
+      throw new PubSubConfigValidationException(
+          "%s: cannot resolve event notifier %s against the server NamespaceTable"
+              .formatted(element, eventNotifier));
     }
   }
 

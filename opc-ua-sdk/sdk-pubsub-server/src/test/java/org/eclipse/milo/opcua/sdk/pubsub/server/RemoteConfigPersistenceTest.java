@@ -30,18 +30,23 @@ import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.sdk.pubsub.PubSubHandle;
+import org.eclipse.milo.opcua.sdk.pubsub.config.EventFieldDefinition;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigFiles;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConnectionConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedEventsConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
 import org.eclipse.milo.opcua.sdk.pubsub.config.UdpDatagramAddress;
 import org.eclipse.milo.opcua.sdk.pubsub.config.WriterGroupConfig;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
+import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -50,6 +55,9 @@ import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfiguration2DataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfigurationRefDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfigurationRefMask;
+import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataSetDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.PublishedEventsDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -206,6 +214,82 @@ class RemoteConfigPersistenceTest {
     assertEquals(storedVersion, managed.configurationVersion());
   }
 
+  @Test
+  void storedEventDataSetSourceReloadsAtAttach() throws Exception {
+    UInteger storedVersion = uint(0x0EEE0001L);
+
+    PubSubConfiguration2DataType stored =
+        PubSubConfigurationFace.withConfigurationVersion(
+            configWithEvents(freeUdpPort()).toDataType(testServer.getServer().getNamespaceTable()),
+            storedVersion);
+
+    var store =
+        new RecordingStore() {
+          @Override
+          public @Nullable PubSubConfiguration2DataType load() {
+            return stored;
+          }
+        };
+
+    ServerPubSub serverPubSub = attachAndStart(store);
+
+    // the loaded event-source configuration won: nothing re-saved, the clock seeded
+    assertEquals(0, store.saved.size());
+    var managed = (ManagedPubSubService) serverPubSub.runtime();
+    assertEquals(storedVersion, managed.configurationVersion());
+
+    // one mutating apply serializes the live config; the PublishedEvents source reloaded
+    // identically
+    serverPubSub.runtime().update(current -> current.toBuilder().enabled(true).build());
+    assertEquals(1, store.saved.size());
+
+    PublishedEventsDataType original = eventSource(stored);
+    PublishedEventsDataType reloaded = eventSource(store.saved.get(0));
+    assertEquals(original.getEventNotifier(), reloaded.getEventNotifier());
+    assertNotNull(reloaded.getSelectedFields());
+    assertEquals(original.getSelectedFields().length, reloaded.getSelectedFields().length);
+  }
+
+  @Test
+  void remoteCloseAndUpdateAddingEventDataSetIsSavedAndReloads() throws Exception {
+    var store = new RecordingStore();
+    ServerPubSub serverPubSub = attachAndStart(store);
+    Session session = session();
+
+    // only the attach-time save so far
+    assertEquals(1, store.saved.size());
+
+    // a remote CloseAndUpdate adds an event dataset; onMediatorApplied saves the wire form
+    CallMethodResult mutating =
+        closeAndUpdate(session, addEventDataSetFile(), addEventDataSetRef());
+    assertEquals(StatusCode.GOOD, mutating.getStatusCode());
+    assertEquals(true, mutating.getOutputArguments()[0].getValue());
+    assertEquals(2, store.saved.size());
+
+    // the saved wire form carries the added event dataset
+    PubSubConfiguration2DataType savedConfig = store.saved.get(1);
+    PublishedEventsDataType savedSource = eventSource(savedConfig);
+    assertNotNull(savedSource.getSelectedFields());
+
+    // the saved wire form reloads: a fresh attach whose store returns it comes up identically,
+    // re-saving nothing (close the first attachment first to free its connection port)
+    attached.remove(serverPubSub);
+    serverPubSub.close();
+
+    var reloadStore =
+        new RecordingStore() {
+          @Override
+          public @Nullable PubSubConfiguration2DataType load() {
+            return savedConfig;
+          }
+        };
+
+    ServerPubSub reloaded = attachAndStart(reloadStore);
+    assertEquals(0, reloadStore.saved.size());
+    var managed = (ManagedPubSubService) reloaded.runtime();
+    assertEquals(savedConfig.getConfigurationVersion(), managed.configurationVersion());
+  }
+
   // region helpers
 
   private ServerPubSub attachAndStart(PubSubConfigurationStore store) throws Exception {
@@ -231,6 +315,62 @@ class RemoteConfigPersistenceTest {
                 .address(UdpDatagramAddress.unicast("127.0.0.1", port))
                 .build())
         .build();
+  }
+
+  /** The baseline {@link #config} plus an unreferenced event-source published dataset. */
+  private static PubSubConfig configWithEvents(int port) {
+    return config(port).toBuilder().publishedDataSet(eventDataSet("ps-evt-ds")).build();
+  }
+
+  /** An event-source dataset selecting {@code Severity} from the ns0 Server notifier. */
+  private static PublishedDataSetConfig eventDataSet(String name) {
+    return PublishedDataSetConfig.builder(name)
+        .source(
+            PublishedEventsConfig.builder(
+                    NodeIds.Server.expanded(testServer.getServer().getNamespaceTable()))
+                .field(
+                    EventFieldDefinition.builder("severity")
+                        .selectedField(
+                            new SimpleAttributeOperand(
+                                NodeIds.BaseEventType,
+                                new QualifiedName[] {new QualifiedName(0, "Severity")},
+                                AttributeId.Value.uid(),
+                                null))
+                        .dataType(NodeIds.UInt16)
+                        .dataSetFieldId(new UUID(0L, 0xE5L))
+                        .build())
+                .build())
+        .build();
+  }
+
+  /** Extract the single {@link PublishedEventsDataType} source from a wire configuration. */
+  private static PublishedEventsDataType eventSource(PubSubConfiguration2DataType wire) {
+    PublishedDataSetDataType[] publishedDataSets = wire.getPublishedDataSets();
+    assertNotNull(publishedDataSets);
+    for (PublishedDataSetDataType dataSet : publishedDataSets) {
+      if (dataSet.getDataSetSource() instanceof PublishedEventsDataType events) {
+        return events;
+      }
+    }
+    throw new AssertionError("no PublishedEventsDataType source in " + wire);
+  }
+
+  /** A file adding an event-source dataset. */
+  private PubSubConfiguration2DataType addEventDataSetFile() {
+    return PubSubConfig.builder()
+        .publishedDataSet(eventDataSet("ps-evt-ds"))
+        .build()
+        .toDataType(testServer.getServer().getNamespaceTable());
+  }
+
+  private static PubSubConfigurationRefDataType addEventDataSetRef() {
+    return new PubSubConfigurationRefDataType(
+        PubSubConfigurationRefMask.of(
+            PubSubConfigurationRefMask.Field.ElementAdd,
+            PubSubConfigurationRefMask.Field.ReferencePubDataset),
+        ushort(0),
+        ushort(0),
+        ushort(0));
   }
 
   /** A file whose connection element (null name/id) structurally matches the live connection. */

@@ -32,11 +32,13 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.identity.AnonymousProvider;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetWriterConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.EventFieldDefinition;
 import org.eclipse.milo.opcua.sdk.pubsub.config.FieldDefinition;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigFiles;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConnectionConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedEventsConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
 import org.eclipse.milo.opcua.sdk.pubsub.config.UdpConnectionConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.UdpDatagramAddress;
@@ -62,6 +64,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfigurationVal
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConnectionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
+import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriterGroupDataType;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -454,6 +457,37 @@ class CloseAndUpdateApplyIntegrationTest {
     assertTrue(objects == null || objects.length == 0);
   }
 
+  @Test
+  void addedEventDataSetResolvesConfigurationObjects() throws Exception {
+    attach(true);
+
+    // one call adds an (unreferenced) event-source PublishedDataSet through the PUBLISHED_DATA_SET
+    // arm; the fragment materializes a PublishedEventsType node the ConfigurationObjects slot must
+    // resolve to for a real client
+    PubSubConfig fileConfig =
+        PubSubConfig.builder().publishedDataSet(eventDataSet("ap-evt-ds")).build();
+
+    FileModelTestClient.CallResult result =
+        applyFile(fileA, fileConfig, true, ref(0, 0, 0, F.ElementAdd, F.ReferencePubDataset));
+
+    assertEquals(StatusCode.GOOD, result.status());
+    assertTrue(FileModelTestClient.changesApplied(result));
+    assertEquals(StatusCode.GOOD, FileModelTestClient.referencesResults(result)[0]);
+
+    // ConfigurationObjects carries the deterministic published-dataset NodeId, which resolves for
+    // a real client (the model rebuilt before the method returned)
+    NodeId[] objects = FileModelTestClient.configurationObjects(result);
+    assertNotNull(objects);
+    assertEquals(1, objects.length);
+
+    UShort idx = testServer.getServer().getServerNamespace().getNamespaceIndex();
+    assertEquals(PubSubNodeIds.publishedDataSetNodeId(idx, "ap-evt-ds"), objects[0]);
+    assertNodePresent(objects[0]);
+
+    // an explicit name assigns nothing
+    assertTrue(fileA.configurationValues(result).isEmpty());
+  }
+
   // region fixtures + helpers
 
   /** Shorthand for the Table 239 mask fields. */
@@ -468,6 +502,8 @@ class CloseAndUpdateApplyIntegrationTest {
         PubSubConfigurationRefMask.Field.ReferenceWriterGroup;
     static final PubSubConfigurationRefMask.Field ReferenceConnection =
         PubSubConfigurationRefMask.Field.ReferenceConnection;
+    static final PubSubConfigurationRefMask.Field ReferencePubDataset =
+        PubSubConfigurationRefMask.Field.ReferencePubDataset;
   }
 
   private static PubSubConfigurationRefDataType ref(
@@ -643,6 +679,27 @@ class CloseAndUpdateApplyIntegrationTest {
             FieldDefinition.builder("value")
                 .dataType(NodeIds.Double)
                 .dataSetFieldId(new java.util.UUID(0L, 0xA1L))
+                .build())
+        .build();
+  }
+
+  /** An event-source dataset selecting {@code Severity} from the ns0 Server notifier. */
+  private static PublishedDataSetConfig eventDataSet(String name) {
+    return PublishedDataSetConfig.builder(name)
+        .source(
+            PublishedEventsConfig.builder(
+                    NodeIds.Server.expanded(testServer.getServer().getNamespaceTable()))
+                .field(
+                    EventFieldDefinition.builder("severity")
+                        .selectedField(
+                            new SimpleAttributeOperand(
+                                NodeIds.BaseEventType,
+                                new QualifiedName[] {new QualifiedName(0, "Severity")},
+                                AttributeId.Value.uid(),
+                                null))
+                        .dataType(NodeIds.UInt16)
+                        .dataSetFieldId(new java.util.UUID(0L, 0xE5L))
+                        .build())
                 .build())
         .build();
   }

@@ -31,6 +31,7 @@ import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetMetaDataConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetReaderConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetWriterConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.EventFieldDefinition;
 import org.eclipse.milo.opcua.sdk.pubsub.config.FieldDefinition;
 import org.eclipse.milo.opcua.sdk.pubsub.config.FieldSelector;
 import org.eclipse.milo.opcua.sdk.pubsub.config.MetadataPolicy;
@@ -38,6 +39,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.NodeFieldAddress;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConnectionConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedEventsConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
 import org.eclipse.milo.opcua.sdk.pubsub.config.ReaderGroupConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.TargetVariableConfig;
@@ -58,6 +60,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldContentMask;
+import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpDataSetMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpNetworkMessageContentMask;
 import org.junit.jupiter.api.AfterAll;
@@ -88,9 +91,15 @@ class PubSubInfoModelNodeTreeTest {
   private static final String READER = "reader";
   private static final String DATA_SET = "nt-ds";
 
+  private static final String EVENT_WRITER_GROUP = "wgrp-evt";
+  private static final String EVENT_WRITER = "writer-evt";
+  private static final String EVENT_DATA_SET = "nt-event-ds";
+
   private static final PublisherId PUBLISHER_ID = PublisherId.uint16(ushort(4731));
   private static final UShort GROUP_ID = ushort(1);
   private static final UShort WRITER_ID = ushort(1);
+  private static final UShort EVENT_GROUP_ID = ushort(2);
+  private static final UShort EVENT_WRITER_ID = ushort(2);
 
   private static final UadpWriterGroupSettings GROUP_SETTINGS =
       UadpWriterGroupSettings.builder()
@@ -362,6 +371,109 @@ class PubSubInfoModelNodeTreeTest {
     }
   }
 
+  @Test
+  void eventPublishedDataSetNodeMaterializesAsPublishedEventsTypeWithDataSetToWriterRef() {
+    NodeId eventDataSetNodeId = fragmentNodeId("PubSub/PublishedDataSets/" + EVENT_DATA_SET);
+    NodeId dataItemsNodeId = fragmentNodeId("PubSub/PublishedDataSets/" + DATA_SET);
+    NodeId eventWriterNodeId =
+        fragmentNodeId("PubSub/" + CONNECTION + "/" + EVENT_WRITER_GROUP + "/" + EVENT_WRITER);
+
+    UaNode eventDataSetNode = managedNode(eventDataSetNodeId);
+    assertEquals(
+        new QualifiedName(appNamespaceIndex(), EVENT_DATA_SET), eventDataSetNode.getBrowseName());
+
+    // an event dataset materializes as PublishedEventsType; the data-items sibling stays
+    // PublishedDataItemsType
+    assertTrue(
+        hasReference(eventDataSetNodeId, NodeIds.HasTypeDefinition, NodeIds.PublishedEventsType));
+    assertFalse(
+        hasReference(
+            eventDataSetNodeId, NodeIds.HasTypeDefinition, NodeIds.PublishedDataItemsType));
+    assertTrue(
+        hasReference(dataItemsNodeId, NodeIds.HasTypeDefinition, NodeIds.PublishedDataItemsType));
+
+    // grafted under the existing ns0 PublishedDataSets folder i=17371
+    assertTrue(
+        hasReference(
+            NodeIds.PublishSubscribe_PublishedDataSets, NodeIds.HasComponent, eventDataSetNodeId),
+        "expected forward HasComponent from i=17371 to " + eventDataSetNodeId);
+
+    // DataSetToWriter from the event dataset node to the writer fed by it
+    assertTrue(
+        hasReference(eventDataSetNodeId, NodeIds.DataSetToWriter, eventWriterNodeId),
+        "expected forward DataSetToWriter from " + eventDataSetNodeId + " to " + eventWriterNodeId);
+    assertTrue(
+        hasReference(eventWriterNodeId, NodeIds.HasTypeDefinition, NodeIds.DataSetWriterType));
+  }
+
+  @Test
+  void eventPublishedDataSetNodeHasNoStatusChildAndNoMethodNodes() {
+    NodeId eventDataSetNodeId = fragmentNodeId("PubSub/PublishedDataSets/" + EVENT_DATA_SET);
+
+    // like every PublishedDataSet node, the event dataset carries no Status child (Part 14 none)
+    Optional<UaNode> dataSetStatus =
+        testServer
+            .getServer()
+            .getAddressSpaceManager()
+            .getManagedNode(
+                fragmentNodeId("PubSub/PublishedDataSets/" + EVENT_DATA_SET + "/Status"));
+    assertTrue(dataSetStatus.isEmpty(), "event PublishedDataSet must not have a Status child");
+
+    // walk the event dataset subtree (its property children, but not across DataSetToWriter into
+    // the writer): the PublishedEventsType exposure adds only read-only properties and, in
+    // particular, no ModifyFieldSelection method node
+    Set<NodeId> visited = new HashSet<>();
+    var queue = new ArrayDeque<NodeId>();
+    queue.add(eventDataSetNodeId);
+    var visitedNodes = new ArrayList<UaNode>();
+
+    while (!queue.isEmpty()) {
+      NodeId nodeId = queue.poll();
+      if (!visited.add(nodeId)) {
+        continue;
+      }
+
+      UaNode node = managedNode(nodeId);
+      visitedNodes.add(node);
+
+      testServer.getServer().getAddressSpaceManager().getManagedReferences(nodeId).stream()
+          .filter(
+              r ->
+                  r.isForward()
+                      && !r.getReferenceTypeId().equals(NodeIds.HasTypeDefinition)
+                      && !r.getReferenceTypeId().equals(NodeIds.DataSetToWriter))
+          .forEach(
+              r ->
+                  r.getTargetNodeId()
+                      .toNodeId(testServer.getServer().getNamespaceTable())
+                      .filter(target -> appNamespaceIndex().equals(target.getNamespaceIndex()))
+                      .ifPresent(queue::add));
+    }
+
+    // the dataset node plus its ConfigurationVersion, DataSetMetaData, EventNotifier,
+    // SelectedFields, and Filter property children (DataSetClassId omitted for a zero Guid)
+    assertTrue(visitedNodes.size() >= 6, "expected the event dataset property subtree: " + visited);
+
+    for (UaNode node : visitedNodes) {
+      assertFalse(
+          node instanceof UaMethodNode,
+          "method node in event dataset subtree: " + node.getNodeId());
+    }
+
+    // the event-specific property children exist and the data-items PublishedData does not
+    managedNode(fragmentNodeId("PubSub/PublishedDataSets/" + EVENT_DATA_SET + "/EventNotifier"));
+    managedNode(fragmentNodeId("PubSub/PublishedDataSets/" + EVENT_DATA_SET + "/SelectedFields"));
+    managedNode(fragmentNodeId("PubSub/PublishedDataSets/" + EVENT_DATA_SET + "/Filter"));
+    assertTrue(
+        testServer
+            .getServer()
+            .getAddressSpaceManager()
+            .getManagedNode(
+                fragmentNodeId("PubSub/PublishedDataSets/" + EVENT_DATA_SET + "/PublishedData"))
+            .isEmpty(),
+        "event PublishedDataSet must not have a PublishedData property");
+  }
+
   // region fixtures
 
   /**
@@ -394,8 +506,13 @@ class PubSubInfoModelNodeTreeTest {
                 TargetVariableConfig.builder().target(nodeAddress(targetNodeId)).build())
             .build();
 
+    // the event dataset is APPENDED after the data-items dataset so positional assertions and the
+    // existing data-items subtree stay unchanged
+    PublishedDataSetConfig eventDataSet = eventDataSet();
+
     return PubSubConfig.builder()
         .publishedDataSet(dataSet)
+        .publishedDataSet(eventDataSet)
         .connection(
             PubSubConnectionConfig.udp(CONNECTION)
                 .publisherId(PUBLISHER_ID)
@@ -413,6 +530,18 @@ class PubSubInfoModelNodeTreeTest {
                                 .fieldContentMask(
                                     DataSetFieldContentMask.of(
                                         DataSetFieldContentMask.Field.StatusCode))
+                                .settings(WRITER_SETTINGS)
+                                .build())
+                        .build())
+                .writerGroup(
+                    WriterGroupConfig.builder(EVENT_WRITER_GROUP)
+                        .writerGroupId(EVENT_GROUP_ID)
+                        .publishingInterval(Duration.ZERO)
+                        .messageSettings(GROUP_SETTINGS)
+                        .dataSetWriter(
+                            DataSetWriterConfig.builder(EVENT_WRITER)
+                                .dataSet(eventDataSet.ref())
+                                .dataSetWriterId(EVENT_WRITER_ID)
                                 .settings(WRITER_SETTINGS)
                                 .build())
                         .build())
@@ -462,6 +591,42 @@ class PubSubInfoModelNodeTreeTest {
   private static NodeFieldAddress nodeAddress(NodeId nodeId) {
     return NodeFieldAddress.of(
         nodeId, AttributeId.Value, testServer.getServer().getNamespaceTable());
+  }
+
+  /**
+   * A two-field {@code PublishedEvents} dataset selecting standard BaseEventType fields from the
+   * Server object notifier ({@code i=2253}); the resolvable ns0 notifier keeps attach/startup valid
+   * on the never-started TestPubSubServer.
+   */
+  private static PublishedDataSetConfig eventDataSet() {
+    return PublishedDataSetConfig.builder(EVENT_DATA_SET)
+        .source(
+            PublishedEventsConfig.builder(NodeIds.Server.expanded())
+                .field(
+                    EventFieldDefinition.builder("Message")
+                        .selectedField(selectOperand("Message"))
+                        .dataType(NodeIds.LocalizedText)
+                        .dataSetFieldId(new UUID(0L, 0x91L))
+                        .build())
+                .field(
+                    EventFieldDefinition.builder("Severity")
+                        .selectedField(selectOperand("Severity"))
+                        .dataType(NodeIds.UInt16)
+                        .dataSetFieldId(new UUID(0L, 0x92L))
+                        .build())
+                .build())
+        .build();
+  }
+
+  /**
+   * A BaseEventType Value-attribute select operand for the single-element browse path {@code n}.
+   */
+  private static SimpleAttributeOperand selectOperand(String browseName) {
+    return new SimpleAttributeOperand(
+        NodeIds.BaseEventType,
+        new QualifiedName[] {new QualifiedName(0, browseName)},
+        AttributeId.Value.uid(),
+        null);
   }
 
   // endregion

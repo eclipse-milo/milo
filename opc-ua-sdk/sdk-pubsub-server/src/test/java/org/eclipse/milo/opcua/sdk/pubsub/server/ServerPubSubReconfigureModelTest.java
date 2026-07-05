@@ -32,6 +32,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.PubSubService;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetMetaDataConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetReaderConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetWriterConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.EventFieldDefinition;
 import org.eclipse.milo.opcua.sdk.pubsub.config.FieldDefinition;
 import org.eclipse.milo.opcua.sdk.pubsub.config.FieldSelector;
 import org.eclipse.milo.opcua.sdk.pubsub.config.MetadataPolicy;
@@ -39,6 +40,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.NodeFieldAddress;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConnectionConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedEventsConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
 import org.eclipse.milo.opcua.sdk.pubsub.config.ReaderGroupConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.TargetVariableConfig;
@@ -54,12 +56,14 @@ import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PubSubState;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpDataSetMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpNetworkMessageContentMask;
 import org.junit.jupiter.api.AfterAll;
@@ -91,6 +95,11 @@ class ServerPubSubReconfigureModelTest {
   private static final String READER2 = "reader2";
   private static final String READER_GROUP2 = "rgrp2";
   private static final String DATA_SET = "rm-ds";
+
+  private static final String EVENT_CONN = "rm-evt-conn";
+  private static final String EVENT_WRITER_GROUP = "evt-wgrp";
+  private static final String EVENT_WRITER = "evt-writer";
+  private static final String EVENT_DATA_SET = "rm-evt-ds";
 
   private static final PublisherId PUBLISHER_ID = PublisherId.uint16(ushort(4761));
   private static final PublisherId EXTERNAL_PUBLISHER_ID = PublisherId.uint16(ushort(4762));
@@ -252,6 +261,49 @@ class ServerPubSubReconfigureModelTest {
                         && reference.getReferenceTypeId().equals(NodeIds.DataSetToWriter)
                         && reference.getTargetNodeId().equalTo(writerNodeId));
     assertTrue(hasDataSetToWriter, "expected a forward DataSetToWriter reference to the writer");
+  }
+
+  @Test
+  void eventPublishedDataSetChangeRebuildsReferencingWriterWithDataSetToWriterRefIntact()
+      throws Exception {
+    int dataPort = freeUdpPort();
+    int discoveryPort = freeUdpPort();
+
+    ServerPubSub serverPubSub = attach(eventConfig(dataPort, discoveryPort, 1));
+    serverPubSub.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+
+    NodeId dataSetNodeId = fragmentNodeId("PubSub/PublishedDataSets/" + EVENT_DATA_SET);
+    NodeId writerNodeId =
+        fragmentNodeId("PubSub/" + EVENT_CONN + "/" + EVENT_WRITER_GROUP + "/" + EVENT_WRITER);
+
+    // the dataset materializes as a PublishedEventsType node with the DataSetToWriter reference
+    assertTrue(
+        hasForward(dataSetNodeId, NodeIds.HasTypeDefinition, NodeIds.PublishedEventsType),
+        "event dataset must be a PublishedEventsType node");
+
+    DataSetMetaDataType before =
+        (DataSetMetaDataType)
+            propertyValue("PubSub/PublishedDataSets/" + EVENT_DATA_SET + "/DataSetMetaData");
+    assertNotNull(before);
+    assertEquals(1, before.getFields().length);
+    assertTrue(hasDataSetToWriter(dataSetNodeId, writerNodeId));
+
+    // add a selected event field: the dataset's metadata changes, inducing a CHANGED entry that
+    // rebuilds the referencing event writer in the same apply
+    serverPubSub.runtime().update(current -> eventConfig(dataPort, discoveryPort, 2));
+
+    DataSetMetaDataType after =
+        (DataSetMetaDataType)
+            propertyValue("PubSub/PublishedDataSets/" + EVENT_DATA_SET + "/DataSetMetaData");
+    assertNotNull(after);
+    assertEquals(2, after.getFields().length);
+
+    // the rebuilt dataset node is still a PublishedEventsType node and the DataSetToWriter
+    // reference to the (rebuilt) writer is intact
+    assertTrue(hasForward(dataSetNodeId, NodeIds.HasTypeDefinition, NodeIds.PublishedEventsType));
+    assertTrue(
+        hasDataSetToWriter(dataSetNodeId, writerNodeId),
+        "expected a forward DataSetToWriter reference to the writer");
   }
 
   @Test
@@ -509,6 +561,22 @@ class ServerPubSubReconfigureModelTest {
         .count();
   }
 
+  /** True if {@code sourceNodeId} browses a forward {@code referenceTypeId} reference to target. */
+  private static boolean hasForward(NodeId sourceNodeId, NodeId referenceTypeId, NodeId target) {
+    UaNode node = managedNode(sourceNodeId).orElseThrow();
+    return node.getReferences().stream()
+        .anyMatch(
+            reference ->
+                reference.isForward()
+                    && reference.getReferenceTypeId().equals(referenceTypeId)
+                    && reference.getTargetNodeId().equalTo(target));
+  }
+
+  /** True if the dataset node browses a forward DataSetToWriter reference to the writer. */
+  private static boolean hasDataSetToWriter(NodeId dataSetNodeId, NodeId writerNodeId) {
+    return hasForward(dataSetNodeId, NodeIds.DataSetToWriter, writerNodeId);
+  }
+
   // region fixtures
 
   /** The ports of one attachment, picked once so unrelated config rebuilds compare equal. */
@@ -644,6 +712,67 @@ class ServerPubSubReconfigureModelTest {
   private static NodeFieldAddress nodeAddress(NodeId nodeId) {
     return NodeFieldAddress.of(
         nodeId, AttributeId.Value, testServer.getServer().getNamespaceTable());
+  }
+
+  /**
+   * A self-contained UDP {@link PubSubConfig} whose single interval-0 writer group publishes a
+   * {@code PublishedEvents} dataset with {@code fieldCount} selected fields (1 or 2). The Server
+   * object notifier ({@code i=2253}) resolves against ns0, so attach/startup stay valid on the
+   * never-started TestPubSubServer; changing only {@code fieldCount} between two configs mutates
+   * the dataset metadata and induces the referencing writer's rebuild.
+   */
+  private static PubSubConfig eventConfig(int dataPort, int discoveryPort, int fieldCount) {
+    PublishedEventsConfig.Builder events = PublishedEventsConfig.builder(NodeIds.Server.expanded());
+    events.field(
+        EventFieldDefinition.builder("Message")
+            .selectedField(eventSelect("Message"))
+            .dataType(NodeIds.LocalizedText)
+            .dataSetFieldId(new UUID(0L, 0xE1L))
+            .build());
+    if (fieldCount > 1) {
+      events.field(
+          EventFieldDefinition.builder("Severity")
+              .selectedField(eventSelect("Severity"))
+              .dataType(NodeIds.UInt16)
+              .dataSetFieldId(new UUID(0L, 0xE2L))
+              .build());
+    }
+
+    PublishedDataSetConfig eventDataSet =
+        PublishedDataSetConfig.builder(EVENT_DATA_SET).source(events.build()).build();
+
+    return PubSubConfig.builder()
+        .publishedDataSet(eventDataSet)
+        .connection(
+            PubSubConnectionConfig.udp(EVENT_CONN)
+                .publisherId(PUBLISHER_ID)
+                .address(UdpDatagramAddress.unicast("127.0.0.1", dataPort))
+                .discoveryAddress(UdpDatagramAddress.unicast("127.0.0.1", discoveryPort))
+                .writerGroup(
+                    WriterGroupConfig.builder(EVENT_WRITER_GROUP)
+                        .writerGroupId(ushort(41))
+                        .publishingInterval(Duration.ZERO)
+                        .messageSettings(GROUP_SETTINGS)
+                        .dataSetWriter(
+                            DataSetWriterConfig.builder(EVENT_WRITER)
+                                .dataSet(eventDataSet.ref())
+                                .dataSetWriterId(ushort(51))
+                                .settings(WRITER_SETTINGS)
+                                .build())
+                        .build())
+                .build())
+        .build();
+  }
+
+  /**
+   * A BaseEventType Value-attribute select operand for the single-element browse path {@code n}.
+   */
+  private static SimpleAttributeOperand eventSelect(String browseName) {
+    return new SimpleAttributeOperand(
+        NodeIds.BaseEventType,
+        new QualifiedName[] {new QualifiedName(0, browseName)},
+        AttributeId.Value.uid(),
+        null);
   }
 
   private ServerPubSub attach(PubSubConfig config) {

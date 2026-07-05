@@ -31,12 +31,14 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import org.eclipse.milo.opcua.sdk.pubsub.config.EventFieldDefinition;
 import org.eclipse.milo.opcua.sdk.pubsub.config.FieldDefinition;
 import org.eclipse.milo.opcua.sdk.pubsub.config.NodeFieldAddress;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfigFiles;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConnectionConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedEventsConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
 import org.eclipse.milo.opcua.sdk.pubsub.config.UdpDatagramAddress;
 import org.eclipse.milo.opcua.sdk.pubsub.config.WriterGroupConfig;
@@ -49,6 +51,7 @@ import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -67,7 +70,10 @@ import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldContentMas
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfiguration2DataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfigurationRefDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfigurationRefMask;
+import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataSetDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.PublishedEventsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
+import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -317,6 +323,80 @@ class PubSubConfigurationFaceTest {
   }
 
   @Test
+  void eventDataSetSurvivesReadModifyWriteAndAddsAnother() throws Exception {
+    ServerPubSub serverPubSub =
+        ServerPubSub.attach(
+            testServer.getServer(),
+            eventConfig(freeUdpPort(), freeUdpPort()),
+            ServerPubSubOptions.builder()
+                .exposeInformationModel(true)
+                .allowRemoteConfiguration(true)
+                .build());
+    attached.add(serverPubSub);
+    serverPubSub.startup().get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+    Session session = session();
+
+    // the baseline event dataset survives the file read (Open 0x01 -> Read -> decode)
+    PubSubConfiguration2DataType before = readDecodedFile(session);
+    assertEquals(1, eventSourceCount(before), "the baseline event dataset is kept");
+
+    // Open(0x06), write a file adding a SECOND event dataset, CloseAndUpdate through the mediator
+    UInteger writeHandle = openHandle(session, 0x06);
+    byte[] fileBytes =
+        PubSubConfigFiles.encodeDataType(
+            PubSubConfig.builder()
+                .publishedDataSet(eventDataSet("rc-evt-ds2"))
+                .build()
+                .toDataType(testServer.getServer().getNamespaceTable()),
+            testServer.getServer().getStaticEncodingContext());
+    assertGood(
+        invoke(
+            NodeIds.PublishSubscribe_PubSubConfiguration_Write,
+            session,
+            new Variant[] {new Variant(writeHandle), new Variant(ByteString.of(fileBytes))}));
+
+    var addRef =
+        new PubSubConfigurationRefDataType(
+            PubSubConfigurationRefMask.of(
+                PubSubConfigurationRefMask.Field.ElementAdd,
+                PubSubConfigurationRefMask.Field.ReferencePubDataset),
+            ushort(0),
+            ushort(0),
+            ushort(0));
+
+    CallMethodResult closeAndUpdate =
+        invoke(
+            NodeIds.PublishSubscribe_PubSubConfiguration_CloseAndUpdate,
+            session,
+            new Variant[] {
+              new Variant(writeHandle),
+              new Variant(true),
+              Variant.ofExtensionObjectArray(
+                  new ExtensionObject[] {
+                    ExtensionObject.encode(
+                        testServer.getServer().getStaticEncodingContext(), addRef)
+                  })
+            });
+
+    assertGood(closeAndUpdate);
+    assertEquals(true, closeAndUpdate.getOutputArguments()[0].getValue());
+    StatusCode[] referencesResults =
+        (StatusCode[]) closeAndUpdate.getOutputArguments()[1].getValue();
+    assertEquals(1, referencesResults.length);
+    assertEquals(StatusCode.GOOD, referencesResults[0]);
+
+    // the fragment rebuilt synchronously: ConfigurationObjects resolves the added event dataset
+    NodeId[] configurationObjects = (NodeId[]) closeAndUpdate.getOutputArguments()[3].getValue();
+    assertEquals(1, configurationObjects.length);
+    UShort idx = testServer.getServer().getServerNamespace().getNamespaceIndex();
+    assertEquals(PubSubNodeIds.publishedDataSetNodeId(idx, "rc-evt-ds2"), configurationObjects[0]);
+
+    // both event datasets are present through the file surface (kept + added)
+    PubSubConfiguration2DataType after = readDecodedFile(session);
+    assertEquals(2, eventSourceCount(after));
+  }
+
+  @Test
   void nothingToDoStillClosesTheHandle() throws Exception {
     attachAndStart();
     Session session = session();
@@ -447,6 +527,75 @@ class PubSubConfigurationFaceTest {
                         .build())
                 .build())
         .build();
+  }
+
+  /** The baseline {@link #config} plus an unreferenced event-source published dataset. */
+  private static PubSubConfig eventConfig(int dataPort, int discoveryPort) {
+    return config(dataPort, discoveryPort).toBuilder()
+        .publishedDataSet(eventDataSet("rc-evt-ds"))
+        .build();
+  }
+
+  /** An event-source dataset selecting {@code Severity} from the ns0 Server notifier. */
+  private static PublishedDataSetConfig eventDataSet(String name) {
+    return PublishedDataSetConfig.builder(name)
+        .source(
+            PublishedEventsConfig.builder(
+                    NodeIds.Server.expanded(testServer.getServer().getNamespaceTable()))
+                .field(
+                    EventFieldDefinition.builder("severity")
+                        .selectedField(
+                            new SimpleAttributeOperand(
+                                NodeIds.BaseEventType,
+                                new QualifiedName[] {new QualifiedName(0, "Severity")},
+                                AttributeId.Value.uid(),
+                                null))
+                        .dataType(NodeIds.UInt16)
+                        .dataSetFieldId(new UUID(0L, 0xE5L))
+                        .build())
+                .build())
+        .build();
+  }
+
+  /** Open the file read-only, read every chunk, close, and decode the whole file. */
+  private PubSubConfiguration2DataType readDecodedFile(Session session) throws UaException {
+    UInteger handle = openHandle(session, 0x01);
+    var content = new ByteArrayOutputStream();
+    while (true) {
+      CallMethodResult read =
+          invoke(
+              NodeIds.PublishSubscribe_PubSubConfiguration_Read,
+              session,
+              new Variant[] {new Variant(handle), new Variant(64)});
+      assertGood(read);
+      ByteString chunk = (ByteString) read.getOutputArguments()[0].getValue();
+      if (chunk == null || chunk.length() == 0) {
+        break;
+      }
+      content.writeBytes(chunk.bytesOrEmpty());
+    }
+    assertGood(
+        invoke(
+            NodeIds.PublishSubscribe_PubSubConfiguration_Close,
+            session,
+            new Variant[] {new Variant(handle)}));
+    return PubSubConfigFiles.decodeDataType(
+        content.toByteArray(), testServer.getServer().getStaticEncodingContext());
+  }
+
+  /** Count the {@link PublishedEventsDataType} sources in a wire configuration. */
+  private static int eventSourceCount(PubSubConfiguration2DataType wire) {
+    PublishedDataSetDataType[] publishedDataSets = wire.getPublishedDataSets();
+    if (publishedDataSets == null) {
+      return 0;
+    }
+    int count = 0;
+    for (PublishedDataSetDataType dataSet : publishedDataSets) {
+      if (dataSet.getDataSetSource() instanceof PublishedEventsDataType) {
+        count++;
+      }
+    }
+    return count;
   }
 
   private static UInteger openHandle(Session session, int mode) {

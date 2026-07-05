@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetMetaDataConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetReaderConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetWriterConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.EventFieldDefinition;
 import org.eclipse.milo.opcua.sdk.pubsub.config.FieldDefinition;
 import org.eclipse.milo.opcua.sdk.pubsub.config.FieldSelector;
 import org.eclipse.milo.opcua.sdk.pubsub.config.MetadataPolicy;
@@ -34,6 +35,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.NodeFieldAddress;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConnectionConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedDataSetConfig;
+import org.eclipse.milo.opcua.sdk.pubsub.config.PublishedEventsConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
 import org.eclipse.milo.opcua.sdk.pubsub.config.ReaderGroupConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.TargetVariableConfig;
@@ -57,6 +59,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetReaderDataType;
@@ -67,8 +70,10 @@ import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfiguration2Da
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConnectionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataItemsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataSetDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.PublishedEventsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedVariableDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
+import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.TargetVariablesDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpDataSetMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpDataSetWriterMessageDataType;
@@ -103,9 +108,15 @@ class PubSubInfoModelValuesTest {
   private static final String READER = "reader";
   private static final String DATA_SET = "vals-ds";
 
+  private static final String EVENT_WRITER_GROUP = "wgrp-evt";
+  private static final String EVENT_WRITER = "writer-evt";
+  private static final String EVENT_DATA_SET = "vals-event-ds";
+
   private static final PublisherId PUBLISHER_ID = PublisherId.uint16(ushort(4741));
   private static final UShort GROUP_ID = ushort(7);
   private static final UShort WRITER_ID = ushort(11);
+  private static final UShort EVENT_GROUP_ID = ushort(8);
+  private static final UShort EVENT_WRITER_ID = ushort(12);
 
   private static final UadpWriterGroupSettings GROUP_SETTINGS =
       UadpWriterGroupSettings.builder()
@@ -391,6 +402,62 @@ class PubSubInfoModelValuesTest {
     assertEquals(targetNodeId, targetVariables[0].getTargetNodeId());
   }
 
+  @Test
+  void eventPublishedDataSetValuesArePopulated() {
+    String prefix = "PubSub/PublishedDataSets/" + EVENT_DATA_SET;
+    PublishedDataSetDataType expectedDataSet = expectedEventDataSet();
+    PublishedEventsDataType expectedSource =
+        assertInstanceOf(PublishedEventsDataType.class, expectedDataSet.getDataSetSource());
+
+    // ConfigurationVersion mirrors the dataset's configured (major, minor)
+    assertEquals(
+        new ConfigurationVersionDataType(uint(5), uint(2)),
+        nodeValue(prefix + "/ConfigurationVersion"));
+
+    // DataSetMetaData is the mapper-derived metadata; event fields carry no MiloSourceKey
+    DataSetMetaDataType metaData =
+        assertInstanceOf(DataSetMetaDataType.class, nodeValue(prefix + "/DataSetMetaData"));
+    assertEquals(expectedDataSet.getDataSetMetaData(), metaData);
+    assertEquals(EVENT_DATA_SET, metaData.getName());
+    assertNotNull(metaData.getFields());
+    assertEquals(2, metaData.getFields().length);
+    assertEquals("Message", metaData.getFields()[0].getName());
+    assertEquals("Severity", metaData.getFields()[1].getName());
+
+    // EventNotifier is the wire-form local NodeId the mapper resolved the notifier to
+    assertEquals(NodeIds.Server, nodeValue(prefix + "/EventNotifier"));
+    assertEquals(expectedSource.getEventNotifier(), nodeValue(prefix + "/EventNotifier"));
+
+    // SelectedFields is the wire-form SimpleAttributeOperand[] (one per event field, wire order)
+    SimpleAttributeOperand[] selectedFields =
+        (SimpleAttributeOperand[]) nodeValue(prefix + "/SelectedFields");
+    assertArrayEquals(expectedSource.getSelectedFields(), selectedFields);
+    assertEquals(2, selectedFields.length);
+
+    // Filter is the wire-form ContentFilter (canonical empty => matches every event)
+    ContentFilter filter = assertInstanceOf(ContentFilter.class, nodeValue(prefix + "/Filter"));
+    assertEquals(expectedSource.getFilter(), filter);
+    assertEquals(new ContentFilter(null), filter);
+
+    // no DataSetClassId was configured (zero Guid): the Optional property is omitted
+    assertTrue(
+        testServer
+            .getServer()
+            .getAddressSpaceManager()
+            .getManagedNode(fragmentNodeId(prefix + "/DataSetClassId"))
+            .isEmpty(),
+        "DataSetClassId property must be omitted for a zero Guid");
+
+    // an event dataset has no PublishedData property (a PublishedDataItems member)
+    assertTrue(
+        testServer
+            .getServer()
+            .getAddressSpaceManager()
+            .getManagedNode(fragmentNodeId(prefix + "/PublishedData"))
+            .isEmpty(),
+        "event PublishedDataSet must not have a PublishedData property");
+  }
+
   // region fixtures
 
   /**
@@ -422,8 +489,13 @@ class PubSubInfoModelValuesTest {
                 TargetVariableConfig.builder().target(nodeAddress(targetNodeId)).build())
             .build();
 
+    // the event dataset is APPENDED after the data-items dataset (index [1]), so every existing
+    // positional expectation keeps addressing the data-items dataset/group/writer at index [0]
+    PublishedDataSetConfig eventDataSet = eventDataSet();
+
     return PubSubConfig.builder()
         .publishedDataSet(dataSet)
+        .publishedDataSet(eventDataSet)
         .connection(
             PubSubConnectionConfig.udp(CONNECTION)
                 .publisherId(PUBLISHER_ID)
@@ -439,6 +511,18 @@ class PubSubInfoModelValuesTest {
                                 .dataSet(dataSet.ref())
                                 .dataSetWriterId(WRITER_ID)
                                 .fieldContentMask(FIELD_MASK)
+                                .settings(WRITER_SETTINGS)
+                                .build())
+                        .build())
+                .writerGroup(
+                    WriterGroupConfig.builder(EVENT_WRITER_GROUP)
+                        .writerGroupId(EVENT_GROUP_ID)
+                        .publishingInterval(Duration.ZERO)
+                        .messageSettings(GROUP_SETTINGS)
+                        .dataSetWriter(
+                            DataSetWriterConfig.builder(EVENT_WRITER)
+                                .dataSet(eventDataSet.ref())
+                                .dataSetWriterId(EVENT_WRITER_ID)
                                 .settings(WRITER_SETTINGS)
                                 .build())
                         .build())
@@ -464,6 +548,44 @@ class PubSubInfoModelValuesTest {
         nodeId, AttributeId.Value, testServer.getServer().getNamespaceTable());
   }
 
+  /**
+   * A two-field {@code PublishedEvents} dataset (Message, Severity) selected from the Server object
+   * notifier ({@code i=2253}); the resolvable ns0 notifier keeps attach/startup valid on the
+   * never-started TestPubSubServer. A distinct configuration version pins the ConfigurationVersion
+   * property assertion.
+   */
+  private static PublishedDataSetConfig eventDataSet() {
+    return PublishedDataSetConfig.builder(EVENT_DATA_SET)
+        .configurationVersion(uint(5), uint(2))
+        .source(
+            PublishedEventsConfig.builder(NodeIds.Server.expanded())
+                .field(
+                    EventFieldDefinition.builder("Message")
+                        .selectedField(selectOperand("Message"))
+                        .dataType(NodeIds.LocalizedText)
+                        .dataSetFieldId(new UUID(0L, 0x91L))
+                        .build())
+                .field(
+                    EventFieldDefinition.builder("Severity")
+                        .selectedField(selectOperand("Severity"))
+                        .dataType(NodeIds.UInt16)
+                        .dataSetFieldId(new UUID(0L, 0x92L))
+                        .build())
+                .build())
+        .build();
+  }
+
+  /**
+   * A BaseEventType Value-attribute select operand for the single-element browse path {@code n}.
+   */
+  private static SimpleAttributeOperand selectOperand(String browseName) {
+    return new SimpleAttributeOperand(
+        NodeIds.BaseEventType,
+        new QualifiedName[] {new QualifiedName(0, browseName)},
+        AttributeId.Value.uid(),
+        null);
+  }
+
   private static PubSubConnectionDataType expectedConnection() {
     return expected.getConnections()[0];
   }
@@ -482,6 +604,11 @@ class PubSubInfoModelValuesTest {
 
   private static PublishedDataSetDataType expectedPublishedDataSet() {
     return expected.getPublishedDataSets()[0];
+  }
+
+  /** The event dataset, appended after the data-items dataset (index [1]). */
+  private static PublishedDataSetDataType expectedEventDataSet() {
+    return expected.getPublishedDataSets()[1];
   }
 
   // endregion
