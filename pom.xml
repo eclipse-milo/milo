@@ -387,6 +387,16 @@
                   </ignoreVersion>
                 </ignoreVersions>
               </rule>
+              <rule>
+                <groupId>com.puppycrawl.tools</groupId>
+                <artifactId>checkstyle</artifactId>
+                <ignoreVersions>
+                  <ignoreVersion>
+                    <type>range</type>
+                    <version>[13.0.0,)</version>
+                  </ignoreVersion>
+                </ignoreVersions>
+              </rule>
             </rules>
           </ruleSet>
         </configuration>
