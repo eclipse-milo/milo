@@ -20,6 +20,7 @@ contained and failures are analyzed once.
   the parent agent explicitly asks you to continue.
 - Always capture Maven output to `/tmp/maven_*.log`.
 - Use Maven quiet mode (`-q`) unless the parent agent explicitly asks for verbose output.
+- Run Maven through `mise exec -- mvn` so `.mise.toml` provides the pinned Java and Maven versions.
 - Before running any test command, read `.claude/docs/testing.md` and follow its module targeting
   and test selection guidance.
 
@@ -29,7 +30,7 @@ Use this pattern for each Maven command:
 
 ```bash
 log="/tmp/maven_<purpose>_$(date +%Y%m%d%H%M%S).log"
-mvn -q <goals> >"$log" 2>&1 && echo "SUCCESS $log" || echo "FAILED $log"
+mise exec -- mvn -q <goals> >"$log" 2>&1 && echo "SUCCESS $log" || echo "FAILED $log"
 ```
 
 Replace `<purpose>` with a short descriptive name such as `compile`, `test`, `verify`, or
@@ -39,12 +40,12 @@ Examples:
 
 ```bash
 log="/tmp/maven_compile_$(date +%Y%m%d%H%M%S).log"
-mvn -q clean compile >"$log" 2>&1 && echo "SUCCESS $log" || echo "FAILED $log"
+mise exec -- mvn -q clean compile >"$log" 2>&1 && echo "SUCCESS $log" || echo "FAILED $log"
 ```
 
 ```bash
 log="/tmp/maven_spotless_apply_$(date +%Y%m%d%H%M%S).log"
-mvn -q spotless:apply >"$log" 2>&1 && echo "SUCCESS $log" || echo "FAILED $log"
+mise exec -- mvn -q spotless:apply >"$log" 2>&1 && echo "SUCCESS $log" || echo "FAILED $log"
 ```
 
 ## Failure Analysis
@@ -64,7 +65,7 @@ For success:
 
 ```markdown
 Maven command succeeded.
-- Command: `mvn -q ...`
+- Command: `mise exec -- mvn -q ...`
 - Output: `/tmp/maven_....log`
 ```
 
