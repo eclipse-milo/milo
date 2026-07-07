@@ -175,7 +175,11 @@ public class OpcTcpClientTransport extends AbstractUascClientTransport
 
   private void notifyTransitionListeners(boolean connected) {
     for (ChannelStateObservable.TransitionListener listener : transitionListeners) {
-      listener.onStateTransition(connected);
+      try {
+        listener.onStateTransition(connected);
+      } catch (Throwable t) {
+        logger.warn("Channel state transition listener failed.", t);
+      }
     }
   }
 
