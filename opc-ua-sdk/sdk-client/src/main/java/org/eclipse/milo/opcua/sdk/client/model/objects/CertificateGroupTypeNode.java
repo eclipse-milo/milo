@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -130,6 +130,76 @@ public class CertificateGroupTypeNode extends BaseObjectTypeNode implements Cert
             "CertificateTypes",
             ExpandedNodeId.parse("i=46"),
             false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
+
+  @Override
+  public NodeId getPurpose() throws UaException {
+    PropertyTypeNode node = getPurposeNode();
+    return (NodeId) node.getValue().getValue().getValue();
+  }
+
+  @Override
+  public void setPurpose(NodeId value) throws UaException {
+    PropertyTypeNode node = getPurposeNode();
+    node.setValue(new Variant(value));
+  }
+
+  @Override
+  public NodeId readPurpose() throws UaException {
+    try {
+      return readPurposeAsync().get();
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
+    }
+  }
+
+  @Override
+  public void writePurpose(NodeId value) throws UaException {
+    try {
+      writePurposeAsync(value).get();
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends NodeId> readPurposeAsync() {
+    return getPurposeNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> (NodeId) v.getValue().getValue());
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writePurposeAsync(NodeId purpose) {
+    DataValue value = DataValue.valueOnly(new Variant(purpose));
+    return getPurposeNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getPurposeNode() throws UaException {
+    try {
+      return getPurposeNodeAsync().get();
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getPurposeNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
+            "http://opcfoundation.org/UA/", "Purpose", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 

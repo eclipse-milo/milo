@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -16,7 +16,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part22/5.3.2">https://reference.opcfoundation.org/v105/Core/docs/Part22/5.3.2</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part3/8.32">https://reference.opcfoundation.org/v105/Core/docs/Part3/8.32</a>
  */
 public abstract class Structure implements UaStructuredType {
   public static final ExpandedNodeId TYPE_ID = ExpandedNodeId.parse("i=22");

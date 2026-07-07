@@ -19,10 +19,14 @@ import java.net.InetSocketAddress;
 import java.security.KeyPair;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -31,6 +35,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.ObjectTypeTree;
@@ -56,6 +61,7 @@ import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultDiscoveryServic
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultMethodServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultMonitoredItemServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultNodeManagementServiceSet;
+import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultQueryServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultSessionServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultSubscriptionServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultViewServiceSet;
@@ -87,6 +93,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
@@ -161,6 +168,15 @@ public class OpcUaServer extends AbstractServiceHandler {
   private final AtomicLong secureChannelTokenIds = new AtomicLong();
 
   private final Map<TransportProfile, OpcServerTransport> transports = new ConcurrentHashMap<>();
+
+  /**
+   * Shared shutdown result for the terminal server shutdown.
+   *
+   * <p>Shutdown tears down diagnostics and namespace state that cannot be safely torn down twice,
+   * so concurrent callers must observe the same operation instead of each running teardown logic.
+   */
+  private final AtomicReference<CompletableFuture<OpcUaServer>> shutdownFuture =
+      new AtomicReference<>();
 
   private final EventBus eventBus = new EventBus("server");
   private final EventFactory eventFactory = new EventFactory(this);
@@ -267,6 +283,7 @@ public class OpcUaServer extends AbstractServiceHandler {
             addServiceSet(path, new DefaultMethodServiceSet(OpcUaServer.this));
             addServiceSet(path, new DefaultMonitoredItemServiceSet(OpcUaServer.this));
             addServiceSet(path, new DefaultNodeManagementServiceSet(OpcUaServer.this));
+            addServiceSet(path, new DefaultQueryServiceSet());
             addServiceSet(path, new DefaultSessionServiceSet(OpcUaServer.this));
             addServiceSet(path, new DefaultSubscriptionServiceSet(OpcUaServer.this));
             addServiceSet(path, new DefaultViewServiceSet(OpcUaServer.this));
@@ -358,10 +375,53 @@ public class OpcUaServer extends AbstractServiceHandler {
     }
   }
 
+  /**
+   * Stop accepting new sessions and tear down the server runtime.
+   *
+   * <p>This method is the synchronization point for server shutdown. The first caller performs the
+   * shutdown sequence: reject new sessions, unbind transports, drain session listener work, close
+   * sessions, then shut down namespaces, diagnostics, events, and subscriptions. Concurrent callers
+   * receive the same {@link CompletableFuture} so namespace and diagnostics lifecycle code is only
+   * run once.
+   *
+   * <p>If shutdown is requested from a session listener callback, the shutdown path avoids waiting
+   * on the callback that is currently executing. When another caller is already waiting for
+   * listener quiescence, this method returns a completed future for that callback and the outer
+   * shutdown caller continues the real teardown after the callback returns.
+   *
+   * @return a future completed when the server shutdown sequence has finished.
+   */
   public CompletableFuture<OpcUaServer> shutdown() {
+    sessionManager.beginShutdown();
+
+    CompletableFuture<OpcUaServer> newShutdownFuture = new CompletableFuture<>();
+    if (!shutdownFuture.compareAndSet(null, newShutdownFuture)) {
+      CompletableFuture<OpcUaServer> existingShutdownFuture = shutdownFuture.get();
+      if (sessionManager.isSessionListenerCallback() && !existingShutdownFuture.isDone()) {
+        // The active shutdown is waiting for this callback to return; joining it here would
+        // deadlock the listener queue.
+        return CompletableFuture.completedFuture(this);
+      } else {
+        return existingShutdownFuture;
+      }
+    }
+
+    try {
+      shutdownInternal();
+      newShutdownFuture.complete(this);
+    } catch (Exception e) {
+      newShutdownFuture.completeExceptionally(e);
+    }
+
+    return newShutdownFuture;
+  }
+
+  private void shutdownInternal() {
     reverseConnectTargetManager.shutdown();
 
     unbindTransports();
+
+    sessionManager.shutdown();
 
     serverNamespace.shutdown();
     opcUaNamespace.shutdown();
@@ -369,8 +429,6 @@ public class OpcUaServer extends AbstractServiceHandler {
     eventFactory.shutdown();
 
     subscriptions.values().forEach(Subscription::deleteSubscription);
-
-    return CompletableFuture.completedFuture(this);
   }
 
   private void rollbackStartup() {
@@ -748,8 +806,7 @@ public class OpcUaServer extends AbstractServiceHandler {
 
     @Override
     public List<EndpointDescription> getEndpointDescriptions() {
-      return endpointDescriptions.get(
-          () -> config.getEndpoints().stream().map(this::transformEndpoint).toList());
+      return endpointDescriptions.get(() -> transformEndpoints(config.getEndpoints()));
     }
 
     @Override
@@ -927,16 +984,155 @@ public class OpcUaServer extends AbstractServiceHandler {
       return false;
     }
 
-    private EndpointDescription transformEndpoint(EndpointConfig endpoint) {
+    private List<EndpointDescription> transformEndpoints(Set<EndpointConfig> endpoints) {
+      Map<UserTokenPolicyKey, String> userTokenPolicyIds = assignUserTokenPolicyIds(endpoints);
+
+      return endpoints.stream().map(e -> transformEndpoint(e, userTokenPolicyIds)).toList();
+    }
+
+    private EndpointDescription transformEndpoint(
+        EndpointConfig endpoint, Map<UserTokenPolicyKey, String> userTokenPolicyIds) {
       return new EndpointDescription(
           endpoint.getEndpointUrl(),
           getApplicationDescription(),
           certificateByteString(endpoint.getCertificate()),
           endpoint.getSecurityMode(),
           endpoint.getSecurityPolicy().getUri(),
-          endpoint.getTokenPolicies().toArray(new UserTokenPolicy[0]),
+          transformUserTokenPolicies(endpoint, userTokenPolicyIds),
           endpoint.getTransportProfile().getUri(),
           ubyte(getSecurityLevel(endpoint.getSecurityPolicy(), endpoint.getSecurityMode())));
+    }
+
+    private UserTokenPolicy[] transformUserTokenPolicies(
+        EndpointConfig endpoint, Map<UserTokenPolicyKey, String> userTokenPolicyIds) {
+
+      return endpoint.getTokenPolicies().stream()
+          .map(
+              tokenPolicy -> {
+                UserTokenPolicyKey key = UserTokenPolicyKey.from(endpoint, tokenPolicy);
+                String assignedPolicyId = userTokenPolicyIds.get(key);
+
+                String policyId =
+                    policyIdChanged(tokenPolicy.getPolicyId(), assignedPolicyId)
+                        ? assignedPolicyId
+                        : tokenPolicy.getPolicyId();
+
+                return new UserTokenPolicy(
+                    policyId,
+                    tokenPolicy.getTokenType(),
+                    tokenPolicy.getIssuedTokenType(),
+                    tokenPolicy.getIssuerEndpointUrl(),
+                    key.securityPolicyUri());
+              })
+          .toArray(UserTokenPolicy[]::new);
+    }
+
+    private Map<UserTokenPolicyKey, String> assignUserTokenPolicyIds(
+        Set<EndpointConfig> endpoints) {
+      Map<String, List<UserTokenPolicyKey>> keysByPolicyId = new LinkedHashMap<>();
+
+      for (EndpointConfig endpoint : endpoints) {
+        for (UserTokenPolicy tokenPolicy : endpoint.getTokenPolicies()) {
+          UserTokenPolicyKey key = UserTokenPolicyKey.from(endpoint, tokenPolicy);
+          List<UserTokenPolicyKey> keys =
+              keysByPolicyId.computeIfAbsent(key.policyId(), ignored -> new ArrayList<>());
+
+          if (!keys.contains(key)) {
+            keys.add(key);
+          }
+        }
+      }
+
+      Set<String> reservedPolicyIds = new LinkedHashSet<>(keysByPolicyId.keySet());
+      Map<UserTokenPolicyKey, String> assignedPolicyIds = new HashMap<>();
+
+      for (List<UserTokenPolicyKey> keys : keysByPolicyId.values()) {
+        if (keys.size() == 1) {
+          UserTokenPolicyKey key = keys.get(0);
+          assignedPolicyIds.put(key, key.policyId());
+        } else {
+          UserTokenPolicyKey firstKey = keys.get(0);
+          assignedPolicyIds.put(firstKey, firstKey.policyId());
+
+          for (int i = 1; i < keys.size(); i++) {
+            UserTokenPolicyKey key = keys.get(i);
+            assignedPolicyIds.put(key, uniquePolicyId(key, reservedPolicyIds));
+          }
+        }
+      }
+
+      return assignedPolicyIds;
+    }
+
+    private boolean policyIdChanged(@Nullable String configuredPolicyId, String assignedPolicyId) {
+      if (Objects.equals(configuredPolicyId, assignedPolicyId)) {
+        return false;
+      } else {
+        return !(isNullOrEmpty(configuredPolicyId) && assignedPolicyId.isEmpty());
+      }
+    }
+
+    private String uniquePolicyId(UserTokenPolicyKey key, Set<String> reservedPolicyIds) {
+      String base =
+          key.policyId().isEmpty()
+              ? key.tokenType().name().toLowerCase(Locale.ROOT)
+              : key.policyId();
+
+      String securityPolicyName = securityPolicyName(key.securityPolicyUri());
+
+      String candidate = base + "-" + securityPolicyName;
+      if (reservedPolicyIds.add(candidate)) {
+        return candidate;
+      }
+
+      candidate = base + "-" + key.tokenType().name() + "-" + securityPolicyName;
+      if (reservedPolicyIds.add(candidate)) {
+        return candidate;
+      }
+
+      for (int i = 2; ; i++) {
+        String indexedCandidate = candidate + "-" + i;
+        if (reservedPolicyIds.add(indexedCandidate)) {
+          return indexedCandidate;
+        }
+      }
+    }
+
+    private String securityPolicyName(String securityPolicyUri) {
+      int index = securityPolicyUri.lastIndexOf('#');
+      String name = index >= 0 ? securityPolicyUri.substring(index + 1) : securityPolicyUri;
+
+      return name.replaceAll("[^A-Za-z0-9_.-]", "-");
+    }
+
+    private boolean isNullOrEmpty(@Nullable String value) {
+      return value == null || value.isEmpty();
+    }
+
+    private record UserTokenPolicyKey(
+        String policyId,
+        UserTokenType tokenType,
+        @Nullable String issuedTokenType,
+        @Nullable String issuerEndpointUrl,
+        String securityPolicyUri) {
+
+      static UserTokenPolicyKey from(EndpointConfig endpoint, UserTokenPolicy tokenPolicy) {
+        String policyId = tokenPolicy.getPolicyId();
+        String securityPolicyUri = tokenPolicy.getSecurityPolicyUri();
+
+        return new UserTokenPolicyKey(
+            policyId == null ? "" : policyId,
+            tokenPolicy.getTokenType(),
+            tokenPolicy.getIssuedTokenType(),
+            tokenPolicy.getIssuerEndpointUrl(),
+            isNullOrEmpty(securityPolicyUri)
+                ? endpoint.getSecurityPolicy().getUri()
+                : securityPolicyUri);
+      }
+
+      private static boolean isNullOrEmpty(@Nullable String value) {
+        return value == null || value.isEmpty();
+      }
     }
 
     private ByteString certificateByteString(@Nullable X509Certificate certificate) {

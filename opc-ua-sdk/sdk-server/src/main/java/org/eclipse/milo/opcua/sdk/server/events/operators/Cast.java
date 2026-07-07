@@ -13,7 +13,7 @@ package org.eclipse.milo.opcua.sdk.server.events.operators;
 import org.eclipse.milo.opcua.sdk.server.events.FilterContext;
 import org.eclipse.milo.opcua.sdk.server.events.OperatorContext;
 import org.eclipse.milo.opcua.sdk.server.events.ValidationException;
-import org.eclipse.milo.opcua.sdk.server.events.conversions.ImplicitConversions;
+import org.eclipse.milo.opcua.sdk.server.events.conversions.ExplicitConversions;
 import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -53,7 +53,7 @@ public class Cast implements Operator<Object> {
       OpcUaDataType dataType = OpcUaDataType.fromNodeId(dataTypeId);
 
       if (dataType != null) {
-        return ImplicitConversions.convert(sourceValue, dataType);
+        return ExplicitConversions.convert(sourceValue, dataType);
       } else {
         return null;
       }
@@ -61,7 +61,7 @@ public class Cast implements Operator<Object> {
       OpcUaDataType dataType = OpcUaDataType.fromNodeId(dataTypeId);
 
       if (dataType != null) {
-        return ImplicitConversions.convert(sourceValue, dataType);
+        return ExplicitConversions.convert(sourceValue, dataType);
       } else {
         return null;
       }

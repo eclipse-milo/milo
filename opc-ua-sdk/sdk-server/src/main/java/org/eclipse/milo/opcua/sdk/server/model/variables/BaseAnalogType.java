@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.sdk.server.model.variables;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.EUInformation;
+import org.eclipse.milo.opcua.stack.core.types.structured.NumberRange;
 import org.eclipse.milo.opcua.stack.core.types.structured.Range;
 
 /**
@@ -28,6 +29,14 @@ public interface BaseAnalogType extends DataItemType {
           -1,
           Range.class);
 
+  QualifiedProperty<NumberRange> INSTRUMENT_NUMBER_RANGE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "InstrumentNumberRange",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23903"),
+          -1,
+          NumberRange.class);
+
   QualifiedProperty<Range> EU_RANGE =
       new QualifiedProperty<>(
           "http://opcfoundation.org/UA/",
@@ -35,6 +44,14 @@ public interface BaseAnalogType extends DataItemType {
           ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=884"),
           -1,
           Range.class);
+
+  QualifiedProperty<NumberRange> EU_NUMBER_RANGE =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "EUNumberRange",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=23903"),
+          -1,
+          NumberRange.class);
 
   QualifiedProperty<EUInformation> ENGINEERING_UNITS =
       new QualifiedProperty<>(
@@ -50,11 +67,23 @@ public interface BaseAnalogType extends DataItemType {
 
   PropertyType getInstrumentRangeNode();
 
+  NumberRange getInstrumentNumberRange();
+
+  void setInstrumentNumberRange(NumberRange value);
+
+  PropertyType getInstrumentNumberRangeNode();
+
   Range getEuRange();
 
   void setEuRange(Range value);
 
   PropertyType getEuRangeNode();
+
+  NumberRange getEuNumberRange();
+
+  void setEuNumberRange(NumberRange value);
+
+  PropertyType getEuNumberRangeNode();
 
   EUInformation getEngineeringUnits();
 

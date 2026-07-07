@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2026 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.sdk.core.dtd;
 
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
@@ -17,13 +27,19 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AdditionalParametersTy
 import org.eclipse.milo.opcua.stack.core.types.structured.AggregateConfiguration;
 import org.eclipse.milo.opcua.stack.core.types.structured.AggregateFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.AggregateFilterResult;
+import org.eclipse.milo.opcua.stack.core.types.structured.AliasCategoryUpdateDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AliasNameDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.AliasNameVerboseDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.AliasUpdateDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.Annotation;
 import org.eclipse.milo.opcua.stack.core.types.structured.AnnotationDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AnonymousIdentityToken;
+import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationConfigurationDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationIdentityDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.AttributeOperand;
+import org.eclipse.milo.opcua.stack.core.types.structured.AuthorizationServiceConfigurationDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AxisInformation;
 import org.eclipse.milo.opcua.stack.core.types.structured.BitFieldDefinition;
 import org.eclipse.milo.opcua.stack.core.types.structured.BrokerConnectionTransportDataType;
@@ -46,12 +62,14 @@ import org.eclipse.milo.opcua.stack.core.types.structured.CallRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.CancelRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CancelResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.CertificateGroupDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ChannelSecurityToken;
 import org.eclipse.milo.opcua.stack.core.types.structured.CloseSecureChannelRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CloseSecureChannelResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.CloseSessionRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CloseSessionResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.ComplexNumberType;
+import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationUpdateTargetType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilterElement;
@@ -96,6 +114,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.DtlsPubSubConnectionDa
 import org.eclipse.milo.opcua.stack.core.types.structured.EUInformation;
 import org.eclipse.milo.opcua.stack.core.types.structured.ElementOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointConfiguration;
+import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointUrlListDataType;
@@ -153,6 +172,8 @@ import org.eclipse.milo.opcua.stack.core.types.structured.LiteralOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.LldpManagementAddressTxPortType;
 import org.eclipse.milo.opcua.stack.core.types.structured.LldpManagementAddressType;
 import org.eclipse.milo.opcua.stack.core.types.structured.LldpTlvType;
+import org.eclipse.milo.opcua.stack.core.types.structured.LogRecord;
+import org.eclipse.milo.opcua.stack.core.types.structured.LogRecordsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.MdnsDiscoveryConfiguration;
 import org.eclipse.milo.opcua.stack.core.types.structured.MethodAttributes;
 import org.eclipse.milo.opcua.stack.core.types.structured.MethodNode;
@@ -170,6 +191,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemNotificat
 import org.eclipse.milo.opcua.stack.core.types.structured.MonitoringFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.MonitoringFilterResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.MonitoringParameters;
+import org.eclipse.milo.opcua.stack.core.types.structured.NameValuePair;
 import org.eclipse.milo.opcua.stack.core.types.structured.NetworkAddressUrlDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.NetworkGroupDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.Node;
@@ -178,6 +200,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.NodeReference;
 import org.eclipse.milo.opcua.stack.core.types.structured.NodeTypeDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.NotificationData;
 import org.eclipse.milo.opcua.stack.core.types.structured.NotificationMessage;
+import org.eclipse.milo.opcua.stack.core.types.structured.NumberRange;
 import org.eclipse.milo.opcua.stack.core.types.structured.ObjectAttributes;
 import org.eclipse.milo.opcua.stack.core.types.structured.ObjectNode;
 import org.eclipse.milo.opcua.stack.core.types.structured.ObjectTypeAttributes;
@@ -249,10 +272,13 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ResponseHeader;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SamplingIntervalDiagnosticsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SecurityGroupDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.SecuritySettingsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SemanticChangeStructureDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ServerDiagnosticsSummaryDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.ServerEndpointDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ServerOnNetwork;
 import org.eclipse.milo.opcua.stack.core.types.structured.ServerStatusDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.ServiceCertificateDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ServiceCounterDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ServiceFault;
 import org.eclipse.milo.opcua.stack.core.types.structured.SessionDiagnosticsDataType;
@@ -270,6 +296,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.SignedSoftwareCertific
 import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.SimpleTypeDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.SortRuleElement;
+import org.eclipse.milo.opcua.stack.core.types.structured.SpanContextDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.StandaloneSubscribedDataSetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.StandaloneSubscribedDataSetRefDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.StatusChangeNotification;
@@ -286,6 +313,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ThreeDFrame;
 import org.eclipse.milo.opcua.stack.core.types.structured.ThreeDOrientation;
 import org.eclipse.milo.opcua.stack.core.types.structured.ThreeDVector;
 import org.eclipse.milo.opcua.stack.core.types.structured.TimeZoneDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.TraceContextDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.TransactionErrorType;
 import org.eclipse.milo.opcua.stack.core.types.structured.TransferResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.TransferSubscriptionsRequest;
@@ -308,6 +336,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.UpdateStructureDataDet
 import org.eclipse.milo.opcua.stack.core.types.structured.UserManagementDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserNameIdentityToken;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
+import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenSettingsDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.VariableAttributes;
 import org.eclipse.milo.opcua.stack.core.types.structured.VariableNode;
 import org.eclipse.milo.opcua.stack.core.types.structured.VariableTypeAttributes;
@@ -400,6 +429,12 @@ public class BinaryDataTypeDictionaryInitializer extends DataTypeDictionaryIniti
             BinaryDataTypeCodec.from(new CurrencyUnitType.Codec())));
     binaryDictionary.registerType(
         new BinaryDataTypeDictionary.BinaryType(
+            "NumberRange",
+            NumberRange.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            NumberRange.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new NumberRange.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
             "AnnotationDataType",
             AnnotationDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
             AnnotationDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
@@ -424,10 +459,71 @@ public class BinaryDataTypeDictionaryInitializer extends DataTypeDictionaryIniti
             BinaryDataTypeCodec.from(new TrustListDataType.Codec())));
     binaryDictionary.registerType(
         new BinaryDataTypeDictionary.BinaryType(
+            "ApplicationConfigurationDataType",
+            ApplicationConfigurationDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            ApplicationConfigurationDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new ApplicationConfigurationDataType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "CertificateGroupDataType",
+            CertificateGroupDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            CertificateGroupDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new CertificateGroupDataType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "ApplicationIdentityDataType",
+            ApplicationIdentityDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            ApplicationIdentityDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new ApplicationIdentityDataType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "EndpointDataType",
+            EndpointDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            EndpointDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new EndpointDataType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "ServerEndpointDataType",
+            ServerEndpointDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            ServerEndpointDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new ServerEndpointDataType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "SecuritySettingsDataType",
+            SecuritySettingsDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            SecuritySettingsDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new SecuritySettingsDataType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "UserTokenSettingsDataType",
+            UserTokenSettingsDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            UserTokenSettingsDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new UserTokenSettingsDataType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "AuthorizationServiceConfigurationDataType",
+            AuthorizationServiceConfigurationDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            AuthorizationServiceConfigurationDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(
+                namespaceTable),
+            BinaryDataTypeCodec.from(new AuthorizationServiceConfigurationDataType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "ConfigurationUpdateTargetType",
+            ConfigurationUpdateTargetType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            ConfigurationUpdateTargetType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new ConfigurationUpdateTargetType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
             "TransactionErrorType",
             TransactionErrorType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
             TransactionErrorType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
             BinaryDataTypeCodec.from(new TransactionErrorType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "ServiceCertificateDataType",
+            ServiceCertificateDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            ServiceCertificateDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new ServiceCertificateDataType.Codec())));
     binaryDictionary.registerType(
         new BinaryDataTypeDictionary.BinaryType(
             "UABinaryFileDataType",
@@ -763,6 +859,24 @@ public class BinaryDataTypeDictionaryInitializer extends DataTypeDictionaryIniti
             BinaryDataTypeCodec.from(new AliasNameDataType.Codec())));
     binaryDictionary.registerType(
         new BinaryDataTypeDictionary.BinaryType(
+            "AliasNameVerboseDataType",
+            AliasNameVerboseDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            AliasNameVerboseDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new AliasNameVerboseDataType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "AliasCategoryUpdateDataType",
+            AliasCategoryUpdateDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            AliasCategoryUpdateDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new AliasCategoryUpdateDataType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "AliasUpdateDataType",
+            AliasUpdateDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            AliasUpdateDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new AliasUpdateDataType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
             "UserManagementDataType",
             UserManagementDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
             UserManagementDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
@@ -803,6 +917,36 @@ public class BinaryDataTypeDictionaryInitializer extends DataTypeDictionaryIniti
             ReferenceListEntryDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
             ReferenceListEntryDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
             BinaryDataTypeCodec.from(new ReferenceListEntryDataType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "LogRecord",
+            LogRecord.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            LogRecord.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new LogRecord.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "LogRecordsDataType",
+            LogRecordsDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            LogRecordsDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new LogRecordsDataType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "SpanContextDataType",
+            SpanContextDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            SpanContextDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new SpanContextDataType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "TraceContextDataType",
+            TraceContextDataType.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            TraceContextDataType.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new TraceContextDataType.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "NameValuePair",
+            NameValuePair.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            NameValuePair.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new NameValuePair.Codec())));
     binaryDictionary.registerType(
         new BinaryDataTypeDictionary.BinaryType(
             "RolePermissionType",
@@ -899,6 +1043,12 @@ public class BinaryDataTypeDictionaryInitializer extends DataTypeDictionaryIniti
             SignedSoftwareCertificate.TYPE_ID.toNodeIdOrThrow(namespaceTable),
             SignedSoftwareCertificate.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
             BinaryDataTypeCodec.from(new SignedSoftwareCertificate.Codec())));
+    binaryDictionary.registerType(
+        new BinaryDataTypeDictionary.BinaryType(
+            "SignatureData",
+            SignatureData.TYPE_ID.toNodeIdOrThrow(namespaceTable),
+            SignatureData.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
+            BinaryDataTypeCodec.from(new SignatureData.Codec())));
     binaryDictionary.registerType(
         new BinaryDataTypeDictionary.BinaryType(
             "AnonymousIdentityToken",
@@ -1457,12 +1607,6 @@ public class BinaryDataTypeDictionaryInitializer extends DataTypeDictionaryIniti
             CloseSecureChannelResponse.TYPE_ID.toNodeIdOrThrow(namespaceTable),
             CloseSecureChannelResponse.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
             BinaryDataTypeCodec.from(new CloseSecureChannelResponse.Codec())));
-    binaryDictionary.registerType(
-        new BinaryDataTypeDictionary.BinaryType(
-            "SignatureData",
-            SignatureData.TYPE_ID.toNodeIdOrThrow(namespaceTable),
-            SignatureData.BINARY_ENCODING_ID.toNodeIdOrThrow(namespaceTable),
-            BinaryDataTypeCodec.from(new SignatureData.Codec())));
     binaryDictionary.registerType(
         new BinaryDataTypeDictionary.BinaryType(
             "CreateSessionRequest",

@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2026 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
 package org.eclipse.milo.opcua.sdk.client.dtd;
 
 import java.util.Map;
@@ -41,6 +51,8 @@ abstract class BinaryDataTypeInfo {
     DATA_TYPE_INFO_MAP.put(
         "CurrencyUnitType", new DataTypeInfo(new NodeId(0, 23498), new NodeId(0, 23507)));
     DATA_TYPE_INFO_MAP.put(
+        "NumberRange", new DataTypeInfo(new NodeId(0, 23903), new NodeId(0, 24250)));
+    DATA_TYPE_INFO_MAP.put(
         "AnnotationDataType", new DataTypeInfo(new NodeId(0, 32434), new NodeId(0, 32560)));
     DATA_TYPE_INFO_MAP.put(
         "LinearConversionDataType", new DataTypeInfo(new NodeId(0, 32435), new NodeId(0, 32561)));
@@ -49,7 +61,36 @@ abstract class BinaryDataTypeInfo {
     DATA_TYPE_INFO_MAP.put(
         "TrustListDataType", new DataTypeInfo(new NodeId(0, 12554), new NodeId(0, 12680)));
     DATA_TYPE_INFO_MAP.put(
+        "BaseConfigurationDataType", new DataTypeInfo(new NodeId(0, 15434), new NodeId(0, 16538)));
+    DATA_TYPE_INFO_MAP.put(
+        "BaseConfigurationRecordDataType",
+        new DataTypeInfo(new NodeId(0, 15435), new NodeId(0, 16539)));
+    DATA_TYPE_INFO_MAP.put(
+        "CertificateGroupDataType", new DataTypeInfo(new NodeId(0, 15436), new NodeId(0, 16540)));
+    DATA_TYPE_INFO_MAP.put(
+        "ConfigurationUpdateTargetType",
+        new DataTypeInfo(new NodeId(0, 15538), new NodeId(0, 16541)));
+    DATA_TYPE_INFO_MAP.put(
         "TransactionErrorType", new DataTypeInfo(new NodeId(0, 32285), new NodeId(0, 32382)));
+    DATA_TYPE_INFO_MAP.put(
+        "ApplicationConfigurationDataType",
+        new DataTypeInfo(new NodeId(0, 23743), new NodeId(0, 23754)));
+    DATA_TYPE_INFO_MAP.put(
+        "ApplicationIdentityDataType",
+        new DataTypeInfo(new NodeId(0, 15556), new NodeId(0, 16543)));
+    DATA_TYPE_INFO_MAP.put(
+        "EndpointDataType", new DataTypeInfo(new NodeId(0, 15557), new NodeId(0, 16544)));
+    DATA_TYPE_INFO_MAP.put(
+        "ServerEndpointDataType", new DataTypeInfo(new NodeId(0, 15558), new NodeId(0, 16545)));
+    DATA_TYPE_INFO_MAP.put(
+        "SecuritySettingsDataType", new DataTypeInfo(new NodeId(0, 15559), new NodeId(0, 16546)));
+    DATA_TYPE_INFO_MAP.put(
+        "UserTokenSettingsDataType", new DataTypeInfo(new NodeId(0, 15560), new NodeId(0, 16547)));
+    DATA_TYPE_INFO_MAP.put(
+        "ServiceCertificateDataType", new DataTypeInfo(new NodeId(0, 23724), new NodeId(0, 23725)));
+    DATA_TYPE_INFO_MAP.put(
+        "AuthorizationServiceConfigurationDataType",
+        new DataTypeInfo(new NodeId(0, 23744), new NodeId(0, 23755)));
     DATA_TYPE_INFO_MAP.put(
         "DataTypeSchemaHeader", new DataTypeInfo(new NodeId(0, 15534), new NodeId(0, 15676)));
     DATA_TYPE_INFO_MAP.put(
@@ -233,6 +274,13 @@ abstract class BinaryDataTypeInfo {
     DATA_TYPE_INFO_MAP.put(
         "AliasNameDataType", new DataTypeInfo(new NodeId(0, 23468), new NodeId(0, 23499)));
     DATA_TYPE_INFO_MAP.put(
+        "AliasNameVerboseDataType", new DataTypeInfo(new NodeId(0, 24051), new NodeId(0, 24262)));
+    DATA_TYPE_INFO_MAP.put(
+        "AliasCategoryUpdateDataType",
+        new DataTypeInfo(new NodeId(0, 24052), new NodeId(0, 24338)));
+    DATA_TYPE_INFO_MAP.put(
+        "AliasUpdateDataType", new DataTypeInfo(new NodeId(0, 24053), new NodeId(0, 24339)));
+    DATA_TYPE_INFO_MAP.put(
         "UserManagementDataType", new DataTypeInfo(new NodeId(0, 24281), new NodeId(0, 24292)));
     DATA_TYPE_INFO_MAP.put(
         "PriorityMappingEntryType", new DataTypeInfo(new NodeId(0, 25220), new NodeId(0, 25239)));
@@ -248,6 +296,16 @@ abstract class BinaryDataTypeInfo {
         new DataTypeInfo(new NodeId(0, 32659), new NodeId(0, 32661)));
     DATA_TYPE_INFO_MAP.put(
         "ReferenceListEntryDataType", new DataTypeInfo(new NodeId(0, 32660), new NodeId(0, 32662)));
+    DATA_TYPE_INFO_MAP.put(
+        "LogRecord", new DataTypeInfo(new NodeId(0, 19361), new NodeId(0, 19379)));
+    DATA_TYPE_INFO_MAP.put(
+        "LogRecordsDataType", new DataTypeInfo(new NodeId(0, 19745), new NodeId(0, 19753)));
+    DATA_TYPE_INFO_MAP.put(
+        "SpanContextDataType", new DataTypeInfo(new NodeId(0, 19746), new NodeId(0, 19754)));
+    DATA_TYPE_INFO_MAP.put(
+        "TraceContextDataType", new DataTypeInfo(new NodeId(0, 19747), new NodeId(0, 19755)));
+    DATA_TYPE_INFO_MAP.put(
+        "NameValuePair", new DataTypeInfo(new NodeId(0, 19748), new NodeId(0, 19756)));
     DATA_TYPE_INFO_MAP.put(
         "RolePermissionType", new DataTypeInfo(new NodeId(0, 96), new NodeId(0, 128)));
     DATA_TYPE_INFO_MAP.put(
@@ -282,6 +340,8 @@ abstract class BinaryDataTypeInfo {
         "MdnsDiscoveryConfiguration", new DataTypeInfo(new NodeId(0, 12891), new NodeId(0, 12901)));
     DATA_TYPE_INFO_MAP.put(
         "SignedSoftwareCertificate", new DataTypeInfo(new NodeId(0, 344), new NodeId(0, 346)));
+    DATA_TYPE_INFO_MAP.put(
+        "SignatureData", new DataTypeInfo(new NodeId(0, 456), new NodeId(0, 458)));
     DATA_TYPE_INFO_MAP.put(
         "UserIdentityToken", new DataTypeInfo(new NodeId(0, 316), new NodeId(0, 318)));
     DATA_TYPE_INFO_MAP.put(
@@ -446,8 +506,6 @@ abstract class BinaryDataTypeInfo {
         "CloseSecureChannelRequest", new DataTypeInfo(new NodeId(0, 450), new NodeId(0, 452)));
     DATA_TYPE_INFO_MAP.put(
         "CloseSecureChannelResponse", new DataTypeInfo(new NodeId(0, 453), new NodeId(0, 455)));
-    DATA_TYPE_INFO_MAP.put(
-        "SignatureData", new DataTypeInfo(new NodeId(0, 456), new NodeId(0, 458)));
     DATA_TYPE_INFO_MAP.put(
         "CreateSessionRequest", new DataTypeInfo(new NodeId(0, 459), new NodeId(0, 461)));
     DATA_TYPE_INFO_MAP.put(

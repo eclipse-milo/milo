@@ -730,20 +730,30 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
         encoder.encodeMatrix(fieldName, matrix);
       } else if (hint instanceof EnumHint) {
         Object[] flatArray = encodeEnumMatrix(dataTypeId.expanded(), jsonArray);
-        var matrix = new Matrix(flatArray, getDimensions(jsonArray), OpcUaDataType.Int32);
+        var matrix =
+            new Matrix(
+                flatArray, getDimensions(jsonArray), OpcUaDataType.Int32, dataTypeId.expanded());
         encoder.encodeEnumMatrix(fieldName, matrix);
       } else if (hint instanceof StructHint) {
         if (dataTypeId.equals(NodeIds.Structure) || fieldAllowsSubtyping(field)) {
           Object[] flatArray =
               encodeStructMatrix(encoder.getEncodingContext(), dataTypeTree, jsonArray, true);
           var matrix =
-              new Matrix(flatArray, getDimensions(jsonArray), OpcUaDataType.ExtensionObject);
+              new Matrix(
+                  flatArray,
+                  getDimensions(jsonArray),
+                  OpcUaDataType.ExtensionObject,
+                  dataTypeId.expanded());
           encoder.encodeMatrix(fieldName, matrix);
         } else {
           Object[] flatArray =
               encodeStructMatrix(encoder.getEncodingContext(), dataTypeTree, jsonArray, false);
           var matrix =
-              new Matrix(flatArray, getDimensions(jsonArray), OpcUaDataType.ExtensionObject);
+              new Matrix(
+                  flatArray,
+                  getDimensions(jsonArray),
+                  OpcUaDataType.ExtensionObject,
+                  dataTypeId.expanded());
           encoder.encodeStructMatrix(fieldName, matrix, dataTypeId);
         }
       } else {

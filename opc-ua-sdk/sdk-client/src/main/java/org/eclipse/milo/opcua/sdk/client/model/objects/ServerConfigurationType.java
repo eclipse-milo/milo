@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -22,7 +22,7 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.4">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.4</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.3">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.3</a>
  */
 public interface ServerConfigurationType extends BaseObjectType {
   QualifiedProperty<String> APPLICATION_URI =
@@ -948,4 +948,25 @@ public interface ServerConfigurationType extends BaseObjectType {
    *     Node or completes exceptionally if an error occurs creating or getting the Node.
    */
   CompletableFuture<? extends TransactionDiagnosticsType> getTransactionDiagnosticsNodeAsync();
+
+  /**
+   * Get the ConfigurationFile {@link ApplicationConfigurationFileType} Node, or {@code null} if it
+   * does not exist.
+   *
+   * <p>The Node is created when first accessed and cached for subsequent calls.
+   *
+   * @return the ConfigurationFile {@link ApplicationConfigurationFileType} Node, or {@code null} if
+   *     it does not exist.
+   * @throws UaException if an error occurs creating or getting the Node.
+   */
+  ApplicationConfigurationFileType getConfigurationFileNode() throws UaException;
+
+  /**
+   * Asynchronous implementation of {@link #getConfigurationFileNode()}.
+   *
+   * @return a CompletableFuture that completes successfully with the
+   *     ApplicationConfigurationFileType Node or completes exceptionally if an error occurs
+   *     creating or getting the Node.
+   */
+  CompletableFuture<? extends ApplicationConfigurationFileType> getConfigurationFileNodeAsync();
 }

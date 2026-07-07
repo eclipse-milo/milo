@@ -1,11 +1,11 @@
 /*
- *  Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
- *  This program and the accompanying materials are made
- *  available under the terms of the Eclipse Public License 2.0
- *  which is available at https://www.eclipse.org/legal/epl-2.0/
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
  *
- *  SPDX-License-Identifier: EPL-2.0
+ * SPDX-License-Identifier: EPL-2.0
  */
 
 package org.eclipse.milo.opcua.stack.core;
@@ -15,7 +15,1067 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 
-public abstract class NodeIds3 extends NodeIds4 {
+abstract class NodeIds3 extends NodeIds4 {
+  public static final NodeId CreateSelfSignedCertificateMethodType_OutputArguments =
+      new NodeId(UShort.MIN, uint(19329));
+
+  public static final NodeId DeleteCertificateMethodType = new NodeId(UShort.MIN, uint(19330));
+
+  public static final NodeId DeleteCertificateMethodType_InputArguments =
+      new NodeId(UShort.MIN, uint(19331));
+
+  public static final NodeId
+      ApplicationConfigurationFolderType_ApplicationName_Placeholder_CreateSelfSignedCertificate =
+          new NodeId(UShort.MIN, uint(19332));
+
+  public static final NodeId
+      ApplicationConfigurationFolderType_ApplicationName_Placeholder_CreateSelfSignedCertificate_InputArguments =
+          new NodeId(UShort.MIN, uint(19333));
+
+  public static final NodeId
+      ApplicationConfigurationFolderType_ApplicationName_Placeholder_CreateSelfSignedCertificate_OutputArguments =
+          new NodeId(UShort.MIN, uint(19334));
+
+  public static final NodeId
+      ApplicationConfigurationFolderType_ApplicationName_Placeholder_DeleteCertificate =
+          new NodeId(UShort.MIN, uint(19335));
+
+  public static final NodeId
+      ApplicationConfigurationFolderType_ApplicationName_Placeholder_DeleteCertificate_InputArguments =
+          new NodeId(UShort.MIN, uint(19336));
+
+  public static final NodeId ServerConfigurationType_CreateSelfSignedCertificate =
+      new NodeId(UShort.MIN, uint(19337));
+
+  public static final NodeId ServerConfigurationType_CreateSelfSignedCertificate_InputArguments =
+      new NodeId(UShort.MIN, uint(19338));
+
+  public static final NodeId ServerConfigurationType_CreateSelfSignedCertificate_OutputArguments =
+      new NodeId(UShort.MIN, uint(19339));
+
+  public static final NodeId ServerConfigurationType_DeleteCertificate =
+      new NodeId(UShort.MIN, uint(19340));
+
+  public static final NodeId ServerConfigurationType_DeleteCertificate_InputArguments =
+      new NodeId(UShort.MIN, uint(19341));
+
+  public static final NodeId ServerConfiguration_CreateSelfSignedCertificate =
+      new NodeId(UShort.MIN, uint(19342));
+
+  public static final NodeId ServerConfiguration_CreateSelfSignedCertificate_InputArguments =
+      new NodeId(UShort.MIN, uint(19343));
+
+  public static final NodeId ServerConfiguration_CreateSelfSignedCertificate_OutputArguments =
+      new NodeId(UShort.MIN, uint(19344));
+
+  public static final NodeId ServerConfiguration_DeleteCertificate =
+      new NodeId(UShort.MIN, uint(19345));
+
+  public static final NodeId ServerConfiguration_DeleteCertificate_InputArguments =
+      new NodeId(UShort.MIN, uint(19346));
+
+  public static final NodeId
+      ProvisionableDeviceType_ApplicationName_Placeholder_CreateSelfSignedCertificate =
+          new NodeId(UShort.MIN, uint(19347));
+
+  public static final NodeId
+      ProvisionableDeviceType_ApplicationName_Placeholder_CreateSelfSignedCertificate_InputArguments =
+          new NodeId(UShort.MIN, uint(19348));
+
+  public static final NodeId
+      ProvisionableDeviceType_ApplicationName_Placeholder_CreateSelfSignedCertificate_OutputArguments =
+          new NodeId(UShort.MIN, uint(19349));
+
+  public static final NodeId ProvisionableDeviceType_ApplicationName_Placeholder_DeleteCertificate =
+      new NodeId(UShort.MIN, uint(19350));
+
+  public static final NodeId
+      ProvisionableDeviceType_ApplicationName_Placeholder_DeleteCertificate_InputArguments =
+          new NodeId(UShort.MIN, uint(19351));
+
+  public static final NodeId LogObjectType = new NodeId(UShort.MIN, uint(19352));
+
+  public static final NodeId LogObjectType_GetRecords = new NodeId(UShort.MIN, uint(19353));
+
+  public static final NodeId LogObjectType_GetRecords_InputArguments =
+      new NodeId(UShort.MIN, uint(19354));
+
+  public static final NodeId LogObjectType_GetRecords_OutputArguments =
+      new NodeId(UShort.MIN, uint(19355));
+
+  public static final NodeId LogObjectType_MaxRecords = new NodeId(UShort.MIN, uint(19356));
+
+  public static final NodeId LogObjectType_MaxStorageDuration = new NodeId(UShort.MIN, uint(19357));
+
+  public static final NodeId GetRecordsMethodType = new NodeId(UShort.MIN, uint(19358));
+
+  public static final NodeId GetRecordsMethodType_InputArguments =
+      new NodeId(UShort.MIN, uint(19359));
+
+  public static final NodeId GetRecordsMethodType_OutputArguments =
+      new NodeId(UShort.MIN, uint(19360));
+
+  public static final NodeId LogRecord = new NodeId(UShort.MIN, uint(19361));
+
+  public static final NodeId BaseLogEventType = new NodeId(UShort.MIN, uint(19362));
+
+  public static final NodeId BaseLogEventType_ConditionClassId =
+      new NodeId(UShort.MIN, uint(19363));
+
+  public static final NodeId BaseLogEventType_ConditionClassName =
+      new NodeId(UShort.MIN, uint(19364));
+
+  public static final NodeId BaseLogEventType_ErrorCode = new NodeId(UShort.MIN, uint(19365));
+
+  public static final NodeId BaseLogEventType_ErrorCodeNode = new NodeId(UShort.MIN, uint(19366));
+
+  public static final NodeId LogOverflowEventType = new NodeId(UShort.MIN, uint(19369));
+
+  public static final NodeId LogEntryConditionClassType = new NodeId(UShort.MIN, uint(19370));
+
+  public static final NodeId ServerLog = new NodeId(UShort.MIN, uint(19372));
+
+  public static final NodeId ServerLog_GetRecords = new NodeId(UShort.MIN, uint(19373));
+
+  public static final NodeId ServerLog_GetRecords_InputArguments =
+      new NodeId(UShort.MIN, uint(19374));
+
+  public static final NodeId ServerLog_GetRecords_OutputArguments =
+      new NodeId(UShort.MIN, uint(19375));
+
+  public static final NodeId ServerLog_MaxRecords = new NodeId(UShort.MIN, uint(19376));
+
+  public static final NodeId ServerLog_MaxStorageDuration = new NodeId(UShort.MIN, uint(19377));
+
+  public static final NodeId Logs = new NodeId(UShort.MIN, uint(19378));
+
+  public static final NodeId LogRecord_Encoding_DefaultBinary = new NodeId(UShort.MIN, uint(19379));
+
+  public static final NodeId OpcUa_BinarySchema_LogRecord = new NodeId(UShort.MIN, uint(19380));
+
+  public static final NodeId OpcUa_BinarySchema_LogRecord_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(19381));
+
+  public static final NodeId OpcUa_BinarySchema_LogRecord_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(19382));
+
+  public static final NodeId LogRecord_Encoding_DefaultXml = new NodeId(UShort.MIN, uint(19383));
+
+  public static final NodeId OpcUa_XmlSchema_LogRecord = new NodeId(UShort.MIN, uint(19384));
+
+  public static final NodeId OpcUa_XmlSchema_LogRecord_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(19385));
+
+  public static final NodeId OpcUa_XmlSchema_LogRecord_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(19386));
+
+  public static final NodeId LogRecord_Encoding_DefaultJson = new NodeId(UShort.MIN, uint(19387));
+
+  public static final NodeId CertificateGroupType_Purpose = new NodeId(UShort.MIN, uint(19398));
+
+  public static final NodeId CertificateGroupFolderType_DefaultApplicationGroup_Purpose =
+      new NodeId(UShort.MIN, uint(19399));
+
+  public static final NodeId CertificateGroupFolderType_DefaultHttpsGroup_Purpose =
+      new NodeId(UShort.MIN, uint(19400));
+
+  public static final NodeId CertificateGroupFolderType_DefaultUserTokenGroup_Purpose =
+      new NodeId(UShort.MIN, uint(19401));
+
+  public static final NodeId CertificateGroupFolderType_AdditionalGroup_Placeholder_Purpose =
+      new NodeId(UShort.MIN, uint(19402));
+
+  public static final NodeId
+      ApplicationConfigurationFolderType_ApplicationName_Placeholder_CertificateGroups_DefaultApplicationGroup_Purpose =
+          new NodeId(UShort.MIN, uint(19403));
+
+  public static final NodeId
+      ApplicationConfigurationFolderType_ApplicationName_Placeholder_CertificateGroups_DefaultHttpsGroup_Purpose =
+          new NodeId(UShort.MIN, uint(19404));
+
+  public static final NodeId
+      ApplicationConfigurationFolderType_ApplicationName_Placeholder_CertificateGroups_DefaultUserTokenGroup_Purpose =
+          new NodeId(UShort.MIN, uint(19405));
+
+  public static final NodeId
+      ApplicationConfigurationFolderType_ApplicationName_Placeholder_ConfigurationFile_MaxEndpoints =
+          new NodeId(UShort.MIN, uint(19406));
+
+  public static final NodeId
+      ApplicationConfigurationFolderType_ApplicationName_Placeholder_ConfigurationFile_MaxCertificateGroups =
+          new NodeId(UShort.MIN, uint(19407));
+
+  public static final NodeId
+      ApplicationConfigurationFolderType_ApplicationName_Placeholder_ConfigurationFile_CertificateGroupPurposes =
+          new NodeId(UShort.MIN, uint(19408));
+
+  public static final NodeId
+      ApplicationConfigurationFolderType_ApplicationName_Placeholder_KeyCredentials =
+          new NodeId(UShort.MIN, uint(19409));
+
+  public static final NodeId
+      ApplicationConfigurationFolderType_ApplicationName_Placeholder_KeyCredentials_CreateCredential =
+          new NodeId(UShort.MIN, uint(19410));
+
+  public static final NodeId
+      ApplicationConfigurationFolderType_ApplicationName_Placeholder_KeyCredentials_CreateCredential_InputArguments =
+          new NodeId(UShort.MIN, uint(19411));
+
+  public static final NodeId
+      ApplicationConfigurationFolderType_ApplicationName_Placeholder_KeyCredentials_CreateCredential_OutputArguments =
+          new NodeId(UShort.MIN, uint(19412));
+
+  public static final NodeId
+      ApplicationConfigurationFolderType_ApplicationName_Placeholder_AuthorizationServices =
+          new NodeId(UShort.MIN, uint(19413));
+
+  public static final NodeId ApplicationConfigurationFileType_MaxEndpoints =
+      new NodeId(UShort.MIN, uint(19414));
+
+  public static final NodeId ApplicationConfigurationFileType_MaxCertificateGroups =
+      new NodeId(UShort.MIN, uint(19415));
+
+  public static final NodeId ApplicationConfigurationFileType_CertificateGroupPurposes =
+      new NodeId(UShort.MIN, uint(19416));
+
+  public static final NodeId
+      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_Purpose =
+          new NodeId(UShort.MIN, uint(19417));
+
+  public static final NodeId ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_Purpose =
+      new NodeId(UShort.MIN, uint(19418));
+
+  public static final NodeId
+      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_Purpose =
+          new NodeId(UShort.MIN, uint(19419));
+
+  public static final NodeId ServerConfigurationType_ConfigurationFile_MaxEndpoints =
+      new NodeId(UShort.MIN, uint(19420));
+
+  public static final NodeId ServerConfigurationType_ConfigurationFile_MaxCertificateGroups =
+      new NodeId(UShort.MIN, uint(19421));
+
+  public static final NodeId ServerConfigurationType_ConfigurationFile_CertificateGroupPurposes =
+      new NodeId(UShort.MIN, uint(19422));
+
+  public static final NodeId ApplicationConfigurationType_KeyCredentials =
+      new NodeId(UShort.MIN, uint(19423));
+
+  public static final NodeId ApplicationConfigurationType_KeyCredentials_CreateCredential =
+      new NodeId(UShort.MIN, uint(19424));
+
+  public static final NodeId
+      ApplicationConfigurationType_KeyCredentials_CreateCredential_InputArguments =
+          new NodeId(UShort.MIN, uint(19425));
+
+  public static final NodeId
+      ApplicationConfigurationType_KeyCredentials_CreateCredential_OutputArguments =
+          new NodeId(UShort.MIN, uint(19426));
+
+  public static final NodeId ApplicationConfigurationType_AuthorizationServices =
+      new NodeId(UShort.MIN, uint(19427));
+
+  public static final NodeId ServerConfiguration_CertificateGroups_DefaultApplicationGroup_Purpose =
+      new NodeId(UShort.MIN, uint(19428));
+
+  public static final NodeId ServerConfiguration_CertificateGroups_DefaultHttpsGroup_Purpose =
+      new NodeId(UShort.MIN, uint(19429));
+
+  public static final NodeId ServerConfiguration_CertificateGroups_DefaultUserTokenGroup_Purpose =
+      new NodeId(UShort.MIN, uint(19430));
+
+  public static final NodeId ServerConfiguration_ConfigurationFile_MaxEndpoints =
+      new NodeId(UShort.MIN, uint(19442));
+
+  public static final NodeId ServerConfiguration_ConfigurationFile_MaxCertificateGroups =
+      new NodeId(UShort.MIN, uint(19443));
+
+  public static final NodeId ServerConfiguration_ConfigurationFile_CertificateGroupPurposes =
+      new NodeId(UShort.MIN, uint(19444));
+
+  public static final NodeId TrustListOutOfDateAlarmType_TrustListId =
+      new NodeId(UShort.MIN, uint(19446));
+
+  public static final NodeId TrustListOutOfDateAlarmType_LastUpdateTime =
+      new NodeId(UShort.MIN, uint(19447));
+
+  public static final NodeId TrustListOutOfDateAlarmType_UpdateFrequency =
+      new NodeId(UShort.MIN, uint(19448));
+
+  public static final NodeId CertificateGroupType_TrustList_UpdateFrequency =
+      new NodeId(UShort.MIN, uint(19449));
+
+  public static final NodeId CertificateGroupType_CertificateExpired =
+      new NodeId(UShort.MIN, uint(19450));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_EventId =
+      new NodeId(UShort.MIN, uint(19451));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_EventType =
+      new NodeId(UShort.MIN, uint(19452));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_SourceNode =
+      new NodeId(UShort.MIN, uint(19453));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_SourceName =
+      new NodeId(UShort.MIN, uint(19454));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_Time =
+      new NodeId(UShort.MIN, uint(19455));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_ReceiveTime =
+      new NodeId(UShort.MIN, uint(19456));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_LocalTime =
+      new NodeId(UShort.MIN, uint(19457));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_Message =
+      new NodeId(UShort.MIN, uint(19458));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_Severity =
+      new NodeId(UShort.MIN, uint(19459));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_ConditionClassId =
+      new NodeId(UShort.MIN, uint(19460));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_ConditionClassName =
+      new NodeId(UShort.MIN, uint(19461));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_ConditionSubClassId =
+      new NodeId(UShort.MIN, uint(19462));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_ConditionSubClassName =
+      new NodeId(UShort.MIN, uint(19463));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_ConditionName =
+      new NodeId(UShort.MIN, uint(19464));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_BranchId =
+      new NodeId(UShort.MIN, uint(19465));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_Retain =
+      new NodeId(UShort.MIN, uint(19466));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_EnabledState =
+      new NodeId(UShort.MIN, uint(19467));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_EnabledState_Id =
+      new NodeId(UShort.MIN, uint(19468));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_EnabledState_Name =
+      new NodeId(UShort.MIN, uint(19469));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_EnabledState_Number =
+      new NodeId(UShort.MIN, uint(19470));
+
+  public static final NodeId
+      CertificateGroupType_CertificateExpired_EnabledState_EffectiveDisplayName =
+          new NodeId(UShort.MIN, uint(19471));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_EnabledState_TransitionTime =
+      new NodeId(UShort.MIN, uint(19472));
+
+  public static final NodeId
+      CertificateGroupType_CertificateExpired_EnabledState_EffectiveTransitionTime =
+          new NodeId(UShort.MIN, uint(19473));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_EnabledState_TrueState =
+      new NodeId(UShort.MIN, uint(19474));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_EnabledState_FalseState =
+      new NodeId(UShort.MIN, uint(19475));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_Quality =
+      new NodeId(UShort.MIN, uint(19476));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_Quality_SourceTimestamp =
+      new NodeId(UShort.MIN, uint(19477));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_LastSeverity =
+      new NodeId(UShort.MIN, uint(19478));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_LastSeverity_SourceTimestamp =
+      new NodeId(UShort.MIN, uint(19479));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_Comment =
+      new NodeId(UShort.MIN, uint(19480));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_Comment_SourceTimestamp =
+      new NodeId(UShort.MIN, uint(19481));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_ClientUserId =
+      new NodeId(UShort.MIN, uint(19482));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_Disable =
+      new NodeId(UShort.MIN, uint(19483));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_Enable =
+      new NodeId(UShort.MIN, uint(19484));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_AddComment =
+      new NodeId(UShort.MIN, uint(19485));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_AddComment_InputArguments =
+      new NodeId(UShort.MIN, uint(19486));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_AckedState =
+      new NodeId(UShort.MIN, uint(19487));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_AckedState_Id =
+      new NodeId(UShort.MIN, uint(19488));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_AckedState_Name =
+      new NodeId(UShort.MIN, uint(19489));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_AckedState_Number =
+      new NodeId(UShort.MIN, uint(19490));
+
+  public static final NodeId
+      CertificateGroupType_CertificateExpired_AckedState_EffectiveDisplayName =
+          new NodeId(UShort.MIN, uint(19491));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_AckedState_TransitionTime =
+      new NodeId(UShort.MIN, uint(19492));
+
+  public static final NodeId
+      CertificateGroupType_CertificateExpired_AckedState_EffectiveTransitionTime =
+          new NodeId(UShort.MIN, uint(19493));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_AckedState_TrueState =
+      new NodeId(UShort.MIN, uint(19494));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_AckedState_FalseState =
+      new NodeId(UShort.MIN, uint(19495));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_ConfirmedState =
+      new NodeId(UShort.MIN, uint(19496));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_ConfirmedState_Id =
+      new NodeId(UShort.MIN, uint(19497));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_ConfirmedState_Name =
+      new NodeId(UShort.MIN, uint(19498));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_ConfirmedState_Number =
+      new NodeId(UShort.MIN, uint(19499));
+
+  public static final NodeId
+      CertificateGroupType_CertificateExpired_ConfirmedState_EffectiveDisplayName =
+          new NodeId(UShort.MIN, uint(19500));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_ConfirmedState_TransitionTime =
+      new NodeId(UShort.MIN, uint(19501));
+
+  public static final NodeId
+      CertificateGroupType_CertificateExpired_ConfirmedState_EffectiveTransitionTime =
+          new NodeId(UShort.MIN, uint(19502));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_ConfirmedState_TrueState =
+      new NodeId(UShort.MIN, uint(19503));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_ConfirmedState_FalseState =
+      new NodeId(UShort.MIN, uint(19504));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_Acknowledge =
+      new NodeId(UShort.MIN, uint(19505));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_Acknowledge_InputArguments =
+      new NodeId(UShort.MIN, uint(19506));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_Confirm =
+      new NodeId(UShort.MIN, uint(19507));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_Confirm_InputArguments =
+      new NodeId(UShort.MIN, uint(19508));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_ActiveState =
+      new NodeId(UShort.MIN, uint(19509));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_ActiveState_Id =
+      new NodeId(UShort.MIN, uint(19510));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_ActiveState_Name =
+      new NodeId(UShort.MIN, uint(19511));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_ActiveState_Number =
+      new NodeId(UShort.MIN, uint(19512));
+
+  public static final NodeId
+      CertificateGroupType_CertificateExpired_ActiveState_EffectiveDisplayName =
+          new NodeId(UShort.MIN, uint(19513));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_ActiveState_TransitionTime =
+      new NodeId(UShort.MIN, uint(19514));
+
+  public static final NodeId
+      CertificateGroupType_CertificateExpired_ActiveState_EffectiveTransitionTime =
+          new NodeId(UShort.MIN, uint(19515));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_ActiveState_TrueState =
+      new NodeId(UShort.MIN, uint(19516));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_ActiveState_FalseState =
+      new NodeId(UShort.MIN, uint(19517));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_InputNode =
+      new NodeId(UShort.MIN, uint(19518));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_SuppressedState =
+      new NodeId(UShort.MIN, uint(19519));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_SuppressedState_Id =
+      new NodeId(UShort.MIN, uint(19520));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_SuppressedState_Name =
+      new NodeId(UShort.MIN, uint(19521));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_SuppressedState_Number =
+      new NodeId(UShort.MIN, uint(19522));
+
+  public static final NodeId
+      CertificateGroupType_CertificateExpired_SuppressedState_EffectiveDisplayName =
+          new NodeId(UShort.MIN, uint(19523));
+
+  public static final NodeId
+      CertificateGroupType_CertificateExpired_SuppressedState_TransitionTime =
+          new NodeId(UShort.MIN, uint(19524));
+
+  public static final NodeId
+      CertificateGroupType_CertificateExpired_SuppressedState_EffectiveTransitionTime =
+          new NodeId(UShort.MIN, uint(19525));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_SuppressedState_TrueState =
+      new NodeId(UShort.MIN, uint(19526));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_SuppressedState_FalseState =
+      new NodeId(UShort.MIN, uint(19527));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_OutOfServiceState =
+      new NodeId(UShort.MIN, uint(19528));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_OutOfServiceState_Id =
+      new NodeId(UShort.MIN, uint(19529));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_OutOfServiceState_Name =
+      new NodeId(UShort.MIN, uint(19530));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_OutOfServiceState_Number =
+      new NodeId(UShort.MIN, uint(19531));
+
+  public static final NodeId
+      CertificateGroupType_CertificateExpired_OutOfServiceState_EffectiveDisplayName =
+          new NodeId(UShort.MIN, uint(19532));
+
+  public static final NodeId
+      CertificateGroupType_CertificateExpired_OutOfServiceState_TransitionTime =
+          new NodeId(UShort.MIN, uint(19533));
+
+  public static final NodeId
+      CertificateGroupType_CertificateExpired_OutOfServiceState_EffectiveTransitionTime =
+          new NodeId(UShort.MIN, uint(19534));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_OutOfServiceState_TrueState =
+      new NodeId(UShort.MIN, uint(19535));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_OutOfServiceState_FalseState =
+      new NodeId(UShort.MIN, uint(19536));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_ShelvingState =
+      new NodeId(UShort.MIN, uint(19537));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_ShelvingState_CurrentState =
+      new NodeId(UShort.MIN, uint(19538));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_ShelvingState_CurrentState_Id =
+      new NodeId(UShort.MIN, uint(19539));
+
+  public static final NodeId
+      CertificateGroupType_CertificateExpired_ShelvingState_CurrentState_Name =
+          new NodeId(UShort.MIN, uint(19540));
+
+  public static final NodeId
+      CertificateGroupType_CertificateExpired_ShelvingState_CurrentState_Number =
+          new NodeId(UShort.MIN, uint(19541));
+
+  public static final NodeId
+      CertificateGroupType_CertificateExpired_ShelvingState_CurrentState_EffectiveDisplayName =
+          new NodeId(UShort.MIN, uint(19542));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_ShelvingState_LastTransition =
+      new NodeId(UShort.MIN, uint(19543));
+
+  public static final NodeId
+      CertificateGroupType_CertificateExpired_ShelvingState_LastTransition_Id =
+          new NodeId(UShort.MIN, uint(19544));
+
+  public static final NodeId
+      CertificateGroupType_CertificateExpired_ShelvingState_LastTransition_Name =
+          new NodeId(UShort.MIN, uint(19545));
+
+  public static final NodeId
+      CertificateGroupType_CertificateExpired_ShelvingState_LastTransition_Number =
+          new NodeId(UShort.MIN, uint(19546));
+
+  public static final NodeId
+      CertificateGroupType_CertificateExpired_ShelvingState_LastTransition_TransitionTime =
+          new NodeId(UShort.MIN, uint(19547));
+
+  public static final NodeId
+      CertificateGroupType_CertificateExpired_ShelvingState_LastTransition_EffectiveTransitionTime =
+          new NodeId(UShort.MIN, uint(19548));
+
+  public static final NodeId CertificateGroupType_CertificateExpired_ShelvingState_AvailableStates =
+      new NodeId(UShort.MIN, uint(19549));
+
+  public static final NodeId DataSetWriterType_Diagnostics = new NodeId(UShort.MIN, uint(19550));
+
+  public static final NodeId DataSetWriterType_Diagnostics_DiagnosticsLevel =
+      new NodeId(UShort.MIN, uint(19551));
+
+  public static final NodeId DataSetWriterType_Diagnostics_TotalInformation =
+      new NodeId(UShort.MIN, uint(19552));
+
+  public static final NodeId DataSetWriterType_Diagnostics_TotalInformation_Active =
+      new NodeId(UShort.MIN, uint(19553));
+
+  public static final NodeId DataSetWriterType_Diagnostics_TotalInformation_Classification =
+      new NodeId(UShort.MIN, uint(19554));
+
+  public static final NodeId DataSetWriterType_Diagnostics_TotalInformation_DiagnosticsLevel =
+      new NodeId(UShort.MIN, uint(19555));
+
+  public static final NodeId DataSetWriterType_Diagnostics_TotalInformation_TimeFirstChange =
+      new NodeId(UShort.MIN, uint(19556));
+
+  public static final NodeId DataSetWriterType_Diagnostics_TotalError =
+      new NodeId(UShort.MIN, uint(19557));
+
+  public static final NodeId DataSetWriterType_Diagnostics_TotalError_Active =
+      new NodeId(UShort.MIN, uint(19558));
+
+  public static final NodeId DataSetWriterType_Diagnostics_TotalError_Classification =
+      new NodeId(UShort.MIN, uint(19559));
+
+  public static final NodeId DataSetWriterType_Diagnostics_TotalError_DiagnosticsLevel =
+      new NodeId(UShort.MIN, uint(19560));
+
+  public static final NodeId DataSetWriterType_Diagnostics_TotalError_TimeFirstChange =
+      new NodeId(UShort.MIN, uint(19561));
+
+  public static final NodeId DataSetWriterType_Diagnostics_Reset =
+      new NodeId(UShort.MIN, uint(19562));
+
+  public static final NodeId DataSetWriterType_Diagnostics_SubError =
+      new NodeId(UShort.MIN, uint(19563));
+
+  public static final NodeId DataSetWriterType_Diagnostics_Counters =
+      new NodeId(UShort.MIN, uint(19564));
+
+  public static final NodeId DataSetWriterType_Diagnostics_Counters_StateError =
+      new NodeId(UShort.MIN, uint(19565));
+
+  public static final NodeId DataSetWriterType_Diagnostics_Counters_StateError_Active =
+      new NodeId(UShort.MIN, uint(19566));
+
+  public static final NodeId DataSetWriterType_Diagnostics_Counters_StateError_Classification =
+      new NodeId(UShort.MIN, uint(19567));
+
+  public static final NodeId DataSetWriterType_Diagnostics_Counters_StateError_DiagnosticsLevel =
+      new NodeId(UShort.MIN, uint(19568));
+
+  public static final NodeId DataSetWriterType_Diagnostics_Counters_StateError_TimeFirstChange =
+      new NodeId(UShort.MIN, uint(19569));
+
+  public static final NodeId DataSetWriterType_Diagnostics_Counters_StateOperationalByMethod =
+      new NodeId(UShort.MIN, uint(19570));
+
+  public static final NodeId
+      DataSetWriterType_Diagnostics_Counters_StateOperationalByMethod_Active =
+          new NodeId(UShort.MIN, uint(19571));
+
+  public static final NodeId
+      DataSetWriterType_Diagnostics_Counters_StateOperationalByMethod_Classification =
+          new NodeId(UShort.MIN, uint(19572));
+
+  public static final NodeId
+      DataSetWriterType_Diagnostics_Counters_StateOperationalByMethod_DiagnosticsLevel =
+          new NodeId(UShort.MIN, uint(19573));
+
+  public static final NodeId
+      DataSetWriterType_Diagnostics_Counters_StateOperationalByMethod_TimeFirstChange =
+          new NodeId(UShort.MIN, uint(19574));
+
+  public static final NodeId DataSetWriterType_Diagnostics_Counters_StateOperationalByParent =
+      new NodeId(UShort.MIN, uint(19575));
+
+  public static final NodeId
+      DataSetWriterType_Diagnostics_Counters_StateOperationalByParent_Active =
+          new NodeId(UShort.MIN, uint(19576));
+
+  public static final NodeId
+      DataSetWriterType_Diagnostics_Counters_StateOperationalByParent_Classification =
+          new NodeId(UShort.MIN, uint(19577));
+
+  public static final NodeId
+      DataSetWriterType_Diagnostics_Counters_StateOperationalByParent_DiagnosticsLevel =
+          new NodeId(UShort.MIN, uint(19578));
+
+  public static final NodeId
+      DataSetWriterType_Diagnostics_Counters_StateOperationalByParent_TimeFirstChange =
+          new NodeId(UShort.MIN, uint(19579));
+
+  public static final NodeId DataSetWriterType_Diagnostics_Counters_StateOperationalFromError =
+      new NodeId(UShort.MIN, uint(19580));
+
+  public static final NodeId
+      DataSetWriterType_Diagnostics_Counters_StateOperationalFromError_Active =
+          new NodeId(UShort.MIN, uint(19581));
+
+  public static final NodeId
+      DataSetWriterType_Diagnostics_Counters_StateOperationalFromError_Classification =
+          new NodeId(UShort.MIN, uint(19582));
+
+  public static final NodeId
+      DataSetWriterType_Diagnostics_Counters_StateOperationalFromError_DiagnosticsLevel =
+          new NodeId(UShort.MIN, uint(19583));
+
+  public static final NodeId
+      DataSetWriterType_Diagnostics_Counters_StateOperationalFromError_TimeFirstChange =
+          new NodeId(UShort.MIN, uint(19584));
+
+  public static final NodeId DataSetWriterType_Diagnostics_Counters_StatePausedByParent =
+      new NodeId(UShort.MIN, uint(19585));
+
+  public static final NodeId DataSetWriterType_Diagnostics_Counters_StatePausedByParent_Active =
+      new NodeId(UShort.MIN, uint(19586));
+
+  public static final NodeId
+      DataSetWriterType_Diagnostics_Counters_StatePausedByParent_Classification =
+          new NodeId(UShort.MIN, uint(19587));
+
+  public static final NodeId
+      DataSetWriterType_Diagnostics_Counters_StatePausedByParent_DiagnosticsLevel =
+          new NodeId(UShort.MIN, uint(19588));
+
+  public static final NodeId
+      DataSetWriterType_Diagnostics_Counters_StatePausedByParent_TimeFirstChange =
+          new NodeId(UShort.MIN, uint(19589));
+
+  public static final NodeId DataSetWriterType_Diagnostics_Counters_StateDisabledByMethod =
+      new NodeId(UShort.MIN, uint(19590));
+
+  public static final NodeId DataSetWriterType_Diagnostics_Counters_StateDisabledByMethod_Active =
+      new NodeId(UShort.MIN, uint(19591));
+
+  public static final NodeId
+      DataSetWriterType_Diagnostics_Counters_StateDisabledByMethod_Classification =
+          new NodeId(UShort.MIN, uint(19592));
+
+  public static final NodeId
+      DataSetWriterType_Diagnostics_Counters_StateDisabledByMethod_DiagnosticsLevel =
+          new NodeId(UShort.MIN, uint(19593));
+
+  public static final NodeId
+      DataSetWriterType_Diagnostics_Counters_StateDisabledByMethod_TimeFirstChange =
+          new NodeId(UShort.MIN, uint(19594));
+
+  public static final NodeId DataSetWriterType_Diagnostics_LiveValues =
+      new NodeId(UShort.MIN, uint(19595));
+
+  public static final NodeId DataSetWriterType_Diagnostics_Counters_FailedDataSetMessages =
+      new NodeId(UShort.MIN, uint(19596));
+
+  public static final NodeId DataSetWriterType_Diagnostics_Counters_FailedDataSetMessages_Active =
+      new NodeId(UShort.MIN, uint(19597));
+
+  public static final NodeId
+      DataSetWriterType_Diagnostics_Counters_FailedDataSetMessages_Classification =
+          new NodeId(UShort.MIN, uint(19598));
+
+  public static final NodeId
+      DataSetWriterType_Diagnostics_Counters_FailedDataSetMessages_DiagnosticsLevel =
+          new NodeId(UShort.MIN, uint(19599));
+
+  public static final NodeId
+      DataSetWriterType_Diagnostics_Counters_FailedDataSetMessages_TimeFirstChange =
+          new NodeId(UShort.MIN, uint(19600));
+
+  public static final NodeId DataSetWriterType_Diagnostics_LiveValues_MessageSequenceNumber =
+      new NodeId(UShort.MIN, uint(19601));
+
+  public static final NodeId
+      DataSetWriterType_Diagnostics_LiveValues_MessageSequenceNumber_DiagnosticsLevel =
+          new NodeId(UShort.MIN, uint(19602));
+
+  public static final NodeId DataSetWriterType_Diagnostics_LiveValues_StatusCode =
+      new NodeId(UShort.MIN, uint(19603));
+
+  public static final NodeId DataSetWriterType_Diagnostics_LiveValues_StatusCode_DiagnosticsLevel =
+      new NodeId(UShort.MIN, uint(19604));
+
+  public static final NodeId DataSetWriterType_Diagnostics_LiveValues_MajorVersion =
+      new NodeId(UShort.MIN, uint(19605));
+
+  public static final NodeId
+      DataSetWriterType_Diagnostics_LiveValues_MajorVersion_DiagnosticsLevel =
+          new NodeId(UShort.MIN, uint(19606));
+
+  public static final NodeId DataSetWriterType_Diagnostics_LiveValues_MinorVersion =
+      new NodeId(UShort.MIN, uint(19607));
+
+  public static final NodeId
+      DataSetWriterType_Diagnostics_LiveValues_MinorVersion_DiagnosticsLevel =
+          new NodeId(UShort.MIN, uint(19608));
+
+  public static final NodeId DataSetReaderType_Diagnostics = new NodeId(UShort.MIN, uint(19609));
+
+  public static final NodeId DataSetReaderType_Diagnostics_DiagnosticsLevel =
+      new NodeId(UShort.MIN, uint(19610));
+
+  public static final NodeId DataSetReaderType_Diagnostics_TotalInformation =
+      new NodeId(UShort.MIN, uint(19611));
+
+  public static final NodeId DataSetReaderType_Diagnostics_TotalInformation_Active =
+      new NodeId(UShort.MIN, uint(19612));
+
+  public static final NodeId DataSetReaderType_Diagnostics_TotalInformation_Classification =
+      new NodeId(UShort.MIN, uint(19613));
+
+  public static final NodeId DataSetReaderType_Diagnostics_TotalInformation_DiagnosticsLevel =
+      new NodeId(UShort.MIN, uint(19614));
+
+  public static final NodeId DataSetReaderType_Diagnostics_TotalInformation_TimeFirstChange =
+      new NodeId(UShort.MIN, uint(19615));
+
+  public static final NodeId DataSetReaderType_Diagnostics_TotalError =
+      new NodeId(UShort.MIN, uint(19616));
+
+  public static final NodeId DataSetReaderType_Diagnostics_TotalError_Active =
+      new NodeId(UShort.MIN, uint(19617));
+
+  public static final NodeId DataSetReaderType_Diagnostics_TotalError_Classification =
+      new NodeId(UShort.MIN, uint(19618));
+
+  public static final NodeId DataSetReaderType_Diagnostics_TotalError_DiagnosticsLevel =
+      new NodeId(UShort.MIN, uint(19619));
+
+  public static final NodeId DataSetReaderType_Diagnostics_TotalError_TimeFirstChange =
+      new NodeId(UShort.MIN, uint(19620));
+
+  public static final NodeId DataSetReaderType_Diagnostics_Reset =
+      new NodeId(UShort.MIN, uint(19621));
+
+  public static final NodeId DataSetReaderType_Diagnostics_SubError =
+      new NodeId(UShort.MIN, uint(19622));
+
+  public static final NodeId DataSetReaderType_Diagnostics_Counters =
+      new NodeId(UShort.MIN, uint(19623));
+
+  public static final NodeId DataSetReaderType_Diagnostics_Counters_StateError =
+      new NodeId(UShort.MIN, uint(19624));
+
+  public static final NodeId DataSetReaderType_Diagnostics_Counters_StateError_Active =
+      new NodeId(UShort.MIN, uint(19625));
+
+  public static final NodeId DataSetReaderType_Diagnostics_Counters_StateError_Classification =
+      new NodeId(UShort.MIN, uint(19626));
+
+  public static final NodeId DataSetReaderType_Diagnostics_Counters_StateError_DiagnosticsLevel =
+      new NodeId(UShort.MIN, uint(19627));
+
+  public static final NodeId DataSetReaderType_Diagnostics_Counters_StateError_TimeFirstChange =
+      new NodeId(UShort.MIN, uint(19628));
+
+  public static final NodeId DataSetReaderType_Diagnostics_Counters_StateOperationalByMethod =
+      new NodeId(UShort.MIN, uint(19629));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_Counters_StateOperationalByMethod_Active =
+          new NodeId(UShort.MIN, uint(19630));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_Counters_StateOperationalByMethod_Classification =
+          new NodeId(UShort.MIN, uint(19631));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_Counters_StateOperationalByMethod_DiagnosticsLevel =
+          new NodeId(UShort.MIN, uint(19632));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_Counters_StateOperationalByMethod_TimeFirstChange =
+          new NodeId(UShort.MIN, uint(19633));
+
+  public static final NodeId DataSetReaderType_Diagnostics_Counters_StateOperationalByParent =
+      new NodeId(UShort.MIN, uint(19634));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_Counters_StateOperationalByParent_Active =
+          new NodeId(UShort.MIN, uint(19635));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_Counters_StateOperationalByParent_Classification =
+          new NodeId(UShort.MIN, uint(19636));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_Counters_StateOperationalByParent_DiagnosticsLevel =
+          new NodeId(UShort.MIN, uint(19637));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_Counters_StateOperationalByParent_TimeFirstChange =
+          new NodeId(UShort.MIN, uint(19638));
+
+  public static final NodeId DataSetReaderType_Diagnostics_Counters_StateOperationalFromError =
+      new NodeId(UShort.MIN, uint(19639));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_Counters_StateOperationalFromError_Active =
+          new NodeId(UShort.MIN, uint(19640));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_Counters_StateOperationalFromError_Classification =
+          new NodeId(UShort.MIN, uint(19641));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_Counters_StateOperationalFromError_DiagnosticsLevel =
+          new NodeId(UShort.MIN, uint(19642));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_Counters_StateOperationalFromError_TimeFirstChange =
+          new NodeId(UShort.MIN, uint(19643));
+
+  public static final NodeId DataSetReaderType_Diagnostics_Counters_StatePausedByParent =
+      new NodeId(UShort.MIN, uint(19644));
+
+  public static final NodeId DataSetReaderType_Diagnostics_Counters_StatePausedByParent_Active =
+      new NodeId(UShort.MIN, uint(19645));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_Counters_StatePausedByParent_Classification =
+          new NodeId(UShort.MIN, uint(19646));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_Counters_StatePausedByParent_DiagnosticsLevel =
+          new NodeId(UShort.MIN, uint(19647));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_Counters_StatePausedByParent_TimeFirstChange =
+          new NodeId(UShort.MIN, uint(19648));
+
+  public static final NodeId DataSetReaderType_Diagnostics_Counters_StateDisabledByMethod =
+      new NodeId(UShort.MIN, uint(19649));
+
+  public static final NodeId DataSetReaderType_Diagnostics_Counters_StateDisabledByMethod_Active =
+      new NodeId(UShort.MIN, uint(19650));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_Counters_StateDisabledByMethod_Classification =
+          new NodeId(UShort.MIN, uint(19651));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_Counters_StateDisabledByMethod_DiagnosticsLevel =
+          new NodeId(UShort.MIN, uint(19652));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_Counters_StateDisabledByMethod_TimeFirstChange =
+          new NodeId(UShort.MIN, uint(19653));
+
+  public static final NodeId DataSetReaderType_Diagnostics_LiveValues =
+      new NodeId(UShort.MIN, uint(19654));
+
+  public static final NodeId DataSetReaderType_Diagnostics_Counters_FailedDataSetMessages =
+      new NodeId(UShort.MIN, uint(19655));
+
+  public static final NodeId DataSetReaderType_Diagnostics_Counters_FailedDataSetMessages_Active =
+      new NodeId(UShort.MIN, uint(19656));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_Counters_FailedDataSetMessages_Classification =
+          new NodeId(UShort.MIN, uint(19657));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_Counters_FailedDataSetMessages_DiagnosticsLevel =
+          new NodeId(UShort.MIN, uint(19658));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_Counters_FailedDataSetMessages_TimeFirstChange =
+          new NodeId(UShort.MIN, uint(19659));
+
+  public static final NodeId DataSetReaderType_Diagnostics_Counters_DecryptionErrors =
+      new NodeId(UShort.MIN, uint(19660));
+
+  public static final NodeId DataSetReaderType_Diagnostics_Counters_DecryptionErrors_Active =
+      new NodeId(UShort.MIN, uint(19661));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_Counters_DecryptionErrors_Classification =
+          new NodeId(UShort.MIN, uint(19662));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_Counters_DecryptionErrors_DiagnosticsLevel =
+          new NodeId(UShort.MIN, uint(19663));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_Counters_DecryptionErrors_TimeFirstChange =
+          new NodeId(UShort.MIN, uint(19664));
+
+  public static final NodeId DataSetReaderType_Diagnostics_LiveValues_MessageSequenceNumber =
+      new NodeId(UShort.MIN, uint(19665));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_LiveValues_MessageSequenceNumber_DiagnosticsLevel =
+          new NodeId(UShort.MIN, uint(19666));
+
+  public static final NodeId DataSetReaderType_Diagnostics_LiveValues_StatusCode =
+      new NodeId(UShort.MIN, uint(19667));
+
+  public static final NodeId DataSetReaderType_Diagnostics_LiveValues_StatusCode_DiagnosticsLevel =
+      new NodeId(UShort.MIN, uint(19668));
+
+  public static final NodeId DataSetReaderType_Diagnostics_LiveValues_MajorVersion =
+      new NodeId(UShort.MIN, uint(19669));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_LiveValues_MajorVersion_DiagnosticsLevel =
+          new NodeId(UShort.MIN, uint(19670));
+
+  public static final NodeId DataSetReaderType_Diagnostics_LiveValues_MinorVersion =
+      new NodeId(UShort.MIN, uint(19671));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_LiveValues_MinorVersion_DiagnosticsLevel =
+          new NodeId(UShort.MIN, uint(19672));
+
+  public static final NodeId DataSetReaderType_Diagnostics_LiveValues_SecurityTokenID =
+      new NodeId(UShort.MIN, uint(19673));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_LiveValues_SecurityTokenID_DiagnosticsLevel =
+          new NodeId(UShort.MIN, uint(19674));
+
+  public static final NodeId DataSetReaderType_Diagnostics_LiveValues_TimeToNextTokenID =
+      new NodeId(UShort.MIN, uint(19675));
+
+  public static final NodeId
+      DataSetReaderType_Diagnostics_LiveValues_TimeToNextTokenID_DiagnosticsLevel =
+          new NodeId(UShort.MIN, uint(19676));
+
+  public static final NodeId PubSubDiagnosticsType = new NodeId(UShort.MIN, uint(19677));
+
+  public static final NodeId PubSubDiagnosticsType_DiagnosticsLevel =
+      new NodeId(UShort.MIN, uint(19678));
+
+  public static final NodeId PubSubDiagnosticsType_TotalInformation =
+      new NodeId(UShort.MIN, uint(19679));
+
+  public static final NodeId PubSubDiagnosticsType_TotalInformation_Active =
+      new NodeId(UShort.MIN, uint(19680));
+
+  public static final NodeId PubSubDiagnosticsType_TotalInformation_Classification =
+      new NodeId(UShort.MIN, uint(19681));
+
+  public static final NodeId PubSubDiagnosticsType_TotalInformation_DiagnosticsLevel =
+      new NodeId(UShort.MIN, uint(19682));
+
   public static final NodeId PubSubDiagnosticsType_TotalInformation_TimeFirstChange =
       new NodeId(UShort.MIN, uint(19683));
 
@@ -166,6 +1226,124 @@ public abstract class NodeIds3 extends NodeIds4 {
 
   public static final NodeId PubSubDiagnosticsRootType = new NodeId(UShort.MIN, uint(19732));
 
+  public static final NodeId
+      ProvisionableDeviceType_ApplicationName_Placeholder_CertificateGroups_DefaultApplicationGroup_Purpose =
+          new NodeId(UShort.MIN, uint(19733));
+
+  public static final NodeId
+      ProvisionableDeviceType_ApplicationName_Placeholder_CertificateGroups_DefaultHttpsGroup_Purpose =
+          new NodeId(UShort.MIN, uint(19734));
+
+  public static final NodeId
+      ProvisionableDeviceType_ApplicationName_Placeholder_CertificateGroups_DefaultUserTokenGroup_Purpose =
+          new NodeId(UShort.MIN, uint(19735));
+
+  public static final NodeId
+      ProvisionableDeviceType_ApplicationName_Placeholder_ConfigurationFile_MaxEndpoints =
+          new NodeId(UShort.MIN, uint(19736));
+
+  public static final NodeId
+      ProvisionableDeviceType_ApplicationName_Placeholder_ConfigurationFile_MaxCertificateGroups =
+          new NodeId(UShort.MIN, uint(19737));
+
+  public static final NodeId
+      ProvisionableDeviceType_ApplicationName_Placeholder_ConfigurationFile_CertificateGroupPurposes =
+          new NodeId(UShort.MIN, uint(19738));
+
+  public static final NodeId ProvisionableDeviceType_ApplicationName_Placeholder_KeyCredentials =
+      new NodeId(UShort.MIN, uint(19739));
+
+  public static final NodeId
+      ProvisionableDeviceType_ApplicationName_Placeholder_KeyCredentials_CreateCredential =
+          new NodeId(UShort.MIN, uint(19740));
+
+  public static final NodeId
+      ProvisionableDeviceType_ApplicationName_Placeholder_KeyCredentials_CreateCredential_InputArguments =
+          new NodeId(UShort.MIN, uint(19741));
+
+  public static final NodeId
+      ProvisionableDeviceType_ApplicationName_Placeholder_KeyCredentials_CreateCredential_OutputArguments =
+          new NodeId(UShort.MIN, uint(19742));
+
+  public static final NodeId
+      ProvisionableDeviceType_ApplicationName_Placeholder_AuthorizationServices =
+          new NodeId(UShort.MIN, uint(19743));
+
+  public static final NodeId LogObjectType_MinimumSeverity = new NodeId(UShort.MIN, uint(19744));
+
+  public static final NodeId LogRecordsDataType = new NodeId(UShort.MIN, uint(19745));
+
+  public static final NodeId SpanContextDataType = new NodeId(UShort.MIN, uint(19746));
+
+  public static final NodeId TraceContextDataType = new NodeId(UShort.MIN, uint(19747));
+
+  public static final NodeId NameValuePair = new NodeId(UShort.MIN, uint(19748));
+
+  public static final NodeId LogRecordMask = new NodeId(UShort.MIN, uint(19749));
+
+  public static final NodeId LogRecordMask_OptionSetValues = new NodeId(UShort.MIN, uint(19750));
+
+  public static final NodeId ServerLog_MinimumSeverity = new NodeId(UShort.MIN, uint(19751));
+
+  public static final NodeId LogRecordsDataType_Encoding_DefaultBinary =
+      new NodeId(UShort.MIN, uint(19753));
+
+  public static final NodeId SpanContextDataType_Encoding_DefaultBinary =
+      new NodeId(UShort.MIN, uint(19754));
+
+  public static final NodeId TraceContextDataType_Encoding_DefaultBinary =
+      new NodeId(UShort.MIN, uint(19755));
+
+  public static final NodeId NameValuePair_Encoding_DefaultBinary =
+      new NodeId(UShort.MIN, uint(19756));
+
+  public static final NodeId OpcUa_BinarySchema_LogRecordsDataType =
+      new NodeId(UShort.MIN, uint(19760));
+
+  public static final NodeId OpcUa_BinarySchema_LogRecordsDataType_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(19761));
+
+  public static final NodeId OpcUa_BinarySchema_LogRecordsDataType_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(19762));
+
+  public static final NodeId OpcUa_BinarySchema_SpanContextDataType =
+      new NodeId(UShort.MIN, uint(19763));
+
+  public static final NodeId OpcUa_BinarySchema_SpanContextDataType_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(19764));
+
+  public static final NodeId OpcUa_BinarySchema_SpanContextDataType_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(19765));
+
+  public static final NodeId OpcUa_BinarySchema_TraceContextDataType =
+      new NodeId(UShort.MIN, uint(19766));
+
+  public static final NodeId OpcUa_BinarySchema_TraceContextDataType_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(19767));
+
+  public static final NodeId OpcUa_BinarySchema_TraceContextDataType_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(19768));
+
+  public static final NodeId OpcUa_BinarySchema_NameValuePair = new NodeId(UShort.MIN, uint(19769));
+
+  public static final NodeId OpcUa_BinarySchema_NameValuePair_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(19770));
+
+  public static final NodeId OpcUa_BinarySchema_NameValuePair_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(19771));
+
+  public static final NodeId LogRecordsDataType_Encoding_DefaultXml =
+      new NodeId(UShort.MIN, uint(19773));
+
+  public static final NodeId SpanContextDataType_Encoding_DefaultXml =
+      new NodeId(UShort.MIN, uint(19774));
+
+  public static final NodeId TraceContextDataType_Encoding_DefaultXml =
+      new NodeId(UShort.MIN, uint(19775));
+
+  public static final NodeId NameValuePair_Encoding_DefaultXml =
+      new NodeId(UShort.MIN, uint(19776));
+
   public static final NodeId PubSubDiagnosticsRootType_LiveValues =
       new NodeId(UShort.MIN, uint(19777));
 
@@ -199,6 +1377,107 @@ public abstract class NodeIds3 extends NodeIds4 {
 
   public static final NodeId PubSubDiagnosticsConnectionType = new NodeId(UShort.MIN, uint(19786));
 
+  public static final NodeId OpcUa_XmlSchema_LogRecordsDataType =
+      new NodeId(UShort.MIN, uint(19790));
+
+  public static final NodeId OpcUa_XmlSchema_LogRecordsDataType_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(19791));
+
+  public static final NodeId OpcUa_XmlSchema_LogRecordsDataType_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(19792));
+
+  public static final NodeId OpcUa_XmlSchema_SpanContextDataType =
+      new NodeId(UShort.MIN, uint(19793));
+
+  public static final NodeId OpcUa_XmlSchema_SpanContextDataType_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(19794));
+
+  public static final NodeId OpcUa_XmlSchema_SpanContextDataType_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(19795));
+
+  public static final NodeId OpcUa_XmlSchema_TraceContextDataType =
+      new NodeId(UShort.MIN, uint(19796));
+
+  public static final NodeId OpcUa_XmlSchema_TraceContextDataType_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(19797));
+
+  public static final NodeId OpcUa_XmlSchema_TraceContextDataType_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(19798));
+
+  public static final NodeId OpcUa_XmlSchema_NameValuePair = new NodeId(UShort.MIN, uint(19799));
+
+  public static final NodeId OpcUa_XmlSchema_NameValuePair_DataTypeVersion =
+      new NodeId(UShort.MIN, uint(19800));
+
+  public static final NodeId OpcUa_XmlSchema_NameValuePair_DictionaryFragment =
+      new NodeId(UShort.MIN, uint(19801));
+
+  public static final NodeId LogRecordsDataType_Encoding_DefaultJson =
+      new NodeId(UShort.MIN, uint(19803));
+
+  public static final NodeId SpanContextDataType_Encoding_DefaultJson =
+      new NodeId(UShort.MIN, uint(19804));
+
+  public static final NodeId TraceContextDataType_Encoding_DefaultJson =
+      new NodeId(UShort.MIN, uint(19805));
+
+  public static final NodeId NameValuePair_Encoding_DefaultJson =
+      new NodeId(UShort.MIN, uint(19806));
+
+  public static final NodeId ServerType_ServerCapabilities_MaxLogObjectContinuationPoints =
+      new NodeId(UShort.MIN, uint(19807));
+
+  public static final NodeId ServerCapabilitiesType_MaxLogObjectContinuationPoints =
+      new NodeId(UShort.MIN, uint(19809));
+
+  public static final NodeId AuditEventType_ClientApplicationUri =
+      new NodeId(UShort.MIN, uint(19811));
+
+  public static final NodeId Server_ServerCapabilities_MaxLogObjectContinuationPoints =
+      new NodeId(UShort.MIN, uint(19812));
+
+  public static final NodeId UsesDataTypeRefinement = new NodeId(UShort.MIN, uint(19814));
+
+  public static final NodeId HasFieldDescription = new NodeId(UShort.MIN, uint(19815));
+
+  public static final NodeId HasFieldDescriptionSetMandatory = new NodeId(UShort.MIN, uint(19816));
+
+  public static final NodeId IsDisabledOptionalField = new NodeId(UShort.MIN, uint(19817));
+
+  public static final NodeId UsesSubtypeRestriction = new NodeId(UShort.MIN, uint(19818));
+
+  public static final NodeId AllowedSubtype = new NodeId(UShort.MIN, uint(19819));
+
+  public static final NodeId DataTypeRefinementType = new NodeId(UShort.MIN, uint(19820));
+
+  public static final NodeId DataTypeRefinementType_FieldDescription_Placeholder =
+      new NodeId(UShort.MIN, uint(19821));
+
+  public static final NodeId SubtypeRestrictionType = new NodeId(UShort.MIN, uint(19822));
+
+  public static final NodeId SubtypeRestrictionType_FieldDescription_Placeholder =
+      new NodeId(UShort.MIN, uint(19823));
+
+  public static final NodeId SerializationEntityType = new NodeId(UShort.MIN, uint(19824));
+
+  public static final NodeId SerializationEntityType_SerializedData =
+      new NodeId(UShort.MIN, uint(19825));
+
+  public static final NodeId SerializationEntityType_IncludeReferenceTypes =
+      new NodeId(UShort.MIN, uint(19826));
+
+  public static final NodeId SerializationEntityType_ExcludeReferenceTypes =
+      new NodeId(UShort.MIN, uint(19827));
+
+  public static final NodeId SerializationEntityType_SerializationDepth =
+      new NodeId(UShort.MIN, uint(19828));
+
+  public static final NodeId SerializationEntityType_ConsiderSubElementSerializationProperties =
+      new NodeId(UShort.MIN, uint(19829));
+
+  public static final NodeId SerializationEntityType_CustomMetaDataProperties =
+      new NodeId(UShort.MIN, uint(19830));
+
   public static final NodeId PubSubDiagnosticsConnectionType_LiveValues =
       new NodeId(UShort.MIN, uint(19831));
 
@@ -210,6 +1489,42 @@ public abstract class NodeIds3 extends NodeIds4 {
           new NodeId(UShort.MIN, uint(19833));
 
   public static final NodeId PubSubDiagnosticsWriterGroupType = new NodeId(UShort.MIN, uint(19834));
+
+  public static final NodeId SerializationEntityType_CustomMetaDataRef =
+      new NodeId(UShort.MIN, uint(19835));
+
+  public static final NodeId SerializationEntityType_IncludeStatus =
+      new NodeId(UShort.MIN, uint(19836));
+
+  public static final NodeId SerializationEntityType_IncludeSourceTimestamp =
+      new NodeId(UShort.MIN, uint(19837));
+
+  public static final NodeId SerializationEntityType_IncludeDictionaryReference =
+      new NodeId(UShort.MIN, uint(19838));
+
+  public static final NodeId SerializationEntityType_ConfigureSerialization =
+      new NodeId(UShort.MIN, uint(19839));
+
+  public static final NodeId SerializationEntityType_ConfigureSerialization_InputArguments =
+      new NodeId(UShort.MIN, uint(19840));
+
+  public static final NodeId SerializationEntityType_ConfigureSerialization_OutputArguments =
+      new NodeId(UShort.MIN, uint(19841));
+
+  public static final NodeId ConfigureSerializationMethodType = new NodeId(UShort.MIN, uint(19842));
+
+  public static final NodeId ConfigureSerializationMethodType_InputArguments =
+      new NodeId(UShort.MIN, uint(19843));
+
+  public static final NodeId ConfigureSerializationMethodType_OutputArguments =
+      new NodeId(UShort.MIN, uint(19844));
+
+  public static final NodeId HasSerializationEntity = new NodeId(UShort.MIN, uint(19845));
+
+  public static final NodeId HasDataTypeRefinement = new NodeId(UShort.MIN, uint(19846));
+
+  public static final NodeId AlarmSuppressionGroupType_AlarmCondition_Placeholder =
+      new NodeId(UShort.MIN, uint(19847));
 
   public static final NodeId PubSubDiagnosticsWriterGroupType_Counters =
       new NodeId(UShort.MIN, uint(19848));
@@ -410,6 +1725,48 @@ public abstract class NodeIds3 extends NodeIds4 {
 
   public static final NodeId PubSubDiagnosticsReaderGroupType = new NodeId(UShort.MIN, uint(19903));
 
+  public static final NodeId AlarmSuppressionGroupType_AlarmCondition_Placeholder_EventId =
+      new NodeId(UShort.MIN, uint(19904));
+
+  public static final NodeId AlarmSuppressionGroupType_AlarmCondition_Placeholder_EventType =
+      new NodeId(UShort.MIN, uint(19905));
+
+  public static final NodeId AlarmSuppressionGroupType_AlarmCondition_Placeholder_SourceNode =
+      new NodeId(UShort.MIN, uint(19906));
+
+  public static final NodeId AlarmSuppressionGroupType_AlarmCondition_Placeholder_SourceName =
+      new NodeId(UShort.MIN, uint(19907));
+
+  public static final NodeId AlarmSuppressionGroupType_AlarmCondition_Placeholder_Time =
+      new NodeId(UShort.MIN, uint(19908));
+
+  public static final NodeId AlarmSuppressionGroupType_AlarmCondition_Placeholder_ReceiveTime =
+      new NodeId(UShort.MIN, uint(19909));
+
+  public static final NodeId AlarmSuppressionGroupType_AlarmCondition_Placeholder_LocalTime =
+      new NodeId(UShort.MIN, uint(19910));
+
+  public static final NodeId AlarmSuppressionGroupType_AlarmCondition_Placeholder_Message =
+      new NodeId(UShort.MIN, uint(19911));
+
+  public static final NodeId AlarmSuppressionGroupType_AlarmCondition_Placeholder_Severity =
+      new NodeId(UShort.MIN, uint(19912));
+
+  public static final NodeId AlarmSuppressionGroupType_AlarmCondition_Placeholder_ConditionClassId =
+      new NodeId(UShort.MIN, uint(19913));
+
+  public static final NodeId
+      AlarmSuppressionGroupType_AlarmCondition_Placeholder_ConditionClassName =
+          new NodeId(UShort.MIN, uint(19914));
+
+  public static final NodeId
+      AlarmSuppressionGroupType_AlarmCondition_Placeholder_ConditionSubClassId =
+          new NodeId(UShort.MIN, uint(19915));
+
+  public static final NodeId
+      AlarmSuppressionGroupType_AlarmCondition_Placeholder_ConditionSubClassName =
+          new NodeId(UShort.MIN, uint(19916));
+
   public static final NodeId PubSubDiagnosticsReaderGroupType_Counters =
       new NodeId(UShort.MIN, uint(19917));
 
@@ -599,6 +1956,52 @@ public abstract class NodeIds3 extends NodeIds4 {
   public static final NodeId PubSubDiagnosticsDataSetWriterType =
       new NodeId(UShort.MIN, uint(19968));
 
+  public static final NodeId AlarmSuppressionGroupType_AlarmCondition_Placeholder_ConditionName =
+      new NodeId(UShort.MIN, uint(19969));
+
+  public static final NodeId AlarmSuppressionGroupType_AlarmCondition_Placeholder_BranchId =
+      new NodeId(UShort.MIN, uint(19970));
+
+  public static final NodeId AlarmSuppressionGroupType_AlarmCondition_Placeholder_Retain =
+      new NodeId(UShort.MIN, uint(19971));
+
+  public static final NodeId AlarmSuppressionGroupType_AlarmCondition_Placeholder_EnabledState =
+      new NodeId(UShort.MIN, uint(19972));
+
+  public static final NodeId AlarmSuppressionGroupType_AlarmCondition_Placeholder_EnabledState_Id =
+      new NodeId(UShort.MIN, uint(19973));
+
+  public static final NodeId
+      AlarmSuppressionGroupType_AlarmCondition_Placeholder_EnabledState_Name =
+          new NodeId(UShort.MIN, uint(19974));
+
+  public static final NodeId
+      AlarmSuppressionGroupType_AlarmCondition_Placeholder_EnabledState_Number =
+          new NodeId(UShort.MIN, uint(19975));
+
+  public static final NodeId
+      AlarmSuppressionGroupType_AlarmCondition_Placeholder_EnabledState_EffectiveDisplayName =
+          new NodeId(UShort.MIN, uint(19976));
+
+  public static final NodeId
+      AlarmSuppressionGroupType_AlarmCondition_Placeholder_EnabledState_TransitionTime =
+          new NodeId(UShort.MIN, uint(19977));
+
+  public static final NodeId
+      AlarmSuppressionGroupType_AlarmCondition_Placeholder_EnabledState_EffectiveTransitionTime =
+          new NodeId(UShort.MIN, uint(19978));
+
+  public static final NodeId
+      AlarmSuppressionGroupType_AlarmCondition_Placeholder_EnabledState_TrueState =
+          new NodeId(UShort.MIN, uint(19979));
+
+  public static final NodeId
+      AlarmSuppressionGroupType_AlarmCondition_Placeholder_EnabledState_FalseState =
+          new NodeId(UShort.MIN, uint(19980));
+
+  public static final NodeId AlarmSuppressionGroupType_AlarmCondition_Placeholder_Quality =
+      new NodeId(UShort.MIN, uint(19981));
+
   public static final NodeId PubSubDiagnosticsDataSetWriterType_Counters =
       new NodeId(UShort.MIN, uint(19982));
 
@@ -766,6 +2169,49 @@ public abstract class NodeIds3 extends NodeIds4 {
 
   public static final NodeId PubSubDiagnosticsDataSetReaderType =
       new NodeId(UShort.MIN, uint(20027));
+
+  public static final NodeId
+      AlarmSuppressionGroupType_AlarmCondition_Placeholder_Quality_SourceTimestamp =
+          new NodeId(UShort.MIN, uint(20028));
+
+  public static final NodeId AlarmSuppressionGroupType_AlarmCondition_Placeholder_LastSeverity =
+      new NodeId(UShort.MIN, uint(20029));
+
+  public static final NodeId
+      AlarmSuppressionGroupType_AlarmCondition_Placeholder_LastSeverity_SourceTimestamp =
+          new NodeId(UShort.MIN, uint(20030));
+
+  public static final NodeId AlarmSuppressionGroupType_AlarmCondition_Placeholder_Comment =
+      new NodeId(UShort.MIN, uint(20031));
+
+  public static final NodeId
+      AlarmSuppressionGroupType_AlarmCondition_Placeholder_Comment_SourceTimestamp =
+          new NodeId(UShort.MIN, uint(20032));
+
+  public static final NodeId AlarmSuppressionGroupType_AlarmCondition_Placeholder_ClientUserId =
+      new NodeId(UShort.MIN, uint(20033));
+
+  public static final NodeId AlarmSuppressionGroupType_AlarmCondition_Placeholder_Disable =
+      new NodeId(UShort.MIN, uint(20034));
+
+  public static final NodeId AlarmSuppressionGroupType_AlarmCondition_Placeholder_Enable =
+      new NodeId(UShort.MIN, uint(20035));
+
+  public static final NodeId AlarmSuppressionGroupType_AlarmCondition_Placeholder_AddComment =
+      new NodeId(UShort.MIN, uint(20036));
+
+  public static final NodeId
+      AlarmSuppressionGroupType_AlarmCondition_Placeholder_AddComment_InputArguments =
+          new NodeId(UShort.MIN, uint(20037));
+
+  public static final NodeId AlarmSuppressionGroupType_AlarmCondition_Placeholder_AckedState =
+      new NodeId(UShort.MIN, uint(20038));
+
+  public static final NodeId AlarmSuppressionGroupType_AlarmCondition_Placeholder_AckedState_Id =
+      new NodeId(UShort.MIN, uint(20039));
+
+  public static final NodeId AlarmSuppressionGroupType_AlarmCondition_Placeholder_AckedState_Name =
+      new NodeId(UShort.MIN, uint(20040));
 
   public static final NodeId PubSubDiagnosticsDataSetReaderType_Counters =
       new NodeId(UShort.MIN, uint(20041));
@@ -4865,6 +6311,10 @@ public abstract class NodeIds3 extends NodeIds4 {
 
   public static final NodeId NetworkAddressUrlType = new NodeId(UShort.MIN, uint(21147));
 
+  public static final NodeId
+      AlarmSuppressionGroupType_AlarmCondition_Placeholder_AckedState_Number =
+          new NodeId(UShort.MIN, uint(21148));
+
   public static final NodeId NetworkAddressUrlType_Url = new NodeId(UShort.MIN, uint(21149));
 
   public static final NodeId WriterGroupDataType_Encoding_DefaultBinary =
@@ -7678,1836 +9128,4 @@ public abstract class NodeIds3 extends NodeIds4 {
   public static final NodeId
       ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_AckedState =
           new NodeId(UShort.MIN, uint(21865));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_AckedState_Id =
-          new NodeId(UShort.MIN, uint(21866));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_AckedState_Name =
-          new NodeId(UShort.MIN, uint(21867));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_AckedState_Number =
-          new NodeId(UShort.MIN, uint(21868));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_AckedState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(21869));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_AckedState_TransitionTime =
-          new NodeId(UShort.MIN, uint(21870));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_AckedState_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(21871));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_AckedState_TrueState =
-          new NodeId(UShort.MIN, uint(21872));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_AckedState_FalseState =
-          new NodeId(UShort.MIN, uint(21873));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ConfirmedState =
-          new NodeId(UShort.MIN, uint(21874));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ConfirmedState_Id =
-          new NodeId(UShort.MIN, uint(21875));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ConfirmedState_Name =
-          new NodeId(UShort.MIN, uint(21876));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ConfirmedState_Number =
-          new NodeId(UShort.MIN, uint(21877));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ConfirmedState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(21878));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ConfirmedState_TransitionTime =
-          new NodeId(UShort.MIN, uint(21879));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ConfirmedState_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(21880));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ConfirmedState_TrueState =
-          new NodeId(UShort.MIN, uint(21881));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ConfirmedState_FalseState =
-          new NodeId(UShort.MIN, uint(21882));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_Acknowledge =
-          new NodeId(UShort.MIN, uint(21883));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_Acknowledge_InputArguments =
-          new NodeId(UShort.MIN, uint(21884));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_Confirm =
-          new NodeId(UShort.MIN, uint(21885));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_Confirm_InputArguments =
-          new NodeId(UShort.MIN, uint(21886));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ActiveState =
-          new NodeId(UShort.MIN, uint(21887));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ActiveState_Id =
-          new NodeId(UShort.MIN, uint(21888));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ActiveState_Name =
-          new NodeId(UShort.MIN, uint(21889));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ActiveState_Number =
-          new NodeId(UShort.MIN, uint(21890));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ActiveState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(21891));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ActiveState_TransitionTime =
-          new NodeId(UShort.MIN, uint(21892));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ActiveState_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(21893));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ActiveState_TrueState =
-          new NodeId(UShort.MIN, uint(21894));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ActiveState_FalseState =
-          new NodeId(UShort.MIN, uint(21895));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_InputNode =
-          new NodeId(UShort.MIN, uint(21896));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_SuppressedState =
-          new NodeId(UShort.MIN, uint(21897));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_SuppressedState_Id =
-          new NodeId(UShort.MIN, uint(21898));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_SuppressedState_Name =
-          new NodeId(UShort.MIN, uint(21899));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_SuppressedState_Number =
-          new NodeId(UShort.MIN, uint(21900));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_SuppressedState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(21901));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_SuppressedState_TransitionTime =
-          new NodeId(UShort.MIN, uint(21902));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_SuppressedState_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(21903));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_SuppressedState_TrueState =
-          new NodeId(UShort.MIN, uint(21904));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_SuppressedState_FalseState =
-          new NodeId(UShort.MIN, uint(21905));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_OutOfServiceState =
-          new NodeId(UShort.MIN, uint(21906));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_OutOfServiceState_Id =
-          new NodeId(UShort.MIN, uint(21907));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_OutOfServiceState_Name =
-          new NodeId(UShort.MIN, uint(21908));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_OutOfServiceState_Number =
-          new NodeId(UShort.MIN, uint(21909));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_OutOfServiceState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(21910));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_OutOfServiceState_TransitionTime =
-          new NodeId(UShort.MIN, uint(21911));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_OutOfServiceState_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(21912));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_OutOfServiceState_TrueState =
-          new NodeId(UShort.MIN, uint(21913));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_OutOfServiceState_FalseState =
-          new NodeId(UShort.MIN, uint(21914));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ShelvingState =
-          new NodeId(UShort.MIN, uint(21915));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ShelvingState_CurrentState =
-          new NodeId(UShort.MIN, uint(21916));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ShelvingState_CurrentState_Id =
-          new NodeId(UShort.MIN, uint(21917));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ShelvingState_CurrentState_Name =
-          new NodeId(UShort.MIN, uint(21918));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ShelvingState_CurrentState_Number =
-          new NodeId(UShort.MIN, uint(21919));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ShelvingState_CurrentState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(21920));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ShelvingState_LastTransition =
-          new NodeId(UShort.MIN, uint(21921));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ShelvingState_LastTransition_Id =
-          new NodeId(UShort.MIN, uint(21922));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ShelvingState_LastTransition_Name =
-          new NodeId(UShort.MIN, uint(21923));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ShelvingState_LastTransition_Number =
-          new NodeId(UShort.MIN, uint(21924));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ShelvingState_LastTransition_TransitionTime =
-          new NodeId(UShort.MIN, uint(21925));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ShelvingState_LastTransition_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(21926));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ShelvingState_AvailableStates =
-          new NodeId(UShort.MIN, uint(21927));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ShelvingState_AvailableTransitions =
-          new NodeId(UShort.MIN, uint(21928));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ShelvingState_UnshelveTime =
-          new NodeId(UShort.MIN, uint(21929));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ShelvingState_TimedShelve =
-          new NodeId(UShort.MIN, uint(21930));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ShelvingState_TimedShelve_InputArguments =
-          new NodeId(UShort.MIN, uint(21931));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ShelvingState_Unshelve =
-          new NodeId(UShort.MIN, uint(21932));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ShelvingState_OneShotShelve =
-          new NodeId(UShort.MIN, uint(21933));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_SuppressedOrShelved =
-          new NodeId(UShort.MIN, uint(21934));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_MaxTimeShelved =
-          new NodeId(UShort.MIN, uint(21935));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_AudibleEnabled =
-          new NodeId(UShort.MIN, uint(21936));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_AudibleSound =
-          new NodeId(UShort.MIN, uint(21937));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_AudibleSound_ListId =
-          new NodeId(UShort.MIN, uint(21938));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_AudibleSound_AgencyId =
-          new NodeId(UShort.MIN, uint(21939));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_AudibleSound_VersionId =
-          new NodeId(UShort.MIN, uint(21940));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_SilenceState =
-          new NodeId(UShort.MIN, uint(21941));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_SilenceState_Id =
-          new NodeId(UShort.MIN, uint(21942));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_SilenceState_Name =
-          new NodeId(UShort.MIN, uint(21943));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_SilenceState_Number =
-          new NodeId(UShort.MIN, uint(21944));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_SilenceState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(21945));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_SilenceState_TransitionTime =
-          new NodeId(UShort.MIN, uint(21946));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_SilenceState_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(21947));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_SilenceState_TrueState =
-          new NodeId(UShort.MIN, uint(21948));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_SilenceState_FalseState =
-          new NodeId(UShort.MIN, uint(21949));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_OnDelay =
-          new NodeId(UShort.MIN, uint(21950));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_OffDelay =
-          new NodeId(UShort.MIN, uint(21951));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_FirstInGroupFlag =
-          new NodeId(UShort.MIN, uint(21952));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_FirstInGroup =
-          new NodeId(UShort.MIN, uint(21953));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_LatchedState =
-          new NodeId(UShort.MIN, uint(21954));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_LatchedState_Id =
-          new NodeId(UShort.MIN, uint(21955));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_LatchedState_Name =
-          new NodeId(UShort.MIN, uint(21956));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_LatchedState_Number =
-          new NodeId(UShort.MIN, uint(21957));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_LatchedState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(21958));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_LatchedState_TransitionTime =
-          new NodeId(UShort.MIN, uint(21959));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_LatchedState_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(21960));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_LatchedState_TrueState =
-          new NodeId(UShort.MIN, uint(21961));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_LatchedState_FalseState =
-          new NodeId(UShort.MIN, uint(21962));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ReAlarmTime =
-          new NodeId(UShort.MIN, uint(21963));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_ReAlarmRepeatCount =
-          new NodeId(UShort.MIN, uint(21964));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_Silence =
-          new NodeId(UShort.MIN, uint(21965));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_Suppress =
-          new NodeId(UShort.MIN, uint(21966));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_Unsuppress =
-          new NodeId(UShort.MIN, uint(21967));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_RemoveFromService =
-          new NodeId(UShort.MIN, uint(21968));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_PlaceInService =
-          new NodeId(UShort.MIN, uint(21969));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_Reset =
-          new NodeId(UShort.MIN, uint(21970));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_NormalState =
-          new NodeId(UShort.MIN, uint(21971));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_TrustListId =
-          new NodeId(UShort.MIN, uint(21972));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_LastUpdateTime =
-          new NodeId(UShort.MIN, uint(21973));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultApplicationGroup_TrustListOutOfDate_UpdateFrequency =
-          new NodeId(UShort.MIN, uint(21974));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustList_UpdateFrequency =
-          new NodeId(UShort.MIN, uint(21975));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired =
-          new NodeId(UShort.MIN, uint(21976));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_EventId =
-          new NodeId(UShort.MIN, uint(21977));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_EventType =
-          new NodeId(UShort.MIN, uint(21978));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_SourceNode =
-          new NodeId(UShort.MIN, uint(21979));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_SourceName =
-          new NodeId(UShort.MIN, uint(21980));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_Time =
-          new NodeId(UShort.MIN, uint(21981));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ReceiveTime =
-          new NodeId(UShort.MIN, uint(21982));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_LocalTime =
-          new NodeId(UShort.MIN, uint(21983));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_Message =
-          new NodeId(UShort.MIN, uint(21984));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_Severity =
-          new NodeId(UShort.MIN, uint(21985));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ConditionClassId =
-          new NodeId(UShort.MIN, uint(21986));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ConditionClassName =
-          new NodeId(UShort.MIN, uint(21987));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ConditionSubClassId =
-          new NodeId(UShort.MIN, uint(21988));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ConditionSubClassName =
-          new NodeId(UShort.MIN, uint(21989));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ConditionName =
-          new NodeId(UShort.MIN, uint(21990));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_BranchId =
-          new NodeId(UShort.MIN, uint(21991));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_Retain =
-          new NodeId(UShort.MIN, uint(21992));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_EnabledState =
-          new NodeId(UShort.MIN, uint(21993));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_EnabledState_Id =
-          new NodeId(UShort.MIN, uint(21994));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_EnabledState_Name =
-          new NodeId(UShort.MIN, uint(21995));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_EnabledState_Number =
-          new NodeId(UShort.MIN, uint(21996));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_EnabledState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(21997));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_EnabledState_TransitionTime =
-          new NodeId(UShort.MIN, uint(21998));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_EnabledState_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(21999));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_EnabledState_TrueState =
-          new NodeId(UShort.MIN, uint(22000));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_EnabledState_FalseState =
-          new NodeId(UShort.MIN, uint(22001));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_Quality =
-          new NodeId(UShort.MIN, uint(22002));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_Quality_SourceTimestamp =
-          new NodeId(UShort.MIN, uint(22003));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_LastSeverity =
-          new NodeId(UShort.MIN, uint(22004));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_LastSeverity_SourceTimestamp =
-          new NodeId(UShort.MIN, uint(22005));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_Comment =
-          new NodeId(UShort.MIN, uint(22006));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_Comment_SourceTimestamp =
-          new NodeId(UShort.MIN, uint(22007));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ClientUserId =
-          new NodeId(UShort.MIN, uint(22008));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_Disable =
-          new NodeId(UShort.MIN, uint(22009));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_Enable =
-          new NodeId(UShort.MIN, uint(22010));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_AddComment =
-          new NodeId(UShort.MIN, uint(22011));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_AddComment_InputArguments =
-          new NodeId(UShort.MIN, uint(22012));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_AckedState =
-          new NodeId(UShort.MIN, uint(22013));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_AckedState_Id =
-          new NodeId(UShort.MIN, uint(22014));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_AckedState_Name =
-          new NodeId(UShort.MIN, uint(22015));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_AckedState_Number =
-          new NodeId(UShort.MIN, uint(22016));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_AckedState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(22017));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_AckedState_TransitionTime =
-          new NodeId(UShort.MIN, uint(22018));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_AckedState_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(22019));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_AckedState_TrueState =
-          new NodeId(UShort.MIN, uint(22020));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_AckedState_FalseState =
-          new NodeId(UShort.MIN, uint(22021));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ConfirmedState =
-          new NodeId(UShort.MIN, uint(22022));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ConfirmedState_Id =
-          new NodeId(UShort.MIN, uint(22023));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ConfirmedState_Name =
-          new NodeId(UShort.MIN, uint(22024));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ConfirmedState_Number =
-          new NodeId(UShort.MIN, uint(22025));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ConfirmedState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(22026));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ConfirmedState_TransitionTime =
-          new NodeId(UShort.MIN, uint(22027));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ConfirmedState_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(22028));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ConfirmedState_TrueState =
-          new NodeId(UShort.MIN, uint(22029));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ConfirmedState_FalseState =
-          new NodeId(UShort.MIN, uint(22030));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_Acknowledge =
-          new NodeId(UShort.MIN, uint(22031));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_Acknowledge_InputArguments =
-          new NodeId(UShort.MIN, uint(22032));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_Confirm =
-          new NodeId(UShort.MIN, uint(22033));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_Confirm_InputArguments =
-          new NodeId(UShort.MIN, uint(22034));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ActiveState =
-          new NodeId(UShort.MIN, uint(22035));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ActiveState_Id =
-          new NodeId(UShort.MIN, uint(22036));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ActiveState_Name =
-          new NodeId(UShort.MIN, uint(22037));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ActiveState_Number =
-          new NodeId(UShort.MIN, uint(22038));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ActiveState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(22039));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ActiveState_TransitionTime =
-          new NodeId(UShort.MIN, uint(22040));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ActiveState_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(22041));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ActiveState_TrueState =
-          new NodeId(UShort.MIN, uint(22042));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ActiveState_FalseState =
-          new NodeId(UShort.MIN, uint(22043));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_InputNode =
-          new NodeId(UShort.MIN, uint(22044));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_SuppressedState =
-          new NodeId(UShort.MIN, uint(22045));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_SuppressedState_Id =
-          new NodeId(UShort.MIN, uint(22046));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_SuppressedState_Name =
-          new NodeId(UShort.MIN, uint(22047));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_SuppressedState_Number =
-          new NodeId(UShort.MIN, uint(22048));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_SuppressedState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(22049));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_SuppressedState_TransitionTime =
-          new NodeId(UShort.MIN, uint(22050));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_SuppressedState_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(22051));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_SuppressedState_TrueState =
-          new NodeId(UShort.MIN, uint(22052));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_SuppressedState_FalseState =
-          new NodeId(UShort.MIN, uint(22053));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_OutOfServiceState =
-          new NodeId(UShort.MIN, uint(22054));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_OutOfServiceState_Id =
-          new NodeId(UShort.MIN, uint(22055));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_OutOfServiceState_Name =
-          new NodeId(UShort.MIN, uint(22056));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_OutOfServiceState_Number =
-          new NodeId(UShort.MIN, uint(22057));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_OutOfServiceState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(22058));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_OutOfServiceState_TransitionTime =
-          new NodeId(UShort.MIN, uint(22059));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_OutOfServiceState_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(22060));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_OutOfServiceState_TrueState =
-          new NodeId(UShort.MIN, uint(22061));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_OutOfServiceState_FalseState =
-          new NodeId(UShort.MIN, uint(22062));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ShelvingState =
-          new NodeId(UShort.MIN, uint(22063));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ShelvingState_CurrentState =
-          new NodeId(UShort.MIN, uint(22064));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ShelvingState_CurrentState_Id =
-          new NodeId(UShort.MIN, uint(22065));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ShelvingState_CurrentState_Name =
-          new NodeId(UShort.MIN, uint(22066));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ShelvingState_CurrentState_Number =
-          new NodeId(UShort.MIN, uint(22067));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ShelvingState_CurrentState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(22068));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ShelvingState_LastTransition =
-          new NodeId(UShort.MIN, uint(22069));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ShelvingState_LastTransition_Id =
-          new NodeId(UShort.MIN, uint(22070));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ShelvingState_LastTransition_Name =
-          new NodeId(UShort.MIN, uint(22071));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ShelvingState_LastTransition_Number =
-          new NodeId(UShort.MIN, uint(22072));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ShelvingState_LastTransition_TransitionTime =
-          new NodeId(UShort.MIN, uint(22073));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ShelvingState_LastTransition_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(22074));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ShelvingState_AvailableStates =
-          new NodeId(UShort.MIN, uint(22075));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ShelvingState_AvailableTransitions =
-          new NodeId(UShort.MIN, uint(22076));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ShelvingState_UnshelveTime =
-          new NodeId(UShort.MIN, uint(22077));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ShelvingState_TimedShelve =
-          new NodeId(UShort.MIN, uint(22078));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ShelvingState_TimedShelve_InputArguments =
-          new NodeId(UShort.MIN, uint(22079));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ShelvingState_Unshelve =
-          new NodeId(UShort.MIN, uint(22080));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ShelvingState_OneShotShelve =
-          new NodeId(UShort.MIN, uint(22081));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_SuppressedOrShelved =
-          new NodeId(UShort.MIN, uint(22082));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_MaxTimeShelved =
-          new NodeId(UShort.MIN, uint(22083));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_AudibleEnabled =
-          new NodeId(UShort.MIN, uint(22084));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_AudibleSound =
-          new NodeId(UShort.MIN, uint(22085));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_AudibleSound_ListId =
-          new NodeId(UShort.MIN, uint(22086));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_AudibleSound_AgencyId =
-          new NodeId(UShort.MIN, uint(22087));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_AudibleSound_VersionId =
-          new NodeId(UShort.MIN, uint(22088));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_SilenceState =
-          new NodeId(UShort.MIN, uint(22089));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_SilenceState_Id =
-          new NodeId(UShort.MIN, uint(22090));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_SilenceState_Name =
-          new NodeId(UShort.MIN, uint(22091));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_SilenceState_Number =
-          new NodeId(UShort.MIN, uint(22092));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_SilenceState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(22093));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_SilenceState_TransitionTime =
-          new NodeId(UShort.MIN, uint(22094));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_SilenceState_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(22095));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_SilenceState_TrueState =
-          new NodeId(UShort.MIN, uint(22096));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_SilenceState_FalseState =
-          new NodeId(UShort.MIN, uint(22097));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_OnDelay =
-          new NodeId(UShort.MIN, uint(22098));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_OffDelay =
-          new NodeId(UShort.MIN, uint(22099));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_FirstInGroupFlag =
-          new NodeId(UShort.MIN, uint(22100));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_FirstInGroup =
-          new NodeId(UShort.MIN, uint(22101));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_LatchedState =
-          new NodeId(UShort.MIN, uint(22102));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_LatchedState_Id =
-          new NodeId(UShort.MIN, uint(22103));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_LatchedState_Name =
-          new NodeId(UShort.MIN, uint(22104));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_LatchedState_Number =
-          new NodeId(UShort.MIN, uint(22105));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_LatchedState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(22106));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_LatchedState_TransitionTime =
-          new NodeId(UShort.MIN, uint(22107));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_LatchedState_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(22108));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_LatchedState_TrueState =
-          new NodeId(UShort.MIN, uint(22109));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_LatchedState_FalseState =
-          new NodeId(UShort.MIN, uint(22110));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ReAlarmTime =
-          new NodeId(UShort.MIN, uint(22111));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ReAlarmRepeatCount =
-          new NodeId(UShort.MIN, uint(22112));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_Silence =
-          new NodeId(UShort.MIN, uint(22113));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_Suppress =
-          new NodeId(UShort.MIN, uint(22114));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_Unsuppress =
-          new NodeId(UShort.MIN, uint(22115));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_RemoveFromService =
-          new NodeId(UShort.MIN, uint(22116));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_PlaceInService =
-          new NodeId(UShort.MIN, uint(22117));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_Reset =
-          new NodeId(UShort.MIN, uint(22118));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_NormalState =
-          new NodeId(UShort.MIN, uint(22119));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ExpirationDate =
-          new NodeId(UShort.MIN, uint(22120));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_ExpirationLimit =
-          new NodeId(UShort.MIN, uint(22121));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_CertificateType =
-          new NodeId(UShort.MIN, uint(22122));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_CertificateExpired_Certificate =
-          new NodeId(UShort.MIN, uint(22123));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate =
-          new NodeId(UShort.MIN, uint(22124));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_EventId =
-          new NodeId(UShort.MIN, uint(22125));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_EventType =
-          new NodeId(UShort.MIN, uint(22126));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_SourceNode =
-          new NodeId(UShort.MIN, uint(22127));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_SourceName =
-          new NodeId(UShort.MIN, uint(22128));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_Time =
-          new NodeId(UShort.MIN, uint(22129));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ReceiveTime =
-          new NodeId(UShort.MIN, uint(22130));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_LocalTime =
-          new NodeId(UShort.MIN, uint(22131));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_Message =
-          new NodeId(UShort.MIN, uint(22132));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_Severity =
-          new NodeId(UShort.MIN, uint(22133));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ConditionClassId =
-          new NodeId(UShort.MIN, uint(22134));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ConditionClassName =
-          new NodeId(UShort.MIN, uint(22135));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ConditionSubClassId =
-          new NodeId(UShort.MIN, uint(22136));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ConditionSubClassName =
-          new NodeId(UShort.MIN, uint(22137));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ConditionName =
-          new NodeId(UShort.MIN, uint(22138));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_BranchId =
-          new NodeId(UShort.MIN, uint(22139));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_Retain =
-          new NodeId(UShort.MIN, uint(22140));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_EnabledState =
-          new NodeId(UShort.MIN, uint(22141));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_EnabledState_Id =
-          new NodeId(UShort.MIN, uint(22142));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_EnabledState_Name =
-          new NodeId(UShort.MIN, uint(22143));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_EnabledState_Number =
-          new NodeId(UShort.MIN, uint(22144));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_EnabledState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(22145));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_EnabledState_TransitionTime =
-          new NodeId(UShort.MIN, uint(22146));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_EnabledState_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(22147));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_EnabledState_TrueState =
-          new NodeId(UShort.MIN, uint(22148));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_EnabledState_FalseState =
-          new NodeId(UShort.MIN, uint(22149));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_Quality =
-          new NodeId(UShort.MIN, uint(22150));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_Quality_SourceTimestamp =
-          new NodeId(UShort.MIN, uint(22151));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_LastSeverity =
-          new NodeId(UShort.MIN, uint(22152));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_LastSeverity_SourceTimestamp =
-          new NodeId(UShort.MIN, uint(22153));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_Comment =
-          new NodeId(UShort.MIN, uint(22154));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_Comment_SourceTimestamp =
-          new NodeId(UShort.MIN, uint(22155));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ClientUserId =
-          new NodeId(UShort.MIN, uint(22156));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_Disable =
-          new NodeId(UShort.MIN, uint(22157));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_Enable =
-          new NodeId(UShort.MIN, uint(22158));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_AddComment =
-          new NodeId(UShort.MIN, uint(22159));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_AddComment_InputArguments =
-          new NodeId(UShort.MIN, uint(22160));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_AckedState =
-          new NodeId(UShort.MIN, uint(22161));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_AckedState_Id =
-          new NodeId(UShort.MIN, uint(22162));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_AckedState_Name =
-          new NodeId(UShort.MIN, uint(22163));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_AckedState_Number =
-          new NodeId(UShort.MIN, uint(22164));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_AckedState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(22165));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_AckedState_TransitionTime =
-          new NodeId(UShort.MIN, uint(22166));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_AckedState_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(22167));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_AckedState_TrueState =
-          new NodeId(UShort.MIN, uint(22168));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_AckedState_FalseState =
-          new NodeId(UShort.MIN, uint(22169));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ConfirmedState =
-          new NodeId(UShort.MIN, uint(22170));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ConfirmedState_Id =
-          new NodeId(UShort.MIN, uint(22171));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ConfirmedState_Name =
-          new NodeId(UShort.MIN, uint(22172));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ConfirmedState_Number =
-          new NodeId(UShort.MIN, uint(22173));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ConfirmedState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(22174));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ConfirmedState_TransitionTime =
-          new NodeId(UShort.MIN, uint(22175));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ConfirmedState_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(22176));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ConfirmedState_TrueState =
-          new NodeId(UShort.MIN, uint(22177));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ConfirmedState_FalseState =
-          new NodeId(UShort.MIN, uint(22178));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_Acknowledge =
-          new NodeId(UShort.MIN, uint(22179));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_Acknowledge_InputArguments =
-          new NodeId(UShort.MIN, uint(22180));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_Confirm =
-          new NodeId(UShort.MIN, uint(22181));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_Confirm_InputArguments =
-          new NodeId(UShort.MIN, uint(22182));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ActiveState =
-          new NodeId(UShort.MIN, uint(22183));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ActiveState_Id =
-          new NodeId(UShort.MIN, uint(22184));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ActiveState_Name =
-          new NodeId(UShort.MIN, uint(22185));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ActiveState_Number =
-          new NodeId(UShort.MIN, uint(22186));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ActiveState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(22187));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ActiveState_TransitionTime =
-          new NodeId(UShort.MIN, uint(22188));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ActiveState_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(22189));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ActiveState_TrueState =
-          new NodeId(UShort.MIN, uint(22190));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ActiveState_FalseState =
-          new NodeId(UShort.MIN, uint(22191));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_InputNode =
-          new NodeId(UShort.MIN, uint(22192));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_SuppressedState =
-          new NodeId(UShort.MIN, uint(22193));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_SuppressedState_Id =
-          new NodeId(UShort.MIN, uint(22194));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_SuppressedState_Name =
-          new NodeId(UShort.MIN, uint(22195));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_SuppressedState_Number =
-          new NodeId(UShort.MIN, uint(22196));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_SuppressedState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(22197));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_SuppressedState_TransitionTime =
-          new NodeId(UShort.MIN, uint(22198));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_SuppressedState_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(22199));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_SuppressedState_TrueState =
-          new NodeId(UShort.MIN, uint(22200));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_SuppressedState_FalseState =
-          new NodeId(UShort.MIN, uint(22201));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_OutOfServiceState =
-          new NodeId(UShort.MIN, uint(22202));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_OutOfServiceState_Id =
-          new NodeId(UShort.MIN, uint(22203));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_OutOfServiceState_Name =
-          new NodeId(UShort.MIN, uint(22204));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_OutOfServiceState_Number =
-          new NodeId(UShort.MIN, uint(22205));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_OutOfServiceState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(22206));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_OutOfServiceState_TransitionTime =
-          new NodeId(UShort.MIN, uint(22207));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_OutOfServiceState_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(22208));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_OutOfServiceState_TrueState =
-          new NodeId(UShort.MIN, uint(22209));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_OutOfServiceState_FalseState =
-          new NodeId(UShort.MIN, uint(22210));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ShelvingState =
-          new NodeId(UShort.MIN, uint(22211));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ShelvingState_CurrentState =
-          new NodeId(UShort.MIN, uint(22212));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ShelvingState_CurrentState_Id =
-          new NodeId(UShort.MIN, uint(22213));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ShelvingState_CurrentState_Name =
-          new NodeId(UShort.MIN, uint(22214));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ShelvingState_CurrentState_Number =
-          new NodeId(UShort.MIN, uint(22215));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ShelvingState_CurrentState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(22216));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ShelvingState_LastTransition =
-          new NodeId(UShort.MIN, uint(22217));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ShelvingState_LastTransition_Id =
-          new NodeId(UShort.MIN, uint(22218));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ShelvingState_LastTransition_Name =
-          new NodeId(UShort.MIN, uint(22219));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ShelvingState_LastTransition_Number =
-          new NodeId(UShort.MIN, uint(22220));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ShelvingState_LastTransition_TransitionTime =
-          new NodeId(UShort.MIN, uint(22221));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ShelvingState_LastTransition_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(22222));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ShelvingState_AvailableStates =
-          new NodeId(UShort.MIN, uint(22223));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ShelvingState_AvailableTransitions =
-          new NodeId(UShort.MIN, uint(22224));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ShelvingState_UnshelveTime =
-          new NodeId(UShort.MIN, uint(22225));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ShelvingState_TimedShelve =
-          new NodeId(UShort.MIN, uint(22226));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ShelvingState_TimedShelve_InputArguments =
-          new NodeId(UShort.MIN, uint(22227));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ShelvingState_Unshelve =
-          new NodeId(UShort.MIN, uint(22228));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ShelvingState_OneShotShelve =
-          new NodeId(UShort.MIN, uint(22229));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_SuppressedOrShelved =
-          new NodeId(UShort.MIN, uint(22230));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_MaxTimeShelved =
-          new NodeId(UShort.MIN, uint(22231));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_AudibleEnabled =
-          new NodeId(UShort.MIN, uint(22232));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_AudibleSound =
-          new NodeId(UShort.MIN, uint(22233));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_AudibleSound_ListId =
-          new NodeId(UShort.MIN, uint(22234));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_AudibleSound_AgencyId =
-          new NodeId(UShort.MIN, uint(22235));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_AudibleSound_VersionId =
-          new NodeId(UShort.MIN, uint(22236));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_SilenceState =
-          new NodeId(UShort.MIN, uint(22237));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_SilenceState_Id =
-          new NodeId(UShort.MIN, uint(22238));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_SilenceState_Name =
-          new NodeId(UShort.MIN, uint(22239));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_SilenceState_Number =
-          new NodeId(UShort.MIN, uint(22240));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_SilenceState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(22241));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_SilenceState_TransitionTime =
-          new NodeId(UShort.MIN, uint(22242));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_SilenceState_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(22243));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_SilenceState_TrueState =
-          new NodeId(UShort.MIN, uint(22244));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_SilenceState_FalseState =
-          new NodeId(UShort.MIN, uint(22245));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_OnDelay =
-          new NodeId(UShort.MIN, uint(22246));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_OffDelay =
-          new NodeId(UShort.MIN, uint(22247));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_FirstInGroupFlag =
-          new NodeId(UShort.MIN, uint(22248));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_FirstInGroup =
-          new NodeId(UShort.MIN, uint(22249));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_LatchedState =
-          new NodeId(UShort.MIN, uint(22250));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_LatchedState_Id =
-          new NodeId(UShort.MIN, uint(22251));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_LatchedState_Name =
-          new NodeId(UShort.MIN, uint(22252));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_LatchedState_Number =
-          new NodeId(UShort.MIN, uint(22253));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_LatchedState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(22254));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_LatchedState_TransitionTime =
-          new NodeId(UShort.MIN, uint(22255));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_LatchedState_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(22256));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_LatchedState_TrueState =
-          new NodeId(UShort.MIN, uint(22257));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_LatchedState_FalseState =
-          new NodeId(UShort.MIN, uint(22258));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ReAlarmTime =
-          new NodeId(UShort.MIN, uint(22259));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_ReAlarmRepeatCount =
-          new NodeId(UShort.MIN, uint(22260));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_Silence =
-          new NodeId(UShort.MIN, uint(22261));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_Suppress =
-          new NodeId(UShort.MIN, uint(22262));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_Unsuppress =
-          new NodeId(UShort.MIN, uint(22263));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_RemoveFromService =
-          new NodeId(UShort.MIN, uint(22264));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_PlaceInService =
-          new NodeId(UShort.MIN, uint(22265));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_Reset =
-          new NodeId(UShort.MIN, uint(22266));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_NormalState =
-          new NodeId(UShort.MIN, uint(22267));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_TrustListId =
-          new NodeId(UShort.MIN, uint(22268));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_LastUpdateTime =
-          new NodeId(UShort.MIN, uint(22269));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultHttpsGroup_TrustListOutOfDate_UpdateFrequency =
-          new NodeId(UShort.MIN, uint(22270));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_TrustList_UpdateFrequency =
-          new NodeId(UShort.MIN, uint(22271));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired =
-          new NodeId(UShort.MIN, uint(22272));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_EventId =
-          new NodeId(UShort.MIN, uint(22273));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_EventType =
-          new NodeId(UShort.MIN, uint(22274));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_SourceNode =
-          new NodeId(UShort.MIN, uint(22275));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_SourceName =
-          new NodeId(UShort.MIN, uint(22276));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_Time =
-          new NodeId(UShort.MIN, uint(22277));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_ReceiveTime =
-          new NodeId(UShort.MIN, uint(22278));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_LocalTime =
-          new NodeId(UShort.MIN, uint(22279));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_Message =
-          new NodeId(UShort.MIN, uint(22280));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_Severity =
-          new NodeId(UShort.MIN, uint(22281));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_ConditionClassId =
-          new NodeId(UShort.MIN, uint(22282));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_ConditionClassName =
-          new NodeId(UShort.MIN, uint(22283));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_ConditionSubClassId =
-          new NodeId(UShort.MIN, uint(22284));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_ConditionSubClassName =
-          new NodeId(UShort.MIN, uint(22285));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_ConditionName =
-          new NodeId(UShort.MIN, uint(22286));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_BranchId =
-          new NodeId(UShort.MIN, uint(22287));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_Retain =
-          new NodeId(UShort.MIN, uint(22288));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_EnabledState =
-          new NodeId(UShort.MIN, uint(22289));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_EnabledState_Id =
-          new NodeId(UShort.MIN, uint(22290));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_EnabledState_Name =
-          new NodeId(UShort.MIN, uint(22291));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_EnabledState_Number =
-          new NodeId(UShort.MIN, uint(22292));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_EnabledState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(22293));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_EnabledState_TransitionTime =
-          new NodeId(UShort.MIN, uint(22294));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_EnabledState_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(22295));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_EnabledState_TrueState =
-          new NodeId(UShort.MIN, uint(22296));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_EnabledState_FalseState =
-          new NodeId(UShort.MIN, uint(22297));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_Quality =
-          new NodeId(UShort.MIN, uint(22298));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_Quality_SourceTimestamp =
-          new NodeId(UShort.MIN, uint(22299));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_LastSeverity =
-          new NodeId(UShort.MIN, uint(22300));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_LastSeverity_SourceTimestamp =
-          new NodeId(UShort.MIN, uint(22301));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_Comment =
-          new NodeId(UShort.MIN, uint(22302));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_Comment_SourceTimestamp =
-          new NodeId(UShort.MIN, uint(22303));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_ClientUserId =
-          new NodeId(UShort.MIN, uint(22304));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_Disable =
-          new NodeId(UShort.MIN, uint(22305));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_Enable =
-          new NodeId(UShort.MIN, uint(22306));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_AddComment =
-          new NodeId(UShort.MIN, uint(22307));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_AddComment_InputArguments =
-          new NodeId(UShort.MIN, uint(22308));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_AckedState =
-          new NodeId(UShort.MIN, uint(22309));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_AckedState_Id =
-          new NodeId(UShort.MIN, uint(22310));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_AckedState_Name =
-          new NodeId(UShort.MIN, uint(22311));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_AckedState_Number =
-          new NodeId(UShort.MIN, uint(22312));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_AckedState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(22313));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_AckedState_TransitionTime =
-          new NodeId(UShort.MIN, uint(22314));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_AckedState_EffectiveTransitionTime =
-          new NodeId(UShort.MIN, uint(22315));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_AckedState_TrueState =
-          new NodeId(UShort.MIN, uint(22316));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_AckedState_FalseState =
-          new NodeId(UShort.MIN, uint(22317));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_ConfirmedState =
-          new NodeId(UShort.MIN, uint(22318));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_ConfirmedState_Id =
-          new NodeId(UShort.MIN, uint(22319));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_ConfirmedState_Name =
-          new NodeId(UShort.MIN, uint(22320));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_ConfirmedState_Number =
-          new NodeId(UShort.MIN, uint(22321));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_ConfirmedState_EffectiveDisplayName =
-          new NodeId(UShort.MIN, uint(22322));
-
-  public static final NodeId
-      ServerConfigurationType_CertificateGroups_DefaultUserTokenGroup_CertificateExpired_ConfirmedState_TransitionTime =
-          new NodeId(UShort.MIN, uint(22323));
 }

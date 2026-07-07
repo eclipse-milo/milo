@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -60,6 +60,14 @@ public interface AuditEventType extends BaseEventType {
           -1,
           String.class);
 
+  QualifiedProperty<String> CLIENT_APPLICATION_URI =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "ClientApplicationUri",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=12"),
+          -1,
+          String.class);
+
   DateTime getActionTimeStamp();
 
   void setActionTimeStamp(DateTime value);
@@ -89,4 +97,10 @@ public interface AuditEventType extends BaseEventType {
   void setClientUserId(String value);
 
   PropertyType getClientUserIdNode();
+
+  String getClientApplicationUri();
+
+  void setClientApplicationUri(String value);
+
+  PropertyType getClientApplicationUriNode();
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -31,6 +31,7 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EUInformation;
+import org.eclipse.milo.opcua.stack.core.types.structured.NumberRange;
 import org.eclipse.milo.opcua.stack.core.types.structured.Range;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 
@@ -153,6 +154,83 @@ public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogTy
   }
 
   @Override
+  public NumberRange getInstrumentNumberRange() throws UaException {
+    PropertyTypeNode node = getInstrumentNumberRangeNode();
+    return cast(node.getValue().getValue().getValue(), NumberRange.class);
+  }
+
+  @Override
+  public void setInstrumentNumberRange(NumberRange value) throws UaException {
+    PropertyTypeNode node = getInstrumentNumberRangeNode();
+    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
+    node.setValue(new Variant(encoded));
+  }
+
+  @Override
+  public NumberRange readInstrumentNumberRange() throws UaException {
+    try {
+      return readInstrumentNumberRangeAsync().get();
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
+    }
+  }
+
+  @Override
+  public void writeInstrumentNumberRange(NumberRange value) throws UaException {
+    try {
+      writeInstrumentNumberRangeAsync(value).get();
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends NumberRange> readInstrumentNumberRangeAsync() {
+    return getInstrumentNumberRangeNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> cast(v.getValue().getValue(), NumberRange.class));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeInstrumentNumberRangeAsync(
+      NumberRange instrumentNumberRange) {
+    ExtensionObject encoded =
+        ExtensionObject.encode(client.getStaticEncodingContext(), instrumentNumberRange);
+    DataValue value = DataValue.valueOnly(new Variant(encoded));
+    return getInstrumentNumberRangeNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getInstrumentNumberRangeNode() throws UaException {
+    try {
+      return getInstrumentNumberRangeNodeAsync().get();
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getInstrumentNumberRangeNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
+            "http://opcfoundation.org/UA/",
+            "InstrumentNumberRange",
+            ExpandedNodeId.parse("i=46"),
+            false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
+
+  @Override
   public Range getEuRange() throws UaException {
     PropertyTypeNode node = getEuRangeNode();
     return cast(node.getValue().getValue().getValue(), Range.class);
@@ -221,6 +299,79 @@ public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogTy
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/", "EURange", ExpandedNodeId.parse("i=46"), false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
+
+  @Override
+  public NumberRange getEuNumberRange() throws UaException {
+    PropertyTypeNode node = getEuNumberRangeNode();
+    return cast(node.getValue().getValue().getValue(), NumberRange.class);
+  }
+
+  @Override
+  public void setEuNumberRange(NumberRange value) throws UaException {
+    PropertyTypeNode node = getEuNumberRangeNode();
+    ExtensionObject encoded = ExtensionObject.encode(client.getStaticEncodingContext(), value);
+    node.setValue(new Variant(encoded));
+  }
+
+  @Override
+  public NumberRange readEuNumberRange() throws UaException {
+    try {
+      return readEuNumberRangeAsync().get();
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
+    }
+  }
+
+  @Override
+  public void writeEuNumberRange(NumberRange value) throws UaException {
+    try {
+      writeEuNumberRangeAsync(value).get();
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends NumberRange> readEuNumberRangeAsync() {
+    return getEuNumberRangeNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> cast(v.getValue().getValue(), NumberRange.class));
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeEuNumberRangeAsync(NumberRange euNumberRange) {
+    ExtensionObject encoded =
+        ExtensionObject.encode(client.getStaticEncodingContext(), euNumberRange);
+    DataValue value = DataValue.valueOnly(new Variant(encoded));
+    return getEuNumberRangeNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getEuNumberRangeNode() throws UaException {
+    try {
+      return getEuNumberRangeNodeAsync().get();
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getEuNumberRangeNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
+            "http://opcfoundation.org/UA/", "EUNumberRange", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -564,6 +564,16 @@ public final class LazyClientDataTypeTreeSeed {
             new ClientDataType(
                 QualifiedName.parse("0:LldpSystemCapabilitiesMap"),
                 NodeIds.LldpSystemCapabilitiesMap,
+                null,
+                null,
+                null,
+                null,
+                false));
+    Tree<DataType> logRecordMask =
+        uInt32.addChild(
+            new ClientDataType(
+                QualifiedName.parse("0:LogRecordMask"),
+                NodeIds.LogRecordMask,
                 null,
                 null,
                 null,
@@ -3143,6 +3153,37 @@ public final class LazyClientDataTypeTreeSeed {
                           "IsOnline",
                           LocalizedText.NULL_VALUE,
                           NodeIds.Boolean,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false)
+                    }),
+                false));
+    Tree<DataType> signatureData =
+        structure.addChild(
+            new ClientDataType(
+                QualifiedName.parse("0:SignatureData"),
+                NodeIds.SignatureData,
+                NodeIds.SignatureData_Encoding_DefaultBinary,
+                NodeIds.SignatureData_Encoding_DefaultXml,
+                NodeIds.SignatureData_Encoding_DefaultJson,
+                new StructureDefinition(
+                    NodeIds.SignatureData_Encoding_DefaultBinary,
+                    NodeIds.Structure,
+                    StructureType.Structure,
+                    new StructureField[] {
+                      new StructureField(
+                          "Algorithm",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "Signature",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.ByteString,
                           -1,
                           null,
                           UInteger.valueOf(0),
@@ -5915,6 +5956,612 @@ public final class LazyClientDataTypeTreeSeed {
                           false)
                     }),
                 false));
+    Tree<DataType> baseConfigurationDataType =
+        structure.addChild(
+            new ClientDataType(
+                QualifiedName.parse("0:BaseConfigurationDataType"),
+                NodeIds.BaseConfigurationDataType,
+                NodeIds.BaseConfigurationDataType_Encoding_DefaultBinary,
+                NodeIds.BaseConfigurationDataType_Encoding_DefaultXml,
+                NodeIds.BaseConfigurationDataType_Encoding_DefaultJson,
+                new StructureDefinition(
+                    NodeIds.BaseConfigurationDataType_Encoding_DefaultBinary,
+                    NodeIds.Structure,
+                    StructureType.Structure,
+                    new StructureField[] {
+                      new StructureField(
+                          "ConfigurationVersion",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.VersionTime,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "ConfigurationProperties",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.KeyValuePair,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false)
+                    }),
+                true));
+    Tree<DataType> applicationConfigurationDataType =
+        baseConfigurationDataType.addChild(
+            new ClientDataType(
+                QualifiedName.parse("0:ApplicationConfigurationDataType"),
+                NodeIds.ApplicationConfigurationDataType,
+                NodeIds.ApplicationConfigurationDataType_Encoding_DefaultBinary,
+                NodeIds.ApplicationConfigurationDataType_Encoding_DefaultXml,
+                NodeIds.ApplicationConfigurationDataType_Encoding_DefaultJson,
+                new StructureDefinition(
+                    NodeIds.ApplicationConfigurationDataType_Encoding_DefaultBinary,
+                    NodeIds.BaseConfigurationDataType,
+                    StructureType.Structure,
+                    new StructureField[] {
+                      new StructureField(
+                          "ConfigurationProperties",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.KeyValuePair,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "ConfigurationVersion",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.VersionTime,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "ApplicationIdentity",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.ApplicationIdentityDataType,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "CertificateGroups",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.CertificateGroupDataType,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "ServerEndpoints",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.ServerEndpointDataType,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "ClientEndpoints",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.EndpointDataType,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "SecuritySettings",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.SecuritySettingsDataType,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "UserTokenSettings",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.UserTokenSettingsDataType,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "AuthorizationServices",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.AuthorizationServiceConfigurationDataType,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false)
+                    }),
+                false));
+    Tree<DataType> baseConfigurationRecordDataType =
+        structure.addChild(
+            new ClientDataType(
+                QualifiedName.parse("0:BaseConfigurationRecordDataType"),
+                NodeIds.BaseConfigurationRecordDataType,
+                NodeIds.BaseConfigurationRecordDataType_Encoding_DefaultBinary,
+                NodeIds.BaseConfigurationRecordDataType_Encoding_DefaultXml,
+                NodeIds.BaseConfigurationRecordDataType_Encoding_DefaultJson,
+                new StructureDefinition(
+                    NodeIds.BaseConfigurationRecordDataType_Encoding_DefaultBinary,
+                    NodeIds.Structure,
+                    StructureType.Structure,
+                    new StructureField[] {
+                      new StructureField(
+                          "Name",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "RecordProperties",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.KeyValuePair,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false)
+                    }),
+                true));
+    Tree<DataType> certificateGroupDataType =
+        baseConfigurationRecordDataType.addChild(
+            new ClientDataType(
+                QualifiedName.parse("0:CertificateGroupDataType"),
+                NodeIds.CertificateGroupDataType,
+                NodeIds.CertificateGroupDataType_Encoding_DefaultBinary,
+                NodeIds.CertificateGroupDataType_Encoding_DefaultXml,
+                NodeIds.CertificateGroupDataType_Encoding_DefaultJson,
+                new StructureDefinition(
+                    NodeIds.CertificateGroupDataType_Encoding_DefaultBinary,
+                    NodeIds.BaseConfigurationRecordDataType,
+                    StructureType.Structure,
+                    new StructureField[] {
+                      new StructureField(
+                          "RecordProperties",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.KeyValuePair,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "Name",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "Purpose",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.NodeId,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "CertificateTypes",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.NodeId,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "IsCertificateAssigned",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.Boolean,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "ValidationOptions",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.TrustListValidationOptions,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false)
+                    }),
+                false));
+    Tree<DataType> applicationIdentityDataType =
+        baseConfigurationRecordDataType.addChild(
+            new ClientDataType(
+                QualifiedName.parse("0:ApplicationIdentityDataType"),
+                NodeIds.ApplicationIdentityDataType,
+                NodeIds.ApplicationIdentityDataType_Encoding_DefaultBinary,
+                NodeIds.ApplicationIdentityDataType_Encoding_DefaultXml,
+                NodeIds.ApplicationIdentityDataType_Encoding_DefaultJson,
+                new StructureDefinition(
+                    NodeIds.ApplicationIdentityDataType_Encoding_DefaultBinary,
+                    NodeIds.BaseConfigurationRecordDataType,
+                    StructureType.Structure,
+                    new StructureField[] {
+                      new StructureField(
+                          "RecordProperties",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.KeyValuePair,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "Name",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "ApplicationUri",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.UriString,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "ApplicationNames",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.LocalizedText,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "AdditionalServers",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.ApplicationDescription,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false)
+                    }),
+                false));
+    Tree<DataType> endpointDataType =
+        baseConfigurationRecordDataType.addChild(
+            new ClientDataType(
+                QualifiedName.parse("0:EndpointDataType"),
+                NodeIds.EndpointDataType,
+                NodeIds.EndpointDataType_Encoding_DefaultBinary,
+                NodeIds.EndpointDataType_Encoding_DefaultXml,
+                NodeIds.EndpointDataType_Encoding_DefaultJson,
+                new StructureDefinition(
+                    NodeIds.EndpointDataType_Encoding_DefaultBinary,
+                    NodeIds.BaseConfigurationRecordDataType,
+                    StructureType.Structure,
+                    new StructureField[] {
+                      new StructureField(
+                          "RecordProperties",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.KeyValuePair,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "Name",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "DiscoveryUrls",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.UriString,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "NetworkName",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "Port",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.UInt16,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false)
+                    }),
+                false));
+    Tree<DataType> serverEndpointDataType =
+        endpointDataType.addChild(
+            new ClientDataType(
+                QualifiedName.parse("0:ServerEndpointDataType"),
+                NodeIds.ServerEndpointDataType,
+                NodeIds.ServerEndpointDataType_Encoding_DefaultBinary,
+                NodeIds.ServerEndpointDataType_Encoding_DefaultXml,
+                NodeIds.ServerEndpointDataType_Encoding_DefaultJson,
+                new StructureDefinition(
+                    NodeIds.ServerEndpointDataType_Encoding_DefaultBinary,
+                    NodeIds.EndpointDataType,
+                    StructureType.Structure,
+                    new StructureField[] {
+                      new StructureField(
+                          "RecordProperties",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.KeyValuePair,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "Name",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "Port",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.UInt16,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "NetworkName",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "DiscoveryUrls",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.UriString,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "EndpointUrls",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.UriString,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "SecuritySettingNames",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "TransportProfileUri",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.UriString,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "UserTokenSettingNames",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "ReverseConnectUrls",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false)
+                    }),
+                false));
+    Tree<DataType> securitySettingsDataType =
+        baseConfigurationRecordDataType.addChild(
+            new ClientDataType(
+                QualifiedName.parse("0:SecuritySettingsDataType"),
+                NodeIds.SecuritySettingsDataType,
+                NodeIds.SecuritySettingsDataType_Encoding_DefaultBinary,
+                NodeIds.SecuritySettingsDataType_Encoding_DefaultXml,
+                NodeIds.SecuritySettingsDataType_Encoding_DefaultJson,
+                new StructureDefinition(
+                    NodeIds.SecuritySettingsDataType_Encoding_DefaultBinary,
+                    NodeIds.BaseConfigurationRecordDataType,
+                    StructureType.Structure,
+                    new StructureField[] {
+                      new StructureField(
+                          "RecordProperties",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.KeyValuePair,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "Name",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "SecurityModes",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.MessageSecurityMode,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "SecurityPolicyUris",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "CertificateGroupName",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false)
+                    }),
+                false));
+    Tree<DataType> userTokenSettingsDataType =
+        baseConfigurationRecordDataType.addChild(
+            new ClientDataType(
+                QualifiedName.parse("0:UserTokenSettingsDataType"),
+                NodeIds.UserTokenSettingsDataType,
+                NodeIds.UserTokenSettingsDataType_Encoding_DefaultBinary,
+                NodeIds.UserTokenSettingsDataType_Encoding_DefaultXml,
+                NodeIds.UserTokenSettingsDataType_Encoding_DefaultJson,
+                new StructureDefinition(
+                    NodeIds.UserTokenSettingsDataType_Encoding_DefaultBinary,
+                    NodeIds.BaseConfigurationRecordDataType,
+                    StructureType.Structure,
+                    new StructureField[] {
+                      new StructureField(
+                          "RecordProperties",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.KeyValuePair,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "Name",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "TokenType",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.UserTokenType,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "IssuedTokenType",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "IssuerEndpointUrl",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "SecurityPolicyUri",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "CertificateGroupName",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "AuthorizationServiceName",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false)
+                    }),
+                false));
+    Tree<DataType> authorizationServiceConfigurationDataType =
+        baseConfigurationRecordDataType.addChild(
+            new ClientDataType(
+                QualifiedName.parse("0:AuthorizationServiceConfigurationDataType"),
+                NodeIds.AuthorizationServiceConfigurationDataType,
+                NodeIds.AuthorizationServiceConfigurationDataType_Encoding_DefaultBinary,
+                NodeIds.AuthorizationServiceConfigurationDataType_Encoding_DefaultXml,
+                NodeIds.AuthorizationServiceConfigurationDataType_Encoding_DefaultJson,
+                new StructureDefinition(
+                    NodeIds.AuthorizationServiceConfigurationDataType_Encoding_DefaultBinary,
+                    NodeIds.BaseConfigurationRecordDataType,
+                    StructureType.Structure,
+                    new StructureField[] {
+                      new StructureField(
+                          "RecordProperties",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.KeyValuePair,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "Name",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "ServiceUri",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.UriString,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "ServiceCertificates",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.ServiceCertificateDataType,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "IssuerEndpointSettings",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false)
+                    }),
+                false));
     Tree<DataType> networkAddressDataType =
         structure.addChild(
             new ClientDataType(
@@ -6349,6 +6996,37 @@ public final class LazyClientDataTypeTreeSeed {
                           "Body",
                           LocalizedText.NULL_VALUE,
                           NodeIds.BaseDataType,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false)
+                    }),
+                false));
+    Tree<DataType> configurationUpdateTargetType =
+        structure.addChild(
+            new ClientDataType(
+                QualifiedName.parse("0:ConfigurationUpdateTargetType"),
+                NodeIds.ConfigurationUpdateTargetType,
+                NodeIds.ConfigurationUpdateTargetType_Encoding_DefaultBinary,
+                NodeIds.ConfigurationUpdateTargetType_Encoding_DefaultXml,
+                NodeIds.ConfigurationUpdateTargetType_Encoding_DefaultJson,
+                new StructureDefinition(
+                    NodeIds.ConfigurationUpdateTargetType_Encoding_DefaultBinary,
+                    NodeIds.Structure,
+                    StructureType.Structure,
+                    new StructureField[] {
+                      new StructureField(
+                          "Path",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "UpdateType",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.ConfigurationUpdateType,
                           -1,
                           null,
                           UInteger.valueOf(0),
@@ -8783,6 +9461,217 @@ public final class LazyClientDataTypeTreeSeed {
                           false)
                     }),
                 false));
+    Tree<DataType> logRecord =
+        structure.addChild(
+            new ClientDataType(
+                QualifiedName.parse("0:LogRecord"),
+                NodeIds.LogRecord,
+                NodeIds.LogRecord_Encoding_DefaultBinary,
+                NodeIds.LogRecord_Encoding_DefaultXml,
+                NodeIds.LogRecord_Encoding_DefaultJson,
+                new StructureDefinition(
+                    NodeIds.LogRecord_Encoding_DefaultBinary,
+                    NodeIds.Structure,
+                    StructureType.StructureWithOptionalFields,
+                    new StructureField[] {
+                      new StructureField(
+                          "Time",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.DateTime,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "Severity",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.UInt16,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "EventType",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.NodeId,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          true),
+                      new StructureField(
+                          "SourceNode",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.NodeId,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          true),
+                      new StructureField(
+                          "SourceName",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          true),
+                      new StructureField(
+                          "Message",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.LocalizedText,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "TraceContext",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.TraceContextDataType,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          true),
+                      new StructureField(
+                          "AdditionalData",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.NameValuePair,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          true)
+                    }),
+                false));
+    Tree<DataType> logRecordsDataType =
+        structure.addChild(
+            new ClientDataType(
+                QualifiedName.parse("0:LogRecordsDataType"),
+                NodeIds.LogRecordsDataType,
+                NodeIds.LogRecordsDataType_Encoding_DefaultBinary,
+                NodeIds.LogRecordsDataType_Encoding_DefaultXml,
+                NodeIds.LogRecordsDataType_Encoding_DefaultJson,
+                new StructureDefinition(
+                    NodeIds.LogRecordsDataType_Encoding_DefaultBinary,
+                    NodeIds.Structure,
+                    StructureType.Structure,
+                    new StructureField[] {
+                      new StructureField(
+                          "LogRecordArray",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.LogRecord,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false)
+                    }),
+                false));
+    Tree<DataType> spanContextDataType =
+        structure.addChild(
+            new ClientDataType(
+                QualifiedName.parse("0:SpanContextDataType"),
+                NodeIds.SpanContextDataType,
+                NodeIds.SpanContextDataType_Encoding_DefaultBinary,
+                NodeIds.SpanContextDataType_Encoding_DefaultXml,
+                NodeIds.SpanContextDataType_Encoding_DefaultJson,
+                new StructureDefinition(
+                    NodeIds.SpanContextDataType_Encoding_DefaultBinary,
+                    NodeIds.Structure,
+                    StructureType.Structure,
+                    new StructureField[] {
+                      new StructureField(
+                          "TraceId",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.Guid,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "SpanId",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.UInt64,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false)
+                    }),
+                false));
+    Tree<DataType> traceContextDataType =
+        spanContextDataType.addChild(
+            new ClientDataType(
+                QualifiedName.parse("0:TraceContextDataType"),
+                NodeIds.TraceContextDataType,
+                NodeIds.TraceContextDataType_Encoding_DefaultBinary,
+                NodeIds.TraceContextDataType_Encoding_DefaultXml,
+                NodeIds.TraceContextDataType_Encoding_DefaultJson,
+                new StructureDefinition(
+                    NodeIds.TraceContextDataType_Encoding_DefaultBinary,
+                    NodeIds.SpanContextDataType,
+                    StructureType.Structure,
+                    new StructureField[] {
+                      new StructureField(
+                          "SpanId",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.UInt64,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "TraceId",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.Guid,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "ParentSpanId",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.UInt64,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "ParentIdentifier",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false)
+                    }),
+                false));
+    Tree<DataType> nameValuePair =
+        structure.addChild(
+            new ClientDataType(
+                QualifiedName.parse("0:NameValuePair"),
+                NodeIds.NameValuePair,
+                NodeIds.NameValuePair_Encoding_DefaultBinary,
+                NodeIds.NameValuePair_Encoding_DefaultXml,
+                NodeIds.NameValuePair_Encoding_DefaultJson,
+                new StructureDefinition(
+                    NodeIds.NameValuePair_Encoding_DefaultBinary,
+                    NodeIds.Structure,
+                    StructureType.Structure,
+                    new StructureField[] {
+                      new StructureField(
+                          "Name",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "Value",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.BaseDataType,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false)
+                    }),
+                false));
     Tree<DataType> aliasNameDataType =
         structure.addChild(
             new ClientDataType(
@@ -9036,6 +9925,84 @@ public final class LazyClientDataTypeTreeSeed {
                           false)
                     }),
                 false));
+    Tree<DataType> serviceCertificateDataType =
+        structure.addChild(
+            new ClientDataType(
+                QualifiedName.parse("0:ServiceCertificateDataType"),
+                NodeIds.ServiceCertificateDataType,
+                NodeIds.ServiceCertificateDataType_Encoding_DefaultBinary,
+                NodeIds.ServiceCertificateDataType_Encoding_DefaultXml,
+                NodeIds.ServiceCertificateDataType_Encoding_DefaultJson,
+                new StructureDefinition(
+                    NodeIds.ServiceCertificateDataType_Encoding_DefaultBinary,
+                    NodeIds.Structure,
+                    StructureType.Structure,
+                    new StructureField[] {
+                      new StructureField(
+                          "Certificate",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.ByteString,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "Issuers",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.ByteString,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "ValidFrom",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.UtcTime,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "ValidTo",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.UtcTime,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false)
+                    }),
+                false));
+    Tree<DataType> numberRange =
+        structure.addChild(
+            new ClientDataType(
+                QualifiedName.parse("0:NumberRange"),
+                NodeIds.NumberRange,
+                NodeIds.NumberRange_Encoding_DefaultBinary,
+                NodeIds.NumberRange_Encoding_DefaultXml,
+                NodeIds.NumberRange_Encoding_DefaultJson,
+                new StructureDefinition(
+                    NodeIds.NumberRange_Encoding_DefaultBinary,
+                    NodeIds.Structure,
+                    StructureType.Structure,
+                    new StructureField[] {
+                      new StructureField(
+                          "Low",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.Number,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "High",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.Number,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false)
+                    }),
+                false));
     Tree<DataType> programDiagnostic2DataType =
         structure.addChild(
             new ClientDataType(
@@ -9142,6 +10109,115 @@ public final class LazyClientDataTypeTreeSeed {
                           LocalizedText.NULL_VALUE,
                           NodeIds.StatusCode,
                           -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false)
+                    }),
+                false));
+    Tree<DataType> aliasNameVerboseDataType =
+        structure.addChild(
+            new ClientDataType(
+                QualifiedName.parse("0:AliasNameVerboseDataType"),
+                NodeIds.AliasNameVerboseDataType,
+                NodeIds.AliasNameVerboseDataType_Encoding_DefaultBinary,
+                NodeIds.AliasNameVerboseDataType_Encoding_DefaultXml,
+                NodeIds.AliasNameVerboseDataType_Encoding_DefaultJson,
+                new StructureDefinition(
+                    NodeIds.AliasNameVerboseDataType_Encoding_DefaultBinary,
+                    NodeIds.Structure,
+                    StructureType.Structure,
+                    new StructureField[] {
+                      new StructureField(
+                          "AliasName",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.QualifiedName,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "ReferencedNodes",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.ExpandedNodeId,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "ServerUris",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "AliasNameCategoryId",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.NodeId,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false)
+                    }),
+                false));
+    Tree<DataType> aliasCategoryUpdateDataType =
+        structure.addChild(
+            new ClientDataType(
+                QualifiedName.parse("0:AliasCategoryUpdateDataType"),
+                NodeIds.AliasCategoryUpdateDataType,
+                NodeIds.AliasCategoryUpdateDataType_Encoding_DefaultBinary,
+                NodeIds.AliasCategoryUpdateDataType_Encoding_DefaultXml,
+                NodeIds.AliasCategoryUpdateDataType_Encoding_DefaultJson,
+                new StructureDefinition(
+                    NodeIds.AliasCategoryUpdateDataType_Encoding_DefaultBinary,
+                    NodeIds.Structure,
+                    StructureType.Structure,
+                    new StructureField[] {
+                      new StructureField(
+                          "Category",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.PortableNodeId,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "LastChange",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.VersionTime,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false)
+                    }),
+                false));
+    Tree<DataType> aliasUpdateDataType =
+        structure.addChild(
+            new ClientDataType(
+                QualifiedName.parse("0:AliasUpdateDataType"),
+                NodeIds.AliasUpdateDataType,
+                NodeIds.AliasUpdateDataType_Encoding_DefaultBinary,
+                NodeIds.AliasUpdateDataType_Encoding_DefaultXml,
+                NodeIds.AliasUpdateDataType_Encoding_DefaultJson,
+                new StructureDefinition(
+                    NodeIds.AliasUpdateDataType_Encoding_DefaultBinary,
+                    NodeIds.Structure,
+                    StructureType.Structure,
+                    new StructureField[] {
+                      new StructureField(
+                          "ApplicationUri",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.String,
+                          -1,
+                          null,
+                          UInteger.valueOf(0),
+                          false),
+                      new StructureField(
+                          "Categories",
+                          LocalizedText.NULL_VALUE,
+                          NodeIds.AliasCategoryUpdateDataType,
+                          1,
                           null,
                           UInteger.valueOf(0),
                           false)
@@ -10503,6 +11579,49 @@ public final class LazyClientDataTypeTreeSeed {
                           3L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "AtMostOnce"),
                       new EnumField(
                           4L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "ExactlyOnce")
+                    }),
+                false));
+    Tree<DataType> configurationUpdateType =
+        enumeration.addChild(
+            new ClientDataType(
+                QualifiedName.parse("0:ConfigurationUpdateType"),
+                NodeIds.ConfigurationUpdateType,
+                null,
+                null,
+                null,
+                new EnumDefinition(
+                    new EnumField[] {
+                      new EnumField(
+                          1L,
+                          LocalizedText.NULL_VALUE,
+                          new LocalizedText(
+                              "",
+                              "The target is added. An error occurs if a name conflict occurs."),
+                          "Insert"),
+                      new EnumField(
+                          2L,
+                          LocalizedText.NULL_VALUE,
+                          new LocalizedText(
+                              "",
+                              "Existing records are updated. An error occurs if a name cannot be"
+                                  + " matched to an existing record."),
+                          "Replace"),
+                      new EnumField(
+                          3L,
+                          LocalizedText.NULL_VALUE,
+                          new LocalizedText(
+                              "",
+                              "Existing records are updated. New records are created if no match to"
+                                  + " an exising record."),
+                          "InsertOrReplace"),
+                      new EnumField(
+                          4L,
+                          LocalizedText.NULL_VALUE,
+                          new LocalizedText(
+                              "",
+                              "Existing records are deleted. An error occurs if a name cannot be"
+                                  + " matched to an existing record."),
+                          "Delete")
                     }),
                 false));
     Tree<DataType> identityCriteriaType =

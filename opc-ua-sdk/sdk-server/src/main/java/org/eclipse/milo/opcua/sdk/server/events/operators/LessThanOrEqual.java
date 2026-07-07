@@ -15,7 +15,7 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.jspecify.annotations.Nullable;
 
-public class LessThanOrEqual extends ImplicitConversionBinaryOperator<Boolean> {
+public class LessThanOrEqual extends ImplicitConversionBinaryOperator {
 
   LessThanOrEqual() {}
 
@@ -28,29 +28,10 @@ public class LessThanOrEqual extends ImplicitConversionBinaryOperator<Boolean> {
       @Nullable Object operand0,
       @Nullable Object operand1) {
 
-    if (operand0 instanceof Number n0 && operand1 instanceof Number n1) {
-      switch (dataType) {
-        case SByte:
-        case Int16:
-        case Int32:
-        case Int64:
-        case Byte:
-        case UInt16:
-        case UInt32:
-          return n0.longValue() <= n1.longValue();
+    if (operand0 != null && operand1 != null) {
+      Integer comparison = OperatorUtil.compareOrdered(dataType, operand0, operand1);
 
-        case UInt64:
-          return Long.compareUnsigned(n0.longValue(), n1.longValue()) <= 0;
-
-        case Float:
-          return n0.floatValue() <= n1.floatValue();
-
-        case Double:
-          return n0.doubleValue() <= n1.doubleValue();
-
-        default:
-          return false;
-      }
+      return comparison != null && comparison <= 0;
     } else {
       return false;
     }

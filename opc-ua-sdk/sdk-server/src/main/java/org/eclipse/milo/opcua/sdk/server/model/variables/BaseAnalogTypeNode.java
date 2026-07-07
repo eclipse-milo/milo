@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -22,6 +22,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EUInformation;
+import org.eclipse.milo.opcua.stack.core.types.structured.NumberRange;
 import org.eclipse.milo.opcua.stack.core.types.structured.Range;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 
@@ -117,6 +118,22 @@ public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogTy
   }
 
   @Override
+  public PropertyTypeNode getInstrumentNumberRangeNode() {
+    Optional<VariableNode> propertyNode = getPropertyNode(BaseAnalogType.INSTRUMENT_NUMBER_RANGE);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public NumberRange getInstrumentNumberRange() {
+    return getProperty(BaseAnalogType.INSTRUMENT_NUMBER_RANGE).orElse(null);
+  }
+
+  @Override
+  public void setInstrumentNumberRange(NumberRange value) {
+    setProperty(BaseAnalogType.INSTRUMENT_NUMBER_RANGE, value);
+  }
+
+  @Override
   public PropertyTypeNode getEuRangeNode() {
     Optional<VariableNode> propertyNode = getPropertyNode(BaseAnalogType.EU_RANGE);
     return (PropertyTypeNode) propertyNode.orElse(null);
@@ -130,6 +147,22 @@ public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogTy
   @Override
   public void setEuRange(Range value) {
     setProperty(BaseAnalogType.EU_RANGE, value);
+  }
+
+  @Override
+  public PropertyTypeNode getEuNumberRangeNode() {
+    Optional<VariableNode> propertyNode = getPropertyNode(BaseAnalogType.EU_NUMBER_RANGE);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public NumberRange getEuNumberRange() {
+    return getProperty(BaseAnalogType.EU_NUMBER_RANGE).orElse(null);
+  }
+
+  @Override
+  public void setEuNumberRange(NumberRange value) {
+    setProperty(BaseAnalogType.EU_NUMBER_RANGE, value);
   }
 
   @Override

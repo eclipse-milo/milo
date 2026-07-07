@@ -32,7 +32,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity;
 import org.eclipse.milo.opcua.sdk.server.identity.IdentityValidator;
@@ -95,6 +97,29 @@ public class SessionManager {
   private final TaskQueue sessionListenerTaskQueue;
 
   /**
+   * Marks executor threads while they are inside {@link SessionListener} callbacks.
+   *
+   * <p>Shutdown normally waits for in-flight listener callbacks, but a listener is allowed to
+   * trigger shutdown itself. In that re-entrant path the callback must not wait for the queue
+   * currently waiting for the callback to return.
+   */
+  private final ThreadLocal<Boolean> sessionListenerCallback = new ThreadLocal<>();
+
+  /** Completes when the one-time session shutdown cleanup has finished. */
+  private final CountDownLatch shutdownComplete = new CountDownLatch(1);
+
+  /**
+   * Terminal shutdown state for session creation and listener delivery.
+   *
+   * <p>{@link #beginShutdown()} moves the manager out of {@link ShutdownState#RUNNING} before
+   * transports are unbound, which rejects new CreateSession requests while existing listener work
+   * can still drain. {@link #shutdown()} performs the one-time cleanup and wakes any concurrent
+   * callers waiting on {@link #shutdownComplete}.
+   */
+  private final AtomicReference<ShutdownState> shutdownState =
+      new AtomicReference<>(ShutdownState.RUNNING);
+
+  /**
    * Store the last N client nonces and to make sure they aren't re-used.
    *
    * <p>This number is arbitrary; trying to prevent clients from re-using nonces is merely to
@@ -110,6 +135,16 @@ public class SessionManager {
     sessionListenerTaskQueue = new TaskQueue(executor);
   }
 
+  /** Session-manager shutdown phases. */
+  private enum ShutdownState {
+    /** Normal operation: CreateSession requests and listener notifications may proceed. */
+    RUNNING,
+    /** New sessions are rejected, but listener quiescence and session cleanup have not started. */
+    REQUESTED,
+    /** The one-time queue drain and session close pass have started. */
+    CLEANUP_STARTED
+  }
+
   /**
    * Kill the session identified by {@code nodeId} and optionally delete all its subscriptions.
    *
@@ -120,13 +155,7 @@ public class SessionManager {
     activeSessions.values().stream()
         .filter(s -> s.getSessionId().equals(nodeId))
         .findFirst()
-        .ifPresent(
-            s -> {
-              s.close(deleteSubscriptions);
-
-              sessionListenerTaskQueue.execute(
-                  () -> sessionListeners.forEach(l -> l.onSessionClosed(s)));
-            });
+        .ifPresent(s -> s.close(deleteSubscriptions));
   }
 
   /**
@@ -203,6 +232,10 @@ public class SessionManager {
 
   public CreateSessionResponse createSession(
       ServiceRequestContext context, CreateSessionRequest request) throws UaException {
+
+    if (isShutdownRequested()) {
+      throw new UaException(StatusCodes.Bad_Shutdown);
+    }
 
     ByteString serverNonce = NonceUtil.generateNonce(32);
     NodeId authenticationToken = new NodeId(0, NonceUtil.generateNonce(32));
@@ -350,6 +383,11 @@ public class SessionManager {
     // CreateSession requests cannot exceed the maximum. Done after validation so that a request
     // which is going to fail never evicts another client's pending session.
     synchronized (sessionLock) {
+      if (isShutdownRequested()) {
+        session.close(false);
+        throw new UaException(StatusCodes.Bad_Shutdown);
+      }
+
       long maxSessionCount = server.getConfig().getLimits().getMaxSessions().longValue();
       if (createdSessions.size() + activeSessions.size() >= maxSessionCount) {
         // OPC UA Part 4, 5.7.2: at the session limit the Server shall close the oldest Session
@@ -375,15 +413,13 @@ public class SessionManager {
             createdSessions.remove(authenticationToken);
             activeSessions.remove(authenticationToken);
 
-            sessionListenerTaskQueue.execute(
-                () -> sessionListeners.forEach(l -> l.onSessionClosed(s)));
+            fireSessionClosed(s);
           });
 
       createdSessions.put(authenticationToken, session);
     }
 
-    sessionListenerTaskQueue.execute(
-        () -> sessionListeners.forEach(l -> l.onSessionCreated(session)));
+    fireSessionCreated(session);
 
     return new CreateSessionResponse(
         createResponseHeader(request),
@@ -396,6 +432,151 @@ public class SessionManager {
         new SignedSoftwareCertificate[0],
         serverSignature,
         uint(maxRequestMessageSize));
+  }
+
+  /**
+   * Drain session listener callbacks, stop accepting queued listener work, and close all sessions.
+   *
+   * <p>The first caller performs cleanup. Concurrent callers outside a listener callback wait for
+   * that cleanup to complete so their caller can safely continue to namespace teardown. If the
+   * caller is itself a session listener callback, shutdown stops the queue without waiting for the
+   * current callback and discards queued callbacks that have not started.
+   */
+  void shutdown() {
+    boolean sessionListenerCallback = isSessionListenerCallback();
+
+    beginShutdown();
+
+    if (!shutdownState.compareAndSet(ShutdownState.REQUESTED, ShutdownState.CLEANUP_STARTED)) {
+      if (!sessionListenerCallback) {
+        awaitShutdownComplete();
+      }
+      return;
+    }
+
+    try {
+      sessionListenerTaskQueue.shutdown(!sessionListenerCallback);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      logger.warn("Interrupted while waiting for session listener callbacks to complete", e);
+    } finally {
+      try {
+        List<Session> sessions;
+        synchronized (sessionLock) {
+          sessions = getAllSessions();
+          createdSessions.clear();
+          activeSessions.clear();
+        }
+
+        sessions.forEach(s -> s.close(true));
+      } finally {
+        shutdownComplete.countDown();
+      }
+    }
+  }
+
+  /**
+   * Mark shutdown as requested before transports are unbound.
+   *
+   * <p>This early transition is visible to {@link #createSession(ServiceRequestContext,
+   * CreateSessionRequest)}, causing new CreateSession requests to fail with {@link
+   * StatusCodes#Bad_Shutdown} while the server drains already-started session listener callbacks.
+   */
+  void beginShutdown() {
+    shutdownState.compareAndSet(ShutdownState.RUNNING, ShutdownState.REQUESTED);
+  }
+
+  private boolean isShutdownRequested() {
+    return shutdownState.get() != ShutdownState.RUNNING;
+  }
+
+  /**
+   * Return whether the current thread is executing a {@link SessionListener} notification.
+   *
+   * <p>{@link OpcUaServer#shutdown()} uses this to avoid returning an in-progress shutdown future
+   * to the callback that the in-progress shutdown is waiting for.
+   *
+   * @return {@code true} if the current thread is inside session listener notification dispatch.
+   */
+  boolean isSessionListenerCallback() {
+    return Boolean.TRUE.equals(sessionListenerCallback.get());
+  }
+
+  /** Wait for the first shutdown caller to finish the session cleanup pass. */
+  private void awaitShutdownComplete() {
+    try {
+      shutdownComplete.await();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      logger.warn("Interrupted while waiting for session shutdown to complete", e);
+    }
+  }
+
+  /** Queue a session-created notification unless shutdown has already started. */
+  private void fireSessionCreated(Session session) {
+    if (!isShutdownRequested()) {
+      sessionListenerTaskQueue.execute(
+          () -> {
+            if (!isShutdownRequested()) {
+              notifySessionCreated(session);
+            }
+          });
+    }
+  }
+
+  /** Queue a session-closed notification unless shutdown has already started. */
+  private void fireSessionClosed(Session session) {
+    if (!isShutdownRequested()) {
+      sessionListenerTaskQueue.execute(
+          () -> {
+            if (!isShutdownRequested()) {
+              notifySessionClosed(session);
+            }
+          });
+    }
+  }
+
+  /** Notify listeners until shutdown starts or the listener snapshot is exhausted. */
+  private void notifySessionCreated(Session session) {
+    withSessionListenerCallback(
+        () -> {
+          for (SessionListener listener : sessionListeners) {
+            if (isShutdownRequested()) {
+              break;
+            }
+
+            listener.onSessionCreated(session);
+          }
+        });
+  }
+
+  /** Notify listeners until shutdown starts or the listener snapshot is exhausted. */
+  private void notifySessionClosed(Session session) {
+    withSessionListenerCallback(
+        () -> {
+          for (SessionListener listener : sessionListeners) {
+            if (isShutdownRequested()) {
+              break;
+            }
+
+            listener.onSessionClosed(session);
+          }
+        });
+  }
+
+  /** Run listener dispatch with re-entrant shutdown detection enabled for the current thread. */
+  private void withSessionListenerCallback(Runnable notification) {
+    Boolean previous = sessionListenerCallback.get();
+    sessionListenerCallback.set(true);
+    try {
+      notification.run();
+    } finally {
+      if (previous != null) {
+        sessionListenerCallback.set(previous);
+      } else {
+        sessionListenerCallback.remove();
+      }
+    }
   }
 
   private SecurityConfiguration createSecurityConfiguration(SecureChannel secureChannel)
@@ -811,7 +992,7 @@ public class SessionManager {
 
     if (session != null) {
       if (session.getSecureChannelId() != secureChannelId) {
-        throw new UaException(StatusCodes.Bad_SecureChannelIdInvalid);
+        throw new UaException(StatusCodes.Bad_SessionIdInvalid);
       } else {
         activeSessions.remove(authToken);
         session.close(request.getDeleteSubscriptions());
@@ -823,7 +1004,7 @@ public class SessionManager {
       if (session == null) {
         throw new UaException(StatusCodes.Bad_SessionIdInvalid);
       } else if (session.getSecureChannelId() != secureChannelId) {
-        throw new UaException(StatusCodes.Bad_SecureChannelIdInvalid);
+        throw new UaException(StatusCodes.Bad_SessionIdInvalid);
       } else {
         createdSessions.remove(authToken);
         session.close(request.getDeleteSubscriptions());

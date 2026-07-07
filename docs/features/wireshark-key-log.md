@@ -208,7 +208,7 @@ per channel lifetime, plus renewals).
 ## Testing
 
 ```bash
-mvn -q verify -pl opc-ua-stack/stack-core \
+mise exec -- mvn -q verify -pl opc-ua-stack/stack-core \
     -Dtest="SecurityKeysetTest,WiresharkKeyLogWriterTest"
 ```
 

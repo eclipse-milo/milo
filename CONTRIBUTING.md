@@ -46,9 +46,9 @@ You can find all the details in the [Contributing via Git](http://wiki.eclipse.o
 * Make your changes
 * When you create new files make sure you include a proper license header at the top of the file (see License Header section below).
 * Make sure you include test cases for non-trivial features
-* Make sure the test suite passes after your changes
+* Make sure the test suite passes after your changes with `mise exec -- mvn clean verify`
 * Make sure checkstyle passes after your changes
-* Apply `google-java-format` (see https://github.com/google/google-java-format) 
+* Apply formatting with `mise exec -- mvn spotless:apply`
 * Commit your changes into that branch
 * Use descriptive and meaningful commit messages
 * If you have a lot of commits squash them into a single commit

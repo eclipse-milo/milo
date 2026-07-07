@@ -9,12 +9,27 @@ Stack Overflow tag: [milo](http://stackoverflow.com/questions/tagged/milo)
 
 Mailing list: https://dev.eclipse.org/mailman/listinfo/milo-dev
 
+## Requirements
+
+The repository pins its Java and Maven toolchain with `mise`:
+
+```shell
+mise install
+```
+
+If `mise` reports that the config is not trusted, review `.mise.toml` and run
+`mise trust .mise.toml` once. After installation, run Maven through `mise exec --` so
+the pinned Java 17 and Maven versions are used.
 
 ## Maven
 
 ### Building Milo
 
-**Using JDK 17**, run `mvn clean install` from the project root.
+**Using JDK 17**, run this from the project root:
+
+```shell
+mise exec -- mvn clean install
+```
 
 To maintain compatibility with Java 17 it is recommended that you build using JDK 17, however the library is runtime compatible with versions 17 and later (e.g. JDK 21, JDK 24).
 
