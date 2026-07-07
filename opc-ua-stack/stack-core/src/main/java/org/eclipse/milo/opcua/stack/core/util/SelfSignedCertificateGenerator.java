@@ -333,11 +333,14 @@ public class SelfSignedCertificateGenerator {
       extends SelfSignedCertificateGenerator {
 
     @Override
-    protected void addExtendedKeyUsage(X509v3CertificateBuilder certificateBuilder) {}
+    protected void addExtendedKeyUsage(X509v3CertificateBuilder certificateBuilder) {
+      // OPC 10000-6, 6.2.2 makes serverAuth/clientAuth ExtendedKeyUsage optional for ECC
+      // profiles, so omit the RSA/default EKU extension:
+      // https://reference.opcfoundation.org/specs/OPC-10000-6/6.2.2/
+    }
 
     @Override
     protected void addKeyUsage(X509v3CertificateBuilder certificateBuilder) throws CertIOException {
-
       certificateBuilder.addExtension(
           Extension.keyUsage,
           false,

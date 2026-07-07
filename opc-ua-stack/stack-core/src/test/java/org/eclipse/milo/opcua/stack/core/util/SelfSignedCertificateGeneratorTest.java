@@ -13,10 +13,13 @@ package org.eclipse.milo.opcua.stack.core.util;
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
+import java.util.List;
+import org.bouncycastle.asn1.x509.KeyPurposeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.security.CertificateCompatibility;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
@@ -25,6 +28,29 @@ import org.junit.jupiter.api.Test;
 
 @NullMarked
 class SelfSignedCertificateGeneratorTest {
+
+  @Test
+  void generatesRsaApplicationCertificate() throws Exception {
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+
+    X509Certificate certificate = buildRsaApplicationCertificate(keyPair);
+
+    CertificateCompatibility.checkCompatible(
+        SecurityPolicy.Basic256Sha256.getProfile(),
+        NodeIds.RsaSha256ApplicationCertificateType,
+        certificate);
+    assertRsaApplicationUsage(certificate);
+    assertTrue(certificate.getSigAlgName().contains("RSA"));
+  }
+
+  @Test
+  void rejectsNonRsaApplicationCertificateKeyPair() throws Exception {
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateNistP256KeyPair();
+
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> SelfSignedCertificateBuilder.forRsaApplicationCertificate(keyPair));
+  }
 
   @Test
   void generatesNistP256ApplicationCertificate() throws Exception {
@@ -120,11 +146,38 @@ class SelfSignedCertificateGeneratorTest {
     assertTrue(certificate.getSigAlgName().contains("Ed448"));
   }
 
+  private static X509Certificate buildRsaApplicationCertificate(KeyPair keyPair) throws Exception {
+    return SelfSignedCertificateBuilder.forRsaApplicationCertificate(keyPair)
+        .setApplicationUri("urn:eclipse:milo:test")
+        .addDnsName("localhost")
+        .build();
+  }
+
   private static X509Certificate buildEccApplicationCertificate(KeyPair keyPair) throws Exception {
     return SelfSignedCertificateBuilder.forEccApplicationCertificate(keyPair)
         .setApplicationUri("urn:eclipse:milo:test")
         .addDnsName("localhost")
         .build();
+  }
+
+  private static void assertRsaApplicationUsage(X509Certificate certificate) throws Exception {
+    boolean[] keyUsage = requireNonNull(certificate.getKeyUsage(), "keyUsage");
+
+    assertTrue(keyUsage[0], "digitalSignature should be set");
+    assertTrue(keyUsage[1], "nonRepudiation should be set");
+    assertTrue(keyUsage[2], "keyEncipherment should be set");
+    assertTrue(keyUsage[3], "dataEncipherment should be set");
+    assertTrue(keyUsage[5], "keyCertSign should be set for self-signed certificates");
+
+    List<String> extendedKeyUsage =
+        requireNonNull(certificate.getExtendedKeyUsage(), "extendedKeyUsage");
+
+    assertTrue(
+        extendedKeyUsage.contains(KeyPurposeId.id_kp_clientAuth.getId()),
+        "ExtendedKeyUsage should include clientAuth");
+    assertTrue(
+        extendedKeyUsage.contains(KeyPurposeId.id_kp_serverAuth.getId()),
+        "ExtendedKeyUsage should include serverAuth");
   }
 
   private static void assertMinimalEccKeyUsage(X509Certificate certificate) throws Exception {
