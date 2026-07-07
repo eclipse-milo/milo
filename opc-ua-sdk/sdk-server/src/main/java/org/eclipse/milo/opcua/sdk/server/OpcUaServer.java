@@ -18,14 +18,10 @@ import java.net.InetSocketAddress;
 import java.security.KeyPair;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -94,10 +90,8 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
-import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
-import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.core.util.FutureUtils;
@@ -686,8 +680,8 @@ public class OpcUaServer extends AbstractServiceHandler {
 
           ApplicationDescription applicationDescription =
               buildApplicationDescription(resolvedEndpointUrls);
-          Map<UserTokenPolicyKey, String> userTokenPolicyIds =
-              assignUserTokenPolicyIds(
+          UserTokenPolicyIds userTokenPolicyIds =
+              UserTokenPolicyIds.assign(
                   resolved.stream().map(ResolvedCertificate::endpointConfig).toList());
 
           return resolved.stream()
@@ -742,7 +736,7 @@ public class OpcUaServer extends AbstractServiceHandler {
   private ResolvedEndpoint buildResolvedEndpoint(
       ResolvedCertificate resolved,
       ApplicationDescription applicationDescription,
-      Map<UserTokenPolicyKey, String> userTokenPolicyIds) {
+      UserTokenPolicyIds userTokenPolicyIds) {
 
     EndpointConfig endpoint = resolved.endpointConfig();
 
@@ -755,141 +749,9 @@ public class OpcUaServer extends AbstractServiceHandler {
             certificateByteString(resolved.certificate()),
             endpoint.getSecurityMode(),
             endpoint.getSecurityPolicy().getUri(),
-            transformUserTokenPolicies(endpoint, userTokenPolicyIds),
+            userTokenPolicyIds.policiesFor(endpoint),
             endpoint.getTransportProfile().getUri(),
             ubyte(getSecurityLevel(endpoint.getSecurityPolicy(), endpoint.getSecurityMode()))));
-  }
-
-  private UserTokenPolicy[] transformUserTokenPolicies(
-      EndpointConfig endpoint, Map<UserTokenPolicyKey, String> userTokenPolicyIds) {
-
-    return endpoint.getTokenPolicies().stream()
-        .map(
-            tokenPolicy -> {
-              UserTokenPolicyKey key = UserTokenPolicyKey.from(endpoint, tokenPolicy);
-              String assignedPolicyId = userTokenPolicyIds.get(key);
-
-              String policyId =
-                  policyIdChanged(tokenPolicy.getPolicyId(), assignedPolicyId)
-                      ? assignedPolicyId
-                      : tokenPolicy.getPolicyId();
-
-              return new UserTokenPolicy(
-                  policyId,
-                  tokenPolicy.getTokenType(),
-                  tokenPolicy.getIssuedTokenType(),
-                  tokenPolicy.getIssuerEndpointUrl(),
-                  key.securityPolicyUri());
-            })
-        .toArray(UserTokenPolicy[]::new);
-  }
-
-  private Map<UserTokenPolicyKey, String> assignUserTokenPolicyIds(
-      List<EndpointConfig> endpoints) {
-    Map<String, List<UserTokenPolicyKey>> keysByPolicyId = new LinkedHashMap<>();
-
-    for (EndpointConfig endpoint : endpoints) {
-      for (UserTokenPolicy tokenPolicy : endpoint.getTokenPolicies()) {
-        UserTokenPolicyKey key = UserTokenPolicyKey.from(endpoint, tokenPolicy);
-        List<UserTokenPolicyKey> keys =
-            keysByPolicyId.computeIfAbsent(key.policyId(), ignored -> new ArrayList<>());
-
-        if (!keys.contains(key)) {
-          keys.add(key);
-        }
-      }
-    }
-
-    Set<String> reservedPolicyIds = new LinkedHashSet<>(keysByPolicyId.keySet());
-    Map<UserTokenPolicyKey, String> assignedPolicyIds = new HashMap<>();
-
-    for (List<UserTokenPolicyKey> keys : keysByPolicyId.values()) {
-      if (keys.size() == 1) {
-        UserTokenPolicyKey key = keys.get(0);
-        assignedPolicyIds.put(key, key.policyId());
-      } else {
-        UserTokenPolicyKey firstKey = keys.get(0);
-        assignedPolicyIds.put(firstKey, firstKey.policyId());
-
-        for (int i = 1; i < keys.size(); i++) {
-          UserTokenPolicyKey key = keys.get(i);
-          assignedPolicyIds.put(key, uniquePolicyId(key, reservedPolicyIds));
-        }
-      }
-    }
-
-    return assignedPolicyIds;
-  }
-
-  private boolean policyIdChanged(@Nullable String configuredPolicyId, String assignedPolicyId) {
-    if (Objects.equals(configuredPolicyId, assignedPolicyId)) {
-      return false;
-    } else {
-      return !(isNullOrEmpty(configuredPolicyId) && assignedPolicyId.isEmpty());
-    }
-  }
-
-  private String uniquePolicyId(UserTokenPolicyKey key, Set<String> reservedPolicyIds) {
-    String base =
-        key.policyId().isEmpty()
-            ? key.tokenType().name().toLowerCase(Locale.ROOT)
-            : key.policyId();
-
-    String securityPolicyName = securityPolicyName(key.securityPolicyUri());
-
-    String candidate = base + "-" + securityPolicyName;
-    if (reservedPolicyIds.add(candidate)) {
-      return candidate;
-    }
-
-    candidate = base + "-" + key.tokenType().name() + "-" + securityPolicyName;
-    if (reservedPolicyIds.add(candidate)) {
-      return candidate;
-    }
-
-    for (int i = 2; ; i++) {
-      String indexedCandidate = candidate + "-" + i;
-      if (reservedPolicyIds.add(indexedCandidate)) {
-        return indexedCandidate;
-      }
-    }
-  }
-
-  private String securityPolicyName(String securityPolicyUri) {
-    int index = securityPolicyUri.lastIndexOf('#');
-    String name = index >= 0 ? securityPolicyUri.substring(index + 1) : securityPolicyUri;
-
-    return name.replaceAll("[^A-Za-z0-9_.-]", "-");
-  }
-
-  private boolean isNullOrEmpty(@Nullable String value) {
-    return value == null || value.isEmpty();
-  }
-
-  private record UserTokenPolicyKey(
-      String policyId,
-      UserTokenType tokenType,
-      @Nullable String issuedTokenType,
-      @Nullable String issuerEndpointUrl,
-      String securityPolicyUri) {
-
-    static UserTokenPolicyKey from(EndpointConfig endpoint, UserTokenPolicy tokenPolicy) {
-      String policyId = tokenPolicy.getPolicyId();
-      String securityPolicyUri = tokenPolicy.getSecurityPolicyUri();
-
-      return new UserTokenPolicyKey(
-          policyId == null ? "" : policyId,
-          tokenPolicy.getTokenType(),
-          tokenPolicy.getIssuedTokenType(),
-          tokenPolicy.getIssuerEndpointUrl(),
-          isNullOrEmpty(securityPolicyUri)
-              ? endpoint.getSecurityPolicy().getUri()
-              : securityPolicyUri);
-    }
-
-    private static boolean isNullOrEmpty(@Nullable String value) {
-      return value == null || value.isEmpty();
-    }
   }
 
   /**
