@@ -55,6 +55,8 @@ import org.slf4j.LoggerFactory;
 /** Field serialization logic shared by {@link DynamicStructCodec} and {@link DynamicUnionCodec}. */
 class FieldUtil {
 
+  private static final ThreadLocal<Integer> EAGER_DECODE_DEPTH = ThreadLocal.withInitial(() -> 0);
+
   private FieldUtil() {}
 
   static Object decodeFieldValue(
@@ -89,11 +91,11 @@ class FieldUtil {
 
     try {
       if (value instanceof ExtensionObject xo) {
-        return xo.decode(decoder.getEncodingContext());
+        return eagerlyDecodeExtensionObject(decoder, xo);
       } else if (value instanceof ExtensionObject[] xos) {
         Object decodedArray = null;
         for (int i = 0; i < xos.length; i++) {
-          Object decoded = xos[i].decode(decoder.getEncodingContext());
+          Object decoded = eagerlyDecodeExtensionObject(decoder, xos[i]);
           if (decodedArray == null) {
             decodedArray = Array.newInstance(decoded.getClass(), xos.length);
           }
@@ -106,7 +108,7 @@ class FieldUtil {
         Class<?> elementType = matrix.getElementType().orElse(Object.class);
 
         if (elementType == ExtensionObject.class) {
-          return matrix.transform(o -> ((ExtensionObject) o).decode(decoder.getEncodingContext()));
+          return matrix.transform(o -> eagerlyDecodeExtensionObject(decoder, (ExtensionObject) o));
         }
       }
     } catch (Exception e) {
@@ -120,6 +122,29 @@ class FieldUtil {
     }
 
     return value;
+  }
+
+  private static UaStructuredType eagerlyDecodeExtensionObject(
+      UaDecoder decoder, ExtensionObject xo) {
+    int depth = EAGER_DECODE_DEPTH.get();
+    int maxDepth = decoder.getEncodingContext().getEncodingLimits().getMaxRecursionDepth();
+
+    if (depth >= maxDepth) {
+      throw new UaSerializationException(
+          StatusCodes.Bad_EncodingLimitsExceeded,
+          "max eager ExtensionObject decode depth exceeded: " + maxDepth);
+    }
+
+    EAGER_DECODE_DEPTH.set(depth + 1);
+    try {
+      return xo.decode(decoder.getEncodingContext());
+    } finally {
+      if (depth == 0) {
+        EAGER_DECODE_DEPTH.remove();
+      } else {
+        EAGER_DECODE_DEPTH.set(depth);
+      }
+    }
   }
 
   private static Object _decodeFieldValue(
@@ -182,7 +207,11 @@ class FieldUtil {
       } else if (fieldHint instanceof FieldHint.Enum hint) {
         Matrix matrix = decoder.decodeEnumMatrix(fieldName);
 
-        return matrix.transform(v -> new DynamicEnumType(hint.dataType, (Integer) v));
+        return matrix.transform(
+            v -> new DynamicEnumType(hint.dataType, (Integer) v),
+            DynamicEnumType.class,
+            OpcUaDataType.Int32,
+            hint.dataType.getNodeId().expanded());
       } else if (fieldHint instanceof FieldHint.Struct) {
         if (dataTypeId.equals(NodeIds.Structure) || fieldAllowsSubtyping(definition, field)) {
           Matrix matrix = decoder.decodeMatrix(fieldName, OpcUaDataType.ExtensionObject);
@@ -191,7 +220,10 @@ class FieldUtil {
               o -> {
                 ExtensionObject xo = (ExtensionObject) o;
                 return xo.decode(decoder.getEncodingContext());
-              });
+              },
+              UaStructuredType.class,
+              OpcUaDataType.ExtensionObject,
+              dataTypeId.expanded());
         } else {
           return decoder.decodeStructMatrix(fieldName, dataTypeId);
         }
@@ -285,7 +317,9 @@ class FieldUtil {
 
           Matrix xoMatrix =
               matrix.transform(
-                  o -> ExtensionObject.encode(encoder.getEncodingContext(), (UaStructuredType) o));
+                  o -> ExtensionObject.encode(encoder.getEncodingContext(), (UaStructuredType) o),
+                  ExtensionObject.class,
+                  OpcUaDataType.ExtensionObject);
 
           encoder.encodeMatrix(fieldName, xoMatrix);
         } else {
@@ -300,7 +334,9 @@ class FieldUtil {
                   o -> {
                     DynamicStructType structValue = (DynamicStructType) o;
                     return ExtensionObject.encode(encoder.getEncodingContext(), structValue);
-                  });
+                  },
+                  ExtensionObject.class,
+                  OpcUaDataType.ExtensionObject);
 
           encoder.encodeMatrix(fieldName, xoMatrix);
         } else {

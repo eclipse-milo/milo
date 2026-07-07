@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -19,7 +19,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.2/#7.8.2.7">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.2/#7.8.2.7</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.2/#7.8.2.9">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.2/#7.8.2.9</a>
  */
 public enum TrustListMasks implements UaEnumeratedType {
   /** No fields are provided. */

@@ -20,11 +20,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -634,20 +636,9 @@ public class SubscriptionManager {
       AttributesResponse attributeResponse)
       throws UaException {
 
-    QualifiedName dataEncoding = request.getItemToMonitor().getDataEncoding();
     AttributeId attributeId =
         AttributeId.from(request.getItemToMonitor().getAttributeId())
             .orElseThrow(() -> new UaException(StatusCodes.Bad_AttributeIdInvalid));
-
-    if (dataEncoding.isNotNull()) {
-      if (attributeId != AttributeId.Value) {
-        throw new UaException(StatusCodes.Bad_DataEncodingInvalid);
-      }
-
-      if (!server.getEncodingManager().hasEncoding(dataEncoding)) {
-        throw new UaException(StatusCodes.Bad_DataEncodingUnsupported);
-      }
-    }
 
     if (attributeResponse instanceof NegativeResponse negativeResponse) {
       throw new UaException(negativeResponse.statusCode());
@@ -1256,6 +1247,7 @@ public class SubscriptionManager {
 
     var deleteResults = new StatusCode[itemsToDelete.length];
     var deletedItems = new ArrayList<BaseMonitoredItem<?>>(itemsToDelete.length);
+    Set<UInteger> deletedItemIds = new HashSet<>();
 
     synchronized (subscription) {
       for (int i = 0; i < itemsToDelete.length; i++) {
@@ -1265,12 +1257,14 @@ public class SubscriptionManager {
         if (item == null) {
           deleteResults[i] = new StatusCode(StatusCodes.Bad_MonitoredItemIdInvalid);
         } else {
-          deletedItems.add(item);
+          if (deletedItemIds.add(itemId)) {
+            deletedItems.add(item);
+
+            monitoredItemCount.decrementAndGet();
+            server.getMonitoredItemCount().decrementAndGet();
+          }
 
           deleteResults[i] = StatusCode.GOOD;
-
-          monitoredItemCount.decrementAndGet();
-          server.getMonitoredItemCount().decrementAndGet();
         }
       }
 

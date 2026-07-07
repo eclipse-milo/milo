@@ -30,6 +30,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
+import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfigLimits;
 import org.eclipse.milo.opcua.sdk.server.identity.AnonymousIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.CompositeValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.UsernameIdentityValidator;
@@ -93,6 +94,10 @@ public final class TestServer {
   public record TestIdentityCertificate(X509Certificate certificate, KeyPair keyPair) {}
 
   public static TestServer create() throws Exception {
+    return create(new OpcUaServerConfigLimits() {});
+  }
+
+  public static TestServer create(OpcUaServerConfigLimits limits) throws Exception {
     int port = new Random().nextInt(65535 - 10000) + 10000;
 
     try {
@@ -101,14 +106,18 @@ public final class TestServer {
       ss.bind(isa);
       ss.close();
 
-      return create(port);
+      return create(port, limits);
     } catch (Throwable t) {
       t.printStackTrace(System.err);
-      return create();
+      return create(limits);
     }
   }
 
   public static TestServer create(int port) throws Exception {
+    return create(port, new OpcUaServerConfigLimits() {});
+  }
+
+  public static TestServer create(int port, OpcUaServerConfigLimits limits) throws Exception {
     File securityTempDir = new File(System.getProperty("java.io.tmpdir"), "security");
     if (!securityTempDir.exists() && !securityTempDir.mkdirs()) {
       throw new Exception("unable to create security temp dir: " + securityTempDir);
@@ -230,6 +239,7 @@ public final class TestServer {
                     usernameIdentityValidator,
                     x509IdentityValidator))
             .setProductUri("urn:eclipse:milo:example-server")
+            .setLimits(limits)
             .build();
 
     OpcUaServer opcUaServer =

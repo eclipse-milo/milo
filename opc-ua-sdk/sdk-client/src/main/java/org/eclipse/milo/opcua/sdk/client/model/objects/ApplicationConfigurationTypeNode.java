@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -356,5 +356,124 @@ public class ApplicationConfigurationTypeNode extends ServerConfigurationTypeNod
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/", "Enabled", ExpandedNodeId.parse("i=46"), false);
     return future.thenApply(node -> (PropertyTypeNode) node);
+  }
+
+  @Override
+  public Boolean getIsNonUaApplication() throws UaException {
+    PropertyTypeNode node = getIsNonUaApplicationNode();
+    return (Boolean) node.getValue().getValue().getValue();
+  }
+
+  @Override
+  public void setIsNonUaApplication(Boolean value) throws UaException {
+    PropertyTypeNode node = getIsNonUaApplicationNode();
+    node.setValue(new Variant(value));
+  }
+
+  @Override
+  public Boolean readIsNonUaApplication() throws UaException {
+    try {
+      return readIsNonUaApplicationAsync().get();
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
+    }
+  }
+
+  @Override
+  public void writeIsNonUaApplication(Boolean value) throws UaException {
+    try {
+      writeIsNonUaApplicationAsync(value).get();
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends Boolean> readIsNonUaApplicationAsync() {
+    return getIsNonUaApplicationNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> (Boolean) v.getValue().getValue());
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeIsNonUaApplicationAsync(Boolean isNonUaApplication) {
+    DataValue value = DataValue.valueOnly(new Variant(isNonUaApplication));
+    return getIsNonUaApplicationNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getIsNonUaApplicationNode() throws UaException {
+    try {
+      return getIsNonUaApplicationNodeAsync().get();
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getIsNonUaApplicationNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
+            "http://opcfoundation.org/UA/",
+            "IsNonUaApplication",
+            ExpandedNodeId.parse("i=46"),
+            false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
+
+  @Override
+  public KeyCredentialConfigurationFolderTypeNode getKeyCredentialsNode() throws UaException {
+    try {
+      return getKeyCredentialsNodeAsync().get();
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends KeyCredentialConfigurationFolderTypeNode>
+      getKeyCredentialsNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
+            "http://opcfoundation.org/UA/", "KeyCredentials", ExpandedNodeId.parse("i=47"), false);
+    return future.thenApply(node -> (KeyCredentialConfigurationFolderTypeNode) node);
+  }
+
+  @Override
+  public AuthorizationServicesConfigurationFolderTypeNode getAuthorizationServicesNode()
+      throws UaException {
+    try {
+      return getAuthorizationServicesNodeAsync().get();
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends AuthorizationServicesConfigurationFolderTypeNode>
+      getAuthorizationServicesNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
+            "http://opcfoundation.org/UA/",
+            "AuthorizationServices",
+            ExpandedNodeId.parse("i=47"),
+            false);
+    return future.thenApply(node -> (AuthorizationServicesConfigurationFolderTypeNode) node);
   }
 }

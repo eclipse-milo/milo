@@ -36,6 +36,8 @@ import org.slf4j.LoggerFactory;
 
 public class SessionsDiagnosticsSummaryObject extends AbstractLifecycle {
 
+  static final int MAX_BROWSE_NAME_LENGTH = 512;
+
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private final Map<NodeId, SessionDiagnosticsObject> sessionDiagnosticsObjects =
@@ -117,12 +119,15 @@ public class SessionsDiagnosticsSummaryObject extends AbstractLifecycle {
 
   private void createSessionDiagnosticsObject(Session session) {
     try {
+      String sessionName = session.getSessionName();
+      QualifiedName browseName = new QualifiedName(1, sessionNameBrowseName(sessionName));
+
       SessionDiagnosticsObjectTypeNode sdoNode =
           (SessionDiagnosticsObjectTypeNode)
               nodeFactory.createNode(
                   new NodeId(1, UUID.randomUUID()), NodeIds.SessionDiagnosticsObjectType);
-      sdoNode.setBrowseName(new QualifiedName(1, session.getSessionName()));
-      sdoNode.setDisplayName(LocalizedText.english(session.getSessionName()));
+      sdoNode.setBrowseName(browseName);
+      sdoNode.setDisplayName(LocalizedText.english(sessionName));
 
       sdoNode.addReference(
           new Reference(
@@ -140,6 +145,14 @@ public class SessionsDiagnosticsSummaryObject extends AbstractLifecycle {
     } catch (UaException e) {
       LoggerFactory.getLogger(getClass()).warn("Failed to create SessionDiagnosticsObject", e);
     }
+  }
+
+  static String sessionNameBrowseName(String sessionName) {
+    if (sessionName != null && sessionName.length() > MAX_BROWSE_NAME_LENGTH) {
+      return sessionName.substring(0, MAX_BROWSE_NAME_LENGTH);
+    }
+
+    return sessionName;
   }
 
   @Override

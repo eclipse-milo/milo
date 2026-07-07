@@ -10,11 +10,14 @@
 
 package org.eclipse.milo.opcua.stack.core.types.builtin;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ThreeDVector;
 import org.junit.jupiter.api.Test;
 
@@ -53,6 +56,62 @@ class MatrixTest {
   }
 
   @Test
+  void transformEmptyMatrixWithExplicitType() {
+    Matrix m = new Matrix(new Integer[0], new int[] {0, 2}, OpcUaDataType.Int32);
+
+    Matrix transformed = m.transform(Object::toString, String.class, OpcUaDataType.String);
+
+    assertArrayEquals(new int[] {0, 2}, transformed.getDimensions());
+    assertEquals(0, Array.getLength(transformed.getElements()));
+    assertEquals(String.class, transformed.getElementType().orElseThrow());
+    assertEquals(OpcUaDataType.String, transformed.getDataType().orElseThrow());
+    assertEquals(
+        OpcUaDataType.String.getNodeId().expanded(), transformed.getDataTypeId().orElseThrow());
+  }
+
+  @Test
+  void emptyStructuredMatrixCanCarryExplicitDataTypeId() {
+    Matrix m =
+        new Matrix(
+            new ThreeDVector[0],
+            new int[] {0, 2},
+            OpcUaDataType.ExtensionObject,
+            ThreeDVector.TYPE_ID);
+
+    assertArrayEquals(new int[] {0, 2}, m.getDimensions());
+    assertEquals(0, Array.getLength(m.getElements()));
+    assertEquals(ThreeDVector.class, m.getElementType().orElseThrow());
+    assertEquals(OpcUaDataType.ExtensionObject, m.getDataType().orElseThrow());
+    assertEquals(ThreeDVector.TYPE_ID, m.getDataTypeId().orElseThrow());
+  }
+
+  @Test
+  void emptyStructuredMatrixWithoutExplicitDataTypeIdDoesNotReadElementZero() {
+    Matrix m = new Matrix(new ThreeDVector[0], new int[] {0, 2}, OpcUaDataType.ExtensionObject);
+
+    assertArrayEquals(new int[] {0, 2}, m.getDimensions());
+    assertEquals(0, Array.getLength(m.getElements()));
+    assertEquals(OpcUaDataType.ExtensionObject, m.getDataType().orElseThrow());
+    assertTrue(m.getDataTypeId().isEmpty());
+  }
+
+  @Test
+  void emptyEnumeratedMatrixCanCarryExplicitDataTypeId() {
+    Matrix m =
+        new Matrix(
+            new ApplicationType[0],
+            new int[] {0, 2},
+            OpcUaDataType.Int32,
+            ApplicationType.TypeInfo.TYPE_ID);
+
+    assertArrayEquals(new int[] {0, 2}, m.getDimensions());
+    assertEquals(0, Array.getLength(m.getElements()));
+    assertEquals(ApplicationType.class, m.getElementType().orElseThrow());
+    assertEquals(OpcUaDataType.Int32, m.getDataType().orElseThrow());
+    assertEquals(ApplicationType.TypeInfo.TYPE_ID, m.getDataTypeId().orElseThrow());
+  }
+
+  @Test
   void nestedArrayValue() {
     String[][] value = {
       new String[] {"0", "1"},
@@ -82,6 +141,15 @@ class MatrixTest {
     assertEquals(
         "Matrix{dataType=Int32, " + "dataTypeId=i=6, dimensions=[2, 2], flatArray=[1, 2, 3, 4]}",
         boxedMatrix2d.toString());
+  }
+
+  @Test
+  void nullMatrixToString() {
+    // A null Matrix has no flatArray; toString() must not throw (previously NPE'd in
+    // ArrayUtil.getType).
+    assertEquals(
+        "Matrix{dataType=null, dataTypeId=null, dimensions=[], flatArray=null}",
+        Matrix.ofNull().toString());
   }
 
   @Test

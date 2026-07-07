@@ -1,6 +1,6 @@
 # Project Context
 
-**Tech Stack:** Java 17, Maven multi-module
+**Tech Stack:** Java 17 managed through `mise`, Maven multi-module
 
 Milo is an open-source OPC UA (IEC 62541) implementation for Java, enabling
 industrial communication and IoT integration. It provides a complete client/server
@@ -19,11 +19,13 @@ SDK for building OPC UA applications.
 
 ## Building and Testing
 
-| Command                 | Purpose                                    |
-|-------------------------|--------------------------------------------|
-| `mvn -q clean compile`  | Compile without tests                      |
-| `mvn -q clean verify`   | Full build with tests and formatting check |
-| `mvn -q spotless:apply` | Fix code formatting issues                 |
+| Command                              | Purpose                                    |
+|--------------------------------------|--------------------------------------------|
+| `mise install`                       | Install pinned Java and Maven tools        |
+| `mise trust .mise.toml`              | Trust the local mise config when prompted  |
+| `mise exec -- mvn -q clean compile`  | Compile without tests                      |
+| `mise exec -- mvn -q clean verify`   | Full build with tests and formatting check |
+| `mise exec -- mvn -q spotless:apply` | Fix code formatting issues                 |
 
 Before running any tests, read `.claude/docs/testing.md` for module targeting flags and
 test patterns, and `.claude/docs/test-guidelines.md` for test quality expectations.
@@ -54,15 +56,17 @@ data flow, validation layers, runtime boundaries, invariants, and extension guid
 Use these steps to verify any completed work. Implementation plans should include these as success criteria.
 
 1. **Format and compile** using the `maven-command-runner` agent:
-    - `mvn -q spotless:apply` - Format code
-    - `mvn -q clean compile` - Compile (skip tests)
+    - `mise exec -- mvn -q spotless:apply` - Format code
+    - `mise exec -- mvn -q clean compile` - Compile (skip tests)
 
-2. **Request code review** from the `preflight` agent, which will:
-    - Review changes for correctness, style, and adherence to project conventions
-    - Report **APPROVED** or **CHANGES REQUESTED**
+No separate review-agent gate is required. Reviews are handled manually or by workflow-specific
+gates when requested.
 
-Before committing, ensure all verification steps pass and preflight approval is received.
+Before committing, ensure all verification steps pass.
 
 ---
 
 > **Build Rule:** ALWAYS use the `maven-command-runner` agent for Maven commands.
+> - Codex: delegate Maven commands to a worker subagent using
+>   `.codex/agents/maven-command-runner.md`.
+> - Claude: use `.claude/agents/maven-command-runner.md`.

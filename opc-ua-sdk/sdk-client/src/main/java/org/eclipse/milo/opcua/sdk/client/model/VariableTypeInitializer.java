@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -14,6 +14,8 @@ import org.eclipse.milo.opcua.sdk.client.VariableTypeManager;
 import org.eclipse.milo.opcua.sdk.client.model.variables.AlarmRateVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.client.model.variables.AlarmStateVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.client.model.variables.AnalogItemTypeNode;
+import org.eclipse.milo.opcua.sdk.client.model.variables.AnalogNumberItemTypeNode;
+import org.eclipse.milo.opcua.sdk.client.model.variables.AnalogNumberUnitRangeTypeNode;
 import org.eclipse.milo.opcua.sdk.client.model.variables.AnalogUnitRangeTypeNode;
 import org.eclipse.milo.opcua.sdk.client.model.variables.AnalogUnitTypeNode;
 import org.eclipse.milo.opcua.sdk.client.model.variables.ArrayItemTypeNode;
@@ -240,9 +242,17 @@ public class VariableTypeInitializer {
         AnalogItemTypeNode.class,
         AnalogItemTypeNode::new);
     variableTypeManager.registerVariableType(
+        NodeId.parse("i=23906").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
+        AnalogNumberItemTypeNode.class,
+        AnalogNumberItemTypeNode::new);
+    variableTypeManager.registerVariableType(
         NodeId.parse("i=17570").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
         AnalogUnitRangeTypeNode.class,
         AnalogUnitRangeTypeNode::new);
+    variableTypeManager.registerVariableType(
+        NodeId.parse("i=23918").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
+        AnalogNumberUnitRangeTypeNode.class,
+        AnalogNumberUnitRangeTypeNode::new);
     variableTypeManager.registerVariableType(
         NodeId.parse("i=17497").reindex(namespaceTable, "http://opcfoundation.org/UA/"),
         AnalogUnitTypeNode.class,

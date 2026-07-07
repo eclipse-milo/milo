@@ -13,7 +13,9 @@ package org.eclipse.milo.opcua.stack.core.encoding.json;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
@@ -673,24 +675,25 @@ class OpcUaJsonEncoderTest {
     try (var encoder = new OpcUaJsonEncoder(context)) {
       encoder.encoding = Encoding.COMPACT;
 
-      // compact form without field
+      // COMPACT form: object with Symbol always omitted; Code omitted when 0 (Good).
       encoder.encodeStatusCode(null, StatusCode.GOOD);
-      assertEquals("0", encoder.getOutputString());
+      assertEquals("{}", encoder.getOutputString());
 
       encoder.reset();
       encoder.encodeStatusCode(null, new StatusCode(StatusCodes.Uncertain_InitialValue));
-      assertEquals(Long.toString(StatusCodes.Uncertain_InitialValue), encoder.getOutputString());
+      assertEquals(
+          "{\"Code\":" + StatusCodes.Uncertain_InitialValue + "}", encoder.getOutputString());
 
       encoder.reset();
       encoder.encodeStatusCode(null, new StatusCode(StatusCodes.Bad_UnexpectedError));
-      assertEquals(Long.toString(StatusCodes.Bad_UnexpectedError), encoder.getOutputString());
+      assertEquals("{\"Code\":" + StatusCodes.Bad_UnexpectedError + "}", encoder.getOutputString());
 
-      // compact form with field
+      // BUILTIN context (raw beginObject): field always emitted; GOOD becomes {}.
       encoder.reset();
       encoder.jsonWriter.beginObject();
       encoder.encodeStatusCode("foo", StatusCode.GOOD);
       encoder.jsonWriter.endObject();
-      assertEquals("{\"foo\":0}", encoder.getOutputString());
+      assertEquals("{\"foo\":{}}", encoder.getOutputString());
     }
   }
 
@@ -699,9 +702,9 @@ class OpcUaJsonEncoderTest {
     try (var encoder = new OpcUaJsonEncoder(context)) {
       encoder.encoding = Encoding.VERBOSE;
 
-      // verbose form without field
+      // verbose form without field; GOOD encodes as {} (Code/Symbol omitted when code==0)
       encoder.encodeStatusCode(null, StatusCode.GOOD);
-      assertEquals("", encoder.getOutputString());
+      assertEquals("{}", encoder.getOutputString());
 
       encoder.reset();
       encoder.encodeStatusCode(null, new StatusCode(StatusCodes.Uncertain_InitialValue));
@@ -713,12 +716,12 @@ class OpcUaJsonEncoderTest {
       assertEquals(
           "{\"Code\":2147549184,\"Symbol\":\"Bad_UnexpectedError\"}", encoder.getOutputString());
 
-      // verbose form with field
+      // verbose form with field; field still emitted with empty object body
       encoder.reset();
       encoder.jsonWriter.beginObject();
       encoder.encodeStatusCode("foo", StatusCode.GOOD);
       encoder.jsonWriter.endObject();
-      assertEquals("{}", encoder.getOutputString()); // key/value omitted because code==0
+      assertEquals("{\"foo\":{}}", encoder.getOutputString());
 
       encoder.reset();
       encoder.jsonWriter.beginObject();
@@ -807,19 +810,19 @@ class OpcUaJsonEncoderTest {
 
       encoder.encodeExtensionObject(null, jsonStringXo);
       assertEquals(
-          "{\"TypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"Body\":{\"foo\":\"bar\",\"baz\":42}}",
+          "{\"UaTypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"UaBody\":{\"foo\":\"bar\",\"baz\":42}}",
           encoder.getOutputString());
 
       encoder.reset();
       encoder.encodeExtensionObject(null, xmlElementXo);
       assertEquals(
-          "{\"TypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"Encoding\":2,\"Body\":\"<foo>bar</foo>\"}",
+          "{\"UaTypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"UaEncoding\":2,\"UaBody\":\"<foo>bar</foo>\"}",
           encoder.getOutputString());
 
       encoder.reset();
       encoder.encodeExtensionObject(null, byteStringXo);
       assertEquals(
-          "{\"TypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"Encoding\":1,\"Body\":\"AAECAw==\"}",
+          "{\"UaTypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"UaEncoding\":1,\"UaBody\":\"AAECAw==\"}",
           encoder.getOutputString());
 
       encoder.reset();
@@ -846,7 +849,7 @@ class OpcUaJsonEncoderTest {
       encoder.encodeDataValue(null, allFieldsValue);
       assertEquals(
           String.format(
-              "{\"Value\":{\"Type\":12,\"Body\":\"foo\"},\"Status\":3080192,\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
+              "{\"Value\":{\"UaType\":12,\"Value\":\"foo\"},\"Status\":{\"Code\":3080192},\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
               isoNow, isoNow),
           encoder.getOutputString());
 
@@ -855,7 +858,7 @@ class OpcUaJsonEncoderTest {
       encoder.encodeDataValue(null, allFieldsValue.copy(b -> b.setValue(Variant.NULL_VALUE)));
       assertEquals(
           String.format(
-              "{\"Status\":3080192,\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
+              "{\"Status\":{\"Code\":3080192},\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
               isoNow, isoNow),
           encoder.getOutputString());
 
@@ -864,7 +867,7 @@ class OpcUaJsonEncoderTest {
       encoder.encodeDataValue(null, allFieldsValue.copy(b -> b.setStatus(StatusCode.GOOD)));
       assertEquals(
           String.format(
-              "{\"Value\":{\"Type\":12,\"Body\":\"foo\"},\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
+              "{\"Value\":{\"UaType\":12,\"Value\":\"foo\"},\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
               isoNow, isoNow),
           encoder.getOutputString());
 
@@ -873,7 +876,7 @@ class OpcUaJsonEncoderTest {
       encoder.encodeDataValue(null, allFieldsValue.copy(b -> b.setSourceTime(null)));
       assertEquals(
           String.format(
-              "{\"Value\":{\"Type\":12,\"Body\":\"foo\"},\"Status\":3080192,\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
+              "{\"Value\":{\"UaType\":12,\"Value\":\"foo\"},\"Status\":{\"Code\":3080192},\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
               isoNow),
           encoder.getOutputString());
 
@@ -882,7 +885,7 @@ class OpcUaJsonEncoderTest {
       encoder.encodeDataValue(null, allFieldsValue.copy(b -> b.setSourcePicoseconds(null)));
       assertEquals(
           String.format(
-              "{\"Value\":{\"Type\":12,\"Body\":\"foo\"},\"Status\":3080192,\"SourceTimestamp\":\"%s\",\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
+              "{\"Value\":{\"UaType\":12,\"Value\":\"foo\"},\"Status\":{\"Code\":3080192},\"SourceTimestamp\":\"%s\",\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
               isoNow, isoNow),
           encoder.getOutputString());
 
@@ -891,7 +894,7 @@ class OpcUaJsonEncoderTest {
       encoder.encodeDataValue(null, allFieldsValue.copy(b -> b.setServerTime(null)));
       assertEquals(
           String.format(
-              "{\"Value\":{\"Type\":12,\"Body\":\"foo\"},\"Status\":3080192,\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerPicoseconds\":200}",
+              "{\"Value\":{\"UaType\":12,\"Value\":\"foo\"},\"Status\":{\"Code\":3080192},\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerPicoseconds\":200}",
               isoNow),
           encoder.getOutputString());
 
@@ -900,7 +903,7 @@ class OpcUaJsonEncoderTest {
       encoder.encodeDataValue(null, allFieldsValue.copy(b -> b.setServerPicoseconds(null)));
       assertEquals(
           String.format(
-              "{\"Value\":{\"Type\":12,\"Body\":\"foo\"},\"Status\":3080192,\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\"}",
+              "{\"Value\":{\"UaType\":12,\"Value\":\"foo\"},\"Status\":{\"Code\":3080192},\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\"}",
               isoNow, isoNow),
           encoder.getOutputString());
 
@@ -924,24 +927,25 @@ class OpcUaJsonEncoderTest {
       context.getNamespaceTable().add("urn:eclipse:milo:test1");
 
       encoder.encodeVariant(null, new Variant(true));
-      assertEquals("{\"Type\":1,\"Body\":true}", encoder.getOutputString());
+      assertEquals("{\"UaType\":1,\"Value\":true}", encoder.getOutputString());
 
       encoder.reset();
       encoder.encodeVariant(null, new Variant(new QualifiedName(1, "foo")));
       assertEquals(
-          "{\"Type\":20,\"Body\":\"nsu=urn:eclipse:milo:test1;foo\"}", encoder.getOutputString());
+          "{\"UaType\":20,\"Value\":\"nsu=urn:eclipse:milo:test1;foo\"}",
+          encoder.getOutputString());
 
       encoder.reset();
       encoder.encodeVariant(
           null, new Variant(new Variant[] {new Variant("foo"), new Variant("bar")}));
       assertEquals(
-          "{\"Type\":24,\"Body\":[{\"Type\":12,\"Body\":\"foo\"},{\"Type\":12,\"Body\":\"bar\"}]}",
+          "{\"UaType\":24,\"Value\":[{\"UaType\":12,\"Value\":\"foo\"},{\"UaType\":12,\"Value\":\"bar\"}]}",
           encoder.getOutputString());
 
       encoder.reset();
       encoder.encodeVariant(null, new Variant(Matrix.ofInt32(new int[][] {{0, 1}, {2, 3}})));
       assertEquals(
-          "{\"Type\":6,\"Body\":[0,1,2,3],\"Dimensions\":[2,2]}", encoder.getOutputString());
+          "{\"UaType\":6,\"Value\":[0,1,2,3],\"Dimensions\":[2,2]}", encoder.getOutputString());
 
       int[] value1d = {0, 1, 2, 3};
       int[][] value2d = {
@@ -961,17 +965,17 @@ class OpcUaJsonEncoderTest {
 
       encoder.reset();
       encoder.encodeVariant(null, new Variant(value1d));
-      assertEquals("{\"Type\":6,\"Body\":[0,1,2,3]}", encoder.getOutputString());
+      assertEquals("{\"UaType\":6,\"Value\":[0,1,2,3]}", encoder.getOutputString());
 
       encoder.reset();
       encoder.encodeVariant(null, new Variant(Matrix.ofInt32(value2d)));
       assertEquals(
-          "{\"Type\":6,\"Body\":[0,2,3,1,3,4],\"Dimensions\":[2,3]}", encoder.getOutputString());
+          "{\"UaType\":6,\"Value\":[0,2,3,1,3,4],\"Dimensions\":[2,3]}", encoder.getOutputString());
 
       encoder.reset();
       encoder.encodeVariant(null, new Variant(Matrix.ofInt32(value3d)));
       assertEquals(
-          "{\"Type\":6,\"Body\":[0,1,2,3,4,5,6,7],\"Dimensions\":[2,2,2]}",
+          "{\"UaType\":6,\"Value\":[0,1,2,3,4,5,6,7],\"Dimensions\":[2,2,2]}",
           encoder.getOutputString());
     }
   }
@@ -991,8 +995,9 @@ class OpcUaJsonEncoderTest {
 
       encoder.reset();
       encoder.encodeDiagnosticInfo(null, nestedDiagnosticInfo);
+      // InnerStatusCode is Good (0); per OPC 10000-6 §5.4.2.13 it is omitted in CompactEncoding.
       assertEquals(
-          "{\"SymbolicId\":5,\"NamespaceUri\":4,\"Locale\":6,\"LocalizedText\":7,\"AdditionalInfo\":\"bar\",\"InnerStatusCode\":0,\"InnerDiagnosticInfo\":{\"SymbolicId\":1,\"NamespaceUri\":0,\"Locale\":2,\"LocalizedText\":3,\"AdditionalInfo\":\"foo\"}}",
+          "{\"SymbolicId\":5,\"NamespaceUri\":4,\"Locale\":6,\"LocalizedText\":7,\"AdditionalInfo\":\"bar\",\"InnerDiagnosticInfo\":{\"SymbolicId\":1,\"NamespaceUri\":0,\"Locale\":2,\"LocalizedText\":3,\"AdditionalInfo\":\"foo\"}}",
           encoder.getOutputString());
 
       encoder.reset();
@@ -1020,7 +1025,7 @@ class OpcUaJsonEncoderTest {
 
       encoder.encodeMessage(null, message);
       assertEquals(
-          "{\"TypeId\":\"i=15257\",\"Body\":{\"RequestHeader\":{\"Timestamp\":\"1601-01-01T00:00:00Z\",\"AuditEntryId\":\"foo\"},\"TimestampsToReturn\":2,\"NodesToRead\":[{\"NodeId\":\"i=1\",\"AttributeId\":13}]}}",
+          "{\"UaTypeId\":\"i=15257\",\"UaBody\":{\"RequestHeader\":{\"Timestamp\":\"1601-01-01T00:00:00Z\",\"AuditEntryId\":\"foo\"},\"TimestampsToReturn\":2,\"NodesToRead\":[{\"NodeId\":\"i=1\",\"AttributeId\":13}]}}",
           encoder.getOutputString());
     }
   }
@@ -1233,6 +1238,442 @@ class OpcUaJsonEncoderTest {
       assertEquals(
           "{\"Array\":[{\"Value\":1.0},{\"X\":2.0,\"Value\":3.0},{\"X\":4.0,\"Value\":5.0},{\"X\":6.0,\"Value\":7.0}],\"Dimensions\":[2,2]}",
           encoder.getOutputString());
+    }
+  }
+
+  // ------------------------------------------------------------------------
+  // Spec-compliance tests for behaviors defined in section 5.4 of OPC 10000-6.
+  // Each test documents the spec rule it covers.
+  // ------------------------------------------------------------------------
+
+  /**
+   * Issue: {@code encodeArray} does not push BUILTIN context, so primitive array elements with
+   * default values (0, false, empty string, null) are silently dropped when the array is encoded
+   * inside a struct.
+   *
+   * <p>Spec 5.4 (arrays): "Any value for a nullable Built-In type that is NULL shall be encoded as
+   * the JSON literal 'null' if the value is an element of a JSON array." Non-nullable defaults like
+   * 0 must also be preserved as array elements — array elements are not subject to struct
+   * field-omission rules.
+   */
+  @Test
+  void encodeUInt32ArrayInsideStruct_preservesZeros() throws Exception {
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      var arg =
+          new Argument(
+              "foo",
+              NodeIds.Int32,
+              2,
+              new UInteger[] {uint(0), uint(1), uint(0)},
+              LocalizedText.english("desc"));
+
+      encoder.encodeStruct(null, arg, Argument.TYPE_ID);
+
+      String output = encoder.getOutputString();
+      assertTrue(
+          output.contains("\"ArrayDimensions\":[0,1,0]"),
+          "ArrayDimensions zeros should be preserved; got: " + output);
+    }
+  }
+
+  /**
+   * Issue: same as the previous test but with all elements at the default. Even an array of zeros
+   * must be preserved as {@code [0,0,0]} — not collapsed to {@code []}.
+   */
+  @Test
+  void encodeUInt32ArrayInsideStruct_preservesAllZeros() throws Exception {
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      var arg =
+          new Argument(
+              "foo",
+              NodeIds.Int32,
+              2,
+              new UInteger[] {uint(0), uint(0), uint(0)},
+              LocalizedText.english("desc"));
+
+      encoder.encodeStruct(null, arg, Argument.TYPE_ID);
+
+      String output = encoder.getOutputString();
+      assertTrue(
+          output.contains("\"ArrayDimensions\":[0,0,0]"),
+          "An all-zero UInteger[] must round-trip as [0,0,0]; got: " + output);
+    }
+  }
+
+  /**
+   * Issue: {@code encodeVariant} returns silently when {@code value.isNull()}. Inside a {@code
+   * Variant[]}, this corrupts the array — the null entry simply disappears instead of being encoded
+   * as JSON {@code null}.
+   *
+   * <p>Spec 5.4: NULL elements of an array shall be encoded as the JSON literal {@code null}.
+   */
+  @Test
+  void encodeVariantArray_nullElementWritesNull() throws Exception {
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.encodeVariantArray(
+          null, new Variant[] {new Variant("foo"), Variant.NULL_VALUE, new Variant("bar")});
+
+      String output = encoder.getOutputString();
+      // Expect three elements; null variant should appear as JSON null between the two strings.
+      assertEquals(
+          "[{\"UaType\":12,\"Value\":\"foo\"},null,{\"UaType\":12,\"Value\":\"bar\"}]", output);
+    }
+  }
+
+  /**
+   * Issue: {@code encodeDateTime} dereferences {@code value.getJavaInstant()} without a null check
+   * when in VERBOSE/BUILTIN context. Passing null should not throw NPE.
+   */
+  @Test
+  void encodeDateTime_nullInVerboseDoesNotThrow() throws Exception {
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.encoding = Encoding.VERBOSE;
+      assertDoesNotThrow(() -> encoder.encodeDateTime(null, null));
+    }
+  }
+
+  /** Issue: {@code encodeStatusCode} NPE on null value in VERBOSE/BUILTIN. */
+  @Test
+  void encodeStatusCode_nullInVerboseDoesNotThrow() throws Exception {
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.encoding = Encoding.VERBOSE;
+      assertDoesNotThrow(() -> encoder.encodeStatusCode(null, null));
+    }
+  }
+
+  /** Issue: {@code encodeXmlElement} NPE on null value in VERBOSE/BUILTIN. */
+  @Test
+  void encodeXmlElement_nullInVerboseDoesNotThrow() throws Exception {
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.encoding = Encoding.VERBOSE;
+      assertDoesNotThrow(() -> encoder.encodeXmlElement(null, null));
+    }
+  }
+
+  /** Issue: {@code encodeByteString} NPE on null value in VERBOSE/BUILTIN. */
+  @Test
+  void encodeByteString_nullInVerboseDoesNotThrow() throws Exception {
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.encoding = Encoding.VERBOSE;
+      assertDoesNotThrow(() -> encoder.encodeByteString(null, null));
+    }
+  }
+
+  /** Issue: {@code encodeGuid} NPE on null value in VERBOSE/BUILTIN. */
+  @Test
+  void encodeGuid_nullInVerboseDoesNotThrow() throws Exception {
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.encoding = Encoding.VERBOSE;
+      assertDoesNotThrow(() -> encoder.encodeGuid(null, null));
+    }
+  }
+
+  /** Issue: {@code encodeNodeId} NPE on null value in VERBOSE/BUILTIN. */
+  @Test
+  void encodeNodeId_nullInVerboseDoesNotThrow() throws Exception {
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.encoding = Encoding.VERBOSE;
+      assertDoesNotThrow(() -> encoder.encodeNodeId(null, null));
+    }
+  }
+
+  /** Issue: {@code encodeExpandedNodeId} NPE on null value in VERBOSE/BUILTIN. */
+  @Test
+  void encodeExpandedNodeId_nullInVerboseDoesNotThrow() throws Exception {
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.encoding = Encoding.VERBOSE;
+      assertDoesNotThrow(() -> encoder.encodeExpandedNodeId(null, null));
+    }
+  }
+
+  /** Issue: {@code encodeQualifiedName} NPE on null value in VERBOSE/BUILTIN. */
+  @Test
+  void encodeQualifiedName_nullInVerboseDoesNotThrow() throws Exception {
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.encoding = Encoding.VERBOSE;
+      assertDoesNotThrow(() -> encoder.encodeQualifiedName(null, null));
+    }
+  }
+
+  /** Issue: {@code encodeDiagnosticInfo} NPE on null value in VERBOSE/BUILTIN. */
+  @Test
+  void encodeDiagnosticInfo_nullInVerboseDoesNotThrow() throws Exception {
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.encoding = Encoding.VERBOSE;
+      assertDoesNotThrow(() -> encoder.encodeDiagnosticInfo(null, null));
+    }
+  }
+
+  /** Issue: {@code encodeMatrix} NPE on null value in VERBOSE/BUILTIN. */
+  @Test
+  void encodeMatrix_nullInVerboseDoesNotThrow() throws Exception {
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.encoding = Encoding.VERBOSE;
+      assertDoesNotThrow(() -> encoder.encodeMatrix(null, null));
+    }
+  }
+
+  /**
+   * Issue: {@code encodeStatusCode} VERBOSE branch silently writes nothing when code == 0, even
+   * though the outer condition decided we are emitting this field. The field should appear as an
+   * (empty) StatusCode representation in VERBOSE.
+   */
+  @Test
+  void encodeStatusCodeVerbose_goodInsideStructEmitsField() throws Exception {
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.encoding = Encoding.VERBOSE;
+
+      encoder.jsonWriter.beginObject();
+      encoder.encodeStatusCode("foo", StatusCode.GOOD);
+      encoder.jsonWriter.endObject();
+
+      // Spec: VERBOSE always emits the field. With code==0 the inner Code/Symbol are omitted,
+      // so the value is the empty object {}.
+      String output = encoder.getOutputString();
+      assertTrue(
+          output.startsWith("{\"foo\":"),
+          "Expected field 'foo' to be emitted in VERBOSE; got: " + output);
+    }
+  }
+
+  /**
+   * Issue: {@code encodeStatusCode} VERBOSE writes {@code "Symbol":""} when the numeric code has no
+   * associated literal. Spec 5.4.2.12: "If the string literal is not known to the encoder the field
+   * is omitted."
+   */
+  @Test
+  void encodeStatusCodeVerbose_unknownSymbolOmitted() throws Exception {
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.encoding = Encoding.VERBOSE;
+
+      // Pick a code unlikely to have a registered symbol.
+      long unknownCode = 0x7FFF_0000L;
+      encoder.encodeStatusCode(null, new StatusCode(unknownCode));
+
+      String output = encoder.getOutputString();
+      assertEquals(
+          "{\"Code\":" + unknownCode + "}",
+          output,
+          "Symbol field should be omitted when literal is unknown");
+    }
+  }
+
+  /**
+   * Issue: {@code encodeDataValue} short-circuits in VERBOSE when all fields are at their defaults,
+   * emitting nothing instead of an (empty) DataValue object.
+   */
+  @Test
+  void encodeDataValueVerbose_allDefaultsStillEmitsField() throws Exception {
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.encoding = Encoding.VERBOSE;
+
+      encoder.jsonWriter.beginObject();
+      encoder.encodeDataValue("foo", new DataValue(Variant.NULL_VALUE, StatusCode.GOOD, null));
+      encoder.jsonWriter.endObject();
+
+      String output = encoder.getOutputString();
+      assertTrue(
+          output.startsWith("{\"foo\":"),
+          "VERBOSE DataValue should emit the field even when all values are default; got: "
+              + output);
+    }
+  }
+
+  /**
+   * Issue: {@code encodeDiagnosticInfo} uses 0 as the default for {@code SymbolicId}, {@code
+   * NamespaceUri}, {@code Locale}, and {@code LocalizedText}. Per spec these default to -1 and are
+   * omitted only when equal to -1.
+   *
+   * <p>A NULL_VALUE DiagnosticInfo (all -1) should encode as {@code {}} in COMPACT.
+   */
+  @Test
+  void encodeDiagnosticInfo_nullValueOmitsInt32Fields() throws Exception {
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.encodeDiagnosticInfo(null, DiagnosticInfo.NULL_VALUE);
+      assertEquals("{}", encoder.getOutputString());
+    }
+  }
+
+  /**
+   * Issue (companion to the above): a DiagnosticInfo with explicit zeros must keep those zeros — 0
+   * is a valid, non-default index into the response string table.
+   *
+   * <p>Also asserts that null AdditionalInfo is omitted in COMPACT (sub-bug of the same root cause:
+   * the {@code BUILTIN} context push inside {@code encodeDiagnosticInfo} disables all
+   * field-omission rules).
+   */
+  @Test
+  void encodeDiagnosticInfo_zeroIndicesAreWritten() throws Exception {
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      var diag = new DiagnosticInfo(0, 0, 0, 0, null, null, null);
+      encoder.encodeDiagnosticInfo(null, diag);
+
+      String output = encoder.getOutputString();
+      assertEquals(
+          "{\"SymbolicId\":0,\"NamespaceUri\":0,\"Locale\":0,\"LocalizedText\":0}", output);
+    }
+  }
+
+  /**
+   * LocalizedText is a nullable built-in type (OPC 10000-6 Table 1), so per §5.4.2.1 a null value
+   * is encoded as JSON {@code null} in VerboseEncoding — the empty-object form is specific to
+   * ExtensionObject (§5.4.2.16), not LocalizedText.
+   */
+  @Test
+  void encodeLocalizedTextVerbose_nullProducesJsonNull() throws Exception {
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.encoding = Encoding.VERBOSE;
+      encoder.encodeLocalizedText(null, null);
+
+      assertEquals("null", encoder.getOutputString());
+    }
+  }
+
+  /**
+   * String is a nullable built-in type (OPC 10000-6 Table 1), so per §5.4.2.1 only a NULL value is
+   * omitted in CompactEncoding. An empty string is a present value and must be preserved as "".
+   */
+  @Test
+  void encodeStringCompact_emptyStringPreservedInStruct() throws Exception {
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      var arg =
+          new Argument(
+              "", // empty string name
+              NodeIds.Int32,
+              -1,
+              null,
+              LocalizedText.english("desc"));
+
+      encoder.encodeStruct(null, arg, Argument.TYPE_ID);
+
+      String output = encoder.getOutputString();
+      assertTrue(
+          output.contains("\"Name\":\"\""),
+          "Empty string field must be preserved as \"\" in COMPACT; got: " + output);
+    }
+  }
+
+  /**
+   * ByteString is a nullable built-in type (OPC 10000-6 Table 1), so per §5.4.2.1 only a NULL value
+   * is omitted in CompactEncoding. A zero-length ByteString is a present value and must be
+   * preserved as the Base64 of an empty array ("").
+   *
+   * <p>Reproducer uses {@link SignatureData}, whose {@code Signature} field is a ByteString.
+   */
+  @Test
+  void encodeByteStringCompact_emptyPreservedInStruct() throws Exception {
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      var sig = new SignatureData("alg", ByteString.of(new byte[0]));
+
+      encoder.encodeStruct(null, sig, SignatureData.TYPE_ID);
+
+      String output = encoder.getOutputString();
+      assertTrue(
+          output.contains("\"Signature\":\"\""),
+          "Empty ByteString field must be preserved as \"\" in COMPACT; got: " + output);
+    }
+  }
+
+  /**
+   * Issue: {@code encodeExtensionObject} doesn't differentiate COMPACT/VERBOSE for null values.
+   * Spec 5.4.2.16: COMPACT omits a default (null) ExtensionObject; VERBOSE emits an empty object.
+   *
+   * <p>This test focuses on the dead-code call to {@code value.getBody()} (line 725) which serves
+   * no purpose. The real assertion here is that the null case is handled consistently.
+   */
+  @Test
+  void encodeExtensionObjectVerbose_nullEmitsEmptyObject() throws Exception {
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.encoding = Encoding.VERBOSE;
+
+      encoder.jsonWriter.beginObject();
+      encoder.encodeExtensionObject("foo", null);
+      encoder.jsonWriter.endObject();
+
+      String output = encoder.getOutputString();
+      // Spec: VERBOSE default ExtensionObject encoded as {}
+      assertEquals("{\"foo\":{}}", output);
+    }
+  }
+
+  /**
+   * Issue: {@code encodeMessage} does not null-check its message argument. Spec doesn't define
+   * encoding a null message, but the method should fail with a UaSerializationException rather than
+   * letting a raw NullPointerException propagate.
+   */
+  @Test
+  void encodeMessage_nullDoesNotThrowNpe() {
+    // Not using try-with-resources: when the encoder fails before writing any JSON,
+    // Gson's JsonWriter.close() throws "Incomplete document". That's irrelevant to
+    // what this test verifies.
+    var encoder = new OpcUaJsonEncoder(context);
+    // Either return cleanly or throw UaSerializationException — never NPE.
+    try {
+      encoder.encodeMessage(null, null);
+    } catch (NullPointerException npe) {
+      throw new AssertionError("encodeMessage(null, null) threw NPE; expected graceful failure");
+    } catch (Exception expected) {
+      // Acceptable: UaSerializationException or similar.
+    }
+  }
+
+  /** Issue (companion): {@code encodeStruct} does not null-check its value argument. */
+  @Test
+  void encodeStruct_nullValueDoesNotThrowNpe() {
+    var encoder = new OpcUaJsonEncoder(context);
+    try {
+      encoder.encodeStruct(null, null, Argument.TYPE_ID);
+    } catch (NullPointerException npe) {
+      throw new AssertionError("encodeStruct with null value threw NPE; expected graceful");
+    } catch (Exception expected) {
+      // Acceptable.
+    }
+  }
+
+  /**
+   * Issue 17: {@code encodeStatusCode} in COMPACT encoding emits a JSON object (not a bare number).
+   * Per OPC 10000-6 §5.4.2.12, StatusCode is always a JSON object; in COMPACT the Symbol field is
+   * omitted and the Code field is omitted when the numeric value is 0 (Good).
+   */
+  @Test
+  void encodeStatusCodeCompact_isJsonObject() throws Exception {
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.encoding = Encoding.COMPACT;
+
+      // Non-Good code: object with Code; Symbol always omitted in COMPACT.
+      long code = StatusCodes.Bad_UnexpectedError;
+      encoder.encodeStatusCode(null, new StatusCode(code));
+      assertEquals("{\"Code\":" + code + "}", encoder.getOutputString());
+    }
+  }
+
+  /**
+   * Issue 18: encoding an empty array of an OptionSet type used to throw because the type id was
+   * derived from {@code Array.get(value, 0)}. The encoder must derive the backing UInteger type
+   * from the OptionSet class hierarchy instead.
+   */
+  @Test
+  void encodeOptionSetArray_emptyDoesNotThrow() throws Exception {
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      assertDoesNotThrow(() -> encoder.encodeVariant(null, new Variant(new PermissionType[0])));
+      // PermissionType extends OptionSetUI32 → backing type is UInt32 (typeId 7).
+      assertEquals("{\"UaType\":7,\"Value\":[]}", encoder.getOutputString());
+    }
+  }
+
+  /**
+   * Issue 21: a QualifiedName whose Name is null/empty must encode as JSON {@code null} regardless
+   * of namespace index — never as a malformed {@code "nsu=...;null"} string.
+   */
+  @Test
+  void encodeQualifiedName_nullNameWithNamespaceEncodesAsJsonNull() throws Exception {
+    context.getNamespaceTable().add("urn:eclipse:milo:test-qn-null");
+
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.encoding = Encoding.VERBOSE; // force the write branch in struct context
+      UShort index = context.getNamespaceTable().getIndex("urn:eclipse:milo:test-qn-null");
+      encoder.encodeQualifiedName(null, new QualifiedName(index, null));
+      assertEquals("null", encoder.getOutputString());
     }
   }
 

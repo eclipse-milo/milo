@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -94,21 +94,26 @@ public class CertificateGroupTypeNode extends BaseObjectTypeNode implements Cert
   }
 
   @Override
+  public PropertyTypeNode getPurposeNode() {
+    Optional<VariableNode> propertyNode = getPropertyNode(CertificateGroupType.PURPOSE);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public NodeId getPurpose() {
+    return getProperty(CertificateGroupType.PURPOSE).orElse(null);
+  }
+
+  @Override
+  public void setPurpose(NodeId value) {
+    setProperty(CertificateGroupType.PURPOSE, value);
+  }
+
+  @Override
   public TrustListTypeNode getTrustListNode() {
     Optional<ObjectNode> component =
         getObjectComponent("http://opcfoundation.org/UA/", "TrustList");
     return (TrustListTypeNode) component.orElse(null);
-  }
-
-  @Override
-  public UaMethodNode getGetRejectedListMethodNode() {
-    Optional<UaNode> methodNode =
-        findNode(
-            "http://opcfoundation.org/UA/",
-            "GetRejectedList",
-            node -> node instanceof UaMethodNode,
-            Reference.HAS_COMPONENT_PREDICATE);
-    return (UaMethodNode) methodNode.orElse(null);
   }
 
   @Override
@@ -123,5 +128,16 @@ public class CertificateGroupTypeNode extends BaseObjectTypeNode implements Cert
     Optional<ObjectNode> component =
         getObjectComponent("http://opcfoundation.org/UA/", "TrustListOutOfDate");
     return (TrustListOutOfDateAlarmTypeNode) component.orElse(null);
+  }
+
+  @Override
+  public UaMethodNode getGetRejectedListMethodNode() {
+    Optional<UaNode> methodNode =
+        findNode(
+            "http://opcfoundation.org/UA/",
+            "GetRejectedList",
+            node -> node instanceof UaMethodNode,
+            Reference.HAS_COMPONENT_PREDICATE);
+    return (UaMethodNode) methodNode.orElse(null);
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -19,7 +19,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
- *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/12.3.10">https://reference.opcfoundation.org/v105/Core/docs/Part5/12.3.10</a>
+ *     href="https://reference.opcfoundation.org/v105/Core/docs/Part4/7.20">https://reference.opcfoundation.org/v105/Core/docs/Part4/7.20</a>
  */
 public enum MessageSecurityMode implements UaEnumeratedType {
   Invalid(0),

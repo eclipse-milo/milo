@@ -72,10 +72,18 @@ public class Matrix {
   }
 
   public Matrix(Object flatArray, int[] dimensions, OpcUaDataType dataType) {
+    this(flatArray, dimensions, dataType, null);
+  }
+
+  public Matrix(
+      Object flatArray,
+      int[] dimensions,
+      OpcUaDataType dataType,
+      @Nullable ExpandedNodeId dataTypeId) {
     this.flatArray = flatArray;
     this.dimensions = dimensions;
     this.dataType = dataType;
-    this.dataTypeId = deriveDataTypeId(flatArray);
+    this.dataTypeId = dataTypeId != null ? dataTypeId : deriveDataTypeId(flatArray);
 
     assert flatArray != null && dimensions.length > 1 && dataType != null;
   }
@@ -178,9 +186,14 @@ public class Matrix {
     if (flatArray == null) {
       return new Matrix(null);
     } else {
+      int length = Array.getLength(flatArray);
+      if (length == 0) {
+        Object transformedArray = Array.newInstance(ArrayUtil.getType(flatArray), 0);
+        return new Matrix(transformedArray, dimensions, dataType, dataTypeId);
+      }
+
       Object transformedArray = null;
 
-      int length = Array.getLength(flatArray);
       for (int i = 0; i < length; i++) {
         Object e = Array.get(flatArray, i);
         Object t = f.apply(e);
@@ -191,6 +204,64 @@ public class Matrix {
       }
 
       return new Matrix(transformedArray, dimensions);
+    }
+  }
+
+  /**
+   * Create a new Matrix by applying the transform function {@code f} to each element, using
+   * explicit metadata for the transformed element type.
+   *
+   * <p>Use this overload when the Matrix may be empty and the transformed element type cannot be
+   * inferred from the first transformed element.
+   *
+   * @param f the transform function applied to each element.
+   * @param transformedType the Java class of the transformed elements.
+   * @param transformedDataType the {@link OpcUaDataType} of the transformed elements.
+   * @return a new Matrix containing transformed elements.
+   */
+  public Matrix transform(
+      Function<Object, Object> f, Class<?> transformedType, OpcUaDataType transformedDataType) {
+    return transform(f, transformedType, transformedDataType, null);
+  }
+
+  /**
+   * Create a new Matrix by applying the transform function {@code f} to each element, using
+   * explicit metadata for the transformed element type.
+   *
+   * <p>Use this overload when the Matrix may be empty and the transformed element type cannot be
+   * inferred from the first transformed element.
+   *
+   * @param f the transform function applied to each element.
+   * @param transformedType the Java class of the transformed elements.
+   * @param transformedDataType the {@link OpcUaDataType} of the transformed elements.
+   * @param transformedDataTypeId the {@link ExpandedNodeId} of the transformed element DataType.
+   * @return a new Matrix containing transformed elements.
+   */
+  public Matrix transform(
+      Function<Object, Object> f,
+      Class<?> transformedType,
+      OpcUaDataType transformedDataType,
+      @Nullable ExpandedNodeId transformedDataTypeId) {
+    if (flatArray == null) {
+      return new Matrix(null);
+    } else {
+      int length = Array.getLength(flatArray);
+      Object transformedArray = null;
+
+      for (int i = 0; i < length; i++) {
+        Object e = Array.get(flatArray, i);
+        Object t = f.apply(e);
+        if (transformedArray == null) {
+          transformedArray = Array.newInstance(t.getClass(), length);
+        }
+        Array.set(transformedArray, i, t);
+      }
+
+      if (transformedArray == null) {
+        transformedArray = Array.newInstance(transformedType, 0);
+      }
+
+      return new Matrix(transformedArray, dimensions, transformedDataType, transformedDataTypeId);
     }
   }
 
@@ -250,6 +321,10 @@ public class Matrix {
             .add("dataTypeId=" + (dataTypeId != null ? dataTypeId.toParseableString() : null))
             .add("dimensions=" + Arrays.toString(dimensions));
 
+    if (flatArray == null) {
+      return joiner.add("flatArray=null").toString();
+    }
+
     Class<?> clazz = ArrayUtil.getType(flatArray);
 
     if (clazz.isPrimitive()) {
@@ -278,6 +353,10 @@ public class Matrix {
   }
 
   private static @Nullable OpcUaDataType deriveBuiltinType(Object flatArray) {
+    if (flatArray == null) {
+      return null;
+    }
+
     Class<?> type = ArrayUtil.getType(flatArray);
 
     return deriveBuiltinType(type);
@@ -308,9 +387,17 @@ public class Matrix {
   }
 
   private static @Nullable ExpandedNodeId deriveDataTypeId(Object flatArray) {
+    if (flatArray == null) {
+      return null;
+    }
+
     Class<?> type = ArrayUtil.getType(flatArray);
 
     if (UaEnumeratedType.class.isAssignableFrom(type)) {
+      if (Array.getLength(flatArray) == 0) {
+        return null;
+      }
+
       Object e = Array.get(flatArray, 0);
       if (e instanceof UaEnumeratedType) {
         return ((UaEnumeratedType) e).getTypeId();
@@ -318,6 +405,10 @@ public class Matrix {
         return null;
       }
     } else if (UaStructuredType.class.isAssignableFrom(type)) {
+      if (Array.getLength(flatArray) == 0) {
+        return null;
+      }
+
       Object e = Array.get(flatArray, 0);
       if (e instanceof UaStructuredType) {
         return ((UaStructuredType) e).getTypeId();

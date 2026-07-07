@@ -44,6 +44,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.UserNameIdentityToken;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -384,6 +385,107 @@ class AbstractUsernameIdentityValidatorTest {
     assertEquals("user", ((Identity.UsernameIdentity) identity).getUsername());
   }
 
+  @Test
+  void emptyLegacyPasswordWithoutNonceReturnsIdentityTokenInvalid() {
+    RecordingPlaintextUsernameValidator validator =
+        new RecordingPlaintextUsernameValidator(legacyPlaintext("", ByteString.NULL_VALUE), true);
+
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                validator.validateIdentityToken(
+                    legacyEncryptedSession(),
+                    legacyEncryptedToken(),
+                    policy(SecurityPolicy.Basic256Sha256),
+                    new SignatureData(null, null)));
+
+    assertEquals(StatusCodes.Bad_IdentityTokenInvalid, exception.getStatusCode().getValue());
+    assertEquals(0, validator.authenticateCount);
+  }
+
+  @Test
+  void emptyLegacyPasswordWithWrongNonceReturnsIdentityTokenInvalid() {
+    RecordingPlaintextUsernameValidator validator =
+        new RecordingPlaintextUsernameValidator(
+            legacyPlaintext("", ByteString.of(new byte[SERVER_NONCE.length()])), true);
+
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                validator.validateIdentityToken(
+                    legacyEncryptedSession(),
+                    legacyEncryptedToken(),
+                    policy(SecurityPolicy.Basic256Sha256),
+                    new SignatureData(null, null)));
+
+    assertEquals(StatusCodes.Bad_IdentityTokenInvalid, exception.getStatusCode().getValue());
+    assertEquals(0, validator.authenticateCount);
+  }
+
+  @Test
+  void wrongLegacyPasswordWithValidNonceReturnsUserAccessDenied() {
+    RecordingPlaintextUsernameValidator validator =
+        new RecordingPlaintextUsernameValidator(
+            legacyPlaintext("wrong", SERVER_NONCE), false);
+
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                validator.validateIdentityToken(
+                    legacyEncryptedSession(),
+                    legacyEncryptedToken(),
+                    policy(SecurityPolicy.Basic256Sha256),
+                    new SignatureData(null, null)));
+
+    assertEquals(StatusCodes.Bad_UserAccessDenied, exception.getStatusCode().getValue());
+    assertEquals("user", validator.username);
+    assertEquals("wrong", validator.password);
+    assertEquals(1, validator.authenticateCount);
+  }
+
+  @Test
+  void legacyPasswordWithValidNonceAuthenticates() throws Exception {
+    RecordingPlaintextUsernameValidator validator =
+        new RecordingPlaintextUsernameValidator(
+            legacyPlaintext("password", SERVER_NONCE), true);
+
+    Identity identity =
+        validator.validateIdentityToken(
+            legacyEncryptedSession(),
+            legacyEncryptedToken(),
+            policy(SecurityPolicy.Basic256Sha256),
+            new SignatureData(null, null));
+
+    assertEquals("user", ((Identity.UsernameIdentity) identity).getUsername());
+    assertEquals("user", validator.username);
+    assertEquals("password", validator.password);
+    assertEquals(1, validator.authenticateCount);
+  }
+
+  @Test
+  void unencryptedEmptyPasswordStillUsesAuthenticationResult() {
+    RecordingPlaintextUsernameValidator validator =
+        new RecordingPlaintextUsernameValidator(new byte[0], false);
+
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                validator.validateIdentityToken(
+                    noneSession(),
+                    new UserNameIdentityToken("username", "user", ByteString.of(new byte[0]), null),
+                    policy(SecurityPolicy.None),
+                    new SignatureData(null, null)));
+
+    assertEquals(StatusCodes.Bad_UserAccessDenied, exception.getStatusCode().getValue());
+    assertEquals("user", validator.username);
+    assertEquals("", validator.password);
+    assertEquals(1, validator.authenticateCount);
+  }
+
   private static TokenFixture tokenFixture(SecurityPolicyProfile profile) throws Exception {
     return tokenFixture(profile, "password");
   }
@@ -493,6 +595,17 @@ class AbstractUsernameIdentityValidatorTest {
     return session;
   }
 
+  private static Session noneSession() {
+    Session session = mock(Session.class);
+    when(session.getLastNonce()).thenReturn(ByteString.NULL_VALUE);
+    when(session.getSecurityConfiguration())
+        .thenReturn(
+            new SecurityConfiguration(
+                SecurityPolicy.None, MessageSecurityMode.None, null, null, null, null, null));
+
+    return session;
+  }
+
   private static void assertMalformedLegacyPlaintextRejected(byte[] plaintext) {
     FixedPlaintextUsernameValidator validator =
         new FixedPlaintextUsernameValidator("password", plaintext);
@@ -507,7 +620,7 @@ class AbstractUsernameIdentityValidatorTest {
                     policy(SecurityPolicy.Basic256Sha256),
                     new SignatureData(null, null)));
 
-    assertEquals(StatusCodes.Bad_IdentityTokenRejected, exception.getStatusCode().getValue());
+    assertEquals(StatusCodes.Bad_IdentityTokenInvalid, exception.getStatusCode().getValue());
   }
 
   private static UserNameIdentityToken legacyEncryptedToken() {
@@ -624,6 +737,40 @@ class AbstractUsernameIdentityValidatorTest {
         Session session, SecurityAlgorithm algorithm, byte[] dataBytes) {
 
       return plaintext;
+    }
+  }
+
+  private static final class RecordingPlaintextUsernameValidator
+      extends AbstractUsernameIdentityValidator {
+
+    private final byte[] plaintext;
+    private final boolean authenticate;
+
+    private int authenticateCount;
+    private @Nullable String username;
+    private @Nullable String password;
+
+    private RecordingPlaintextUsernameValidator(byte[] plaintext, boolean authenticate) {
+      this.plaintext = plaintext;
+      this.authenticate = authenticate;
+    }
+
+    @Override
+    protected byte[] decryptTokenData(
+        Session session, SecurityAlgorithm algorithm, byte[] dataBytes) {
+
+      return plaintext;
+    }
+
+    @Override
+    protected @Nullable Identity.UsernameIdentity authenticateUsernamePassword(
+        Session session, String username, String password) {
+
+      authenticateCount++;
+      this.username = username;
+      this.password = password;
+
+      return authenticate ? new DefaultUsernameIdentity(username) : null;
     }
   }
 

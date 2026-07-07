@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -67,6 +67,14 @@ public interface ServerCapabilitiesType extends BaseObjectType {
       new QualifiedProperty<>(
           "http://opcfoundation.org/UA/",
           "MaxHistoryContinuationPoints",
+          ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
+          -1,
+          UShort.class);
+
+  QualifiedProperty<UShort> MAX_LOG_OBJECT_CONTINUATION_POINTS =
+      new QualifiedProperty<>(
+          "http://opcfoundation.org/UA/",
+          "MaxLogObjectContinuationPoints",
           ExpandedNodeId.parse("nsu=http://opcfoundation.org/UA/;i=5"),
           -1,
           UShort.class);
@@ -210,6 +218,12 @@ public interface ServerCapabilitiesType extends BaseObjectType {
   void setMaxHistoryContinuationPoints(UShort value);
 
   PropertyType getMaxHistoryContinuationPointsNode();
+
+  UShort getMaxLogObjectContinuationPoints();
+
+  void setMaxLogObjectContinuationPoints(UShort value);
+
+  PropertyType getMaxLogObjectContinuationPointsNode();
 
   SignedSoftwareCertificate[] getSoftwareCertificates();
 

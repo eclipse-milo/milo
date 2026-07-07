@@ -9,8 +9,61 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    environment: maven-central-release
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out release ref
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate release commit
+        shell: bash
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_REF_TYPE}" != "tag" ]]; then
+            echo "Release publishing must run from a tag ref, got '${GITHUB_REF_TYPE}'." >&2
+            exit 1
+          fi
+
+          release_commit="$(git rev-parse HEAD)"
+          release_branch="release/${GITHUB_REF_NAME#v}"
+
+          git fetch --no-tags --prune origin \
+            "+refs/heads/${DEFAULT_BRANCH}:refs/remotes/origin/${DEFAULT_BRANCH}"
+
+          allowed_refs=("refs/remotes/origin/${DEFAULT_BRANCH}")
+
+          ls_remote_status=0
+          git ls-remote --exit-code --heads origin "${release_branch}" >/dev/null ||
+            ls_remote_status=$?
+
+          if [[ "${ls_remote_status}" -eq 0 ]]; then
+            git fetch --no-tags --prune origin \
+              "+refs/heads/${release_branch}:refs/remotes/origin/${release_branch}"
+
+            allowed_refs+=("refs/remotes/origin/${release_branch}")
+          elif [[ "${ls_remote_status}" -ne 2 ]]; then
+            echo "Unable to query release branch ${release_branch}." >&2
+            exit "${ls_remote_status}"
+          fi
+
+          for allowed_ref in "${allowed_refs[@]}"; do
+            if git merge-base --is-ancestor "${release_commit}" "${allowed_ref}"; then
+              exit 0
+            fi
+          done
+
+          {
+            echo "Release commit ${release_commit} is not reachable from an allowed release source."
+            echo "Allowed refs:"
+            printf '  %s\n' "${allowed_refs[@]}"
+          } >&2
+
+          exit 1
 
       - name: Set up Maven Central Repository
         uses: actions/setup-java@v4

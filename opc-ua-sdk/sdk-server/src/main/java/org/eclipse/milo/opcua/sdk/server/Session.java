@@ -24,6 +24,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionDiagnostics;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionSecurityDiagnostics;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity;
@@ -45,6 +46,19 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Server-side representation of an OPC UA Session.
+ *
+ * <p>A Session owns the per-client state established by CreateSession and ActivateSession:
+ * diagnostics, security context, user identity, continuation points, subscriptions, timeout
+ * tracking, and the secure channel association used to validate service calls. The {@link
+ * SessionManager} creates and indexes sessions, while the Session itself owns cleanup of the
+ * resources that hang from that client relationship.
+ *
+ * <p>Closing a Session is terminal and idempotent. Several paths can race to close the same
+ * Session, including client CloseSession, timeout checks, explicit server-side session removal, and
+ * server shutdown. Lifecycle listeners therefore observe at most one close notification.
+ */
 public class Session {
 
   private static final int IDENTITY_HISTORY_MAX_SIZE = 10;
@@ -57,6 +71,9 @@ public class Session {
   private final List<LifecycleListener> listeners = new CopyOnWriteArrayList<>();
 
   private final SubscriptionManager subscriptionManager;
+
+  /** Ensures timeout, subscription, and lifecycle cleanup run once across all close paths. */
+  private final AtomicBoolean closed = new AtomicBoolean(false);
 
   private final LinkedList<String> clientUserIdHistory = new LinkedList<>();
 
@@ -418,7 +435,21 @@ public class Session {
     return callSemaphore;
   }
 
+  /**
+   * Close this Session and release the resources owned by it.
+   *
+   * <p>This method may be reached concurrently from protocol handling, timeout handling, explicit
+   * administrative removal, and server shutdown. Only the first caller performs cleanup and
+   * notifies lifecycle listeners; later callers return without changing state.
+   *
+   * @param deleteSubscriptions {@code true} if subscriptions owned by this Session should be
+   *     deleted as part of the close.
+   */
   void close(boolean deleteSubscriptions) {
+    if (!closed.compareAndSet(false, true)) {
+      return;
+    }
+
     if (checkTimeoutFuture != null) {
       checkTimeoutFuture.cancel(false);
     }

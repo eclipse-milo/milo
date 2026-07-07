@@ -8,19 +8,19 @@ to avoid applying the filter to all modules.
 **Run a specific test class:**
 
 ```bash
-mvn -q -pl opc-ua-sdk/sdk-server test -Dtest=ClassName
+mise exec -- mvn -q -pl opc-ua-sdk/sdk-server test -Dtest=ClassName
 ```
 
 **Run a specific test method:**
 
 ```bash
-mvn -q -pl opc-ua-sdk/sdk-server test -Dtest=ClassName#methodName
+mise exec -- mvn -q -pl opc-ua-sdk/sdk-server test -Dtest=ClassName#methodName
 ```
 
 **Run tests matching a pattern:**
 
 ```bash
-mvn -q -pl opc-ua-stack/stack-core test -Dtest=*ServiceTest
+mise exec -- mvn -q -pl opc-ua-stack/stack-core test -Dtest=*ServiceTest
 ```
 
 Most tests live in `opc-ua-sdk/integration-tests`, `opc-ua-stack/stack-core`, and
@@ -38,7 +38,7 @@ Most tests live in `opc-ua-sdk/integration-tests`, `opc-ua-stack/stack-core`, an
 
 ```bash
 # Changed and testing sdk-server only
-mvn -q -pl opc-ua-sdk/sdk-server test -Dtest=ClassName
+mise exec -- mvn -q -pl opc-ua-sdk/sdk-server test -Dtest=ClassName
 ```
 
 **`-pl ... -am`** — the change is in a dependency of the module being tested. This
@@ -46,7 +46,7 @@ rebuilds the dependency chain so tests run against the latest code:
 
 ```bash
 # Changed stack-core, running integration-tests
-mvn -q -pl opc-ua-sdk/integration-tests -am test -Dtest=ClassName
+mise exec -- mvn -q -pl opc-ua-sdk/integration-tests -am test -Dtest=ClassName
 ```
 
 **`-pl ... -amd`** — the change is in a low-level module and you want to test all modules
@@ -54,7 +54,7 @@ that depend on it:
 
 ```bash
 # Changed stack-core, run tests in stack-core and everything that depends on it
-mvn -q -pl opc-ua-stack/stack-core -amd test
+mise exec -- mvn -q -pl opc-ua-stack/stack-core -amd test
 ```
 
 ### Rule of thumb
@@ -66,5 +66,5 @@ against stale (previously compiled) code.
 ## Run All Tests
 
 ```bash
-mvn -q clean verify
+mise exec -- mvn -q clean verify
 ```

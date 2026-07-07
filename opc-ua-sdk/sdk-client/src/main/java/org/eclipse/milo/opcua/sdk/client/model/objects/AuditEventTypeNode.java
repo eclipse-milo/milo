@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -411,6 +411,79 @@ public class AuditEventTypeNode extends BaseEventTypeNode implements AuditEventT
     CompletableFuture<UaNode> future =
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/", "ClientUserId", ExpandedNodeId.parse("i=46"), false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
+
+  @Override
+  public String getClientApplicationUri() throws UaException {
+    PropertyTypeNode node = getClientApplicationUriNode();
+    return (String) node.getValue().getValue().getValue();
+  }
+
+  @Override
+  public void setClientApplicationUri(String value) throws UaException {
+    PropertyTypeNode node = getClientApplicationUriNode();
+    node.setValue(new Variant(value));
+  }
+
+  @Override
+  public String readClientApplicationUri() throws UaException {
+    try {
+      return readClientApplicationUriAsync().get();
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
+    }
+  }
+
+  @Override
+  public void writeClientApplicationUri(String value) throws UaException {
+    try {
+      writeClientApplicationUriAsync(value).get();
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends String> readClientApplicationUriAsync() {
+    return getClientApplicationUriNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> (String) v.getValue().getValue());
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeClientApplicationUriAsync(String clientApplicationUri) {
+    DataValue value = DataValue.valueOnly(new Variant(clientApplicationUri));
+    return getClientApplicationUriNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getClientApplicationUriNode() throws UaException {
+    try {
+      return getClientApplicationUriNodeAsync().get();
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode> getClientApplicationUriNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
+            "http://opcfoundation.org/UA/",
+            "ClientApplicationUri",
+            ExpandedNodeId.parse("i=46"),
+            false);
     return future.thenApply(node -> (PropertyTypeNode) node);
   }
 }

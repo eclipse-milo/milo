@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
+import org.eclipse.milo.opcua.sdk.core.WriteMask;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultAccessController.AccessControlAttributes;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultAccessController.AccessControlContext;
@@ -257,6 +258,115 @@ class DefaultAccessControllerTest {
     assertEquals(AccessResult.DENIED_USER_ACCESS, results.get(wvDisplayName));
     assertEquals(AccessResult.DENIED_USER_ACCESS, results.get(wvDescription));
     assertEquals(AccessResult.DENIED_USER_ACCESS, results.get(wvBrowseName));
+  }
+
+  @Test
+  void checkWriteAccess_RolePermissions_DeniedByUserWriteMask() {
+    var nodeId = new NodeId(1, "foo");
+    var writeValue =
+        new WriteValue(
+            nodeId,
+            AttributeId.RolePermissions.uid(),
+            null,
+            DataValue.valueOnly(Variant.NULL_VALUE));
+
+    attributesMap.put(
+        nodeId,
+        new AccessControlAttributes(
+            null,
+            null,
+            UInteger.MIN,
+            null,
+            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  ROLE_A, PermissionType.of(PermissionType.Field.WriteRolePermissions))
+            }));
+    Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
+
+    AccessResult result =
+        DefaultAccessController.checkWriteAccess(context, List.of(writeValue)).get(writeValue);
+
+    assertEquals(AccessResult.DENIED_USER_ACCESS, result);
+  }
+
+  @Test
+  void checkWriteAccess_Historizing_DeniedByUserWriteMask() {
+    var nodeId = new NodeId(1, "foo");
+    var writeValue =
+        new WriteValue(
+            nodeId, AttributeId.Historizing.uid(), null, DataValue.valueOnly(Variant.NULL_VALUE));
+
+    attributesMap.put(
+        nodeId,
+        new AccessControlAttributes(
+            null,
+            null,
+            UInteger.MIN,
+            null,
+            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  ROLE_A, PermissionType.of(PermissionType.Field.WriteHistorizing))
+            }));
+    Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
+
+    AccessResult result =
+        DefaultAccessController.checkWriteAccess(context, List.of(writeValue)).get(writeValue);
+
+    assertEquals(AccessResult.DENIED_USER_ACCESS, result);
+  }
+
+  @Test
+  void checkWriteAccess_UserRolePermissions_DeniedByUserWriteMask() {
+    var nodeId = new NodeId(1, "foo");
+    var writeValue =
+        new WriteValue(
+            nodeId,
+            AttributeId.UserRolePermissions.uid(),
+            null,
+            DataValue.valueOnly(Variant.NULL_VALUE));
+
+    attributesMap.put(
+        nodeId,
+        new AccessControlAttributes(
+            null, null, UInteger.MAX, null, null, new RolePermissionType[] {}));
+    Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of()));
+
+    AccessResult result =
+        DefaultAccessController.checkWriteAccess(context, List.of(writeValue)).get(writeValue);
+
+    assertEquals(AccessResult.DENIED_USER_ACCESS, result);
+  }
+
+  @Test
+  void checkWriteAccess_RolePermissions_AllowedByUserWriteMask() {
+    var nodeId = new NodeId(1, "foo");
+    var writeValue =
+        new WriteValue(
+            nodeId,
+            AttributeId.RolePermissions.uid(),
+            null,
+            DataValue.valueOnly(Variant.NULL_VALUE));
+
+    attributesMap.put(
+        nodeId,
+        new AccessControlAttributes(
+            null,
+            null,
+            UInteger.valueOf(WriteMask.RolePermissions.getValue()),
+            null,
+            null,
+            new RolePermissionType[] {
+              new RolePermissionType(
+                  ROLE_A, PermissionType.of(PermissionType.Field.WriteRolePermissions))
+            }));
+    Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
+
+    AccessResult result =
+        DefaultAccessController.checkWriteAccess(context, List.of(writeValue)).get(writeValue);
+
+    assertEquals(AccessResult.ALLOWED, result);
   }
 
   @Test
@@ -691,5 +801,151 @@ class DefaultAccessControllerTest {
 
       assertEquals(AccessResult.ALLOWED, result);
     }
+  }
+
+  @Test
+  void checkRolePermissionAccess_DeniesPermissionsForUnassignedRoles() {
+    Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_B)));
+
+    var readRolePermissionsNodeId = new NodeId(1, "readRolePermissions");
+    var readValueId =
+        new ReadValueId(readRolePermissionsNodeId, AttributeId.RolePermissions.uid(), null, null);
+    attributesMap.put(
+        readRolePermissionsNodeId,
+        new AccessControlAttributes(
+            null,
+            null,
+            null,
+            null,
+            null,
+            rolePermissions(PermissionType.Field.ReadRolePermissions)));
+
+    assertEquals(
+        AccessResult.DENIED_USER_ACCESS,
+        DefaultAccessController.checkReadAccess(context, List.of(readValueId)).get(readValueId));
+
+    var writeRolePermissionsNodeId = new NodeId(1, "writeRolePermissions");
+    var writeRolePermissionsValue =
+        new WriteValue(
+            writeRolePermissionsNodeId,
+            AttributeId.RolePermissions.uid(),
+            null,
+            DataValue.valueOnly(Variant.NULL_VALUE));
+    attributesMap.put(
+        writeRolePermissionsNodeId,
+        new AccessControlAttributes(
+            null,
+            null,
+            null,
+            null,
+            null,
+            rolePermissions(PermissionType.Field.WriteRolePermissions)));
+
+    assertEquals(
+        AccessResult.DENIED_USER_ACCESS,
+        DefaultAccessController.checkWriteAccess(context, List.of(writeRolePermissionsValue))
+            .get(writeRolePermissionsValue));
+
+    var writeHistorizingNodeId = new NodeId(1, "writeHistorizing");
+    var writeHistorizingValue =
+        new WriteValue(
+            writeHistorizingNodeId,
+            AttributeId.Historizing.uid(),
+            null,
+            DataValue.valueOnly(Variant.NULL_VALUE));
+    attributesMap.put(
+        writeHistorizingNodeId,
+        new AccessControlAttributes(
+            null, null, null, null, null, rolePermissions(PermissionType.Field.WriteHistorizing)));
+
+    assertEquals(
+        AccessResult.DENIED_USER_ACCESS,
+        DefaultAccessController.checkWriteAccess(context, List.of(writeHistorizingValue))
+            .get(writeHistorizingValue));
+
+    var browseNodeId = new NodeId(1, "browse");
+    attributesMap.put(
+        browseNodeId,
+        new AccessControlAttributes(
+            null, null, null, null, null, rolePermissions(PermissionType.Field.Browse)));
+
+    assertEquals(
+        AccessResult.DENIED_USER_ACCESS,
+        DefaultAccessController.checkBrowseAccess(context, List.of(browseNodeId))
+            .get(browseNodeId));
+
+    var objectNodeId = new NodeId(1, "object");
+    var methodNodeId = new NodeId(1, "method");
+    var callMethodRequest = new CallMethodRequest(objectNodeId, methodNodeId, null);
+    attributesMap.put(
+        objectNodeId,
+        new AccessControlAttributes(
+            null, null, null, null, null, rolePermissions(PermissionType.Field.Call)));
+    attributesMap.put(
+        methodNodeId,
+        new AccessControlAttributes(
+            null, null, null, null, null, rolePermissions(PermissionType.Field.Call)));
+
+    assertEquals(
+        AccessResult.DENIED_USER_ACCESS,
+        DefaultAccessController.checkCallAccess(context, List.of(callMethodRequest))
+            .get(callMethodRequest));
+
+    var addReferenceSourceNodeId = new NodeId(1, "addReferenceSource");
+    var addReferenceTargetNodeId = new NodeId(1, "addReferenceTarget");
+    var addReferencesItem =
+        new AddReferencesItem(
+            addReferenceSourceNodeId,
+            NodeIds.HasComponent,
+            true,
+            null,
+            addReferenceTargetNodeId.expanded(),
+            NodeClass.Object);
+    attributesMap.put(
+        addReferenceSourceNodeId,
+        new AccessControlAttributes(
+            null, null, null, null, null, rolePermissions(PermissionType.Field.AddReference)));
+
+    assertEquals(
+        AccessResult.DENIED_USER_ACCESS,
+        DefaultAccessController.checkAddReferencesAccess(context, List.of(addReferencesItem))
+            .get(addReferencesItem));
+
+    var deleteNodesItem = new DeleteNodesItem(new NodeId(1, "deleteNode"), true);
+    attributesMap.put(
+        deleteNodesItem.getNodeId(),
+        new AccessControlAttributes(
+            null, null, null, null, null, rolePermissions(PermissionType.Field.DeleteNode)));
+
+    assertEquals(
+        AccessResult.DENIED_USER_ACCESS,
+        DefaultAccessController.checkDeleteNodesAccess(context, List.of(deleteNodesItem))
+            .get(deleteNodesItem));
+
+    var deleteReferenceSourceNodeId = new NodeId(1, "deleteReferenceSource");
+    var deleteReferenceTargetNodeId = new NodeId(1, "deleteReferenceTarget");
+    var deleteReferencesItem =
+        new DeleteReferencesItem(
+            deleteReferenceSourceNodeId,
+            NodeIds.HasComponent,
+            true,
+            deleteReferenceTargetNodeId.expanded(),
+            true);
+    attributesMap.put(
+        deleteReferenceSourceNodeId,
+        new AccessControlAttributes(
+            null, null, null, null, null, rolePermissions(PermissionType.Field.RemoveReference)));
+
+    assertEquals(
+        AccessResult.DENIED_USER_ACCESS,
+        DefaultAccessController.checkDeleteReferencesAccess(context, List.of(deleteReferencesItem))
+            .get(deleteReferencesItem));
+  }
+
+  private static RolePermissionType[] rolePermissions(PermissionType.Field field) {
+    return new RolePermissionType[] {
+      new RolePermissionType(ROLE_A, PermissionType.of(field)),
+      new RolePermissionType(ROLE_B, PermissionType.of())
+    };
   }
 }

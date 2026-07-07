@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -498,6 +498,81 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
         getMemberNodeAsync(
             "http://opcfoundation.org/UA/",
             "MaxHistoryContinuationPoints",
+            ExpandedNodeId.parse("i=46"),
+            false);
+    return future.thenApply(node -> (PropertyTypeNode) node);
+  }
+
+  @Override
+  public UShort getMaxLogObjectContinuationPoints() throws UaException {
+    PropertyTypeNode node = getMaxLogObjectContinuationPointsNode();
+    return (UShort) node.getValue().getValue().getValue();
+  }
+
+  @Override
+  public void setMaxLogObjectContinuationPoints(UShort value) throws UaException {
+    PropertyTypeNode node = getMaxLogObjectContinuationPointsNode();
+    node.setValue(new Variant(value));
+  }
+
+  @Override
+  public UShort readMaxLogObjectContinuationPoints() throws UaException {
+    try {
+      return readMaxLogObjectContinuationPointsAsync().get();
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
+    }
+  }
+
+  @Override
+  public void writeMaxLogObjectContinuationPoints(UShort value) throws UaException {
+    try {
+      writeMaxLogObjectContinuationPointsAsync(value).get();
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends UShort> readMaxLogObjectContinuationPointsAsync() {
+    return getMaxLogObjectContinuationPointsNodeAsync()
+        .thenCompose(node -> node.readAttributeAsync(AttributeId.Value))
+        .thenApply(v -> (UShort) v.getValue().getValue());
+  }
+
+  @Override
+  public CompletableFuture<StatusCode> writeMaxLogObjectContinuationPointsAsync(
+      UShort maxLogObjectContinuationPoints) {
+    DataValue value = DataValue.valueOnly(new Variant(maxLogObjectContinuationPoints));
+    return getMaxLogObjectContinuationPointsNodeAsync()
+        .thenCompose(node -> node.writeAttributeAsync(AttributeId.Value, value));
+  }
+
+  @Override
+  public PropertyTypeNode getMaxLogObjectContinuationPointsNode() throws UaException {
+    try {
+      return getMaxLogObjectContinuationPointsNodeAsync().get();
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends PropertyTypeNode>
+      getMaxLogObjectContinuationPointsNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
+            "http://opcfoundation.org/UA/",
+            "MaxLogObjectContinuationPoints",
             ExpandedNodeId.parse("i=46"),
             false);
     return future.thenApply(node -> (PropertyTypeNode) node);

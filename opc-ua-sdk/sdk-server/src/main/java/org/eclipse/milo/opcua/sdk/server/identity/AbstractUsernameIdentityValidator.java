@@ -90,7 +90,7 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
       byte[] plainTextBytes = decryptTokenData(session, algorithm, tokenBytes);
 
       if (plainTextBytes.length < Integer.BYTES) {
-        throw new UaException(StatusCodes.Bad_IdentityTokenRejected, "invalid token data");
+        throw new UaException(StatusCodes.Bad_IdentityTokenInvalid, "invalid token data");
       }
 
       // @formatter:off
@@ -128,7 +128,7 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
 
         return authenticateUsernameOrThrow(session, username, password);
       } else {
-        throw new UaException(StatusCodes.Bad_UserAccessDenied);
+        throw new UaException(StatusCodes.Bad_IdentityTokenInvalid);
       }
     } else {
       String password = new String(tokenBytes, StandardCharsets.UTF_8);

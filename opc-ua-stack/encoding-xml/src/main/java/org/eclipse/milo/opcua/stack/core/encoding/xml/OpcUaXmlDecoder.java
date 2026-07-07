@@ -1210,39 +1210,244 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
 
   @Override
   public Matrix decodeMatrix(String field, OpcUaDataType dataType) throws UaSerializationException {
-    // TODO implement decodeMatrix
     if (currentNode(field)) {
-      currentNode = currentNode.getNextSibling();
-    }
-    return Matrix.ofNull();
-  }
+      Node node = currentNode;
 
-  @Override
-  public Matrix decodeEnumMatrix(String field) {
-    if (currentNode(field)) {
-      // TODO implement decodeEnumMatrix
-      return Matrix.ofNull();
+      try {
+        Node dimensionsNode = firstElementChild(node);
+
+        if (dimensionsNode == null) {
+          // A null Matrix encodes as an empty/nil field with no Dimensions or Elements.
+          return Matrix.ofNull();
+        }
+
+        int[] dimensions = decodeMatrixDimensions(dimensionsNode);
+
+        List<Object> elements = new ArrayList<>();
+        Node elementsNode = nextElementSibling(dimensionsNode);
+
+        if (elementsNode != null) {
+          NodeList children = elementsNode.getChildNodes();
+
+          for (int i = 0; i < children.getLength(); i++) {
+            currentNode = children.item(i);
+
+            if (currentNode.getNodeType() == Node.ELEMENT_NODE) {
+              String elementName = currentNode.getLocalName();
+
+              // OPC 10000-6 5.3.4: the element name shall be the type name. The caller asked for a
+              // dataType Matrix, so every element under <Elements> must carry that type's name.
+              if (!dataType.name().equals(elementName)) {
+                throw new UaSerializationException(
+                    StatusCodes.Bad_DecodingError,
+                    "expected Matrix element <"
+                        + dataType.name()
+                        + "> but found <"
+                        + elementName
+                        + ">");
+              }
+
+              elements.add(readBuiltinType(elementName, dataType.name()));
+            }
+          }
+        }
+
+        checkMatrixElementCount(dimensions, elements.size());
+
+        Object array = Array.newInstance(builtinTypeClass(dataType.name()), elements.size());
+        for (int i = 0; i < elements.size(); i++) {
+          Array.set(array, i, elements.get(i));
+        }
+
+        return new Matrix(array, dimensions, dataType);
+      } finally {
+        currentNode = node.getNextSibling();
+      }
     } else {
       return Matrix.ofNull();
     }
   }
 
   @Override
-  public Matrix decodeStructMatrix(String field, NodeId dataTypeId) {
-    // TODO implement decodeStructMatrix
+  public Matrix decodeEnumMatrix(String field) {
     if (currentNode(field)) {
-      currentNode = currentNode.getNextSibling();
+      Node node = currentNode;
+
+      try {
+        Node dimensionsNode = firstElementChild(node);
+
+        if (dimensionsNode == null) {
+          return Matrix.ofNull();
+        }
+
+        int[] dimensions = decodeMatrixDimensions(dimensionsNode);
+
+        List<Integer> elements = new ArrayList<>();
+        Node elementsNode = nextElementSibling(dimensionsNode);
+
+        if (elementsNode != null) {
+          NodeList children = elementsNode.getChildNodes();
+
+          for (int i = 0; i < children.getLength(); i++) {
+            currentNode = children.item(i);
+
+            if (currentNode.getNodeType() == Node.ELEMENT_NODE) {
+              elements.add(decodeEnum(currentNode.getLocalName()));
+            }
+          }
+        }
+
+        checkMatrixElementCount(dimensions, elements.size());
+
+        // Enumerations reduce to Int32, mirroring OpcUaBinaryDecoder.decodeEnumMatrix.
+        return new Matrix(elements.toArray(Integer[]::new), dimensions, OpcUaDataType.Int32);
+      } finally {
+        currentNode = node.getNextSibling();
+      }
+    } else {
+      return Matrix.ofNull();
     }
-    return Matrix.ofNull();
+  }
+
+  /**
+   * {@code OpcUaXmlEncoder.encodeStructMatrix} writes each structure as a self-describing {@link
+   * ExtensionObject}, so the elements are read back as ExtensionObjects and then decoded into their
+   * structures — the result is a Matrix of {@code UaStructuredType}, mirroring {@code
+   * OpcUaBinaryDecoder.decodeStructMatrix} and {@link #decodeStructArray}. (Returning the raw
+   * ExtensionObjects would break the decode-encode round-trip, since {@code encodeStructMatrix}
+   * casts each element to {@code UaStructuredType}.)
+   *
+   * <p>{@code dataTypeId} is the expected structure type for this field; for a non-subtyped field
+   * the decoded type must match it, so an ExtensionObject of any other type is rejected rather than
+   * handing the caller a Matrix with unexpected element types.
+   */
+  @Override
+  public Matrix decodeStructMatrix(String field, NodeId dataTypeId) {
+    Matrix matrix = decodeMatrix(field, OpcUaDataType.ExtensionObject);
+
+    if (matrix.isNull()) {
+      return matrix;
+    }
+
+    DataTypeCodec codec = context.getDataTypeManager().getCodec(dataTypeId);
+
+    if (codec == null) {
+      throw new UaSerializationException(
+          StatusCodes.Bad_DecodingError, "no codec registered: " + dataTypeId);
+    }
+
+    Class<?> expectedType = codec.getType();
+
+    return matrix.transform(
+        o -> {
+          Object struct = ((ExtensionObject) o).decode(context);
+
+          if (!expectedType.isInstance(struct)) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_DecodingError,
+                "expected struct type "
+                    + dataTypeId
+                    + " but decoded "
+                    + (struct != null ? struct.getClass().getName() : "null"));
+          }
+
+          return struct;
+        },
+        expectedType,
+        OpcUaDataType.ExtensionObject,
+        dataTypeId.expanded());
   }
 
   @Override
   public Matrix decodeStructMatrix(String field, ExpandedNodeId dataTypeId) {
-    // TODO implement decodeStructMatrix
-    if (currentNode(field)) {
-      currentNode = currentNode.getNextSibling();
+    NodeId localDataTypeId =
+        dataTypeId
+            .toNodeId(context.getNamespaceTable())
+            .orElseThrow(
+                () ->
+                    new UaSerializationException(
+                        StatusCodes.Bad_DecodingError, "namespace not registered: " + dataTypeId));
+
+    return decodeStructMatrix(field, localDataTypeId);
+  }
+
+  private int[] decodeMatrixDimensions(Node dimensionsNode) {
+    List<Integer> dimensions = new ArrayList<>();
+    NodeList children = dimensionsNode.getChildNodes();
+
+    for (int i = 0; i < children.getLength(); i++) {
+      currentNode = children.item(i);
+
+      if (currentNode.getNodeType() == Node.ELEMENT_NODE) {
+        int dimension = decodeInt32("Int32");
+
+        // OPC 10000-6 5.3.1.17: all Matrix dimensions shall be greater than zero.
+        if (dimension <= 0) {
+          throw new UaSerializationException(
+              StatusCodes.Bad_DecodingError,
+              "Matrix dimension must be greater than zero: " + dimension);
+        }
+
+        dimensions.add(dimension);
+      }
     }
-    return Matrix.ofNull();
+
+    int[] dims = new int[dimensions.size()];
+    for (int i = 0; i < dims.length; i++) {
+      dims[i] = dimensions.get(i);
+    }
+    return dims;
+  }
+
+  /**
+   * Validate that the product of {@code dimensions} equals {@code elementCount}.
+   *
+   * <p>OPC 10000-6 5.3.1.17 requires the Matrix dimensions to be consistent with the number of
+   * flattened elements; a mismatch is a decoding error rather than a silently-malformed Matrix.
+   *
+   * @throws UaSerializationException if the dimensions do not describe exactly {@code elementCount}
+   *     elements.
+   */
+  private static void checkMatrixElementCount(int[] dimensions, int elementCount) {
+    long product = 1;
+    for (int dimension : dimensions) {
+      product *= dimension;
+    }
+
+    if (product != elementCount) {
+      throw new UaSerializationException(
+          StatusCodes.Bad_DecodingError,
+          "Matrix dimensions "
+              + Arrays.toString(dimensions)
+              + " describe "
+              + product
+              + " elements but found "
+              + elementCount);
+    }
+  }
+
+  /**
+   * @return the first child of {@code node} that is an element, skipping any intervening text nodes
+   *     (e.g. whitespace in indented XML), or {@code null} if there is none.
+   */
+  private static @Nullable Node firstElementChild(Node node) {
+    Node child = node.getFirstChild();
+    while (child != null && child.getNodeType() != Node.ELEMENT_NODE) {
+      child = child.getNextSibling();
+    }
+    return child;
+  }
+
+  /**
+   * @return the next sibling of {@code node} that is an element, skipping any intervening text
+   *     nodes (e.g. whitespace in indented XML), or {@code null} if there is none.
+   */
+  private static @Nullable Node nextElementSibling(Node node) {
+    Node sibling = node.getNextSibling();
+    while (sibling != null && sibling.getNodeType() != Node.ELEMENT_NODE) {
+      sibling = sibling.getNextSibling();
+    }
+    return sibling;
   }
 
   /**

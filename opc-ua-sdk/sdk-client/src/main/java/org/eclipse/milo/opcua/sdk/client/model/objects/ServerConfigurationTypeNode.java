@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -921,5 +921,29 @@ public class ServerConfigurationTypeNode extends BaseObjectTypeNode
             ExpandedNodeId.parse("i=47"),
             false);
     return future.thenApply(node -> (TransactionDiagnosticsTypeNode) node);
+  }
+
+  @Override
+  public ApplicationConfigurationFileTypeNode getConfigurationFileNode() throws UaException {
+    try {
+      return getConfigurationFileNodeAsync().get();
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
+    }
+  }
+
+  @Override
+  public CompletableFuture<? extends ApplicationConfigurationFileTypeNode>
+      getConfigurationFileNodeAsync() {
+    CompletableFuture<UaNode> future =
+        getMemberNodeAsync(
+            "http://opcfoundation.org/UA/",
+            "ConfigurationFile",
+            ExpandedNodeId.parse("i=47"),
+            false);
+    return future.thenApply(node -> (ApplicationConfigurationFileTypeNode) node);
   }
 }

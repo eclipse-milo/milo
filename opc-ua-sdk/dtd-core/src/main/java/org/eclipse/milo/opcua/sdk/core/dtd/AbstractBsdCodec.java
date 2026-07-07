@@ -334,14 +334,35 @@ public abstract class AbstractBsdCodec<StructureT, MemberT> implements BinaryDat
     if (dictionary instanceof BinaryDataTypeDictionary binaryDictionary) {
       TypeDescription typeDescription = binaryDictionary.getTypeDescription(description);
 
-      if (typeDescription instanceof StructuredType) {
+      if (typeDescription instanceof StructuredType structuredType) {
         DataTypeCodec codec = dictionary.getCodec(description);
 
         if (codec != null) {
-          codec.encode(context, encoder, (UaStructuredType) value);
+          UaStructuredType structValue;
+          if (value instanceof UaStructuredType uaStruct) {
+            structValue = uaStruct;
+          } else {
+            // The parent codec produced a non-UaStructuredType representation
+            // (e.g. a JsonObject from JsonObjectCodec). Wrap it in a
+            // BsdStructWrapper so the nested codec receives the same form its
+            // own decodeBinary() returns.
+            DataTypeDictionary.Type type = dictionary.getType(description);
+            if (type == null) {
+              throw new UaSerializationException(
+                  StatusCodes.Bad_EncodingError,
+                  String.format(
+                      "no Type registered for description=%s under namespaceUri=%s",
+                      description, namespaceUri));
+            }
+            BsdDataType dataType =
+                new BsdDataType(
+                    description, type.getDataTypeId(), type.getEncodingId(), structuredType);
+            structValue = new BsdStructWrapper<>(dataType, value);
+          }
+          codec.encode(context, encoder, structValue);
         } else {
           throw new UaSerializationException(
-              StatusCodes.Bad_DecodingError,
+              StatusCodes.Bad_EncodingError,
               String.format(
                   "no OpcBinaryDataTypeCodec registered for description=%s under namespaceUri=%s",
                   description, namespaceUri));

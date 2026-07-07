@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -152,5 +152,21 @@ public class AuditEventTypeNode extends BaseEventTypeNode implements AuditEventT
   @Override
   public void setClientUserId(String value) {
     setProperty(AuditEventType.CLIENT_USER_ID, value);
+  }
+
+  @Override
+  public PropertyTypeNode getClientApplicationUriNode() {
+    Optional<VariableNode> propertyNode = getPropertyNode(AuditEventType.CLIENT_APPLICATION_URI);
+    return (PropertyTypeNode) propertyNode.orElse(null);
+  }
+
+  @Override
+  public String getClientApplicationUri() {
+    return getProperty(AuditEventType.CLIENT_APPLICATION_URI).orElse(null);
+  }
+
+  @Override
+  public void setClientApplicationUri(String value) {
+    setProperty(AuditEventType.CLIENT_APPLICATION_URI, value);
   }
 }

@@ -12,9 +12,11 @@ package org.eclipse.milo.opcua.stack.core.encoding.json;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -28,6 +30,7 @@ import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
@@ -817,10 +820,25 @@ class OpcUaJsonDecoderTest {
         new StringReader("{\"Type\":6,\"Body\":[0,1,2,3,4,5,6,7],\"Dimensions\":[2,2,2]}"));
     assertEquals(new Variant(Matrix.ofInt32(value3d)), decoder.decodeVariant(null));
 
+    decoder.reset(new StringReader("{\"Type\":6,\"Body\":[1],\"Dimensions\":[2147483647]}"));
+    assertThrows(UaSerializationException.class, () -> decoder.decodeVariant(null));
+
     decoder.reset(new StringReader("{\"foo\":{\"Type\":1,\"Body\":true}}"));
     decoder.jsonReader.beginObject();
     assertEquals(new Variant(true), decoder.decodeVariant("foo"));
     decoder.jsonReader.endObject();
+  }
+
+  /**
+   * Round-trip companion to {@code OpcUaJsonEncoderTest.encodeVariantArray_nullElementWritesNull}:
+   * the encoder writes JSON null for null Variant array elements, so the decoder must accept it.
+   */
+  @Test
+  void decodeVariant_acceptsJsonNull() throws IOException {
+    var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
+
+    decoder.reset(new StringReader("null"));
+    assertEquals(Variant.NULL_VALUE, decoder.decodeVariant(null));
   }
 
   @Test
@@ -945,6 +963,23 @@ class OpcUaJsonDecoderTest {
   }
 
   @Test
+  void decodeMatrixRejectsInvalidDimensions() {
+    var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
+
+    decoder.reset(new StringReader("{\"Array\":[1],\"Dimensions\":[2147483647]}"));
+    assertThrows(
+        UaSerializationException.class, () -> decoder.decodeMatrix(null, OpcUaDataType.Int32));
+
+    decoder.reset(new StringReader("{\"Array\":[1],\"Dimensions\":[-1]}"));
+    assertThrows(
+        UaSerializationException.class, () -> decoder.decodeMatrix(null, OpcUaDataType.Int32));
+
+    decoder.reset(new StringReader("{\"Array\":[1],\"Dimensions\":[2,1]}"));
+    assertThrows(
+        UaSerializationException.class, () -> decoder.decodeMatrix(null, OpcUaDataType.Int32));
+  }
+
+  @Test
   void decodeEnumMatrix() throws Exception {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
@@ -980,6 +1015,146 @@ class OpcUaJsonDecoderTest {
     decoder.jsonReader.beginObject();
     assertEquals(matrix, decoder.decodeStructMatrix("foo", XVType.TYPE_ID));
     decoder.jsonReader.endObject();
+
+    decoder.reset(new StringReader("{\"Array\":[{\"Value\":1.0}],\"Dimensions\":[2147483647]}"));
+    assertThrows(
+        UaSerializationException.class, () -> decoder.decodeStructMatrix(null, XVType.TYPE_ID));
+  }
+
+  // ------------------------------------------------------------------------
+  // Spec-compliance tests for behaviors defined in section 5.4 of OPC 10000-6.
+  // Each test documents the spec rule it covers.
+  // ------------------------------------------------------------------------
+
+  /**
+   * Issue: {@code decodeStatusCode} only handles {@code JsonToken.NUMBER}, but the encoder emits
+   * VERBOSE StatusCode as a JSON object ({@code {"Code":..., "Symbol":"..."}}). The decoder must be
+   * symmetric.
+   */
+  @Test
+  void decodeStatusCode_verboseObject() throws IOException {
+    var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
+
+    decoder.reset(new StringReader("{\"Code\":1083310080,\"Symbol\":\"Uncertain_InitialValue\"}"));
+    assertEquals(
+        new StatusCode(StatusCodes.Uncertain_InitialValue), decoder.decodeStatusCode(null));
+
+    decoder.reset(new StringReader("{}"));
+    assertEquals(StatusCode.GOOD, decoder.decodeStatusCode(null));
+  }
+
+  /**
+   * Issue: {@code decodeLocalizedText} unconditionally calls {@code jsonReader.beginObject()}
+   * without first checking for {@code JsonToken.NULL}. The encoder emits bare {@code null} for a
+   * null LocalizedText (see {@link
+   * OpcUaJsonEncoderTest#encodeLocalizedTextVerbose_nullProducesJsonNull()}), so this is a
+   * round-trip hazard.
+   */
+  @Test
+  void decodeLocalizedText_acceptsJsonNull() throws IOException {
+    var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
+
+    decoder.reset(new StringReader("null"));
+    // Should be tolerated and return a null-valued LocalizedText, not throw.
+    LocalizedText result = assertDoesNotThrow(() -> decoder.decodeLocalizedText(null));
+    assertEquals(LocalizedText.NULL_VALUE, result);
+  }
+
+  /**
+   * Issue: {@code decodeExtensionObject} switches on {@code encoding} when reading {@code Body}.
+   * JSON object field order is not guaranteed; if {@code Body} appears before {@code Encoding}, the
+   * wrong branch is taken.
+   */
+  @Test
+  void decodeExtensionObject_bodyBeforeEncoding() throws IOException {
+    context.getNamespaceTable().add("urn:eclipse:milo:test1");
+    context.getNamespaceTable().add("urn:eclipse:milo:test2");
+
+    var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
+
+    var byteStringXo =
+        ExtensionObject.of(ByteString.of(new byte[] {0x00, 0x01, 0x02, 0x03}), new NodeId(2, 42));
+
+    // Body field appears BEFORE Encoding field.
+    decoder.reset(
+        new StringReader(
+            "{\"TypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"Body\":\"AAECAw==\",\"Encoding\":1}"));
+    assertEquals(byteStringXo, decoder.decodeExtensionObject(null));
+  }
+
+  /**
+   * Issue: {@code decodeDiagnosticInfo} initializes its Int32 locals to 0, so omitted fields decode
+   * to 0 instead of the spec-defined default -1.
+   *
+   * <p>Round-trip: encode {@link DiagnosticInfo#NULL_VALUE} (all -1) → omit all Int32 fields per
+   * spec → decode back should yield NULL_VALUE again.
+   */
+  @Test
+  void decodeDiagnosticInfo_omittedInt32FieldsDefaultToMinusOne() throws IOException {
+    var decoder = new OpcUaJsonDecoder(context, new StringReader("{}"));
+
+    DiagnosticInfo decoded = decoder.decodeDiagnosticInfo(null);
+    assertEquals(DiagnosticInfo.NULL_VALUE, decoded);
+  }
+
+  /**
+   * Issue 20: a QualifiedName encoded with a malformed {@code "nsu="} prefix that is missing the
+   * {@code ';'} separator must surface as a {@link UaSerializationException} instead of a raw
+   * {@link StringIndexOutOfBoundsException}.
+   */
+  @Test
+  void decodeQualifiedName_malformedNsuRejected() {
+    var decoder = new OpcUaJsonDecoder(context, new StringReader("\"nsu=urn:no-semicolon-here\""));
+
+    assertThrows(UaSerializationException.class, () -> decoder.decodeQualifiedName(null));
+  }
+
+  /**
+   * Issue 1773: {@code decodeStruct(String field, ...)} throws {@code Bad_DecodingError} on a
+   * member-name mismatch, but the CompactEncoding omits default-valued (and NULL) struct members
+   * (OPC 10000-6 §5.4.6, Table 45). Like every sibling field decoder, it must instead stash the
+   * peeked name and return {@code null} so the surrounding object keeps decoding.
+   */
+  @Test
+  void decodeStruct_omittedMember_restoresNameAndReturnsNull() throws IOException {
+    var decoder = new OpcUaJsonDecoder(context, new StringReader("{\"Other\":42}"));
+    decoder.jsonReader.beginObject();
+
+    // "ConfigurationVersion" is absent; the next member is "Other".
+    assertNull(decoder.decodeStruct("ConfigurationVersion", XVType.TYPE_ID));
+    // The peeked name was restored, so the following member still decodes.
+    assertEquals(42, decoder.decodeInt32("Other"));
+    decoder.jsonReader.endObject();
+  }
+
+  /**
+   * Issue 1773: a struct member encoded as JSON {@code null} (the VerboseEncoding of NULL per OPC
+   * 10000-6 §5.4.6, Table 45) must decode to {@code null} rather than failing with "Expected
+   * BEGIN_OBJECT but was NULL".
+   */
+  @Test
+  void decodeStruct_jsonNullMember_returnsNull() throws IOException {
+    var decoder =
+        new OpcUaJsonDecoder(context, new StringReader("{\"ConfigurationVersion\":null}"));
+    decoder.jsonReader.beginObject();
+
+    assertNull(decoder.decodeStruct("ConfigurationVersion", XVType.TYPE_ID));
+    decoder.jsonReader.endObject();
+  }
+
+  /**
+   * Issue 1773: the real-world interop case. A spec-conformant Compact document legally omits the
+   * all-default {@code ConfigurationVersion} member of {@link DataSetMetaDataType}; the whole
+   * structure must still decode, with that member taking its default ({@code null}) value.
+   */
+  @Test
+  void decodeStruct_compactOmitsDefaultValuedStructMember() {
+    var decoder = new OpcUaJsonDecoder(context, "{\"Name\":\"Demo\",\"Fields\":[]}");
+
+    var decoded = (DataSetMetaDataType) decoder.decodeStruct(null, DataSetMetaDataType.TYPE_ID);
+
+    assertEquals("Demo", decoded.getName());
+    assertNull(decoded.getConfigurationVersion());
   }
 
   private static byte[] randomBytes16() {

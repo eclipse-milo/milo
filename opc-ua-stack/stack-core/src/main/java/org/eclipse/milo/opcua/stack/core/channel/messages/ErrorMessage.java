@@ -10,9 +10,12 @@
 
 package org.eclipse.milo.opcua.stack.core.channel.messages;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.MoreObjects;
 import io.netty.buffer.ByteBuf;
+import java.nio.charset.StandardCharsets;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 
 public class ErrorMessage {
@@ -44,7 +47,7 @@ public class ErrorMessage {
     encodeString(message.getReason(), buffer);
   }
 
-  public static ErrorMessage decode(ByteBuf buffer) {
+  public static ErrorMessage decode(ByteBuf buffer) throws UaException {
     return new ErrorMessage(buffer.readUnsignedIntLE(), decodeString(buffer));
   }
 
@@ -52,19 +55,39 @@ public class ErrorMessage {
     if (s == null) {
       buffer.writeIntLE(-1);
     } else {
-      buffer.writeIntLE(s.length());
-      buffer.writeBytes(s.getBytes(Charsets.UTF_8));
+      byte[] bs = s.getBytes(StandardCharsets.UTF_8);
+      buffer.writeIntLE(bs.length);
+      buffer.writeBytes(bs);
     }
   }
 
-  private static String decodeString(ByteBuf buffer) {
+  private static String decodeString(ByteBuf buffer) throws UaException {
     int length = buffer.readIntLE();
-    if (length == -1) {
-      return null;
+    if (length < 0) {
+      if (length == -1) {
+        return null;
+      } else {
+        throw new UaException(
+            StatusCodes.Bad_DecodingError, "invalid error reason length: " + length);
+      }
     } else {
+      if (length > EncodingLimits.DEFAULT_MAX_MESSAGE_SIZE) {
+        throw new UaException(
+            StatusCodes.Bad_EncodingLimitsExceeded,
+            String.format(
+                "error reason length exceeds max message size (length=%s, max=%s)",
+                length, EncodingLimits.DEFAULT_MAX_MESSAGE_SIZE));
+      }
+      if (length > buffer.readableBytes()) {
+        throw new UaException(
+            StatusCodes.Bad_DecodingError,
+            String.format(
+                "error reason length exceeds remaining frame bytes (length=%s, remaining=%s)",
+                length, buffer.readableBytes()));
+      }
       byte[] bs = new byte[length];
       buffer.readBytes(bs);
-      return new String(bs, Charsets.UTF_8);
+      return new String(bs, StandardCharsets.UTF_8);
     }
   }
 }
