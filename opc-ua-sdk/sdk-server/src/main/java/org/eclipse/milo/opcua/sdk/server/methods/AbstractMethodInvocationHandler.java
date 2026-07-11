@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.server.methods;
 
 import static java.util.Objects.requireNonNullElse;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
@@ -21,8 +22,11 @@ import org.eclipse.milo.opcua.sdk.server.AccessContext;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
+import org.eclipse.milo.opcua.stack.core.encoding.DataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
@@ -57,8 +61,10 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
   @Override
   public final CallMethodResult invoke(AccessContext accessContext, CallMethodRequest request) {
     try {
+      // Defensive copy: values for structure-typed arguments may be substituted with their
+      // decoded values below, and the request's array should not be modified.
       Variant[] inputArgumentValues =
-          requireNonNullElse(request.getInputArguments(), new Variant[0]);
+          requireNonNullElse(request.getInputArguments(), new Variant[0]).clone();
 
       if (inputArgumentValues.length < getInputArguments().length) {
         throw new UaException(StatusCodes.Bad_ArgumentsMissing);
@@ -80,35 +86,83 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
         if (value != null) {
           NodeId argDataTypeId = argument.getDataType();
 
-          NodeId valueDataTypeId =
-              variant
-                  .getDataTypeId()
-                  .flatMap(xni -> xni.toNodeId(node.getNodeContext().getNamespaceTable()))
-                  .orElse(NodeId.NULL_VALUE);
+          DataTypeTree dataTypeTree = node.getNodeContext().getServer().getDataTypeTree();
 
-          if (!argDataTypeId.equals(valueDataTypeId)) {
-            DataTypeTree dataTypeTree = node.getNodeContext().getServer().getDataTypeTree();
+          boolean argIsStructType =
+              NodeIds.Structure.equals(argDataTypeId) || dataTypeTree.isStructType(argDataTypeId);
 
-            if (dataTypeTree.isStructType(argDataTypeId)) {
-              ExtensionObject xo = (ExtensionObject) value;
-              UaStructuredType decoded =
-                  xo.decode(node.getNodeContext().getServer().getStaticEncodingContext());
+          if (argIsStructType) {
+            try {
+              if (value instanceof ExtensionObject xo) {
+                UaStructuredType decoded =
+                    xo.decode(node.getNodeContext().getServer().getStaticEncodingContext());
 
-              valueDataTypeId =
-                  decoded
-                      .getTypeId()
-                      .toNodeId(node.getNodeContext().getNamespaceTable())
-                      .orElse(NodeId.NULL_VALUE);
+                dataTypeMatch = structureTypeMatches(dataTypeTree, argDataTypeId, decoded);
 
-              DataType argType = dataTypeTree.getType(argDataTypeId);
-              boolean isAbstract = argType != null && argType.isAbstract();
+                if (dataTypeMatch) {
+                  // Substitute the decoded value so implementations receive the
+                  // UaStructuredType rather than the raw ExtensionObject.
+                  inputArgumentValues[i] = new Variant(decoded);
+                }
+              } else if (value instanceof ExtensionObject[] xos) {
+                var decodedElements = new UaStructuredType[xos.length];
 
-              if (isAbstract) {
-                dataTypeMatch = dataTypeTree.isSubtypeOf(valueDataTypeId, argDataTypeId);
+                for (int j = 0; dataTypeMatch && j < xos.length; j++) {
+                  ExtensionObject xo = xos[j];
+
+                  if (xo == null || xo.isNull()) {
+                    // A struct array with null elements has no typed representation.
+                    dataTypeMatch = false;
+                  } else {
+                    UaStructuredType decoded =
+                        xo.decode(node.getNodeContext().getServer().getStaticEncodingContext());
+
+                    dataTypeMatch = structureTypeMatches(dataTypeTree, argDataTypeId, decoded);
+
+                    decodedElements[j] = decoded;
+                  }
+                }
+
+                if (dataTypeMatch) {
+                  // Substitute a correctly-typed array of the decoded values, so that e.g. an
+                  // argument of DataType XVType is delivered as XVType[], even when empty.
+                  inputArgumentValues[i] =
+                      new Variant(typedStructArray(argDataTypeId, decodedElements));
+                }
+              } else if (value instanceof UaStructuredType structValue) {
+                dataTypeMatch = structureTypeMatches(dataTypeTree, argDataTypeId, structValue);
+              } else if (value instanceof UaStructuredType[] structValues) {
+                for (int j = 0; dataTypeMatch && j < structValues.length; j++) {
+                  UaStructuredType structValue = structValues[j];
+
+                  dataTypeMatch =
+                      structValue != null
+                          && structureTypeMatches(dataTypeTree, argDataTypeId, structValue);
+                }
+              } else if (value instanceof Matrix) {
+                // TODO decoding a Matrix of ExtensionObject into its struct elements is not
+                //  supported; accept it only if the DataType ids already match exactly.
+                NodeId valueDataTypeId =
+                    variant
+                        .getDataTypeId()
+                        .flatMap(xni -> xni.toNodeId(node.getNodeContext().getNamespaceTable()))
+                        .orElse(NodeId.NULL_VALUE);
+
+                dataTypeMatch = argDataTypeId.equals(valueDataTypeId);
               } else {
-                dataTypeMatch = Objects.equals(valueDataTypeId, argDataTypeId);
+                dataTypeMatch = false;
               }
-            } else {
+            } catch (UaSerializationException e) {
+              dataTypeMatch = false;
+            }
+          } else {
+            NodeId valueDataTypeId =
+                variant
+                    .getDataTypeId()
+                    .flatMap(xni -> xni.toNodeId(node.getNodeContext().getNamespaceTable()))
+                    .orElse(NodeId.NULL_VALUE);
+
+            if (!argDataTypeId.equals(valueDataTypeId)) {
               dataTypeMatch = dataTypeTree.isAssignable(argDataTypeId, value.getClass());
             }
           }
@@ -191,6 +245,70 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
   }
 
   /**
+   * Check that a structure value's DataType matches the DataType of the {@link Argument} it was
+   * supplied for.
+   *
+   * <p>If the Argument's DataType is abstract the value's DataType may be any subtype of it;
+   * otherwise the DataTypes must match exactly.
+   *
+   * @param dataTypeTree the server's {@link DataTypeTree}.
+   * @param argDataTypeId the {@link NodeId} of the Argument's DataType.
+   * @param structValue the {@link UaStructuredType} value to check.
+   * @return {@code true} if {@code structValue}'s DataType matches the Argument's DataType.
+   */
+  private boolean structureTypeMatches(
+      DataTypeTree dataTypeTree, NodeId argDataTypeId, UaStructuredType structValue) {
+
+    NodeId valueDataTypeId =
+        structValue
+            .getTypeId()
+            .toNodeId(node.getNodeContext().getNamespaceTable())
+            .orElse(NodeId.NULL_VALUE);
+
+    DataType argType = dataTypeTree.getType(argDataTypeId);
+    boolean isAbstract = argType != null && argType.isAbstract();
+
+    if (isAbstract) {
+      return dataTypeTree.isSubtypeOf(valueDataTypeId, argDataTypeId);
+    } else {
+      return Objects.equals(valueDataTypeId, argDataTypeId);
+    }
+  }
+
+  /**
+   * Create an array of the class registered for {@code argDataTypeId} containing {@code elements}.
+   *
+   * <p>Follows the {@code OpcUaBinaryDecoder#decodeStructArray} precedent: the element class comes
+   * from the registered {@link DataTypeCodec}, so even an empty array is correctly typed. If no
+   * codec is registered, e.g. because the DataType is abstract, the {@link UaStructuredType} array
+   * is returned as-is.
+   *
+   * @param argDataTypeId the {@link NodeId} of the Argument's DataType.
+   * @param elements the decoded {@link UaStructuredType} elements.
+   * @return an array of the codec's registered class containing {@code elements}.
+   */
+  private Object typedStructArray(NodeId argDataTypeId, UaStructuredType[] elements) {
+    DataTypeCodec codec =
+        node.getNodeContext()
+            .getServer()
+            .getStaticEncodingContext()
+            .getDataTypeManager()
+            .getCodec(argDataTypeId);
+
+    if (codec == null) {
+      return elements;
+    }
+
+    Object array = Array.newInstance(codec.getType(), elements.length);
+
+    for (int i = 0; i < elements.length; i++) {
+      Array.set(array, i, elements[i]);
+    }
+
+    return array;
+  }
+
+  /**
    * Get the input {@link Argument}s expected by the Method this handler is installed on.
    *
    * @return the input {@link Argument}s expected by the Method this handler is installed on.
@@ -212,7 +330,10 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
    *
    * @param invocationContext the {@link InvocationContext}.
    * @param inputValues the user-supplied values for the input arguments. Each value has been
-   *     verified to be of the type specified by its {@link Argument}.
+   *     verified to be of the type specified by its {@link Argument}. Values for arguments with a
+   *     structured DataType carry the decoded {@link UaStructuredType} value (or, for array
+   *     arguments, an array of the DataType's registered class, e.g. {@code XVType[]}) rather than
+   *     the raw {@link ExtensionObject}(s) received in the request.
    * @return this output values matching this Method's output arguments, if any.
    * @throws UaException if invocation has failed for some reason.
    */
@@ -227,6 +348,8 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
    * Bad_OutOfRange for any invalid input values.
    *
    * @param inputArgumentValues the input values provided by the client for the current method call.
+   *     Values for arguments with a structured DataType carry decoded {@link UaStructuredType}
+   *     values rather than raw {@link ExtensionObject}s.
    * @throws InvalidArgumentException if one or more input argument values are invalid.
    */
   protected void validateInputArgumentValues(Variant[] inputArgumentValues)
