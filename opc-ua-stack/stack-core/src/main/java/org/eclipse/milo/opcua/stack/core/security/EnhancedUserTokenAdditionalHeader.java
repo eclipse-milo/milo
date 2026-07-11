@@ -175,8 +175,7 @@ public final class EnhancedUserTokenAdditionalHeader {
   private static Optional<SecurityPolicy> compatibleUsernameTokenSecurityPolicy(
       EndpointDescription endpoint, UserTokenPolicy tokenPolicy) {
 
-    Optional<SecurityPolicy> securityPolicy =
-        resolveUserTokenSecurityPolicy(endpoint, tokenPolicy);
+    Optional<SecurityPolicy> securityPolicy = resolveUserTokenSecurityPolicy(endpoint, tokenPolicy);
 
     if (securityPolicy.isEmpty()) {
       return Optional.empty();

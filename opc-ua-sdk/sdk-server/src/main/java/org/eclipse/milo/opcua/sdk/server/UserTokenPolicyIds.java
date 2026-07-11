@@ -130,9 +130,7 @@ final class UserTokenPolicyIds {
 
   private static String uniquePolicyId(UserTokenPolicyKey key, Set<String> reservedPolicyIds) {
     String base =
-        key.policyId().isEmpty()
-            ? key.tokenType().name().toLowerCase(Locale.ROOT)
-            : key.policyId();
+        key.policyId().isEmpty() ? key.tokenType().name().toLowerCase(Locale.ROOT) : key.policyId();
 
     String securityPolicyName = securityPolicyName(key.securityPolicyUri());
 

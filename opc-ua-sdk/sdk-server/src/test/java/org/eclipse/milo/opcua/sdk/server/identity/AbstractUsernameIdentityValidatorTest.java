@@ -427,8 +427,7 @@ class AbstractUsernameIdentityValidatorTest {
   @Test
   void wrongLegacyPasswordWithValidNonceReturnsUserAccessDenied() {
     RecordingPlaintextUsernameValidator validator =
-        new RecordingPlaintextUsernameValidator(
-            legacyPlaintext("wrong", SERVER_NONCE), false);
+        new RecordingPlaintextUsernameValidator(legacyPlaintext("wrong", SERVER_NONCE), false);
 
     UaException exception =
         assertThrows(
@@ -449,8 +448,7 @@ class AbstractUsernameIdentityValidatorTest {
   @Test
   void legacyPasswordWithValidNonceAuthenticates() throws Exception {
     RecordingPlaintextUsernameValidator validator =
-        new RecordingPlaintextUsernameValidator(
-            legacyPlaintext("password", SERVER_NONCE), true);
+        new RecordingPlaintextUsernameValidator(legacyPlaintext("password", SERVER_NONCE), true);
 
     Identity identity =
         validator.validateIdentityToken(
@@ -624,8 +622,7 @@ class AbstractUsernameIdentityValidatorTest {
   }
 
   private static UserNameIdentityToken legacyEncryptedToken() {
-    return new UserNameIdentityToken(
-        "username", "user", ByteString.of(new byte[] {0x01}), null);
+    return new UserNameIdentityToken("username", "user", ByteString.of(new byte[] {0x01}), null);
   }
 
   private static byte[] legacyPlaintext(String password, ByteString nonce) {

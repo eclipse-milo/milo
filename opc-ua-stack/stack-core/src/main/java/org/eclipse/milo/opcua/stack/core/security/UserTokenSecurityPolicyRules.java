@@ -110,8 +110,7 @@ public final class UserTokenSecurityPolicyRules {
       boolean explicitlySpecified)
       throws UaException {
 
-    SecurityPolicy channelSecurityPolicy =
-        SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
+    SecurityPolicy channelSecurityPolicy = SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
 
     requireSamePublicKeyAlgorithmAsChannel(
         endpoint.getSecurityMode(),
