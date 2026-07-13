@@ -18,12 +18,10 @@ import io.netty.buffer.CompositeByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.util.AttributeKey;
-import io.netty.util.ReferenceCountUtil;
 import io.netty.util.Timeout;
 import java.io.IOException;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -87,7 +85,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
 
   private boolean symmetricHandlerAdded = false;
 
-  private List<ByteBuf> chunkBuffers = new ArrayList<>();
+  private final ChunkBufferAccumulator chunkBuffers = new ChunkBufferAccumulator();
 
   private final AtomicReference<AsymmetricSecurityHeader> headerRef = new AtomicReference<>();
 
@@ -128,6 +126,8 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
 
   @Override
   public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+    chunkBuffers.releaseAll();
+
     if (secureChannelTimeout != null) {
       secureChannelTimeout.cancel();
       secureChannelTimeout = null;
@@ -137,9 +137,15 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
   }
 
   @Override
+  protected void handlerRemoved0(ChannelHandlerContext ctx) throws Exception {
+    chunkBuffers.releaseAll();
+
+    super.handlerRemoved0(ctx);
+  }
+
+  @Override
   public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-    chunkBuffers.forEach(ReferenceCountUtil::safeRelease);
-    chunkBuffers.clear();
+    chunkBuffers.releaseAll();
 
     if (cause instanceof IOException) {
       ctx.close();
@@ -206,8 +212,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
     char chunkType = (char) buffer.readByte();
 
     if (chunkType == 'A') {
-      chunkBuffers.forEach(ByteBuf::release);
-      chunkBuffers.clear();
+      chunkBuffers.releaseAll();
       headerRef.set(null);
     } else {
       buffer.skipBytes(4); // Skip messageSize
@@ -343,7 +348,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
             String.format("max chunk size exceeded (%s)", maxChunkSize));
       }
 
-      chunkBuffers.add(buffer.retain());
+      chunkBuffers.add(buffer);
 
       if (maxChunkCount > 0 && chunkBuffers.size() > maxChunkCount) {
         throw new UaException(
@@ -352,9 +357,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
       }
 
       if (chunkType == 'F') {
-        final List<ByteBuf> buffersToDecode = chunkBuffers;
-
-        chunkBuffers = new ArrayList<>();
+        final List<ByteBuf> buffersToDecode = chunkBuffers.takeAll();
         headerRef.set(null);
 
         ByteBuf message;
