@@ -412,74 +412,60 @@ public class SubscriptionManager {
     long globalMax = server.getConfig().getLimits().getMaxMonitoredItems().longValue();
     long sessionMax = server.getConfig().getLimits().getMaxMonitoredItemsPerSession().longValue();
 
-    boolean monitoredItemsCommitted = false;
-    try {
-      for (MonitoredItemCreateRequest request : requests) {
-        boolean globalCountIncremented = false;
-        boolean sessionCountIncremented = false;
-        boolean creationSucceeded = false;
+    for (MonitoredItemCreateRequest request : requests) {
+      long globalCount = server.getMonitoredItemCount().incrementAndGet();
+      long sessionCount = monitoredItemCount.incrementAndGet();
+      boolean created = false;
 
-        try {
-          long globalCount = server.getMonitoredItemCount().incrementAndGet();
-          globalCountIncremented = true;
-          long sessionCount = monitoredItemCount.incrementAndGet();
-          sessionCountIncremented = true;
-
-          if (globalCount <= globalMax && sessionCount <= sessionMax) {
-            BaseMonitoredItem<?> monitoredItem;
-
-            boolean isValueAttribute =
-                request.getItemToMonitor().getAttributeId().equals(AttributeId.Value.uid());
-
-            AttributesResponse attributesResponse =
-                (isValueAttribute && hasPercentDeadbandFilter(request))
-                    ? analogItemAttributes.get(request.getItemToMonitor().getNodeId())
-                    : regularAttributes.get(request.getItemToMonitor().getNodeId());
-
-            monitoredItem =
-                createMonitoredItem(request, subscription, timestamps, attributesResponse);
-
-            monitoredItems.add(monitoredItem);
-            creationSucceeded = true;
-
-            results.add(
-                new MonitoredItemCreateResult(
-                    StatusCode.GOOD,
-                    monitoredItem.getId(),
-                    monitoredItem.getSamplingInterval(),
-                    uint(monitoredItem.getQueueSize()),
-                    monitoredItem.getFilterResult()));
-          } else {
-            throw new UaException(StatusCodes.Bad_TooManyMonitoredItems);
-          }
-        } catch (UaException e) {
-          results.add(
-              new MonitoredItemCreateResult(
-                  e.getStatusCode(), UInteger.MIN, 0.0, UInteger.MIN, null));
-        } finally {
-          if (!creationSucceeded) {
-            if (sessionCountIncremented) {
-              monitoredItemCount.decrementAndGet();
-            }
-            if (globalCountIncremented) {
-              server.getMonitoredItemCount().decrementAndGet();
-            }
-          }
+      try {
+        if (globalCount > globalMax || sessionCount > sessionMax) {
+          throw new UaException(StatusCodes.Bad_TooManyMonitoredItems);
         }
-      }
 
-      subscription.addMonitoredItems(monitoredItems);
-      monitoredItemsCommitted = true;
-    } finally {
-      if (!monitoredItemsCommitted && !monitoredItems.isEmpty()) {
-        try {
-          subscription.removeMonitoredItems(monitoredItems);
-        } finally {
-          monitoredItemCount.addAndGet(-monitoredItems.size());
-          server.getMonitoredItemCount().addAndGet(-monitoredItems.size());
+        boolean isValueAttribute =
+            request.getItemToMonitor().getAttributeId().equals(AttributeId.Value.uid());
+
+        AttributesResponse attributesResponse =
+            (isValueAttribute && hasPercentDeadbandFilter(request))
+                ? analogItemAttributes.get(request.getItemToMonitor().getNodeId())
+                : regularAttributes.get(request.getItemToMonitor().getNodeId());
+
+        BaseMonitoredItem<?> monitoredItem =
+            createMonitoredItem(request, subscription, timestamps, attributesResponse);
+
+        // Build the result before adding the item to monitoredItems; if it throws, the
+        // item must not be committed to the subscription or counted against the quotas.
+        MonitoredItemCreateResult result =
+            new MonitoredItemCreateResult(
+                StatusCode.GOOD,
+                monitoredItem.getId(),
+                monitoredItem.getSamplingInterval(),
+                uint(monitoredItem.getQueueSize()),
+                monitoredItem.getFilterResult());
+
+        monitoredItems.add(monitoredItem);
+        results.add(result);
+        created = true;
+      } catch (Exception e) {
+        StatusCode statusCode;
+        if (e instanceof UaException ue) {
+          statusCode = ue.getStatusCode();
+        } else {
+          logger.error("Unexpected error creating MonitoredItem", e);
+          statusCode = new StatusCode(StatusCodes.Bad_InternalError);
+        }
+
+        results.add(
+            new MonitoredItemCreateResult(statusCode, UInteger.MIN, 0.0, UInteger.MIN, null));
+      } finally {
+        if (!created) {
+          monitoredItemCount.decrementAndGet();
+          server.getMonitoredItemCount().decrementAndGet();
         }
       }
     }
+
+    subscription.addMonitoredItems(monitoredItems);
 
     byMonitoredItemType(
         monitoredItems,
@@ -613,10 +599,23 @@ public class SubscriptionManager {
       throw new UaException(StatusCodes.Bad_AttributeIdInvalid);
     }
 
-    Object filterObject =
-        request.getRequestedParameters().getFilter().decode(server.getStaticEncodingContext());
+    MonitoringFilter filter;
 
-    MonitoringFilter filter = validateEventItemFilter(filterObject);
+    try {
+      ExtensionObject filterXo = request.getRequestedParameters().getFilter();
+
+      if (filterXo == null || filterXo.isNull()) {
+        throw new UaException(StatusCodes.Bad_MonitoredItemFilterInvalid);
+      }
+
+      Object filterObject = filterXo.decode(server.getStaticEncodingContext());
+
+      filter = validateEventItemFilter(filterObject);
+    } catch (UaSerializationException e) {
+      logger.debug("error decoding MonitoringFilter", e);
+
+      throw new UaException(StatusCodes.Bad_MonitoredItemFilterInvalid, e);
+    }
 
     RevisedEventItemParameters revisedParameters;
 
@@ -862,10 +861,23 @@ public class SubscriptionManager {
     }
 
     if (attributeId == AttributeId.EventNotifier) {
-      Object filterObject =
-          request.getRequestedParameters().getFilter().decode(server.getStaticEncodingContext());
+      MonitoringFilter filter;
 
-      MonitoringFilter filter = validateEventItemFilter(filterObject);
+      try {
+        ExtensionObject filterXo = request.getRequestedParameters().getFilter();
+
+        if (filterXo == null || filterXo.isNull()) {
+          throw new UaException(StatusCodes.Bad_MonitoredItemFilterInvalid);
+        }
+
+        Object filterObject = filterXo.decode(server.getStaticEncodingContext());
+
+        filter = validateEventItemFilter(filterObject);
+      } catch (UaSerializationException e) {
+        logger.debug("error decoding MonitoringFilter", e);
+
+        throw new UaException(StatusCodes.Bad_MonitoredItemFilterInvalid, e);
+      }
 
       RevisedEventItemParameters revisedParameters;
 
