@@ -25,6 +25,10 @@ Which sources a reader uses, and which it trusts, is controlled by the reader's 
 
 One thing `MetaDataReceivedEvent` is not: a signal that metadata was applied. The event fires for every metadata message a reader's filters match, regardless of policy — with `REQUIRE_CONFIGURED` it is notification only.
 
+## Metadata types direct JSON field decoding
+
+Beyond naming, the effective metadata's field types direct how JSON payload values decode. Verbose-encoded JSON is not self-describing — a `{"Code":1073741824}` object is either a StatusCode *value* or the Part 14 "bad field status instead of the value" transfer, `"NaN"` is either a Float or a String, and an empty array has no element type — so when a reader's effective metadata (configured or discovered, same precedence as naming) declares a field's DataType as a built-in type, the value decodes as that type: StatusCode fields yield StatusCode values, Int64/UInt64/DateTime/Guid strings yield their declared types, numbers take their declared width and signedness, LocalizedText objects yield `LocalizedText`, and arrays — including empty ones — decode as arrays of the declared element type. A value that does not parse as its declared type, a message whose transmitted major version mismatches the metadata, or a field the metadata does not name falls back to decoding by JSON shape; shape-decoded arrays with no common concrete element type (empty, all-null, or heterogeneous) surface as `Variant[]`. Fields whose DataType is not a built-in type (enumerations, custom structures) currently decode by shape; see `work/pubsub/metadata-directed-decoding-design.md` for the planned extension to schema-driven enum and structure decoding.
+
 ## Metadata does not gate data delivery
 
 This is the caveat that surprises people. A reader with `ACCEPT_DISCOVERED` or `REQUEST_IF_MISSING` and no configured metadata still delivers DataSets the moment data arrives — it does not wait for metadata. Until metadata is applied, decoded fields carry synthetic positional names and the dataset has no name. Observed live with the discovery example pair, a pre-metadata delivery looks like this:

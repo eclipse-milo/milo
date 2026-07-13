@@ -17,15 +17,19 @@ import com.google.gson.JsonParser;
 import io.netty.buffer.ByteBuf;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.eclipse.milo.opcua.sdk.pubsub.config.DataSetMetaDataConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PublisherId;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DataSetMessageKind;
+import org.eclipse.milo.opcua.sdk.pubsub.uadp.DataSetMetaDataResolver;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodeContext;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedDataSetMessage;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedField;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedMetaData;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedNetworkMessage;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.encoding.json.OpcUaJsonDecoder;
@@ -59,9 +63,13 @@ import org.jspecify.annotations.Nullable;
  * </ul>
  *
  * <p>Unknown members are skipped in headers; payload values are decoded leniently by {@link
- * JsonFieldDecoder}. DataSetMessage-level {@code PublisherId} values (legal when no NetworkMessage
- * header is present) are hoisted into {@link DecodedNetworkMessage#publisherId()}. Headers the
- * decoded records have no slot for ({@code MessageId}, {@code WriterGroupName}, {@code
+ * JsonFieldDecoder}. When the {@link DecodeContext} carries a {@link DataSetMetaDataResolver}, each
+ * DataSetMessage's effective metadata is resolved from its wire values (PublisherId,
+ * DataSetWriterId, and transmitted metadata version, each possibly absent; version checking is the
+ * resolver's responsibility) and field values decode against their metadata-declared built-in types
+ * instead of by JSON shape. DataSetMessage-level {@code PublisherId} values (legal when no
+ * NetworkMessage header is present) are hoisted into {@link DecodedNetworkMessage#publisherId()}.
+ * Headers the decoded records have no slot for ({@code MessageId}, {@code WriterGroupName}, {@code
  * DataSetWriterName}, {@code DataSetClassId}) are dropped.
  */
 final class JsonNetworkMessageDecoder {
@@ -92,6 +100,7 @@ final class JsonNetworkMessageDecoder {
     }
 
     var fieldDecoder = new JsonFieldDecoder(context.encodingContext());
+    DataSetMetaDataResolver metaDataResolver = context.metaDataResolver();
     var hoist = new Hoist();
 
     if (root.isJsonArray()) {
@@ -99,7 +108,9 @@ final class JsonNetworkMessageDecoder {
       List<DecodedDataSetMessage> messages = new ArrayList<>();
       for (JsonElement element : root.getAsJsonArray()) {
         if (element.isJsonObject()) {
-          messages.add(decodeDataSetMessage(element.getAsJsonObject(), hoist, fieldDecoder));
+          messages.add(
+              decodeDataSetMessage(
+                  element.getAsJsonObject(), hoist, fieldDecoder, metaDataResolver, null));
         }
       }
       return networkMessage(hoist.publisherId, messages, List.of());
@@ -122,7 +133,7 @@ final class JsonNetworkMessageDecoder {
     }
 
     if ("ua-data".equals(messageType) || object.has("Messages")) {
-      return decodeDataMessage(object, hoist, fieldDecoder);
+      return decodeDataMessage(object, hoist, fieldDecoder, metaDataResolver);
     }
 
     if (messageType != null
@@ -135,13 +146,17 @@ final class JsonNetworkMessageDecoder {
     }
 
     // a single DataSetMessage or a bare payload object (§7.2.5.3 collapse rules 3/4)
-    DecodedDataSetMessage message = decodeDataSetMessage(object, hoist, fieldDecoder);
+    DecodedDataSetMessage message =
+        decodeDataSetMessage(object, hoist, fieldDecoder, metaDataResolver, null);
     return networkMessage(hoist.publisherId, List.of(message), List.of());
   }
 
   /** Decode a NetworkMessage with header (Table 184). Unknown members are skipped. */
   private static DecodedNetworkMessage decodeDataMessage(
-      JsonObject object, Hoist hoist, JsonFieldDecoder fieldDecoder) {
+      JsonObject object,
+      Hoist hoist,
+      JsonFieldDecoder fieldDecoder,
+      @Nullable DataSetMetaDataResolver metaDataResolver) {
 
     PublisherId publisherId = null;
     String publisherIdValue = stringMember(object, "PublisherId");
@@ -154,11 +169,19 @@ final class JsonNetworkMessageDecoder {
     if (messagesElement != null) {
       if (messagesElement.isJsonObject()) {
         // SingleDataSetMessage: a JSON object containing a single DataSetMessage
-        messages.add(decodeDataSetMessage(messagesElement.getAsJsonObject(), hoist, fieldDecoder));
+        messages.add(
+            decodeDataSetMessage(
+                messagesElement.getAsJsonObject(),
+                hoist,
+                fieldDecoder,
+                metaDataResolver,
+                publisherId));
       } else if (messagesElement.isJsonArray()) {
         for (JsonElement element : messagesElement.getAsJsonArray()) {
           if (element.isJsonObject()) {
-            messages.add(decodeDataSetMessage(element.getAsJsonObject(), hoist, fieldDecoder));
+            messages.add(
+                decodeDataSetMessage(
+                    element.getAsJsonObject(), hoist, fieldDecoder, metaDataResolver, publisherId));
           }
         }
       }
@@ -235,10 +258,18 @@ final class JsonNetworkMessageDecoder {
 
   /** Decode one Messages element: a DataSetMessage with header, or a bare payload object. */
   private static DecodedDataSetMessage decodeDataSetMessage(
-      JsonObject object, Hoist hoist, JsonFieldDecoder fieldDecoder) {
+      JsonObject object,
+      Hoist hoist,
+      JsonFieldDecoder fieldDecoder,
+      @Nullable DataSetMetaDataResolver metaDataResolver,
+      @Nullable PublisherId networkPublisherId) {
 
     if (!hasDataSetMessageHeader(object)) {
-      return decodePayloadOnly(object, fieldDecoder);
+      return decodePayloadOnly(
+          object,
+          fieldDecoder,
+          metaDataResolver,
+          networkPublisherId != null ? networkPublisherId : hoist.publisherId);
     }
 
     UShort dataSetWriterId = ushortMember(object, "DataSetWriterId");
@@ -272,9 +303,14 @@ final class JsonNetworkMessageDecoder {
 
     // a DataSetMessage-level PublisherId is legal when no NetworkMessage header is present
     // (Table 185); hoist it to the NetworkMessage level, where the matching chain reads it
+    PublisherId publisherId = networkPublisherId;
     String publisherIdValue = stringMember(object, "PublisherId");
     if (publisherIdValue != null) {
-      hoist.offer(PublisherId.string(publisherIdValue));
+      PublisherId messagePublisherId = PublisherId.string(publisherIdValue);
+      hoist.offer(messagePublisherId);
+      if (publisherId == null) {
+        publisherId = messagePublisherId;
+      }
     }
 
     boolean valid = true;
@@ -297,7 +333,9 @@ final class JsonNetworkMessageDecoder {
     if (valid && kind != DataSetMessageKind.KEEP_ALIVE) {
       JsonElement payloadElement = object.get("Payload");
       if (payloadElement != null && payloadElement.isJsonObject()) {
-        fields = decodeFields(payloadElement.getAsJsonObject(), fieldDecoder);
+        DataSetMetaDataConfig metaData =
+            resolveMetaData(metaDataResolver, publisherId, dataSetWriterId, configurationVersion);
+        fields = decodeFields(payloadElement.getAsJsonObject(), fieldDecoder, metaData);
       }
     }
 
@@ -317,12 +355,17 @@ final class JsonNetworkMessageDecoder {
    * 185), anything else a key frame keyed by field name.
    */
   private static DecodedDataSetMessage decodePayloadOnly(
-      JsonObject object, JsonFieldDecoder fieldDecoder) {
+      JsonObject object,
+      JsonFieldDecoder fieldDecoder,
+      @Nullable DataSetMetaDataResolver metaDataResolver,
+      @Nullable PublisherId publisherId) {
 
     if (object.isEmpty()) {
       return new DecodedDataSetMessage(
           null, DataSetMessageKind.KEEP_ALIVE, true, null, null, null, null, List.of());
     }
+
+    DataSetMetaDataConfig metaData = resolveMetaData(metaDataResolver, publisherId, null, null);
 
     return new DecodedDataSetMessage(
         null,
@@ -332,21 +375,65 @@ final class JsonNetworkMessageDecoder {
         null,
         null,
         null,
-        decodeFields(object, fieldDecoder));
+        decodeFields(object, fieldDecoder, metaData));
+  }
+
+  /**
+   * Resolve the effective metadata for a DataSetMessage's field decode, or {@code null} when no
+   * resolver is present or the resolver knows no usable metadata for the wire values (version
+   * checking is the resolver's responsibility).
+   */
+  private static @Nullable DataSetMetaDataConfig resolveMetaData(
+      @Nullable DataSetMetaDataResolver metaDataResolver,
+      @Nullable PublisherId publisherId,
+      @Nullable UShort dataSetWriterId,
+      @Nullable ConfigurationVersionDataType version) {
+
+    if (metaDataResolver == null) {
+      return null;
+    }
+    return metaDataResolver.resolve(
+        new DataSetMetaDataResolver.ResolveRequest(publisherId, dataSetWriterId, version));
   }
 
   /** Decode a Payload object into name-keyed fields, in document order. */
   private static List<DecodedField> decodeFields(
-      JsonObject payload, JsonFieldDecoder fieldDecoder) {
+      JsonObject payload, JsonFieldDecoder fieldDecoder, @Nullable DataSetMetaDataConfig metaData) {
+
+    Map<String, OpcUaDataType> declaredTypes = declaredTypes(metaData);
 
     var fields = new ArrayList<DecodedField>(payload.size());
     int index = 0;
     for (Map.Entry<String, JsonElement> entry : payload.entrySet()) {
-      DataValue value = fieldDecoder.decodeFieldValue(entry.getValue());
+      DataValue value =
+          fieldDecoder.decodeFieldValue(entry.getValue(), declaredTypes.get(entry.getKey()));
       fields.add(new DecodedField(index, entry.getKey(), value));
       index++;
     }
     return fields;
+  }
+
+  /**
+   * The declared built-in type of each metadata field, by name: the field's DataType NodeId when it
+   * is a built-in type (the ns=0 identifiers 1..25, with Structure ≙ ExtensionObject and
+   * BaseDataType ≙ Variant). Fields with non-built-in DataTypes (enumerations, abstract numerics)
+   * are absent and fall back to shape-based decoding.
+   */
+  private static Map<String, OpcUaDataType> declaredTypes(
+      @Nullable DataSetMetaDataConfig metaData) {
+
+    if (metaData == null) {
+      return Map.of();
+    }
+    var declaredTypes = new HashMap<String, OpcUaDataType>();
+    for (DataSetMetaDataConfig.Field field : metaData.fields()) {
+      OpcUaDataType declaredType = OpcUaDataType.fromNodeId(field.dataTypeId());
+      if (declaredType != null) {
+        // duplicate field names are degenerate metadata; keep the first, like index-based naming
+        declaredTypes.putIfAbsent(field.name(), declaredType);
+      }
+    }
+    return declaredTypes;
   }
 
   /**

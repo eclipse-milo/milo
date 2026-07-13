@@ -18,6 +18,7 @@ import java.lang.reflect.Array;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.Base64;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -46,15 +47,23 @@ import org.slf4j.LoggerFactory;
  * current Compact/Verbose encodings and the deprecated Reversible/NonReversible encodings (OPC
  * 10000-6 §5.4 and Annex H).
  *
- * <p>Decoding is metadata-less by design — the decode SPI carries no reader FieldMetaData — so
- * collapsed Verbose values are decoded by their JSON shape: booleans, strings, and numbers map to
- * Boolean, String, and Int32/Int64/Double (integral vs. decimal literal); {@code UaType}/{@code
- * Type} wrappers decode by the carried built-in type id; {@code Value}/{@code Dimensions} objects
- * become arrays and matrices; {@code UaTypeId} objects become JSON {@link ExtensionObject}s;
- * StatusCode-shaped objects in a value position carry the Bad field status of Part 14 Table 35;
- * other objects are surfaced as JSON {@link ExtensionObject}s without a type id, for the
- * application to decode against its metadata. Verbose Enumeration strings ({@code "Name_Value"})
- * are indistinguishable from String values without metadata and decode as String.
+ * <p>When the caller supplies a field's metadata-declared built-in type, shape-ambiguous values
+ * decode against it (Part 14 §6.2.3: the DataSetMetaData carries "the information necessary to
+ * decode DataSetMessages"): collapsed Verbose {@code StatusCode} objects decode as StatusCode
+ * <em>values</em> on StatusCode-typed fields, Int64/UInt64/DateTime/Guid/ByteString/XmlElement/
+ * NodeId/QualifiedName strings decode to their declared types, LocalizedText objects decode as
+ * LocalizedText, numbers take their declared width and signedness, and arrays — including empty
+ * ones — decode as arrays of the declared type. A value that does not parse as its declared type
+ * falls back to the shape-based decode below (incoherent-publisher tolerance).
+ *
+ * <p>Without metadata, collapsed Verbose values are decoded by their JSON shape: booleans, strings,
+ * and numbers map to Boolean, String, and Int32/Int64/Double (integral vs. decimal literal); {@code
+ * UaType}/{@code Type} wrappers decode by the carried built-in type id; {@code Value}/{@code
+ * Dimensions} objects become arrays and matrices; {@code UaTypeId} objects become JSON {@link
+ * ExtensionObject}s; StatusCode-shaped objects in a value position carry the Bad field status of
+ * Part 14 Table 35; other objects are surfaced as JSON {@link ExtensionObject}s without a type id,
+ * for the application to decode against its metadata. Verbose Enumeration strings ({@code
+ * "Name_Value"}) are indistinguishable from String values without metadata and decode as String.
  *
  * <p>Field decoding never throws: undecodable values yield a {@code Bad_DecodingError} {@link
  * DataValue} with a one-time WARN (lenient payload handling).
@@ -85,10 +94,13 @@ final class JsonFieldDecoder {
     this.encodingContext = encodingContext;
   }
 
-  /** Decode one payload member value. Never throws. */
-  DataValue decodeFieldValue(@Nullable JsonElement element) {
+  /**
+   * Decode one payload member value, against {@code declaredType} when present, else by JSON shape.
+   * Never throws.
+   */
+  DataValue decodeFieldValue(@Nullable JsonElement element, @Nullable OpcUaDataType declaredType) {
     try {
-      return decodeFieldValueInternal(element);
+      return decodeFieldValueInternal(element, declaredType);
     } catch (Exception e) {
       if (LENIENT_PAYLOAD_WARNED.compareAndSet(false, true)) {
         LOGGER.warn(
@@ -108,9 +120,23 @@ final class JsonFieldDecoder {
     }
   }
 
-  private DataValue decodeFieldValueInternal(@Nullable JsonElement element) {
+  private DataValue decodeFieldValueInternal(
+      @Nullable JsonElement element, @Nullable OpcUaDataType declaredType) {
+
     if (element == null || element.isJsonNull()) {
       return plainValue(Variant.NULL_VALUE);
+    }
+
+    if (declaredType != null) {
+      try {
+        return decodeDeclaredValue(element, declaredType);
+      } catch (Exception e) {
+        LOGGER.debug(
+            "field value does not decode as its metadata-declared type {}; falling back to the"
+                + " shape-based decode",
+            declaredType,
+            e);
+      }
     }
 
     if (element.isJsonPrimitive()) {
@@ -142,6 +168,34 @@ final class JsonFieldDecoder {
 
   private static DataValue plainValue(Variant variant) {
     return new DataValue(variant, StatusCode.GOOD, null, null, null, null);
+  }
+
+  /**
+   * Decode a value against its metadata-declared built-in type. Wrapper objects still take the
+   * wrapper path — with the declared type directing their {@code Value} member when the wire
+   * carries no {@code UaType} — and a StatusCode-shaped object on a field NOT declared StatusCode
+   * remains the Table 35 footnote-c bad-status transfer. Everything else — including the
+   * shape-ambiguous Verbose forms (StatusCode objects on StatusCode fields, Int64/DateTime/Guid/...
+   * strings, empty or mixed-width arrays) — decodes as the declared type.
+   */
+  private DataValue decodeDeclaredValue(JsonElement element, OpcUaDataType declaredType) {
+    if (element.isJsonArray()) {
+      return plainValue(Variant.of(decodeTypedArray(declaredType, element.getAsJsonArray())));
+    }
+
+    if (element.isJsonObject()) {
+      JsonObject object = element.getAsJsonObject();
+
+      if (isWrapperObject(object)) {
+        return decodeWrapper(object, declaredType);
+      }
+      if (declaredType != OpcUaDataType.StatusCode && isStatusCodeObject(object)) {
+        // Table 35 footnote c: a Bad status is transferred instead of the value
+        return new DataValue(Variant.NULL_VALUE, decodeStatusCode(object), null, null, null, null);
+      }
+    }
+
+    return plainValue(Variant.of(decodeTypedScalar(declaredType, element)));
   }
 
   /** {@code true} for objects of the shape {@code {"Code":n}} / {@code {"Code":n,"Symbol":s}}. */
@@ -179,10 +233,21 @@ final class JsonFieldDecoder {
 
   /** Decode a Variant/DataValue wrapper object, current or deprecated-Reversible spelling. */
   private DataValue decodeWrapper(JsonObject object) {
-    Integer typeId = null;
+    return decodeWrapper(object, null);
+  }
+
+  /**
+   * Decode a Variant/DataValue wrapper object; a wire-carried {@code UaType}/{@code Type} directs
+   * the {@code Value} member decode, else the metadata-declared type when present.
+   */
+  private DataValue decodeWrapper(JsonObject object, @Nullable OpcUaDataType declaredType) {
+    OpcUaDataType dataType;
     JsonElement typeElement = object.has("UaType") ? object.get("UaType") : object.get("Type");
     if (typeElement != null && typeElement.isJsonPrimitive()) {
-      typeId = typeElement.getAsInt();
+      // a wire-carried type id wins, even when it resolves to no built-in type (generic decode)
+      dataType = OpcUaDataType.fromTypeId(typeElement.getAsInt());
+    } else {
+      dataType = declaredType;
     }
 
     JsonElement body = object.has("Value") ? object.get("Value") : object.get("Body");
@@ -200,14 +265,14 @@ final class JsonFieldDecoder {
     Object value = null;
     if (body != null && !body.isJsonNull()) {
       if (body.isJsonArray()) {
-        Object array = decodeTypedArray(typeId, body.getAsJsonArray());
+        Object array = decodeTypedArray(dataType, body.getAsJsonArray());
         if (dimensions != null && dimensions.length > 1) {
           value = new Matrix(array, dimensions);
         } else {
           value = array;
         }
       } else {
-        value = decodeTypedScalar(typeId, body);
+        value = decodeTypedScalar(dataType, body);
       }
     }
 
@@ -226,13 +291,13 @@ final class JsonFieldDecoder {
         Variant.of(value), status, sourceTime, sourcePicoseconds, serverTime, serverPicoseconds);
   }
 
-  /** Decode a scalar value by built-in type id; without one, by JSON shape. */
-  private @Nullable Object decodeTypedScalar(@Nullable Integer typeId, JsonElement element) {
+  /** Decode a scalar value by built-in type; without one, by JSON shape. */
+  private @Nullable Object decodeTypedScalar(
+      @Nullable OpcUaDataType dataType, JsonElement element) {
     if (element.isJsonNull()) {
       return null;
     }
 
-    OpcUaDataType dataType = typeId != null ? OpcUaDataType.fromTypeId(typeId) : null;
     if (dataType == null) {
       return decodeGenericValue(element);
     }
@@ -269,9 +334,8 @@ final class JsonFieldDecoder {
     };
   }
 
-  /** Decode a typed array; with no usable type id, falls back to the generic array decode. */
-  private Object decodeTypedArray(@Nullable Integer typeId, JsonArray array) {
-    OpcUaDataType dataType = typeId != null ? OpcUaDataType.fromTypeId(typeId) : null;
+  /** Decode a typed array; with no usable type, falls back to the generic array decode. */
+  private Object decodeTypedArray(@Nullable OpcUaDataType dataType, JsonArray array) {
     Class<?> backingClass = dataType != null ? dataType.getBackingClass() : null;
 
     if (backingClass == null) {
@@ -280,7 +344,7 @@ final class JsonFieldDecoder {
 
     Object result = Array.newInstance(backingClass, array.size());
     for (int i = 0; i < array.size(); i++) {
-      Array.set(result, i, decodeTypedScalar(typeId, array.get(i)));
+      Array.set(result, i, decodeTypedScalar(dataType, array.get(i)));
     }
     return result;
   }
@@ -363,8 +427,12 @@ final class JsonFieldDecoder {
   }
 
   /**
-   * Decode an array without type information; arrays of one uniform element type become typed
-   * arrays, anything else stays {@code Object[]}.
+   * Decode an array without type information. Arrays of one uniform element class become typed
+   * arrays; numeric elements whose integral literals decode to mixed widths (e.g. {@code [0,
+   * 4294967295]} as Integer + Long) are widened to the widest class present. Anything else — empty
+   * arrays, arrays whose elements all decode to null, nested bare arrays, and genuinely
+   * heterogeneous arrays — becomes a {@code Variant[]}, the OPC UA representation of an array with
+   * no common concrete element type (a bare {@code Object[]} is not a legal Variant value).
    */
   private Object decodeGenericArray(JsonArray array) {
     var decoded = new Object[array.size()];
@@ -382,6 +450,17 @@ final class JsonFieldDecoder {
       }
     }
 
+    if (!uniform) {
+      Class<?> widened = widenedNumericClass(decoded);
+      if (widened != null) {
+        for (int i = 0; i < decoded.length; i++) {
+          decoded[i] = widenNumeric(decoded[i], widened);
+        }
+        commonClass = widened;
+        uniform = true;
+      }
+    }
+
     if (uniform && commonClass != null && !commonClass.isArray()) {
       Object typed = Array.newInstance(commonClass, decoded.length);
       for (int i = 0; i < decoded.length; i++) {
@@ -390,7 +469,49 @@ final class JsonFieldDecoder {
       return typed;
     }
 
-    return decoded;
+    var variants = new Variant[decoded.length];
+    for (int i = 0; i < decoded.length; i++) {
+      variants[i] = Variant.of(decoded[i]);
+    }
+    return variants;
+  }
+
+  /** The numeric classes the generic scalar decode produces, narrowest to widest. */
+  private static final List<Class<?>> NUMERIC_WIDTH_ORDER =
+      List.of(Integer.class, Long.class, Double.class);
+
+  /**
+   * The widest of {@code Integer}/{@code Long}/{@code Double} when every non-null element is one of
+   * them, else {@code null}. All-null and all-Integer arrays need no widening and also yield {@code
+   * null}.
+   */
+  private static @Nullable Class<?> widenedNumericClass(@Nullable Object[] decoded) {
+    int widest = -1;
+    for (Object value : decoded) {
+      if (value != null) {
+        int width = NUMERIC_WIDTH_ORDER.indexOf(value.getClass());
+        if (width < 0) {
+          return null;
+        }
+        widest = Math.max(widest, width);
+      }
+    }
+    return widest > 0 ? NUMERIC_WIDTH_ORDER.get(widest) : null;
+  }
+
+  /**
+   * {@code value} boxed as {@code target} ({@code Long} or {@code Double}); null passes through.
+   */
+  private static @Nullable Object widenNumeric(@Nullable Object value, Class<?> target) {
+    if (value == null) {
+      return null;
+    }
+    Number number = (Number) value;
+    // no ternary: a Double/Long conditional expression numerically promotes both branches to Double
+    if (target == Double.class) {
+      return number.doubleValue();
+    }
+    return number.longValue();
   }
 
   /**

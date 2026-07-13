@@ -225,7 +225,8 @@ class UadpDiscoveryModelTest {
 
   @Test
   void decodeContextOfMirrorsCanonicalConstructor() {
-    assertEquals(new DecodeContext(ENCODING_CONTEXT, null), DecodeContext.of(ENCODING_CONTEXT));
+    assertEquals(
+        new DecodeContext(ENCODING_CONTEXT, null, null), DecodeContext.of(ENCODING_CONTEXT));
   }
 
   // endregion

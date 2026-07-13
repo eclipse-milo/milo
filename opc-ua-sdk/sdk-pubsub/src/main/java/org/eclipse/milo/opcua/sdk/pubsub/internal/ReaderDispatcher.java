@@ -41,6 +41,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.config.SecurityGroupRef;
 import org.eclipse.milo.opcua.sdk.pubsub.config.UadpDataSetReaderSettings;
 import org.eclipse.milo.opcua.sdk.pubsub.security.SecurityKeyMaterial;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DataSetMessageKind;
+import org.eclipse.milo.opcua.sdk.pubsub.uadp.DataSetMetaDataResolver;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodeContext;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedDataSetMessage;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodedField;
@@ -192,9 +193,16 @@ final class ReaderDispatcher {
       String mappingName = entry.getKey();
       MessageMappingProvider provider = entry.getValue();
 
+      // like key material, effective metadata for decode-time field typing is resolved by
+      // plaintext wire identity BEFORE reader matching (decode runs once per (connection,
+      // mapping)); per-mapping, so only readers of the mapping being decoded supply metadata
+      DataSetMetaDataResolver metaDataResolver =
+          request -> resolveEffectiveMetaData(connection, mappingName, request);
+
       UadpDecodedMessage decoded;
       try {
-        DecodeContext context = DecodeContext.of(service.getEncodingContext(), securityResolver);
+        DecodeContext context =
+            DecodeContext.of(service.getEncodingContext(), securityResolver, metaDataResolver);
         if (provider instanceof UadpMessageMapping uadpMapping) {
           decoded = uadpMapping.decodeMessage(context, buffer.slice());
         } else {
@@ -660,7 +668,7 @@ final class ReaderDispatcher {
   private record StatusTimeoutKey(
       PubSubHandle connection, String mappingName, PublisherId publisherId) {}
 
-  private record StatusTimeout(long serial, AtomicReference<ScheduledFuture<?>> future) {}
+  private record StatusTimeout(long serial, AtomicReference<@Nullable ScheduledFuture<?>> future) {}
 
   /**
    * Route one decoded DataSetMetaData announcement, received on either the data socket or the
@@ -768,15 +776,8 @@ final class ReaderDispatcher {
 
     DataSetMetaDataConfig metaData = effectiveMetaData(reader);
 
-    // The major version can only be checked when it is transmitted: the decoder substitutes 0
-    // when DataSetFlags1 bit 5 is clear (e.g. the default UADP-Dynamic mask carries only the
-    // minor version), and a VersionTime of 0 means "not used" per Part 14.
     ConfigurationVersionDataType version = message.configurationVersion();
-    if (version != null
-        && metaData != null
-        && version.getMajorVersion().longValue() != 0L
-        && !version.getMajorVersion().equals(metaData.getConfigurationVersionMajor())) {
-
+    if (metaData != null && majorVersionMismatch(version, metaData)) {
       // do not reset the receive timeout: per §6.2.9.4 a reader that cannot obtain matching
       // metadata within messageReceiveTimeout goes to Error
       service.getDiagnostics().dataSetMessageReceived(group.path());
@@ -1290,6 +1291,54 @@ final class ReaderDispatcher {
       }
     }
     return reader.configuredMetaData();
+  }
+
+  /**
+   * Resolve the effective metadata for decode-time field typing by plaintext wire identity: the
+   * first receiving reader of the mapping whose PublisherId and DataSetWriterId filters match
+   * supplies its effective metadata, unless the message transmits a mismatching major version.
+   * Readers with conflicting metadata for the same wire identity is degenerate configuration;
+   * first-match applies (the per-reader dispatch below still names and version-checks fields
+   * against each reader's own effective metadata).
+   */
+  private @Nullable DataSetMetaDataConfig resolveEffectiveMetaData(
+      ConnectionRuntime connection,
+      String mappingName,
+      DataSetMetaDataResolver.ResolveRequest request) {
+
+    for (ReaderGroupRuntime group : connection.readerGroupRuntimes()) {
+      for (DataSetReaderRuntime reader : group.readerRuntimes()) {
+        if (!reader.mappingName().equals(mappingName)) {
+          continue;
+        }
+        if (isNotReceiving(reader.state())) {
+          continue;
+        }
+        if (!publisherIdMatches(reader.config(), request.publisherId())
+            || !dataSetWriterIdMatches(reader.config(), request.dataSetWriterId())) {
+          continue;
+        }
+        DataSetMetaDataConfig metaData = effectiveMetaData(reader);
+        if (metaData != null && !majorVersionMismatch(request.configurationVersion(), metaData)) {
+          return metaData;
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Whether {@code version} is a checkable transmitted metadata version whose major version does
+   * not match {@code metaData}. The major version can only be checked when it is transmitted: the
+   * decoder substitutes 0 when it is absent (e.g. the default UADP-Dynamic mask carries only the
+   * minor version), and a VersionTime of 0 means "not used" per Part 14.
+   */
+  private static boolean majorVersionMismatch(
+      @Nullable ConfigurationVersionDataType version, DataSetMetaDataConfig metaData) {
+
+    return version != null
+        && version.getMajorVersion().longValue() != 0L
+        && !version.getMajorVersion().equals(metaData.getConfigurationVersionMajor());
   }
 
   private static boolean isNotReceiving(PubSubState state) {

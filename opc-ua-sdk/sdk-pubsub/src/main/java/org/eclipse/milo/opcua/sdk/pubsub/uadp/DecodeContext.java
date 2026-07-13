@@ -16,22 +16,27 @@ import org.jspecify.annotations.Nullable;
 /**
  * Context for {@link MessageMappingProvider#decode(DecodeContext, io.netty.buffer.ByteBuf)}.
  *
- * <p>Future versions (e.g. JSON mapping, broker transports) will add components to this record via
- * new {@code of(...)} factory overloads; the canonical constructor may change incompatibly when
- * they do.
+ * <p>Future versions (e.g. broker transports) will add components to this record via new {@code
+ * of(...)} factory overloads; the canonical constructor may change incompatibly when they do.
  *
  * @param encodingContext the {@link EncodingContext} used to decode field values.
  * @param securityResolver resolves key material for received secured NetworkMessages, or {@code
  *     null} if the receiver has no key infrastructure: secured messages are then skipped with
  *     outcome {@link SecurityOutcome#NO_RESOLVER}.
+ * @param metaDataResolver resolves the effective DataSetMetaData for received DataSetMessages so
+ *     field values can be decoded against their declared types, or {@code null} if no metadata
+ *     infrastructure is available: mappings then fall back to self-describing or shape-based field
+ *     decoding.
  * @apiNote Create instances via {@link #of(EncodingContext)} rather than the canonical constructor;
  *     the factory methods are stable while the canonical constructor is not.
  */
 public record DecodeContext(
-    EncodingContext encodingContext, @Nullable SecurityContextResolver securityResolver) {
+    EncodingContext encodingContext,
+    @Nullable SecurityContextResolver securityResolver,
+    @Nullable DataSetMetaDataResolver metaDataResolver) {
 
   /**
-   * Create a {@link DecodeContext} without a security resolver.
+   * Create a {@link DecodeContext} without a security resolver or metadata resolver.
    *
    * @param encodingContext the {@link EncodingContext} used to decode field values.
    * @return a new {@link DecodeContext}.
@@ -41,7 +46,7 @@ public record DecodeContext(
   }
 
   /**
-   * Create a {@link DecodeContext}.
+   * Create a {@link DecodeContext} without a metadata resolver.
    *
    * @param encodingContext the {@link EncodingContext} used to decode field values.
    * @param securityResolver resolves key material for received secured NetworkMessages, or {@code
@@ -50,6 +55,23 @@ public record DecodeContext(
    */
   public static DecodeContext of(
       EncodingContext encodingContext, @Nullable SecurityContextResolver securityResolver) {
-    return new DecodeContext(encodingContext, securityResolver);
+    return new DecodeContext(encodingContext, securityResolver, null);
+  }
+
+  /**
+   * Create a {@link DecodeContext}.
+   *
+   * @param encodingContext the {@link EncodingContext} used to decode field values.
+   * @param securityResolver resolves key material for received secured NetworkMessages, or {@code
+   *     null} if the receiver has no key infrastructure.
+   * @param metaDataResolver resolves the effective DataSetMetaData for received DataSetMessages, or
+   *     {@code null} if no metadata infrastructure is available.
+   * @return a new {@link DecodeContext}.
+   */
+  public static DecodeContext of(
+      EncodingContext encodingContext,
+      @Nullable SecurityContextResolver securityResolver,
+      @Nullable DataSetMetaDataResolver metaDataResolver) {
+    return new DecodeContext(encodingContext, securityResolver, metaDataResolver);
   }
 }
