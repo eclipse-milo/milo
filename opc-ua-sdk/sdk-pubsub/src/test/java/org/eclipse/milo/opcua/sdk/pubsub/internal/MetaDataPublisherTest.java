@@ -61,6 +61,7 @@ import org.eclipse.milo.opcua.sdk.pubsub.transport.TransportProvider;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.DecodeContext;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.UadpMessageMapping;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.UadpMetaDataAnnouncement;
+import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
@@ -387,7 +388,8 @@ class MetaDataPublisherTest {
 
     // the wire-bound metadata strips the reserved 0:MiloSourceKey property that the
     // configuration-model mapping carries for KeyFieldAddress-sourced fields
-    DataSetMetaDataType unstripped = DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false);
+    DataSetMetaDataType unstripped =
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false, new NamespaceTable());
     KeyValuePair[] unstrippedProperties = unstripped.getFields()[0].getProperties();
     assertNotNull(unstrippedProperties);
     assertEquals(MILO_SOURCE_KEY, unstrippedProperties[0].getKey());

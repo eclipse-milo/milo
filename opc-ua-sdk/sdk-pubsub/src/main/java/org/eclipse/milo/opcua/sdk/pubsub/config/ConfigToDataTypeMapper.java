@@ -641,7 +641,8 @@ final class ConfigToDataTypeMapper {
 
     // KeyFieldAddress keys ride along in FieldMetaData properties (MiloSourceKey); the discovery
     // responder derives announcement metadata through the same seam with stripMiloSourceKey=true.
-    DataSetMetaDataType metaData = DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false);
+    DataSetMetaDataType metaData =
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false, namespaceTable);
 
     return new PublishedDataSetDataType(
         dataSet.getName(), null, metaData, toKeyValuePairs(dataSet.getProperties()), dataSetSource);

@@ -49,17 +49,22 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.DataSetOrderingType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.FilterOperator;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.OverrideValueHandling;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.BrokerConnectionTransportDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilterElement;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldContentMask;
+import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetReaderDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetWriterDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DatagramConnectionTransport2DataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DatagramWriterGroupTransport2DataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.EnumDefinition;
+import org.eclipse.milo.opcua.stack.core.types.structured.EnumDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.EnumField;
 import org.eclipse.milo.opcua.stack.core.types.structured.FieldMetaData;
 import org.eclipse.milo.opcua.stack.core.types.structured.FieldTargetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonDataSetMessageContentMask;
@@ -77,7 +82,11 @@ import org.eclipse.milo.opcua.stack.core.types.structured.PublishedVariableDataT
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SecurityGroupDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
+import org.eclipse.milo.opcua.stack.core.types.structured.SimpleTypeDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.StandaloneSubscribedDataSetRefDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.StructureDefinition;
+import org.eclipse.milo.opcua.stack.core.types.structured.StructureDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.StructureField;
 import org.eclipse.milo.opcua.stack.core.types.structured.TargetVariablesDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpDataSetMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpNetworkMessageContentMask;
@@ -117,6 +126,7 @@ class PubSubConfigMapperRoundTripTest {
   private static final UUID FIELD_VALUE_ID = new UUID(0xA2L, 1L);
   private static final UUID FIELD_EVT_SEVERITY_ID = new UUID(0xA3L, 1L);
   private static final UUID FIELD_EVT_MESSAGE_ID = new UUID(0xA3L, 2L);
+  private static final UUID FIELD_POSITION_ID = new UUID(0xA4L, 1L);
   private static final UUID MD_F1_ID = new UUID(0xB1L, 1L);
   private static final UUID MD_F2_ID = new UUID(0xB1L, 2L);
   private static final UUID MD_CLASS_ID = new UUID(0xB1L, 99L);
@@ -243,6 +253,46 @@ class PubSubConfigMapperRoundTripTest {
                 .dataType(NodeIds.Double)
                 .dataSetFieldId(FIELD_VALUE_ID)
                 .build())
+        .build();
+  }
+
+  /**
+   * A dataset with a custom-structure field and authored DataTypeSchemaHeader type descriptions.
+   * The DataType NodeIds live in URI_2 (publisher-local index 2 in {@link #namespaceTable()}).
+   */
+  private static PublishedDataSetConfig customTypesDataSet() {
+    return PublishedDataSetConfig.builder("pds-custom")
+        .field(
+            FieldDefinition.builder("position")
+                .dataType(new NodeId(2, 3001))
+                .dataSetFieldId(FIELD_POSITION_ID)
+                .build())
+        .structureDataType(
+            new NodeId(2, 3001),
+            new QualifiedName(2, "Position"),
+            new StructureDefinition(
+                new NodeId(2, 3003),
+                NodeIds.Structure,
+                StructureType.Structure,
+                new StructureField[] {
+                  new StructureField(
+                      "X", LocalizedText.NULL_VALUE, NodeIds.Double, -1, null, uint(0), false),
+                  new StructureField(
+                      "Y", LocalizedText.NULL_VALUE, NodeIds.Double, -1, null, uint(0), false)
+                }))
+        .enumDataType(
+            new EnumDescription(
+                new NodeId(2, 4001),
+                new QualifiedName(2, "Mode"),
+                new EnumDefinition(
+                    new EnumField[] {
+                      new EnumField(0L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "Off"),
+                      new EnumField(1L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "On")
+                    }),
+                ubyte(6)))
+        .simpleDataType(
+            new SimpleTypeDescription(
+                new NodeId(2, 5001), new QualifiedName(2, "Meters"), NodeIds.Double, ubyte(11)))
         .build();
   }
 
@@ -576,7 +626,8 @@ class PubSubConfigMapperRoundTripTest {
    * broker transports at all three levels, node and key field addresses, promoted fields, an event
    * published dataset with a content filter referenced by an event writer with a non-default event
    * queue capacity, standalone subscribed datasets, target variables, properties at every level,
-   * and raw escape hatches built from namespace 0 types.
+   * raw escape hatches built from namespace 0 types, and a published dataset with authored
+   * DataTypeSchemaHeader type descriptions whose DataType NodeIds live in a non-zero namespace.
    */
   private static PubSubConfig maximalConfig() {
     SecurityGroupConfig sg = securityGroup();
@@ -587,6 +638,7 @@ class PubSubConfigMapperRoundTripTest {
         .publishedDataSet(publishedDataSet1())
         .publishedDataSet(publishedDataSet2())
         .publishedDataSet(publishedEventsDataSet())
+        .publishedDataSet(customTypesDataSet())
         .standaloneSubscribedDataSet(standalone1())
         .standaloneSubscribedDataSet(standalone2())
         .securityGroup(sg)
@@ -1357,7 +1409,8 @@ class PubSubConfigMapperRoundTripTest {
 
     // The emitted metadata is exactly the DataSetMetaDataMapper derivation.
     assertEquals(
-        DataSetMetaDataMapper.toDataSetMetaDataType(publishedEventsDataSet(), false),
+        DataSetMetaDataMapper.toDataSetMetaDataType(
+            publishedEventsDataSet(), false, namespaceTable()),
         pdsEvents.getDataSetMetaData());
 
     FieldMetaData[] fields = pdsEvents.getDataSetMetaData().getFields();
@@ -1414,6 +1467,46 @@ class PubSubConfigMapperRoundTripTest {
     assertEquals(
         new NodeId(1, "Sensor.Temperature"), source.getPublishedData()[0].getPublishedVariable());
     assertEquals(new NodeId(1, uint(5001)), source.getPublishedData()[1].getPublishedVariable());
+  }
+
+  @Test
+  void dataTypeSchemaHeaderWireFormUsesMetaDataLocalIndexes() {
+    NamespaceTable table = namespaceTable();
+    PubSubConfiguration2DataType dataType = maximalConfig().toDataType(table);
+
+    DataSetMetaDataType metaData = dataType.getPublishedDataSets()[3].getDataSetMetaData();
+
+    // Only URI_2 is referenced by the metadata, so the namespaces array holds just that URI and
+    // publisher-local index 2 remaps to metadata-local index 1 (OPC 10000-5 §12.31: entry k maps
+    // to NamespaceIndex k + 1; namespace 0 is never included).
+    assertArrayEquals(new String[] {URI_2}, metaData.getNamespaces());
+    assertEquals(new NodeId(1, 3001), metaData.getFields()[0].getDataType());
+
+    StructureDescription structure = metaData.getStructureDataTypes()[0];
+    assertEquals(new NodeId(1, 3001), structure.getDataTypeId());
+    assertEquals(new QualifiedName(1, "Position"), structure.getName());
+    assertEquals(new NodeId(1, 3003), structure.getStructureDefinition().getDefaultEncodingId());
+    assertEquals(NodeIds.Structure, structure.getStructureDefinition().getBaseDataType());
+    assertEquals(NodeIds.Double, structure.getStructureDefinition().getFields()[0].getDataType());
+
+    assertEquals(new NodeId(1, 4001), metaData.getEnumDataTypes()[0].getDataTypeId());
+    assertEquals(new QualifiedName(1, "Mode"), metaData.getEnumDataTypes()[0].getName());
+    assertEquals(new NodeId(1, 5001), metaData.getSimpleDataTypes()[0].getDataTypeId());
+    assertEquals(NodeIds.Double, metaData.getSimpleDataTypes()[0].getBaseDataType());
+
+    // The import direction restores publisher-local indexes and the authored descriptions.
+    PubSubConfig imported = PubSubConfig.fromDataType(dataType, table);
+    assertEquals(customTypesDataSet(), imported.publishedDataSet("pds-custom").orElseThrow());
+  }
+
+  @Test
+  void unresolvableMetaDataNamespaceThrowsOnFromDataType() {
+    PubSubConfiguration2DataType dataType = maximalConfig().toDataType(namespaceTable());
+
+    // A table without URI_2 cannot resolve the metadata namespaces array back to local indexes.
+    assertThrows(
+        PubSubConfigValidationException.class,
+        () -> PubSubConfig.fromDataType(dataType, new NamespaceTable(URI_1)));
   }
 
   // endregion

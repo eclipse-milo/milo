@@ -76,6 +76,64 @@ discovery responder and retained-MQTT `ua-metadata` paths, and a subscriber reso
 dataset's field names exactly as it resolves a data dataset's — decoding against configured metadata,
 or learning it from discovery or a retained document, works unchanged.
 
+## Custom DataType metadata (type descriptions)
+
+A dataset field whose values are a custom structure is announced with `BuiltInType` 22
+(ExtensionObject) and the DataType NodeId — enough to say "this is a struct", not enough for a
+remote subscriber to decode its members. Part 14 solves this with the DataTypeSchemaHeader content
+of the DataSetMetaData (OPC UA 10000-14 §6.2.3.2.2): a `Namespaces` array plus
+`StructureDataTypes` / `EnumDataTypes` / `SimpleDataTypes` descriptions of every custom DataType
+"potentially contained in the associated DataSetMessages".
+
+Declare the descriptions on the published dataset — they are explicit configuration, nothing is
+inferred from field DataType NodeIds, and declaring the complete set (including nested structures)
+is the application's responsibility:
+
+```java
+PublishedDataSetConfig dataSet =
+    PublishedDataSetConfig.builder("custom-ds")
+        .field(
+            FieldDefinition.builder("position")
+                .dataType(positionDataTypeId) // publisher-local NodeId, non-zero namespace
+                .build())
+        // one-liner for Milo code-generated types (or any type exposing the generated
+        // static definition(NamespaceTable) convention)
+        .structureDataType(
+            positionDataTypeId,
+            new QualifiedName(2, "Position3D"),
+            Position3D.definition(namespaceTable))
+        .build();
+```
+
+`enumDataType(...)` and `simpleDataType(...)` declare Enumeration/OptionSet DataTypes and subtypes
+of builtin DataTypes the same way; fully hand-built `StructureDescription` /
+`EnumDescription` / `SimpleTypeDescription` instances are equally accepted.
+
+What the engine does with them:
+
+- **Namespace remapping.** NodeIds and names in the config are publisher-local. The announced
+  metadata carries its own `Namespaces` array (OPC UA 10000-5 §12.31: entry *k* maps to
+  NamespaceIndex *k*+1; namespace 0 is the OPC UA namespace and is never listed), and every
+  non-zero-namespace NodeId and QualifiedName in the metadata — field DataTypes, field property
+  keys, and everything inside the type descriptions — is remapped to those metadata-local indexes.
+  A remote subscriber needs no access to the publisher's namespace table. A namespace index that
+  does not resolve in the publisher's namespace table fails metadata derivation (and with it
+  config export or writer startup) with `PubSubConfigValidationException`.
+- **Wire forms.** UADP (binary) metadata carries the metadata-local indexes verbatim, backed by
+  the `Namespaces` array. The JSON `ua-metadata` `MetaData` member is encoded against the
+  metadata's own namespaces, so its NodeIds and QualifiedNames appear in the URI-qualified
+  `nsu=<uri>;...` string form — self-describing even before consulting the array. A JSON
+  subscriber that does not know the URI decodes them per the Part 6 unknown-namespace rule as
+  namespace-0 String values carrying the `nsu=` text.
+- **Config round trip.** `PubSubConfig.toDataType` emits the descriptions inside
+  `PublishedDataSetDataType.dataSetMetaData` and `fromDataType` restores them, resolving the
+  metadata-local indexes back through the supplied namespace table.
+
+One thing the engine does **not** do: bump the ConfigurationVersion. Per OPC UA 10000-14
+§6.2.3.2.6 the `majorVersion` shall be updated when the metadata namespaces (or a field DataType)
+change — like field edits, editing type descriptions leaves `configurationVersion(...)` to the
+application.
+
 ## UDP discovery
 
 On UDP connections, discovery is built in and largely automatic.

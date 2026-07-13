@@ -33,6 +33,7 @@ import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -46,6 +47,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrokerTransportQualityOfService;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.DataSetOrderingType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
@@ -66,6 +68,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.DataSetWriterTransport
 import org.eclipse.milo.opcua.stack.core.types.structured.DatagramConnectionTransportDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DatagramWriterGroupTransportDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.EnumDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.FieldMetaData;
 import org.eclipse.milo.opcua.stack.core.types.structured.FieldTargetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonDataSetMessageContentMask;
@@ -88,8 +91,12 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ReaderGroupTransportDa
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SecurityGroupDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
+import org.eclipse.milo.opcua.stack.core.types.structured.SimpleTypeDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.StandaloneSubscribedDataSetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.StandaloneSubscribedDataSetRefDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.StructureDefinition;
+import org.eclipse.milo.opcua.stack.core.types.structured.StructureDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.StructureField;
 import org.eclipse.milo.opcua.stack.core.types.structured.SubscribedDataSetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.TargetVariablesDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.UadpDataSetMessageContentMask;
@@ -830,6 +837,14 @@ final class DataTypeToConfigMapper {
             ? metaData.getFields()
             : new FieldMetaData[0];
 
+    // NodeIds and names inside the metadata use metadata-local namespace indexes backed by the
+    // DataTypeSchemaHeader namespaces array (OPC UA 10000-5 §12.31); resolve them back to
+    // publisher-local indexes. Metadata carrying no namespaces array has nothing to resolve
+    // against and passes indexes through unchanged.
+    var metaDataNamespaces =
+        new MetaDataNamespaceResolver(
+            metaData != null ? metaData.getNamespaces() : null, namespaceTable, path);
+
     PublishedDataSetSourceDataType source = dataSet.getDataSetSource();
     if (source == null || source instanceof PublishedDataItemsDataType) {
       PublishedVariableDataType[] publishedData = new PublishedVariableDataType[0];
@@ -840,10 +855,10 @@ final class DataTypeToConfigMapper {
       for (int i = 0; i < fields.length; i++) {
         FieldMetaData fieldMetaData = fields[i];
         PublishedVariableDataType variable = i < publishedData.length ? publishedData[i] : null;
-        builder.field(mapFieldDefinition(fieldMetaData, variable, path));
+        builder.field(mapFieldDefinition(fieldMetaData, variable, metaDataNamespaces, path));
       }
     } else if (source instanceof PublishedEventsDataType events) {
-      builder.source(mapPublishedEvents(events, fields, path));
+      builder.source(mapPublishedEvents(events, fields, metaDataNamespaces, path));
     } else {
       throw new PubSubConfigValidationException(
           path
@@ -852,13 +867,149 @@ final class DataTypeToConfigMapper {
               + source.getClass().getName());
     }
 
+    if (metaData != null) {
+      mapTypeDescriptions(metaData, metaDataNamespaces, builder);
+    }
+
     fromKeyValuePairs(dataSet.getExtensionFields()).forEach(builder::property);
 
     return builder.build();
   }
 
+  /** Map the DataTypeSchemaHeader type descriptions back to authored, publisher-local form. */
+  private static void mapTypeDescriptions(
+      DataSetMetaDataType metaData,
+      MetaDataNamespaceResolver metaDataNamespaces,
+      PublishedDataSetConfig.Builder builder) {
+
+    StructureDescription[] structureDataTypes = metaData.getStructureDataTypes();
+    if (structureDataTypes != null) {
+      for (StructureDescription description : structureDataTypes) {
+        if (description != null) {
+          builder.structureDataType(
+              new StructureDescription(
+                  metaDataNamespaces.resolve(description.getDataTypeId()),
+                  metaDataNamespaces.resolve(description.getName()),
+                  resolveStructureDefinition(
+                      description.getStructureDefinition(), metaDataNamespaces)));
+        }
+      }
+    }
+
+    EnumDescription[] enumDataTypes = metaData.getEnumDataTypes();
+    if (enumDataTypes != null) {
+      for (EnumDescription description : enumDataTypes) {
+        if (description != null) {
+          builder.enumDataType(
+              new EnumDescription(
+                  metaDataNamespaces.resolve(description.getDataTypeId()),
+                  metaDataNamespaces.resolve(description.getName()),
+                  description.getEnumDefinition(),
+                  description.getBuiltInType()));
+        }
+      }
+    }
+
+    SimpleTypeDescription[] simpleDataTypes = metaData.getSimpleDataTypes();
+    if (simpleDataTypes != null) {
+      for (SimpleTypeDescription description : simpleDataTypes) {
+        if (description != null) {
+          builder.simpleDataType(
+              new SimpleTypeDescription(
+                  metaDataNamespaces.resolve(description.getDataTypeId()),
+                  metaDataNamespaces.resolve(description.getName()),
+                  metaDataNamespaces.resolve(description.getBaseDataType()),
+                  description.getBuiltInType()));
+        }
+      }
+    }
+  }
+
+  private static StructureDefinition resolveStructureDefinition(
+      StructureDefinition definition, MetaDataNamespaceResolver metaDataNamespaces) {
+
+    StructureField[] fields = definition.getFields();
+    StructureField[] resolvedFields = null;
+    if (fields != null) {
+      resolvedFields = new StructureField[fields.length];
+      for (int i = 0; i < fields.length; i++) {
+        StructureField field = fields[i];
+        resolvedFields[i] =
+            new StructureField(
+                field.getName(),
+                field.getDescription(),
+                metaDataNamespaces.resolve(field.getDataType()),
+                field.getValueRank(),
+                field.getArrayDimensions(),
+                field.getMaxStringLength(),
+                field.getIsOptional());
+      }
+    }
+
+    return new StructureDefinition(
+        metaDataNamespaces.resolve(definition.getDefaultEncodingId()),
+        metaDataNamespaces.resolve(definition.getBaseDataType()),
+        definition.getStructureType(),
+        resolvedFields);
+  }
+
+  /**
+   * Resolves metadata-local namespace indexes — backed by the DataSetMetaData's
+   * DataTypeSchemaHeader namespaces array, where entry {@code k} corresponds to NamespaceIndex
+   * {@code k + 1} and index 0 is the OPC UA namespace (OPC UA 10000-5 §12.31) — back to
+   * publisher-local indexes in the target namespace table. Metadata carrying no namespaces array
+   * passes indexes through unchanged (the shape emitted before the schema header was populated).
+   */
+  private static final class MetaDataNamespaceResolver {
+
+    private final String @Nullable [] namespaces;
+    private final NamespaceTable namespaceTable;
+    private final String path;
+
+    private MetaDataNamespaceResolver(
+        String @Nullable [] namespaces, NamespaceTable namespaceTable, String path) {
+      this.namespaces = namespaces;
+      this.namespaceTable = namespaceTable;
+      this.path = path;
+    }
+
+    NodeId resolve(NodeId nodeId) {
+      if (namespaces == null || nodeId.getNamespaceIndex().intValue() == 0) {
+        return nodeId;
+      }
+      return nodeId.withNamespaceIndex(publisherLocalIndex(nodeId.getNamespaceIndex()));
+    }
+
+    QualifiedName resolve(QualifiedName name) {
+      if (namespaces == null || name.namespaceIndex().intValue() == 0) {
+        return name;
+      }
+      return name.withNamespaceIndex(publisherLocalIndex(name.namespaceIndex()));
+    }
+
+    private UShort publisherLocalIndex(UShort metaDataIndex) {
+      assert namespaces != null;
+      int k = metaDataIndex.intValue();
+      String uri = k <= namespaces.length ? namespaces[k - 1] : null;
+      if (uri == null) {
+        throw new PubSubConfigValidationException(
+            "%s: metadata namespace index %s has no entry in the metadata namespaces array"
+                .formatted(path, metaDataIndex));
+      }
+      UShort index = namespaceTable.getIndex(uri);
+      if (index == null) {
+        throw new PubSubConfigValidationException(
+            "%s: metadata namespace %s not present in the namespace table".formatted(path, uri));
+      }
+      return index;
+    }
+  }
+
   private PublishedEventsConfig mapPublishedEvents(
-      PublishedEventsDataType events, FieldMetaData[] fields, String path) {
+      PublishedEventsDataType events,
+      FieldMetaData[] fields,
+      MetaDataNamespaceResolver metaDataNamespaces,
+      String path) {
 
     NodeId eventNotifier = events.getEventNotifier();
 
@@ -885,7 +1036,8 @@ final class DataTypeToConfigMapper {
     }
 
     for (int i = 0; i < fields.length; i++) {
-      builder.field(mapEventFieldDefinition(fields[i], selectedFields[i], path));
+      builder.field(
+          mapEventFieldDefinition(fields[i], selectedFields[i], metaDataNamespaces, path));
     }
 
     ContentFilter filter = events.getFilter();
@@ -895,7 +1047,10 @@ final class DataTypeToConfigMapper {
   }
 
   private static EventFieldDefinition mapEventFieldDefinition(
-      FieldMetaData fieldMetaData, @Nullable SimpleAttributeOperand selectedField, String path) {
+      FieldMetaData fieldMetaData,
+      @Nullable SimpleAttributeOperand selectedField,
+      MetaDataNamespaceResolver metaDataNamespaces,
+      String path) {
 
     String fieldName = requireName(fieldMetaData.getName(), path + " field");
     String fieldPath = path + " field '%s'".formatted(fieldName);
@@ -909,7 +1064,7 @@ final class DataTypeToConfigMapper {
     builder.selectedField(selectedField);
 
     if (fieldMetaData.getDataType() != null) {
-      builder.dataType(fieldMetaData.getDataType());
+      builder.dataType(metaDataNamespaces.resolve(fieldMetaData.getDataType()));
     }
     if (fieldMetaData.getDataSetFieldId() != null) {
       builder.dataSetFieldId(fieldMetaData.getDataSetFieldId());
@@ -921,24 +1076,30 @@ final class DataTypeToConfigMapper {
     }
     builder.arrayDimensions(fieldMetaData.getArrayDimensions());
 
-    fromKeyValuePairs(fieldMetaData.getProperties()).forEach(builder::property);
+    fromKeyValuePairs(fieldMetaData.getProperties())
+        .forEach((name, value) -> builder.property(metaDataNamespaces.resolve(name), value));
 
     return builder.build();
   }
 
   private FieldDefinition mapFieldDefinition(
-      FieldMetaData fieldMetaData, @Nullable PublishedVariableDataType variable, String path) {
+      FieldMetaData fieldMetaData,
+      @Nullable PublishedVariableDataType variable,
+      MetaDataNamespaceResolver metaDataNamespaces,
+      String path) {
 
     String fieldName = requireName(fieldMetaData.getName(), path + " field");
     String fieldPath = path + " field '%s'".formatted(fieldName);
 
     FieldDefinition.Builder builder = FieldDefinition.builder(fieldName);
 
-    Map<QualifiedName, Variant> properties = fromKeyValuePairs(fieldMetaData.getProperties());
+    Map<QualifiedName, Variant> properties = new LinkedHashMap<>();
+    fromKeyValuePairs(fieldMetaData.getProperties())
+        .forEach((name, value) -> properties.put(metaDataNamespaces.resolve(name), value));
     Variant sourceKey = properties.remove(MILO_SOURCE_KEY);
 
     if (fieldMetaData.getDataType() != null) {
-      builder.dataType(fieldMetaData.getDataType());
+      builder.dataType(metaDataNamespaces.resolve(fieldMetaData.getDataType()));
     }
     if (fieldMetaData.getDataSetFieldId() != null) {
       builder.dataSetFieldId(fieldMetaData.getDataSetFieldId());

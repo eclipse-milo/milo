@@ -64,6 +64,14 @@ import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfiguration2Da
  *   <li>{@code FieldMetaData.builtInType} is derived from the field's DataType NodeId (builtin
  *       types map to their builtin type id, everything else to ExtensionObject/22) and is not
  *       consumed by {@code fromDataType}.
+ *   <li>NodeIds and QualifiedNames inside the emitted {@code dataSetMetaData} — {@code
+ *       FieldMetaData.dataType} and property keys, and the authored DataTypeSchemaHeader type
+ *       descriptions ({@link PublishedDataSetConfig#getStructureDataTypes()} et al.) — use
+ *       metadata-local namespace indexes backed by the metadata's own {@code namespaces} array (OPC
+ *       UA 10000-5 §12.31); {@code fromDataType} resolves them back through the supplied {@link
+ *       NamespaceTable}, and an unresolvable metadata namespace URI or index throws {@link
+ *       PubSubConfigValidationException}. Metadata carrying no namespaces array (the shape emitted
+ *       before the schema header was populated) passes namespace indexes through unchanged.
  *   <li>Wire {@code SecurityGroupId}s are the referenced {@link SecurityGroupConfig}'s {@code
  *       securityGroupId} (not its config name); {@code fromDataType} resolves them back to the
  *       matching group by id.
@@ -163,11 +171,10 @@ import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfiguration2Da
  *   <li>Writer group: {@code localeIds}, {@code headerLayoutUri}.
  *   <li>Dataset reader: {@code dataSetFieldContentMask}, {@code headerLayoutUri}.
  *   <li>Published dataset: {@code dataSetFolder}, metadata {@code description}, {@code
- *       dataSetClassId} (emitted as the all-zero Guid), the DataTypeSchemaHeader arrays, and the
- *       {@code PublishedVariableDataType} sampling/deadband/index-range/substitute-value fields
- *       (emitted as defaults). {@code PublishedDataSetConfig.properties} maps to {@code
- *       extensionFields}. Dataset sources other than {@code PublishedDataItems} and {@code
- *       PublishedEvents} are rejected.
+ *       dataSetClassId} (emitted as the all-zero Guid), and the {@code PublishedVariableDataType}
+ *       sampling/deadband/index-range/substitute-value fields (emitted as defaults). {@code
+ *       PublishedDataSetConfig.properties} maps to {@code extensionFields}. Dataset sources other
+ *       than {@code PublishedDataItems} and {@code PublishedEvents} are rejected.
  *   <li>Standalone subscribed dataset: {@code dataSetFolder}. {@code SubscribedDataSetMirror} and
  *       inline standalone subscribed datasets are rejected.
  *   <li>MQTT connection address: {@code networkInterface}.

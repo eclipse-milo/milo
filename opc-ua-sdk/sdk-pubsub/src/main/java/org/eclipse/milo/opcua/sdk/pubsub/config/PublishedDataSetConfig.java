@@ -14,13 +14,21 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.structured.DataTypeDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.EnumDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.SimpleTypeDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.StructureDefinition;
+import org.eclipse.milo.opcua.stack.core.types.structured.StructureDescription;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -32,6 +40,13 @@ import org.jspecify.annotations.Nullable;
  * the same ref) or a {@link PublishedEventsConfig} (event fields selected from events emitted by an
  * event notifier Node). Published datasets are referenced by DataSetWriters via {@link
  * PublishedDataSetRef}. Corresponds to the Part 14 {@code PublishedDataSetDataType}.
+ *
+ * <p>A dataset whose fields carry custom DataTypes may additionally declare the type descriptions
+ * those fields depend on ({@link Builder#structureDataType(StructureDescription)}, {@link
+ * Builder#enumDataType(EnumDescription)}, {@link Builder#simpleDataType(SimpleTypeDescription)});
+ * they populate the DataTypeSchemaHeader of the dataset's announced DataSetMetaData so a remote
+ * subscriber can decode custom fields from the metadata alone. See {@link
+ * #getStructureDataTypes()}.
  */
 public final class PublishedDataSetConfig {
 
@@ -41,6 +56,9 @@ public final class PublishedDataSetConfig {
   private final UInteger configurationVersionMajor;
   private final UInteger configurationVersionMinor;
   private final Map<QualifiedName, Variant> properties;
+  private final List<StructureDescription> structureDataTypes;
+  private final List<EnumDescription> enumDataTypes;
+  private final List<SimpleTypeDescription> simpleDataTypes;
 
   private PublishedDataSetConfig(Builder builder, PublishedDataSetSourceConfig source) {
     this.name = builder.name;
@@ -49,6 +67,9 @@ public final class PublishedDataSetConfig {
     this.configurationVersionMajor = builder.configurationVersionMajor;
     this.configurationVersionMinor = builder.configurationVersionMinor;
     this.properties = Collections.unmodifiableMap(new LinkedHashMap<>(builder.properties));
+    this.structureDataTypes = List.copyOf(builder.structureDataTypes);
+    this.enumDataTypes = List.copyOf(builder.enumDataTypes);
+    this.simpleDataTypes = List.copyOf(builder.simpleDataTypes);
   }
 
   /**
@@ -120,6 +141,47 @@ public final class PublishedDataSetConfig {
   }
 
   /**
+   * Get the descriptions of the Structure and Union DataTypes this dataset's fields depend on, in
+   * authored order.
+   *
+   * <p>Together with {@link #getEnumDataTypes()} and {@link #getSimpleDataTypes()} these populate
+   * the DataTypeSchemaHeader content of the dataset's DataSetMetaData (OPC UA 10000-14 §6.2.3.2.2:
+   * the header "shall be populated with ... all namespaces and DataTypes that are potentially
+   * contained in the associated DataSetMessages"; the descriptions themselves are defined in OPC UA
+   * 10000-5 §12.31). NodeIds and names inside the descriptions are publisher-local — resolved
+   * against the publisher's namespace table, the same convention as {@link
+   * FieldDefinition#getDataType()} — and are remapped to metadata-local namespace indexes when the
+   * metadata is derived.
+   *
+   * @return an unmodifiable list of the structure DataType descriptions.
+   */
+  public List<StructureDescription> getStructureDataTypes() {
+    return structureDataTypes;
+  }
+
+  /**
+   * Get the descriptions of the Enumeration and OptionSet DataTypes this dataset's fields depend
+   * on, in authored order.
+   *
+   * @return an unmodifiable list of the enum DataType descriptions.
+   * @see #getStructureDataTypes()
+   */
+  public List<EnumDescription> getEnumDataTypes() {
+    return enumDataTypes;
+  }
+
+  /**
+   * Get the descriptions of the DataTypes derived from builtin DataTypes this dataset's fields
+   * depend on, in authored order.
+   *
+   * @return an unmodifiable list of the simple DataType descriptions.
+   * @see #getStructureDataTypes()
+   */
+  public List<SimpleTypeDescription> getSimpleDataTypes() {
+    return simpleDataTypes;
+  }
+
+  /**
    * Get a {@link PublishedDataSetRef} referencing this published dataset by name.
    *
    * @return a {@link PublishedDataSetRef} referencing this published dataset.
@@ -140,6 +202,9 @@ public final class PublishedDataSetConfig {
     builder.configurationVersionMajor = configurationVersionMajor;
     builder.configurationVersionMinor = configurationVersionMinor;
     builder.properties.putAll(properties);
+    builder.structureDataTypes.addAll(structureDataTypes);
+    builder.enumDataTypes.addAll(enumDataTypes);
+    builder.simpleDataTypes.addAll(simpleDataTypes);
     return builder;
   }
 
@@ -156,25 +221,39 @@ public final class PublishedDataSetConfig {
         && source.equals(that.source)
         && configurationVersionMajor.equals(that.configurationVersionMajor)
         && configurationVersionMinor.equals(that.configurationVersionMinor)
-        && properties.equals(that.properties);
+        && properties.equals(that.properties)
+        && structureDataTypes.equals(that.structureDataTypes)
+        && enumDataTypes.equals(that.enumDataTypes)
+        && simpleDataTypes.equals(that.simpleDataTypes);
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(
-        name, enabled, source, configurationVersionMajor, configurationVersionMinor, properties);
+        name,
+        enabled,
+        source,
+        configurationVersionMajor,
+        configurationVersionMinor,
+        properties,
+        structureDataTypes,
+        enumDataTypes,
+        simpleDataTypes);
   }
 
   @Override
   public String toString() {
-    return "PublishedDataSetConfig{name='%s', enabled=%s, source=%s, configurationVersion=(%s, %s), properties=%s}"
+    return "PublishedDataSetConfig{name='%s', enabled=%s, source=%s, configurationVersion=(%s, %s), properties=%s, structureDataTypes=%s, enumDataTypes=%s, simpleDataTypes=%s}"
         .formatted(
             name,
             enabled,
             source,
             configurationVersionMajor,
             configurationVersionMinor,
-            properties);
+            properties,
+            structureDataTypes,
+            enumDataTypes,
+            simpleDataTypes);
   }
 
   /**
@@ -197,6 +276,9 @@ public final class PublishedDataSetConfig {
     private UInteger configurationVersionMajor = uint(1);
     private UInteger configurationVersionMinor = uint(1);
     private final Map<QualifiedName, Variant> properties = new LinkedHashMap<>();
+    private final List<StructureDescription> structureDataTypes = new ArrayList<>();
+    private final List<EnumDescription> enumDataTypes = new ArrayList<>();
+    private final List<SimpleTypeDescription> simpleDataTypes = new ArrayList<>();
 
     private Builder(String name) {
       this.name = name;
@@ -267,12 +349,89 @@ public final class PublishedDataSetConfig {
     }
 
     /**
+     * Declare a Structure or Union DataType the dataset's fields depend on.
+     *
+     * <p>The description is announced in the {@code structureDataTypes} of the dataset's
+     * DataSetMetaData, whose DataTypeSchemaHeader "shall be populated with ... all namespaces and
+     * DataTypes that are potentially contained in the associated DataSetMessages" (OPC UA 10000-14
+     * §6.2.3.2.2) — including nested Structures (OPC UA 10000-5 §12.31). Declaring the complete set
+     * is the application's responsibility; nothing is inferred from field DataType NodeIds.
+     *
+     * <p>NodeIds and names inside the description are publisher-local (resolved against the
+     * publisher's namespace table); metadata derivation remaps them to metadata-local namespace
+     * indexes backed by the announced {@code namespaces} array.
+     *
+     * <p>Per OPC UA 10000-14 §6.2.3.2.6 the ConfigurationVersion {@code majorVersion} shall be
+     * updated when the announced namespaces (or a field DataType) change. Like field edits, editing
+     * type descriptions does not bump {@link #configurationVersion(UInteger, UInteger)}
+     * automatically — the application owns the version.
+     *
+     * @param description the {@link StructureDescription}.
+     * @return this {@link Builder}.
+     */
+    public Builder structureDataType(StructureDescription description) {
+      structureDataTypes.add(description);
+      return this;
+    }
+
+    /**
+     * Declare a Structure or Union DataType from its parts — a convenience for types following the
+     * Milo code-generated convention of a static {@code definition(NamespaceTable)} method:
+     *
+     * <pre>{@code
+     * builder.structureDataType(dataTypeId, name, XVType.definition(namespaceTable));
+     * }</pre>
+     *
+     * @param dataTypeId the publisher-local NodeId of the DataType.
+     * @param name the name of the DataType; typically the DataType Node's BrowseName.
+     * @param definition the {@link StructureDefinition}, e.g. {@code
+     *     SomeType.definition(namespaceTable)}.
+     * @return this {@link Builder}.
+     * @see #structureDataType(StructureDescription)
+     */
+    public Builder structureDataType(
+        NodeId dataTypeId, QualifiedName name, StructureDefinition definition) {
+      return structureDataType(new StructureDescription(dataTypeId, name, definition));
+    }
+
+    /**
+     * Declare an Enumeration or OptionSet DataType the dataset's fields depend on.
+     *
+     * <p>The description is announced in the {@code enumDataTypes} of the dataset's
+     * DataSetMetaData; see {@link #structureDataType(StructureDescription)} for the authoring
+     * contract.
+     *
+     * @param description the {@link EnumDescription}.
+     * @return this {@link Builder}.
+     */
+    public Builder enumDataType(EnumDescription description) {
+      enumDataTypes.add(description);
+      return this;
+    }
+
+    /**
+     * Declare a DataType derived from a builtin DataType that the dataset's fields depend on.
+     *
+     * <p>The description is announced in the {@code simpleDataTypes} of the dataset's
+     * DataSetMetaData; see {@link #structureDataType(StructureDescription)} for the authoring
+     * contract.
+     *
+     * @param description the {@link SimpleTypeDescription}.
+     * @return this {@link Builder}.
+     */
+    public Builder simpleDataType(SimpleTypeDescription description) {
+      simpleDataTypes.add(description);
+      return this;
+    }
+
+    /**
      * Build a {@link PublishedDataSetConfig} from the configured values.
      *
      * @return a new {@link PublishedDataSetConfig}.
      * @throws PubSubConfigValidationException if the name is empty, both {@link
-     *     #field(FieldDefinition)} and {@link #source(PublishedDataSetSourceConfig)} were used, or
-     *     the implicit data-items source contains two fields sharing a name or a DataSetFieldId.
+     *     #field(FieldDefinition)} and {@link #source(PublishedDataSetSourceConfig)} were used, the
+     *     implicit data-items source contains two fields sharing a name or a DataSetFieldId, or two
+     *     type descriptions share a DataType NodeId.
      */
     public PublishedDataSetConfig build() {
       if (name.isEmpty()) {
@@ -282,6 +441,18 @@ public final class PublishedDataSetConfig {
         throw new PubSubConfigValidationException(
             "PublishedDataSetConfig '%s': field(...) and source(...) are mutually exclusive"
                 .formatted(name));
+      }
+
+      Set<NodeId> describedDataTypeIds = new HashSet<>();
+      for (List<? extends DataTypeDescription> descriptions :
+          List.of(structureDataTypes, enumDataTypes, simpleDataTypes)) {
+        for (DataTypeDescription description : descriptions) {
+          if (!describedDataTypeIds.add(description.getDataTypeId())) {
+            throw new PubSubConfigValidationException(
+                "PublishedDataSetConfig '%s': duplicate type description for DataType %s"
+                    .formatted(name, description.getDataTypeId()));
+          }
+        }
       }
 
       PublishedDataSetSourceConfig source = this.source;

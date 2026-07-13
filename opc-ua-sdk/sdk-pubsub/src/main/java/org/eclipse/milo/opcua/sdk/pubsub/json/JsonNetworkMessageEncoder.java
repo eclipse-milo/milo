@@ -28,9 +28,15 @@ import org.eclipse.milo.opcua.sdk.pubsub.uadp.DataSetMessageKind;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.EncodeContext;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.EncodedNetworkMessage;
 import org.eclipse.milo.opcua.sdk.pubsub.uadp.MetaDataEncodeContext;
+import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.ServerTable;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
+import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.encoding.EncodingManager;
 import org.eclipse.milo.opcua.stack.core.encoding.json.OpcUaJsonEncoder;
+import org.eclipse.milo.opcua.stack.core.types.DataTypeManager;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
@@ -146,7 +152,8 @@ final class JsonNetworkMessageEncoder {
         writer.setHtmlSafe(false);
 
         String metaDataJson;
-        try (var structEncoder = new OpcUaJsonEncoder(context.encodingContext())) {
+        try (var structEncoder =
+            new OpcUaJsonEncoder(metaDataEncodingContext(context.encodingContext(), metaData))) {
           structEncoder.setEncoding(OpcUaJsonEncoder.Encoding.COMPACT);
           structEncoder.encodeStruct(null, metaData, DataSetMetaDataType.TYPE_ID);
           metaDataJson = structEncoder.getOutputString();
@@ -173,6 +180,52 @@ final class JsonNetworkMessageEncoder {
       buffer.release();
       throw toUaException(e);
     }
+  }
+
+  /**
+   * The encoding context for the {@code MetaData} member: NamespaceIndexes in NodeIds and
+   * QualifiedNames contained in a DataSetMetaData with a populated DataTypeSchemaHeader namespaces
+   * array are metadata-local — per OPC 10000-5 §12.31 entry {@code k} of the array maps to
+   * NamespaceIndex {@code k + 1} and index 0 is the OPC UA namespace — so the JSON codec's
+   * index-to-URI resolution must run against that array, not the publisher's namespace table. A
+   * metadata with no namespaces array is encoded against the publisher context unchanged.
+   */
+  private static EncodingContext metaDataEncodingContext(
+      EncodingContext context, DataSetMetaDataType metaData) {
+
+    String[] namespaces = metaData.getNamespaces();
+    if (namespaces == null || namespaces.length == 0) {
+      return context;
+    }
+
+    var metaDataNamespaces = new NamespaceTable(namespaces);
+
+    return new EncodingContext() {
+      @Override
+      public DataTypeManager getDataTypeManager() {
+        return context.getDataTypeManager();
+      }
+
+      @Override
+      public EncodingManager getEncodingManager() {
+        return context.getEncodingManager();
+      }
+
+      @Override
+      public EncodingLimits getEncodingLimits() {
+        return context.getEncodingLimits();
+      }
+
+      @Override
+      public NamespaceTable getNamespaceTable() {
+        return metaDataNamespaces;
+      }
+
+      @Override
+      public ServerTable getServerTable() {
+        return context.getServerTable();
+      }
+    };
   }
 
   private static String isoTimestamp(MetaDataEncodeContext context, DateTime timestamp) {

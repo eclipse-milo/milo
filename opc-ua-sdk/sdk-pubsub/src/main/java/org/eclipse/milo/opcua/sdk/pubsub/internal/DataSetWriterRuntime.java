@@ -292,7 +292,9 @@ final class DataSetWriterRuntime extends AbstractComponentRuntime {
     this.configurationVersion =
         new ConfigurationVersionDataType(
             dataSet.getConfigurationVersionMajor(), dataSet.getConfigurationVersionMinor());
-    this.metaData = DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, true);
+    this.metaData =
+        DataSetMetaDataMapper.toDataSetMetaDataType(
+            dataSet, true, service.getEncodingContext().getNamespaceTable());
 
     this.keyFrameCount = Math.max(1L, config.getKeyFrameCount().longValue());
     this.deltaCapable =

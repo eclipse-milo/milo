@@ -25,6 +25,7 @@ import static org.eclipse.milo.opcua.sdk.pubsub.json.JsonTestFixtures.toJson;
 import static org.eclipse.milo.opcua.sdk.pubsub.json.JsonTestFixtures.writer;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -47,14 +48,21 @@ import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.FieldMetaData;
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonDataSetMessageContentMask;
 import org.eclipse.milo.opcua.stack.core.types.structured.JsonNetworkMessageContentMask;
+import org.eclipse.milo.opcua.stack.core.types.structured.StructureDefinition;
+import org.eclipse.milo.opcua.stack.core.types.structured.StructureDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.StructureField;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -763,4 +771,164 @@ class JsonGoldenVectorTest {
           originalFields[i].getDataSetFieldId(), roundTrippedFields[i].getDataSetFieldId());
     }
   }
+
+  // region ua-metadata with DataTypeSchemaHeader content
+
+  private static final UUID POSITION_FIELD_ID =
+      UUID.fromString("7d2f3a10-9b4c-4e8d-a1b2-c3d4e5f60718");
+
+  /**
+   * Metadata for a dataset with one custom-structure field: a Namespaces array (metadata-local
+   * index 1 = the single entry, per OPC 10000-5 §12.31) and the StructureDescription a remote
+   * subscriber needs to interpret the field's inline JSON struct members.
+   */
+  private static DataSetMetaDataType schemaHeaderMetaData() {
+    return new DataSetMetaDataType(
+        new String[] {"urn:milo:test:custom-types"},
+        new StructureDescription[] {
+          new StructureDescription(
+              new NodeId(1, 3001),
+              new QualifiedName(1, "Position"),
+              new StructureDefinition(
+                  new NodeId(1, 3003),
+                  NodeIds.Structure,
+                  StructureType.Structure,
+                  new StructureField[] {
+                    new StructureField(
+                        "X", LocalizedText.NULL_VALUE, NodeIds.Double, -1, null, uint(0), false),
+                    new StructureField(
+                        "Y", LocalizedText.NULL_VALUE, NodeIds.Double, -1, null, uint(0), false)
+                  }))
+        },
+        null,
+        null,
+        "Telemetry",
+        LocalizedText.NULL_VALUE,
+        new FieldMetaData[] {field("position", 22, new NodeId(1, 3001), -1, POSITION_FIELD_ID)},
+        new UUID(0L, 0L),
+        EXAMPLE_VERSION);
+  }
+
+  /**
+   * The {@code MetaData} member of a {@code ua-metadata} message carrying DataTypeSchemaHeader
+   * content is the plain CompactEncoding of {@link DataSetMetaDataType} (§7.2.5.5.2 Table 188),
+   * encoded against the metadata's own namespaces array (OPC 10000-5 §12.31: metadata-local index 1
+   * = the first array entry): the JSON codec renders the metadata-local indexes in NodeIds and
+   * QualifiedNames as their {@code nsu=} URI-qualified string forms, self-describing to a remote
+   * subscriber; null/default members are omitted.
+   */
+  @Test
+  void encodeMetaDataWithSchemaHeaderMatchesGoldenVector() throws Exception {
+    var context =
+        MetaDataEncodeContext.of(
+            ENCODING_CONTEXT,
+            PUBLISHER_ID,
+            group(JsonNetworkMessageContentMask.of()),
+            writer(
+                "telemetry-writer",
+                21,
+                JsonDataSetMessageContentMask.of(),
+                DataSetFieldContentMask.of()));
+
+    EncodedNetworkMessage encoded = MAPPING.encodeMetaData(context, schemaHeaderMetaData());
+    JsonObject actual = toJson(encoded).getAsJsonObject();
+
+    assertEquals("ua-metadata", actual.get("MessageType").getAsString());
+
+    JsonObject expectedMetaData =
+        JsonParser.parseString(
+                """
+                {
+                  "Namespaces": ["urn:milo:test:custom-types"],
+                  "StructureDataTypes": [
+                    {
+                      "DataTypeId": "nsu=urn:milo:test:custom-types;i=3001",
+                      "Name": "nsu=urn:milo:test:custom-types;Position",
+                      "StructureDefinition": {
+                        "DefaultEncodingId": "nsu=urn:milo:test:custom-types;i=3003",
+                        "BaseDataType": "i=22",
+                        "Fields": [
+                          { "Name": "X", "DataType": "i=11", "ValueRank": -1 },
+                          { "Name": "Y", "DataType": "i=11", "ValueRank": -1 }
+                        ]
+                      }
+                    }
+                  ],
+                  "Name": "Telemetry",
+                  "Fields": [
+                    {
+                      "Name": "position",
+                      "BuiltInType": 22,
+                      "DataType": "nsu=urn:milo:test:custom-types;i=3001",
+                      "ValueRank": -1,
+                      "DataSetFieldId": "7d2f3a10-9b4c-4e8d-a1b2-c3d4e5f60718"
+                    }
+                  ],
+                  "ConfigurationVersion": { "MajorVersion": 1444863032, "MinorVersion": 1444863033 }
+                }
+                """)
+            .getAsJsonObject();
+
+    assertEquals(
+        normalizeUuidStrings(expectedMetaData), normalizeUuidStrings(actual.get("MetaData")));
+  }
+
+  /**
+   * A decoded {@code ua-metadata} document surfaces the DataTypeSchemaHeader content to the
+   * subscriber-side metadata consumer: nothing in the decode path drops the Namespaces array or the
+   * type descriptions.
+   */
+  @Test
+  void decodeMetaDataWithSchemaHeaderSurfacesDescriptions() throws Exception {
+    var context =
+        MetaDataEncodeContext.of(
+            ENCODING_CONTEXT,
+            PUBLISHER_ID,
+            group(JsonNetworkMessageContentMask.of()),
+            writer(
+                "telemetry-writer",
+                21,
+                JsonDataSetMessageContentMask.of(),
+                DataSetFieldContentMask.of()));
+
+    DataSetMetaDataType original = schemaHeaderMetaData();
+    EncodedNetworkMessage encoded = MAPPING.encodeMetaData(context, original);
+
+    String wire;
+    try {
+      wire = encoded.data().toString(java.nio.charset.StandardCharsets.UTF_8);
+    } finally {
+      encoded.data().release();
+    }
+
+    DecodedNetworkMessage decoded = decode(wire);
+    assertEquals(1, decoded.metaData().size());
+    assertEquals(ushort(21), decoded.metaData().get(0).dataSetWriterId());
+
+    DataSetMetaDataType roundTripped = decoded.metaData().get(0).metaData();
+    assertArrayEquals(original.getNamespaces(), roundTripped.getNamespaces());
+    assertNull(roundTripped.getEnumDataTypes());
+    assertNull(roundTripped.getSimpleDataTypes());
+
+    // The decoding context's namespace table does not contain the custom URI, so per the OPC
+    // 10000-6 unknown-namespace decoding rule the URI-qualified NodeIds fall back to namespace-0
+    // String NodeIds carrying the nsu-form text — still self-describing, and still matching
+    // between the field and its description.
+    NodeId fallbackDataTypeId = new NodeId(0, "nsu=urn:milo:test:custom-types;i=3001");
+    assertEquals(fallbackDataTypeId, roundTripped.getFields()[0].getDataType());
+
+    StructureDescription description = roundTripped.getStructureDataTypes()[0];
+    assertEquals(fallbackDataTypeId, description.getDataTypeId());
+    assertEquals(
+        new QualifiedName(0, "nsu=urn:milo:test:custom-types;Position"), description.getName());
+    assertEquals("X", description.getStructureDefinition().getFields()[0].getName());
+    assertEquals(NodeIds.Double, description.getStructureDefinition().getFields()[0].getDataType());
+    assertEquals("Y", description.getStructureDefinition().getFields()[1].getName());
+
+    // Acceptance shape: the Namespaces array carries the URI the field's DataType is qualified
+    // with, and the matching StructureDescription names the members of the inline struct.
+    assertEquals("urn:milo:test:custom-types", roundTripped.getNamespaces()[0]);
+  }
+
+  // endregion
 }

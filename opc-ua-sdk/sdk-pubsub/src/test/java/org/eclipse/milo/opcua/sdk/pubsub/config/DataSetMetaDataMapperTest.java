@@ -27,28 +27,41 @@ import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ConfigurationVersionDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.EnumDefinition;
+import org.eclipse.milo.opcua.stack.core.types.structured.EnumDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.EnumField;
 import org.eclipse.milo.opcua.stack.core.types.structured.FieldMetaData;
 import org.eclipse.milo.opcua.stack.core.types.structured.KeyValuePair;
 import org.eclipse.milo.opcua.stack.core.types.structured.PubSubConfiguration2DataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedDataSetDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
+import org.eclipse.milo.opcua.stack.core.types.structured.SimpleTypeDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.StructureDefinition;
+import org.eclipse.milo.opcua.stack.core.types.structured.StructureDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.StructureField;
+import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
 import org.junit.jupiter.api.Test;
 
 /**
  * Tests for {@code DataSetMetaDataMapper}, the published dataset metadata derivation seam used by
  * the UADP discovery responder: identity with the metadata emitted inside whole-config {@code
  * PubSubConfig.toDataType}, the strip mode that removes only the reserved {@code 0:MiloSourceKey}
- * property, configuration version passthrough, empty-fields handling, table-free derivation for
- * URI-form node addresses, and event dataset field derivation.
+ * property, configuration version passthrough, empty-fields handling, source-address derivation
+ * that never resolves field source URIs, event dataset field derivation, and the
+ * DataTypeSchemaHeader content (namespaces array building, metadata-local namespace remapping, and
+ * authored type descriptions).
  */
 class DataSetMetaDataMapperTest {
 
   private static final String URI_1 = "urn:milo:test:ns1";
+  private static final String URI_2 = "urn:milo:test:ns2";
   private static final String UNRESOLVABLE_URI = "urn:milo:test:unresolvable";
 
   private static final QualifiedName MILO_SOURCE_KEY = new QualifiedName(0, "MiloSourceKey");
@@ -64,9 +77,12 @@ class DataSetMetaDataMapperTest {
   private static final UUID FIELD_EVENT_MESSAGE_ID = new UUID(0xE6L, 1L);
   private static final UUID FIELD_EVENT_SEVERITY_ID = new UUID(0xE6L, 2L);
   private static final UUID FIELD_EVENT_PAYLOAD_ID = new UUID(0xE6L, 3L);
+  private static final UUID FIELD_CUSTOM_ID = new UUID(0xE7L, 1L);
+  private static final UUID FIELD_XV_ID = new UUID(0xE7L, 2L);
+  private static final UUID FIELD_EVENT_CUSTOM_ID = new UUID(0xE7L, 3L);
 
   private static NamespaceTable table() {
-    return new NamespaceTable(URI_1);
+    return new NamespaceTable(URI_1, URI_2);
   }
 
   // region Dataset fixtures
@@ -247,7 +263,8 @@ class DataSetMetaDataMapperTest {
   void seamMatchesWholeConfigMetadataForKeyFieldDataSet() {
     PublishedDataSetConfig dataSet = keyFieldDataSet();
 
-    DataSetMetaDataType metaData = DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false);
+    DataSetMetaDataType metaData =
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false, table());
 
     assertEquals(wholeConfigMetaData(dataSet), metaData);
 
@@ -264,7 +281,8 @@ class DataSetMetaDataMapperTest {
   void seamMatchesWholeConfigMetadataForNodeFieldDataSet() {
     PublishedDataSetConfig dataSet = nodeFieldDataSet();
 
-    DataSetMetaDataType metaData = DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false);
+    DataSetMetaDataType metaData =
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false, table());
 
     assertEquals(wholeConfigMetaData(dataSet), metaData);
 
@@ -278,7 +296,8 @@ class DataSetMetaDataMapperTest {
     PublishedDataSetConfig dataSet = mixedDataSet();
 
     assertEquals(
-        wholeConfigMetaData(dataSet), DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false));
+        wholeConfigMetaData(dataSet),
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false, table()));
   }
 
   @Test
@@ -286,7 +305,8 @@ class DataSetMetaDataMapperTest {
     PublishedDataSetConfig dataSet = emptyDataSet();
 
     assertEquals(
-        wholeConfigMetaData(dataSet), DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false));
+        wholeConfigMetaData(dataSet),
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false, table()));
   }
 
   @Test
@@ -307,7 +327,7 @@ class DataSetMetaDataMapperTest {
     for (PublishedDataSetConfig dataSet : config.publishedDataSets()) {
       assertEquals(
           metaDataByName(dataType, dataSet.getName()),
-          DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false),
+          DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false, table()),
           dataSet.getName());
     }
   }
@@ -320,8 +340,10 @@ class DataSetMetaDataMapperTest {
   void stripRemovesOnlyMiloSourceKeyProperty() {
     PublishedDataSetConfig dataSet = keyFieldDataSet();
 
-    DataSetMetaDataType stripped = DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, true);
-    DataSetMetaDataType unstripped = DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false);
+    DataSetMetaDataType stripped =
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, true, table());
+    DataSetMetaDataType unstripped =
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false, table());
 
     // "label": user properties survive, in order; MiloSourceKey is appended last when unstripped.
     KeyValuePair unitsPair =
@@ -352,7 +374,10 @@ class DataSetMetaDataMapperTest {
     assertEquals(unstripped.getDescription(), stripped.getDescription());
     assertEquals(unstripped.getDataSetClassId(), stripped.getDataSetClassId());
     assertEquals(unstripped.getConfigurationVersion(), stripped.getConfigurationVersion());
-    assertNull(stripped.getNamespaces());
+    // The non-zero-namespace property keys put both URIs into the namespaces array (their
+    // publisher-local indexes 1 and 2 coincide with the metadata-local first-use order here).
+    assertArrayEquals(new String[] {URI_1, URI_2}, stripped.getNamespaces());
+    assertArrayEquals(unstripped.getNamespaces(), stripped.getNamespaces());
     assertNull(stripped.getStructureDataTypes());
     assertNull(stripped.getEnumDataTypes());
     assertNull(stripped.getSimpleDataTypes());
@@ -363,16 +388,18 @@ class DataSetMetaDataMapperTest {
     PublishedDataSetConfig dataSet = nodeFieldDataSet();
 
     assertEquals(
-        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false),
-        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, true));
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false, table()),
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, true, table()));
   }
 
   @Test
   void stripAffectsOnlyKeySourcedFieldsInMixedDataSet() {
     PublishedDataSetConfig dataSet = mixedDataSet();
 
-    DataSetMetaDataType stripped = DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, true);
-    DataSetMetaDataType unstripped = DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false);
+    DataSetMetaDataType stripped =
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, true, table());
+    DataSetMetaDataType unstripped =
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false, table());
 
     // The node-sourced field is byte-identical in both modes.
     assertEquals(unstripped.getFields()[0], stripped.getFields()[0]);
@@ -396,7 +423,7 @@ class DataSetMetaDataMapperTest {
   @Test
   void emptyFieldsMapToNullFieldsArray() {
     DataSetMetaDataType metaData =
-        DataSetMetaDataMapper.toDataSetMetaDataType(emptyDataSet(), false);
+        DataSetMetaDataMapper.toDataSetMetaDataType(emptyDataSet(), false, table());
 
     assertNull(metaData.getFields());
     assertEquals("empty-ds", metaData.getName());
@@ -410,7 +437,8 @@ class DataSetMetaDataMapperTest {
         new ConfigurationVersionDataType(uint(4), uint(2)), metaData.getConfigurationVersion());
 
     // Strip mode does not change the empty shape.
-    assertEquals(metaData, DataSetMetaDataMapper.toDataSetMetaDataType(emptyDataSet(), true));
+    assertEquals(
+        metaData, DataSetMetaDataMapper.toDataSetMetaDataType(emptyDataSet(), true, table()));
   }
 
   @Test
@@ -430,22 +458,25 @@ class DataSetMetaDataMapperTest {
 
     assertEquals(
         expected,
-        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false).getConfigurationVersion());
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false, table())
+            .getConfigurationVersion());
     assertEquals(
         expected,
-        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, true).getConfigurationVersion());
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, true, table())
+            .getConfigurationVersion());
 
     // The builder default is (1, 1).
     PublishedDataSetConfig defaulted = PublishedDataSetConfig.builder("d-ds").build();
     assertEquals(
         new ConfigurationVersionDataType(uint(1), uint(1)),
-        DataSetMetaDataMapper.toDataSetMetaDataType(defaulted, false).getConfigurationVersion());
+        DataSetMetaDataMapper.toDataSetMetaDataType(defaulted, false, table())
+            .getConfigurationVersion());
   }
 
   @Test
   void fieldMetaDataWireShape() {
     DataSetMetaDataType metaData =
-        DataSetMetaDataMapper.toDataSetMetaDataType(nodeFieldDataSet(), false);
+        DataSetMetaDataMapper.toDataSetMetaDataType(nodeFieldDataSet(), false, table());
 
     FieldMetaData[] fields = metaData.getFields();
     assertNotNull(fields);
@@ -499,9 +530,12 @@ class DataSetMetaDataMapperTest {
     assertThrows(
         PubSubConfigValidationException.class, () -> config.toDataType(new NamespaceTable()));
 
-    // ...but metadata derivation is table-free: same dataset, no throw, in either mode.
+    // ...but metadata derivation never resolves field source addresses (the table is consulted
+    // only for non-zero-namespace NodeIds contained in the metadata itself): same dataset, no
+    // throw, in either mode.
     for (boolean strip : new boolean[] {false, true}) {
-      DataSetMetaDataType metaData = DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, strip);
+      DataSetMetaDataType metaData =
+          DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, strip, table());
 
       assertEquals("foreign-ds", metaData.getName());
       FieldMetaData field = metaData.getFields()[0];
@@ -520,7 +554,8 @@ class DataSetMetaDataMapperTest {
   void seamMatchesWholeConfigMetadataForEventDataSet() {
     PublishedDataSetConfig dataSet = eventDataSet();
 
-    DataSetMetaDataType metaData = DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false);
+    DataSetMetaDataType metaData =
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false, table());
 
     assertEquals(wholeConfigMetaData(dataSet), metaData);
   }
@@ -528,7 +563,7 @@ class DataSetMetaDataMapperTest {
   @Test
   void eventFieldMetaDataWireShape() {
     DataSetMetaDataType metaData =
-        DataSetMetaDataMapper.toDataSetMetaDataType(eventDataSet(), false);
+        DataSetMetaDataMapper.toDataSetMetaDataType(eventDataSet(), false, table());
 
     FieldMetaData[] fields = metaData.getFields();
     assertNotNull(fields);
@@ -581,8 +616,10 @@ class DataSetMetaDataMapperTest {
   void eventFieldsNeverCarryMiloSourceKeyAndStripIsIdentity() {
     PublishedDataSetConfig dataSet = eventDataSet();
 
-    DataSetMetaDataType unstripped = DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false);
-    DataSetMetaDataType stripped = DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, true);
+    DataSetMetaDataType unstripped =
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false, table());
+    DataSetMetaDataType stripped =
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, true, table());
 
     // Event fields have no field address source, so no reserved key property in unstripped
     // mode...
@@ -602,10 +639,274 @@ class DataSetMetaDataMapperTest {
 
     assertEquals(
         expected,
-        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false).getConfigurationVersion());
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false, table())
+            .getConfigurationVersion());
     assertEquals(
         expected,
-        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, true).getConfigurationVersion());
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, true, table())
+            .getConfigurationVersion());
+  }
+
+  // endregion
+
+  // region DataTypeSchemaHeader: namespaces and type descriptions
+
+  /** A hand-built definition of a custom structure living in namespace URI_2 (local index 2). */
+  private static StructureDefinition customStructDefinition() {
+    return new StructureDefinition(
+        new NodeId(2, 3003),
+        NodeIds.Structure,
+        StructureType.Structure,
+        new StructureField[] {
+          new StructureField(
+              "X", LocalizedText.NULL_VALUE, NodeIds.Double, -1, null, uint(0), false),
+          new StructureField(
+              "Nested", LocalizedText.NULL_VALUE, new NodeId(2, 3010), -1, null, uint(0), false)
+        });
+  }
+
+  @Test
+  void fieldDataTypeNamespacesRemapToMetaDataLocalIndexes() {
+    PublishedDataSetConfig dataSet =
+        PublishedDataSetConfig.builder("custom-ds")
+            .field(
+                FieldDefinition.builder("custom")
+                    .dataType(new NodeId(2, 3001))
+                    .dataSetFieldId(FIELD_CUSTOM_ID)
+                    .build())
+            .build();
+
+    for (boolean strip : new boolean[] {false, true}) {
+      DataSetMetaDataType metaData =
+          DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, strip, table());
+
+      // Per OPC 10000-5 §12.31 the namespaces array excludes namespace 0 and its first entry maps
+      // to NamespaceIndex 1; only the referenced URI_2 appears, so publisher-local index 2 becomes
+      // metadata-local index 1.
+      assertArrayEquals(new String[] {URI_2}, metaData.getNamespaces());
+      FieldMetaData field = metaData.getFields()[0];
+      assertEquals(new NodeId(1, 3001), field.getDataType());
+      assertEquals(ubyte(22), field.getBuiltInType()); // non-builtin: ExtensionObject
+    }
+  }
+
+  @Test
+  void generatedTypeDescriptionAuthoredViaDefinitionMethod() {
+    NamespaceTable table = table();
+
+    // The one-liner authoring path for Milo code-generated types: DataType NodeId, name, and the
+    // generated definition(NamespaceTable) method.
+    PublishedDataSetConfig dataSet =
+        PublishedDataSetConfig.builder("xv-ds")
+            .field(
+                FieldDefinition.builder("xv")
+                    .dataType(NodeIds.XVType)
+                    .dataSetFieldId(FIELD_XV_ID)
+                    .build())
+            .structureDataType(
+                NodeIds.XVType, new QualifiedName(0, "XVType"), XVType.definition(table))
+            .build();
+
+    DataSetMetaDataType metaData =
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false, table);
+
+    // Everything lives in namespace 0: no namespaces array, and the description is untouched.
+    assertNull(metaData.getNamespaces());
+    assertArrayEquals(
+        new StructureDescription[] {
+          new StructureDescription(
+              NodeIds.XVType, new QualifiedName(0, "XVType"), XVType.definition(table))
+        },
+        metaData.getStructureDataTypes());
+    assertNull(metaData.getEnumDataTypes());
+    assertNull(metaData.getSimpleDataTypes());
+
+    assertEquals(ubyte(22), metaData.getFields()[0].getBuiltInType());
+    assertEquals(NodeIds.XVType, metaData.getFields()[0].getDataType());
+  }
+
+  @Test
+  void handBuiltNonZeroNamespaceDescriptionIsFullyRemapped() {
+    PublishedDataSetConfig dataSet =
+        PublishedDataSetConfig.builder("custom-ds")
+            .field(
+                FieldDefinition.builder("custom")
+                    .dataType(new NodeId(2, 3001))
+                    .dataSetFieldId(FIELD_CUSTOM_ID)
+                    .build())
+            .structureDataType(
+                new NodeId(2, 3001), new QualifiedName(2, "Custom"), customStructDefinition())
+            .build();
+
+    DataSetMetaDataType metaData =
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false, table());
+
+    assertArrayEquals(new String[] {URI_2}, metaData.getNamespaces());
+
+    StructureDescription description = metaData.getStructureDataTypes()[0];
+    assertEquals(new NodeId(1, 3001), description.getDataTypeId());
+    assertEquals(new QualifiedName(1, "Custom"), description.getName());
+
+    StructureDefinition definition = description.getStructureDefinition();
+    assertEquals(new NodeId(1, 3003), definition.getDefaultEncodingId());
+    assertEquals(NodeIds.Structure, definition.getBaseDataType());
+    assertEquals(StructureType.Structure, definition.getStructureType());
+
+    StructureField[] fields = definition.getFields();
+    assertEquals("X", fields[0].getName());
+    assertEquals(NodeIds.Double, fields[0].getDataType()); // namespace 0: unchanged
+    assertEquals("Nested", fields[1].getName());
+    assertEquals(new NodeId(1, 3010), fields[1].getDataType());
+
+    // The announced field DataType NodeId and the description id agree after remapping.
+    assertEquals(metaData.getFields()[0].getDataType(), description.getDataTypeId());
+  }
+
+  @Test
+  void namespacesCollectInFirstUseOrderFieldsBeforeDescriptions() {
+    PublishedDataSetConfig dataSet =
+        PublishedDataSetConfig.builder("order-ds")
+            .field(
+                FieldDefinition.builder("custom")
+                    .dataType(new NodeId(2, 3001)) // URI_2 first (wire order)
+                    .dataSetFieldId(FIELD_CUSTOM_ID)
+                    .build())
+            .structureDataType(
+                new NodeId(1, 4001), // URI_1 second (description order)
+                new QualifiedName(1, "Other"),
+                new StructureDefinition(
+                    NodeId.NULL_VALUE, NodeIds.Structure, StructureType.Structure, null))
+            .build();
+
+    DataSetMetaDataType metaData =
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false, table());
+
+    assertArrayEquals(new String[] {URI_2, URI_1}, metaData.getNamespaces());
+    assertEquals(new NodeId(1, 3001), metaData.getFields()[0].getDataType());
+    assertEquals(new NodeId(2, 4001), metaData.getStructureDataTypes()[0].getDataTypeId());
+  }
+
+  @Test
+  void sharedNamespaceCollapsesToOneEntry() {
+    PublishedDataSetConfig dataSet =
+        PublishedDataSetConfig.builder("shared-ds")
+            .field(
+                FieldDefinition.builder("custom")
+                    .dataType(new NodeId(2, 3001))
+                    .dataSetFieldId(FIELD_CUSTOM_ID)
+                    .build())
+            .structureDataType(
+                new NodeId(2, 3001), new QualifiedName(2, "Custom"), customStructDefinition())
+            .enumDataType(
+                new EnumDescription(
+                    new NodeId(2, 4001),
+                    new QualifiedName(2, "Color"),
+                    new EnumDefinition(
+                        new EnumField[] {
+                          new EnumField(
+                              0L, LocalizedText.NULL_VALUE, LocalizedText.NULL_VALUE, "Red")
+                        }),
+                    ubyte(6)))
+            .simpleDataType(
+                new SimpleTypeDescription(
+                    new NodeId(2, 5001), new QualifiedName(2, "Meters"), NodeIds.Double, ubyte(11)))
+            .build();
+
+    DataSetMetaDataType metaData =
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, false, table());
+
+    assertArrayEquals(new String[] {URI_2}, metaData.getNamespaces());
+
+    EnumDescription enumDescription = metaData.getEnumDataTypes()[0];
+    assertEquals(new NodeId(1, 4001), enumDescription.getDataTypeId());
+    assertEquals(new QualifiedName(1, "Color"), enumDescription.getName());
+    assertEquals(ubyte(6), enumDescription.getBuiltInType());
+    assertEquals("Red", enumDescription.getEnumDefinition().getFields()[0].getName());
+
+    SimpleTypeDescription simpleDescription = metaData.getSimpleDataTypes()[0];
+    assertEquals(new NodeId(1, 5001), simpleDescription.getDataTypeId());
+    assertEquals(new QualifiedName(1, "Meters"), simpleDescription.getName());
+    assertEquals(NodeIds.Double, simpleDescription.getBaseDataType());
+    assertEquals(ubyte(11), simpleDescription.getBuiltInType());
+  }
+
+  @Test
+  void propertyKeyNamespacesRemapToMetaDataLocalIndexes() {
+    // Only URI_2 is referenced (by a property key): it becomes metadata-local index 1, so the
+    // emitted key's index differs from the authored publisher-local index 2.
+    PublishedDataSetConfig dataSet =
+        PublishedDataSetConfig.builder("prop-ds")
+            .field(
+                FieldDefinition.builder("plain")
+                    .dataType(NodeIds.Double)
+                    .dataSetFieldId(FIELD_CUSTOM_ID)
+                    .property(new QualifiedName(2, "hint"), Variant.ofInt32(7))
+                    .build())
+            .build();
+
+    DataSetMetaDataType metaData =
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, true, table());
+
+    assertArrayEquals(new String[] {URI_2}, metaData.getNamespaces());
+    assertArrayEquals(
+        new KeyValuePair[] {new KeyValuePair(new QualifiedName(1, "hint"), Variant.ofInt32(7))},
+        metaData.getFields()[0].getProperties());
+  }
+
+  @Test
+  void unresolvableMetaDataNamespaceIndexThrows() {
+    PublishedDataSetConfig dataSet =
+        PublishedDataSetConfig.builder("bad-ds")
+            .field(
+                FieldDefinition.builder("custom")
+                    .dataType(new NodeId(7, 3001))
+                    .dataSetFieldId(FIELD_CUSTOM_ID)
+                    .build())
+            .build();
+
+    for (boolean strip : new boolean[] {false, true}) {
+      assertThrows(
+          PubSubConfigValidationException.class,
+          () -> DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, strip, table()));
+    }
+  }
+
+  @Test
+  void eventFieldDataTypeNamespacesRemapToo() {
+    PublishedDataSetConfig dataSet =
+        PublishedDataSetConfig.builder("event-custom-ds")
+            .source(
+                PublishedEventsConfig.builder(ExpandedNodeId.of(URI_1, "Boiler.Notifier"))
+                    .field(
+                        EventFieldDefinition.builder("payload")
+                            .selectedField(select("Payload"))
+                            .dataType(new NodeId(2, 3001))
+                            .dataSetFieldId(FIELD_EVENT_CUSTOM_ID)
+                            .build())
+                    .build())
+            .build();
+
+    DataSetMetaDataType metaData =
+        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, true, table());
+
+    assertArrayEquals(new String[] {URI_2}, metaData.getNamespaces());
+    assertEquals(new NodeId(1, 3001), metaData.getFields()[0].getDataType());
+  }
+
+  @Test
+  void duplicateTypeDescriptionDataTypeIdIsRejectedAtBuild() {
+    PublishedDataSetConfig.Builder builder =
+        PublishedDataSetConfig.builder("dup-ds")
+            .structureDataType(
+                new NodeId(2, 3001), new QualifiedName(2, "Custom"), customStructDefinition())
+            .simpleDataType(
+                new SimpleTypeDescription(
+                    new NodeId(2, 3001),
+                    new QualifiedName(2, "Custom"),
+                    NodeIds.Double,
+                    ubyte(11)));
+
+    assertThrows(PubSubConfigValidationException.class, builder::build);
   }
 
   // endregion

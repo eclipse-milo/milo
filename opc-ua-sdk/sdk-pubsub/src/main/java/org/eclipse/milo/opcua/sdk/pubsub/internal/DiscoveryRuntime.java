@@ -667,7 +667,10 @@ final class DiscoveryRuntime {
         if (dataSetWriterId.equals(writer.config().getDataSetWriterId())) {
           return serviceConfig
               .publishedDataSet(writer.config().getDataSet().name())
-              .map(dataSet -> DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, true))
+              .map(
+                  dataSet ->
+                      DataSetMetaDataMapper.toDataSetMetaDataType(
+                          dataSet, true, service.getEncodingContext().getNamespaceTable()))
               .orElse(null);
         }
       }
@@ -690,7 +693,8 @@ final class DiscoveryRuntime {
                 dataSet ->
                     result.put(
                         dataSetWriterId,
-                        DataSetMetaDataMapper.toDataSetMetaDataType(dataSet, true)));
+                        DataSetMetaDataMapper.toDataSetMetaDataType(
+                            dataSet, true, service.getEncodingContext().getNamespaceTable())));
       }
     }
 
