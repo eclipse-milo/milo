@@ -26,6 +26,8 @@ import org.slf4j.LoggerFactory;
 public abstract sealed class ExtensionObject
     permits ExtensionObject.Binary, ExtensionObject.Json, ExtensionObject.Xml {
 
+  private static final ThreadLocal<Integer> DECODE_DEPTH = ThreadLocal.withInitial(() -> 0);
+
   private final Lazy<UaStructuredType> decoded = new Lazy<>();
 
   /**
@@ -113,7 +115,28 @@ public abstract sealed class ExtensionObject
   public final UaStructuredType decode(EncodingContext context, DataTypeEncoding encoding)
       throws UaSerializationException {
 
-    return decoded.get(() -> encoding.decode(context, this));
+    return decoded.get(
+        () -> {
+          int depth = DECODE_DEPTH.get();
+          int maxDepth = context.getEncodingLimits().getMaxRecursionDepth();
+
+          if (depth > maxDepth) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_EncodingLimitsExceeded,
+                "max ExtensionObject decode depth exceeded: " + maxDepth);
+          }
+
+          DECODE_DEPTH.set(depth + 1);
+          try {
+            return encoding.decode(context, this);
+          } finally {
+            if (depth == 0) {
+              DECODE_DEPTH.remove();
+            } else {
+              DECODE_DEPTH.set(depth);
+            }
+          }
+        });
   }
 
   /**

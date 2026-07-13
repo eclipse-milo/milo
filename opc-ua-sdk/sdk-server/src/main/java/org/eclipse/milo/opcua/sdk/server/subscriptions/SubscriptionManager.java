@@ -412,48 +412,74 @@ public class SubscriptionManager {
     long globalMax = server.getConfig().getLimits().getMaxMonitoredItems().longValue();
     long sessionMax = server.getConfig().getLimits().getMaxMonitoredItemsPerSession().longValue();
 
-    for (MonitoredItemCreateRequest request : requests) {
-      try {
-        long globalCount = server.getMonitoredItemCount().incrementAndGet();
-        long sessionCount = monitoredItemCount.incrementAndGet();
+    boolean monitoredItemsCommitted = false;
+    try {
+      for (MonitoredItemCreateRequest request : requests) {
+        boolean globalCountIncremented = false;
+        boolean sessionCountIncremented = false;
+        boolean creationSucceeded = false;
 
-        if (globalCount <= globalMax && sessionCount <= sessionMax) {
-          BaseMonitoredItem<?> monitoredItem;
+        try {
+          long globalCount = server.getMonitoredItemCount().incrementAndGet();
+          globalCountIncremented = true;
+          long sessionCount = monitoredItemCount.incrementAndGet();
+          sessionCountIncremented = true;
 
-          boolean isValueAttribute =
-              request.getItemToMonitor().getAttributeId().equals(AttributeId.Value.uid());
+          if (globalCount <= globalMax && sessionCount <= sessionMax) {
+            BaseMonitoredItem<?> monitoredItem;
 
-          AttributesResponse attributesResponse =
-              (isValueAttribute && hasPercentDeadbandFilter(request))
-                  ? analogItemAttributes.get(request.getItemToMonitor().getNodeId())
-                  : regularAttributes.get(request.getItemToMonitor().getNodeId());
+            boolean isValueAttribute =
+                request.getItemToMonitor().getAttributeId().equals(AttributeId.Value.uid());
 
-          monitoredItem =
-              createMonitoredItem(request, subscription, timestamps, attributesResponse);
+            AttributesResponse attributesResponse =
+                (isValueAttribute && hasPercentDeadbandFilter(request))
+                    ? analogItemAttributes.get(request.getItemToMonitor().getNodeId())
+                    : regularAttributes.get(request.getItemToMonitor().getNodeId());
 
-          monitoredItems.add(monitoredItem);
+            monitoredItem =
+                createMonitoredItem(request, subscription, timestamps, attributesResponse);
 
+            monitoredItems.add(monitoredItem);
+            creationSucceeded = true;
+
+            results.add(
+                new MonitoredItemCreateResult(
+                    StatusCode.GOOD,
+                    monitoredItem.getId(),
+                    monitoredItem.getSamplingInterval(),
+                    uint(monitoredItem.getQueueSize()),
+                    monitoredItem.getFilterResult()));
+          } else {
+            throw new UaException(StatusCodes.Bad_TooManyMonitoredItems);
+          }
+        } catch (UaException e) {
           results.add(
               new MonitoredItemCreateResult(
-                  StatusCode.GOOD,
-                  monitoredItem.getId(),
-                  monitoredItem.getSamplingInterval(),
-                  uint(monitoredItem.getQueueSize()),
-                  monitoredItem.getFilterResult()));
-        } else {
-          throw new UaException(StatusCodes.Bad_TooManyMonitoredItems);
+                  e.getStatusCode(), UInteger.MIN, 0.0, UInteger.MIN, null));
+        } finally {
+          if (!creationSucceeded) {
+            if (sessionCountIncremented) {
+              monitoredItemCount.decrementAndGet();
+            }
+            if (globalCountIncremented) {
+              server.getMonitoredItemCount().decrementAndGet();
+            }
+          }
         }
-      } catch (UaException e) {
-        monitoredItemCount.decrementAndGet();
-        server.getMonitoredItemCount().decrementAndGet();
+      }
 
-        results.add(
-            new MonitoredItemCreateResult(
-                e.getStatusCode(), UInteger.MIN, 0.0, UInteger.MIN, null));
+      subscription.addMonitoredItems(monitoredItems);
+      monitoredItemsCommitted = true;
+    } finally {
+      if (!monitoredItemsCommitted && !monitoredItems.isEmpty()) {
+        try {
+          subscription.removeMonitoredItems(monitoredItems);
+        } finally {
+          monitoredItemCount.addAndGet(-monitoredItems.size());
+          server.getMonitoredItemCount().addAndGet(-monitoredItems.size());
+        }
       }
     }
-
-    subscription.addMonitoredItems(monitoredItems);
 
     byMonitoredItemType(
         monitoredItems,
