@@ -73,7 +73,18 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
     byte[] tokenBytes = token.getPassword().bytesOrEmpty();
 
     if (algorithm != SecurityAlgorithm.None) {
-      byte[] plainTextBytes = decryptTokenData(session, algorithm, tokenBytes);
+      // Decrypting attacker-controlled RSA PKCS#1 v1.5 ciphertext can expose a padding oracle.
+      if (algorithm == SecurityAlgorithm.Rsa15) {
+        throw new UaException(StatusCodes.Bad_IdentityTokenInvalid);
+      }
+
+      byte[] plainTextBytes;
+
+      try {
+        plainTextBytes = decryptTokenData(session, algorithm, tokenBytes);
+      } catch (UaException ignored) {
+        throw new UaException(StatusCodes.Bad_IdentityTokenInvalid);
+      }
 
       if (plainTextBytes.length < 4) {
         throw new UaException(StatusCodes.Bad_IdentityTokenInvalid, "invalid token data");
@@ -100,7 +111,7 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
       if (passwordLength
           > session.getServer().getConfig().getLimits().getMaxPasswordLength().longValue()) {
         throw new UaException(
-            StatusCodes.Bad_EncodingLimitsExceeded, "password length exceeds limits");
+            StatusCodes.Bad_IdentityTokenInvalid, "password length exceeds limits");
       }
 
       byte[] passwordBytes = new byte[passwordLength];
@@ -111,8 +122,13 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
 
       if (MessageDigest.isEqual(lastNonce.bytes(), nonceBytes)) {
         String password = new String(passwordBytes, StandardCharsets.UTF_8);
+        UsernameIdentity identity = authenticateUsernamePassword(session, username, password);
 
-        return authenticateUsernameOrThrow(session, username, password);
+        if (identity != null) {
+          return identity;
+        } else {
+          throw new UaException(StatusCodes.Bad_IdentityTokenInvalid);
+        }
       } else {
         throw new UaException(StatusCodes.Bad_IdentityTokenInvalid);
       }
