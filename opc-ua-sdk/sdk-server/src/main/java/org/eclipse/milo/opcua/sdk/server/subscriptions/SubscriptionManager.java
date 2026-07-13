@@ -433,8 +433,9 @@ public class SubscriptionManager {
         BaseMonitoredItem<?> monitoredItem =
             createMonitoredItem(request, subscription, timestamps, attributesResponse);
 
-        // Build the result before adding the item to monitoredItems; if it throws, the
-        // item must not be committed to the subscription or counted against the quotas.
+        // getFilterResult() can throw while encoding the filter result, so it must be
+        // called before the item is added to monitoredItems; otherwise a failure would
+        // commit an item to the subscription after its quota reservation is released.
         MonitoredItemCreateResult result =
             new MonitoredItemCreateResult(
                 StatusCode.GOOD,
