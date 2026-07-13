@@ -102,8 +102,9 @@ public abstract class AbstractX509IdentityValidator extends AbstractIdentityVali
   /**
    * Create and return an {@link X509UserIdentity} for the user identified by {@code certificate}.
    *
-   * <p>Possession of the private key associated with this certificate has been verified prior to
-   * this call.
+   * <p>Server configuration rejects X.509 user token policies whose effective {@link
+   * SecurityPolicy} is {@link SecurityPolicy#None}, so possession of the private key associated
+   * with this certificate has been verified prior to this call.
    *
    * @param session the {@link Session} being activated.
    * @param certificate the {@link X509Certificate} identifying the user.

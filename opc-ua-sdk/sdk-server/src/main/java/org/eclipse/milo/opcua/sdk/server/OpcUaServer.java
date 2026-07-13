@@ -955,20 +955,13 @@ public class OpcUaServer extends AbstractServiceHandler {
 
       static UserTokenPolicyKey from(EndpointConfig endpoint, UserTokenPolicy tokenPolicy) {
         String policyId = tokenPolicy.getPolicyId();
-        String securityPolicyUri = tokenPolicy.getSecurityPolicyUri();
 
         return new UserTokenPolicyKey(
             policyId == null ? "" : policyId,
             tokenPolicy.getTokenType(),
             tokenPolicy.getIssuedTokenType(),
             tokenPolicy.getIssuerEndpointUrl(),
-            isNullOrEmpty(securityPolicyUri)
-                ? endpoint.getSecurityPolicy().getUri()
-                : securityPolicyUri);
-      }
-
-      private static boolean isNullOrEmpty(@Nullable String value) {
-        return value == null || value.isEmpty();
+            endpoint.getEffectiveTokenSecurityPolicyUri(tokenPolicy));
       }
     }
 
