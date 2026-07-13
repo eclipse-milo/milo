@@ -18,6 +18,9 @@ import java.util.Map;
 import java.util.Optional;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.core.WriteMask;
+import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
+import org.eclipse.milo.opcua.sdk.server.RoleMapper;
+import org.eclipse.milo.opcua.sdk.server.identity.Identity;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultAccessController.AccessControlAttributes;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultAccessController.AccessControlContext;
@@ -1054,6 +1057,33 @@ class DefaultAccessControllerTest {
         AccessResult.DENIED_USER_ACCESS,
         DefaultAccessController.checkDeleteReferencesAccess(context, List.of(deleteReferencesItem))
             .get(deleteReferencesItem));
+  }
+
+  @Test
+  void copiedConfigPreservesRoleBasedAuthorizationBehavior() {
+    Identity identity = Mockito.mock(Identity.class);
+    RoleMapper roleMapper = ignored -> List.of(ROLE_B);
+    OpcUaServerConfig directConfig = OpcUaServerConfig.builder().setRoleMapper(roleMapper).build();
+    OpcUaServerConfig copiedConfig = OpcUaServerConfig.copy(directConfig).build();
+
+    var nodeId = new NodeId(1, "browse");
+    attributesMap.put(
+        nodeId,
+        new AccessControlAttributes(
+            null, null, null, null, null, rolePermissions(PermissionType.Field.Browse)));
+
+    Mockito.when(context.getRoleIds())
+        .thenReturn(
+            directConfig.getRoleMapper().map(mapper -> mapper.getRoleIds(identity)),
+            copiedConfig.getRoleMapper().map(mapper -> mapper.getRoleIds(identity)));
+
+    AccessResult directResult =
+        DefaultAccessController.checkBrowseAccess(context, List.of(nodeId)).get(nodeId);
+    AccessResult copiedResult =
+        DefaultAccessController.checkBrowseAccess(context, List.of(nodeId)).get(nodeId);
+
+    assertEquals(AccessResult.DENIED_USER_ACCESS, directResult);
+    assertEquals(directResult, copiedResult);
   }
 
   private static RolePermissionType[] rolePermissions(PermissionType.Field field) {
