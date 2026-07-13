@@ -164,6 +164,7 @@ public interface OpcUaServerConfig {
     builder.setLimits(config.getLimits());
     builder.setIdentityValidator(config.getIdentityValidator());
     builder.setCertificateManager(config.getCertificateManager());
+    config.getRoleMapper().ifPresent(builder::setRoleMapper);
     builder.setExecutor(config.getExecutor());
     builder.setScheduledExecutor(config.getScheduledExecutorService());
     config.getSecurityKeysListener().ifPresent(builder::setSecurityKeysListener);
