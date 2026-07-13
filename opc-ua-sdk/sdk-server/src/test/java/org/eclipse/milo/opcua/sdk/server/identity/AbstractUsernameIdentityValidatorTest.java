@@ -153,12 +153,14 @@ class AbstractUsernameIdentityValidatorTest {
   }
 
   @Test
-  void rsa15CiphertextsAreRejectedWithoutDecryption() throws Exception {
-    CryptoUsernameIdentityValidator validator = new CryptoUsernameIdentityValidator(true);
+  void rsa15CiphertextFailuresHaveUniformStatusAndNoCause() throws Exception {
+    CryptoUsernameIdentityValidator validator = new CryptoUsernameIdentityValidator(false);
     byte[] validCiphertext =
         encrypt(SecurityPolicy.Basic128Rsa15, tokenData(PASSWORD, SERVER_NONCE.bytesOrEmpty()));
+    byte[] wrongPasswordCiphertext =
+        encrypt(SecurityPolicy.Basic128Rsa15, tokenData("wrong", SERVER_NONCE.bytesOrEmpty()));
 
-    for (byte[] ciphertext : List.of(validCiphertext, zeroedCopy(validCiphertext))) {
+    for (byte[] ciphertext : List.of(wrongPasswordCiphertext, zeroedCopy(validCiphertext))) {
       UaException exception =
           assertThrows(
               UaException.class,
@@ -170,8 +172,24 @@ class AbstractUsernameIdentityValidatorTest {
       assertUniformEncryptedTokenFailure(exception);
     }
 
-    assertEquals(0, validator.decryptCount);
-    assertEquals(0, validator.authenticateCount);
+    assertEquals(2, validator.decryptCount);
+    assertEquals(1, validator.authenticateCount);
+  }
+
+  @Test
+  void rsa15EncryptedPasswordStillAuthenticates() throws Exception {
+    CryptoUsernameIdentityValidator validator = new CryptoUsernameIdentityValidator(true);
+    byte[] ciphertext =
+        encrypt(SecurityPolicy.Basic128Rsa15, tokenData(PASSWORD, SERVER_NONCE.bytesOrEmpty()));
+
+    UsernameIdentity identity =
+        validator.validate(
+            encryptedSession(SecurityPolicy.Basic128Rsa15),
+            encryptedToken(SecurityPolicy.Basic128Rsa15, ciphertext));
+
+    assertEquals(USERNAME, identity.getUsername());
+    assertEquals(1, validator.decryptCount);
+    assertEquals(1, validator.authenticateCount);
   }
 
   @Test

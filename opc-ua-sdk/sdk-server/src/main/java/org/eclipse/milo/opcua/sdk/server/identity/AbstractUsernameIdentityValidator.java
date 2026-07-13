@@ -73,11 +73,6 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
     byte[] tokenBytes = token.getPassword().bytesOrEmpty();
 
     if (algorithm != SecurityAlgorithm.None) {
-      // Decrypting attacker-controlled RSA PKCS#1 v1.5 ciphertext can expose a padding oracle.
-      if (algorithm == SecurityAlgorithm.Rsa15) {
-        throw new UaException(StatusCodes.Bad_IdentityTokenInvalid);
-      }
-
       byte[] plainTextBytes;
 
       try {
