@@ -13,9 +13,11 @@ package org.eclipse.milo.opcua.sdk.server.servicesets.impl;
 import static java.util.stream.Collectors.toList;
 import static org.eclipse.milo.opcua.sdk.server.servicesets.AbstractServiceSet.createResponseHeader;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.servicesets.DiscoveryServiceSet;
@@ -44,9 +46,32 @@ public class DefaultDiscoveryServiceSet implements DiscoveryServiceSet {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private final OpcUaServer server;
+  private final Supplier<List<ApplicationDescription>> additionalServers;
 
   public DefaultDiscoveryServiceSet(OpcUaServer server) {
+    this(server, List::of);
+  }
+
+  /**
+   * Create a DefaultDiscoveryServiceSet that includes additional servers in the results of the
+   * FindServers service.
+   *
+   * <p>The supplier is invoked each time the FindServers service is invoked, and may return
+   * different results over time. It must not include the ApplicationDescription of {@code server}
+   * itself; that is always included.
+   *
+   * <p>This is intended for use by servers that know of other servers they should advertise, e.g.
+   * the other members of a non-transparent redundant server set.
+   *
+   * @param server the {@link OpcUaServer} this service set belongs to.
+   * @param additionalServers a supplier of additional {@link ApplicationDescription}s to include in
+   *     the results of the FindServers service.
+   */
+  public DefaultDiscoveryServiceSet(
+      OpcUaServer server, Supplier<List<ApplicationDescription>> additionalServers) {
+
     this.server = server;
+    this.additionalServers = additionalServers;
   }
 
   @Override
@@ -94,8 +119,9 @@ public class DefaultDiscoveryServiceSet implements DiscoveryServiceSet {
             ? List.of(request.getServerUris())
             : Collections.emptyList();
 
-    List<ApplicationDescription> applicationDescriptions =
-        List.of(getFilteredApplicationDescription(request.getEndpointUrl()));
+    List<ApplicationDescription> applicationDescriptions = new ArrayList<>();
+    applicationDescriptions.add(getFilteredApplicationDescription(request.getEndpointUrl()));
+    applicationDescriptions.addAll(additionalServers.get());
 
     applicationDescriptions =
         applicationDescriptions.stream().filter(ad -> filterServerUris(ad, serverUris)).toList();
