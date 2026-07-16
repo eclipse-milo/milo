@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
+import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionSecurityDiagnosticsAccessMode;
 import org.eclipse.milo.opcua.sdk.server.identity.AnonymousIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.CompositeValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.IdentityValidator;
@@ -118,6 +119,15 @@ public interface OpcUaServerConfig {
   Optional<RoleMapper> getRoleMapper();
 
   /**
+   * Get the authorization mode for Session security diagnostics and the diagnostics enabled flag.
+   *
+   * @return the configured access mode.
+   */
+  default SessionSecurityDiagnosticsAccessMode getSessionSecurityDiagnosticsAccessMode() {
+    return SessionSecurityDiagnosticsAccessMode.RESTRICTED;
+  }
+
+  /**
    * Get the {@link SecurityKeysListener} to be notified when symmetric security keys are derived
    * during OpenSecureChannel handshakes.
    *
@@ -165,6 +175,8 @@ public interface OpcUaServerConfig {
     builder.setIdentityValidator(config.getIdentityValidator());
     builder.setCertificateManager(config.getCertificateManager());
     config.getRoleMapper().ifPresent(builder::setRoleMapper);
+    builder.setSessionSecurityDiagnosticsAccessMode(
+        config.getSessionSecurityDiagnosticsAccessMode());
     builder.setExecutor(config.getExecutor());
     builder.setScheduledExecutor(config.getScheduledExecutorService());
     config.getSecurityKeysListener().ifPresent(builder::setSecurityKeysListener);
