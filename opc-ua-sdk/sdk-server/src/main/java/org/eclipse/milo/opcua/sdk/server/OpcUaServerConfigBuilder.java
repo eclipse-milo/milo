@@ -10,11 +10,14 @@
 
 package org.eclipse.milo.opcua.sdk.server;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionSecurityDiagnosticsAccessMode;
 import org.eclipse.milo.opcua.sdk.server.identity.AnonymousIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.IdentityValidator;
 import org.eclipse.milo.opcua.stack.core.Stack;
@@ -48,6 +51,9 @@ public class OpcUaServerConfigBuilder {
   private CertificateManager certificateManager;
 
   private RoleMapper roleMapper;
+
+  private SessionSecurityDiagnosticsAccessMode sessionSecurityDiagnosticsAccessMode =
+      SessionSecurityDiagnosticsAccessMode.RESTRICTED;
 
   private @Nullable SecurityKeysListener securityKeysListener;
 
@@ -104,6 +110,19 @@ public class OpcUaServerConfigBuilder {
     return this;
   }
 
+  /**
+   * Set the authorization mode for Session security diagnostics and the diagnostics enabled flag.
+   *
+   * @param accessMode the authorization mode.
+   * @return this builder.
+   */
+  public OpcUaServerConfigBuilder setSessionSecurityDiagnosticsAccessMode(
+      SessionSecurityDiagnosticsAccessMode accessMode) {
+
+    this.sessionSecurityDiagnosticsAccessMode = requireNonNull(accessMode);
+    return this;
+  }
+
   public OpcUaServerConfigBuilder setSecurityKeysListener(
       @Nullable SecurityKeysListener securityKeysListener) {
     this.securityKeysListener = securityKeysListener;
@@ -139,6 +158,7 @@ public class OpcUaServerConfigBuilder {
         limits,
         certificateManager,
         roleMapper,
+        sessionSecurityDiagnosticsAccessMode,
         securityKeysListener,
         executor,
         scheduledExecutor);
@@ -156,6 +176,7 @@ public class OpcUaServerConfigBuilder {
     private final OpcUaServerConfigLimits limits;
     private final CertificateManager certificateManager;
     private final RoleMapper roleMapper;
+    private final SessionSecurityDiagnosticsAccessMode sessionSecurityDiagnosticsAccessMode;
     private final @Nullable SecurityKeysListener securityKeysListener;
     private final ExecutorService executor;
     private final ScheduledExecutorService scheduledExecutorService;
@@ -175,6 +196,39 @@ public class OpcUaServerConfigBuilder {
         ExecutorService executor,
         ScheduledExecutorService scheduledExecutorService) {
 
+      this(
+          endpoints,
+          applicationName,
+          applicationUri,
+          productUri,
+          buildInfo,
+          identityValidator,
+          encodingLimits,
+          limits,
+          certificateManager,
+          roleMapper,
+          SessionSecurityDiagnosticsAccessMode.RESTRICTED,
+          securityKeysListener,
+          executor,
+          scheduledExecutorService);
+    }
+
+    public OpcUaServerConfigImpl(
+        Set<EndpointConfig> endpoints,
+        LocalizedText applicationName,
+        String applicationUri,
+        String productUri,
+        BuildInfo buildInfo,
+        IdentityValidator identityValidator,
+        EncodingLimits encodingLimits,
+        OpcUaServerConfigLimits limits,
+        CertificateManager certificateManager,
+        RoleMapper roleMapper,
+        SessionSecurityDiagnosticsAccessMode sessionSecurityDiagnosticsAccessMode,
+        @Nullable SecurityKeysListener securityKeysListener,
+        ExecutorService executor,
+        ScheduledExecutorService scheduledExecutorService) {
+
       this.endpoints = endpoints;
       this.applicationName = applicationName;
       this.applicationUri = applicationUri;
@@ -185,6 +239,8 @@ public class OpcUaServerConfigBuilder {
       this.limits = limits;
       this.certificateManager = certificateManager;
       this.roleMapper = roleMapper;
+      this.sessionSecurityDiagnosticsAccessMode =
+          requireNonNull(sessionSecurityDiagnosticsAccessMode);
       this.securityKeysListener = securityKeysListener;
       this.executor = executor;
       this.scheduledExecutorService = scheduledExecutorService;
@@ -238,6 +294,11 @@ public class OpcUaServerConfigBuilder {
     @Override
     public Optional<RoleMapper> getRoleMapper() {
       return Optional.ofNullable(roleMapper);
+    }
+
+    @Override
+    public SessionSecurityDiagnosticsAccessMode getSessionSecurityDiagnosticsAccessMode() {
+      return sessionSecurityDiagnosticsAccessMode;
     }
 
     @Override

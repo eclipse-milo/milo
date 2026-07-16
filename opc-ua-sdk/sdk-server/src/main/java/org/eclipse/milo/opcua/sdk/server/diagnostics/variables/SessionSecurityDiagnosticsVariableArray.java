@@ -11,6 +11,8 @@
 package org.eclipse.milo.opcua.sdk.server.diagnostics.variables;
 
 import static org.eclipse.milo.opcua.sdk.server.diagnostics.variables.Util.diagnosticValueFilter;
+import static org.eclipse.milo.opcua.sdk.server.diagnostics.variables.Util.roleBasedUserAccessLevelFilter;
+import static org.eclipse.milo.opcua.sdk.server.diagnostics.variables.Util.roleBasedUserRolePermissionsFilter;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,13 +28,16 @@ import org.eclipse.milo.opcua.sdk.server.NodeManager;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.SessionListener;
+import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionSecurityDiagnosticsAccessMode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ServerDiagnosticsTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.SessionSecurityDiagnosticsArrayTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.SessionSecurityDiagnosticsTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.AttributeObserver;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.factories.NodeFactory;
+import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilter;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -43,9 +48,18 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.structured.SessionSecurityDiagnosticsDataType;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Publishes security diagnostics for all active Sessions and manages the per-Session Variables
+ * created beneath the standard diagnostics array.
+ *
+ * <p>Elements are created and removed as Sessions enter and leave the server. Access to the array,
+ * its runtime-created elements, and the diagnostics enabled flag is derived from the standard
+ * nodes' role metadata unless legacy access is explicitly configured.
+ */
 public class SessionSecurityDiagnosticsVariableArray extends AbstractLifecycle {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -57,6 +71,7 @@ public class SessionSecurityDiagnosticsVariableArray extends AbstractLifecycle {
 
   private AttributeObserver attributeObserver;
   private SessionListener sessionListener;
+  private AttributeFilter enabledFlagAccessFilter;
 
   private final OpcUaServer server;
   private final NodeFactory nodeFactory;
@@ -99,6 +114,19 @@ public class SessionSecurityDiagnosticsVariableArray extends AbstractLifecycle {
                         new NoSuchElementException("NodeId: " + NodeIds.Server_ServerDiagnostics));
 
     diagnosticsEnabled.set(diagnosticsNode.getEnabledFlag());
+
+    if (server.getConfig().getSessionSecurityDiagnosticsAccessMode()
+        == SessionSecurityDiagnosticsAccessMode.RESTRICTED) {
+
+      // EnabledFlag grants read access broadly but reserves writes for ConfigureAdmin and
+      // SecurityAdmin. Derive UserAccessLevel from those standard RolePermissions.
+      enabledFlagAccessFilter = roleBasedUserAccessLevelFilter();
+      diagnosticsNode.getEnabledFlagNode().getFilterChain().addLast(enabledFlagAccessFilter);
+
+      // Apply the array's restricted role policy to Value access and to other node operations.
+      node.getFilterChain()
+          .addLast(roleBasedUserAccessLevelFilter(), roleBasedUserRolePermissionsFilter());
+    }
 
     if (diagnosticsEnabled.get()) {
       addSessionListener();
@@ -188,7 +216,10 @@ public class SessionSecurityDiagnosticsVariableArray extends AbstractLifecycle {
 
       SessionSecurityDiagnosticsTypeNode elementNode =
           (SessionSecurityDiagnosticsTypeNode)
-              nodeFactory.createNode(elementNodeId, NodeIds.SessionSecurityDiagnosticsType);
+              nodeFactory.createNode(
+                  elementNodeId,
+                  NodeIds.SessionSecurityDiagnosticsType,
+                  securityAccessControl(node));
 
       elementNode.setBrowseName(new QualifiedName(1, "SessionSecurityDiagnostics"));
       elementNode.setDisplayName(
@@ -220,10 +251,37 @@ public class SessionSecurityDiagnosticsVariableArray extends AbstractLifecycle {
     }
   }
 
+  /**
+   * Creates a callback that copies the standard array instance's security attributes to dynamically
+   * instantiated element Variables and their fields.
+   *
+   * <p>The type definition describes the element shape, but the runtime nodes must carry the array
+   * instance's authorization and secure-channel requirements.
+   *
+   * @param arrayNode the standard array node that supplies the security attributes.
+   * @return a callback that applies those attributes to instantiated Variables.
+   */
+  static NodeFactory.InstantiationCallback securityAccessControl(
+      SessionSecurityDiagnosticsArrayTypeNode arrayNode) {
+
+    return new NodeFactory.InstantiationCallback() {
+      @Override
+      public void onVariableAdded(
+          @Nullable UaNode parent, UaVariableNode instance, NodeId typeDefinitionId) {
+
+        instance.setRolePermissions(arrayNode.getRolePermissions());
+        instance.setUserRolePermissions(arrayNode.getUserRolePermissions());
+        instance.setAccessRestrictions(arrayNode.getAccessRestrictions());
+      }
+    };
+  }
+
   @Override
   protected void onShutdown() {
+    AttributeFilter accessFilter = enabledFlagAccessFilter;
     AttributeObserver observer = attributeObserver;
-    if (observer != null) {
+
+    if (accessFilter != null || observer != null) {
       ServerDiagnosticsTypeNode diagnosticsNode =
           (ServerDiagnosticsTypeNode)
               server
@@ -234,8 +292,15 @@ public class SessionSecurityDiagnosticsVariableArray extends AbstractLifecycle {
                           new NoSuchElementException(
                               "NodeId: " + NodeIds.Server_ServerDiagnostics));
 
-      diagnosticsNode.getEnabledFlagNode().removeAttributeObserver(observer);
-      attributeObserver = null;
+      if (accessFilter != null) {
+        diagnosticsNode.getEnabledFlagNode().getFilterChain().remove(accessFilter);
+        enabledFlagAccessFilter = null;
+      }
+
+      if (observer != null) {
+        diagnosticsNode.getEnabledFlagNode().removeAttributeObserver(observer);
+        attributeObserver = null;
+      }
     }
 
     if (sessionListener != null) {
