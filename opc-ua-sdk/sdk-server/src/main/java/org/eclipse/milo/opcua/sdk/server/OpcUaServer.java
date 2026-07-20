@@ -34,7 +34,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.ObjectTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceTypeTree;
@@ -42,6 +41,7 @@ import org.eclipse.milo.opcua.sdk.core.typetree.VariableTypeTree;
 import org.eclipse.milo.opcua.sdk.server.conditions.ConditionManager;
 import org.eclipse.milo.opcua.sdk.server.conditions.DefaultConditionManager;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.ServerDiagnosticsSummary;
+import org.eclipse.milo.opcua.sdk.server.events.EventNotifierScope;
 import org.eclipse.milo.opcua.sdk.server.events.TransientEvent;
 import org.eclipse.milo.opcua.sdk.server.items.EventItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
@@ -203,7 +203,7 @@ public class OpcUaServer extends AbstractServiceHandler {
   private final EventFactory eventFactory = new EventFactory(this);
   private final EventInstantiator eventInstantiator = new EventInstantiator(this);
   private final EventNotifier eventNotifier = new ServerEventNotifier(this);
-  private final ConditionManager conditionManager = new DefaultConditionManager();
+  private final ConditionManager conditionManager = new DefaultConditionManager(this);
 
   private final EncodingContext staticEncodingContext;
   private final EncodingContext dynamicEncodingContext;
@@ -1366,8 +1366,6 @@ public class OpcUaServer extends AbstractServiceHandler {
    */
   private static class ServerEventNotifier implements EventNotifier {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
     private final Set<EventListener> eventListeners =
         Collections.synchronizedSet(new LinkedHashSet<>());
 
@@ -1388,7 +1386,18 @@ public class OpcUaServer extends AbstractServiceHandler {
         return;
       }
 
-      Set<NodeId> notifierScope = getNotifierScope(event);
+      // The notifier-scope walk is only consulted for non-Server MonitoredItems; when every
+      // listener monitors the Server Object (or is a non-MonitoredItem subscriber) the BFS would
+      // be discarded, so skip it entirely in that common case.
+      boolean scopeNeeded =
+          toNotify.stream()
+              .anyMatch(
+                  l ->
+                      l instanceof MonitoredItem item
+                          && !NodeIds.Server.equals(item.getReadValueId().getNodeId()));
+
+      Set<NodeId> notifierScope =
+          scopeNeeded ? EventNotifierScope.resolve(server, event) : Set.of();
 
       for (EventListener eventListener : toNotify) {
         if (isInScope(eventListener, notifierScope)) {
@@ -1399,68 +1408,10 @@ public class OpcUaServer extends AbstractServiceHandler {
 
     private boolean isInScope(EventListener eventListener, Set<NodeId> notifierScope) {
       if (eventListener instanceof MonitoredItem item) {
-        NodeId monitoredNodeId = item.getReadValueId().getNodeId();
-
-        return NodeIds.Server.equals(monitoredNodeId) || notifierScope.contains(monitoredNodeId);
+        return EventNotifierScope.contains(item, notifierScope);
       } else {
         return true;
       }
-    }
-
-    /**
-     * Collect the Event's SourceNode plus every node that can reach it via forward
-     * HasEventSource/HasNotifier References, by walking inverse References up from the SourceNode.
-     */
-    private Set<NodeId> getNotifierScope(BaseEventTypeNode event) {
-      NodeId sourceNodeId = event != null ? event.getSourceNode() : null;
-
-      if (sourceNodeId == null || sourceNodeId.isNull()) {
-        return Set.of();
-      }
-
-      ReferenceTypeTree referenceTypeTree = server.getReferenceTypeTree();
-
-      var scope = new HashSet<NodeId>();
-      var queue = new ArrayDeque<NodeId>();
-      scope.add(sourceNodeId);
-      queue.add(sourceNodeId);
-
-      while (!queue.isEmpty()) {
-        NodeId nodeId = queue.poll();
-
-        List<Reference> references;
-        try {
-          references =
-              server
-                  .getAddressSpaceManager()
-                  .getManagedReferences(
-                      nodeId,
-                      r ->
-                          r.isInverse()
-                              && (NodeIds.HasEventSource.equals(r.getReferenceTypeId())
-                                  || referenceTypeTree.isSubtypeOf(
-                                      r.getReferenceTypeId(), NodeIds.HasEventSource)));
-        } catch (Throwable t) {
-          // Tolerate concurrent address space mutation: a mid-fire mutation may cost one
-          // delivery, never a crash.
-          logger.debug("Error resolving notifier scope at {}", nodeId, t);
-          continue;
-        }
-
-        for (Reference reference : references) {
-          reference
-              .getTargetNodeId()
-              .toNodeId(server.getNamespaceTable())
-              .ifPresent(
-                  targetNodeId -> {
-                    if (scope.add(targetNodeId)) {
-                      queue.add(targetNodeId);
-                    }
-                  });
-        }
-      }
-
-      return scope;
     }
 
     @Override

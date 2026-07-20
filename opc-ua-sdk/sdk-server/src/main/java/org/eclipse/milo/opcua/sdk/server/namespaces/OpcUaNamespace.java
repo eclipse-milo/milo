@@ -12,12 +12,10 @@ package org.eclipse.milo.opcua.sdk.server.namespaces;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import org.eclipse.milo.opcua.sdk.server.ManagedNamespaceWithLifecycle;
@@ -30,7 +28,6 @@ import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.methods.Out;
-import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ConditionType;
 import org.eclipse.milo.opcua.sdk.server.model.objects.OperationLimitsTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ServerCapabilitiesTypeNode;
@@ -51,8 +48,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.RedundancySupport;
@@ -61,7 +56,6 @@ import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.BuildInfo;
 import org.eclipse.milo.opcua.stack.core.types.structured.ServerStatusDataType;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
-import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -288,6 +282,14 @@ public class OpcUaNamespace extends ManagedNamespaceWithLifecycle {
     } else {
       logger.warn("ConditionRefresh UaMethodNode not found.");
     }
+
+    UaNode node2 = getNodeManager().get(NodeIds.ConditionType_ConditionRefresh2);
+
+    if (node2 instanceof UaMethodNode conditionRefresh2Node) {
+      configureMethodNode(conditionRefresh2Node, ConditionRefresh2MethodImpl::new);
+    } else {
+      logger.warn("ConditionRefresh2 UaMethodNode not found.");
+    }
   }
 
   private static <T extends AbstractMethodInvocationHandler> void configureMethodNode(
@@ -319,56 +321,32 @@ public class OpcUaNamespace extends ManagedNamespaceWithLifecycle {
 
     @Override
     protected void invoke(InvocationContext context, UInteger subscriptionId) throws UaException {
-      Session session = context.getSession().orElse(null);
+      Session session =
+          context.getSession().orElseThrow(() -> new UaException(StatusCodes.Bad_UserAccessDenied));
 
-      if (session != null) {
-        Subscription subscription =
-            session.getSubscriptionManager().getSubscription(subscriptionId);
+      server.getConditionManager().conditionRefresh(session, subscriptionId);
+    }
+  }
 
-        if (subscription != null) {
-          BaseEventTypeNode refreshStart =
-              server
-                  .getEventInstantiator()
-                  .createEvent(new NodeId(1, UUID.randomUUID()), NodeIds.RefreshStartEventType);
+  private static class ConditionRefresh2MethodImpl extends ConditionType.ConditionRefresh2Method {
 
-          refreshStart.setBrowseName(new QualifiedName(1, "RefreshStart"));
-          refreshStart.setDisplayName(LocalizedText.english("RefreshStart"));
-          refreshStart.setEventId(NonceUtil.generateNonce(16));
-          refreshStart.setEventType(NodeIds.RefreshStartEventType);
-          refreshStart.setSourceNode(NodeIds.Server);
-          refreshStart.setSourceName("Server");
-          refreshStart.setTime(DateTime.now());
-          refreshStart.setReceiveTime(DateTime.NULL_VALUE);
-          refreshStart.setMessage(LocalizedText.english("RefreshStart"));
-          refreshStart.setSeverity(ushort(0));
+    private final OpcUaServer server;
 
-          BaseEventTypeNode refreshEnd =
-              server
-                  .getEventInstantiator()
-                  .createEvent(new NodeId(1, UUID.randomUUID()), NodeIds.RefreshEndEventType);
+    ConditionRefresh2MethodImpl(UaMethodNode node) {
+      super(node);
 
-          refreshEnd.setBrowseName(new QualifiedName(1, "RefreshEnd"));
-          refreshEnd.setDisplayName(LocalizedText.english("RefreshEnd"));
-          refreshEnd.setEventId(NonceUtil.generateNonce(16));
-          refreshEnd.setEventType(NodeIds.RefreshEndEventType);
-          refreshEnd.setSourceNode(NodeIds.Server);
-          refreshEnd.setSourceName("Server");
-          refreshEnd.setTime(DateTime.now());
-          refreshEnd.setReceiveTime(DateTime.NULL_VALUE);
-          refreshEnd.setMessage(LocalizedText.english("RefreshEnd"));
-          refreshEnd.setSeverity(ushort(0));
+      server = node.getNodeContext().getServer();
+    }
 
-          server.getEventNotifier().fire(refreshStart);
-          server.getEventNotifier().fire(refreshEnd);
+    @Override
+    protected void invoke(
+        InvocationContext context, UInteger subscriptionId, UInteger monitoredItemId)
+        throws UaException {
 
-          refreshStart.delete();
-          refreshEnd.delete();
-        } else {
-          throw new UaException(StatusCodes.Bad_SubscriptionIdInvalid);
-        }
-      } else {
-        throw new UaException(StatusCodes.Bad_UserAccessDenied);
-      }
+      Session session =
+          context.getSession().orElseThrow(() -> new UaException(StatusCodes.Bad_UserAccessDenied));
+
+      server.getConditionManager().conditionRefresh2(session, subscriptionId, monitoredItemId);
     }
   }
 

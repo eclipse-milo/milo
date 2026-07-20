@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.sdk.server.conditions;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -347,6 +348,32 @@ public class Condition {
      * @param time the transition time shared by all variables this mutation touches.
      */
     void apply(DateTime time);
+  }
+
+  /**
+   * Create refresh replay snapshots: one immutable snapshot per Retained branch, trunk first, each
+   * materializing a never-registered event node carrying this Condition's NodeId and the branch's
+   * last EventId/Time; empty if nothing is retained.
+   *
+   * <p>This is the internal replay contract between a Condition and the ConditionManager (the
+   * design's {@code RetainedConditionSource}); v1 has exactly the trunk. Snapshots are taken under
+   * the Condition's lock so their values are mutually consistent, and must be {@link
+   * ConditionEventSnapshot#delete() deleted} by the caller after delivery.
+   *
+   * @return one {@link ConditionEventSnapshot} per Retained branch.
+   * @throws UaException if materializing a snapshot fails.
+   */
+  List<ConditionEventSnapshot> createRefreshSnapshots() throws UaException {
+    lock.lock();
+    try {
+      if (!trunk.isRetained()) {
+        return List.of();
+      }
+
+      return List.of(ConditionEventSnapshot.create(server, node, trunk));
+    } finally {
+      lock.unlock();
+    }
   }
 
   /**
