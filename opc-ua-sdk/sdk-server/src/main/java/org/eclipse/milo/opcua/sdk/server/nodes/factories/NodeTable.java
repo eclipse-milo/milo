@@ -10,12 +10,14 @@
 
 package org.eclipse.milo.opcua.sdk.server.nodes.factories;
 
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.util.Tree;
+import org.jspecify.annotations.Nullable;
 
 class NodeTable {
 
@@ -23,6 +25,26 @@ class NodeTable {
 
   void addNode(BrowsePath browsePath, NodeId nodeId) {
     nodes.put(browsePath, nodeId);
+  }
+
+  /** Find the path of an instance declaration, excluding the root type definition itself. */
+  @Nullable BrowsePath getDeclarationPath(NodeId nodeId) {
+    return nodes.entrySet().stream()
+        .filter(entry -> entry.getKey().parent != null && entry.getValue().equals(nodeId))
+        .map(Map.Entry::getKey)
+        // A declaration reached through a non-hierarchical reference may also be reached through
+        // its actual hierarchical declaration path. Prefer that shallower canonical path instead
+        // of manufacturing a nested duplicate such as ActiveState/LimitState.
+        .min(Comparator.comparingInt(NodeTable::depth))
+        .orElse(null);
+  }
+
+  private static int depth(BrowsePath browsePath) {
+    int depth = 0;
+    for (BrowsePath path = browsePath; path.parent != null; path = path.parent) {
+      depth++;
+    }
+    return depth;
   }
 
   Tree<BrowsePath> getBrowsePathTree() {

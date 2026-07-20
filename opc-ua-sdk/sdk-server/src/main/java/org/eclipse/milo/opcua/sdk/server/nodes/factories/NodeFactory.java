@@ -313,9 +313,36 @@ public class NodeFactory {
 
                 if (!NodeIds.HasModellingRule.equals(referenceTypeId)) {
                   if (target.targetNodeId != null) {
-                    node.addReference(
-                        new Reference(
-                            node.getNodeId(), referenceTypeId, target.targetNodeId, true));
+                    // A non-hierarchical reference between two instance declarations describes a
+                    // reference between their instances, not a literal reference back into the
+                    // type declaration. Resolve such targets through the declaration table; if an
+                    // optional target was not instantiated, omit the reference. HasTypeDefinition
+                    // deliberately remains a literal reference to the type node.
+                    BrowsePath targetPath = null;
+                    if (!NodeIds.HasTypeDefinition.equals(referenceTypeId)) {
+                      targetPath =
+                          target
+                              .targetNodeId
+                              .toNodeId(namespaceTable)
+                              .map(nodeTable::getDeclarationPath)
+                              .orElse(null);
+                    }
+
+                    if (targetPath != null) {
+                      UaNode targetNode = nodes.get(targetPath);
+                      if (targetNode != null) {
+                        node.addReference(
+                            new Reference(
+                                node.getNodeId(),
+                                referenceTypeId,
+                                targetNode.getNodeId().expanded(),
+                                t.forward));
+                      }
+                    } else {
+                      node.addReference(
+                          new Reference(
+                              node.getNodeId(), referenceTypeId, target.targetNodeId, t.forward));
+                    }
                   } else {
                     BrowsePath targetPath = target.targetPath;
 
@@ -327,7 +354,7 @@ public class NodeFactory {
                               node.getNodeId(),
                               referenceTypeId,
                               targetNode.getNodeId().expanded(),
-                              true));
+                              t.forward));
                     }
                   }
                 }

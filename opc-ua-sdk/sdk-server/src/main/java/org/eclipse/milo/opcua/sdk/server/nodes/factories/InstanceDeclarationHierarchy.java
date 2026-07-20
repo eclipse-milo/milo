@@ -136,10 +136,21 @@ public class InstanceDeclarationHierarchy {
                         // Hierarchical References to Nodes without a ModellingRule are not
                         // considered.
 
-                        BrowsePath browsePath = new BrowsePath(parentPath, node.getBrowseName());
-
                         ReferenceTypeTree referenceTypeTree =
                             node.getNodeContext().getServer().getReferenceTypeTree();
+
+                        // A declaration reached through a non-hierarchical reference may also
+                        // have its normal hierarchical parent (for example ActiveState
+                        // HasTrueSubState LimitState). It will be visited through that hierarchy;
+                        // adding it here would instantiate a second, invented nested path. Keep
+                        // the old behavior for legitimate declarations reachable only through a
+                        // non-hierarchical reference.
+                        if (!isHierarchical(reference.getReferenceTypeId(), referenceTypeTree)
+                            && hasHierarchicalParent(node, referenceTypeTree)) {
+                          return;
+                        }
+
+                        BrowsePath browsePath = new BrowsePath(parentPath, node.getBrowseName());
 
                         if (isInstanceDeclaration(node)) {
                           nodeTable.addNode(browsePath, node.getNodeId());
@@ -155,7 +166,10 @@ public class InstanceDeclarationHierarchy {
                               .forEach(
                                   r ->
                                       referenceTable.addReference(
-                                          browsePath, r.getReferenceTypeId(), r.getTargetNodeId()));
+                                          browsePath,
+                                          r.getReferenceTypeId(),
+                                          r.getTargetNodeId(),
+                                          r.isForward()));
 
                           // Recursively add any additional instance declarations, on both this
                           // instance declaration and its type definition if applicable.
@@ -194,6 +208,22 @@ public class InstanceDeclarationHierarchy {
               r ->
                   NodeIds.ModellingRule_Mandatory.equalTo(r.getTargetNodeId())
                       || NodeIds.ModellingRule_Optional.equalTo(r.getTargetNodeId()));
+    }
+
+    private static boolean hasHierarchicalParent(UaNode node, ReferenceTypeTree referenceTypeTree) {
+
+      return node.getReferences().stream()
+          .anyMatch(
+              reference ->
+                  reference.isInverse()
+                      && isHierarchical(reference.getReferenceTypeId(), referenceTypeTree));
+    }
+
+    private static boolean isHierarchical(
+        NodeId referenceTypeId, ReferenceTypeTree referenceTypeTree) {
+
+      return NodeIds.HierarchicalReferences.equals(referenceTypeId)
+          || referenceTypeTree.isSubtypeOf(referenceTypeId, NodeIds.HierarchicalReferences);
     }
   }
 }
