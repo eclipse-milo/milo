@@ -13,12 +13,15 @@ package org.eclipse.milo.opcua.sdk.server.conditions;
 import static java.util.Objects.requireNonNull;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 
+import java.time.Duration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceTypeTree;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AcknowledgeableConditionTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.AlarmConditionTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ConditionTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
@@ -59,6 +62,9 @@ public class ConditionBuilder {
   private LocalizedText conditionClassName = LocalizedText.english("BaseConditionClass");
   private UShort severity = ushort(1);
   private boolean withConfirm = false;
+  private @Nullable NodeId inputNode;
+  private boolean withShelving = false;
+  private @Nullable Duration maxTimeShelved;
 
   private final UaNodeContext context;
 
@@ -170,6 +176,49 @@ public class ConditionBuilder {
   }
 
   /**
+   * Set the InputNode Property value: the {@link NodeId} of the Variable the alarm monitors.
+   *
+   * <p>Only meaningful for AlarmConditionType and its subtypes. The SDK does not subscribe to the
+   * input; the application drives {@link AlarmCondition#setActive}.
+   *
+   * @param inputNode the {@link NodeId} of the alarm's input Variable.
+   * @return this builder.
+   */
+  public ConditionBuilder inputNode(NodeId inputNode) {
+    this.inputNode = inputNode;
+    return this;
+  }
+
+  /**
+   * Opt in to the optional ShelvingState component and its shelving methods, with no MaxTimeShelved
+   * limit.
+   *
+   * <p>Only meaningful for AlarmConditionType and its subtypes.
+   *
+   * @return this builder.
+   */
+  public ConditionBuilder withShelving() {
+    this.withShelving = true;
+    return this;
+  }
+
+  /**
+   * Opt in to the optional ShelvingState component and its shelving methods, limited by the
+   * optional MaxTimeShelved Property: TimedShelve may not exceed it and OneShotShelve automatically
+   * releases after it.
+   *
+   * <p>Only meaningful for AlarmConditionType and its subtypes.
+   *
+   * @param maxTimeShelved the MaxTimeShelved Property value.
+   * @return this builder.
+   */
+  public ConditionBuilder withShelving(Duration maxTimeShelved) {
+    this.withShelving = true;
+    this.maxTimeShelved = maxTimeShelved;
+    return this;
+  }
+
+  /**
    * Get the instance method nodes recorded during {@link #buildNode}, keyed by BrowseName, for
    * {@link Condition#installMethodHandlers}.
    */
@@ -187,10 +236,20 @@ public class ConditionBuilder {
     NodeId nodeId = requireNonNull(this.nodeId, "nodeId must be set");
     QualifiedName browseName = requireNonNull(this.browseName, "browseName must be set");
 
-    Set<String> optionalIncludes =
-        withConfirm
-            ? Set.of("TransitionTime", "SupportsFilteredRetain", "ConfirmedState")
-            : Set.of("TransitionTime", "SupportsFilteredRetain");
+    Set<String> optionalIncludes = new HashSet<>();
+    optionalIncludes.add("TransitionTime");
+    optionalIncludes.add("SupportsFilteredRetain");
+    if (withConfirm) {
+      optionalIncludes.add("ConfirmedState");
+    }
+    if (withShelving) {
+      optionalIncludes.add("ShelvingState");
+      // The ShelvedStateMachine's LastTransition (FiniteStateMachineType) is Optional.
+      optionalIncludes.add("LastTransition");
+      if (maxTimeShelved != null) {
+        optionalIncludes.add("MaxTimeShelved");
+      }
+    }
 
     var nodeFactory = new NodeFactory(context);
 
@@ -252,12 +311,26 @@ public class ConditionBuilder {
     if (node instanceof AcknowledgeableConditionTypeNode ackNode) {
       wireSubStates(ackNode);
     }
+
+    if (node instanceof AlarmConditionTypeNode alarmNode) {
+      initializeAlarmNode(alarmNode);
+    }
+  }
+
+  private void initializeAlarmNode(AlarmConditionTypeNode node) {
+    node.setInputNode(inputNode != null ? inputNode : NodeId.NULL_VALUE);
+    node.setSuppressedOrShelved(false);
+
+    if (maxTimeShelved != null) {
+      node.setMaxTimeShelved((double) maxTimeShelved.toMillis());
+    }
   }
 
   /**
-   * Wire AckedState and ConfirmedState as true sub-states of EnabledState per §5.4; the required
-   * inverse Reference from sub-state to super-state is added automatically by {@code
-   * UaNode.addReference}.
+   * Wire the present sub-states of EnabledState per §5.4 in a single pass: AckedState and
+   * ConfirmedState for every AcknowledgeableCondition, plus ActiveState and the ShelvingState
+   * sub-state machine (§5.8.10) for an AlarmCondition. The required inverse Reference from
+   * sub-state to super-state is added automatically by {@code UaNode.addReference}.
    */
   private void wireSubStates(AcknowledgeableConditionTypeNode node) {
     TwoStateVariableTypeNode enabledState = node.getEnabledStateNode();
@@ -267,11 +340,14 @@ public class ConditionBuilder {
 
     wireSubState(enabledState, node.getAckedStateNode());
     wireSubState(enabledState, node.getConfirmedStateNode());
+
+    if (node instanceof AlarmConditionTypeNode alarmNode) {
+      wireSubState(enabledState, alarmNode.getActiveStateNode());
+      wireSubState(enabledState, alarmNode.getShelvingStateNode());
+    }
   }
 
-  private void wireSubState(
-      TwoStateVariableTypeNode superState, @Nullable TwoStateVariableTypeNode subState) {
-
+  private void wireSubState(UaNode superState, @Nullable UaNode subState) {
     if (subState == null) {
       return;
     }

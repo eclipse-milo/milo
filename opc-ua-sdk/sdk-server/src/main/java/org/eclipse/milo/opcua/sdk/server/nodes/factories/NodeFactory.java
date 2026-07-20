@@ -207,7 +207,14 @@ public class NodeFactory {
           throw new UaException(StatusCodes.Bad_InternalError);
         }
       } else {
-        // Non-root Nodes are all instance declarations
+        // Non-root Nodes are all instance declarations.
+        // Iteration is parent-before-child, so if the parent declaration was an optional the
+        // callback declined, none of its children are instantiated either; instantiating them
+        // would register orphaned nodes that belong to no hierarchy.
+        if (!nodes.containsKey(browsePath.parent)) {
+          continue;
+        }
+
         NodeId instanceNodeId = instanceNodeId(rootNodeId, browsePath);
 
         if (node instanceof UaMethodNode declaration) {

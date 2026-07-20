@@ -18,6 +18,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.events.EventNotifierScope;
@@ -55,6 +56,8 @@ public class DefaultConditionManager implements ConditionManager {
 
   private final ConcurrentMap<NodeId, Condition> conditions = new ConcurrentHashMap<>();
 
+  private final AtomicBoolean shutdown = new AtomicBoolean(false);
+
   /** Ids of Subscriptions with a refresh in progress (§5.5.7's per-Subscription guard). */
   private final Set<UInteger> refreshInProgress = ConcurrentHashMap.newKeySet();
 
@@ -66,7 +69,16 @@ public class DefaultConditionManager implements ConditionManager {
 
   @Override
   public void register(Condition condition) {
+    if (shutdown.get()) {
+      condition.shutdown();
+      return;
+    }
+
     conditions.put(condition.getConditionId(), condition);
+
+    if (shutdown.get() && conditions.remove(condition.getConditionId(), condition)) {
+      condition.shutdown();
+    }
   }
 
   @Override
@@ -283,6 +295,23 @@ public class DefaultConditionManager implements ConditionManager {
       }
     } catch (Exception e) {
       logger.warn("Error delivering RefreshRequired to item {}", eventItem.getId(), e);
+    }
+  }
+
+  @Override
+  public void shutdown() {
+    if (shutdown.compareAndSet(false, true)) {
+      conditions.forEach(
+          (conditionId, condition) -> {
+            if (conditions.remove(conditionId, condition)) {
+              try {
+                condition.shutdown();
+              } catch (Throwable t) {
+                logger.warn("Error shutting down Condition {}", conditionId, t);
+              }
+            }
+          });
+      refreshInProgress.clear();
     }
   }
 

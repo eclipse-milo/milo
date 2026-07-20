@@ -30,7 +30,7 @@ public abstract class AbstractClientServerTest {
 
   @BeforeAll
   public void startClientAndServer() throws Exception {
-    testServer = TestServer.create();
+    testServer = createTestServer();
     server = testServer.getServer();
 
     testNamespace = new TestNamespace(server);
@@ -43,6 +43,16 @@ public abstract class AbstractClientServerTest {
     client = TestClient.create(server, this::customizeClientConfig);
 
     client.connect();
+  }
+
+  /**
+   * Create the test server. Subclasses may override to customize server-side executors or limits.
+   *
+   * @return the {@link TestServer} to use.
+   * @throws Exception if the server cannot be created.
+   */
+  protected TestServer createTestServer() throws Exception {
+    return TestServer.create();
   }
 
   @AfterAll

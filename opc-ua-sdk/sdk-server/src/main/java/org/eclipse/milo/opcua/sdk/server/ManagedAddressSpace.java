@@ -282,6 +282,10 @@ public abstract class ManagedAddressSpace implements AddressSpace {
 
     if (node instanceof UaObjectNode objectNode) {
       methodNode = objectNode.findMethodNode(methodId);
+
+      if (methodNode == null) {
+        methodNode = server.getConditionManager().findMethodNode(objectId, methodId).orElse(null);
+      }
     } else if (node instanceof UaObjectTypeNode objectTypeNode) {
       methodNode = objectTypeNode.findMethodNode(methodId);
     }

@@ -26,6 +26,7 @@ import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
 import org.eclipse.milo.opcua.sdk.server.model.objects.ConditionType;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ConditionTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.ConditionVariableTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
@@ -122,8 +123,7 @@ public class Condition {
     ensureConditionVariableDefaults(lastSeverity, new Variant(UShort.MIN));
     ensureConditionVariableDefaults(comment, new Variant(LocalizedText.NULL_VALUE));
 
-    Boolean enabledId = enabledState != null ? enabledState.getId() : null;
-    enabled = enabledId == null || enabledId;
+    enabled = booleanId(enabledState, true);
 
     installDisabledReadFilter(quality);
     installDisabledReadFilter(lastSeverity);
@@ -547,6 +547,17 @@ public class Condition {
   }
 
   /**
+   * Find a Method exposed through ConditionId dispatch but owned by a nested state machine.
+   * Subclasses override for the nested methods they support.
+   */
+  Optional<UaMethodNode> findMethodNode(NodeId methodId) {
+    return Optional.empty();
+  }
+
+  /** Release runtime resources owned by this Condition during server shutdown. */
+  void shutdown() {}
+
+  /**
    * Apply the NULL-comment convention used by comment-taking methods: a NULL comment leaves the
    * stored Comment unchanged; any non-NULL comment (including empty text with a locale) is stored.
    * AddComment rejects NULL before reaching this helper, while Acknowledge and Confirm ignore it.
@@ -580,6 +591,32 @@ public class Condition {
     return interceptor;
   }
 
+  /**
+   * Run {@code action} while holding the lock serializing this Condition's state transitions, for
+   * behavior collaborators (e.g. the shelving runtime) that must validate and mutate atomically.
+   *
+   * @param action the action to run under the lock.
+   * @param <E> the checked exception the action may throw.
+   * @throws E if the action throws.
+   */
+  <E extends Exception> void runLocked(LockedAction<E> action) throws E {
+    lock.lock();
+    try {
+      action.run();
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  @FunctionalInterface
+  interface LockedAction<E extends Exception> {
+    void run() throws E;
+  }
+
+  OpcUaServer getServer() {
+    return server;
+  }
+
   static @Nullable String clientUserId(InvocationContext context) {
     return context.getSession().map(Session::getClientUserId).orElse(null);
   }
@@ -592,7 +629,7 @@ public class Condition {
 
   /**
    * Set a TwoStateVariable coherently: Value text, Id, and TransitionTime share one transition
-   * time.
+   * time, and the optional EffectiveDisplayName, where present, tracks the Value text.
    */
   void setTwoState(
       @Nullable TwoStateVariableTypeNode state, boolean value, StateTexts texts, DateTime time) {
@@ -601,9 +638,16 @@ public class Condition {
       return;
     }
 
-    state.setValue(new DataValue(new Variant(LocalizedText.english(texts.forState(value)))));
+    LocalizedText text = LocalizedText.english(texts.forState(value));
+
+    state.setValue(new DataValue(new Variant(text)));
     state.setId(value);
     state.setTransitionTime(time);
+
+    PropertyTypeNode effectiveDisplayName = state.getEffectiveDisplayNameNode();
+    if (effectiveDisplayName != null) {
+      effectiveDisplayName.setValue(new DataValue(new Variant(text)));
+    }
   }
 
   /** Set a ConditionVariable's value and its SourceTimestamp. */
@@ -615,6 +659,16 @@ public class Condition {
 
     variable.setValue(new DataValue(value));
     variable.setSourceTimestamp(time);
+  }
+
+  /**
+   * Resolve a TwoStateVariable's boolean Id, treating a null node or an unset Id as {@code
+   * defaultValue}. The default differs by state — EnabledState/AckedState/ConfirmedState default
+   * {@code true}, ActiveState defaults {@code false} — so it is spelled out at each call site.
+   */
+  static boolean booleanId(@Nullable TwoStateVariableTypeNode state, boolean defaultValue) {
+    Boolean id = state != null ? state.getId() : null;
+    return id != null ? id : defaultValue;
   }
 
   /**

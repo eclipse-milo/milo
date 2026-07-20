@@ -106,8 +106,7 @@ public class AcknowledgeableCondition extends Condition {
    * @return {@code true} if the current state is acknowledged.
    */
   public boolean isAcked() {
-    Boolean id = ackedState != null ? ackedState.getId() : null;
-    return id == null || id;
+    return booleanId(ackedState, true);
   }
 
   /**
@@ -118,8 +117,7 @@ public class AcknowledgeableCondition extends Condition {
    * @return {@code true} if the current state is confirmed.
    */
   public boolean isConfirmed() {
-    Boolean id = confirmedState != null ? confirmedState.getId() : null;
-    return id == null || id;
+    return booleanId(confirmedState, true);
   }
 
   /**

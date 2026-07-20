@@ -475,6 +475,8 @@ public class OpcUaServer extends AbstractServiceHandler {
 
     unbindTransports();
 
+    conditionManager.shutdown();
+
     sessionManager.shutdown();
 
     serverNamespace.shutdown();

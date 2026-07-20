@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.sdk.server.conditions;
 import java.util.Optional;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredEventItem;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -50,6 +51,20 @@ public interface ConditionManager {
    * @return the registered {@link Condition} identified by {@code conditionId}, if any.
    */
   Optional<Condition> findCondition(NodeId conditionId);
+
+  /**
+   * Find a nested Method exposed by a registered Condition for ConditionId dispatch.
+   *
+   * <p>The default implementation preserves compatibility for custom managers by resolving through
+   * {@link #findCondition}.
+   *
+   * @param conditionId the ConditionId used as the Call ObjectId.
+   * @param methodId the instance or type-declaration MethodId.
+   * @return the matching nested {@link UaMethodNode}, if any.
+   */
+  default Optional<UaMethodNode> findMethodNode(NodeId conditionId, NodeId methodId) {
+    return findCondition(conditionId).flatMap(condition -> condition.findMethodNode(methodId));
+  }
 
   /**
    * Find the {@link ConditionBranch} of any registered Condition that {@code eventId} identifies a
@@ -101,4 +116,12 @@ public interface ConditionManager {
    * @param eventItem the {@link MonitoredEventItem} whose queue overflowed and has since drained.
    */
   default void onConditionEventOverflow(MonitoredEventItem eventItem) {}
+
+  /**
+   * Release runtime resources owned by registered Conditions during server shutdown.
+   *
+   * <p>The default implementation is a no-op so custom ConditionManager implementations remain
+   * source-compatible and need not own Condition lifecycle.
+   */
+  default void shutdown() {}
 }
