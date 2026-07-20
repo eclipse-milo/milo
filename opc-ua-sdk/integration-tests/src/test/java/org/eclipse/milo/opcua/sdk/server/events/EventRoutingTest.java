@@ -16,10 +16,8 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -31,23 +29,15 @@ import org.eclipse.milo.opcua.sdk.server.UaNodeManager;
 import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectNode;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
+import org.eclipse.milo.opcua.sdk.test.EventTestSupport;
 import org.eclipse.milo.opcua.sdk.test.TestNamespace;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.enumerated.FilterOperator;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MonitoringMode;
-import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilter;
-import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilterElement;
 import org.eclipse.milo.opcua.stack.core.types.structured.EventFilter;
-import org.eclipse.milo.opcua.stack.core.types.structured.LiteralOperand;
-import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -226,24 +216,12 @@ public class EventRoutingTest extends AbstractClientServerTest {
   }
 
   private List<Variant[]> monitorEvents(NodeId nodeId) throws Exception {
-    var events = new CopyOnWriteArrayList<Variant[]>();
-    createEventItem(nodeId, events);
-    return events;
+    return EventTestSupport.monitorEvents(subscription, nodeId, eventFilter());
   }
 
   private OpcUaMonitoredItem createEventItem(NodeId nodeId, List<Variant[]> events)
       throws Exception {
-
-    OpcUaMonitoredItem item = OpcUaMonitoredItem.newEventItem(nodeId, eventFilter());
-    item.setQueueSize(uint(10));
-    item.setEventValueListener((monitoredItem, eventFields) -> events.add(eventFields));
-
-    subscription.addMonitoredItem(item);
-    subscription.synchronizeMonitoredItems();
-
-    assertTrue(item.getCreateResult().orElseThrow().isGood());
-
-    return item;
+    return EventTestSupport.createEventItem(subscription, nodeId, eventFilter(), events);
   }
 
   private void setMonitoringMode(OpcUaMonitoredItem item, MonitoringMode monitoringMode) {
@@ -272,66 +250,26 @@ public class EventRoutingTest extends AbstractClientServerTest {
   /** Wait until an event with Message {@code message} arrives, returning its fields. */
   private static Variant[] awaitEvent(List<Variant[]> events, String message)
       throws InterruptedException {
-
-    long deadline = System.currentTimeMillis() + 5_000;
-
-    while (System.currentTimeMillis() < deadline) {
-      Variant[] match = findEvent(events, message);
-      if (match != null) {
-        return match;
-      }
-      //noinspection BusyWait
-      Thread.sleep(50);
-    }
-
-    fail("event with message \"" + message + "\" was not delivered");
-    return null; // unreachable
+    return EventTestSupport.awaitEvent(
+        events, "message \"" + message + "\"", eventFields -> messageMatches(eventFields, message));
   }
 
   /** Assert an event with Message {@code message} does not arrive within a settle period. */
   private static void assertNoEvent(List<Variant[]> events, String message)
       throws InterruptedException {
-
-    Thread.sleep(2_000);
-
-    assertNull(
-        findEvent(events, message),
-        "event with message \"" + message + "\" should not have been delivered");
+    EventTestSupport.assertNoEvent(
+        events, "message \"" + message + "\"", eventFields -> messageMatches(eventFields, message));
   }
 
-  private static Variant @Nullable [] findEvent(List<Variant[]> events, String message) {
-    for (Variant[] eventFields : events) {
-      if (eventFields[0].value() instanceof LocalizedText text && message.equals(text.text())) {
-        return eventFields;
-      }
-    }
-    return null;
+  private static boolean messageMatches(Variant[] eventFields, String message) {
+    return eventFields[0].value() instanceof LocalizedText text && message.equals(text.text());
   }
 
   /** Select Message and Severity; match only events with Severity == {@link #TEST_SEVERITY}. */
   private static EventFilter eventFilter() {
-    var whereClause =
-        new ContentFilter(
-            new ContentFilterElement[] {
-              new ContentFilterElement(
-                  FilterOperator.Equals,
-                  new ExtensionObject[] {
-                    ExtensionObject.encode(DefaultEncodingContext.INSTANCE, eventField("Severity")),
-                    ExtensionObject.encode(
-                        DefaultEncodingContext.INSTANCE,
-                        new LiteralOperand(new Variant(ushort(TEST_SEVERITY))))
-                  })
-            });
-
-    return new EventFilter(
-        new SimpleAttributeOperand[] {eventField("Message"), eventField("Severity")}, whereClause);
-  }
-
-  private static SimpleAttributeOperand eventField(String browseName) {
-    return new SimpleAttributeOperand(
-        NodeIds.BaseEventType,
-        new QualifiedName[] {new QualifiedName(0, browseName)},
-        AttributeId.Value.uid(),
-        null);
+    return EventTestSupport.severityEventFilter(
+        TEST_SEVERITY,
+        EventTestSupport.eventField(NodeIds.BaseEventType, "Message"),
+        EventTestSupport.eventField(NodeIds.BaseEventType, "Severity"));
   }
 }
