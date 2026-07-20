@@ -139,6 +139,16 @@ public class ConditionBranch {
     this.acked = acked;
   }
 
+  /**
+   * Start a new acknowledgement obligation while the branch is already unacknowledged. The
+   * generation changes so EventIds from the preceding obligation cannot acknowledge the new state,
+   * but AckedState itself remains false and therefore has no new transition time.
+   */
+  void renewAcknowledgementCycle() {
+    ackedStateGeneration++;
+    acked = false;
+  }
+
   void setConfirmed(boolean confirmed) {
     if (this.confirmed != confirmed && !confirmed) {
       confirmedStateGeneration++;

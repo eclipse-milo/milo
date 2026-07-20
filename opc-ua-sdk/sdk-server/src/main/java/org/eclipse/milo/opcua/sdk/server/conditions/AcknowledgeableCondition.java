@@ -169,9 +169,17 @@ public class AcknowledgeableCondition extends Condition {
   }
 
   void applyAcked(ConditionBranch branch, boolean acked, DateTime time) {
-    branch.setAcked(acked);
+    boolean stateChanged = branch.isAcked() != acked;
 
-    if (branch.isTrunk()) {
+    if (!acked && !stateChanged) {
+      // A new alarm state can need a fresh acknowledgement while AckedState already reads false.
+      // Renew the EventId generation without inventing a false→false TwoStateVariable transition.
+      branch.renewAcknowledgementCycle();
+    } else {
+      branch.setAcked(acked);
+    }
+
+    if (branch.isTrunk() && stateChanged) {
       setTwoState(ackedState, acked, ACKED_TEXTS, time);
     }
   }

@@ -241,13 +241,25 @@ public class Condition {
     withStateChange(
         "Severity changed",
         () -> !Objects.equals(node.getSeverity(), severity),
-        now -> {
-          UShort previousSeverity = node.getSeverity();
-          if (previousSeverity != null) {
-            setConditionVariable(lastSeverity, new Variant(previousSeverity), now);
-          }
-          node.setSeverity(severity);
-        });
+        now -> applySeverity(severity, now));
+  }
+
+  /**
+   * Apply a Severity change inside a state mutation, maintaining LastSeverity (the Severity of the
+   * last issued event); a call that does not change the Severity is a no-op.
+   *
+   * <p>Must be called while holding the Condition's lock, inside a {@link StateMutation}.
+   */
+  void applySeverity(UShort severity, DateTime time) {
+    UShort previousSeverity = node.getSeverity();
+    if (Objects.equals(previousSeverity, severity)) {
+      return;
+    }
+
+    if (previousSeverity != null) {
+      setConditionVariable(lastSeverity, new Variant(previousSeverity), time);
+    }
+    node.setSeverity(severity);
   }
 
   /**
@@ -266,7 +278,7 @@ public class Condition {
   }
 
   /** The current value stored in {@code variable}, or {@code null} if none. */
-  private static @Nullable Object currentValue(UaVariableNode variable) {
+  static @Nullable Object currentValue(UaVariableNode variable) {
     DataValue value = variable.getValue();
     return value != null ? value.getValue().getValue() : null;
   }

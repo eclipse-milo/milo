@@ -157,15 +157,26 @@ public class AlarmCondition extends AcknowledgeableCondition {
   public void setActive(boolean active) {
     runLocked(
         () -> {
-          if (shelvingRuntime != null) {
-            shelvingRuntime.applyExpiryIfDue();
-          }
+          applyShelvingExpiryIfDue();
 
           withStateChange(
               ACTIVE_TEXTS.forState(active),
               () -> isActive() != active,
               now -> applyActive(active, now));
         });
+  }
+
+  /**
+   * Apply due lazy shelving expiry, for {@code setActive}-parallel entry points (e.g. {@code
+   * evaluate} in the limit subclasses): a shelving deadline that passed with no timer prompt is
+   * applied before the new transition so the two state changes generate separate events.
+   *
+   * <p>Must be called while holding the Condition's lock.
+   */
+  void applyShelvingExpiryIfDue() {
+    if (shelvingRuntime != null) {
+      shelvingRuntime.applyExpiryIfDue();
+    }
   }
 
   /**
@@ -200,7 +211,14 @@ public class AlarmCondition extends AcknowledgeableCondition {
     return active || super.computeRetain();
   }
 
-  private void applyActive(boolean active, DateTime time) {
+  /**
+   * Apply an ActiveState change inside a state mutation: ActiveState coherence, the
+   * acknowledgement-needed transition on activation, and one-shot shelving release on deactivation.
+   *
+   * <p>Must be called while holding the Condition's lock, inside a {@link StateMutation}, and only
+   * when the active state actually changes.
+   */
+  void applyActive(boolean active, DateTime time) {
     setTwoState(activeState, active, ACTIVE_TEXTS, time);
     this.active = active;
 
