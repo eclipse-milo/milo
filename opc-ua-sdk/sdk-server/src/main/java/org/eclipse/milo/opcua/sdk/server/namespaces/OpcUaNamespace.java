@@ -26,7 +26,6 @@ import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfigLimits;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.items.BaseMonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.items.DataItem;
-import org.eclipse.milo.opcua.sdk.server.items.EventItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
@@ -126,29 +125,6 @@ public class OpcUaNamespace extends ManagedNamespaceWithLifecycle {
   @Override
   public void onMonitoringModeChanged(List<MonitoredItem> monitoredItems) {
     subscriptionModel.onMonitoringModeChanged(monitoredItems);
-  }
-
-  @Override
-  public void onEventItemsCreated(List<EventItem> eventItems) {
-    eventItems.stream()
-        .filter(MonitoredItem::isSamplingEnabled)
-        .forEach(item -> server.getEventNotifier().register(item));
-  }
-
-  @Override
-  public void onEventItemsModified(List<EventItem> eventItems) {
-    for (EventItem item : eventItems) {
-      if (item.isSamplingEnabled()) {
-        server.getEventNotifier().register(item);
-      } else {
-        server.getEventNotifier().unregister(item);
-      }
-    }
-  }
-
-  @Override
-  public void onEventItemsDeleted(List<EventItem> eventItems) {
-    eventItems.forEach(item -> server.getEventNotifier().unregister(item));
   }
 
   private void loadNodes() {

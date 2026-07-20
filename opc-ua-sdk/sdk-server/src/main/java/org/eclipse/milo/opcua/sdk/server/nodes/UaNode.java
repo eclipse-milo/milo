@@ -14,6 +14,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -339,19 +340,32 @@ public abstract class UaNode implements UaServerNode {
   }
 
   protected Optional<UaNode> getManagedNode(NodeId nodeId) {
-    // return getNodeManager(nodeId).flatMap(n -> n.getNode(nodeId));
-    return context.getServer().getAddressSpaceManager().getManagedNode(nodeId);
+    // This Node's own NodeManager is consulted first so that resolution works even when the
+    // NodeManager is not registered with the AddressSpaceManager, e.g. transient event node
+    // trees created by EventFactory.
+    Optional<UaNode> node = context.getNodeManager().getNode(nodeId);
+
+    return node.isPresent()
+        ? node
+        : context.getServer().getAddressSpaceManager().getManagedNode(nodeId);
   }
 
   protected Optional<UaNode> getManagedNode(ExpandedNodeId nodeId) {
-    // return getNodeManager(nodeId).flatMap(n -> n.getNode(nodeId));
-    return context.getServer().getAddressSpaceManager().getManagedNode(nodeId);
+    return nodeId.toNodeId(context.getNamespaceTable()).flatMap(this::getManagedNode);
   }
 
   @Override
   public List<Reference> getReferences() {
-    return List.copyOf(
-        context.getServer().getAddressSpaceManager().getManagedReferences(getNodeId()));
+    // This Node's own NodeManager may not be registered with the AddressSpaceManager, e.g.
+    // transient event node trees created by EventFactory, so its References are included in
+    // addition to the (possibly overlapping) managed References.
+    var references =
+        new LinkedHashSet<Reference>(
+            context.getServer().getAddressSpaceManager().getManagedReferences(getNodeId()));
+
+    references.addAll(context.getNodeManager().getReferences(getNodeId()));
+
+    return List.copyOf(references);
   }
 
   /**

@@ -266,7 +266,10 @@ public class SubscriptionManager {
         byMonitoredItemType(
             deletedItems,
             dataItems -> server.getAddressSpaceManager().onDataItemsDeleted(dataItems),
-            eventItems -> server.getAddressSpaceManager().onEventItemsDeleted(eventItems));
+            eventItems -> {
+              unregisterEventItems(eventItems);
+              server.getAddressSpaceManager().onEventItemsDeleted(eventItems);
+            });
 
         results[i] = StatusCode.GOOD;
 
@@ -471,7 +474,10 @@ public class SubscriptionManager {
     byMonitoredItemType(
         monitoredItems,
         dataItems -> server.getAddressSpaceManager().onDataItemsCreated(dataItems),
-        eventItems -> server.getAddressSpaceManager().onEventItemsCreated(eventItems));
+        eventItems -> {
+          registerEventItems(eventItems);
+          server.getAddressSpaceManager().onEventItemsCreated(eventItems);
+        });
 
     return results;
   }
@@ -821,7 +827,10 @@ public class SubscriptionManager {
     byMonitoredItemType(
         monitoredItems,
         dataItems -> server.getAddressSpaceManager().onDataItemsModified(dataItems),
-        eventItems -> server.getAddressSpaceManager().onEventItemsModified(eventItems));
+        eventItems -> {
+          registerEventItems(eventItems);
+          server.getAddressSpaceManager().onEventItemsModified(eventItems);
+        });
 
     /*
      * AddressSpaces have been notified; send the response.
@@ -1317,7 +1326,10 @@ public class SubscriptionManager {
     byMonitoredItemType(
         deletedItems,
         dataItems -> server.getAddressSpaceManager().onDataItemsDeleted(dataItems),
-        eventItems -> server.getAddressSpaceManager().onEventItemsDeleted(eventItems));
+        eventItems -> {
+          unregisterEventItems(eventItems);
+          server.getAddressSpaceManager().onEventItemsDeleted(eventItems);
+        });
 
     /*
      * Build and return results.
@@ -1364,6 +1376,21 @@ public class SubscriptionManager {
         results[i] = StatusCode.GOOD;
       } else {
         results[i] = new StatusCode(StatusCodes.Bad_MonitoredItemIdInvalid);
+      }
+    }
+
+    /*
+     * Toggle EventNotifier registration for EventItems whose sampling state changed with the
+     * MonitoringMode.
+     */
+
+    for (MonitoredItem item : modified) {
+      if (item instanceof EventItem eventItem) {
+        if (eventItem.isSamplingEnabled()) {
+          server.getEventNotifier().register(eventItem);
+        } else {
+          server.getEventNotifier().unregister(eventItem);
+        }
       }
     }
 
@@ -1557,7 +1584,10 @@ public class SubscriptionManager {
         byMonitoredItemType(
             deletedItems,
             dataItems -> server.getAddressSpaceManager().onDataItemsDeleted(dataItems),
-            eventItems -> server.getAddressSpaceManager().onEventItemsDeleted(eventItems));
+            eventItems -> {
+              unregisterEventItems(eventItems);
+              server.getAddressSpaceManager().onEventItemsDeleted(eventItems);
+            });
 
         monitoredItemCount.getAndUpdate(count -> count - deletedItems.size());
         server.getMonitoredItemCount().getAndUpdate(count -> count - deletedItems.size());
@@ -1646,7 +1676,10 @@ public class SubscriptionManager {
             byMonitoredItemType(
                 monitoredItems.values(),
                 dataItems -> server.getAddressSpaceManager().onDataItemsDeleted(dataItems),
-                eventItems -> server.getAddressSpaceManager().onEventItemsDeleted(eventItems));
+                eventItems -> {
+                  unregisterEventItems(eventItems);
+                  server.getAddressSpaceManager().onEventItemsDeleted(eventItems);
+                });
 
             monitoredItemCount.getAndUpdate(count -> count - monitoredItems.size());
             server.getMonitoredItemCount().getAndUpdate(count -> count - monitoredItems.size());
@@ -1654,6 +1687,28 @@ public class SubscriptionManager {
             monitoredItems.clear();
           }
         });
+  }
+
+  /**
+   * Register or unregister {@code eventItems} with the Server's {@link
+   * org.eclipse.milo.opcua.sdk.server.EventNotifier} according to each item's sampling state.
+   *
+   * <p>Registration is SDK-owned and idempotent, for items from all namespaces; the {@code
+   * AddressSpace.onEventItems*} callbacks are lifecycle notifications only.
+   */
+  private void registerEventItems(List<EventItem> eventItems) {
+    for (EventItem item : eventItems) {
+      if (item.isSamplingEnabled()) {
+        server.getEventNotifier().register(item);
+      } else {
+        server.getEventNotifier().unregister(item);
+      }
+    }
+  }
+
+  /** Unregister {@code eventItems} from the Server's EventNotifier. */
+  private void unregisterEventItems(List<EventItem> eventItems) {
+    eventItems.forEach(item -> server.getEventNotifier().unregister(item));
   }
 
   /**

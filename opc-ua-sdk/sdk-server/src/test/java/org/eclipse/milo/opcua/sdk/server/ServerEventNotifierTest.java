@@ -50,9 +50,11 @@ public class ServerEventNotifierTest {
 
   private static EventNotifier newServerEventNotifier() throws Exception {
     Class<?> notifierClass = Class.forName(OpcUaServer.class.getName() + "$ServerEventNotifier");
-    Constructor<?> constructor = notifierClass.getDeclaredConstructor();
+    Constructor<?> constructor = notifierClass.getDeclaredConstructor(OpcUaServer.class);
     constructor.setAccessible(true);
 
-    return (EventNotifier) constructor.newInstance();
+    // a null OpcUaServer is sufficient: firing a null event resolves an empty notifier scope
+    // without consulting the server, and non-item listeners are always in scope.
+    return (EventNotifier) constructor.newInstance(new Object[] {null});
   }
 }

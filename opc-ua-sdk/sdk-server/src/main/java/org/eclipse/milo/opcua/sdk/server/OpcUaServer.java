@@ -18,8 +18,10 @@ import java.net.InetSocketAddress;
 import java.security.KeyPair;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
+import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -32,11 +34,15 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
+import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.ObjectTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.VariableTypeTree;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.ServerDiagnosticsSummary;
+import org.eclipse.milo.opcua.sdk.server.events.TransientEvent;
+import org.eclipse.milo.opcua.sdk.server.items.EventItem;
+import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.model.ObjectTypeInitializer;
 import org.eclipse.milo.opcua.sdk.server.model.VariableTypeInitializer;
 import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
@@ -69,6 +75,7 @@ import org.eclipse.milo.opcua.sdk.server.typetree.ObjectTypeTreeBuilder;
 import org.eclipse.milo.opcua.sdk.server.typetree.ReferenceTypeTreeBuilder;
 import org.eclipse.milo.opcua.sdk.server.typetree.VariableTypeTreeBuilder;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.ServerTable;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -95,6 +102,7 @@ import org.eclipse.milo.opcua.stack.core.types.DefaultDataTypeManager;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
 import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
@@ -107,6 +115,7 @@ import org.eclipse.milo.opcua.stack.core.util.FutureUtils;
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
 import org.eclipse.milo.opcua.stack.core.util.LongSequence;
 import org.eclipse.milo.opcua.stack.core.util.ManifestUtil;
+import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
 import org.eclipse.milo.opcua.stack.transport.server.OpcServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.OpcServerTransportFactory;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
@@ -191,7 +200,7 @@ public class OpcUaServer extends AbstractServiceHandler {
   private final EventBus eventBus = new EventBus("server");
   private final EventFactory eventFactory = new EventFactory(this);
   private final EventInstantiator eventInstantiator = new EventInstantiator(this);
-  private final EventNotifier eventNotifier = new ServerEventNotifier();
+  private final EventNotifier eventNotifier = new ServerEventNotifier(this);
 
   private final EncodingContext staticEncodingContext;
   private final EncodingContext dynamicEncodingContext;
@@ -598,6 +607,31 @@ public class OpcUaServer extends AbstractServiceHandler {
    */
   public EventNotifier getEventNotifier() {
     return eventNotifier;
+  }
+
+  /**
+   * Create a new {@link TransientEvent} of the type identified by {@code typeDefinitionId}.
+   *
+   * <p>The Event Node is created with an auto-generated NodeId in a NodeManager that is never
+   * registered with the Server's AddressSpaceManager, and is deleted when the {@link
+   * TransientEvent} is closed. The EventType, EventId, Time, and ReceiveTime fields are
+   * pre-populated with sensible defaults that may be overwritten; all other fields must be
+   * populated by the caller before firing.
+   *
+   * @param typeDefinitionId the {@link NodeId} of the ObjectTypeNode representing the Event type
+   *     definition.
+   * @return a new {@link TransientEvent}.
+   * @throws UaException if an error occurs creating the Event instance.
+   */
+  public TransientEvent newEvent(NodeId typeDefinitionId) throws UaException {
+    BaseEventTypeNode eventNode =
+        eventFactory.createTransientEvent(new NodeId(1, UUID.randomUUID()), typeDefinitionId);
+
+    eventNode.setEventId(NonceUtil.generateNonce(16));
+    eventNode.setTime(DateTime.now());
+    eventNode.setReceiveTime(DateTime.NULL_VALUE);
+
+    return new TransientEvent(this, eventNode);
   }
 
   public ObjectTypeManager getObjectTypeManager() {
@@ -1300,10 +1334,36 @@ public class OpcUaServer extends AbstractServiceHandler {
     }
   }
 
+  /**
+   * An {@link EventNotifier} that scopes delivery to {@link EventItem}s by the notifier hierarchy.
+   *
+   * <p>Delivery rules for a fired Event with SourceNode S, evaluated per registered listener:
+   *
+   * <ul>
+   *   <li>listeners that are not {@link EventItem}s always receive the Event.
+   *   <li>an item monitoring the Server Object (i=2253) always receives the Event (Part 5 root
+   *       notifier rule).
+   *   <li>an item monitoring node M receives the Event iff S = M or S is reachable from M via
+   *       forward HasEventSource/HasNotifier References (subtypes honored). Reachability is
+   *       resolved at fire time by walking inverse References up from S, so the hierarchy must be
+   *       wired with Reference pairs (both directions), as {@code
+   *       ManagedNamespace.registerEventNotifier} does.
+   *   <li>an Event whose SourceNode is null or outside any wired hierarchy reaches only
+   *       Server-object items.
+   * </ul>
+   */
   private static class ServerEventNotifier implements EventNotifier {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final Set<EventListener> eventListeners =
         Collections.synchronizedSet(new LinkedHashSet<>());
+
+    private final OpcUaServer server;
+
+    private ServerEventNotifier(OpcUaServer server) {
+      this.server = server;
+    }
 
     @Override
     public void fire(BaseEventTypeNode event) {
@@ -1312,7 +1372,83 @@ public class OpcUaServer extends AbstractServiceHandler {
         toNotify = List.copyOf(eventListeners);
       }
 
-      toNotify.forEach(eventListener -> eventListener.onEvent(event));
+      if (toNotify.isEmpty()) {
+        return;
+      }
+
+      Set<NodeId> notifierScope = getNotifierScope(event);
+
+      for (EventListener eventListener : toNotify) {
+        if (isInScope(eventListener, notifierScope)) {
+          eventListener.onEvent(event);
+        }
+      }
+    }
+
+    private boolean isInScope(EventListener eventListener, Set<NodeId> notifierScope) {
+      if (eventListener instanceof MonitoredItem item) {
+        NodeId monitoredNodeId = item.getReadValueId().getNodeId();
+
+        return NodeIds.Server.equals(monitoredNodeId) || notifierScope.contains(monitoredNodeId);
+      } else {
+        return true;
+      }
+    }
+
+    /**
+     * Collect the Event's SourceNode plus every node that can reach it via forward
+     * HasEventSource/HasNotifier References, by walking inverse References up from the SourceNode.
+     */
+    private Set<NodeId> getNotifierScope(BaseEventTypeNode event) {
+      NodeId sourceNodeId = event != null ? event.getSourceNode() : null;
+
+      if (sourceNodeId == null || sourceNodeId.isNull()) {
+        return Set.of();
+      }
+
+      ReferenceTypeTree referenceTypeTree = server.getReferenceTypeTree();
+
+      var scope = new HashSet<NodeId>();
+      var queue = new ArrayDeque<NodeId>();
+      scope.add(sourceNodeId);
+      queue.add(sourceNodeId);
+
+      while (!queue.isEmpty()) {
+        NodeId nodeId = queue.poll();
+
+        List<Reference> references;
+        try {
+          references =
+              server
+                  .getAddressSpaceManager()
+                  .getManagedReferences(
+                      nodeId,
+                      r ->
+                          r.isInverse()
+                              && (NodeIds.HasEventSource.equals(r.getReferenceTypeId())
+                                  || referenceTypeTree.isSubtypeOf(
+                                      r.getReferenceTypeId(), NodeIds.HasEventSource)));
+        } catch (Throwable t) {
+          // Tolerate concurrent address space mutation: a mid-fire mutation may cost one
+          // delivery, never a crash.
+          logger.debug("Error resolving notifier scope at {}", nodeId, t);
+          continue;
+        }
+
+        for (Reference reference : references) {
+          reference
+              .getTargetNodeId()
+              .toNodeId(server.getNamespaceTable())
+              .ifPresent(
+                  targetNodeId -> {
+                    if (scope.add(targetNodeId)) {
+                      queue.add(targetNodeId);
+                    }
+                  });
+        }
+      }
+
+      return scope;
     }
 
     @Override

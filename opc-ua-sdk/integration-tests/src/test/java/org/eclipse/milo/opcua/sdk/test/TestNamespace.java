@@ -36,6 +36,7 @@ import org.eclipse.milo.opcua.sdk.server.nodes.UaDataTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationRequest;
 import org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel;
@@ -79,6 +80,12 @@ public class TestNamespace extends ManagedNamespaceWithLifecycle {
 
   private volatile Thread eventThread;
   private volatile boolean keepPostingEvents = true;
+
+  /** Widened to public so tests can wire notifier hierarchies. */
+  @Override
+  public void registerEventNotifier(UaObjectNode area) {
+    super.registerEventNotifier(area);
+  }
 
   public TestNamespace(OpcUaServer server) {
     super(server, NAMESPACE_URI);
