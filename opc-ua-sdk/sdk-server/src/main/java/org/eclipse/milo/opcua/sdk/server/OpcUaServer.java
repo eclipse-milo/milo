@@ -39,6 +39,8 @@ import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.ObjectTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.VariableTypeTree;
+import org.eclipse.milo.opcua.sdk.server.conditions.ConditionManager;
+import org.eclipse.milo.opcua.sdk.server.conditions.DefaultConditionManager;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.ServerDiagnosticsSummary;
 import org.eclipse.milo.opcua.sdk.server.events.TransientEvent;
 import org.eclipse.milo.opcua.sdk.server.items.EventItem;
@@ -201,6 +203,7 @@ public class OpcUaServer extends AbstractServiceHandler {
   private final EventFactory eventFactory = new EventFactory(this);
   private final EventInstantiator eventInstantiator = new EventInstantiator(this);
   private final EventNotifier eventNotifier = new ServerEventNotifier(this);
+  private final ConditionManager conditionManager = new DefaultConditionManager();
 
   private final EncodingContext staticEncodingContext;
   private final EncodingContext dynamicEncodingContext;
@@ -607,6 +610,15 @@ public class OpcUaServer extends AbstractServiceHandler {
    */
   public EventNotifier getEventNotifier() {
     return eventNotifier;
+  }
+
+  /**
+   * Get the Server's {@link ConditionManager}.
+   *
+   * @return the Server's {@link ConditionManager}.
+   */
+  public ConditionManager getConditionManager() {
+    return conditionManager;
   }
 
   /**
