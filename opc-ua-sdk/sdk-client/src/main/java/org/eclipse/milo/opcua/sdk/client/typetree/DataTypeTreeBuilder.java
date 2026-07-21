@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -71,11 +71,21 @@ public class DataTypeTreeBuilder {
                 null,
                 true));
 
+    // The build is pinned to the session it starts on: if the session closes or changes mid-build
+    // the build fails instead of silently continuing (and caching an incomplete tree) on a session
+    // it didn't start on.
+    NodeId sessionId = client.getSession().getSessionId();
+
     NamespaceTable namespaceTable = client.readNamespaceTable();
 
     OperationLimits operationLimits = client.getOperationLimits();
 
-    addChildren(List.of(root), client, namespaceTable, operationLimits);
+    addChildren(List.of(root), client, sessionId, namespaceTable, operationLimits);
+
+    // Final check: the last batch of requests could have been issued just as the session changed
+    // and succeeded against the new session; don't return a tree partially read from another
+    // session.
+    ClientBrowseUtils.checkSessionUnchanged(client, sessionId);
 
     return new DataTypeTree(root);
   }
@@ -103,8 +113,12 @@ public class DataTypeTreeBuilder {
   private static void addChildren(
       List<Tree<DataType>> parentTypes,
       OpcUaClient client,
+      NodeId sessionId,
       NamespaceTable namespaceTable,
-      OperationLimits operationLimits) {
+      OperationLimits operationLimits)
+      throws UaException {
+
+    ClientBrowseUtils.checkSessionUnchanged(client, sessionId);
 
     List<List<ReferenceDescription>> parentSubtypes =
         ClientBrowseUtils.browseWithOperationLimits(
@@ -136,10 +150,10 @@ public class DataTypeTreeBuilder {
               .collect(Collectors.toList());
 
       List<List<ReferenceDescription>> encodingReferences =
-          browseEncodings(client, dataTypeIds, operationLimits);
+          browseEncodings(client, sessionId, dataTypeIds, operationLimits);
 
       List<Attributes> dataTypeAttributes =
-          readDataTypeAttributes(client, dataTypeIds, operationLimits);
+          readDataTypeAttributes(client, sessionId, dataTypeIds, operationLimits);
 
       assert subtypes.size() == dataTypeIds.size()
           && subtypes.size() == encodingReferences.size()
@@ -200,12 +214,18 @@ public class DataTypeTreeBuilder {
     }
 
     if (!childTypes.isEmpty()) {
-      addChildren(childTypes, client, namespaceTable, operationLimits);
+      addChildren(childTypes, client, sessionId, namespaceTable, operationLimits);
     }
   }
 
   private static List<List<ReferenceDescription>> browseEncodings(
-      OpcUaClient client, List<NodeId> dataTypeIds, OperationLimits operationLimits) {
+      OpcUaClient client,
+      NodeId sessionId,
+      List<NodeId> dataTypeIds,
+      OperationLimits operationLimits)
+      throws UaException {
+
+    ClientBrowseUtils.checkSessionUnchanged(client, sessionId);
 
     List<BrowseDescription> browseDescriptions =
         dataTypeIds.stream()
@@ -224,11 +244,17 @@ public class DataTypeTreeBuilder {
   }
 
   private static List<@Nullable Attributes> readDataTypeAttributes(
-      OpcUaClient client, List<NodeId> dataTypeIds, OperationLimits operationLimits) {
+      OpcUaClient client,
+      NodeId sessionId,
+      List<NodeId> dataTypeIds,
+      OperationLimits operationLimits)
+      throws UaException {
 
     if (dataTypeIds.isEmpty()) {
       return List.of();
     }
+
+    ClientBrowseUtils.checkSessionUnchanged(client, sessionId);
 
     var readValueIds = new ArrayList<ReadValueId>();
 
@@ -276,13 +302,5 @@ public class DataTypeTreeBuilder {
     return attributes;
   }
 
-  private static class Attributes {
-    final Boolean isAbstract;
-    final DataTypeDefinition definition;
-
-    private Attributes(Boolean isAbstract, DataTypeDefinition definition) {
-      this.isAbstract = isAbstract;
-      this.definition = definition;
-    }
-  }
+  private record Attributes(Boolean isAbstract, DataTypeDefinition definition) {}
 }
