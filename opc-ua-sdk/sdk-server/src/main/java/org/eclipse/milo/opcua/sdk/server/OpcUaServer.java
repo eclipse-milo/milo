@@ -43,6 +43,7 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
 import org.eclipse.milo.opcua.sdk.server.namespaces.OpcUaNamespace;
 import org.eclipse.milo.opcua.sdk.server.namespaces.ServerNamespace;
 import org.eclipse.milo.opcua.sdk.server.nodes.factories.EventFactory;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.EventInstantiator;
 import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.NodeInstantiator;
 import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.TypeModelCache;
 import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTarget;
@@ -189,6 +190,7 @@ public class OpcUaServer extends AbstractServiceHandler {
 
   private final EventBus eventBus = new EventBus("server");
   private final EventFactory eventFactory = new EventFactory(this);
+  private final EventInstantiator eventInstantiator = new EventInstantiator(this);
   private final EventNotifier eventNotifier = new ServerEventNotifier();
 
   private final EncodingContext staticEncodingContext;
@@ -346,6 +348,7 @@ public class OpcUaServer extends AbstractServiceHandler {
 
   public CompletableFuture<OpcUaServer> startup() {
     eventFactory.startup();
+    eventInstantiator.startup();
 
     getResolvedEndpoints().stream()
         .sorted(Comparator.comparing(e -> e.endpointConfig().getTransportProfile()))
@@ -465,6 +468,7 @@ public class OpcUaServer extends AbstractServiceHandler {
     serverNamespace.shutdown();
     opcUaNamespace.shutdown();
 
+    eventInstantiator.shutdown();
     eventFactory.shutdown();
 
     subscriptions.values().forEach(Subscription::deleteSubscription);
@@ -473,6 +477,7 @@ public class OpcUaServer extends AbstractServiceHandler {
   private void rollbackStartup() {
     reverseConnectTargetManager.shutdown();
     unbindTransports();
+    eventInstantiator.shutdown();
     eventFactory.shutdown();
   }
 
@@ -568,9 +573,22 @@ public class OpcUaServer extends AbstractServiceHandler {
    * Get the shared {@link EventFactory}.
    *
    * @return the shared {@link EventFactory}.
+   * @deprecated use {@link #getEventInstantiator()}, which validates the expected Java class at
+   *     plan time instead of casting after creation. See {@code
+   *     docs/features/node-instantiation-migration.md}.
    */
+  @Deprecated
   public EventFactory getEventFactory() {
     return eventFactory;
+  }
+
+  /**
+   * Get the shared {@link EventInstantiator}, used to create transient Event instances.
+   *
+   * @return the shared {@link EventInstantiator}.
+   */
+  public EventInstantiator getEventInstantiator() {
+    return eventInstantiator;
   }
 
   /**

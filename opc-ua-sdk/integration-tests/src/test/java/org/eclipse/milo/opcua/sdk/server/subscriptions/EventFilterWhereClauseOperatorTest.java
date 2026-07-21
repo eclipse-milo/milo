@@ -277,7 +277,7 @@ public class EventFilterWhereClauseOperatorTest extends AbstractClientServerTest
     UUID eventId = UUID.randomUUID();
     BaseEventTypeNode eventNode =
         server
-            .getEventFactory()
+            .getEventInstantiator()
             .createEvent(
                 newNodeId("EventFilterWhereClauseOperatorTest/" + eventId), NodeIds.BaseEventType);
 

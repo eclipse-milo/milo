@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.examples.server.methods;
 
+import static java.util.Objects.requireNonNull;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 
 import java.util.UUID;
@@ -59,10 +60,10 @@ public class GenerateEventMethod extends AbstractMethodInvocationHandler {
   @Override
   protected Variant[] invoke(InvocationContext invocationContext, Variant[] inputValues)
       throws UaException {
-    NodeId eventTypeId = (NodeId) inputValues[0].value();
+    NodeId eventTypeId = (NodeId) requireNonNull(inputValues[0].value());
 
     BaseEventTypeNode eventNode =
-        server.getEventFactory().createEvent(new NodeId(1, UUID.randomUUID()), eventTypeId);
+        server.getEventInstantiator().createEvent(new NodeId(1, UUID.randomUUID()), eventTypeId);
 
     eventNode.setBrowseName(new QualifiedName(1, "foo"));
     eventNode.setDisplayName(LocalizedText.english("foo"));

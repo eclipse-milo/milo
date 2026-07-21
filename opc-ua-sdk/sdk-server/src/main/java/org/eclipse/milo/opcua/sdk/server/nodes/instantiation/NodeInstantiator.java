@@ -282,7 +282,8 @@ public final class NodeInstantiator {
       NodeClass instanceNodeClass =
           typeNodeClass == NodeClass.VariableType ? NodeClass.Variable : NodeClass.Object;
 
-      if (Boolean.TRUE.equals(typeAttributes.getOrNull(AttributeId.IsAbstract))) {
+      if (Boolean.TRUE.equals(typeAttributes.getOrNull(AttributeId.IsAbstract))
+          && !request.allowAbstractType()) {
         diagnostics.add(
             InstantiationDiagnostic.planError(
                 InstantiationDiagnostic.Code.ABSTRACT_TYPE,

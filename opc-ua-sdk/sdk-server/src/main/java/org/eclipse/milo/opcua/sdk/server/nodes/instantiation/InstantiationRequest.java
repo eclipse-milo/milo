@@ -72,6 +72,7 @@ public final class InstantiationRequest<T extends UaNode> {
   private final InstantiationPurpose purpose;
   private final ReferenceReplicationPolicy referenceReplication;
   private final ClassResolution classResolution;
+  private final boolean allowAbstractType;
   private final List<OnNode> onNodeHooks;
   private final Map<BrowsePath, Consumer<UaMethodNode>> methodBinders;
   private final List<Consumer<InstantiationResult<T>>> afterCommitObservers;
@@ -103,6 +104,7 @@ public final class InstantiationRequest<T extends UaNode> {
     this.purpose = builder.purpose;
     this.referenceReplication = builder.referenceReplication;
     this.classResolution = builder.classResolution;
+    this.allowAbstractType = builder.allowAbstractType;
     this.onNodeHooks = List.copyOf(builder.onNodeHooks);
     this.methodBinders = Map.copyOf(builder.methodBinders);
     this.afterCommitObservers = List.copyOf(builder.afterCommitObservers);
@@ -354,6 +356,14 @@ public final class InstantiationRequest<T extends UaNode> {
   }
 
   /**
+   * @return {@code true} if the instantiated root type may be abstract; {@code false} (reject at
+   *     plan time) unless configured otherwise.
+   */
+  public boolean allowAbstractType() {
+    return allowAbstractType;
+  }
+
+  /**
    * @return the {@code onNode} hooks, in registration order.
    */
   public List<OnNode> onNodeHooks() {
@@ -462,6 +472,7 @@ public final class InstantiationRequest<T extends UaNode> {
     private InstantiationPurpose purpose = InstantiationPurpose.NORMAL_INSTANCE;
     private ReferenceReplicationPolicy referenceReplication = ReferenceReplicationPolicy.DEFAULT;
     private ClassResolution classResolution = ClassResolution.NEAREST_ANCESTOR;
+    private boolean allowAbstractType = false;
     private final List<OnNode> onNodeHooks = new ArrayList<>();
     private final Map<BrowsePath, Consumer<UaMethodNode>> methodBinders = new LinkedHashMap<>();
     private final List<Consumer<InstantiationResult<T>>> afterCommitObservers = new ArrayList<>();
@@ -751,6 +762,22 @@ public final class InstantiationRequest<T extends UaNode> {
      */
     public Builder<T> classResolution(ClassResolution classResolution) {
       this.classResolution = requireNonNull(classResolution, "classResolution");
+      return this;
+    }
+
+    /**
+     * Permit the instantiated root type to be abstract instead of rejecting it at plan time.
+     *
+     * <p>Abstract types admit no address-space instances, so plan ordinarily rejects them and
+     * demands a concrete subtype ({@link #concreteType} at {@link BrowsePath#root()}). The
+     * sanctioned exception is transient instances that never join the server's hierarchy — Event
+     * instances of abstract EventTypes (BaseEventType itself is abstract), created into a private
+     * NodeManager and deleted after being fired.
+     *
+     * @return this builder.
+     */
+    public Builder<T> allowAbstractType() {
+      this.allowAbstractType = true;
       return this;
     }
 

@@ -352,7 +352,7 @@ public class OpcUaNamespace extends ManagedNamespaceWithLifecycle {
         if (subscription != null) {
           BaseEventTypeNode refreshStart =
               server
-                  .getEventFactory()
+                  .getEventInstantiator()
                   .createEvent(new NodeId(1, UUID.randomUUID()), NodeIds.RefreshStartEventType);
 
           refreshStart.setBrowseName(new QualifiedName(1, "RefreshStart"));
@@ -368,7 +368,7 @@ public class OpcUaNamespace extends ManagedNamespaceWithLifecycle {
 
           BaseEventTypeNode refreshEnd =
               server
-                  .getEventFactory()
+                  .getEventInstantiator()
                   .createEvent(new NodeId(1, UUID.randomUUID()), NodeIds.RefreshEndEventType);
 
           refreshEnd.setBrowseName(new QualifiedName(1, "RefreshEnd"));
