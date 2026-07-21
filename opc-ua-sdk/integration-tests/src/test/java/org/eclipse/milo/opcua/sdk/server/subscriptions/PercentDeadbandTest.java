@@ -25,9 +25,8 @@ import org.eclipse.milo.opcua.sdk.client.subscriptions.MonitoredItemSynchronizat
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaMonitoredItem;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaSubscription;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
-import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.server.model.variables.AnalogItemTypeNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.factories.NodeFactory;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationRequest;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
 import org.eclipse.milo.opcua.sdk.test.TestNamespace;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
@@ -1029,37 +1028,22 @@ public class PercentDeadbandTest extends AbstractClientServerTest {
 
     var nodeId = new NodeId(namespace.getNamespaceIndex(), identifier);
 
-    AnalogItemTypeNode node =
-        (AnalogItemTypeNode)
-            namespace
-                .getNodeFactory()
-                .createNode(
-                    nodeId,
-                    NodeIds.AnalogItemType,
-                    new NodeFactory.InstantiationCallback() {
-                      @Override
-                      public boolean includeOptionalNode(
-                          NodeId typeDefinitionId, QualifiedName browseName) {
-                        return true;
-                      }
-                    });
+    InstantiationRequest<AnalogItemTypeNode> request =
+        InstantiationRequest.of(AnalogItemTypeNode.class, NodeIds.AnalogItemType)
+            .nodeId(nodeId)
+            .browseName(new QualifiedName(namespace.getNamespaceIndex(), identifier))
+            .displayName(LocalizedText.english(identifier))
+            .rootAttribute(AttributeId.DataType, NodeIds.Double)
+            .value(new DataValue(new Variant(initialValue)))
+            .rootAttribute(AttributeId.AccessLevel, AccessLevel.toValue(AccessLevel.READ_WRITE))
+            .rootAttribute(AttributeId.UserAccessLevel, AccessLevel.toValue(AccessLevel.READ_WRITE))
+            .includeAllOptionals()
+            .parent(NodeIds.ObjectsFolder, NodeIds.HasComponent)
+            .target(namespace.getNodeManager())
+            .onNode(euRangeInitializer(euRange))
+            .build();
 
-    node.setBrowseName(new QualifiedName(namespace.getNamespaceIndex(), identifier));
-    node.setDisplayName(LocalizedText.english(identifier));
-    node.setDataType(NodeIds.Double);
-    node.setValue(new DataValue(new Variant(initialValue)));
-    node.setAccessLevel(AccessLevel.toValue(AccessLevel.READ_WRITE));
-    node.setUserAccessLevel(AccessLevel.toValue(AccessLevel.READ_WRITE));
-    node.setEuRange(euRange);
-
-    node.addReference(
-        new Reference(
-            node.getNodeId(),
-            NodeIds.HasComponent,
-            NodeIds.ObjectsFolder.expanded(),
-            Reference.Direction.INVERSE));
-
-    namespace.getNodeManager().addNode(node);
+    namespace.getNodeContext().getServer().getNodeInstantiator().instantiate(request);
   }
 
   private void createAnalogItemArrayNode(
@@ -1072,38 +1056,35 @@ public class PercentDeadbandTest extends AbstractClientServerTest {
 
     var nodeId = new NodeId(namespace.getNamespaceIndex(), identifier);
 
-    AnalogItemTypeNode node =
-        (AnalogItemTypeNode)
-            namespace
-                .getNodeFactory()
-                .createNode(
-                    nodeId,
-                    NodeIds.AnalogItemType,
-                    new NodeFactory.InstantiationCallback() {
-                      @Override
-                      public boolean includeOptionalNode(
-                          NodeId typeDefinitionId, QualifiedName browseName) {
-                        return true;
-                      }
-                    });
+    InstantiationRequest<AnalogItemTypeNode> request =
+        InstantiationRequest.of(AnalogItemTypeNode.class, NodeIds.AnalogItemType)
+            .nodeId(nodeId)
+            .browseName(new QualifiedName(namespace.getNamespaceIndex(), identifier))
+            .displayName(LocalizedText.english(identifier))
+            .rootAttribute(AttributeId.DataType, dataType)
+            .rootAttribute(AttributeId.ValueRank, 1) // One-dimensional array
+            .value(new DataValue(new Variant(initialValue)))
+            .rootAttribute(AttributeId.AccessLevel, AccessLevel.toValue(AccessLevel.READ_WRITE))
+            .rootAttribute(AttributeId.UserAccessLevel, AccessLevel.toValue(AccessLevel.READ_WRITE))
+            .includeAllOptionals()
+            .parent(NodeIds.ObjectsFolder, NodeIds.HasComponent)
+            .target(namespace.getNodeManager())
+            .onNode(euRangeInitializer(euRange))
+            .build();
 
-    node.setBrowseName(new QualifiedName(namespace.getNamespaceIndex(), identifier));
-    node.setDisplayName(LocalizedText.english(identifier));
-    node.setDataType(dataType);
-    node.setValueRank(1); // One-dimensional array
-    node.setValue(new DataValue(new Variant(initialValue)));
-    node.setAccessLevel(AccessLevel.toValue(AccessLevel.READ_WRITE));
-    node.setUserAccessLevel(AccessLevel.toValue(AccessLevel.READ_WRITE));
-    node.setEuRange(euRange);
+    namespace.getNodeContext().getServer().getNodeInstantiator().instantiate(request);
+  }
 
-    node.addReference(
-        new Reference(
-            node.getNodeId(),
-            NodeIds.HasComponent,
-            NodeIds.ObjectsFolder.expanded(),
-            Reference.Direction.INVERSE));
+  /** Initializes the EURange property of a staged AnalogItem instance before it is published. */
+  private static InstantiationRequest.OnNode euRangeInitializer(Range euRange) {
+    return (declaration, node, parent, graph) -> {
+      if (declaration != null
+          && declaration.browseName().equals(new QualifiedName(0, "EURange"))
+          && node instanceof org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode variableNode) {
 
-    namespace.getNodeManager().addNode(node);
+        variableNode.setValue(new DataValue(new Variant(euRange)));
+      }
+    };
   }
 
   private void resetNodeValues() throws Exception {
