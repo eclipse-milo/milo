@@ -20,6 +20,13 @@
  * a silently truncated hierarchy. Models are structural snapshots keyed by {@link
  * org.eclipse.milo.opcua.sdk.server.nodes.instantiation.BrowsePath}, with every ModellingRule
  * classified and provenance preserved for diagnostics.
+ *
+ * <p><strong>Experimental:</strong> this package is new API, subject to adjustment for one minor
+ * release based on experience from Milo's in-tree migrations and validation of the placeholder
+ * surface against real companion-specification workloads, after which it freezes. The legacy {@code
+ * org.eclipse.milo.opcua.sdk.server.nodes.factories} subsystem remains available, with unchanged
+ * behavior, for the whole deprecation period; see {@code
+ * docs/features/node-instantiation-migration.md} for the legacy-to-new mapping.
  */
 @NullMarked
 package org.eclipse.milo.opcua.sdk.server.nodes.instantiation;
