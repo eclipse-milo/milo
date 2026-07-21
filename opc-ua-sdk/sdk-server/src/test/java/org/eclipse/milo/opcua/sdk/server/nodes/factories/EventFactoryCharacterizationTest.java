@@ -55,16 +55,16 @@ import org.mockito.stubbing.Answer;
 
 /**
  * Characterization tests pinning the observable behavior of {@link EventFactory} exactly as
- * shipped, before the replacement node-instantiation engine lands (design goal G7). This fixture is
- * the assertion source for the event-path replacement: {@code createEvent} forces all optional
- * members on, casts the result to {@link BaseEventTypeNode} (so a custom, unregistered event type
- * throws {@link ClassCastException} — the D15 hazard, pinned as-is), applies {@code setEventType},
- * and stores the created nodes in the factory's private, AddressSpaceManager-registered {@link
- * UaNodeManager} rather than in any caller-visible NodeManager.
+ * shipped, before the replacement node-instantiation engine lands. This fixture is the assertion
+ * source for the event-path replacement: {@code createEvent} forces all optional members on, casts
+ * the result to {@link BaseEventTypeNode} (so a custom, unregistered event type throws {@link
+ * ClassCastException} — a hazard pinned as-is), applies {@code setEventType}, and stores the
+ * created nodes in the factory's private, AddressSpaceManager-registered {@link UaNodeManager}
+ * rather than in any caller-visible NodeManager.
  *
  * <p>A test failure here means legacy behavior drifted; a deliberate, reviewed legacy fix must
  * update this fixture in the same commit. See {@link NodeFactoryCharacterizationTest} for the
- * shared nondeterminism (R3) and static-IDH-cache isolation notes; synthetic type NodeIds here are
+ * shared nondeterminism and static-IDH-cache isolation notes; synthetic type NodeIds here are
  * likewise unique per test method.
  */
 public class EventFactoryCharacterizationTest {
@@ -219,10 +219,10 @@ public class EventFactoryCharacterizationTest {
   }
 
   /**
-   * The D15 hazard, pinned as shipped: an event type with no registered constructor falls back to a
-   * plain {@link UaObjectNode}, and {@code createEvent}'s cast throws {@link ClassCastException}
-   * instead of a {@code UaException}. The instantiated nodes have already been stored in the
-   * private NodeManager by the time the cast fails, and are left behind.
+   * Pinned as shipped: an event type with no registered constructor falls back to a plain {@link
+   * UaObjectNode}, and {@code createEvent}'s cast throws {@link ClassCastException} instead of a
+   * {@code UaException}. The instantiated nodes have already been stored in the private NodeManager
+   * by the time the cast fails, and are left behind.
    */
   @Test
   public void createEventWithUnregisteredCustomTypeThrowsClassCastException() {

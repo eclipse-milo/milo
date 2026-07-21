@@ -71,24 +71,25 @@ import org.mockito.stubbing.Answer;
  * InstanceDeclarationHierarchy} exactly as shipped, before the replacement node-instantiation
  * engine lands.
  *
- * <p>These tests are the fixture required by the replacement design's G7 ("legacy untouched"): they
- * assert what the legacy code <em>actually does today</em>, including behavior the design catalogs
- * as defective (D1, D2, D5, D6, silent collision replacement, the child NodeId formula's
- * ambiguities). A test failure here means legacy behavior drifted. Any deliberate, reviewed legacy
- * fix must update this fixture in the same commit — that is the audit trail G7 requires. Do not
- * "fix" a failing assertion by changing it to the spec-correct expectation.
+ * <p>These tests are the fixture required by the replacement design's "legacy untouched" guarantee:
+ * they assert what the legacy code <em>actually does today</em>, including behavior the design
+ * catalogs as defective (orphaned mandatory descendants of excluded optionals, shallow nested-type
+ * expansion, backwards declaration-vs-type precedence, unconditional optional Methods, silent
+ * collision replacement, the child NodeId formula's ambiguities). A test failure here means legacy
+ * behavior drifted. Any deliberate, reviewed legacy fix must update this fixture in the same commit
+ * — that is the audit trail the replacement design requires. Do not "fix" a failing assertion by
+ * changing it to the spec-correct expectation.
  *
- * <p><b>Nondeterminism (design risk R3):</b> node publication order — the order nodes are added to
- * the {@link NodeManager} — follows {@code HashMap} iteration order in {@code
- * NodeFactory.createNodeTree} and is not deterministic. Callback iteration follows the browse-path
- * tree. No test here asserts publication or callback <em>ordering</em>; assertions are on set
- * membership and per-node state only. G7 verification is therefore narrowed to this deterministic
- * subset, with ordering documented as unspecified.
+ * <p><b>Nondeterminism:</b> node publication order — the order nodes are added to the {@link
+ * NodeManager} — follows {@code HashMap} iteration order in {@code NodeFactory.createNodeTree} and
+ * is not deterministic. Callback iteration follows the browse-path tree. No test here asserts
+ * publication or callback <em>ordering</em>; assertions are on set membership and per-node state
+ * only. Drift verification is therefore narrowed to this deterministic subset, with ordering
+ * documented as unspecified.
  *
  * <p><b>Isolation note:</b> {@code NodeFactory} keeps a static JVM-global IDH cache keyed by type
- * NodeId alone (the D8 hazard). Every synthetic type in these tests gets a NodeId unique across the
- * whole test run ({@link #testPrefix}) so a cached hierarchy from one test can never be observed by
- * another.
+ * NodeId alone. Every synthetic type in these tests gets a NodeId unique across the whole test run
+ * ({@link #testPrefix}) so a cached hierarchy from one test can never be observed by another.
  */
 public class NodeFactoryCharacterizationTest {
 
@@ -174,8 +175,6 @@ public class NodeFactoryCharacterizationTest {
 
     nodeFactory = new NodeFactory(context, objectTypeManager, variableTypeManager);
   }
-
-  // region Child NodeId formula
 
   /**
    * Child NodeIds are the root identifier string-concatenated with the joined browse path
@@ -278,10 +277,6 @@ public class NodeFactoryCharacterizationTest {
     assertNotSame(nested, slash, "distinct logical members collide on one NodeId");
   }
 
-  // endregion
-
-  // region Callback timing and contract
-
   /**
    * Callbacks fire after <em>every</em> node of the tree has been stored in the NodeManager; the
    * root fires with {@code parent == null}; {@code includeOptionalNode} receives the
@@ -344,7 +339,7 @@ public class NodeFactoryCharacterizationTest {
         recorder.variableEvents.stream()
             .anyMatch(e -> e.parent() == root && nameOf(e.instance()).equals("OptVar")));
 
-    // Contract pin (the D7 mismatch, as shipped): includeOptionalNode received the *member's*
+    // Contract pin, as shipped: includeOptionalNode received the *member's*
     // type definition id, not the id of the type being instantiated.
     assertEquals(1, recorder.includeCalls.size(), "one optional member consulted once");
     RecordingCallback.IncludeCall call = recorder.includeCalls.get(0);
@@ -352,18 +347,14 @@ public class NodeFactoryCharacterizationTest {
     assertEquals(NodeIds.BaseDataVariableType, call.typeDefinitionId());
   }
 
-  // endregion
-
-  // region D1: excluded optional orphans its mandatory descendants
-
   /**
-   * D1, pinned as shipped: excluding an Optional member prevents only that node's creation. Its
+   * Pinned as shipped: excluding an Optional member prevents only that node's creation. Its
    * Mandatory descendants are still created and stored — unreachable, with no hierarchical
    * reference connecting them to anything — and their callbacks fire with {@code parent == null},
    * indistinguishable from the root signal.
    */
   @Test
-  public void d1ExcludedOptionalStillCreatesMandatoryDescendants() throws Exception {
+  public void excludedOptionalStillCreatesMandatoryDescendants() throws Exception {
     UaObjectTypeNode typeNode = addObjectType("D1Type", NodeIds.BaseObjectType);
     UaObjectNode optObj =
         addObjectDeclaration(
@@ -382,7 +373,7 @@ public class NodeFactoryCharacterizationTest {
     assertFalse(nodeManager.containsNode(optObjId), "excluded optional itself is not created");
     assertTrue(
         nodeManager.containsNode(orphanId),
-        "the excluded optional's mandatory descendant IS created and stored (D1)");
+        "the excluded optional's mandatory descendant IS created and stored");
 
     // The orphan has no hierarchical reference linking it to a parent: only its
     // HasTypeDefinition reference was wired (HasModellingRule is skipped, and the
@@ -408,18 +399,14 @@ public class NodeFactoryCharacterizationTest {
         recorder.objectEvents.stream().anyMatch(e -> e.parent() == null && e.instance() == root));
   }
 
-  // endregion
-
-  // region D2: nested member types are only shallowly expanded (A1 evidence)
-
   /**
-   * D2, pinned as shipped (A1 runtime evidence): a member whose type definition is a
-   * <em>subtype</em> is expanded without the subtype's supertype-declared members — the nested
-   * type-definition recursion does not build the member type's fully-inherited hierarchy. A member
-   * typed directly as the declaring supertype gets the member (control case).
+   * Pinned as shipped (confirmed at runtime): a member whose type definition is a <em>subtype</em>
+   * is expanded without the subtype's supertype-declared members — the nested type-definition
+   * recursion does not build the member type's fully-inherited hierarchy. A member typed directly
+   * as the declaring supertype gets the member (control case).
    */
   @Test
-  public void d2NestedMemberTypeMissingSupertypeMembers() throws Exception {
+  public void nestedMemberTypeMissingSupertypeMembers() throws Exception {
     // BaseSMType declares a Mandatory CurrentState; DerivedSMType subtypes it, adding nothing.
     UaObjectTypeNode baseSmType = addObjectType("BaseSMType", NodeIds.BaseObjectType);
     addVariableDeclaration(
@@ -437,25 +424,21 @@ public class NodeFactoryCharacterizationTest {
     assertTrue(nodeManager.containsNode(new NodeId(1, testPrefix + ":D2Root/1:SM")));
     assertFalse(
         nodeManager.containsNode(new NodeId(1, testPrefix + ":D2Root/1:SM/1:CurrentState")),
-        "member typed as a subtype is MISSING its supertype-declared mandatory member (D2)");
+        "member typed as a subtype is MISSING its supertype-declared mandatory member");
 
     assertTrue(
         nodeManager.containsNode(new NodeId(1, testPrefix + ":D2Root/1:SM2/1:CurrentState")),
         "control: member typed directly as the declaring type gets the member");
   }
 
-  // endregion
-
-  // region D5: type-declared entry wins over on-declaration override (A1 evidence)
-
   /**
-   * D5, pinned as shipped (A1 runtime evidence): for a member with both an on-declaration child and
-   * a same-named child declared by the member's type definition, the <em>type's</em> entry
-   * overwrites the on-declaration override (backwards relative to Part 3 §6.3.3.3), and the
-   * duplicate hierarchical rows produced by the two walks are both wired onto the instance.
+   * Pinned as shipped (confirmed at runtime): for a member with both an on-declaration child and a
+   * same-named child declared by the member's type definition, the <em>type's</em> entry overwrites
+   * the on-declaration override (backwards relative to Part 3 §6.3.3.3), and the duplicate
+   * hierarchical rows produced by the two walks are both wired onto the instance.
    */
   @Test
-  public void d5TypeDeclaredChildShadowsOnDeclarationOverride() throws Exception {
+  public void typeDeclaredChildShadowsOnDeclarationOverride() throws Exception {
     UaObjectTypeNode memberType = addObjectType("D5MemberType", NodeIds.BaseObjectType);
     UaVariableNode typeChild =
         addVariableDeclaration(
@@ -483,7 +466,7 @@ public class NodeFactoryCharacterizationTest {
     assertEquals(
         NodeIds.String,
         childInstance.getDataType(),
-        "the type-declared child won; the on-declaration override was silently discarded (D5)");
+        "the type-declared child won; the on-declaration override was silently discarded");
     assertEquals(new Variant("fromType"), childInstance.getValue().getValue());
 
     // Both walks appended a hierarchical row for the same parent/child pair; the factory wires
@@ -497,21 +480,17 @@ public class NodeFactoryCharacterizationTest {
                         && NodeIds.HasComponent.equals(r.getReferenceTypeId())
                         && r.getTargetNodeId().equals(childInstanceId.expanded()))
             .count();
-    assertEquals(2, duplicateRows, "duplicate hierarchical rows are wired verbatim (D5)");
+    assertEquals(2, duplicateRows, "duplicate hierarchical rows are wired verbatim");
   }
 
-  // endregion
-
-  // region D6: Optional Methods are created unconditionally
-
   /**
-   * D6, pinned as shipped: the optional-exclusion gate exists only for Object and Variable members.
-   * An Optional Method member is created unconditionally and {@code includeOptionalNode} is never
+   * Pinned as shipped: the optional-exclusion gate exists only for Object and Variable members. An
+   * Optional Method member is created unconditionally and {@code includeOptionalNode} is never
    * consulted for it; an Optional Variable member alongside it is consulted and excluded. Method
    * instances copy the declaration's attributes.
    */
   @Test
-  public void d6OptionalMethodsCreatedUnconditionally() throws Exception {
+  public void optionalMethodsCreatedUnconditionally() throws Exception {
     UaObjectTypeNode typeNode = addObjectType("D6Type", NodeIds.BaseObjectType);
     UaMethodNode methodDecl =
         addMethodDeclaration(typeNode, "OptMethod", NodeIds.ModellingRule_Optional);
@@ -526,7 +505,7 @@ public class NodeFactoryCharacterizationTest {
     NodeId methodInstanceId = new NodeId(1, testPrefix + ":D6Root/1:OptMethod");
     assertTrue(
         nodeManager.containsNode(methodInstanceId),
-        "Optional Method created despite the exclude-all callback (D6)");
+        "Optional Method created despite the exclude-all callback");
     assertFalse(
         nodeManager.containsNode(new NodeId(1, testPrefix + ":D6Root/1:OptVar")),
         "Optional Variable was excluded as requested");
@@ -534,7 +513,7 @@ public class NodeFactoryCharacterizationTest {
     assertTrue(
         recorder.includeCalls.stream()
             .noneMatch(c -> c.browseName().equals(new QualifiedName(1, "OptMethod"))),
-        "includeOptionalNode never consulted for the Optional Method (D6)");
+        "includeOptionalNode never consulted for the Optional Method");
     assertTrue(
         recorder.includeCalls.stream()
             .anyMatch(c -> c.browseName().equals(new QualifiedName(1, "OptVar"))),
@@ -546,10 +525,6 @@ public class NodeFactoryCharacterizationTest {
     assertEquals(methodDecl.isExecutable(), methodInstance.isExecutable());
     assertEquals(methodDecl.isUserExecutable(), methodInstance.isUserExecutable());
   }
-
-  // endregion
-
-  // region Silent collision replacement
 
   /**
    * Pinned as shipped: instantiating with a root NodeId that already exists silently replaces the
@@ -596,8 +571,8 @@ public class NodeFactoryCharacterizationTest {
   }
 
   /**
-   * The D13 latent NPE, pinned as shipped: because reference-map state under a replaced NodeId is
-   * not cleared, a pre-existing node's stale forward {@code HasTypeDefinition} reference (here to a
+   * The latent NPE, pinned as shipped: because reference-map state under a replaced NodeId is not
+   * cleared, a pre-existing node's stale forward {@code HasTypeDefinition} reference (here to a
    * VariableType) is found first by {@code getTypeDefinitionNode()} during the notification phase,
    * which then throws {@link NullPointerException} — after every node of the tree has already been
    * created and stored, with no cleanup.
@@ -632,10 +607,6 @@ public class NodeFactoryCharacterizationTest {
         nodeManager.containsNode(new NodeId(1, testPrefix + ":NpeCollisionRoot/1:Foo")),
         "nodes created before the notification-phase NPE are left behind");
   }
-
-  // endregion
-
-  // region Attribute propagation
 
   /**
    * The exact Variable attribute propagation set, as shipped: instances copy
@@ -811,15 +782,11 @@ public class NodeFactoryCharacterizationTest {
     assertEquals(varType.getBrowseName(), varRoot.getBrowseName());
   }
 
-  // endregion
-
-  // region Reference wiring
-
   /**
    * Pinned as shipped: {@code HasModellingRule} references are excluded from instances; every other
    * declaration reference row is wired verbatim — absolute targets as-is, so non-hierarchical
-   * references between declarations point at the <em>type's</em> declaration nodes (the D4
-   * behavior), and inverse rows are re-emitted as forward references (direction is not preserved).
+   * references between declarations point at the <em>type's</em> declaration nodes, and inverse
+   * rows are re-emitted as forward references (direction is not preserved).
    */
   @Test
   public void modellingRuleExcludedOtherReferencesWiredVerbatim() throws Exception {
@@ -860,7 +827,7 @@ public class NodeFactoryCharacterizationTest {
                     r.isForward()
                         && NodeIds.HasCause.equals(r.getReferenceTypeId())
                         && r.getTargetNodeId().equals(barDecl.getNodeId().expanded())),
-        "non-hierarchical reference wired verbatim to the type's declaration node (D4)");
+        "non-hierarchical reference wired verbatim to the type's declaration node");
     assertTrue(
         fooReferences.stream()
             .noneMatch(
@@ -880,10 +847,6 @@ public class NodeFactoryCharacterizationTest {
                         && r.getTargetNodeId().equals(fooDecl.getNodeId().expanded())),
         "inverse declaration row forced forward on the instance");
   }
-
-  // endregion
-
-  // region Fixture helpers
 
   private NodeId newNodeId(String id) {
     return new NodeId(1, testPrefix + ":" + id);
@@ -1048,6 +1011,4 @@ public class NodeFactoryCharacterizationTest {
       variableEvents.add(new NodeEvent(parent, instance));
     }
   }
-
-  // endregion
 }
