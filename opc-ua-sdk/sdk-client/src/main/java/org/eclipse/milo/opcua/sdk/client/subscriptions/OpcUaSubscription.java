@@ -17,8 +17,18 @@ import static org.eclipse.milo.opcua.stack.core.util.FutureUtils.supplyAsyncComp
 
 import com.google.common.primitives.Ints;
 import java.math.BigInteger;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.StringJoiner;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -36,7 +46,18 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MonitoringMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
-import org.eclipse.milo.opcua.stack.core.types.structured.*;
+import org.eclipse.milo.opcua.stack.core.types.structured.CreateMonitoredItemsResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.CreateSubscriptionResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.DeleteMonitoredItemsResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.DeleteSubscriptionsResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.EventFieldList;
+import org.eclipse.milo.opcua.stack.core.types.structured.ModifyMonitoredItemsResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.ModifySubscriptionResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemCreateResult;
+import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemModifyResult;
+import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemNotification;
+import org.eclipse.milo.opcua.stack.core.types.structured.SetMonitoringModeResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.SetPublishingModeResponse;
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
 import org.eclipse.milo.opcua.stack.core.util.Lists;
 import org.eclipse.milo.opcua.stack.core.util.TaskQueue;
@@ -356,12 +377,7 @@ public class OpcUaSubscription {
    * @param item the MonitoredItem to remove.
    */
   public void removeMonitoredItem(OpcUaMonitoredItem item) {
-    OpcUaMonitoredItem removedItem =
-        item.getClientHandle().map(monitoredItems::remove).orElse(null);
-
-    if (removedItem != null) {
-      itemsToDelete.add(removedItem);
-    }
+    item.getClientHandle().map(monitoredItems::remove).ifPresent(itemsToDelete::add);
   }
 
   /**
