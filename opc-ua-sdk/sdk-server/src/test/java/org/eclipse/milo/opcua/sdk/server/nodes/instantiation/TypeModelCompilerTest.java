@@ -230,6 +230,92 @@ public class TypeModelCompilerTest {
           typeDefinitionRows,
           "the singular HasTypeDefinition is replaced by the winner's");
     }
+
+    /**
+     * A supertype's explicit specialization of a member type's child survives into the subtype's
+     * model when the subtype re-declares the member without re-declaring the child: the inherited
+     * explicit declaration beats the member-type default the subtype's own walk re-grafted, and
+     * validation runs in the matching direction (no spurious narrowing warning).
+     */
+    @Test
+    void inheritedExplicitSpecializationBeatsRegraftedMemberTypeDefault() throws Exception {
+      UaObjectTypeNode memberType = fx.addObjectType("GraftMemberType", NodeIds.BaseObjectType);
+      UaVariableNode typeChild =
+          fx.addVariableDeclaration(
+              memberType, "B", NodeIds.BaseDataVariableType, NodeIds.ModellingRule_Mandatory);
+      typeChild.setDataType(NodeIds.Number);
+
+      UaObjectTypeNode superType = fx.addObjectType("GraftSuperType", NodeIds.BaseObjectType);
+      UaObjectNode d =
+          fx.addObjectDeclaration(
+              superType, "D", memberType.getNodeId(), NodeIds.ModellingRule_Mandatory);
+      UaVariableNode specialized =
+          fx.addVariableDeclaration(
+              d, "B", NodeIds.BaseDataVariableType, NodeIds.ModellingRule_Mandatory);
+      specialized.setDataType(NodeIds.Int32);
+
+      UaObjectTypeNode subType = fx.addObjectType("GraftSubType", superType.getNodeId());
+      fx.addObjectDeclaration(
+          subType, "D", memberType.getNodeId(), NodeIds.ModellingRule_Mandatory);
+
+      TypeInstantiationModel model = fx.compiler().compile(subType.getNodeId());
+
+      InstanceDeclaration child = model.get(path("D", "B")).orElseThrow();
+      assertEquals(
+          specialized.getNodeId(),
+          child.declarationNodeId(),
+          "the inherited explicit specialization wins over the re-grafted member-type default");
+      assertEquals(NodeIds.Int32, child.attributes().dataType());
+      assertTrue(
+          child.overriddenDeclarations().contains(typeChild.getNodeId()),
+          "the member-type default is recorded as overridden");
+      assertTrue(
+          model.diagnostics().stream()
+              .noneMatch(diag -> diag.code() == ModelDiagnostic.Code.VARIABLE_NARROWING),
+          "no narrowing warning: Int32 narrowing Number is validated in the correct direction");
+    }
+
+    /**
+     * Two inherited references between the same declaration pair (Part 3 §6.4.3) both survive an
+     * override of the child by an unrelated ReferenceType: an edge folded from the supertype must
+     * not suppress a sibling edge folded by the same merge, whatever their subtype relationship or
+     * iteration order.
+     */
+    @Test
+    void siblingInheritedEdgesAtOverriddenPathDoNotSuppressEachOther() throws Exception {
+      // Named so the subtype reference sorts (and folds) before its supertype reference.
+      UaReferenceTypeNode vSuper = fx.addReferenceType("BWidgetRef", NodeIds.HasComponent);
+      UaReferenceTypeNode vSub = fx.addReferenceType("AWidgetRef", vSuper.getNodeId());
+
+      UaObjectTypeNode base = fx.addObjectType("EdgePairBase", NodeIds.BaseObjectType);
+      UaObjectNode baseC =
+          fx.addObjectDeclaration(
+              base, "C", NodeIds.BaseObjectType, NodeIds.ModellingRule_Mandatory, vSub.getNodeId());
+      base.addReference(
+          new Reference(base.getNodeId(), vSuper.getNodeId(), baseC.getNodeId().expanded(), true));
+
+      UaObjectTypeNode sub = fx.addObjectType("EdgePairSub", base.getNodeId());
+      fx.addObjectDeclaration(
+          sub, "C", NodeIds.BaseObjectType, NodeIds.ModellingRule_Mandatory, NodeIds.HasNotifier);
+
+      TypeInstantiationModel model = fx.compiler().compile(sub.getNodeId());
+
+      assertTrue(
+          model
+              .hierarchy()
+              .contains(new DeclarationEdge(BrowsePath.root(), NodeIds.HasNotifier, path("C"))),
+          "the subtype's own edge stands");
+      assertTrue(
+          model
+              .hierarchy()
+              .contains(new DeclarationEdge(BrowsePath.root(), vSub.getNodeId(), path("C"))),
+          "the first inherited edge remains");
+      assertTrue(
+          model
+              .hierarchy()
+              .contains(new DeclarationEdge(BrowsePath.root(), vSuper.getNodeId(), path("C"))),
+          "a sibling inherited edge folded by the same merge must not suppress this one");
+    }
   }
 
   /** Expansion depth, override precedence and provenance, and non-declaration exclusion. */

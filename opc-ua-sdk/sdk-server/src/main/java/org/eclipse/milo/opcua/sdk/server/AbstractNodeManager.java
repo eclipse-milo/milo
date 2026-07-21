@@ -226,6 +226,24 @@ public class AbstractNodeManager<T extends Node> implements NodeManager<T> {
       }
     }
 
+    // Only a commit that actually changes state bumps the generation; a no-op commit (empty
+    // batch, reuse-only, or References all already present) must leave outstanding handles
+    // current, like the other mutation methods. The bump happens BEFORE the apply loop — and is
+    // deliberately not undone by rollback — so a lock-free reader that observes any mid-commit
+    // (or rolled-back) state can never also observe a still-current generation.
+    boolean mutates =
+        !batch.getNodeAdditions().isEmpty()
+            || batch.getReferenceAdditions().stream()
+                .anyMatch(
+                    reference -> {
+                      LinkedHashMultiset<Reference> references =
+                          referenceMap.get(reference.getSourceNodeId());
+                      return references == null || !references.contains(reference);
+                    });
+    if (mutates) {
+      generation++;
+    }
+
     // Validation is complete; apply, undoing all applied additions if a mutation fails.
     List<NodeId> addedNodes = new ArrayList<>();
     List<Reference> addedReferences = new ArrayList<>();
@@ -256,13 +274,6 @@ public class AbstractNodeManager<T extends Node> implements NodeManager<T> {
           "batch commit failed and was rolled back",
           e,
           nothingApplied);
-    }
-
-    // Only a commit that actually changed state bumps the generation; a no-op commit (empty batch,
-    // reuse-only, or References all already present) must leave outstanding handles current, like
-    // the other mutation methods.
-    if (!addedNodes.isEmpty() || !addedReferences.isEmpty()) {
-      generation++;
     }
 
     return new CommitResult(addedNodes, addedReferences);

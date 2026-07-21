@@ -14,6 +14,7 @@ import java.util.UUID;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The full context a request's {@code nodeIdStrategy} receives for one planned node: the instance
@@ -33,12 +34,15 @@ public record NodeIdContext(NodeId rootNodeId, BrowsePath path, InstanceDeclarat
   /**
    * The default derivation: a String identifier in the root's namespace, the root identifier prefix
    * followed by {@code /<namespaceIndex>:<name>} per path element, with {@code \}, {@code /}, and
-   * {@code :} escaped inside names ({@code \\}, {@code \/}, {@code \:}) and non-String root
-   * identifiers rendered with a type marker ({@code i=}, {@code g=}, {@code b=}).
+   * {@code :} escaped ({@code \\}, {@code \/}, {@code \:}) inside names and String root identifiers
+   * alike. Non-String root identifiers are rendered with a type marker ({@code i=}, {@code g=},
+   * {@code b=}); a String root that itself begins with a marker gets an {@code s=} marker so no
+   * rendered root can impersonate another.
    *
    * <p>Unlike the legacy formula this is collision-resistant: a member named {@code "A/1:B"} cannot
-   * collide with a nested member {@code A} containing {@code B}, and a numeric root {@code 7}
-   * cannot collide with a String root {@code "7"}.
+   * collide with a nested member {@code A} containing {@code B}, a numeric root {@code 7} cannot
+   * collide with a String root {@code "7"} or {@code "i=7"}, and a String root containing {@code /}
+   * or {@code :} cannot collide with another root's derived member.
    *
    * @return the default {@link NodeId} for this occurrence.
    */
@@ -47,7 +51,7 @@ public record NodeIdContext(NodeId rootNodeId, BrowsePath path, InstanceDeclarat
 
     String prefix;
     if (rootIdentifier instanceof String s) {
-      prefix = s;
+      prefix = mimicsTypeMarker(s) ? "s=" + escape(s) : escape(s);
     } else if (rootIdentifier instanceof UInteger u) {
       prefix = "i=" + u;
     } else if (rootIdentifier instanceof UUID g) {
@@ -67,8 +71,8 @@ public record NodeIdContext(NodeId rootNodeId, BrowsePath path, InstanceDeclarat
   /**
    * The legacy {@code NodeFactory} derivation, verbatim: the root identifier's string form
    * concatenated with {@code /<namespaceIndex>:<name>} per path element, unescaped, a String
-   * identifier in the root's namespace. Ambiguous by construction (that is D9); provided because
-   * derived ids are persisted identity for existing deployments migrating to this API.
+   * identifier in the root's namespace. Ambiguous by construction; provided anyway because derived
+   * ids are persisted identity for existing deployments migrating to this API.
    *
    * @return the legacy-formula {@link NodeId} for this occurrence.
    */
@@ -81,7 +85,25 @@ public record NodeIdContext(NodeId rootNodeId, BrowsePath path, InstanceDeclarat
     return new NodeId(rootNodeId.getNamespaceIndex(), sb.toString());
   }
 
-  private static String escape(String name) {
+  /**
+   * Whether {@code identifier} begins with one of the rendered root markers ({@code i=}, {@code
+   * g=}, {@code b=}, {@code s=}), in which case it needs an {@code s=} marker of its own to stay
+   * distinguishable from a rendered non-String root.
+   */
+  private static boolean mimicsTypeMarker(String identifier) {
+    if (identifier.length() < 2 || identifier.charAt(1) != '=') {
+      return false;
+    }
+    char c = identifier.charAt(0);
+    return c == 'i' || c == 'g' || c == 'b' || c == 's';
+  }
+
+  private static String escape(@Nullable String name) {
+    if (name == null) {
+      // A QualifiedName's name may be null; derive from the empty string rather than failing
+      // where the model layer tolerated the malformed BrowseName.
+      return "";
+    }
     StringBuilder sb = new StringBuilder(name.length());
     for (int i = 0; i < name.length(); i++) {
       char c = name.charAt(i);

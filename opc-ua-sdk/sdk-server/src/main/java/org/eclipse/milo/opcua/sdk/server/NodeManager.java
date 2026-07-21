@@ -356,6 +356,11 @@ public interface NodeManager<T extends Node> {
      * Return {@code true} if the {@link NodeManager} has not been mutated since this handle was
      * acquired.
      *
+     * <p>This is an advisory, lock-free check: a mutation in progress on another thread may not be
+     * reflected yet. The authoritative staleness check is {@link
+     * NodeManagerBatch.Builder#expectGeneration(long)}, which a supporting {@link
+     * NodeManager#commit(NodeManagerBatch)} evaluates atomically with the commit itself.
+     *
      * @return {@code true} if the {@link NodeManager} has not been mutated since this handle was
      *     acquired.
      */

@@ -93,6 +93,12 @@ public record InstantiationDiagnostic(
      * compatible (BrowseName, NodeClass, TypeDefinition, or expected Java class).
      */
     INCOMPATIBLE_REUSE,
+    /**
+     * The requested parent attachment is invalid: the parent ReferenceType is not a hierarchical
+     * ReferenceType (an error; no attachment is planned), or the parent node does not resolve in
+     * the server at plan time (a warning; commit fails if it is still missing at apply).
+     */
+    INVALID_PARENT,
     /** A request override violates the Variable narrowing rules of Part 3 §6.2.8. */
     VARIABLE_NARROWING,
     /** A planned Method's declaration carries a Method signature finding from the model. */

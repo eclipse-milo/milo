@@ -22,10 +22,9 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for the WP5 registry evolution of {@link ObjectTypeManager} and {@link
- * VariableTypeManager}: the additive snapshot-constructor registration overload and the
- * class-exposing {@code getRegisteredType} lookup, with the pre-existing tuple and {@code Legacy*}
- * surfaces byte-for-byte untouched (R4).
+ * Tests for the registry evolution of {@link ObjectTypeManager} and {@link VariableTypeManager}:
+ * the additive snapshot-constructor registration overload and the class-exposing {@code
+ * getRegisteredType} lookup, with the pre-existing tuple and {@code Legacy*} surfaces untouched.
  */
 public class TypeManagerRegistrationTest {
 
@@ -76,7 +75,7 @@ public class TypeManagerRegistrationTest {
     // The pre-existing lookup is unchanged (the legacy engine resolves this registration)...
     assertSame(tupleConstructor, manager.getNodeConstructor(typeId).orElseThrow());
 
-    // ...and the new engine sees the same registration through the class-exposing accessor (R4).
+    // ...and the new engine sees the same registration through the class-exposing accessor.
     ObjectTypeManager.RegisteredObjectType registered =
         manager.getRegisteredType(typeId).orElseThrow();
     assertEquals(UaObjectNode.class, registered.nodeClass());
@@ -173,6 +172,76 @@ public class TypeManagerRegistrationTest {
         manager.getRegisteredType(typeId).orElseThrow();
     assertNotNull(registered.nodeConstructor(), "adapted constructor visible to the new engine");
     assertNull(registered.snapshotConstructor());
+  }
+
+  @Test
+  void objectSnapshotRegistrationPreservesExistingTupleRegistration() {
+    ObjectTypeManager manager = new ObjectTypeManager();
+
+    ObjectTypeManager.ObjectNodeConstructor tupleConstructor =
+        (context,
+            nodeId,
+            browseName,
+            displayName,
+            description,
+            writeMask,
+            userWriteMask,
+            rolePermissions,
+            userRolePermissions,
+            accessRestrictions) -> {
+          throw new UnsupportedOperationException("never invoked here");
+        };
+    ObjectTypeManager.SnapshotConstructor snapshotConstructor =
+        (context, nodeId, attributes) -> {
+          throw new UnsupportedOperationException("never invoked here");
+        };
+
+    // Registering the snapshot form after the tuple form must not disconnect the legacy
+    // NodeFactory/EventFactory lookup from its typed constructor, and vice versa.
+    manager.registerObjectType(typeId, UaObjectNode.class, tupleConstructor);
+    manager.registerObjectType(typeId, UaObjectNode.class, snapshotConstructor);
+
+    assertSame(tupleConstructor, manager.getNodeConstructor(typeId).orElseThrow());
+    ObjectTypeManager.RegisteredObjectType registered =
+        manager.getRegisteredType(typeId).orElseThrow();
+    assertSame(tupleConstructor, registered.nodeConstructor());
+    assertSame(snapshotConstructor, registered.snapshotConstructor());
+  }
+
+  @Test
+  void variableTupleRegistrationPreservesExistingSnapshotRegistration() {
+    VariableTypeManager manager = new VariableTypeManager();
+
+    VariableTypeManager.VariableNodeConstructor tupleConstructor =
+        (context,
+            nodeId,
+            browseName,
+            displayName,
+            description,
+            writeMask,
+            userWriteMask,
+            rolePermissions,
+            userRolePermissions,
+            accessRestrictions,
+            value,
+            dataType,
+            valueRank,
+            arrayDimensions) -> {
+          throw new UnsupportedOperationException("never invoked here");
+        };
+    VariableTypeManager.SnapshotConstructor snapshotConstructor =
+        (context, nodeId, attributes) -> {
+          throw new UnsupportedOperationException("never invoked here");
+        };
+
+    manager.registerVariableType(typeId, UaVariableNode.class, snapshotConstructor);
+    manager.registerVariableType(typeId, UaVariableNode.class, tupleConstructor);
+
+    assertSame(tupleConstructor, manager.getNodeConstructor(typeId).orElseThrow());
+    VariableTypeManager.RegisteredVariableType registered =
+        manager.getRegisteredType(typeId).orElseThrow();
+    assertSame(tupleConstructor, registered.nodeConstructor());
+    assertSame(snapshotConstructor, registered.snapshotConstructor());
   }
 
   @Test

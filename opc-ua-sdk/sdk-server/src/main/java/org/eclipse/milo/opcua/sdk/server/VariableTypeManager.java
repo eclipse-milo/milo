@@ -35,8 +35,13 @@ public class VariableTypeManager {
       Class<? extends UaVariableNode> nodeClass,
       VariableNodeConstructor variableNodeConstructor) {
 
-    typeDefinitions.put(
-        typeDefinition, new VariableTypeDefinition(nodeClass, variableNodeConstructor, null));
+    typeDefinitions.compute(
+        typeDefinition,
+        (id, prev) ->
+            new VariableTypeDefinition(
+                nodeClass,
+                variableNodeConstructor,
+                prev != null ? prev.snapshotConstructor : null));
   }
 
   /**
@@ -48,6 +53,10 @@ public class VariableTypeManager {
    * node-instantiation engine; the legacy {@code NodeFactory} lookup path ({@link
    * #getNodeConstructor(NodeId)}) does not see them and falls back to its default construction.
    *
+   * <p>Each overload replaces only its own constructor form: registering a snapshot constructor for
+   * a type that already has a tuple registration (or vice versa) keeps the other form intact, so
+   * neither lookup path silently loses its typed construction.
+   *
    * @param typeDefinition the {@link NodeId} of the VariableType.
    * @param nodeClass the Java class instances of the type are constructed as.
    * @param snapshotConstructor the snapshot-consuming constructor.
@@ -57,8 +66,11 @@ public class VariableTypeManager {
       Class<? extends UaVariableNode> nodeClass,
       SnapshotConstructor snapshotConstructor) {
 
-    typeDefinitions.put(
-        typeDefinition, new VariableTypeDefinition(nodeClass, null, snapshotConstructor));
+    typeDefinitions.compute(
+        typeDefinition,
+        (id, prev) ->
+            new VariableTypeDefinition(
+                nodeClass, prev != null ? prev.nodeConstructor : null, snapshotConstructor));
   }
 
   public void registerVariableType(
@@ -90,7 +102,11 @@ public class VariableTypeManager {
           }
         };
 
-    typeDefinitions.put(typeDefinition, new VariableTypeDefinition(nodeClass, adapted, null));
+    typeDefinitions.compute(
+        typeDefinition,
+        (id, prev) ->
+            new VariableTypeDefinition(
+                nodeClass, adapted, prev != null ? prev.snapshotConstructor : null));
   }
 
   public Optional<VariableNodeConstructor> getNodeConstructor(NodeId typeDefinition) {
@@ -105,8 +121,9 @@ public class VariableTypeManager {
    *
    * <p>This is the node-instantiation engine's lookup: exposing the {@link Class} enables plan-time
    * expected-class checks and nearest-registered-ancestor fallback along the {@code HasSubtype}
-   * chain. Exactly one of {@link RegisteredVariableType#nodeConstructor()} and {@link
-   * RegisteredVariableType#snapshotConstructor()} is non-null.
+   * chain. At least one of {@link RegisteredVariableType#nodeConstructor()} and {@link
+   * RegisteredVariableType#snapshotConstructor()} is non-null; both are when the type was
+   * registered through both overload forms.
    *
    * @param typeDefinition the {@link NodeId} of the VariableType.
    * @return the registration, if one exists.
@@ -136,8 +153,8 @@ public class VariableTypeManager {
   }
 
   /**
-   * A VariableType registration: the Java class instances are constructed as, plus whichever
-   * constructor form the registration supplied (exactly one is non-null).
+   * A VariableType registration: the Java class instances are constructed as, plus the constructor
+   * form(s) the registrations supplied (at least one is non-null).
    *
    * @param nodeClass the registered Java class.
    * @param nodeConstructor the tuple-signature constructor, if registered with one.

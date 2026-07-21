@@ -11,7 +11,6 @@
 package org.eclipse.milo.opcua.sdk.server.nodes.instantiation;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -20,7 +19,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.eclipse.milo.opcua.sdk.core.Reference;
-import org.eclipse.milo.opcua.sdk.core.ValueRanks;
 import org.eclipse.milo.opcua.sdk.server.NodeManager;
 import org.eclipse.milo.opcua.sdk.server.ObjectTypeManager;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
@@ -112,6 +110,8 @@ public final class NodeInstantiator {
     private final Map<BrowsePath, SkippedDeclaration> skipped = new LinkedHashMap<>();
     private final List<InstantiationDiagnostic> diagnostics = new ArrayList<>();
     private final Map<NodeId, TypeInstantiationModel> memberModels = new HashMap<>();
+
+    private @Nullable Set<BrowsePath> effectiveIncludedPaths;
 
     private PlanComputation(
         NodeInstantiator instantiator,
@@ -372,8 +372,10 @@ public final class NodeInstantiator {
     private boolean isSelected(InstanceDeclaration declaration, boolean isOptional) {
       BrowsePath path = declaration.browsePath();
 
-      for (BrowsePath included : request.includedPaths()) {
-        // Selecting a nested path implies its ancestors.
+      for (BrowsePath included : effectiveIncludedPaths()) {
+        // Selecting a nested path implies its ancestors — but only a path that resolves in the
+        // model implies anything; a mistyped include must not materialize its ancestors (it is
+        // reported by the UNMATCHED_PATH warning instead).
         if (included.startsWith(path)) {
           return true;
         }
@@ -384,6 +386,20 @@ public final class NodeInstantiator {
       }
 
       return request.includePredicate().map(p -> p.test(declaration)).orElse(false);
+    }
+
+    /** The request's included paths that resolve to a declaration in the model. */
+    private Set<BrowsePath> effectiveIncludedPaths() {
+      if (effectiveIncludedPaths == null) {
+        Set<BrowsePath> resolved = new HashSet<>();
+        for (BrowsePath included : request.includedPaths()) {
+          if (model.get(included).isPresent()) {
+            resolved.add(included);
+          }
+        }
+        effectiveIncludedPaths = resolved;
+      }
+      return effectiveIncludedPaths;
     }
 
     private void skip(InstanceDeclaration declaration, SkippedDeclaration.Reason reason) {
@@ -796,12 +812,34 @@ public final class NodeInstantiator {
       }
 
       if (request.parentNodeId().isPresent() && request.parentReferenceTypeId().isPresent()) {
-        references.add(
-            new Reference(
-                request.parentNodeId().get(),
-                request.parentReferenceTypeId().get(),
-                rootNodeId.expanded(),
-                true));
+        NodeId parentNodeId = request.parentNodeId().get();
+        NodeId parentReferenceTypeId = request.parentReferenceTypeId().get();
+
+        if (!isReferenceSubtypeOfOrEqual(parentReferenceTypeId, NodeIds.HierarchicalReferences)) {
+          diagnostics.add(
+              InstantiationDiagnostic.planError(
+                  InstantiationDiagnostic.Code.INVALID_PARENT,
+                  "parent reference type "
+                      + parentReferenceTypeId
+                      + " is not a hierarchical ReferenceType",
+                  BrowsePath.root(),
+                  parentNodeId));
+        } else {
+          // The parent may live in any NodeManager, so resolution is server-wide with a target
+          // fallback; a missing parent is advisory only — commit is where a dangling attachment
+          // actually fails.
+          if (server.getAddressSpaceManager().getManagedNode(parentNodeId).isEmpty()
+              && !request.target().containsNode(parentNodeId)) {
+            diagnostics.add(
+                InstantiationDiagnostic.planWarning(
+                    InstantiationDiagnostic.Code.INVALID_PARENT,
+                    "parent node " + parentNodeId + " does not resolve in this server at plan time",
+                    BrowsePath.root(),
+                    parentNodeId));
+          }
+          references.add(
+              new Reference(parentNodeId, parentReferenceTypeId, rootNodeId.expanded(), true));
+        }
       }
 
       for (DeclarationEdge edge : model.hierarchy()) {
@@ -991,58 +1029,31 @@ public final class NodeInstantiator {
     }
 
     private boolean isTypeSubtypeOfOrEqual(NodeId typeId, NodeId supertypeId) {
-      if (typeId.equals(supertypeId)) {
-        return true;
-      }
-      Set<NodeId> visited = new HashSet<>();
-      NodeId current = typeId;
-      while (current != null && visited.add(current)) {
-        NodeId parent = immediateSupertype(current);
-        if (supertypeId.equals(parent)) {
-          return true;
-        }
-        current = parent;
-      }
-      return false;
+      return TypeSpaceRules.isTypeSubtypeOfOrEqual(
+          typeId,
+          supertypeId,
+          id -> server.getAddressSpaceManager().getManagedReferences(id),
+          server.getNamespaceTable());
     }
 
     private @Nullable NodeId immediateSupertype(NodeId typeId) {
-      return server.getAddressSpaceManager().getManagedReferences(typeId).stream()
-          .filter(Reference.SUBTYPE_OF)
-          .map(r -> r.getTargetNodeId().toNodeId(server.getNamespaceTable()).orElse(null))
-          .filter(Objects::nonNull)
-          .min(Comparator.comparing(NodeId::toParseableString))
-          .orElse(null);
+      return TypeSpaceRules.immediateSupertype(
+          typeId,
+          id -> server.getAddressSpaceManager().getManagedReferences(id),
+          server.getNamespaceTable());
     }
 
     private boolean isReferenceSubtypeOfOrEqual(NodeId referenceTypeId, NodeId supertypeId) {
-      return referenceTypeId.equals(supertypeId)
-          || server.getReferenceTypeTree().isSubtypeOf(referenceTypeId, supertypeId);
+      return TypeSpaceRules.isReferenceSubtypeOfOrEqual(
+          server.getReferenceTypeTree(), referenceTypeId, supertypeId);
     }
 
     private static boolean isValueRankRestriction(int base, int restricted) {
-      if (base == restricted || base == ValueRanks.Any) {
-        return true;
-      }
-      if (base == ValueRanks.ScalarOrOneDimension) {
-        return restricted == ValueRanks.Scalar || restricted == 1;
-      }
-      if (base == ValueRanks.OneOrMoreDimensions) {
-        return restricted >= 1;
-      }
-      return false;
+      return TypeSpaceRules.isValueRankRestriction(base, restricted);
     }
 
     private static boolean isArrayDimensionsRestriction(UInteger[] base, UInteger[] restricted) {
-      if (restricted.length != base.length) {
-        return false;
-      }
-      for (int i = 0; i < base.length; i++) {
-        if (base[i].longValue() != 0 && !base[i].equals(restricted[i])) {
-          return false;
-        }
-      }
-      return true;
+      return TypeSpaceRules.isArrayDimensionsRestriction(base, restricted);
     }
 
     // endregion

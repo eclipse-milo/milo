@@ -160,7 +160,7 @@ public class InstantiationPlanTest {
           (plan.plannedNodes().size() - 1) + plan.skippedDeclarations().size());
     }
 
-    /** Selecting a nested path implies its ancestors (U4). */
+    /** Selecting a nested path implies its ancestors. */
     @Test
     void includingNestedPathImpliesAncestors() throws Exception {
       UaObjectTypeNode typeNode = fx.addObjectType("ImplyType", NodeIds.BaseObjectType);
@@ -185,6 +185,39 @@ public class InstantiationPlanTest {
       assertTrue(
           plan.plannedNode(path("OptA", "Leaf")).isPresent(),
           "Mandatory under a selected Optional exists");
+    }
+
+    /**
+     * An included path that resolves to nothing in the model implies nothing: it warns as
+     * unmatched, and its would-be ancestors are not materialized on the strength of a typo.
+     */
+    @Test
+    void unmatchedIncludedPathDoesNotImplyAncestors() throws Exception {
+      UaObjectTypeNode typeNode = fx.addObjectType("TypoImplyType", NodeIds.BaseObjectType);
+      UaObjectNode optA =
+          fx.addObjectDeclaration(
+              typeNode, "OptA", NodeIds.BaseObjectType, NodeIds.ModellingRule_Optional);
+      fx.addVariableDeclaration(
+          optA, "Leaf", NodeIds.BaseDataVariableType, NodeIds.ModellingRule_Optional);
+
+      InstantiationPlan<UaObjectNode> plan =
+          fx.instantiator()
+              .plan(
+                  objectRequest(typeNode.getNodeId(), "Dev")
+                      .includeOptional(path("OptA", "Typo"))
+                      .build());
+
+      assertFalse(plan.hasErrors());
+      assertTrue(
+          plan.plannedNode(path("OptA")).isEmpty(),
+          "an unmatched include must not materialize its ancestors");
+      assertTrue(
+          plan.diagnostics().stream()
+              .anyMatch(
+                  d ->
+                      d.code() == InstantiationDiagnostic.Code.UNMATCHED_PATH
+                          && path("OptA", "Typo").equals(d.browsePath())),
+          "the typo'd include is reported as unmatched");
     }
 
     /** {@code includeAllOptionals()} selects Optionals but not vendor-rule declarations. */
@@ -229,7 +262,7 @@ public class InstantiationPlanTest {
       assertTrue(plan.plannedNode(path("Vendor")).isPresent());
     }
 
-    /** The context-rich predicate escape hatch decides otherwise-undecided declarations (L2). */
+    /** The context-rich predicate escape hatch decides otherwise-undecided declarations. */
     @Test
     void predicateEscapeHatchSelectsByDeclarationContext() throws Exception {
       UaObjectTypeNode typeNode = fx.addObjectType("PredType", NodeIds.BaseObjectType);
@@ -250,7 +283,7 @@ public class InstantiationPlanTest {
       assertTrue(plan.plannedNode(path("OptNo")).isEmpty());
     }
 
-    /** Optional Methods obey selection like everything else — the D6 fix. */
+    /** Optional Methods obey selection like everything else. */
     @Test
     void optionalMethodObeysSelection() throws Exception {
       UaObjectTypeNode typeNode = fx.addObjectType("MethodSelType", NodeIds.BaseObjectType);
@@ -275,7 +308,7 @@ public class InstantiationPlanTest {
     /**
      * Excluding an Optional prunes its whole subtree: mandatory descendants are {@code
      * ANCESTOR_OMITTED} (their BrowsePath does not exist — the valid exception, input b), never
-     * planned, never referenced — the D1 orphan fix.
+     * planned, never referenced, so no orphaned references escape the plan.
      */
     @Test
     void excludingOptionalPrunesSubtreeWithoutOrphans() throws Exception {
@@ -326,7 +359,7 @@ public class InstantiationPlanTest {
       assertEquals(SkippedDeclaration.Reason.EXCLUDED, skippedAt(plan, path("Mand")).reason());
     }
 
-    /** Two same-named Optionals at different paths select independently — the D7 fix. */
+    /** Two same-named Optionals at different paths select independently. */
     @Test
     void sameNamedOptionalsAtDifferentPathsSelectIndependently() throws Exception {
       UaObjectTypeNode typeNode = fx.addObjectType("D7Type", NodeIds.BaseObjectType);
@@ -353,10 +386,7 @@ public class InstantiationPlanTest {
       assertTrue(plan.plannedNode(path("B", "Opt")).isEmpty());
     }
 
-    /**
-     * Placeholders are never auto-expanded; ExposesItsArray is surfaced but not materialized
-     * (KD10).
-     */
+    /** Placeholders are never auto-expanded; ExposesItsArray is surfaced but not materialized. */
     @Test
     void placeholdersAndExposesItsArrayAreSkippedWithDiagnostics() throws Exception {
       UaObjectTypeNode typeNode = fx.addObjectType("PlaceholderType", NodeIds.BaseObjectType);
@@ -532,8 +562,8 @@ public class InstantiationPlanTest {
 
     /**
      * The full attribute set propagates from declarations by rule — including
-     * MinimumSamplingInterval, Historizing, and the three security attributes legacy dropped (D10)
-     * — with the absent / explicit-null distinction preserved.
+     * MinimumSamplingInterval, Historizing, and the three security attributes the legacy factory
+     * dropped — with the absent / explicit-null distinction preserved.
      */
     @Test
     void fullAttributeSetPropagatesIncludingSecurityAttributes() throws Exception {
@@ -674,10 +704,7 @@ public class InstantiationPlanTest {
       assertEquals(NodeClass.Variable, attributes.getOrNull(AttributeId.NodeClass));
     }
 
-    /**
-     * Root BrowseName precedence: request &gt; DefaultInstanceBrowseName &gt; type BrowseName
-     * (D11/U8).
-     */
+    /** Root BrowseName precedence: request &gt; DefaultInstanceBrowseName &gt; type BrowseName. */
     @Test
     void rootBrowseNamePrecedence() throws Exception {
       UaObjectTypeNode plainType = fx.addObjectType("PlainType", NodeIds.BaseObjectType);
@@ -786,8 +813,8 @@ public class InstantiationPlanTest {
     }
 
     /**
-     * Q2: an unregistered subtype resolves to the nearest registered ancestor's class by walking
-     * the {@code HasSubtype} chain, two levels deep here.
+     * An unregistered subtype resolves to the nearest registered ancestor's class by walking the
+     * {@code HasSubtype} chain, two levels deep here.
      */
     @Test
     void unregisteredSubtypeFallsBackToNearestRegisteredAncestor() throws Exception {
@@ -1019,7 +1046,7 @@ public class InstantiationPlanTest {
 
     /**
      * A declaration-internal non-hierarchical reference is re-mapped onto the corresponding
-     * instances exactly once, forward — the D4 fix, §6.4.3 direct-connection consistency.
+     * instances exactly once, forward — §6.4.3 direct-connection consistency.
      */
     @Test
     void internalNonHierarchicalRowRemappedExactlyOnce() throws Exception {
@@ -1081,7 +1108,7 @@ public class InstantiationPlanTest {
           "no planned edge to an omitted target");
     }
 
-    /** External rows are copied verbatim by default and droppable via the named policy (KD7). */
+    /** External rows are copied verbatim by default and droppable via the named policy. */
     @Test
     void externalRowsFollowReplicationPolicy() throws Exception {
       UaReferenceTypeNode refType =
@@ -1124,8 +1151,7 @@ public class InstantiationPlanTest {
     }
 
     /**
-     * {@code HasModellingRule} is dropped for normal instances, retained for INSTANCE_DECLARATION
-     * (U14).
+     * {@code HasModellingRule} is dropped for normal instances, retained for INSTANCE_DECLARATION.
      */
     @Test
     void hasModellingRuleRetentionIsPurposeDependent() throws Exception {
@@ -1179,9 +1205,7 @@ public class InstantiationPlanTest {
   @Nested
   class NodeIdAllocation {
 
-    /**
-     * The strategy receives full context and supports any identifier scheme; pins win over it (U6).
-     */
+    /** The strategy receives full context and supports any identifier scheme; pins win over it. */
     @Test
     void strategyReceivesFullContextAndPinningWins() throws Exception {
       UaObjectTypeNode typeNode = fx.addObjectType("IdType", NodeIds.BaseObjectType);
@@ -1219,9 +1243,9 @@ public class InstantiationPlanTest {
     }
 
     /**
-     * The default allocator escapes reserved characters, so the two WP1-pinned legacy ambiguities
-     * cannot collide: a member named {@code "A/1:B"} vs a nested member {@code A}/{@code B}, and a
-     * numeric root {@code 7} vs a String root {@code "7"}.
+     * The default allocator escapes reserved characters, so the two characterized legacy
+     * ambiguities cannot collide: a member named {@code "A/1:B"} vs a nested member {@code
+     * A}/{@code B}, and a numeric root {@code 7} vs a String root {@code "7"}.
      */
     @Test
     void defaultAllocatorEscapesReservedCharacters() throws Exception {
@@ -1255,7 +1279,7 @@ public class InstantiationPlanTest {
 
       NodeId nestedLeafId = nested.plannedNode(path("A", "B")).orElseThrow().nodeId();
       NodeId slashLeafId = slash.plannedNode(path("A/1:B")).orElseThrow().nodeId();
-      assertNotEquals(nestedLeafId, slashLeafId, "escaping disambiguates the WP1 collision");
+      assertNotEquals(nestedLeafId, slashLeafId, "escaping disambiguates the legacy collision");
 
       // Numeric vs String root identifiers cannot derive identical child ids either.
       UaObjectTypeNode rootAmbigType = fx.addObjectType("RootAmbigType", NodeIds.BaseObjectType);
@@ -1280,12 +1304,44 @@ public class InstantiationPlanTest {
       assertNotEquals(
           numericRoot.plannedNode(path("Foo")).orElseThrow().nodeId(),
           stringRoot.plannedNode(path("Foo")).orElseThrow().nodeId());
+
+      // A String root spelled like a rendered numeric root ("i=7") cannot collide with the
+      // numeric root either, and a String root containing the separator syntax cannot collide
+      // with another root's derived member.
+      InstantiationPlan<UaObjectNode> markerRoot =
+          fx.instantiator()
+              .plan(
+                  InstantiationRequest.of(UaObjectNode.class, rootAmbigType.getNodeId())
+                      .nodeId(new NodeId(1, "i=7"))
+                      .target(target)
+                      .build());
+      assertNotEquals(
+          numericRoot.plannedNode(path("Foo")).orElseThrow().nodeId(),
+          markerRoot.plannedNode(path("Foo")).orElseThrow().nodeId());
+
+      UaObjectTypeNode bOnlyType = fx.addObjectType("BOnlyType", NodeIds.BaseObjectType);
+      fx.addVariableDeclaration(
+          bOnlyType, "B", NodeIds.BaseDataVariableType, NodeIds.ModellingRule_Mandatory);
+
+      InstantiationPlan<UaObjectNode> separatorRoot =
+          fx.instantiator()
+              .plan(
+                  InstantiationRequest.of(UaObjectNode.class, bOnlyType.getNodeId())
+                      .nodeId(new NodeId(1, "AmbigRoot/1:A"))
+                      .target(target)
+                      .build());
+      assertNotEquals(
+          nestedLeafId,
+          separatorRoot.plannedNode(path("B")).orElseThrow().nodeId(),
+          "a root containing the separator syntax cannot collide with another root's nested"
+              + " member");
     }
 
     /**
-     * {@code legacyPathStrings()} reproduces the WP1-pinned formula exactly: root identifier
-     * string-concatenated with {@code /ns:name} per element, a String identifier in the root's
-     * namespace — including the pinned numeric-root case ({@code 7} deriving {@code "7/1:Foo"}).
+     * {@code legacyPathStrings()} reproduces the characterized legacy formula exactly: root
+     * identifier string-concatenated with {@code /ns:name} per element, a String identifier in the
+     * root's namespace — including the pinned numeric-root case ({@code 7} deriving {@code
+     * "7/1:Foo"}).
      */
     @Test
     void legacyPathStringsReproducesCharacterizedFormula() throws Exception {
@@ -1334,7 +1390,7 @@ public class InstantiationPlanTest {
   @Nested
   class Methods {
 
-    /** Methods are copied by default; SHARE references the type's Method node per call (KD9/L6). */
+    /** Methods are copied by default; SHARE references the type's Method node per call. */
     @Test
     void methodCopyByDefaultShareByRequest() throws Exception {
       UaObjectTypeNode typeNode = fx.addObjectType("MethodType", NodeIds.BaseObjectType);
@@ -1416,8 +1472,8 @@ public class InstantiationPlanTest {
 
     /**
      * Plan is provably side-effect free: neither the target manager nor the source address space is
-     * mutated — checked with WP4's generation tracking plus node/reference counts and a sampled
-     * identity check.
+     * mutated — checked with NodeManager generation tracking plus node/reference counts and a
+     * sampled identity check.
      */
     @Test
     void planPerformsZeroMutation() throws Exception {

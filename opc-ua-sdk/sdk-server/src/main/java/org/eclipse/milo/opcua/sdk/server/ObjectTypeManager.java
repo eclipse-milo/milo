@@ -34,8 +34,11 @@ public class ObjectTypeManager {
       Class<? extends UaObjectNode> nodeClass,
       ObjectNodeConstructor objectNodeConstructor) {
 
-    typeDefinitions.put(
-        typeDefinition, new ObjectTypeDefinition(nodeClass, objectNodeConstructor, null));
+    typeDefinitions.compute(
+        typeDefinition,
+        (id, prev) ->
+            new ObjectTypeDefinition(
+                nodeClass, objectNodeConstructor, prev != null ? prev.snapshotConstructor : null));
   }
 
   /**
@@ -47,6 +50,10 @@ public class ObjectTypeManager {
    * node-instantiation engine; the legacy {@code NodeFactory} lookup path ({@link
    * #getNodeConstructor(NodeId)}) does not see them and falls back to its default construction.
    *
+   * <p>Each overload replaces only its own constructor form: registering a snapshot constructor for
+   * a type that already has a tuple registration (or vice versa) keeps the other form intact, so
+   * neither lookup path silently loses its typed construction.
+   *
    * @param typeDefinition the {@link NodeId} of the ObjectType.
    * @param nodeClass the Java class instances of the type are constructed as.
    * @param snapshotConstructor the snapshot-consuming constructor.
@@ -56,8 +63,11 @@ public class ObjectTypeManager {
       Class<? extends UaObjectNode> nodeClass,
       SnapshotConstructor snapshotConstructor) {
 
-    typeDefinitions.put(
-        typeDefinition, new ObjectTypeDefinition(nodeClass, null, snapshotConstructor));
+    typeDefinitions.compute(
+        typeDefinition,
+        (id, prev) ->
+            new ObjectTypeDefinition(
+                nodeClass, prev != null ? prev.nodeConstructor : null, snapshotConstructor));
   }
 
   public void registerObjectType(
@@ -85,7 +95,11 @@ public class ObjectTypeManager {
           }
         };
 
-    typeDefinitions.put(typeDefinition, new ObjectTypeDefinition(nodeClass, adapted, null));
+    typeDefinitions.compute(
+        typeDefinition,
+        (id, prev) ->
+            new ObjectTypeDefinition(
+                nodeClass, adapted, prev != null ? prev.snapshotConstructor : null));
   }
 
   public Optional<ObjectNodeConstructor> getNodeConstructor(NodeId typeDefinition) {
@@ -100,8 +114,9 @@ public class ObjectTypeManager {
    *
    * <p>This is the node-instantiation engine's lookup: exposing the {@link Class} enables plan-time
    * expected-class checks and nearest-registered-ancestor fallback along the {@code HasSubtype}
-   * chain. Exactly one of {@link RegisteredObjectType#nodeConstructor()} and {@link
-   * RegisteredObjectType#snapshotConstructor()} is non-null.
+   * chain. At least one of {@link RegisteredObjectType#nodeConstructor()} and {@link
+   * RegisteredObjectType#snapshotConstructor()} is non-null; both are when the type was registered
+   * through both overload forms.
    *
    * @param typeDefinition the {@link NodeId} of the ObjectType.
    * @return the registration, if one exists.
@@ -130,8 +145,8 @@ public class ObjectTypeManager {
   }
 
   /**
-   * An ObjectType registration: the Java class instances are constructed as, plus whichever
-   * constructor form the registration supplied (exactly one is non-null).
+   * An ObjectType registration: the Java class instances are constructed as, plus the constructor
+   * form(s) the registrations supplied (at least one is non-null).
    *
    * @param nodeClass the registered Java class.
    * @param nodeConstructor the tuple-signature constructor, if registered with one.

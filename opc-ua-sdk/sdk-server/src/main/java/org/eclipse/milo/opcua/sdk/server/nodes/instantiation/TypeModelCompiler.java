@@ -25,7 +25,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.eclipse.milo.opcua.sdk.core.Reference;
-import org.eclipse.milo.opcua.sdk.core.ValueRanks;
 import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceTypeTree;
 import org.eclipse.milo.opcua.sdk.server.AddressSpaceManager;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
@@ -97,8 +96,7 @@ public class TypeModelCompiler {
   private static final QualifiedName INPUT_ARGUMENTS = new QualifiedName(0, "InputArguments");
   private static final QualifiedName OUTPUT_ARGUMENTS = new QualifiedName(0, "OutputArguments");
 
-  private static final Comparator<NodeId> NODE_ID_ORDER =
-      Comparator.comparing(NodeId::toParseableString);
+  private static final Comparator<NodeId> NODE_ID_ORDER = TypeSpaceRules.NODE_ID_ORDER;
 
   private final AddressSpaceManager addressSpaceManager;
   private final NamespaceTable namespaceTable;
@@ -629,8 +627,9 @@ public class TypeModelCompiler {
 
     if (rule.isShallow()) {
       // Recorded shallowly: complex structures beneath placeholders are not further considered
-      // for instantiating (Part 3 §6.4.4.4.4–.5); ExposesItsArray is model-visibility only (KD10).
-      // Shallow recording skips subtree expansion, not validation of the recorded type metadata.
+      // for instantiating (Part 3 §6.4.4.4.4–.5), and ExposesItsArray is visible in the model but
+      // never materialized. Shallow recording skips subtree expansion, not validation of the
+      // recorded type metadata.
       if (memberTypeId != null) {
         UaNode memberTypeNode = getNode(memberTypeId, ctx);
         if (memberTypeNode == null) {
@@ -806,8 +805,9 @@ public class TypeModelCompiler {
       validateNarrowing(declaration.attributes(), memberModel.rootAttributes, path, targetId, ctx);
     }
 
-    // Graft the member type's fully-inherited model beneath this declaration (the D2 fix).
-    // Explicit on-declaration entries were walked first and win per path (the D5 fix).
+    // Graft the member type's fully-inherited model beneath this declaration, so nested types are
+    // expanded at every depth. Explicit on-declaration entries were walked first and win per path
+    // (Part 3 §6.3.3.3).
     foldInto(table, memberModel, path, ctx);
   }
 
@@ -816,7 +816,11 @@ public class TypeModelCompiler {
    * prefix} — the root path for a supertype merge (Part 3 §6.3.3.2), a declaration's path for a
    * member-type graft. An entry already present in {@code target} at a path wins (the subtype's own
    * entry, or an explicit on-declaration child), with its override chain appended and the
-   * transition validated by {@code override}.
+   * transition validated by {@code override} — unless the folded entry already overrode the present
+   * one in its own model. That provenance identifies a supertype's explicit specialization arriving
+   * at a path currently occupied by a member-type default the subtype re-grafted without
+   * re-declaring the child: the specialization is the more derived declaration and wins, with the
+   * override validated in the matching direction.
    *
    * <p>Inherited references at an overridden path are suppressed only where Part 3 §6.3.3.3
    * replaces them: a hierarchy edge is replaced when the winner connects the same parent/child pair
@@ -828,6 +832,7 @@ public class TypeModelCompiler {
       CompiledType target, CompiledType source, BrowsePath prefix, CompileContext ctx) {
 
     Set<BrowsePath> overriddenPaths = new HashSet<>();
+    Set<BrowsePath> incomingWins = new HashSet<>();
 
     for (InstanceDeclaration d : source.declarations.values()) {
       BrowsePath path = prefix.concat(d.browsePath());
@@ -836,18 +841,33 @@ public class TypeModelCompiler {
       InstanceDeclaration existing = target.declarations.get(path);
       if (existing == null) {
         target.declarations.put(path, incoming);
+      } else if (incoming.overriddenDeclarations().contains(existing.declarationNodeId())) {
+        overriddenPaths.add(path);
+        incomingWins.add(path);
+        override(incoming, existing, target, ctx);
       } else {
         overriddenPaths.add(path);
         override(existing, incoming, target, ctx);
       }
     }
 
+    // Only edges present before this fold can replace an inherited edge; two edges folded by the
+    // same loop describe distinct relationships and must not suppress each other.
+    List<DeclarationEdge> preexistingEdges = List.copyOf(target.edges);
+
     for (DeclarationEdge e : source.edges) {
       BrowsePath parentPath = prefix.concat(e.parentPath());
       BrowsePath childPath = prefix.concat(e.childPath());
-      if (overriddenPaths.contains(childPath)) {
+      if (incomingWins.contains(childPath)) {
+        // The folded declaration won at this path, so its edge replaces the loser's.
+        target.edges.removeIf(
+            w ->
+                w.parentPath().equals(parentPath)
+                    && w.childPath().equals(childPath)
+                    && isReferenceSubtypeOfOrEqual(e.referenceTypeId(), w.referenceTypeId()));
+      } else if (overriddenPaths.contains(childPath)) {
         boolean replaced =
-            target.edges.stream()
+            preexistingEdges.stream()
                 .anyMatch(
                     w ->
                         w.parentPath().equals(parentPath)
@@ -862,9 +882,17 @@ public class TypeModelCompiler {
     }
 
     for (Row r : source.rows) {
-      if (overriddenPaths.contains(prefix.concat(r.row().sourcePath()))
-          && isSingularReference(r.row().referenceTypeId())) {
-        continue;
+      BrowsePath rowPath = prefix.concat(r.row().sourcePath());
+      if (overriddenPaths.contains(rowPath) && isSingularReference(r.row().referenceTypeId())) {
+        if (incomingWins.contains(rowPath)) {
+          // The folded declaration won at this path, so its singular rows replace the loser's.
+          target.rows.removeIf(
+              t ->
+                  t.row().sourcePath().equals(rowPath)
+                      && sameSingularFamily(t.row().referenceTypeId(), r.row().referenceTypeId()));
+        } else {
+          continue;
+        }
       }
       target.rows.add(new Row(reroot(r.row(), prefix), r.frozen()));
     }
@@ -878,9 +906,17 @@ public class TypeModelCompiler {
         || isReferenceSubtypeOfOrEqual(referenceTypeId, NodeIds.HasModellingRule);
   }
 
+  /** Whether {@code a} and {@code b} are singular references of the same family. */
+  private boolean sameSingularFamily(NodeId a, NodeId b) {
+    return (isReferenceSubtypeOfOrEqual(a, NodeIds.HasTypeDefinition)
+            && isReferenceSubtypeOfOrEqual(b, NodeIds.HasTypeDefinition))
+        || (isReferenceSubtypeOfOrEqual(a, NodeIds.HasModellingRule)
+            && isReferenceSubtypeOfOrEqual(b, NodeIds.HasModellingRule));
+  }
+
   private boolean isReferenceSubtypeOfOrEqual(NodeId referenceTypeId, NodeId supertypeId) {
-    return referenceTypeId.equals(supertypeId)
-        || referenceTypeTree.isSubtypeOf(referenceTypeId, supertypeId);
+    return TypeSpaceRules.isReferenceSubtypeOfOrEqual(
+        referenceTypeTree, referenceTypeId, supertypeId);
   }
 
   /**
@@ -895,11 +931,13 @@ public class TypeModelCompiler {
 
     BrowsePath path = winner.browsePath();
 
-    List<NodeId> chain = new ArrayList<>(winner.overriddenDeclarations());
+    // A LinkedHashSet because the winner's chain may already contain the overridden declaration
+    // (a supertype specialization beating a re-grafted member-type default it overrode before).
+    LinkedHashSet<NodeId> chain = new LinkedHashSet<>(winner.overriddenDeclarations());
     chain.add(overridden.declarationNodeId());
     chain.addAll(overridden.overriddenDeclarations());
 
-    table.declarations.put(path, winner.withOverridden(chain));
+    table.declarations.put(path, winner.withOverridden(List.copyOf(chain)));
 
     // No instance can conform to both the inherited and the overriding declaration when the
     // override changes NodeClass or replaces the TypeDefinition with an unrelated type (Part 3
@@ -1007,7 +1045,7 @@ public class TypeModelCompiler {
     }
 
     if (from == ModellingRule.OPTIONAL_PLACEHOLDER && to == ModellingRule.MANDATORY_PLACEHOLDER) {
-      // Q4: Table 21 permits this transition but §6.4.4.4.4 contests it; warn, don't error.
+      // Table 21 permits this transition but §6.4.4.4.4 contests it; warn, don't error.
       ctx.add(
           ModelDiagnostic.warning(
               ModelDiagnostic.Code.MODELLING_RULE_TIGHTENING,
@@ -1111,28 +1149,11 @@ public class TypeModelCompiler {
   }
 
   private static boolean isValueRankRestriction(int base, int restricted) {
-    if (base == restricted || base == ValueRanks.Any) {
-      return true;
-    }
-    if (base == ValueRanks.ScalarOrOneDimension) {
-      return restricted == ValueRanks.Scalar || restricted == 1;
-    }
-    if (base == ValueRanks.OneOrMoreDimensions) {
-      return restricted >= 1;
-    }
-    return false;
+    return TypeSpaceRules.isValueRankRestriction(base, restricted);
   }
 
   private static boolean isArrayDimensionsRestriction(UInteger[] base, UInteger[] restricted) {
-    if (restricted.length != base.length) {
-      return false;
-    }
-    for (int i = 0; i < base.length; i++) {
-      if (base[i].longValue() != 0 && !base[i].equals(restricted[i])) {
-        return false;
-      }
-    }
-    return true;
+    return TypeSpaceRules.isArrayDimensionsRestriction(base, restricted);
   }
 
   private void validateMethodSignature(
@@ -1338,9 +1359,8 @@ public class TypeModelCompiler {
             .filter(
                 r ->
                     r.isForward()
-                        && (NodeIds.HasInterface.equals(r.getReferenceTypeId())
-                            || referenceTypeTree.isSubtypeOf(
-                                r.getReferenceTypeId(), NodeIds.HasInterface)))
+                        && isReferenceSubtypeOfOrEqual(
+                            r.getReferenceTypeId(), NodeIds.HasInterface))
             .map(r -> r.getTargetNodeId().toNodeId(namespaceTable).orElse(null))
             .filter(Objects::nonNull)
             .sorted(NODE_ID_ORDER)
@@ -1373,7 +1393,7 @@ public class TypeModelCompiler {
           continue;
         }
 
-        // Every same-path collision is validated (KD11), not only the mandatory members: a local
+        // Every same-path collision is validated, not only the mandatory members: a local
         // declaration colliding with any interface member's BrowsePath must be similar to it.
         boolean compatible =
             local.nodeClass() == member.nodeClass()
@@ -1567,29 +1587,17 @@ public class TypeModelCompiler {
   }
 
   private boolean isHierarchical(NodeId referenceTypeId) {
-    return NodeIds.HierarchicalReferences.equals(referenceTypeId)
-        || referenceTypeTree.isSubtypeOf(referenceTypeId, NodeIds.HierarchicalReferences);
+    return isReferenceSubtypeOfOrEqual(referenceTypeId, NodeIds.HierarchicalReferences);
   }
 
   /**
-   * Walk the inverse HasSubtype chain through the {@link AddressSpaceManager} to decide whether
-   * {@code typeId} is {@code supertypeId} or one of its subtypes. Used for TypeDefinition and
-   * DataType compatibility, which the ReferenceType tree does not cover.
+   * Walk the inverse HasSubtype chain, reading through the dependency-tracking context, to decide
+   * whether {@code typeId} is {@code supertypeId} or one of its subtypes. Used for TypeDefinition
+   * and DataType compatibility, which the ReferenceType tree does not cover.
    */
   private boolean isTypeSubtypeOfOrEqual(NodeId typeId, NodeId supertypeId, CompileContext ctx) {
-    if (typeId.equals(supertypeId)) {
-      return true;
-    }
-    Set<NodeId> visited = new HashSet<>();
-    NodeId current = typeId;
-    while (current != null && visited.add(current)) {
-      NodeId parent = immediateSupertype(current, ctx);
-      if (supertypeId.equals(parent)) {
-        return true;
-      }
-      current = parent;
-    }
-    return false;
+    return TypeSpaceRules.isTypeSubtypeOfOrEqual(
+        typeId, supertypeId, id -> getReferences(id, ctx), namespaceTable);
   }
 
   /**
@@ -1597,12 +1605,7 @@ public class TypeModelCompiler {
    *     {@code HasSubtype} reference — or {@code null} if the type has none.
    */
   private @Nullable NodeId immediateSupertype(NodeId typeId, CompileContext ctx) {
-    return getReferences(typeId, ctx).stream()
-        .filter(Reference.SUBTYPE_OF)
-        .map(r -> r.getTargetNodeId().toNodeId(namespaceTable).orElse(null))
-        .filter(Objects::nonNull)
-        .min(NODE_ID_ORDER)
-        .orElse(null);
+    return TypeSpaceRules.immediateSupertype(typeId, id -> getReferences(id, ctx), namespaceTable);
   }
 
   private @Nullable QualifiedName findDefaultInstanceBrowseName(
