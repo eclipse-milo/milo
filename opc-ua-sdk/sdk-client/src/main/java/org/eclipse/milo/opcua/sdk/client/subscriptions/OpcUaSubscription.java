@@ -654,6 +654,28 @@ public class OpcUaSubscription {
         Lists.partition(itemsToDelete, partitionSize.intValue()).toList();
 
     for (List<OpcUaMonitoredItem> partition : partitions) {
+      // Server state may be cleared concurrently, so read each item id only once.
+      //noinspection DuplicatedCode
+      var monitoredItemIds = new ArrayList<UInteger>(partition.size());
+      var itemIds = new ArrayList<Optional<UInteger>>(partition.size());
+
+      for (OpcUaMonitoredItem item : partition) {
+        Optional<UInteger> itemId = item.getMonitoredItemId();
+
+        itemIds.add(itemId);
+        itemId.ifPresent(monitoredItemIds::add);
+      }
+
+      if (monitoredItemIds.isEmpty()) {
+        for (OpcUaMonitoredItem item : partition) {
+          serviceOperationsResults.add(
+              new MonitoredItemServiceOperationResult(
+                  item, new StatusCode(StatusCodes.Bad_InvalidState), null));
+        }
+
+        continue;
+      }
+
       try {
         logger.debug(
             "id={}, deleteMonitoredItems partition.size(): {}",
@@ -661,26 +683,39 @@ public class OpcUaSubscription {
             partition.size());
 
         DeleteMonitoredItemsResponse response =
-            client.deleteMonitoredItems(
-                serverState.getSubscriptionId(),
-                partition.stream()
-                    .map(item -> item.getMonitoredItemId().orElseThrow())
-                    .collect(Collectors.toList()));
+            client.deleteMonitoredItems(serverState.getSubscriptionId(), monitoredItemIds);
 
         StatusCode[] results = requireNonNull(response.getResults());
 
-        for (int i = 0; i < results.length; i++) {
-          StatusCode result = results[i];
+        int resultIndex = 0;
+        for (int i = 0; i < partition.size(); i++) {
+          OpcUaMonitoredItem item = partition.get(i);
 
-          partition.get(i).applyDeleteResult(result);
+          if (itemIds.get(i).isPresent()) {
+            StatusCode result = results[resultIndex++];
 
-          serviceOperationsResults.add(
-              new MonitoredItemServiceOperationResult(partition.get(i), StatusCode.GOOD, result));
+            item.applyDeleteResult(result);
+
+            serviceOperationsResults.add(
+                new MonitoredItemServiceOperationResult(item, StatusCode.GOOD, result));
+          } else {
+            serviceOperationsResults.add(
+                new MonitoredItemServiceOperationResult(
+                    item, new StatusCode(StatusCodes.Bad_InvalidState), null));
+          }
         }
       } catch (UaException e) {
-        for (OpcUaMonitoredItem item : partition) {
-          serviceOperationsResults.add(
-              new MonitoredItemServiceOperationResult(item, e.getStatusCode(), null));
+        for (int i = 0; i < partition.size(); i++) {
+          OpcUaMonitoredItem item = partition.get(i);
+
+          if (itemIds.get(i).isPresent()) {
+            serviceOperationsResults.add(
+                new MonitoredItemServiceOperationResult(item, e.getStatusCode(), null));
+          } else {
+            serviceOperationsResults.add(
+                new MonitoredItemServiceOperationResult(
+                    item, new StatusCode(StatusCodes.Bad_InvalidState), null));
+          }
         }
       }
     }
@@ -717,7 +752,8 @@ public class OpcUaSubscription {
   /**
    * Set the {@link MonitoringMode} for a group of MonitoredItems.
    *
-   * <p>These MonitoredItems must exist on the Server before setting the MonitoringMode.
+   * <p>A MonitoredItem that does not exist on the Server produces a {@code Bad_InvalidState}
+   * service result.
    *
    * @param monitoringMode the MonitoringMode to set.
    * @param monitoredItems the MonitoredItems to set the MonitoringMode for.
@@ -730,12 +766,6 @@ public class OpcUaSubscription {
 
     if (monitoredItems.isEmpty()) {
       return Collections.emptyList();
-    }
-
-    if (monitoredItems.stream()
-        .anyMatch(item -> item.getSyncState() == OpcUaMonitoredItem.SyncState.INITIAL)) {
-
-      throw new IllegalArgumentException("MonitoredItems must exist before setting MonitoringMode");
     }
 
     var serviceOperationResults =
@@ -757,6 +787,28 @@ public class OpcUaSubscription {
         Lists.partition(monitoredItems, partitionSize.intValue()).toList();
 
     for (List<OpcUaMonitoredItem> partition : partitions) {
+      // Server state may be cleared concurrently, so read each item id only once.
+      //noinspection DuplicatedCode
+      var monitoredItemIds = new ArrayList<UInteger>(partition.size());
+      var itemIds = new ArrayList<Optional<UInteger>>(partition.size());
+
+      for (OpcUaMonitoredItem item : partition) {
+        Optional<UInteger> itemId = item.getMonitoredItemId();
+
+        itemIds.add(itemId);
+        itemId.ifPresent(monitoredItemIds::add);
+      }
+
+      if (monitoredItemIds.isEmpty()) {
+        for (OpcUaMonitoredItem item : partition) {
+          serviceOperationResults.add(
+              new MonitoredItemServiceOperationResult(
+                  item, new StatusCode(StatusCodes.Bad_InvalidState), null));
+        }
+
+        continue;
+      }
+
       try {
         logger.debug(
             "id={}, setMonitoringMode partition.size(): {}",
@@ -765,32 +817,43 @@ public class OpcUaSubscription {
 
         SetMonitoringModeResponse response =
             client.setMonitoringMode(
-                serverState.getSubscriptionId(),
-                monitoringMode,
-                partition.stream()
-                    .map(item -> item.getMonitoredItemId().orElseThrow())
-                    .collect(Collectors.toList()));
+                serverState.getSubscriptionId(), monitoringMode, monitoredItemIds);
 
         StatusCode[] results = requireNonNull(response.getResults());
 
-        for (int i = 0; i < results.length; i++) {
-          StatusCode result = results[i];
-
+        int resultIndex = 0;
+        for (int i = 0; i < partition.size(); i++) {
           OpcUaMonitoredItem item = partition.get(i);
 
-          item.applySetMonitoringModeResult(result);
-          if (result.isGood()) {
-            item.setMonitoringMode(monitoringMode);
+          if (itemIds.get(i).isPresent()) {
+            StatusCode result = results[resultIndex++];
+
+            item.applySetMonitoringModeResult(result);
+            if (result.isGood()) {
+              item.setMonitoringMode(monitoringMode);
+            }
+            serviceOperationResults.add(
+                new MonitoredItemServiceOperationResult(item, StatusCode.GOOD, result));
+          } else {
+            serviceOperationResults.add(
+                new MonitoredItemServiceOperationResult(
+                    item, new StatusCode(StatusCodes.Bad_InvalidState), null));
           }
-          serviceOperationResults.add(
-              new MonitoredItemServiceOperationResult(item, StatusCode.GOOD, result));
         }
       } catch (UaException e) {
-        for (OpcUaMonitoredItem item : partition) {
-          item.applySetMonitoringModeResult(e.getStatusCode());
+        for (int i = 0; i < partition.size(); i++) {
+          OpcUaMonitoredItem item = partition.get(i);
 
-          serviceOperationResults.add(
-              new MonitoredItemServiceOperationResult(item, e.getStatusCode(), null));
+          if (itemIds.get(i).isPresent()) {
+            item.applySetMonitoringModeResult(e.getStatusCode());
+
+            serviceOperationResults.add(
+                new MonitoredItemServiceOperationResult(item, e.getStatusCode(), null));
+          } else {
+            serviceOperationResults.add(
+                new MonitoredItemServiceOperationResult(
+                    item, new StatusCode(StatusCodes.Bad_InvalidState), null));
+          }
         }
       }
     }

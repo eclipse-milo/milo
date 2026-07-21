@@ -18,12 +18,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MonitoringMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.junit.jupiter.api.AfterEach;
@@ -119,6 +123,90 @@ public class OpcUaMonitoredItemTest extends AbstractClientServerTest {
     assertTrue(deleted.get(0).serviceResult().isGood());
     assertTrue(deleted.get(0).operationResult().orElseThrow().isGood());
     assertEquals(OpcUaMonitoredItem.SyncState.INITIAL, monitoredItem.getSyncState());
+  }
+
+  @Test
+  void deleteMonitoredItemsHandlesClearedItemServerState() {
+    var validItem = OpcUaMonitoredItem.newDataItem(NodeIds.Server_ServerStatus_CurrentTime);
+    var resetItem = new ResetOnMonitoredItemIdRead();
+
+    subscription.addMonitoredItems(List.of(validItem, resetItem));
+    subscription.createMonitoredItems();
+
+    subscription.removeMonitoredItems(List.of(validItem, resetItem));
+    resetItem.resetOnNextMonitoredItemIdRead();
+
+    List<MonitoredItemServiceOperationResult> results = subscription.deleteMonitoredItems();
+
+    assertEquals(2, results.size());
+
+    MonitoredItemServiceOperationResult validResult =
+        results.stream()
+            .filter(result -> result.monitoredItem() == validItem)
+            .findFirst()
+            .orElseThrow();
+    assertEquals(StatusCode.GOOD, validResult.serviceResult());
+    assertTrue(validResult.operationResult().orElseThrow().isGood());
+
+    MonitoredItemServiceOperationResult resetResult =
+        results.stream()
+            .filter(result -> result.monitoredItem() == resetItem)
+            .findFirst()
+            .orElseThrow();
+    assertEquals(new StatusCode(StatusCodes.Bad_InvalidState), resetResult.serviceResult());
+    assertTrue(resetResult.operationResult().isEmpty());
+  }
+
+  @Test
+  void setMonitoringModeHandlesClearedItemServerState() {
+    var validItem = OpcUaMonitoredItem.newDataItem(NodeIds.Server_ServerStatus_CurrentTime);
+    var resetBeforeCallItem =
+        OpcUaMonitoredItem.newDataItem(NodeIds.Server_ServerStatus_CurrentTime);
+    var resetOnReadItem = new ResetOnMonitoredItemIdRead();
+
+    subscription.addMonitoredItems(List.of(validItem, resetBeforeCallItem, resetOnReadItem));
+    subscription.createMonitoredItems();
+
+    resetBeforeCallItem.reset();
+    resetOnReadItem.resetOnNextMonitoredItemIdRead();
+
+    List<MonitoredItemServiceOperationResult> results =
+        subscription.setMonitoringMode(
+            MonitoringMode.Disabled, List.of(validItem, resetBeforeCallItem, resetOnReadItem));
+
+    assertEquals(3, results.size());
+
+    MonitoredItemServiceOperationResult validResult = results.get(0);
+    assertEquals(validItem, validResult.monitoredItem());
+    assertEquals(StatusCode.GOOD, validResult.serviceResult());
+    assertTrue(validResult.operationResult().orElseThrow().isGood());
+    assertEquals(MonitoringMode.Disabled, validItem.getMonitoringMode());
+
+    MonitoredItemServiceOperationResult resetBeforeCallResult = results.get(1);
+    assertEquals(resetBeforeCallItem, resetBeforeCallResult.monitoredItem());
+    assertEquals(
+        new StatusCode(StatusCodes.Bad_InvalidState), resetBeforeCallResult.serviceResult());
+    assertTrue(resetBeforeCallResult.operationResult().isEmpty());
+    assertEquals(MonitoringMode.Reporting, resetBeforeCallItem.getMonitoringMode());
+
+    MonitoredItemServiceOperationResult resetOnReadResult = results.get(2);
+    assertEquals(resetOnReadItem, resetOnReadResult.monitoredItem());
+    assertEquals(new StatusCode(StatusCodes.Bad_InvalidState), resetOnReadResult.serviceResult());
+    assertTrue(resetOnReadResult.operationResult().isEmpty());
+    assertEquals(MonitoringMode.Reporting, resetOnReadItem.getMonitoringMode());
+  }
+
+  @Test
+  void setMonitoringModeReturnsInvalidStateForNeverCreatedItem() {
+    var monitoredItem = OpcUaMonitoredItem.newDataItem(NodeIds.Server_ServerStatus_CurrentTime);
+
+    List<MonitoredItemServiceOperationResult> results =
+        subscription.setMonitoringMode(MonitoringMode.Disabled, List.of(monitoredItem));
+
+    assertEquals(1, results.size());
+    assertEquals(monitoredItem, results.get(0).monitoredItem());
+    assertEquals(new StatusCode(StatusCodes.Bad_InvalidState), results.get(0).serviceResult());
+    assertTrue(results.get(0).operationResult().isEmpty());
   }
 
   @Test
@@ -229,5 +317,33 @@ public class OpcUaMonitoredItemTest extends AbstractClientServerTest {
     assertEquals(0.0, monitoredItem.getSamplingInterval());
     // Verify the filter is null as specified
     assertNull(monitoredItem.getFilter());
+  }
+
+  private static final class ResetOnMonitoredItemIdRead extends OpcUaMonitoredItem {
+
+    private boolean resetOnNextMonitoredItemIdRead;
+
+    private ResetOnMonitoredItemIdRead() {
+      super(
+          new ReadValueId(
+              NodeIds.Server_ServerStatus_CurrentTime,
+              AttributeId.Value.uid(),
+              null,
+              QualifiedName.NULL_VALUE));
+    }
+
+    private void resetOnNextMonitoredItemIdRead() {
+      resetOnNextMonitoredItemIdRead = true;
+    }
+
+    @Override
+    public Optional<UInteger> getMonitoredItemId() {
+      if (resetOnNextMonitoredItemIdRead) {
+        resetOnNextMonitoredItemIdRead = false;
+        reset();
+      }
+
+      return super.getMonitoredItemId();
+    }
   }
 }
