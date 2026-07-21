@@ -97,7 +97,7 @@ final class ShelvingRuntime {
    * observes a consistent state/deadline combination rather than a torn read straddling a
    * transition. Updated under the lock wherever {@code state}/{@code unshelveDeadline} change.
    */
-  private volatile ReadSnapshot readSnapshot = new ReadSnapshot(ShelvedState.UNSHELVED, null);
+  private volatile ReadSnapshot readSnapshot;
 
   // Guarded by the owning Condition's lock.
   private long shelveGeneration = 0;
@@ -226,12 +226,18 @@ final class ShelvingRuntime {
         () -> alarm.getInterceptor().onOneShotShelve(context),
         () -> {
           // One-shot shelving lasts until the active→inactive transition, bounded by
-          // MaxTimeShelved where the Property is present (§5.8.11).
+          // MaxTimeShelved where the Property is present (§5.8.11). A non-finite MaxTimeShelved
+          // (NaN/±Infinity written at runtime) is not a usable bound: treat it as unbounded rather
+          // than letting deadline()'s cast turn it into 0 and immediately unshelve, mirroring the
+          // finiteness guard handleTimedShelve applies to its own argument.
           Double maxTimeShelved = alarm.getNode().getMaxTimeShelved();
 
-          shelveTransition(
-              ShelvedState.ONE_SHOT_SHELVED,
-              maxTimeShelved != null ? now -> deadline(now, maxTimeShelved) : null);
+          if (maxTimeShelved != null && Double.isFinite(maxTimeShelved)) {
+            double maxMillis = maxTimeShelved;
+            shelveTransition(ShelvedState.ONE_SHOT_SHELVED, now -> deadline(now, maxMillis));
+          } else {
+            shelveTransition(ShelvedState.ONE_SHOT_SHELVED, null);
+          }
         });
   }
 
@@ -386,7 +392,9 @@ final class ShelvingRuntime {
   private static DateTime deadline(DateTime now, double millisFromNow) {
     long javaTime;
     try {
-      javaTime = Math.addExact(now.getJavaTime(), (long) millisFromNow);
+      // Round up: a positive but sub-millisecond duration (e.g. a TimedShelve of 0.5) must still
+      // yield a deadline strictly after now rather than truncating to 0 and expiring immediately.
+      javaTime = Math.addExact(now.getJavaTime(), (long) Math.ceil(millisFromNow));
     } catch (ArithmeticException e) {
       // Saturate instead of wrapping to a past instant for an unbounded (very large) shelving time.
       javaTime = Long.MAX_VALUE;
