@@ -96,9 +96,14 @@ public record InstantiationDiagnostic(
     /**
      * The requested parent attachment is invalid: the parent ReferenceType is not a hierarchical
      * ReferenceType (an error; no attachment is planned), or the parent node does not resolve in
-     * the server at plan time (a warning; commit fails if it is still missing at apply).
+     * the server at plan time (a warning; the apply-stage recheck fails if it is still missing).
      */
     INVALID_PARENT,
+    /**
+     * A request attribute override is invalid: an explicit null for an attribute that is mandatory
+     * for the instance's NodeClass, which would commit a node no client can read correctly.
+     */
+    INVALID_ATTRIBUTE,
     /** A request override violates the Variable narrowing rules of Part 3 §6.2.8. */
     VARIABLE_NARROWING,
     /** A planned Method's declaration carries a Method signature finding from the model. */
@@ -161,6 +166,21 @@ public record InstantiationDiagnostic(
       Code code, String message, @Nullable BrowsePath browsePath, @Nullable NodeId nodeId) {
     return new InstantiationDiagnostic(
         Severity.WARNING, Phase.PLAN, code, message, browsePath, nodeId);
+  }
+
+  /**
+   * Create an apply-phase {@link Severity#ERROR} diagnostic.
+   *
+   * @param code the finding code.
+   * @param message a human-readable description.
+   * @param browsePath the affected path, or {@code null}.
+   * @param nodeId the affected node, or {@code null}.
+   * @return the diagnostic.
+   */
+  public static InstantiationDiagnostic applyError(
+      Code code, String message, @Nullable BrowsePath browsePath, @Nullable NodeId nodeId) {
+    return new InstantiationDiagnostic(
+        Severity.ERROR, Phase.APPLY, code, message, browsePath, nodeId);
   }
 
   /**

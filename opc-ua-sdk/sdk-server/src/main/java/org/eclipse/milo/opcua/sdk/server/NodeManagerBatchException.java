@@ -26,10 +26,12 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 public class NodeManagerBatchException extends UaException {
 
   private final CommitResult applied;
+  private final boolean staleGeneration;
 
   public NodeManagerBatchException(long statusCode, String message, CommitResult applied) {
     super(statusCode, message);
     this.applied = applied;
+    this.staleGeneration = false;
   }
 
   public NodeManagerBatchException(
@@ -37,24 +39,50 @@ public class NodeManagerBatchException extends UaException {
 
     super(statusCode, message, cause);
     this.applied = applied;
+    this.staleGeneration = false;
+  }
+
+  private NodeManagerBatchException(
+      long statusCode, String message, CommitResult applied, boolean staleGeneration) {
+
+    super(statusCode, message);
+    this.applied = applied;
+    this.staleGeneration = staleGeneration;
   }
 
   /**
    * Create an exception for a batch whose declared expected generation no longer matches the target
    * {@link NodeManager}, indicating the manager was mutated since the batch was planned.
    *
+   * <p>Public so that any {@link NodeManager#commit(NodeManagerBatch)} implementation can report
+   * staleness in the form retrying callers recognize via {@link #isStaleGeneration()}.
+   *
    * @param expected the generation the batch expected.
    * @param actual the manager's current generation.
    * @param applied the journal of additions applied before the failure.
    * @return a {@link NodeManagerBatchException} with status {@link StatusCodes#Bad_InvalidState}.
    */
-  static NodeManagerBatchException staleGeneration(
+  public static NodeManagerBatchException staleGeneration(
       long expected, long actual, CommitResult applied) {
 
     return new NodeManagerBatchException(
         StatusCodes.Bad_InvalidState,
         "expected generation %s but was %s".formatted(expected, actual),
-        applied);
+        applied,
+        true);
+  }
+
+  /**
+   * Distinguishes a generation-mismatch rejection — safely retryable after re-reading the target,
+   * because nothing was applied — from every other commit failure. A status code alone cannot make
+   * this distinction: implementations may use {@link StatusCodes#Bad_InvalidState} for unrelated
+   * failures.
+   *
+   * @return {@code true} if this failure is a generation mismatch created by {@link
+   *     #staleGeneration(long, long, CommitResult)}.
+   */
+  public boolean isStaleGeneration() {
+    return staleGeneration;
   }
 
   /**

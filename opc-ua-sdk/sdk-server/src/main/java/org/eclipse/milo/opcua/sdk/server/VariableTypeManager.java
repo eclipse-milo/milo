@@ -79,28 +79,22 @@ public class VariableTypeManager {
       LegacyVariableNodeConstructor variableNodeConstructor) {
 
     VariableNodeConstructor adapted =
-        new VariableNodeConstructor() {
-          @Override
-          public UaVariableNode apply(
-              UaNodeContext context,
-              NodeId nodeId,
-              QualifiedName browseName,
-              LocalizedText displayName,
-              LocalizedText description,
-              UInteger writeMask,
-              UInteger userWriteMask,
-              RolePermissionType[] rolePermissions,
-              RolePermissionType[] userRolePermissions,
-              AccessRestrictionType accessRestrictions,
-              DataValue value,
-              NodeId dataType,
-              Integer valueRank,
-              UInteger[] arrayDimensions) {
-
-            return variableNodeConstructor.apply(
+        (context,
+            nodeId,
+            browseName,
+            displayName,
+            description,
+            writeMask,
+            userWriteMask,
+            rolePermissions,
+            userRolePermissions,
+            accessRestrictions,
+            value,
+            dataType,
+            valueRank,
+            arrayDimensions) ->
+            variableNodeConstructor.apply(
                 context, nodeId, browseName, displayName, description, writeMask, userWriteMask);
-          }
-        };
 
     typeDefinitions.compute(
         typeDefinition,
@@ -136,21 +130,10 @@ public class VariableTypeManager {
             d -> new RegisteredVariableType(d.nodeClass, d.nodeConstructor, d.snapshotConstructor));
   }
 
-  private static class VariableTypeDefinition {
-    final Class<? extends UaVariableNode> nodeClass;
-    final @Nullable VariableNodeConstructor nodeConstructor;
-    final @Nullable SnapshotConstructor snapshotConstructor;
-
-    private VariableTypeDefinition(
-        Class<? extends UaVariableNode> nodeClass,
-        @Nullable VariableNodeConstructor nodeConstructor,
-        @Nullable SnapshotConstructor snapshotConstructor) {
-
-      this.nodeClass = nodeClass;
-      this.nodeConstructor = nodeConstructor;
-      this.snapshotConstructor = snapshotConstructor;
-    }
-  }
+  private record VariableTypeDefinition(
+      Class<? extends UaVariableNode> nodeClass,
+      @Nullable VariableNodeConstructor nodeConstructor,
+      @Nullable SnapshotConstructor snapshotConstructor) {}
 
   /**
    * A VariableType registration: the Java class instances are constructed as, plus the constructor
@@ -201,6 +184,14 @@ public class VariableTypeManager {
   /**
    * Constructs a {@link UaVariableNode} from the planned {@link AttributeSnapshot} instead of a
    * fixed attribute tuple, so newly modeled attributes propagate without signature changes.
+   *
+   * <p>The constructor owns attribute application with one exception: the instantiation engine
+   * applies nothing after a snapshot constructor returns — any planned attribute the constructor
+   * does not read from {@code attributes} and set on the node is dropped — except Value, which the
+   * engine always overwrites with the declaration's value re-stamped at apply time (or the
+   * Bad_NoValue convention when unset). A constructor-computed initial Value does not survive.
+   * (Tuple-signature registrations, by contrast, receive an engine overlay of the attributes their
+   * signature cannot carry.)
    */
   @FunctionalInterface
   public interface SnapshotConstructor {

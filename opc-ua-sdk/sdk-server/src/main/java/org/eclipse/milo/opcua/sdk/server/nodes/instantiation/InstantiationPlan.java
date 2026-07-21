@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 
 /**
  * The pure-data result of joining one {@link InstantiationRequest} with the type's {@link
@@ -38,6 +39,7 @@ public final class InstantiationPlan<T extends UaNode> {
   private final List<SkippedDeclaration> skippedDeclarations;
   private final List<Reference> references;
   private final List<InstantiationDiagnostic> diagnostics;
+  private final Map<NodeId, Long> consultedModelRevisions;
 
   InstantiationPlan(
       InstantiationRequest<T> request,
@@ -45,7 +47,8 @@ public final class InstantiationPlan<T extends UaNode> {
       List<PlannedNode> plannedNodes,
       List<SkippedDeclaration> skippedDeclarations,
       List<Reference> references,
-      List<InstantiationDiagnostic> diagnostics) {
+      List<InstantiationDiagnostic> diagnostics,
+      Map<NodeId, Long> consultedModelRevisions) {
 
     this.request = request;
     this.model = model;
@@ -53,6 +56,7 @@ public final class InstantiationPlan<T extends UaNode> {
     this.skippedDeclarations = List.copyOf(skippedDeclarations);
     this.references = List.copyOf(references);
     this.diagnostics = List.copyOf(diagnostics);
+    this.consultedModelRevisions = Map.copyOf(consultedModelRevisions);
 
     var byPath = new LinkedHashMap<BrowsePath, PlannedNode>();
     for (PlannedNode node : this.plannedNodes) {
@@ -81,6 +85,18 @@ public final class InstantiationPlan<T extends UaNode> {
    */
   public long modelRevision() {
     return model.modelRevision();
+  }
+
+  /**
+   * Every type model this plan was computed from, with the revision consulted: the root type plus
+   * any member models resolved separately (a {@code concreteType} selection outside the root
+   * model's dependency closure has its own cache entry, so the root revision alone cannot vouch for
+   * it). Apply revalidates each entry before constructing anything.
+   *
+   * @return the consulted type models, keyed by type definition {@link NodeId}, mapped to revision.
+   */
+  public Map<NodeId, Long> consultedModelRevisions() {
+    return consultedModelRevisions;
   }
 
   /**
@@ -114,9 +130,10 @@ public final class InstantiationPlan<T extends UaNode> {
   }
 
   /**
-   * @return every reference to be committed, fully resolved to instance ids: the root's
-   *     HasTypeDefinition, the parent attachment (if requested), the realized hierarchy edges, and
-   *     the replicated declaration rows — in that deterministic order.
+   * @return every planned reference, fully resolved to instance ids: the root's HasTypeDefinition,
+   *     the parent attachment (if requested), the realized hierarchy edges, and the replicated
+   *     declaration rows — in that deterministic order. The commit additionally derives and stores
+   *     each row's inverse, so the committed row set is larger than this list.
    */
   public List<Reference> references() {
     return references;

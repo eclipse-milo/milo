@@ -15,6 +15,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceTypeTree;
 import org.eclipse.milo.opcua.sdk.server.AddressSpaceManager;
@@ -72,6 +73,7 @@ public class TypeFixtures {
   private final OpcUaServer server;
   private final NamespaceTable namespaceTable;
   private final UaNodeManager nodeManager;
+  private final List<UaNodeManager> registeredManagers = new CopyOnWriteArrayList<>();
   private final UaNodeContext context;
   private final ObjectTypeManager objectTypeManager;
   private final VariableTypeManager variableTypeManager;
@@ -85,30 +87,52 @@ public class TypeFixtures {
     Mockito.when(server.getNamespaceTable()).thenReturn(namespaceTable);
 
     nodeManager = new UaNodeManager();
+    registeredManagers.add(nodeManager);
 
     AddressSpaceManager addressSpaceManager = Mockito.mock(AddressSpaceManager.class);
 
     Mockito.when(addressSpaceManager.getManagedNode(Mockito.any(NodeId.class)))
         .then(
             (Answer<Optional<UaNode>>)
-                invocation -> nodeManager.getNode(invocation.getArgument(0)));
+                invocation ->
+                    registeredManagers.stream()
+                        .flatMap(m -> m.getNode(invocation.<NodeId>getArgument(0)).stream())
+                        .findFirst());
 
     Mockito.when(addressSpaceManager.getManagedNode(Mockito.any(ExpandedNodeId.class)))
         .then(
             (Answer<Optional<UaNode>>)
-                invocation -> nodeManager.getNode(invocation.getArgument(0), namespaceTable));
+                invocation ->
+                    registeredManagers.stream()
+                        .flatMap(
+                            m ->
+                                m
+                                    .getNode(
+                                        invocation.<ExpandedNodeId>getArgument(0), namespaceTable)
+                                    .stream())
+                        .findFirst());
 
     Mockito.when(addressSpaceManager.getManagedReferences(Mockito.any(NodeId.class)))
         .then(
             (Answer<List<Reference>>)
-                invocation -> nodeManager.getReferences(invocation.getArgument(0)));
+                invocation ->
+                    registeredManagers.stream()
+                        .flatMap(m -> m.getReferences(invocation.<NodeId>getArgument(0)).stream())
+                        .toList());
 
     Mockito.when(addressSpaceManager.getManagedReferences(Mockito.any(NodeId.class), Mockito.any()))
         .then(
             (Answer<List<Reference>>)
                 invocation ->
-                    nodeManager.getReferences(
-                        invocation.getArgument(0), invocation.getArgument(1)));
+                    registeredManagers.stream()
+                        .flatMap(
+                            m ->
+                                m
+                                    .getReferences(
+                                        invocation.<NodeId>getArgument(0),
+                                        invocation.getArgument(1))
+                                    .stream())
+                        .toList());
 
     Mockito.when(server.getAddressSpaceManager()).thenReturn(addressSpaceManager);
     Mockito.when(server.getStaticEncodingContext()).thenReturn(DefaultEncodingContext.INSTANCE);
@@ -218,6 +242,18 @@ public class TypeFixtures {
    */
   public UaNodeManager newTargetManager() {
     return new UaNodeManager();
+  }
+
+  /**
+   * Make {@code manager} visible through the mocked {@link AddressSpaceManager}, mirroring a real
+   * server registering a destination manager: node-level navigation (typed getters, {@code
+   * getPropertyNode}, {@code getReferences()}) resolves through the address space, so committed
+   * instances are only navigable once their manager is registered.
+   *
+   * @param manager the manager to register.
+   */
+  public void registerWithAddressSpace(UaNodeManager manager) {
+    registeredManagers.add(manager);
   }
 
   /**

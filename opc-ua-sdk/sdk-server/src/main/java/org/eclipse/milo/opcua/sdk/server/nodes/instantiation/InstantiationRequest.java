@@ -71,6 +71,7 @@ public final class InstantiationRequest<T extends UaNode> {
   private final ClassResolution classResolution;
   private final List<OnNode> onNodeHooks;
   private final Map<BrowsePath, Consumer<UaMethodNode>> methodBinders;
+  private final List<Consumer<InstantiationResult<T>>> afterCommitObservers;
 
   private InstantiationRequest(Builder<T> builder) {
     this.rootClass = builder.rootClass;
@@ -95,6 +96,7 @@ public final class InstantiationRequest<T extends UaNode> {
     this.classResolution = builder.classResolution;
     this.onNodeHooks = List.copyOf(builder.onNodeHooks);
     this.methodBinders = Map.copyOf(builder.methodBinders);
+    this.afterCommitObservers = List.copyOf(builder.afterCommitObservers);
   }
 
   /**
@@ -274,6 +276,13 @@ public final class InstantiationRequest<T extends UaNode> {
   }
 
   /**
+   * @return the after-commit observers, in registration order.
+   */
+  public List<Consumer<InstantiationResult<T>>> afterCommitObservers() {
+    return afterCommitObservers;
+  }
+
+  /**
    * How the engine resolves the Java class (and constructor) for a type from the typed registries.
    * This is a per-request knob; the legacy {@code NodeFactory} lookup keeps its exact-match
    * semantics regardless.
@@ -295,6 +304,13 @@ public final class InstantiationRequest<T extends UaNode> {
    * A per-node behavior hook, run during apply after the complete staged graph is constructed and
    * before anything is committed or published: attach filters, permissions, value sources, and
    * initial state here instead of mutating nodes after creation.
+   *
+   * <p>Configure node-local state only. Graph-mutating conveniences ({@link UaNode#addReference},
+   * {@code setProperty}, {@code addComponent}, …) write through the node's context straight into
+   * the live target NodeManager — outside the journaled batch, so they are never rolled back on
+   * failure, never removed by {@link InstantiationResult#deleteCreated()}, and they advance the
+   * target generation, forcing a commit retry. Structure belongs in the request (selection, {@code
+   * assignNodeId}, reference replication), not in a hook.
    */
   @FunctionalInterface
   public interface OnNode {
@@ -342,6 +358,7 @@ public final class InstantiationRequest<T extends UaNode> {
     private ClassResolution classResolution = ClassResolution.NEAREST_ANCESTOR;
     private final List<OnNode> onNodeHooks = new ArrayList<>();
     private final Map<BrowsePath, Consumer<UaMethodNode>> methodBinders = new LinkedHashMap<>();
+    private final List<Consumer<InstantiationResult<T>>> afterCommitObservers = new ArrayList<>();
 
     private Builder(Class<T> rootClass, NodeId typeDefinitionId) {
       this.rootClass = requireNonNull(rootClass, "rootClass");
@@ -609,8 +626,14 @@ public final class InstantiationRequest<T extends UaNode> {
 
     /**
      * Bind behavior to the Method realized at {@code path} (under either {@link
-     * MethodInstantiation} mode), at creation rather than post-hoc. A path matching no planned
-     * Method produces a plan warning.
+     * MethodInstantiation} mode), within the same apply rather than post-hoc. A path matching no
+     * planned Method produces a plan warning.
+     *
+     * <p>Binders run immediately after a successful commit — a binder may target a reused or shared
+     * Method the instantiation does not own, so binding earlier would leave mutations on published
+     * nodes if the commit failed. A binder exception aborts apply and rolls back the committed
+     * additions; a mutation an earlier binder made to a reused or shared node cannot be rolled
+     * back.
      *
      * @param path the Method occurrence path.
      * @param binder receives the realized {@link UaMethodNode}.
@@ -618,6 +641,20 @@ public final class InstantiationRequest<T extends UaNode> {
      */
     public Builder<T> bindMethod(BrowsePath path, Consumer<UaMethodNode> binder) {
       methodBinders.put(requireNonNull(path, "path"), requireNonNull(binder, "binder"));
+      return this;
+    }
+
+    /**
+     * Add an observer notified after a successful commit, with the completed {@link
+     * InstantiationResult}. Notification only: observers run after the graph is committed and
+     * published, and an observer exception is logged and swallowed — it cannot affect the
+     * instantiation's success. Initialization belongs in {@link #onNode} / {@link #bindMethod}.
+     *
+     * @param observer the observer.
+     * @return this builder.
+     */
+    public Builder<T> afterCommit(Consumer<InstantiationResult<T>> observer) {
+      afterCommitObservers.add(requireNonNull(observer, "observer"));
       return this;
     }
 

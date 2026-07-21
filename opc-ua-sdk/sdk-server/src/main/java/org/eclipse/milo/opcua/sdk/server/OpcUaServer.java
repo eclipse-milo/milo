@@ -43,6 +43,7 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
 import org.eclipse.milo.opcua.sdk.server.namespaces.OpcUaNamespace;
 import org.eclipse.milo.opcua.sdk.server.namespaces.ServerNamespace;
 import org.eclipse.milo.opcua.sdk.server.nodes.factories.EventFactory;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.NodeInstantiator;
 import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.TypeModelCache;
 import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTarget;
 import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTargetHandle;
@@ -141,6 +142,7 @@ public class OpcUaServer extends AbstractServiceHandler {
   private final VariableTypeManager variableTypeManager = new VariableTypeManager();
 
   private final TypeModelCache typeModelCache = new TypeModelCache(this);
+  private final NodeInstantiator nodeInstantiator = new NodeInstantiator(this);
 
   private final Lazy<DataTypeTree> dataTypeTree = new Lazy<>();
   private final Lazy<ObjectTypeTree> objectTypeTree = new Lazy<>();
@@ -597,6 +599,16 @@ public class OpcUaServer extends AbstractServiceHandler {
    */
   public TypeModelCache getTypeModelCache() {
     return typeModelCache;
+  }
+
+  /**
+   * Get the Server's {@link NodeInstantiator}, the facade for describing, planning, and applying
+   * TypeDefinition instantiations.
+   *
+   * @return the Server's {@link NodeInstantiator}.
+   */
+  public NodeInstantiator getNodeInstantiator() {
+    return nodeInstantiator;
   }
 
   /**

@@ -10,44 +10,66 @@
 
 package org.eclipse.milo.opcua.sdk.server.nodes.instantiation;
 
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
+
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.server.NodeManager;
+import org.eclipse.milo.opcua.sdk.server.NodeManagerBatch;
+import org.eclipse.milo.opcua.sdk.server.NodeManagerBatchException;
 import org.eclipse.milo.opcua.sdk.server.ObjectTypeManager;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.VariableTypeManager;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
+import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The server-scoped instantiation facade: {@link #describe} exposes a type's compiled {@link
- * TypeInstantiationModel} (through the server's {@link TypeModelCache}), and {@link #plan} joins a
+ * TypeInstantiationModel} (through the server's {@link TypeModelCache}), {@link #plan} joins a
  * model with an {@link InstantiationRequest} into a pure-data {@link InstantiationPlan} — no nodes
- * created, nothing mutated.
+ * created, nothing mutated — and {@link #apply} materializes a plan into the request's target as a
+ * staged, journaled unit. {@link #instantiate} is the one-call convenience wrapping plan and apply.
  *
  * <p>Source type information always comes from the server's address space; the destination is
  * entirely the request's business (its target {@link NodeManager}) — plan only ever <em>reads</em>
- * the target, for collision preflight.
+ * the target, for collision preflight, and apply writes to nothing else.
  */
 public final class NodeInstantiator {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(NodeInstantiator.class);
 
   private final OpcUaServer server;
 
@@ -96,6 +118,63 @@ public final class NodeInstantiator {
   }
 
   /**
+   * Materialize {@code plan} into its request's target {@link NodeManager} as a staged, journaled
+   * unit.
+   *
+   * <p>Six stages: (1) revalidate the model fingerprints — a type changed since planning fails with
+   * {@link InstantiationDiagnostic.Code#MODEL_CHANGED} before anything is constructed; (2) recheck
+   * collisions, reused-node compatibility, and the parent attachment against the target; (3)
+   * construct every planned node, unpublished; (4) run the request's {@code onNode} hooks against
+   * the complete staged graph; (5) commit nodes and references as one journaled batch through the
+   * target's storage primitives, then run the request's {@code bindMethod} binders against the
+   * committed graph; (6) on failure, roll back exactly the journaled additions — never a recursive
+   * delete from the root.
+   *
+   * <p>If the target does not override the storage primitives, the commit runs on the sequential
+   * emulations and the result reports {@link NodeManager.StorageGuarantee#BEST_EFFORT} instead of
+   * atomic — degraded, and said so, never silent.
+   *
+   * <p>A commit rejected because the target's generation advanced is rechecked and retried a small,
+   * bounded number of times. Under sustained concurrent mutation of the same target — even by
+   * non-conflicting writers — the retries can be exhausted, failing with {@link
+   * InstantiationDiagnostic.Code#COMMIT_FAILED} and {@code Bad_InvalidState}; such a failure is
+   * safe to retry by re-applying the plan.
+   *
+   * @param plan the plan to materialize.
+   * @param <T> the expected root class.
+   * @return the {@link InstantiationResult}.
+   * @throws InstantiationException if {@code plan} carries errors, or an apply stage fails; apart
+   *     from a failed rollback ({@link InstantiationDiagnostic.Code#ROLLBACK_FAILED}, reported
+   *     loudly), a failed apply leaves no residue in the target.
+   * @throws UaException if the model revalidation cannot read the type.
+   */
+  public <T extends UaNode> InstantiationResult<T> apply(InstantiationPlan<T> plan)
+      throws UaException {
+
+    if (plan.hasErrors()) {
+      throw new InstantiationException(
+          StatusCodes.Bad_InvalidArgument, InstantiationDiagnostic.Phase.PLAN, plan.errors(), null);
+    }
+
+    return new ApplyExecution<>(this, plan).execute();
+  }
+
+  /**
+   * Plan and apply {@code request} in one call — the 90% case.
+   *
+   * @param request the request to instantiate.
+   * @param <T> the expected root class.
+   * @return the {@link InstantiationResult}.
+   * @throws InstantiationException if the plan carries errors or apply fails.
+   * @throws UaException if the type's model cannot be compiled.
+   */
+  public <T extends UaNode> InstantiationResult<T> instantiate(InstantiationRequest<T> request)
+      throws UaException {
+
+    return apply(plan(request));
+  }
+
+  /**
    * One plan computation: selection, class and attribute resolution, NodeId allocation, collision
    * preflight, and reference resolution over a single model snapshot.
    */
@@ -109,7 +188,7 @@ public final class NodeInstantiator {
     private final Map<BrowsePath, Working> planned = new LinkedHashMap<>();
     private final Map<BrowsePath, SkippedDeclaration> skipped = new LinkedHashMap<>();
     private final List<InstantiationDiagnostic> diagnostics = new ArrayList<>();
-    private final Map<NodeId, TypeInstantiationModel> memberModels = new HashMap<>();
+    private final Map<NodeId, @Nullable TypeInstantiationModel> memberModels = new HashMap<>();
 
     private @Nullable Set<BrowsePath> effectiveIncludedPaths;
 
@@ -141,8 +220,23 @@ public final class NodeInstantiator {
       List<PlannedNode> plannedNodes =
           planned.values().stream().map(Working::toPlannedNode).toList();
 
+      Map<NodeId, Long> consultedModelRevisions = new HashMap<>();
+      consultedModelRevisions.put(model.typeDefinitionId(), model.modelRevision());
+      memberModels.forEach(
+          (typeId, memberModel) -> {
+            if (memberModel != null) {
+              consultedModelRevisions.put(typeId, memberModel.modelRevision());
+            }
+          });
+
       return new InstantiationPlan<>(
-          request, model, plannedNodes, List.copyOf(skipped.values()), references, diagnostics);
+          request,
+          model,
+          plannedNodes,
+          List.copyOf(skipped.values()),
+          references,
+          diagnostics,
+          consultedModelRevisions);
     }
 
     // region Root
@@ -180,6 +274,8 @@ public final class NodeInstantiator {
       }
 
       AttributeSnapshot effective = rootEffectiveAttributes(typeAttributes, instanceNodeClass);
+
+      validateRootOverrideNulls(instanceNodeClass);
 
       if (instanceNodeClass == NodeClass.Variable) {
         validateRootNarrowing(effective, typeAttributes);
@@ -231,6 +327,58 @@ public final class NodeInstantiator {
       }
 
       return b.build();
+    }
+
+    /** Attributes every Object instance must carry; an explicit-null override cannot stand. */
+    private static final Set<AttributeId> MANDATORY_OBJECT_ATTRIBUTES =
+        EnumSet.of(
+            AttributeId.NodeClass,
+            AttributeId.BrowseName,
+            AttributeId.DisplayName,
+            AttributeId.EventNotifier);
+
+    /**
+     * Attributes every Variable instance must carry; an explicit-null override cannot stand. Value
+     * is exempt: a null Value follows the Bad_NoValue convention rather than being invalid.
+     */
+    private static final Set<AttributeId> MANDATORY_VARIABLE_ATTRIBUTES =
+        EnumSet.of(
+            AttributeId.NodeClass,
+            AttributeId.BrowseName,
+            AttributeId.DisplayName,
+            AttributeId.DataType,
+            AttributeId.ValueRank,
+            AttributeId.AccessLevel,
+            AttributeId.UserAccessLevel,
+            AttributeId.Historizing);
+
+    /**
+     * An explicit-null override of a mandatory attribute would survive construction defaults (the
+     * overlay preserves explicit nulls by design) and commit a node no client can read correctly,
+     * so it is rejected here; explicit nulls remain valid for optional attributes.
+     */
+    private void validateRootOverrideNulls(NodeClass instanceNodeClass) {
+      Set<AttributeId> mandatory =
+          instanceNodeClass == NodeClass.Variable
+              ? MANDATORY_VARIABLE_ATTRIBUTES
+              : MANDATORY_OBJECT_ATTRIBUTES;
+
+      AttributeSnapshot overrides = request.rootAttributeOverrides();
+      for (AttributeId id : overrides.attributeIds()) {
+        if (overrides.isNull(id) && mandatory.contains(id)) {
+          diagnostics.add(
+              InstantiationDiagnostic.planError(
+                  InstantiationDiagnostic.Code.INVALID_ATTRIBUTE,
+                  "attribute override "
+                      + id
+                      + " is an explicit null, but "
+                      + id
+                      + " is mandatory for NodeClass "
+                      + instanceNodeClass,
+                  BrowsePath.root(),
+                  model.typeDefinitionId()));
+        }
+      }
     }
 
     private void validateRootNarrowing(AttributeSnapshot effective, AttributeSnapshot base) {
@@ -744,55 +892,16 @@ public final class NodeInstantiator {
       }
     }
 
-    /**
-     * Validate reuse compatibility: namespace-qualified BrowseName, NodeClass, TypeDefinition (the
-     * planned type or a subtype), and — for the root — the expected Java class the typed result
-     * promises.
-     *
-     * @return {@code null} if compatible, otherwise a description of the incompatibility.
-     */
     private @Nullable String reuseIncompatibility(@Nullable UaNode existing, Working working) {
-      if (existing == null) {
-        return "the node disappeared between preflight checks";
-      }
-
-      QualifiedName plannedBrowseName =
-          (QualifiedName) working.effectiveAttributes.getOrNull(AttributeId.BrowseName);
-      if (!Objects.equals(existing.getBrowseName(), plannedBrowseName)) {
-        return "BrowseName "
-            + existing.getBrowseName()
-            + " does not match planned "
-            + plannedBrowseName;
-      }
-
-      if (existing.getNodeClass() != working.nodeClass) {
-        return "NodeClass " + existing.getNodeClass() + " does not match " + working.nodeClass;
-      }
-
-      if (working.isRoot() && !request.rootClass().isInstance(existing)) {
-        return "existing node is not a " + request.rootClass().getName();
-      }
-
-      if (working.typeDefinitionId != null) {
-        NodeId existingTypeId =
-            request.target().getReferences(working.nodeId).stream()
-                .filter(Reference.HAS_TYPE_DEFINITION_PREDICATE)
-                .map(r -> r.getTargetNodeId().toNodeId(server.getNamespaceTable()).orElse(null))
-                .filter(Objects::nonNull)
-                .findFirst()
-                .orElse(null);
-
-        if (existingTypeId == null
-            || !isTypeSubtypeOfOrEqual(existingTypeId, working.typeDefinitionId)) {
-          return "TypeDefinition "
-              + existingTypeId
-              + " is not "
-              + working.typeDefinitionId
-              + " or a subtype";
-        }
-      }
-
-      return null;
+      return instantiator.reuseIncompatibility(
+          existing,
+          (QualifiedName) working.effectiveAttributes.getOrNull(AttributeId.BrowseName),
+          working.nodeClass,
+          working.isRoot(),
+          request.rootClass(),
+          working.typeDefinitionId,
+          Objects.requireNonNull(working.nodeId),
+          request.target());
     }
 
     // endregion
@@ -826,8 +935,8 @@ public final class NodeInstantiator {
                   parentNodeId));
         } else {
           // The parent may live in any NodeManager, so resolution is server-wide with a target
-          // fallback; a missing parent is advisory only — commit is where a dangling attachment
-          // actually fails.
+          // fallback; a missing parent is advisory at plan time — the apply-stage recheck fails
+          // if it is still missing, so no dangling attachment is committed.
           if (server.getAddressSpaceManager().getManagedNode(parentNodeId).isEmpty()
               && !request.target().containsNode(parentNodeId)) {
             diagnostics.add(
@@ -1029,11 +1138,7 @@ public final class NodeInstantiator {
     }
 
     private boolean isTypeSubtypeOfOrEqual(NodeId typeId, NodeId supertypeId) {
-      return TypeSpaceRules.isTypeSubtypeOfOrEqual(
-          typeId,
-          supertypeId,
-          id -> server.getAddressSpaceManager().getManagedReferences(id),
-          server.getNamespaceTable());
+      return instantiator.isTypeSubtypeOfOrEqual(typeId, supertypeId);
     }
 
     private @Nullable NodeId immediateSupertype(NodeId typeId) {
@@ -1109,6 +1214,864 @@ public final class NodeInstantiator {
             effectiveAttributes,
             materialization);
       }
+    }
+  }
+
+  private boolean isTypeSubtypeOfOrEqual(NodeId typeId, NodeId supertypeId) {
+    return TypeSpaceRules.isTypeSubtypeOfOrEqual(
+        typeId,
+        supertypeId,
+        id -> server.getAddressSpaceManager().getManagedReferences(id),
+        server.getNamespaceTable());
+  }
+
+  /**
+   * Validate reuse compatibility, shared by plan preflight and apply recheck: namespace-qualified
+   * BrowseName, NodeClass, TypeDefinition (the planned type or a subtype, read from the target's
+   * reference rows), and — for the root — the expected Java class the typed result promises.
+   *
+   * @return {@code null} if compatible, otherwise a description of the incompatibility.
+   */
+  private @Nullable String reuseIncompatibility(
+      @Nullable UaNode existing,
+      @Nullable QualifiedName plannedBrowseName,
+      NodeClass plannedNodeClass,
+      boolean isRoot,
+      Class<? extends UaNode> rootClass,
+      @Nullable NodeId plannedTypeDefinitionId,
+      NodeId nodeId,
+      NodeManager<UaNode> target) {
+
+    if (existing == null) {
+      return "the node disappeared between preflight checks";
+    }
+
+    if (!Objects.equals(existing.getBrowseName(), plannedBrowseName)) {
+      return "BrowseName "
+          + existing.getBrowseName()
+          + " does not match planned "
+          + plannedBrowseName;
+    }
+
+    if (existing.getNodeClass() != plannedNodeClass) {
+      return "NodeClass " + existing.getNodeClass() + " does not match " + plannedNodeClass;
+    }
+
+    if (isRoot && !rootClass.isInstance(existing)) {
+      return "existing node is not a " + rootClass.getName();
+    }
+
+    if (plannedTypeDefinitionId != null) {
+      NamespaceTable namespaceTable = server.getNamespaceTable();
+      NodeId existingTypeId =
+          target.getReferences(nodeId, Reference.HAS_TYPE_DEFINITION_PREDICATE).stream()
+              .map(r -> r.getTargetNodeId().toNodeId(namespaceTable).orElse(null))
+              .filter(Objects::nonNull)
+              .findFirst()
+              .orElse(null);
+
+      if (existingTypeId == null
+          || !isTypeSubtypeOfOrEqual(existingTypeId, plannedTypeDefinitionId)) {
+        return "TypeDefinition "
+            + existingTypeId
+            + " is not "
+            + plannedTypeDefinitionId
+            + " or a subtype";
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * One apply: model revalidation, target recheck, unpublished staging, hooks, journaled commit
+   * with rollback — the six stages over a single error-free plan.
+   */
+  private static final class ApplyExecution<T extends UaNode> {
+
+    /**
+     * A stale-generation commit means the target advanced between the stage-2 recheck and the
+     * commit; the recheck is re-run and the commit retried, bounded so a busy target degrades to a
+     * clean failure rather than livelock.
+     */
+    private static final int MAX_COMMIT_ATTEMPTS = 3;
+
+    /** Attributes consumed by every node constructor form's common prefix. */
+    private static final Set<AttributeId> COMMON_CONSTRUCTED =
+        EnumSet.of(
+            AttributeId.NodeClass,
+            AttributeId.BrowseName,
+            AttributeId.DisplayName,
+            AttributeId.Description,
+            AttributeId.WriteMask,
+            AttributeId.UserWriteMask,
+            AttributeId.RolePermissions,
+            AttributeId.UserRolePermissions,
+            AttributeId.AccessRestrictions);
+
+    /** Attributes consumed by the Variable tuple constructor beyond the common prefix. */
+    private static final Set<AttributeId> VARIABLE_CONSTRUCTED = variableConstructed();
+
+    private static Set<AttributeId> variableConstructed() {
+      EnumSet<AttributeId> set = EnumSet.copyOf(COMMON_CONSTRUCTED);
+      set.addAll(
+          EnumSet.of(
+              AttributeId.Value,
+              AttributeId.DataType,
+              AttributeId.ValueRank,
+              AttributeId.ArrayDimensions));
+      return set;
+    }
+
+    /** Attributes consumed by the Method constructor (security attributes are overlaid). */
+    private static final Set<AttributeId> METHOD_CONSTRUCTED =
+        EnumSet.of(
+            AttributeId.NodeClass,
+            AttributeId.BrowseName,
+            AttributeId.DisplayName,
+            AttributeId.Description,
+            AttributeId.WriteMask,
+            AttributeId.UserWriteMask,
+            AttributeId.Executable,
+            AttributeId.UserExecutable);
+
+    private final NodeInstantiator instantiator;
+    private final OpcUaServer server;
+    private final InstantiationPlan<T> plan;
+    private final InstantiationRequest<T> request;
+    private final NodeManager<UaNode> target;
+
+    /** Constructed-but-unpublished nodes, by path; CREATE entries only. */
+    private final Map<BrowsePath, UaNode> staged = new LinkedHashMap<>();
+
+    /** Existing nodes serving REUSE and SHARE entries, resolved by the recheck. */
+    private final Map<BrowsePath, UaNode> adopted = new HashMap<>();
+
+    private ApplyExecution(NodeInstantiator instantiator, InstantiationPlan<T> plan) {
+      this.instantiator = instantiator;
+      this.server = instantiator.server;
+      this.plan = plan;
+      this.request = plan.request();
+      this.target = request.target();
+    }
+
+    InstantiationResult<T> execute() throws UaException {
+      revalidateModel();
+
+      long generation = recheckTarget();
+
+      stageNodes();
+      runHooks();
+
+      InstantiationResult<T> result = commitAndBuildResult(generation);
+
+      notifyObservers(result);
+
+      return result;
+    }
+
+    // region Stage 1: model revalidation
+
+    /**
+     * Every model the plan consulted is revalidated, not just the root's: a {@code concreteType}
+     * selection outside the root model's dependency closure has its own cache entry, and a stale
+     * one would silently commit outdated attribute defaults or an instance of a now-abstract type.
+     */
+    private void revalidateModel() throws InstantiationException {
+      for (Map.Entry<NodeId, Long> consulted : plan.consultedModelRevisions().entrySet()) {
+        NodeId typeDefinitionId = consulted.getKey();
+
+        TypeInstantiationModel current;
+        try {
+          current = instantiator.describe(typeDefinitionId);
+        } catch (UaException e) {
+          throw failure(
+              StatusCodes.Bad_InvalidState,
+              InstantiationDiagnostic.applyError(
+                  InstantiationDiagnostic.Code.MODEL_CHANGED,
+                  "type " + typeDefinitionId + " no longer compiles: " + e.getMessage(),
+                  BrowsePath.root(),
+                  typeDefinitionId),
+              e);
+        }
+
+        if (current.modelRevision() != consulted.getValue()) {
+          throw failure(
+              StatusCodes.Bad_InvalidState,
+              InstantiationDiagnostic.applyError(
+                  InstantiationDiagnostic.Code.MODEL_CHANGED,
+                  "type "
+                      + typeDefinitionId
+                      + " changed since this plan was computed (model revision "
+                      + consulted.getValue()
+                      + " -> "
+                      + current.modelRevision()
+                      + "); re-plan against the current model",
+                  BrowsePath.root(),
+                  typeDefinitionId),
+              null);
+        }
+      }
+    }
+
+    // endregion
+
+    // region Stage 2: target recheck
+
+    /**
+     * Recheck the plan's target assumptions and capture the generation the commit will expect, so
+     * recheck-and-commit is atomic on targets whose primitives track generations.
+     *
+     * @return the target generation captured before the recheck reads.
+     */
+    private long recheckTarget() throws InstantiationException {
+      long generation = target.getGeneration().value();
+
+      for (PlannedNode planned : plan.plannedNodes()) {
+        switch (planned.materialization()) {
+          case CREATE -> {
+            if (target.containsNode(planned.nodeId())) {
+              throw failure(
+                  StatusCodes.Bad_NodeIdExists,
+                  InstantiationDiagnostic.applyError(
+                      InstantiationDiagnostic.Code.NODE_ID_COLLISION,
+                      "planned NodeId "
+                          + planned.nodeId()
+                          + " at "
+                          + planned.browsePath()
+                          + " appeared in the target since the plan was computed; re-plan"
+                          + " (adoption is a plan-time decision)",
+                      planned.browsePath(),
+                      planned.nodeId()),
+                  null);
+            }
+          }
+          case REUSE -> {
+            UaNode existing = target.getNode(planned.nodeId()).orElse(null);
+
+            String incompatibility =
+                instantiator.reuseIncompatibility(
+                    existing,
+                    (QualifiedName) planned.effectiveAttributes().getOrNull(AttributeId.BrowseName),
+                    planned.nodeClass(),
+                    planned.isRoot(),
+                    request.rootClass(),
+                    planned.typeDefinitionId(),
+                    planned.nodeId(),
+                    target);
+
+            if (incompatibility != null) {
+              throw failure(
+                  StatusCodes.Bad_NodeIdExists,
+                  InstantiationDiagnostic.applyError(
+                      InstantiationDiagnostic.Code.INCOMPATIBLE_REUSE,
+                      "existing node at "
+                          + planned.nodeId()
+                          + " can no longer be reused for "
+                          + planned.browsePath()
+                          + ": "
+                          + incompatibility,
+                      planned.browsePath(),
+                      planned.nodeId()),
+                  null);
+            }
+
+            adopted.put(planned.browsePath(), existing);
+          }
+          case SHARE -> {
+            UaNode shared =
+                server.getAddressSpaceManager().getManagedNode(planned.nodeId()).orElse(null);
+
+            if (!(shared instanceof UaMethodNode)) {
+              throw failure(
+                  StatusCodes.Bad_InvalidState,
+                  InstantiationDiagnostic.applyError(
+                      InstantiationDiagnostic.Code.MODEL_CHANGED,
+                      "shared Method declaration "
+                          + planned.nodeId()
+                          + " at "
+                          + planned.browsePath()
+                          + " no longer resolves to a Method node",
+                      planned.browsePath(),
+                      planned.nodeId()),
+                  null);
+            }
+
+            adopted.put(planned.browsePath(), shared);
+          }
+        }
+      }
+
+      // The commit validates only the batch's own nodes, so a parent that disappeared since plan
+      // time would otherwise commit as a reference row sourced at a nonexistent NodeId — and a
+      // node later created at that id would silently acquire a phantom child.
+      if (request.parentNodeId().isPresent() && request.parentReferenceTypeId().isPresent()) {
+        NodeId parentNodeId = request.parentNodeId().get();
+        if (server.getAddressSpaceManager().getManagedNode(parentNodeId).isEmpty()
+            && !target.containsNode(parentNodeId)) {
+          throw failure(
+              StatusCodes.Bad_ParentNodeIdInvalid,
+              InstantiationDiagnostic.applyError(
+                  InstantiationDiagnostic.Code.INVALID_PARENT,
+                  "parent node "
+                      + parentNodeId
+                      + " does not resolve in this server; the planned parent attachment would"
+                      + " dangle",
+                  BrowsePath.root(),
+                  parentNodeId),
+              null);
+        }
+      }
+
+      return generation;
+    }
+
+    // endregion
+
+    // region Stage 3: staging
+
+    private void stageNodes() throws InstantiationException {
+      // Staged nodes see the *destination* as their context: post-commit, node-level navigation
+      // (typed getters, getComponent, property lookups) resolves against the target's references.
+      UaNodeContext context =
+          new UaNodeContext() {
+            @Override
+            public OpcUaServer getServer() {
+              return server;
+            }
+
+            @Override
+            public NodeManager<UaNode> getNodeManager() {
+              return target;
+            }
+          };
+
+      for (PlannedNode planned : plan.plannedNodes()) {
+        if (planned.materialization() != PlannedNode.Materialization.CREATE) {
+          continue;
+        }
+
+        UaNode node;
+        try {
+          node = construct(context, planned);
+        } catch (Exception e) {
+          throw failure(
+              StatusCodes.Bad_InternalError,
+              InstantiationDiagnostic.applyError(
+                  InstantiationDiagnostic.Code.CONSTRUCTOR_FAILED,
+                  "constructor failed at " + planned.browsePath() + ": " + e,
+                  planned.browsePath(),
+                  planned.nodeId()),
+              e);
+        }
+
+        if (!planned.javaClass().isInstance(node)) {
+          throw failure(
+              StatusCodes.Bad_InternalError,
+              InstantiationDiagnostic.applyError(
+                  InstantiationDiagnostic.Code.CONSTRUCTOR_FAILED,
+                  "constructor for "
+                      + planned.constructorTypeId()
+                      + " returned a "
+                      + node.getClass().getName()
+                      + ", expected "
+                      + planned.javaClass().getName(),
+                  planned.browsePath(),
+                  planned.nodeId()),
+              null);
+        }
+
+        staged.put(planned.browsePath(), node);
+      }
+    }
+
+    private UaNode construct(UaNodeContext context, PlannedNode planned) {
+      AttributeSnapshot attributes = planned.effectiveAttributes();
+
+      return switch (planned.nodeClass()) {
+        case Object -> constructObject(context, planned, attributes);
+        case Variable -> constructVariable(context, planned, attributes);
+        case Method -> constructMethod(context, planned, attributes);
+        default ->
+            throw new IllegalStateException("unexpected instance NodeClass " + planned.nodeClass());
+      };
+    }
+
+    private UaObjectNode constructObject(
+        UaNodeContext context, PlannedNode planned, AttributeSnapshot attributes) {
+
+      ObjectTypeManager.RegisteredObjectType registered =
+          planned.constructorTypeId() != null
+              ? server
+                  .getObjectTypeManager()
+                  .getRegisteredType(planned.constructorTypeId())
+                  .orElse(null)
+              : null;
+
+      if (registered != null && registered.snapshotConstructor() != null) {
+        return registered.snapshotConstructor().apply(context, planned.nodeId(), attributes);
+      }
+
+      UaObjectNode node;
+      if (registered != null && registered.nodeConstructor() != null) {
+        node =
+            registered
+                .nodeConstructor()
+                .apply(
+                    context,
+                    planned.nodeId(),
+                    (QualifiedName) attributes.getOrNull(AttributeId.BrowseName),
+                    (LocalizedText) attributes.getOrNull(AttributeId.DisplayName),
+                    (LocalizedText) attributes.getOrNull(AttributeId.Description),
+                    (UInteger) attributes.getOrNull(AttributeId.WriteMask),
+                    (UInteger) attributes.getOrNull(AttributeId.UserWriteMask),
+                    (RolePermissionType[]) attributes.getOrNull(AttributeId.RolePermissions),
+                    (RolePermissionType[]) attributes.getOrNull(AttributeId.UserRolePermissions),
+                    (AccessRestrictionType) attributes.getOrNull(AttributeId.AccessRestrictions));
+      } else {
+        UByte eventNotifier = (UByte) attributes.getOrNull(AttributeId.EventNotifier);
+        node =
+            new UaObjectNode(
+                context,
+                planned.nodeId(),
+                (QualifiedName) attributes.getOrNull(AttributeId.BrowseName),
+                (LocalizedText) attributes.getOrNull(AttributeId.DisplayName),
+                (LocalizedText) attributes.getOrNull(AttributeId.Description),
+                (UInteger) attributes.getOrNull(AttributeId.WriteMask),
+                (UInteger) attributes.getOrNull(AttributeId.UserWriteMask),
+                (RolePermissionType[]) attributes.getOrNull(AttributeId.RolePermissions),
+                (RolePermissionType[]) attributes.getOrNull(AttributeId.UserRolePermissions),
+                (AccessRestrictionType) attributes.getOrNull(AttributeId.AccessRestrictions),
+                eventNotifier != null ? eventNotifier : ubyte(0));
+      }
+
+      // The remaining planned attributes (EventNotifier for the tuple form) — the R4 adaptation
+      // overlay that lets tuple-signature registrations receive newly modeled attributes.
+      overlay(node, attributes, COMMON_CONSTRUCTED);
+
+      return node;
+    }
+
+    private UaVariableNode constructVariable(
+        UaNodeContext context, PlannedNode planned, AttributeSnapshot attributes) {
+
+      VariableTypeManager.RegisteredVariableType registered =
+          planned.constructorTypeId() != null
+              ? server
+                  .getVariableTypeManager()
+                  .getRegisteredType(planned.constructorTypeId())
+                  .orElse(null)
+              : null;
+
+      // Committed Variables never share the declaration's DataValue instance: values are re-issued
+      // with a fresh source timestamp, and an unset value follows the Bad_NoValue convention.
+      DataValue freshValue = freshValue(attributes.value());
+
+      UaVariableNode node;
+      if (registered != null && registered.snapshotConstructor() != null) {
+        node = registered.snapshotConstructor().apply(context, planned.nodeId(), attributes);
+      } else if (registered != null && registered.nodeConstructor() != null) {
+        node =
+            registered
+                .nodeConstructor()
+                .apply(
+                    context,
+                    planned.nodeId(),
+                    (QualifiedName) attributes.getOrNull(AttributeId.BrowseName),
+                    (LocalizedText) attributes.getOrNull(AttributeId.DisplayName),
+                    (LocalizedText) attributes.getOrNull(AttributeId.Description),
+                    (UInteger) attributes.getOrNull(AttributeId.WriteMask),
+                    (UInteger) attributes.getOrNull(AttributeId.UserWriteMask),
+                    (RolePermissionType[]) attributes.getOrNull(AttributeId.RolePermissions),
+                    (RolePermissionType[]) attributes.getOrNull(AttributeId.UserRolePermissions),
+                    (AccessRestrictionType) attributes.getOrNull(AttributeId.AccessRestrictions),
+                    freshValue,
+                    attributes.dataType(),
+                    attributes.valueRank(),
+                    attributes.arrayDimensions());
+        overlay(node, attributes, VARIABLE_CONSTRUCTED);
+      } else {
+        node =
+            new UaVariableNode(
+                context,
+                planned.nodeId(),
+                (QualifiedName) attributes.getOrNull(AttributeId.BrowseName),
+                (LocalizedText) attributes.getOrNull(AttributeId.DisplayName),
+                (LocalizedText) attributes.getOrNull(AttributeId.Description),
+                (UInteger) attributes.getOrNull(AttributeId.WriteMask),
+                (UInteger) attributes.getOrNull(AttributeId.UserWriteMask),
+                (RolePermissionType[]) attributes.getOrNull(AttributeId.RolePermissions),
+                (RolePermissionType[]) attributes.getOrNull(AttributeId.UserRolePermissions),
+                (AccessRestrictionType) attributes.getOrNull(AttributeId.AccessRestrictions),
+                freshValue,
+                attributes.dataType(),
+                attributes.valueRank(),
+                attributes.arrayDimensions());
+        overlay(node, attributes, VARIABLE_CONSTRUCTED);
+      }
+
+      // Uniform value policy across all constructor forms (a snapshot constructor received the
+      // snapshot's normalized value, not the freshened one).
+      node.setAttribute(AttributeId.Value, freshValue);
+
+      return node;
+    }
+
+    private UaMethodNode constructMethod(
+        UaNodeContext context, PlannedNode planned, AttributeSnapshot attributes) {
+
+      Boolean executable = (Boolean) attributes.getOrNull(AttributeId.Executable);
+      Boolean userExecutable = (Boolean) attributes.getOrNull(AttributeId.UserExecutable);
+
+      UaMethodNode node =
+          new UaMethodNode(
+              context,
+              planned.nodeId(),
+              (QualifiedName) attributes.getOrNull(AttributeId.BrowseName),
+              (LocalizedText) attributes.getOrNull(AttributeId.DisplayName),
+              (LocalizedText) attributes.getOrNull(AttributeId.Description),
+              (UInteger) attributes.getOrNull(AttributeId.WriteMask),
+              (UInteger) attributes.getOrNull(AttributeId.UserWriteMask),
+              executable != null ? executable : Boolean.TRUE,
+              userExecutable != null ? userExecutable : Boolean.TRUE);
+
+      overlay(node, attributes, METHOD_CONSTRUCTED);
+
+      return node;
+    }
+
+    /**
+     * Apply every planned attribute the constructor did not consume, preserving explicit nulls.
+     * Direct field writes ({@link UaNode#setAttribute}), bypassing any filters a constructor may
+     * have installed — this is construction, not runtime mutation.
+     */
+    private static void overlay(
+        UaNode node, AttributeSnapshot attributes, Set<AttributeId> consumed) {
+      for (AttributeId attributeId : attributes.attributeIds()) {
+        if (consumed.contains(attributeId)) {
+          continue;
+        }
+        node.setAttribute(
+            attributeId, attributes.isNull(attributeId) ? null : attributes.getOrNull(attributeId));
+      }
+    }
+
+    private static DataValue freshValue(@Nullable DataValue declared) {
+      if (declared == null || declared.getValue().getValue() == null) {
+        return new DataValue(
+            Variant.NULL_VALUE, new StatusCode(StatusCodes.Bad_NoValue), DateTime.now());
+      }
+
+      return new DataValue(declared.getValue(), declared.getStatusCode(), DateTime.now());
+    }
+
+    // endregion
+
+    // region Stage 4: hooks
+
+    private void runHooks() throws InstantiationException {
+      if (request.onNodeHooks().isEmpty()) {
+        return;
+      }
+
+      StagedGraph graph = new StagedGraphView(realizedInOrder());
+
+      for (PlannedNode planned : plan.plannedNodes()) {
+        UaNode node = staged.get(planned.browsePath());
+        if (node == null) {
+          // Hooks customize what this apply constructs; adopted and shared nodes are not modified.
+          continue;
+        }
+
+        UaNode parent = planned.isRoot() ? null : realizedAt(planned.browsePath().parent());
+
+        for (InstantiationRequest.OnNode hook : request.onNodeHooks()) {
+          try {
+            hook.accept(planned.declaration(), node, parent, graph);
+          } catch (Exception e) {
+            throw failure(
+                StatusCodes.Bad_InternalError,
+                InstantiationDiagnostic.applyError(
+                    InstantiationDiagnostic.Code.CUSTOMIZATION_FAILED,
+                    "onNode hook failed at " + planned.browsePath() + ": " + e,
+                    planned.browsePath(),
+                    planned.nodeId()),
+                e);
+          }
+        }
+      }
+    }
+
+    /**
+     * Binders run only after a successful commit: they may target reused or shared nodes the
+     * instantiation does not own, so binding earlier would leave mutations on published nodes if
+     * the commit failed, and a stale-generation retry can re-adopt a different instance — binding
+     * pre-commit would customize an instance the committed graph no longer contains.
+     */
+    private void bindMethods() throws InstantiationException {
+      for (BrowsePath path : request.methodBinders().keySet().stream().sorted().toList()) {
+        UaNode node = realizedAt(path);
+        if (node instanceof UaMethodNode method) {
+          try {
+            request.methodBinders().get(path).accept(method);
+          } catch (Exception e) {
+            throw failure(
+                StatusCodes.Bad_InternalError,
+                InstantiationDiagnostic.applyError(
+                    InstantiationDiagnostic.Code.CUSTOMIZATION_FAILED,
+                    "bindMethod binder failed at " + path + ": " + e,
+                    path,
+                    node.getNodeId()),
+                e);
+          }
+        }
+        // A path matching no realized Method was already warned about at plan time.
+      }
+    }
+
+    private @Nullable UaNode realizedAt(BrowsePath path) {
+      UaNode node = staged.get(path);
+      return node != null ? node : adopted.get(path);
+    }
+
+    private Map<BrowsePath, UaNode> realizedInOrder() {
+      Map<BrowsePath, UaNode> ordered = new LinkedHashMap<>();
+      for (PlannedNode planned : plan.plannedNodes()) {
+        UaNode node = realizedAt(planned.browsePath());
+        if (node != null) {
+          ordered.put(planned.browsePath(), node);
+        }
+      }
+      return ordered;
+    }
+
+    // endregion
+
+    // region Stages 5 and 6: commit, rollback, result
+
+    private InstantiationResult<T> commitAndBuildResult(long generation) throws UaException {
+      for (int attempt = 1; ; attempt++) {
+        NodeManagerBatch<UaNode> batch = buildBatch(generation);
+
+        NodeManager.CommitResult journal;
+        try {
+          journal = target.commit(batch);
+        } catch (NodeManagerBatchException e) {
+          List<InstantiationDiagnostic> rollbackFindings = rollBack(e.getApplied());
+
+          // The typed signal, not the status code: implementations may throw Bad_InvalidState for
+          // unrelated failures, which must not be retried as if the target had merely advanced.
+          boolean staleGeneration = e.isStaleGeneration() && rollbackFindings.isEmpty();
+
+          if (staleGeneration && attempt < MAX_COMMIT_ATTEMPTS) {
+            // The target advanced between recheck and commit (nothing was applied); revalidate the
+            // plan's target assumptions against the new state and try again.
+            generation = recheckTarget();
+            continue;
+          }
+
+          List<InstantiationDiagnostic> diagnostics = new ArrayList<>();
+          diagnostics.add(
+              InstantiationDiagnostic.applyError(
+                  InstantiationDiagnostic.Code.COMMIT_FAILED,
+                  "batch commit into the target NodeManager failed: " + e.getMessage(),
+                  null,
+                  null));
+          diagnostics.addAll(rollbackFindings);
+
+          throw new InstantiationException(
+              e.getStatusCode().getValue(), InstantiationDiagnostic.Phase.APPLY, diagnostics, e);
+        } catch (RuntimeException e) {
+          // An unchecked failure crossing the commit seam. AbstractNodeManager's atomic commit
+          // wraps these itself (rolled back, empty journal); a third-party emulation may not, and
+          // without a journal nothing can be removed deterministically — on a best-effort target
+          // the residue is unknown.
+          throw failure(
+              StatusCodes.Bad_InternalError,
+              InstantiationDiagnostic.applyError(
+                  InstantiationDiagnostic.Code.COMMIT_FAILED,
+                  "batch commit into the target NodeManager failed unchecked ("
+                      + e
+                      + "); no journal is available, residue on a best-effort target is unknown",
+                  null,
+                  null),
+              e);
+        }
+
+        try {
+          bindMethods();
+        } catch (InstantiationException bindFailure) {
+          // The commit succeeded but a binder failed; remove the journaled additions so the
+          // no-residue contract holds for everything this apply created. A mutation an earlier
+          // binder made to a reused or shared node cannot be undone and remains.
+          List<InstantiationDiagnostic> rollbackFindings = rollBack(journal);
+          if (rollbackFindings.isEmpty()) {
+            throw bindFailure;
+          }
+
+          List<InstantiationDiagnostic> diagnostics = new ArrayList<>(bindFailure.getDiagnostics());
+          diagnostics.addAll(rollbackFindings);
+
+          throw new InstantiationException(
+              bindFailure.getStatusCode().getValue(),
+              InstantiationDiagnostic.Phase.APPLY,
+              diagnostics,
+              bindFailure);
+        }
+
+        return buildResult(batch, journal);
+      }
+    }
+
+    private NodeManagerBatch<UaNode> buildBatch(long generation) {
+      NodeManagerBatch.Builder<UaNode> batch = NodeManagerBatch.builder();
+
+      batch.expectGeneration(generation);
+
+      for (UaNode node : staged.values()) {
+        batch.addNode(node);
+      }
+
+      for (PlannedNode planned : plan.plannedNodes()) {
+        if (planned.materialization() == PlannedNode.Materialization.REUSE) {
+          batch.reuseNode(planned.nodeId());
+        }
+      }
+
+      NamespaceTable namespaceTable = server.getNamespaceTable();
+      for (Reference reference : plan.references()) {
+        batch.addReference(reference);
+        reference.invert(namespaceTable).ifPresent(batch::addReference);
+      }
+
+      return batch.build();
+    }
+
+    /**
+     * Remove exactly the additions in {@code applied} — journal removal only, never a recursive
+     * delete from the root, which would follow HasChild into reused or shared nodes. Empty on the
+     * atomic path (a failed atomic commit applied nothing); the partial journal of a failed
+     * best-effort commit otherwise.
+     *
+     * @return findings for anything that could not be removed; empty on full success.
+     */
+    private List<InstantiationDiagnostic> rollBack(NodeManager.CommitResult applied) {
+      List<InstantiationDiagnostic> findings = new ArrayList<>();
+
+      for (Reference reference : applied.addedReferences()) {
+        try {
+          target.removeReference(reference);
+        } catch (Exception e) {
+          findings.add(
+              InstantiationDiagnostic.applyError(
+                  InstantiationDiagnostic.Code.ROLLBACK_FAILED,
+                  "rollback could not remove reference " + reference + ": " + e,
+                  null,
+                  reference.getSourceNodeId()));
+        }
+      }
+
+      for (NodeId nodeId : applied.addedNodes()) {
+        try {
+          target.removeNode(nodeId);
+        } catch (Exception e) {
+          findings.add(
+              InstantiationDiagnostic.applyError(
+                  InstantiationDiagnostic.Code.ROLLBACK_FAILED,
+                  "rollback could not remove node " + nodeId + ": " + e,
+                  null,
+                  nodeId));
+        }
+      }
+
+      return findings;
+    }
+
+    private InstantiationResult<T> buildResult(
+        NodeManagerBatch<UaNode> batch, NodeManager.CommitResult journal) {
+
+      List<MaterializedNode> materializedNodes = new ArrayList<>();
+      for (PlannedNode planned : plan.plannedNodes()) {
+        UaNode node = Objects.requireNonNull(realizedAt(planned.browsePath()));
+
+        MaterializedNode.Provenance provenance =
+            switch (planned.materialization()) {
+              case CREATE -> MaterializedNode.Provenance.CREATED;
+              case REUSE -> MaterializedNode.Provenance.REUSED;
+              case SHARE -> MaterializedNode.Provenance.SHARED;
+            };
+
+        materializedNodes.add(new MaterializedNode(planned.browsePath(), node, provenance));
+      }
+
+      Set<Reference> added = new HashSet<>(journal.addedReferences());
+      List<MaterializedReference> references =
+          batch.getReferenceAdditions().stream()
+              .map(r -> new MaterializedReference(r, added.contains(r)))
+              .toList();
+
+      T root = request.rootClass().cast(Objects.requireNonNull(realizedAt(BrowsePath.root())));
+
+      return new InstantiationResult<>(
+          root,
+          materializedNodes,
+          plan.skippedDeclarations(),
+          references,
+          plan.diagnostics(),
+          plan.modelRevision(),
+          target.getStorageGuarantee(),
+          target);
+    }
+
+    private void notifyObservers(InstantiationResult<T> result) {
+      for (Consumer<InstantiationResult<T>> observer : request.afterCommitObservers()) {
+        try {
+          observer.accept(result);
+        } catch (Exception e) {
+          LOGGER.warn(
+              "after-commit observer failed for instantiation of {}: {}",
+              plan.model().typeDefinitionId(),
+              e,
+              e);
+        }
+      }
+    }
+
+    // endregion
+
+    private static InstantiationException failure(
+        long statusCode, InstantiationDiagnostic diagnostic, @Nullable Throwable cause) {
+      return new InstantiationException(
+          statusCode, InstantiationDiagnostic.Phase.APPLY, List.of(diagnostic), cause);
+    }
+  }
+
+  /** The read-only staged-graph view handed to {@code onNode} hooks. */
+  private static final class StagedGraphView implements StagedGraph {
+
+    private final Map<BrowsePath, UaNode> nodes;
+    private final List<UaNode> nodeList;
+
+    private StagedGraphView(Map<BrowsePath, UaNode> nodes) {
+      this.nodes = nodes;
+      // The backing map is complete before the view is constructed, so one immutable copy serves
+      // every nodes() call.
+      this.nodeList = List.copyOf(nodes.values());
+    }
+
+    @Override
+    public UaNode root() {
+      return Objects.requireNonNull(nodes.get(BrowsePath.root()));
+    }
+
+    @Override
+    public Optional<UaNode> node(BrowsePath path) {
+      return Optional.ofNullable(nodes.get(path));
+    }
+
+    @Override
+    public List<UaNode> nodes() {
+      return nodeList;
     }
   }
 }

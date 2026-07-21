@@ -76,24 +76,18 @@ public class ObjectTypeManager {
       LegacyObjectNodeConstructor objectNodeConstructor) {
 
     ObjectNodeConstructor adapted =
-        new ObjectNodeConstructor() {
-          @Override
-          public UaObjectNode apply(
-              UaNodeContext context,
-              NodeId nodeId,
-              QualifiedName browseName,
-              LocalizedText displayName,
-              LocalizedText description,
-              UInteger writeMask,
-              UInteger userWriteMask,
-              RolePermissionType[] rolePermissions,
-              RolePermissionType[] userRolePermissions,
-              AccessRestrictionType accessRestrictions) {
-
-            return objectNodeConstructor.apply(
+        (context,
+            nodeId,
+            browseName,
+            displayName,
+            description,
+            writeMask,
+            userWriteMask,
+            rolePermissions,
+            userRolePermissions,
+            accessRestrictions) ->
+            objectNodeConstructor.apply(
                 context, nodeId, browseName, displayName, description, writeMask, userWriteMask);
-          }
-        };
 
     typeDefinitions.compute(
         typeDefinition,
@@ -128,21 +122,10 @@ public class ObjectTypeManager {
         .map(d -> new RegisteredObjectType(d.nodeClass, d.nodeConstructor, d.snapshotConstructor));
   }
 
-  private static class ObjectTypeDefinition {
-    final Class<? extends UaObjectNode> nodeClass;
-    final @Nullable ObjectNodeConstructor nodeConstructor;
-    final @Nullable SnapshotConstructor snapshotConstructor;
-
-    private ObjectTypeDefinition(
-        Class<? extends UaObjectNode> nodeClass,
-        @Nullable ObjectNodeConstructor nodeConstructor,
-        @Nullable SnapshotConstructor snapshotConstructor) {
-
-      this.nodeClass = nodeClass;
-      this.nodeConstructor = nodeConstructor;
-      this.snapshotConstructor = snapshotConstructor;
-    }
-  }
+  private record ObjectTypeDefinition(
+      Class<? extends UaObjectNode> nodeClass,
+      @Nullable ObjectNodeConstructor nodeConstructor,
+      @Nullable SnapshotConstructor snapshotConstructor) {}
 
   /**
    * An ObjectType registration: the Java class instances are constructed as, plus the constructor
@@ -189,6 +172,11 @@ public class ObjectTypeManager {
   /**
    * Constructs a {@link UaObjectNode} from the planned {@link AttributeSnapshot} instead of a fixed
    * attribute tuple, so newly modeled attributes propagate without signature changes.
+   *
+   * <p>The constructor owns attribute application: the instantiation engine applies nothing after a
+   * snapshot constructor returns, so any planned attribute the constructor does not read from
+   * {@code attributes} and set on the node is dropped. (Tuple-signature registrations, by contrast,
+   * receive an engine overlay of the attributes their signature cannot carry.)
    */
   @FunctionalInterface
   public interface SnapshotConstructor {
