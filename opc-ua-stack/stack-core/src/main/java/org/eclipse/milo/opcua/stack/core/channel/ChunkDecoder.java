@@ -16,6 +16,8 @@ import io.netty.util.ReferenceCountUtil;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import javax.crypto.Cipher;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -111,11 +113,17 @@ public final class ChunkDecoder {
   public DecodedMessage decodeSymmetric(SecureChannel channel, List<ByteBuf> chunkBuffers)
       throws MessageAbortException, MessageDecodeException {
 
+    boolean validated = false;
+
     try {
       validateSymmetricSecurityHeaders(channel, chunkBuffers);
+      validated = true;
     } catch (UaException e) {
-      chunkBuffers.forEach(ReferenceCountUtil::safeRelease);
       throw new MessageDecodeException(e);
+    } finally {
+      if (!validated) {
+        releaseAll(chunkBuffers);
+      }
     }
 
     return decode(symmetricDecoder, channel, chunkBuffers, null);
@@ -129,18 +137,26 @@ public final class ChunkDecoder {
       throws MessageAbortException, MessageDecodeException {
 
     CompositeByteBuf composite = BufferUtil.compositeBuffer();
+    List<ByteBuf> buffersToDecode = new ArrayList<>(chunkBuffers);
+    boolean decoded = false;
 
     try {
-      return decoder.decode(channel, composite, chunkBuffers, additionalSignedBytes);
-    } catch (MessageAbortException e) {
-      ReferenceCountUtil.safeRelease(composite);
-      chunkBuffers.forEach(ReferenceCountUtil::safeRelease);
-      throw e;
+      DecodedMessage decodedMessage =
+          decoder.decode(channel, composite, buffersToDecode, additionalSignedBytes);
+      decoded = true;
+      return decodedMessage;
     } catch (UaException e) {
-      ReferenceCountUtil.safeRelease(composite);
-      chunkBuffers.forEach(ReferenceCountUtil::safeRelease);
       throw new MessageDecodeException(e);
+    } finally {
+      if (!decoded) {
+        ReferenceCountUtil.safeRelease(composite);
+        releaseAll(buffersToDecode);
+      }
     }
+  }
+
+  private static void releaseAll(List<ByteBuf> chunkBuffers) {
+    chunkBuffers.forEach(ReferenceCountUtil::safeRelease);
   }
 
   private static void validateSymmetricSecurityHeaders(
@@ -226,7 +242,8 @@ public final class ChunkDecoder {
       long requestId = -1L;
       byte[] lastSignature = null;
 
-      for (ByteBuf chunkBuffer : chunkBuffers) {
+      for (Iterator<ByteBuf> iterator = chunkBuffers.iterator(); iterator.hasNext(); ) {
+        ByteBuf chunkBuffer = iterator.next();
         final char chunkType = (char) chunkBuffer.getByte(3);
 
         chunkBuffer.skipBytes(SecureMessageHeader.SECURE_MESSAGE_HEADER_SIZE);
@@ -291,6 +308,7 @@ public final class ChunkDecoder {
               errorMessage.getReason(), requestId, errorMessage.getError());
         }
 
+        iterator.remove();
         composite.addComponent(bodyBuffer);
         composite.writerIndex(composite.writerIndex() + bodyBuffer.readableBytes());
       }

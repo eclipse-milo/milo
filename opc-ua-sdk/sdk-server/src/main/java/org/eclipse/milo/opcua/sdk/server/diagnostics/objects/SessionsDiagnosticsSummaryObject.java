@@ -23,17 +23,29 @@ import org.eclipse.milo.opcua.sdk.server.diagnostics.variables.SessionDiagnostic
 import org.eclipse.milo.opcua.sdk.server.diagnostics.variables.SessionSecurityDiagnosticsVariableArray;
 import org.eclipse.milo.opcua.sdk.server.model.objects.SessionDiagnosticsObjectTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.SessionsDiagnosticsSummaryTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.SessionSecurityDiagnosticsArrayTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.SessionSecurityDiagnosticsTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.factories.NodeFactory;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Manages the standard diagnostics arrays and the per-Session diagnostics Objects beneath the
+ * server's SessionsDiagnosticsSummary node.
+ *
+ * <p>Ordinary session diagnostics and security diagnostics share a lifecycle but retain distinct
+ * authorization policies. Security metadata is propagated only to each dynamically instantiated
+ * security diagnostics subtree.
+ */
 public class SessionsDiagnosticsSummaryObject extends AbstractLifecycle {
 
   static final int MAX_BROWSE_NAME_LENGTH = 512;
@@ -125,7 +137,9 @@ public class SessionsDiagnosticsSummaryObject extends AbstractLifecycle {
       SessionDiagnosticsObjectTypeNode sdoNode =
           (SessionDiagnosticsObjectTypeNode)
               nodeFactory.createNode(
-                  new NodeId(1, UUID.randomUUID()), NodeIds.SessionDiagnosticsObjectType);
+                  new NodeId(1, UUID.randomUUID()),
+                  NodeIds.SessionDiagnosticsObjectType,
+                  securityDiagnosticsAccessControl(node));
       sdoNode.setBrowseName(browseName);
       sdoNode.setDisplayName(LocalizedText.english(sessionName));
 
@@ -145,6 +159,36 @@ public class SessionsDiagnosticsSummaryObject extends AbstractLifecycle {
     } catch (UaException e) {
       LoggerFactory.getLogger(getClass()).warn("Failed to create SessionDiagnosticsObject", e);
     }
+  }
+
+  /**
+   * Creates a callback that applies the standard security diagnostics array's access policy only to
+   * the security diagnostics subtree of a dynamically instantiated Session diagnostics Object.
+   *
+   * @param summaryNode the standard summary node containing the security diagnostics array.
+   * @return a callback that applies security attributes to security diagnostics Variables.
+   */
+  static NodeFactory.InstantiationCallback securityDiagnosticsAccessControl(
+      SessionsDiagnosticsSummaryTypeNode summaryNode) {
+
+    return new NodeFactory.InstantiationCallback() {
+      @Override
+      public void onVariableAdded(
+          @Nullable UaNode parent, UaVariableNode instance, NodeId typeDefinitionId) {
+
+        if (instance instanceof SessionSecurityDiagnosticsTypeNode
+            || parent instanceof SessionSecurityDiagnosticsTypeNode) {
+
+          // Ordinary SessionDiagnostics intentionally retain their separate standard permissions.
+          SessionSecurityDiagnosticsArrayTypeNode securityArray =
+              summaryNode.getSessionSecurityDiagnosticsArrayNode();
+
+          instance.setRolePermissions(securityArray.getRolePermissions());
+          instance.setUserRolePermissions(securityArray.getUserRolePermissions());
+          instance.setAccessRestrictions(securityArray.getAccessRestrictions());
+        }
+      }
+    };
   }
 
   static String sessionNameBrowseName(String sessionName) {

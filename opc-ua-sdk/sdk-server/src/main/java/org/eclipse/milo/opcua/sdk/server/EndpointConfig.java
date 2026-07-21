@@ -61,6 +61,8 @@ public class EndpointConfig {
     this.securityPolicy = securityPolicy;
     this.securityMode = securityMode;
     this.tokenPolicies = List.copyOf(tokenPolicies);
+
+    validateTokenPolicies();
   }
 
   public TransportProfile getTransportProfile() {
@@ -107,6 +109,25 @@ public class EndpointConfig {
 
   public List<UserTokenPolicy> getTokenPolicies() {
     return tokenPolicies;
+  }
+
+  String getEffectiveTokenSecurityPolicyUri(UserTokenPolicy tokenPolicy) {
+    String securityPolicyUri = tokenPolicy.getSecurityPolicyUri();
+
+    return securityPolicyUri == null || securityPolicyUri.isEmpty()
+        ? securityPolicy.getUri()
+        : securityPolicyUri;
+  }
+
+  private void validateTokenPolicies() {
+    for (UserTokenPolicy tokenPolicy : tokenPolicies) {
+      if (tokenPolicy.getTokenType() == UserTokenType.Certificate
+          && SecurityPolicy.None.getUri().equals(getEffectiveTokenSecurityPolicyUri(tokenPolicy))) {
+
+        throw new IllegalArgumentException(
+            "X.509 user token policy cannot use SecurityPolicy.None: " + tokenPolicy.getPolicyId());
+      }
+    }
   }
 
   public String getEndpointUrl() {

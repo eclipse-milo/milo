@@ -18,6 +18,9 @@ import java.util.Map;
 import java.util.Optional;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.core.WriteMask;
+import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
+import org.eclipse.milo.opcua.sdk.server.RoleMapper;
+import org.eclipse.milo.opcua.sdk.server.identity.Identity;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultAccessController.AccessControlAttributes;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultAccessController.AccessControlContext;
@@ -28,7 +31,10 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
+import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AddReferencesItem;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.DeleteNodesItem;
@@ -645,6 +651,117 @@ class DefaultAccessControllerTest {
   }
 
   @Test
+  void checkCallAccess_AccessRestrictions() {
+    var objectNodeId = new NodeId(1, "object");
+    var methodNodeId = new NodeId(1, "method");
+    var callMethodRequest = new CallMethodRequest(objectNodeId, methodNodeId, null);
+
+    // SigningRequired | EncryptionRequired
+    var accessRestrictions = new AccessRestrictionType(UShort.valueOf(3));
+
+    attributesMap.put(
+        objectNodeId, new AccessControlAttributes(null, null, null, null, null, null));
+    attributesMap.put(
+        methodNodeId,
+        new AccessControlAttributes(null, accessRestrictions, null, null, null, null));
+
+    {
+      Mockito.when(context.getSecurityMode()).thenReturn(MessageSecurityMode.None);
+
+      AccessResult result =
+          DefaultAccessController.checkCallAccess(context, List.of(callMethodRequest))
+              .get(callMethodRequest);
+
+      assertEquals(AccessResult.DENIED_SECURITY_MODE, result);
+    }
+
+    {
+      Mockito.when(context.getSecurityMode()).thenReturn(MessageSecurityMode.Sign);
+
+      AccessResult result =
+          DefaultAccessController.checkCallAccess(context, List.of(callMethodRequest))
+              .get(callMethodRequest);
+
+      assertEquals(AccessResult.DENIED_SECURITY_MODE, result);
+    }
+
+    {
+      Mockito.when(context.getSecurityMode()).thenReturn(MessageSecurityMode.SignAndEncrypt);
+
+      AccessResult result =
+          DefaultAccessController.checkCallAccess(context, List.of(callMethodRequest))
+              .get(callMethodRequest);
+
+      assertEquals(AccessResult.ALLOWED, result);
+    }
+  }
+
+  @Test
+  void checkCallAccess_AccessRestrictions_ObjectNode() {
+    var objectNodeId = new NodeId(1, "object");
+    var methodNodeId = new NodeId(1, "method");
+    var callMethodRequest = new CallMethodRequest(objectNodeId, methodNodeId, null);
+
+    // SigningRequired | EncryptionRequired
+    var accessRestrictions = new AccessRestrictionType(UShort.valueOf(3));
+
+    attributesMap.put(
+        objectNodeId,
+        new AccessControlAttributes(null, accessRestrictions, null, null, null, null));
+    attributesMap.put(
+        methodNodeId, new AccessControlAttributes(null, null, null, null, null, null));
+
+    {
+      Mockito.when(context.getSecurityMode()).thenReturn(MessageSecurityMode.None);
+
+      AccessResult result =
+          DefaultAccessController.checkCallAccess(context, List.of(callMethodRequest))
+              .get(callMethodRequest);
+
+      assertEquals(AccessResult.DENIED_SECURITY_MODE, result);
+    }
+
+    {
+      Mockito.when(context.getSecurityMode()).thenReturn(MessageSecurityMode.SignAndEncrypt);
+
+      AccessResult result =
+          DefaultAccessController.checkCallAccess(context, List.of(callMethodRequest))
+              .get(callMethodRequest);
+
+      assertEquals(AccessResult.ALLOWED, result);
+    }
+  }
+
+  @Test
+  void checkCallAccess_RolePermissions_DeniedOnSecureChannel() {
+    var objectNodeId = new NodeId(1, "object");
+    var methodNodeId = new NodeId(1, "method");
+    var callMethodRequest = new CallMethodRequest(objectNodeId, methodNodeId, null);
+
+    var attributes =
+        new AccessControlAttributes(
+            null,
+            null,
+            null,
+            null,
+            null,
+            new RolePermissionType[] {
+              new RolePermissionType(ROLE_A, PermissionType.of()),
+            });
+    attributesMap.put(objectNodeId, attributes);
+    attributesMap.put(methodNodeId, attributes);
+
+    Mockito.when(context.getSecurityMode()).thenReturn(MessageSecurityMode.SignAndEncrypt);
+    Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
+
+    AccessResult result =
+        DefaultAccessController.checkCallAccess(context, List.of(callMethodRequest))
+            .get(callMethodRequest);
+
+    assertEquals(AccessResult.DENIED_USER_ACCESS, result);
+  }
+
+  @Test
   void checkAddReferences() {
     var sourceNodeId = new NodeId(1, "source");
     var targetNodeId = new NodeId(1, "target");
@@ -940,6 +1057,33 @@ class DefaultAccessControllerTest {
         AccessResult.DENIED_USER_ACCESS,
         DefaultAccessController.checkDeleteReferencesAccess(context, List.of(deleteReferencesItem))
             .get(deleteReferencesItem));
+  }
+
+  @Test
+  void copiedConfigPreservesRoleBasedAuthorizationBehavior() {
+    Identity identity = Mockito.mock(Identity.class);
+    RoleMapper roleMapper = ignored -> List.of(ROLE_B);
+    OpcUaServerConfig directConfig = OpcUaServerConfig.builder().setRoleMapper(roleMapper).build();
+    OpcUaServerConfig copiedConfig = OpcUaServerConfig.copy(directConfig).build();
+
+    var nodeId = new NodeId(1, "browse");
+    attributesMap.put(
+        nodeId,
+        new AccessControlAttributes(
+            null, null, null, null, null, rolePermissions(PermissionType.Field.Browse)));
+
+    Mockito.when(context.getRoleIds())
+        .thenReturn(
+            directConfig.getRoleMapper().map(mapper -> mapper.getRoleIds(identity)),
+            copiedConfig.getRoleMapper().map(mapper -> mapper.getRoleIds(identity)));
+
+    AccessResult directResult =
+        DefaultAccessController.checkBrowseAccess(context, List.of(nodeId)).get(nodeId);
+    AccessResult copiedResult =
+        DefaultAccessController.checkBrowseAccess(context, List.of(nodeId)).get(nodeId);
+
+    assertEquals(AccessResult.DENIED_USER_ACCESS, directResult);
+    assertEquals(directResult, copiedResult);
   }
 
   private static RolePermissionType[] rolePermissions(PermissionType.Field field) {

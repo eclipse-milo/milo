@@ -42,18 +42,18 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
 import org.eclipse.milo.opcua.sdk.server.namespaces.OpcUaNamespace;
 import org.eclipse.milo.opcua.sdk.server.namespaces.ServerNamespace;
 import org.eclipse.milo.opcua.sdk.server.nodes.factories.EventFactory;
+import org.eclipse.milo.opcua.sdk.server.servicesets.AttributeServiceSet;
+import org.eclipse.milo.opcua.sdk.server.servicesets.DiscoveryServiceSet;
+import org.eclipse.milo.opcua.sdk.server.servicesets.MethodServiceSet;
+import org.eclipse.milo.opcua.sdk.server.servicesets.MonitoredItemServiceSet;
+import org.eclipse.milo.opcua.sdk.server.servicesets.NodeManagementServiceSet;
+import org.eclipse.milo.opcua.sdk.server.servicesets.QueryServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.Service;
+import org.eclipse.milo.opcua.sdk.server.servicesets.SessionServiceSet;
+import org.eclipse.milo.opcua.sdk.server.servicesets.SubscriptionServiceSet;
+import org.eclipse.milo.opcua.sdk.server.servicesets.ViewServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultAccessController;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultAttributeServiceSet;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultDiscoveryServiceSet;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultMethodServiceSet;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultMonitoredItemServiceSet;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultNodeManagementServiceSet;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultQueryServiceSet;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultSessionServiceSet;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultSubscriptionServiceSet;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultViewServiceSet;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.Subscription;
 import org.eclipse.milo.opcua.sdk.server.typetree.DataTypeTreeBuilder;
 import org.eclipse.milo.opcua.sdk.server.typetree.ObjectTypeTreeBuilder;
@@ -193,6 +193,22 @@ public class OpcUaServer extends AbstractServiceHandler {
   private final ServerApplicationContext applicationContext;
 
   public OpcUaServer(OpcUaServerConfig config, OpcServerTransportFactory transportFactory) {
+    this(config, transportFactory, new ServiceSets() {});
+  }
+
+  /**
+   * Create an OpcUaServer using the service set implementations supplied by {@code serviceSets}.
+   *
+   * @param config the {@link OpcUaServerConfig}.
+   * @param transportFactory the {@link OpcServerTransportFactory}.
+   * @param serviceSets the {@link ServiceSets} supplying the service set implementations this
+   *     server uses.
+   */
+  public OpcUaServer(
+      OpcUaServerConfig config,
+      OpcServerTransportFactory transportFactory,
+      ServiceSets serviceSets) {
+
     this.config = config;
     this.transportFactory = transportFactory;
 
@@ -259,19 +275,31 @@ public class OpcUaServer extends AbstractServiceHandler {
             .map(e -> EndpointUtil.getPath(e.getEndpointUrl()))
             .distinct();
 
+    DiscoveryServiceSet discoveryServiceSet = serviceSets.createDiscoveryServiceSet(this);
+    AttributeServiceSet attributeServiceSet = serviceSets.createAttributeServiceSet(this);
+    MethodServiceSet methodServiceSet = serviceSets.createMethodServiceSet(this);
+    MonitoredItemServiceSet monitoredItemServiceSet =
+        serviceSets.createMonitoredItemServiceSet(this);
+    NodeManagementServiceSet nodeManagementServiceSet =
+        serviceSets.createNodeManagementServiceSet(this);
+    QueryServiceSet queryServiceSet = serviceSets.createQueryServiceSet(this);
+    SessionServiceSet sessionServiceSet = serviceSets.createSessionServiceSet(this);
+    SubscriptionServiceSet subscriptionServiceSet = serviceSets.createSubscriptionServiceSet(this);
+    ViewServiceSet viewServiceSet = serviceSets.createViewServiceSet(this);
+
     paths.forEach(
         path -> {
-          addServiceSet(path, new DefaultDiscoveryServiceSet(OpcUaServer.this));
+          addServiceSet(path, discoveryServiceSet);
 
           if (!path.endsWith("/discovery")) {
-            addServiceSet(path, new DefaultAttributeServiceSet(OpcUaServer.this));
-            addServiceSet(path, new DefaultMethodServiceSet(OpcUaServer.this));
-            addServiceSet(path, new DefaultMonitoredItemServiceSet(OpcUaServer.this));
-            addServiceSet(path, new DefaultNodeManagementServiceSet(OpcUaServer.this));
-            addServiceSet(path, new DefaultQueryServiceSet());
-            addServiceSet(path, new DefaultSessionServiceSet(OpcUaServer.this));
-            addServiceSet(path, new DefaultSubscriptionServiceSet(OpcUaServer.this));
-            addServiceSet(path, new DefaultViewServiceSet(OpcUaServer.this));
+            addServiceSet(path, attributeServiceSet);
+            addServiceSet(path, methodServiceSet);
+            addServiceSet(path, monitoredItemServiceSet);
+            addServiceSet(path, nodeManagementServiceSet);
+            addServiceSet(path, queryServiceSet);
+            addServiceSet(path, sessionServiceSet);
+            addServiceSet(path, subscriptionServiceSet);
+            addServiceSet(path, viewServiceSet);
           }
         });
 

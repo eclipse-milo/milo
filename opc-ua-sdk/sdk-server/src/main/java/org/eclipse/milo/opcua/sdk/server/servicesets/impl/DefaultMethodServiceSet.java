@@ -95,7 +95,7 @@ public class DefaultMethodServiceSet implements MethodServiceSet {
                             request.getRequestHeader().getTimeoutHint(),
                             request.getRequestHeader().getAdditionalHeader());
 
-                    return server.getAddressSpaceManager().call(callContext, methodsToCall);
+                    return server.getAddressSpaceManager().call(callContext, group);
                   }
                 });
 

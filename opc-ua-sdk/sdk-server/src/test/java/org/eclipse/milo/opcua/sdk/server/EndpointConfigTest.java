@@ -12,12 +12,14 @@ package org.eclipse.milo.opcua.sdk.server;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
@@ -50,6 +52,7 @@ import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.GetEndpointsRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.GetEndpointsResponse;
@@ -848,5 +851,54 @@ public class EndpointConfigTest {
     public CertificateValidator getCertificateValidator() {
       return new CertificateValidator.InsecureCertificateValidator();
     }
+  }
+
+  @Test
+  public void x509TokenPolicyWithExplicitNoneThrows() {
+    UserTokenPolicy tokenPolicy =
+        new UserTokenPolicy(
+            "certificate", UserTokenType.Certificate, null, null, SecurityPolicy.None.getUri());
+
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            EndpointConfig.newBuilder()
+                .setCertificate(mock(X509Certificate.class))
+                .setSecurityPolicy(SecurityPolicy.Basic256Sha256)
+                .setSecurityMode(MessageSecurityMode.SignAndEncrypt)
+                .addTokenPolicy(tokenPolicy)
+                .build());
+  }
+
+  @Test
+  public void x509TokenPolicyInheritingNoneThrows() {
+    UserTokenPolicy tokenPolicy =
+        new UserTokenPolicy("certificate", UserTokenType.Certificate, null, null, null);
+
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> EndpointConfig.newBuilder().addTokenPolicy(tokenPolicy).build());
+  }
+
+  @Test
+  public void x509TokenPolicyWithBasic256Sha256IsAccepted() {
+    UserTokenPolicy tokenPolicy =
+        new UserTokenPolicy(
+            "certificate",
+            UserTokenType.Certificate,
+            null,
+            null,
+            SecurityPolicy.Basic256Sha256.getUri());
+
+    assertDoesNotThrow(() -> EndpointConfig.newBuilder().addTokenPolicy(tokenPolicy).build());
+  }
+
+  @Test
+  public void nonX509TokenPolicyWithNoneIsAccepted() {
+    UserTokenPolicy tokenPolicy =
+        new UserTokenPolicy(
+            "username", UserTokenType.UserName, null, null, SecurityPolicy.None.getUri());
+
+    assertDoesNotThrow(() -> EndpointConfig.newBuilder().addTokenPolicy(tokenPolicy).build());
   }
 }

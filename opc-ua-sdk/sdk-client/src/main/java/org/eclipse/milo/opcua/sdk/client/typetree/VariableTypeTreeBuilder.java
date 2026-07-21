@@ -70,11 +70,21 @@ public class VariableTypeTreeBuilder {
                 null,
                 true));
 
+    // The build is pinned to the session it starts on: if the session closes or changes mid-build
+    // the build fails instead of silently continuing (and caching an incomplete tree) on a session
+    // it didn't start on.
+    NodeId sessionId = client.getSession().getSessionId();
+
     NamespaceTable namespaceTable = client.readNamespaceTable();
 
     OperationLimits operationLimits = client.getOperationLimits();
 
-    addChildren(List.of(root), client, namespaceTable, operationLimits);
+    addChildren(List.of(root), client, sessionId, namespaceTable, operationLimits);
+
+    // Final check: the last batch of requests could have been issued just as the session changed
+    // and succeeded against the new session; don't return a tree partially read from another
+    // session.
+    ClientBrowseUtils.checkSessionUnchanged(client, sessionId);
 
     return new VariableTypeTree(root);
   }
@@ -102,8 +112,12 @@ public class VariableTypeTreeBuilder {
   private static void addChildren(
       List<Tree<VariableType>> parentTypes,
       OpcUaClient client,
+      NodeId sessionId,
       NamespaceTable namespaceTable,
-      OperationLimits operationLimits) {
+      OperationLimits operationLimits)
+      throws UaException {
+
+    ClientBrowseUtils.checkSessionUnchanged(client, sessionId);
 
     List<List<ReferenceDescription>> parentSubtypes =
         ClientBrowseUtils.browseWithOperationLimits(
@@ -135,7 +149,7 @@ public class VariableTypeTreeBuilder {
               .collect(Collectors.toList());
 
       List<Attributes> variableTypeAttributes =
-          readVariableTypeAttributes(client, variableTypeIds, operationLimits);
+          readVariableTypeAttributes(client, sessionId, variableTypeIds, operationLimits);
 
       assert subtypes.size() == variableTypeIds.size()
           && subtypes.size() == variableTypeAttributes.size();
@@ -170,16 +184,22 @@ public class VariableTypeTreeBuilder {
     }
 
     if (!childTypes.isEmpty()) {
-      addChildren(childTypes, client, namespaceTable, operationLimits);
+      addChildren(childTypes, client, sessionId, namespaceTable, operationLimits);
     }
   }
 
   private static List<Attributes> readVariableTypeAttributes(
-      OpcUaClient client, List<NodeId> variableTypeIds, OperationLimits operationLimits) {
+      OpcUaClient client,
+      NodeId sessionId,
+      List<NodeId> variableTypeIds,
+      OperationLimits operationLimits)
+      throws UaException {
 
     if (variableTypeIds.isEmpty()) {
       return List.of();
     }
+
+    ClientBrowseUtils.checkSessionUnchanged(client, sessionId);
 
     var readValueIds = new ArrayList<ReadValueId>();
 

@@ -14,7 +14,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
-import java.util.ArrayList;
 import java.util.List;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -53,7 +52,7 @@ public class UascServerSymmetricHandler extends ByteToMessageCodec<UascServiceRe
 
   private final int maxChunkCount;
   private final int maxChunkSize;
-  private List<ByteBuf> chunkBuffers;
+  private final ChunkBufferAccumulator chunkBuffers;
 
   private final OpcUaBinaryEncoder binaryEncoder;
   private final OpcUaBinaryDecoder binaryDecoder;
@@ -89,7 +88,7 @@ public class UascServerSymmetricHandler extends ByteToMessageCodec<UascServiceRe
     maxChunkCount = channelParameters.getLocalMaxChunkCount();
     maxChunkSize = channelParameters.getLocalReceiveBufferSize();
 
-    chunkBuffers = new ArrayList<>(maxChunkCount);
+    chunkBuffers = new ChunkBufferAccumulator(maxChunkCount);
   }
 
   @Override
@@ -97,6 +96,27 @@ public class UascServerSymmetricHandler extends ByteToMessageCodec<UascServiceRe
     ctx.pipeline().addLast(new UascServiceRequestHandler(config, applicationContext));
 
     super.handlerAdded(ctx);
+  }
+
+  @Override
+  public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
+    chunkBuffers.releaseAll();
+
+    super.handlerRemoved(ctx);
+  }
+
+  @Override
+  public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+    chunkBuffers.releaseAll();
+
+    super.channelInactive(ctx);
+  }
+
+  @Override
+  public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+    chunkBuffers.releaseAll();
+
+    super.exceptionCaught(ctx, cause);
   }
 
   @Override
@@ -143,8 +163,7 @@ public class UascServerSymmetricHandler extends ByteToMessageCodec<UascServiceRe
     char chunkType = (char) buffer.readByte();
 
     if (chunkType == 'A') {
-      chunkBuffers.forEach(ByteBuf::release);
-      chunkBuffers.clear();
+      chunkBuffers.releaseAll();
     } else {
       buffer.skipBytes(4); // Skip messageSize
 
@@ -162,7 +181,7 @@ public class UascServerSymmetricHandler extends ByteToMessageCodec<UascServiceRe
             String.format("max chunk size exceeded (%s)", maxChunkSize));
       }
 
-      chunkBuffers.add(buffer.retain());
+      chunkBuffers.add(buffer);
 
       if (maxChunkCount > 0 && chunkBuffers.size() > maxChunkCount) {
         throw new UaException(
@@ -171,8 +190,7 @@ public class UascServerSymmetricHandler extends ByteToMessageCodec<UascServiceRe
       }
 
       if (chunkType == 'F') {
-        final List<ByteBuf> buffersToDecode = chunkBuffers;
-        chunkBuffers = new ArrayList<>();
+        final List<ByteBuf> buffersToDecode = chunkBuffers.takeAll();
 
         ByteBuf message = null;
 

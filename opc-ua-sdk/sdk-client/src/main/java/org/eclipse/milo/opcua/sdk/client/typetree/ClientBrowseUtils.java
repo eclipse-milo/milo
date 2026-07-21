@@ -18,10 +18,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
 import org.eclipse.milo.opcua.sdk.client.OperationLimits;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.BrowseDescription;
@@ -30,11 +33,16 @@ import org.eclipse.milo.opcua.stack.core.types.structured.BrowseResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Shared utility methods for client-side browse and read operations with operation limit handling.
+ *
+ * <p>Service-level failures propagate as {@link UaException} so that callers building type trees
+ * fail rather than silently caching incomplete results. Operation-level failures (bad status on an
+ * individual node) are still tolerated and yield empty/bad results for that node only.
  */
 final class ClientBrowseUtils {
 
@@ -43,15 +51,43 @@ final class ClientBrowseUtils {
   private ClientBrowseUtils() {}
 
   /**
+   * Check that the client's currently-active session is the session identified by {@code
+   * sessionId}.
+   *
+   * <p>Used to pin a multi-request type tree build to the session it started on, so that losing the
+   * session aborts the build instead of letting it silently span sessions.
+   *
+   * @param client the OPC UA client.
+   * @param sessionId the id of the session the operation started on.
+   * @throws UaException with {@link StatusCodes#Bad_SessionClosed} if there is no active session or
+   *     the active session is not the expected one.
+   */
+  static void checkSessionUnchanged(OpcUaClient client, NodeId sessionId) throws UaException {
+    OpcUaSession session;
+    try {
+      session = client.getSessionAsync().getNow(null);
+    } catch (RuntimeException e) {
+      session = null;
+    }
+
+    if (session == null || !sessionId.equals(session.getSessionId())) {
+      throw new UaException(
+          StatusCodes.Bad_SessionClosed, "session closed or changed during type tree build");
+    }
+  }
+
+  /**
    * Read values with operation limits, partitioning requests as necessary.
    *
    * @param client the OPC UA client.
    * @param readValueIds the list of ReadValueIds to read.
    * @param limits the operation limits from the server.
    * @return the list of DataValues corresponding to the read requests.
+   * @throws UaException if a service-level error occurs.
    */
   static List<DataValue> readWithOperationLimits(
-      OpcUaClient client, List<ReadValueId> readValueIds, OperationLimits limits) {
+      OpcUaClient client, List<ReadValueId> readValueIds, OperationLimits limits)
+      throws UaException {
 
     if (readValueIds.isEmpty()) {
       return List.of();
@@ -68,19 +104,11 @@ final class ClientBrowseUtils {
 
     var values = new ArrayList<DataValue>();
 
-    partition(readValueIds, partitionSize)
-        .forEach(
-            partitionList -> {
-              try {
-                ReadResponse response = client.read(0.0, TimestampsToReturn.Neither, partitionList);
-                DataValue[] results = response.getResults();
-                Collections.addAll(values, requireNonNull(results));
-              } catch (UaException e) {
-                LOGGER.debug("Read failed: {}", e.getMessage(), e);
-                var value = new DataValue(e.getStatusCode());
-                values.addAll(Collections.nCopies(partitionList.size(), value));
-              }
-            });
+    for (List<ReadValueId> partitionList : partition(readValueIds, partitionSize).toList()) {
+      ReadResponse response = client.read(0.0, TimestampsToReturn.Neither, partitionList);
+      DataValue[] results = response.getResults();
+      Collections.addAll(values, requireNonNull(results));
+    }
 
     return values;
   }
@@ -92,9 +120,11 @@ final class ClientBrowseUtils {
    * @param browseDescriptions the list of BrowseDescriptions.
    * @param limits the operation limits from the server.
    * @return the list of reference description lists corresponding to each browse request.
+   * @throws UaException if a service-level error occurs.
    */
   static List<List<ReferenceDescription>> browseWithOperationLimits(
-      OpcUaClient client, List<BrowseDescription> browseDescriptions, OperationLimits limits) {
+      OpcUaClient client, List<BrowseDescription> browseDescriptions, OperationLimits limits)
+      throws UaException {
 
     if (browseDescriptions.isEmpty()) {
       return List.of();
@@ -111,8 +141,10 @@ final class ClientBrowseUtils {
 
     var references = new ArrayList<List<ReferenceDescription>>();
 
-    partition(browseDescriptions, partitionSize)
-        .forEach(partitionList -> references.addAll(browse(client, partitionList)));
+    for (List<BrowseDescription> partitionList :
+        partition(browseDescriptions, partitionSize).toList()) {
+      references.addAll(browse(client, partitionList));
+    }
 
     return references;
   }
@@ -123,9 +155,10 @@ final class ClientBrowseUtils {
    * @param client the OPC UA client.
    * @param browseDescriptions the list of BrowseDescriptions.
    * @return a list of reference description lists, one per browse description.
+   * @throws UaException if a service-level error occurs.
    */
   static List<List<ReferenceDescription>> browse(
-      OpcUaClient client, List<BrowseDescription> browseDescriptions) {
+      OpcUaClient client, List<BrowseDescription> browseDescriptions) throws UaException {
 
     if (browseDescriptions.isEmpty()) {
       return List.of();
@@ -133,29 +166,22 @@ final class ClientBrowseUtils {
 
     final var referenceDescriptionLists = new ArrayList<List<ReferenceDescription>>();
 
-    try {
-      client
-          .browse(browseDescriptions)
-          .forEach(
-              result -> {
-                if (result.getStatusCode().isGood()) {
-                  var references = new ArrayList<ReferenceDescription>();
+    for (BrowseResult result : client.browse(browseDescriptions)) {
+      if (result.getStatusCode().isGood()) {
+        var references = new ArrayList<ReferenceDescription>();
 
-                  ReferenceDescription[] refs =
-                      requireNonNullElse(result.getReferences(), new ReferenceDescription[0]);
-                  Collections.addAll(references, refs);
+        ReferenceDescription[] refs =
+            requireNonNullElse(result.getReferences(), new ReferenceDescription[0]);
+        Collections.addAll(references, refs);
 
-                  ByteString continuationPoint = result.getContinuationPoint();
-                  List<ReferenceDescription> nextRefs = maybeBrowseNext(client, continuationPoint);
-                  references.addAll(nextRefs);
+        ByteString continuationPoint = result.getContinuationPoint();
+        List<ReferenceDescription> nextRefs = maybeBrowseNext(client, continuationPoint);
+        references.addAll(nextRefs);
 
-                  referenceDescriptionLists.add(references);
-                } else {
-                  referenceDescriptionLists.add(List.of());
-                }
-              });
-    } catch (UaException e) {
-      referenceDescriptionLists.addAll(Collections.nCopies(browseDescriptions.size(), List.of()));
+        referenceDescriptionLists.add(references);
+      } else {
+        referenceDescriptionLists.add(List.of());
+      }
     }
 
     return referenceDescriptionLists;
@@ -167,28 +193,24 @@ final class ClientBrowseUtils {
    * @param client the OPC UA client.
    * @param continuationPoint the continuation point from a previous browse.
    * @return the list of additional reference descriptions.
+   * @throws UaException if a service-level error occurs.
    */
   static List<ReferenceDescription> maybeBrowseNext(
-      OpcUaClient client, ByteString continuationPoint) {
+      OpcUaClient client, @Nullable ByteString continuationPoint) throws UaException {
 
     var references = new ArrayList<ReferenceDescription>();
 
     while (continuationPoint != null && continuationPoint.isNotNull()) {
-      try {
-        BrowseNextResponse response = client.browseNext(false, List.of(continuationPoint));
+      BrowseNextResponse response = client.browseNext(false, List.of(continuationPoint));
 
-        BrowseResult result = requireNonNull(response.getResults())[0];
+      BrowseResult result = requireNonNull(response.getResults())[0];
 
-        ReferenceDescription[] rds =
-            requireNonNullElse(result.getReferences(), new ReferenceDescription[0]);
+      ReferenceDescription[] rds =
+          requireNonNullElse(result.getReferences(), new ReferenceDescription[0]);
 
-        references.addAll(List.of(rds));
+      references.addAll(List.of(rds));
 
-        continuationPoint = result.getContinuationPoint();
-      } catch (Exception e) {
-        LOGGER.warn("BrowseNext failed: {}", e.getMessage(), e);
-        return references;
-      }
+      continuationPoint = result.getContinuationPoint();
     }
 
     return references;

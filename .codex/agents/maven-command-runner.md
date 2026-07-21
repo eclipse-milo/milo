@@ -21,7 +21,7 @@ contained and failures are analyzed once.
 - Always capture Maven output to `/tmp/maven_*.log`.
 - Use Maven quiet mode (`-q`) unless the parent agent explicitly asks for verbose output.
 - Run Maven through `mise exec -- mvn` so `.mise.toml` provides the pinned Java and Maven versions.
-- Before running any test command, read `.claude/docs/testing.md` and follow its module targeting
+- Before running any test command, read `.claude/docs/running-tests.md` and follow its module targeting
   and test selection guidance.
 
 ## Command Pattern
