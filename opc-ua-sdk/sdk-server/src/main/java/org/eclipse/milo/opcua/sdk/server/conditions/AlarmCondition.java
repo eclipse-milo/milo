@@ -208,6 +208,40 @@ public class AlarmCondition extends AcknowledgeableCondition {
     return active || super.computeRetain();
   }
 
+  @Override
+  ConditionSnapshot.@Nullable ShelvingSnapshot captureShelving() {
+    return shelvingRuntime != null ? shelvingRuntime.captureState() : null;
+  }
+
+  @Override
+  @Nullable Boolean captureActive() {
+    return isActive();
+  }
+
+  @Override
+  void applySnapshot(
+      ConditionSnapshot snapshot,
+      ConditionSnapshot.@Nullable BranchSnapshot trunkSnapshot,
+      DateTime time) {
+
+    super.applySnapshot(snapshot, trunkSnapshot, time);
+
+    boolean restoredActive = trunkSnapshot != null && Boolean.TRUE.equals(trunkSnapshot.active());
+    if (isActive() != restoredActive) {
+      setTwoState(activeState, restoredActive, ACTIVE_TEXTS, time);
+      active = restoredActive;
+    }
+
+    // Absent shelving state takes the §4.12 Unshelved recovery default rather than leaving a
+    // previous restore's shelved state (and its armed timer) in place.
+    ConditionSnapshot.ShelvingSnapshot shelving = snapshot.shelving();
+    if (shelvingRuntime != null) {
+      shelvingRuntime.restoreState(
+          shelving != null ? shelving.state() : ShelvedState.UNSHELVED,
+          shelving != null ? shelving.unshelveDeadline() : null);
+    }
+  }
+
   /**
    * Apply an ActiveState change inside a state mutation: ActiveState coherence, the
    * acknowledgement-needed transition on activation, and one-shot shelving release on deactivation.

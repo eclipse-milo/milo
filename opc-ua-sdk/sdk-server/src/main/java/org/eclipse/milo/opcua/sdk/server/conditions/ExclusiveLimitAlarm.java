@@ -10,12 +10,14 @@
 
 package org.eclipse.milo.opcua.sdk.server.conditions;
 
+import java.util.Set;
 import java.util.function.Consumer;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ExclusiveLimitAlarmTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ExclusiveLimitStateMachineTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -152,6 +154,30 @@ public class ExclusiveLimitAlarm extends LimitAlarm {
     }
 
     setActive(false, null);
+  }
+
+  @Override
+  Set<ExclusiveLimitState> captureActiveLimits() {
+    ExclusiveLimitState limitState = getLimitState();
+    return limitState != null ? Set.of(limitState) : Set.of();
+  }
+
+  @Override
+  void applySnapshot(
+      ConditionSnapshot snapshot,
+      ConditionSnapshot.@Nullable BranchSnapshot trunkSnapshot,
+      DateTime time) {
+
+    super.applySnapshot(snapshot, trunkSnapshot, time);
+
+    ExclusiveLimitState target =
+        isActive() && trunkSnapshot != null
+            ? ExclusiveLimitState.mostSevere(trunkSnapshot.activeLimits())
+            : null;
+
+    // Restore replaces the machine state: an inactive snapshot clears a previous restore's limit.
+    limitStateMachine.setState(target, time);
+    setActiveEffectiveDisplayName(target);
   }
 
   /**

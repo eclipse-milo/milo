@@ -55,28 +55,6 @@ import org.jspecify.annotations.Nullable;
  */
 final class ShelvingRuntime {
 
-  enum ShelvedState {
-    UNSHELVED("Unshelved", NodeIds.ShelvedStateMachineType_Unshelved),
-    TIMED_SHELVED("TimedShelved", NodeIds.ShelvedStateMachineType_TimedShelved),
-    ONE_SHOT_SHELVED("OneShotShelved", NodeIds.ShelvedStateMachineType_OneShotShelved);
-
-    private final String stateName;
-    private final NodeId stateId;
-
-    ShelvedState(String stateName, NodeId stateId) {
-      this.stateName = stateName;
-      this.stateId = stateId;
-    }
-
-    String stateName() {
-      return stateName;
-    }
-
-    NodeId stateId() {
-      return stateId;
-    }
-  }
-
   /** Immutable {@code (state, deadline)} pair for the lock-free UnshelveTime read. */
   private record ReadSnapshot(ShelvedState state, @Nullable DateTime deadline) {}
 
@@ -299,6 +277,48 @@ final class ShelvingRuntime {
   void onActiveTransition(boolean active, DateTime time) {
     if (!active && state == ShelvedState.ONE_SHOT_SHELVED) {
       applyTransition(ShelvedState.UNSHELVED, null, time);
+    }
+  }
+
+  /** Capture the shelving state for a {@link ConditionSnapshot}; the Condition's lock is held. */
+  ConditionSnapshot.ShelvingSnapshot captureState() {
+    return new ConditionSnapshot.ShelvingSnapshot(state, unshelveDeadline);
+  }
+
+  /**
+   * Restore shelving state from a snapshot, silently: CurrentState and SuppressedOrShelved are
+   * written but no transition is modelled (LastTransition keeps its seeded NULL value) and no event
+   * is generated. A deadline already in the past arms no timer — the restored alarm unshelves
+   * lazily on its first touch, composing with {@link #applyExpiryIfDue()}. TimedShelved without a
+   * deadline restores as Unshelved.
+   *
+   * <p>Must be called while holding the owning Condition's lock, before the Condition has generated
+   * events.
+   */
+  void restoreState(ShelvedState target, @Nullable DateTime deadline) {
+    if (target == ShelvedState.TIMED_SHELVED && deadline == null) {
+      // TimedShelved without its deadline could never expire — both the timer and the lazy
+      // fallback key on the deadline — so the incoherent pair normalizes to the Unshelved
+      // recovery default instead of shelving forever.
+      target = ShelvedState.UNSHELVED;
+    }
+
+    DateTime effectiveDeadline = target != ShelvedState.UNSHELVED ? deadline : null;
+
+    state = target;
+    unshelveDeadline = effectiveDeadline;
+    readSnapshot = new ReadSnapshot(target, effectiveDeadline);
+    shelveGeneration++;
+    cancelExpiryTimer();
+
+    setCurrentState(target);
+
+    alarm.getNode().setSuppressedOrShelved(target != ShelvedState.UNSHELVED);
+
+    if (effectiveDeadline != null
+        && !expiryTimerSuppressed
+        && effectiveDeadline.getJavaTime() > System.currentTimeMillis()) {
+      scheduleExpiryTimer(effectiveDeadline);
     }
   }
 

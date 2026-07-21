@@ -93,6 +93,13 @@ public class Condition {
    */
   private volatile boolean enabled;
 
+  /**
+   * Whether this Condition is live, i.e. externally visible: it has generated an event or exposed a
+   * refresh replay snapshot. Once live, {@link #restoreSnapshot(ConditionSnapshot)} is rejected, so
+   * a restore cannot invalidate an EventId a client may already hold. Guarded by the lock.
+   */
+  private boolean live = false;
+
   private final ConditionTypeNode node;
   private final OpcUaServer server;
 
@@ -407,10 +414,159 @@ public class Condition {
         return List.of();
       }
 
+      // A restored branch can be Retained without a replayable event identity: an empty or
+      // partial snapshot leaves no EventId (or one absent from the accepted window), and replaying
+      // it as-is would be unacknowledgeable. Give the branch a usable identity before exposure.
+      if (trunk.getLastEventId().isNull()) {
+        ByteString eventId = NonceUtil.generateNonce(16);
+        DateTime time = DateTime.now();
+        node.setEventId(eventId);
+        node.setTime(time);
+        trunk.recordEvent(eventId, time);
+      } else if (!trunk.acceptsEventId(trunk.getLastEventId())) {
+        trunk.recordEvent(trunk.getLastEventId(), trunk.getLastEventTime());
+      }
+
+      // The replayed EventId is now client-visible: a later restore may not invalidate it.
+      live = true;
+
       return List.of(ConditionEventSnapshot.create(server, node, trunk));
     } finally {
       lock.unlock();
     }
+  }
+
+  /**
+   * Capture an immutable snapshot of this Condition's state (Part 9 §4.12), taken under the
+   * Condition's lock so its values are mutually consistent.
+   *
+   * <p>The snapshot may contain operator identity (ClientUserId) and operator comments; storage and
+   * serialization are the application's concern.
+   *
+   * @return the captured {@link ConditionSnapshot}.
+   */
+  public ConditionSnapshot captureSnapshot() {
+    lock.lock();
+    try {
+      return new ConditionSnapshot(
+          isEnabled(),
+          node.getSeverity(),
+          lastSeverity != null && currentValue(lastSeverity) instanceof UShort severity
+              ? severity
+              : null,
+          quality != null && currentValue(quality) instanceof StatusCode statusCode
+              ? statusCode
+              : null,
+          comment != null && currentValue(comment) instanceof LocalizedText text ? text : null,
+          node.getClientUserId(),
+          captureShelving(),
+          List.of(captureBranch(trunk)));
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  /**
+   * Restore state from a previously captured {@link ConditionSnapshot} (Part 9 §4.12).
+   *
+   * <p>Restore is a pre-live operation: it applies state silently — no events are generated and no
+   * EventIds are minted — and is rejected once this Condition is live, i.e. it has generated an
+   * event or exposed a refresh replay snapshot. Absent snapshot fields take the §4.12 recovery
+   * defaults (Enabled, Acked and Confirmed {@code false}, Unshelved), replacing any state a
+   * previous restore applied. Reconnecting clients learn recovered state via ConditionRefresh
+   * replay of the restored Retained branches, carrying the captured EventId and Time (a Retained
+   * branch restored without an event identity mints one at first replay), and operator methods
+   * accept pre-capture EventIds. Stable ConditionIds across restarts are the application's
+   * responsibility: restore only applies state to whatever instance node the Condition wraps.
+   *
+   * @param snapshot the {@link ConditionSnapshot} to restore.
+   * @throws IllegalStateException if this Condition is already live.
+   */
+  public void restoreSnapshot(ConditionSnapshot snapshot) {
+    lock.lock();
+    try {
+      if (live) {
+        throw new IllegalStateException(
+            "restoreSnapshot is a pre-live operation: this Condition has already generated or"
+                + " replayed events");
+      }
+
+      DateTime now = DateTime.now();
+
+      ConditionSnapshot.BranchSnapshot trunkSnapshot = snapshot.trunk().orElse(null);
+      trunk.restore(trunkSnapshot);
+
+      applySnapshot(snapshot, trunkSnapshot, now);
+
+      initializeRetain();
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  /**
+   * Apply {@code snapshot}'s state to the instance nodes, silently, after the trunk branch state
+   * has been restored. Subclasses override to apply their own level's state and call {@code super}.
+   *
+   * <p>Called while holding the Condition's lock.
+   *
+   * @param snapshot the snapshot being restored.
+   * @param trunkSnapshot the snapshot's trunk branch, or {@code null} if it has none.
+   * @param time the transition time shared by all restored variables.
+   */
+  void applySnapshot(
+      ConditionSnapshot snapshot,
+      ConditionSnapshot.@Nullable BranchSnapshot trunkSnapshot,
+      DateTime time) {
+
+    boolean enable = snapshot.enabled() == null || snapshot.enabled();
+    if (isEnabled() != enable) {
+      setEnabledState(enable, time);
+    }
+
+    if (snapshot.quality() != null) {
+      setConditionVariable(quality, new Variant(snapshot.quality()), time);
+    }
+    if (snapshot.severity() != null) {
+      node.setSeverity(snapshot.severity());
+    }
+    if (snapshot.lastSeverity() != null) {
+      setConditionVariable(lastSeverity, new Variant(snapshot.lastSeverity()), time);
+    }
+    if (snapshot.comment() != null) {
+      setConditionVariable(comment, new Variant(snapshot.comment()), time);
+    }
+    if (snapshot.clientUserId() != null) {
+      node.setClientUserId(snapshot.clientUserId());
+    }
+  }
+
+  private ConditionSnapshot.BranchSnapshot captureBranch(ConditionBranch branch) {
+    return new ConditionSnapshot.BranchSnapshot(
+        branch.getBranchId(),
+        branch.isAcked(),
+        branch.isConfirmed(),
+        captureActive(),
+        captureActiveLimits(),
+        branch.isRetained(),
+        branch.getLastEventId(),
+        branch.getLastEventTime(),
+        branch.captureEventIdWindow());
+  }
+
+  /** Capture the shelving state for a snapshot; non-alarm Conditions have none. */
+  ConditionSnapshot.@Nullable ShelvingSnapshot captureShelving() {
+    return null;
+  }
+
+  /** Capture the alarm active state for a branch snapshot; non-alarm Conditions have none. */
+  @Nullable Boolean captureActive() {
+    return null;
+  }
+
+  /** Capture the violated limits for a branch snapshot; non-limit Conditions have none. */
+  Set<ExclusiveLimitState> captureActiveLimits() {
+    return Set.of();
   }
 
   /**
@@ -422,6 +578,8 @@ public class Condition {
    */
   void fireEvent(String message, DateTime time) {
     ByteString eventId = NonceUtil.generateNonce(16);
+
+    live = true;
 
     node.setEventId(eventId);
     node.setTime(time);

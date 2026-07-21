@@ -10,8 +10,10 @@
 
 package org.eclipse.milo.opcua.sdk.server.conditions;
 
+import java.util.Set;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The states of the ExclusiveLimitStateMachine (Part 9 §5.8.19.2), doubling as the identifier of
@@ -71,5 +73,19 @@ public enum ExclusiveLimitState {
   /** Rank within a side: HighHigh/LowLow outrank High/Low; escalation compares within one side. */
   int severityRank() {
     return this == HIGH_HIGH || this == LOW_LOW ? 2 : 1;
+  }
+
+  /**
+   * The most severe limit in {@code limits} per {@link #BY_EXCURSION excursion order}, or {@code
+   * null} if the set is empty.
+   */
+  static @Nullable ExclusiveLimitState mostSevere(Set<ExclusiveLimitState> limits) {
+    for (ExclusiveLimitState limit : BY_EXCURSION) {
+      if (limits.contains(limit)) {
+        return limit;
+      }
+    }
+
+    return null;
   }
 }

@@ -11,13 +11,16 @@
 package org.eclipse.milo.opcua.sdk.server.conditions;
 
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import org.eclipse.milo.opcua.sdk.server.model.objects.NonExclusiveLimitAlarmTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -164,6 +167,42 @@ public class NonExclusiveLimitAlarm extends LimitAlarm {
             applyLimitStates(targets, changed);
           }
         });
+  }
+
+  @Override
+  Set<ExclusiveLimitState> captureActiveLimits() {
+    var activeLimits = EnumSet.noneOf(ExclusiveLimitState.class);
+    for (ExclusiveLimitState limit : limitStates.keySet()) {
+      if (isLimitActive(limit)) {
+        activeLimits.add(limit);
+      }
+    }
+
+    return activeLimits;
+  }
+
+  @Override
+  void applySnapshot(
+      ConditionSnapshot snapshot,
+      ConditionSnapshot.@Nullable BranchSnapshot trunkSnapshot,
+      DateTime time) {
+
+    super.applySnapshot(snapshot, trunkSnapshot, time);
+
+    // Restore replaces every configured limit state: limits the snapshot omits go inactive, so an
+    // earlier restore's violations cannot linger.
+    Set<ExclusiveLimitState> activeLimits =
+        isActive() && trunkSnapshot != null ? trunkSnapshot.activeLimits() : Set.of();
+
+    for (Map.Entry<ExclusiveLimitState, TwoStateVariableTypeNode> entry : limitStates.entrySet()) {
+      ExclusiveLimitState limit = entry.getKey();
+      boolean violated = activeLimits.contains(limit);
+      if (isLimitActive(limit) != violated) {
+        setTwoState(entry.getValue(), violated, stateTexts(limit), time);
+      }
+    }
+
+    setActiveEffectiveDisplayName(ExclusiveLimitState.mostSevere(activeLimits));
   }
 
   /**

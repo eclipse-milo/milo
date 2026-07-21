@@ -165,6 +165,26 @@ public class AcknowledgeableCondition extends Condition {
     return !trunk.isAcked() || (hasConfirmedState() && !trunk.isConfirmed());
   }
 
+  @Override
+  void applySnapshot(
+      ConditionSnapshot snapshot,
+      ConditionSnapshot.@Nullable BranchSnapshot trunkSnapshot,
+      DateTime time) {
+
+    super.applySnapshot(snapshot, trunkSnapshot, time);
+
+    // The trunk branch was restored (with the §4.12 Acked/Confirmed=false recovery defaults for
+    // absent fields) before this hook runs; mirror its state into the node's TwoStateVariables.
+    setTwoState(ackedState, currentBranch().isAcked(), ACKED_TEXTS, time);
+    if (hasConfirmedState()) {
+      setTwoState(confirmedState, currentBranch().isConfirmed(), CONFIRMED_TEXTS, time);
+    } else {
+      // Without the optional ConfirmedState the branch invariant is confirmed == true; the §4.12
+      // Confirmed=false default the branch restore applied would contradict isConfirmed().
+      currentBranch().setConfirmed(true);
+    }
+  }
+
   void applyAcked(ConditionBranch branch, boolean acked, DateTime time) {
     boolean stateChanged = branch.isAcked() != acked;
 

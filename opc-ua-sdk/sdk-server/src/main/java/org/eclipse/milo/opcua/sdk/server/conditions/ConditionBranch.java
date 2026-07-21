@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.server.conditions;
 
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -172,6 +173,62 @@ public class ConditionBranch {
         new EventState(eventId, acked, confirmed, ackedStateGeneration, confirmedStateGeneration));
     while (eventStateWindow.size() > EVENT_ID_WINDOW_SIZE) {
       eventStateWindow.pollFirst();
+    }
+  }
+
+  /**
+   * Capture the accepted-EventId window for a {@link ConditionSnapshot.BranchSnapshot}, oldest
+   * entry first, with each entry's obligation-cycle generations normalized to current/stale flags.
+   * Called under the owning Condition's lock.
+   */
+  List<ConditionSnapshot.AcceptedEventId> captureEventIdWindow() {
+    return eventStateWindow.stream()
+        .map(
+            eventState ->
+                new ConditionSnapshot.AcceptedEventId(
+                    eventState.eventId(),
+                    eventState.acked(),
+                    eventState.confirmed(),
+                    eventState.ackedStateGeneration() == ackedStateGeneration,
+                    eventState.confirmedStateGeneration() == confirmedStateGeneration))
+        .toList();
+  }
+
+  /**
+   * Restore this branch's state from {@code snapshot}; {@code null} applies the §4.12 recovery
+   * defaults (Acked and Confirmed {@code false}, no event identity, empty window). The captured
+   * current/stale obligation-cycle flags are rebased onto fresh generation counters. Retained is
+   * restored as captured; the owning Condition recomputes the trunk's value afterwards.
+   *
+   * <p>Called under the owning Condition's lock, before the Condition is live.
+   */
+  void restore(ConditionSnapshot.@Nullable BranchSnapshot snapshot) {
+    acked = snapshot != null && Boolean.TRUE.equals(snapshot.acked());
+    confirmed = snapshot != null && Boolean.TRUE.equals(snapshot.confirmed());
+    retained = snapshot != null && snapshot.retained();
+
+    ByteString lastEventId = snapshot != null ? snapshot.lastEventId() : null;
+    DateTime lastEventTime = snapshot != null ? snapshot.lastEventTime() : null;
+    this.lastEventId = lastEventId != null ? lastEventId : ByteString.NULL_VALUE;
+    this.lastEventTime = lastEventTime != null ? lastEventTime : DateTime.NULL_VALUE;
+
+    ackedStateGeneration = 1;
+    confirmedStateGeneration = 1;
+
+    eventStateWindow.clear();
+    if (snapshot != null) {
+      for (ConditionSnapshot.AcceptedEventId entry : snapshot.eventIdWindow()) {
+        eventStateWindow.addLast(
+            new EventState(
+                entry.eventId(),
+                entry.acked(),
+                entry.confirmed(),
+                entry.ackedCurrentCycle() ? 1 : 0,
+                entry.confirmedCurrentCycle() ? 1 : 0));
+      }
+      while (eventStateWindow.size() > EVENT_ID_WINDOW_SIZE) {
+        eventStateWindow.pollFirst();
+      }
     }
   }
 
