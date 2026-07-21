@@ -19,8 +19,10 @@ import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceTypeTree;
 import org.eclipse.milo.opcua.sdk.server.AddressSpaceManager;
 import org.eclipse.milo.opcua.sdk.server.NodeManager;
+import org.eclipse.milo.opcua.sdk.server.ObjectTypeManager;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.UaNodeManager;
+import org.eclipse.milo.opcua.sdk.server.VariableTypeManager;
 import org.eclipse.milo.opcua.sdk.server.namespaces.loader.NodeLoader;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
@@ -71,6 +73,9 @@ public class TypeFixtures {
   private final NamespaceTable namespaceTable;
   private final UaNodeManager nodeManager;
   private final UaNodeContext context;
+  private final ObjectTypeManager objectTypeManager;
+  private final VariableTypeManager variableTypeManager;
+  private final TypeModelCache typeModelCache;
 
   private TypeFixtures() throws Exception {
     server = Mockito.mock(OpcUaServer.class);
@@ -122,6 +127,17 @@ public class TypeFixtures {
           }
         };
 
+    objectTypeManager = new ObjectTypeManager();
+    Mockito.when(server.getObjectTypeManager()).thenReturn(objectTypeManager);
+
+    variableTypeManager = new VariableTypeManager();
+    Mockito.when(server.getVariableTypeManager()).thenReturn(variableTypeManager);
+
+    // The cache's supplier goes through compiler() so each compilation sees a ReferenceType tree
+    // rebuilt from current state (custom ReferenceTypes added by tests included).
+    typeModelCache = new TypeModelCache(this::compiler);
+    Mockito.when(server.getTypeModelCache()).thenReturn(typeModelCache);
+
     new NodeLoader(context, nodeManager).loadNodes();
 
     rebuildReferenceTypeTree();
@@ -164,6 +180,44 @@ public class TypeFixtures {
    */
   public UaNodeContext context() {
     return context;
+  }
+
+  /**
+   * @return the real {@link ObjectTypeManager} wired into the mocked server.
+   */
+  public ObjectTypeManager objectTypeManager() {
+    return objectTypeManager;
+  }
+
+  /**
+   * @return the real {@link VariableTypeManager} wired into the mocked server.
+   */
+  public VariableTypeManager variableTypeManager() {
+    return variableTypeManager;
+  }
+
+  /**
+   * @return the real {@link TypeModelCache} wired into the mocked server.
+   */
+  public TypeModelCache typeModelCache() {
+    return typeModelCache;
+  }
+
+  /**
+   * @return a {@link NodeInstantiator} over this fixture's mocked server. The ReferenceType tree is
+   *     rebuilt first so types added by the test are classified correctly.
+   */
+  public NodeInstantiator instantiator() {
+    rebuildReferenceTypeTree();
+    return new NodeInstantiator(server);
+  }
+
+  /**
+   * @return a fresh, empty destination {@link UaNodeManager}, distinct from the source manager
+   *     holding ns0 and the synthetic types.
+   */
+  public UaNodeManager newTargetManager() {
+    return new UaNodeManager();
   }
 
   /**
