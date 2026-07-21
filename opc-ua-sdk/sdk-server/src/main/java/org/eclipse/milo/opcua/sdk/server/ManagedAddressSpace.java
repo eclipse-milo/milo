@@ -74,6 +74,13 @@ public abstract class ManagedAddressSpace implements AddressSpace {
     nodeFactory = createNodeFactory();
   }
 
+  /**
+   * @deprecated the legacy {@link NodeFactory} is replaced by {@link
+   *     org.eclipse.milo.opcua.sdk.server.nodes.instantiation.NodeInstantiator}, obtained from
+   *     {@code getServer().getNodeInstantiator()} and targeted at {@link #getNodeManager()}. See
+   *     {@code docs/features/node-instantiation-migration.md}.
+   */
+  @Deprecated
   protected NodeFactory createNodeFactory() {
     return new NodeFactory(nodeContext);
   }
@@ -86,6 +93,13 @@ public abstract class ManagedAddressSpace implements AddressSpace {
     return nodeContext;
   }
 
+  /**
+   * @deprecated the legacy {@link NodeFactory} is replaced by {@link
+   *     org.eclipse.milo.opcua.sdk.server.nodes.instantiation.NodeInstantiator}, obtained from
+   *     {@code getServer().getNodeInstantiator()} and targeted at {@link #getNodeManager()}. See
+   *     {@code docs/features/node-instantiation-migration.md}.
+   */
+  @Deprecated
   public NodeFactory getNodeFactory() {
     return nodeFactory;
   }
