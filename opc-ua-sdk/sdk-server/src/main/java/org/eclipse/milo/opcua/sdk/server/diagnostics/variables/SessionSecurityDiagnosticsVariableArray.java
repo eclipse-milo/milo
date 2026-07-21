@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
-import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.ValueRank;
 import org.eclipse.milo.opcua.sdk.server.AbstractLifecycle;
 import org.eclipse.milo.opcua.sdk.server.Lifecycle;
@@ -34,10 +33,9 @@ import org.eclipse.milo.opcua.sdk.server.model.variables.SessionSecurityDiagnost
 import org.eclipse.milo.opcua.sdk.server.model.variables.SessionSecurityDiagnosticsTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.AttributeObserver;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.factories.NodeFactory;
 import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilter;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationRequest;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -48,7 +46,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.structured.SessionSecurityDiagnosticsDataType;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,7 +71,6 @@ public class SessionSecurityDiagnosticsVariableArray extends AbstractLifecycle {
   private AttributeFilter enabledFlagAccessFilter;
 
   private final OpcUaServer server;
-  private final NodeFactory nodeFactory;
 
   private final SessionSecurityDiagnosticsArrayTypeNode node;
   private final NodeManager<UaNode> diagnosticsNodeManager;
@@ -86,20 +82,6 @@ public class SessionSecurityDiagnosticsVariableArray extends AbstractLifecycle {
     this.diagnosticsNodeManager = diagnosticsNodeManager;
 
     this.server = node.getNodeContext().getServer();
-
-    this.nodeFactory =
-        new NodeFactory(
-            new UaNodeContext() {
-              @Override
-              public OpcUaServer getServer() {
-                return server;
-              }
-
-              @Override
-              public NodeManager<UaNode> getNodeManager() {
-                return diagnosticsNodeManager;
-              }
-            });
   }
 
   @Override
@@ -214,29 +196,27 @@ public class SessionSecurityDiagnosticsVariableArray extends AbstractLifecycle {
       String id = Util.buildBrowseNamePath(node) + "[" + index + "]";
       NodeId elementNodeId = new NodeId(1, id);
 
+      InstantiationRequest<SessionSecurityDiagnosticsTypeNode> request =
+          InstantiationRequest.of(
+                  SessionSecurityDiagnosticsTypeNode.class, NodeIds.SessionSecurityDiagnosticsType)
+              .nodeId(elementNodeId)
+              .browseName(new QualifiedName(1, "SessionSecurityDiagnostics"))
+              .displayName(
+                  new LocalizedText(node.getDisplayName().locale(), "SessionSecurityDiagnostics"))
+              .rootAttribute(AttributeId.ArrayDimensions, null)
+              .rootAttribute(AttributeId.ValueRank, ValueRank.Scalar.getValue())
+              .rootAttribute(AttributeId.DataType, NodeIds.SessionSecurityDiagnosticsDataType)
+              .rootAttribute(AttributeId.AccessLevel, AccessLevel.toValue(AccessLevel.READ_ONLY))
+              .rootAttribute(
+                  AttributeId.UserAccessLevel, AccessLevel.toValue(AccessLevel.READ_ONLY))
+              .parent(node.getNodeId(), NodeIds.HasComponent)
+              .target(diagnosticsNodeManager)
+              .legacyPathStrings()
+              .onNode(securityAccessControl(node))
+              .build();
+
       SessionSecurityDiagnosticsTypeNode elementNode =
-          (SessionSecurityDiagnosticsTypeNode)
-              nodeFactory.createNode(
-                  elementNodeId,
-                  NodeIds.SessionSecurityDiagnosticsType,
-                  securityAccessControl(node));
-
-      elementNode.setBrowseName(new QualifiedName(1, "SessionSecurityDiagnostics"));
-      elementNode.setDisplayName(
-          new LocalizedText(node.getDisplayName().locale(), "SessionSecurityDiagnostics"));
-      elementNode.setArrayDimensions(null);
-      elementNode.setValueRank(ValueRank.Scalar.getValue());
-      elementNode.setDataType(NodeIds.SessionSecurityDiagnosticsDataType);
-      elementNode.setAccessLevel(AccessLevel.toValue(AccessLevel.READ_ONLY));
-      elementNode.setUserAccessLevel(AccessLevel.toValue(AccessLevel.READ_ONLY));
-
-      elementNode.addReference(
-          new Reference(
-              elementNode.getNodeId(),
-              NodeIds.HasComponent,
-              node.getNodeId().expanded(),
-              Reference.Direction.INVERSE));
-      diagnosticsNodeManager.addNode(elementNode);
+          server.getNodeInstantiator().instantiate(request).root();
 
       SessionSecurityDiagnosticsVariable sessionSecurityDiagnosticsVariable =
           new SessionSecurityDiagnosticsVariable(elementNode, session);
@@ -252,23 +232,21 @@ public class SessionSecurityDiagnosticsVariableArray extends AbstractLifecycle {
   }
 
   /**
-   * Creates a callback that copies the standard array instance's security attributes to dynamically
-   * instantiated element Variables and their fields.
+   * Creates a hook that copies the standard array instance's security attributes to dynamically
+   * instantiated element Variables and their fields, while the nodes are still staged — before
+   * anything is published.
    *
    * <p>The type definition describes the element shape, but the runtime nodes must carry the array
    * instance's authorization and secure-channel requirements.
    *
    * @param arrayNode the standard array node that supplies the security attributes.
-   * @return a callback that applies those attributes to instantiated Variables.
+   * @return a hook that applies those attributes to instantiated Variables.
    */
-  static NodeFactory.InstantiationCallback securityAccessControl(
+  static InstantiationRequest.OnNode securityAccessControl(
       SessionSecurityDiagnosticsArrayTypeNode arrayNode) {
 
-    return new NodeFactory.InstantiationCallback() {
-      @Override
-      public void onVariableAdded(
-          @Nullable UaNode parent, UaVariableNode instance, NodeId typeDefinitionId) {
-
+    return (declaration, node, parent, graph) -> {
+      if (node instanceof UaVariableNode instance) {
         instance.setRolePermissions(arrayNode.getRolePermissions());
         instance.setUserRolePermissions(arrayNode.getUserRolePermissions());
         instance.setAccessRestrictions(arrayNode.getAccessRestrictions());
