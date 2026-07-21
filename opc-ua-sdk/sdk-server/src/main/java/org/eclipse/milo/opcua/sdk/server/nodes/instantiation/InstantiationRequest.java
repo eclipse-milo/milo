@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.sdk.server.nodes.instantiation;
 import static java.util.Objects.requireNonNull;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -66,6 +67,8 @@ public final class InstantiationRequest<T extends UaNode> {
   private final ConflictPolicy conflictPolicy;
   private final MethodInstantiation methodInstantiation;
   private final Map<BrowsePath, NodeId> concreteTypes;
+  private final Map<BrowsePath, List<PlaceholderRealization>> placeholderExpansions;
+  private final @Nullable PlaceholderOrigin placeholderOrigin;
   private final InstantiationPurpose purpose;
   private final ReferenceReplicationPolicy referenceReplication;
   private final ClassResolution classResolution;
@@ -91,6 +94,12 @@ public final class InstantiationRequest<T extends UaNode> {
     this.conflictPolicy = builder.conflictPolicy;
     this.methodInstantiation = builder.methodInstantiation;
     this.concreteTypes = Map.copyOf(builder.concreteTypes);
+
+    var expansions = new LinkedHashMap<BrowsePath, List<PlaceholderRealization>>();
+    builder.placeholderExpansions.forEach((path, list) -> expansions.put(path, List.copyOf(list)));
+    this.placeholderExpansions = Collections.unmodifiableMap(expansions);
+
+    this.placeholderOrigin = builder.placeholderOrigin;
     this.purpose = builder.purpose;
     this.referenceReplication = builder.referenceReplication;
     this.classResolution = builder.classResolution;
@@ -112,6 +121,75 @@ public final class InstantiationRequest<T extends UaNode> {
    */
   public static <T extends UaNode> Builder<T> of(Class<T> rootClass, NodeId typeDefinitionId) {
     return new Builder<>(rootClass, typeDefinitionId);
+  }
+
+  /**
+   * Start a request realizing {@code placeholderDeclaration} under the existing instance node
+   * {@code instanceNodeId} — post-hoc placeholder-driven creation, flowing through the same
+   * plan/apply machinery as any other request.
+   *
+   * <p>The request instantiates the placeholder's declared type; parent placement is preset to
+   * {@code instanceNodeId}, attached with the ReferenceType that connects the placeholder
+   * declaration to its own parent (resolved at plan time; call {@link Builder#parent parent} to
+   * override it). The caller still supplies identity: {@link Builder#nodeId nodeId} and, since a
+   * placeholder's own BrowseName is only a marker, {@link Builder#browseName browseName}.
+   *
+   * <p>To instantiate a concrete subtype of the declared (possibly abstract) placeholder type,
+   * select it with {@link Builder#concreteType concreteType} at {@link BrowsePath#root()}.
+   *
+   * @param instanceNodeId the existing instance node the realization is created under.
+   * @param placeholderDeclaration the placeholder declaration being realized, from {@link
+   *     TypeInstantiationModel#placeholders()}.
+   * @return a new {@link Builder} expecting a {@link UaNode} root; use {@link
+   *     #forPlaceholder(Class, NodeId, InstanceDeclaration)} for a typed root.
+   * @throws IllegalArgumentException if {@code placeholderDeclaration} is not a placeholder or has
+   *     no TypeDefinition (Method placeholders cannot be realized this way).
+   */
+  public static Builder<UaNode> forPlaceholder(
+      NodeId instanceNodeId, InstanceDeclaration placeholderDeclaration) {
+    return forPlaceholder(UaNode.class, instanceNodeId, placeholderDeclaration);
+  }
+
+  /**
+   * Start a request realizing {@code placeholderDeclaration} under the existing instance node
+   * {@code instanceNodeId}, with a typed root — see {@link #forPlaceholder(NodeId,
+   * InstanceDeclaration)}.
+   *
+   * @param rootClass the expected Java class of the realized root, checked at plan time.
+   * @param instanceNodeId the existing instance node the realization is created under.
+   * @param placeholderDeclaration the placeholder declaration being realized.
+   * @param <T> the expected root class.
+   * @return a new {@link Builder}.
+   * @throws IllegalArgumentException if {@code placeholderDeclaration} is not a placeholder or has
+   *     no TypeDefinition (Method placeholders cannot be realized this way).
+   */
+  public static <T extends UaNode> Builder<T> forPlaceholder(
+      Class<T> rootClass, NodeId instanceNodeId, InstanceDeclaration placeholderDeclaration) {
+
+    requireNonNull(instanceNodeId, "instanceNodeId");
+    requireNonNull(placeholderDeclaration, "placeholderDeclaration");
+
+    if (!placeholderDeclaration.isPlaceholder()) {
+      throw new IllegalArgumentException(
+          "declaration at "
+              + placeholderDeclaration.browsePath()
+              + " is not a placeholder (ModellingRule "
+              + placeholderDeclaration.rule()
+              + ")");
+    }
+
+    NodeId typeDefinitionId = placeholderDeclaration.typeDefinitionId();
+    if (typeDefinitionId == null) {
+      throw new IllegalArgumentException(
+          "placeholder declaration at "
+              + placeholderDeclaration.browsePath()
+              + " has no TypeDefinition; Method placeholders cannot be realized by forPlaceholder");
+    }
+
+    Builder<T> builder = new Builder<>(rootClass, typeDefinitionId);
+    builder.parentNodeId = instanceNodeId;
+    builder.placeholderOrigin = new PlaceholderOrigin(instanceNodeId, placeholderDeclaration);
+    return builder;
   }
 
   /**
@@ -238,6 +316,20 @@ public final class InstantiationRequest<T extends UaNode> {
   }
 
   /**
+   * @return the realizations bound to placeholder paths, in registration order per path.
+   */
+  public Map<BrowsePath, List<PlaceholderRealization>> placeholderExpansions() {
+    return placeholderExpansions;
+  }
+
+  /**
+   * @return the placeholder this request realizes, if it was created by {@link #forPlaceholder}.
+   */
+  public Optional<PlaceholderOrigin> placeholderOrigin() {
+    return Optional.ofNullable(placeholderOrigin);
+  }
+
+  /**
    * @return the instantiation purpose; {@link InstantiationPurpose#NORMAL_INSTANCE} unless
    *     configured otherwise.
    */
@@ -301,6 +393,17 @@ public final class InstantiationRequest<T extends UaNode> {
   }
 
   /**
+   * The provenance of a {@link #forPlaceholder} request: the existing instance node the realization
+   * is created under and the placeholder declaration being realized. Carried so plan time can
+   * resolve the parent ReferenceType from the placeholder declaration's own attachment when the
+   * request does not set one explicitly.
+   *
+   * @param instanceNodeId the existing instance node the realization is created under.
+   * @param declaration the placeholder declaration being realized.
+   */
+  public record PlaceholderOrigin(NodeId instanceNodeId, InstanceDeclaration declaration) {}
+
+  /**
    * A per-node behavior hook, run during apply after the complete staged graph is constructed and
    * before anything is committed or published: attach filters, permissions, value sources, and
    * initial state here instead of mutating nodes after creation.
@@ -353,6 +456,9 @@ public final class InstantiationRequest<T extends UaNode> {
     private ConflictPolicy conflictPolicy = ConflictPolicy.FAIL;
     private MethodInstantiation methodInstantiation = MethodInstantiation.COPY;
     private final Map<BrowsePath, NodeId> concreteTypes = new LinkedHashMap<>();
+    private final Map<BrowsePath, List<PlaceholderRealization>> placeholderExpansions =
+        new LinkedHashMap<>();
+    private @Nullable PlaceholderOrigin placeholderOrigin;
     private InstantiationPurpose purpose = InstantiationPurpose.NORMAL_INSTANCE;
     private ReferenceReplicationPolicy referenceReplication = ReferenceReplicationPolicy.DEFAULT;
     private ClassResolution classResolution = ClassResolution.NEAREST_ANCESTOR;
@@ -569,6 +675,10 @@ public final class InstantiationRequest<T extends UaNode> {
      * Choose the concrete subtype instantiated for the (typically abstract-typed) member at {@code
      * path}. Must be the declared member type or a subtype of it.
      *
+     * <p>At {@link BrowsePath#root()}, chooses the concrete subtype the whole request instantiates
+     * in place of its declared type (validated the same way) — this is how a {@link
+     * #forPlaceholder} request selects a concrete subtype of the placeholder's declared type.
+     *
      * @param path the member occurrence path.
      * @param typeDefinitionId the concrete type to instantiate.
      * @return this builder.
@@ -576,6 +686,38 @@ public final class InstantiationRequest<T extends UaNode> {
     public Builder<T> concreteType(BrowsePath path, NodeId typeDefinitionId) {
       concreteTypes.put(
           requireNonNull(path, "path"), requireNonNull(typeDefinitionId, "typeDefinitionId"));
+      return this;
+    }
+
+    /**
+     * Bind realizations to the placeholder declaration at {@code path} — request-time expansion.
+     * Each realization is planned as a sibling of the placeholder (the placeholder's path with its
+     * last element replaced by the realization's BrowseName), with the full member hierarchy of its
+     * (concrete-resolved) type realized beneath it.
+     *
+     * <p>Repeated calls for the same path accumulate. Binding a nested placeholder implies its
+     * ancestors, like {@link #includeOptional}; a MandatoryPlaceholder left without a single
+     * realization is a plan error ({@link
+     * InstantiationDiagnostic.Code#MANDATORY_PLACEHOLDER_UNSATISFIED}); a path naming no expandable
+     * placeholder — mistyped, excluded, or under an omitted ancestor — is a plan error too ({@link
+     * InstantiationDiagnostic.Code#PLACEHOLDER_EXPANSION_INVALID}): expansion is a directive to
+     * create, never silently dropped.
+     *
+     * @param path the placeholder occurrence path (for a placeholder inside another expansion's
+     *     realized subtree: the realized path, e.g. {@code Channel1/<Signal>}).
+     * @param realizations the realizations to bind; at least one.
+     * @return this builder.
+     */
+    public Builder<T> expandPlaceholder(BrowsePath path, PlaceholderRealization... realizations) {
+      requireNonNull(path, "path");
+      if (realizations.length == 0) {
+        throw new IllegalArgumentException("at least one realization is required");
+      }
+      List<PlaceholderRealization> list =
+          placeholderExpansions.computeIfAbsent(path, p -> new ArrayList<>());
+      for (PlaceholderRealization realization : realizations) {
+        list.add(requireNonNull(realization, "realization"));
+      }
       return this;
     }
 

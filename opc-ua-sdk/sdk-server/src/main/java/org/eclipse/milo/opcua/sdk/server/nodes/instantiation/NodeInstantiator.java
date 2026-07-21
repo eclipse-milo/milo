@@ -23,6 +23,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.server.NodeManager;
 import org.eclipse.milo.opcua.sdk.server.NodeManagerBatch;
@@ -112,7 +113,13 @@ public final class NodeInstantiator {
   public <T extends UaNode> InstantiationPlan<T> plan(InstantiationRequest<T> request)
       throws UaException {
 
-    TypeInstantiationModel model = describe(request.typeDefinitionId());
+    // A concreteType selection at the root path substitutes the instantiated type wholesale —
+    // how a forPlaceholder request selects a concrete subtype of an abstract declared type;
+    // validated against the declared type when the root is planned.
+    NodeId rootTypeId =
+        request.concreteTypes().getOrDefault(BrowsePath.root(), request.typeDefinitionId());
+
+    TypeInstantiationModel model = describe(rootTypeId);
 
     return new PlanComputation<>(this, request, model).compute();
   }
@@ -190,7 +197,17 @@ public final class NodeInstantiator {
     private final List<InstantiationDiagnostic> diagnostics = new ArrayList<>();
     private final Map<NodeId, @Nullable TypeInstantiationModel> memberModels = new HashMap<>();
 
-    private @Nullable Set<BrowsePath> effectiveIncludedPaths;
+    /** Expanded placeholder subtrees: realization path -> the member-type model grafted there. */
+    private final Map<BrowsePath, TypeInstantiationModel> graftedModels = new LinkedHashMap<>();
+
+    /** Hierarchy edges added by placeholder expansion, absolute-path keyed like the model's. */
+    private final List<DeclarationEdge> graftedEdges = new ArrayList<>();
+
+    /** Reference rows added by placeholder expansion, relocated to realized paths. */
+    private final List<ReferenceRow> graftedRows = new ArrayList<>();
+
+    /** Expansion paths that reached an expandable placeholder; any others are plan errors. */
+    private final Set<BrowsePath> consumedExpansions = new HashSet<>();
 
     private PlanComputation(
         NodeInstantiator instantiator,
@@ -209,6 +226,8 @@ public final class NodeInstantiator {
       for (InstanceDeclaration declaration : model.declarations()) {
         classify(declaration);
       }
+
+      validateExpansions();
 
       allocateNodeIds();
       preflightCollisions();
@@ -242,6 +261,21 @@ public final class NodeInstantiator {
     // region Root
 
     private void planRoot() {
+      NodeId declaredTypeId = request.typeDefinitionId();
+      if (!model.typeDefinitionId().equals(declaredTypeId)
+          && !isTypeSubtypeOfOrEqual(model.typeDefinitionId(), declaredTypeId)) {
+        diagnostics.add(
+            InstantiationDiagnostic.planError(
+                InstantiationDiagnostic.Code.CONCRETE_TYPE_INVALID,
+                "concreteType "
+                    + model.typeDefinitionId()
+                    + " for the instance root is not declared type "
+                    + declaredTypeId
+                    + " or a subtype",
+                BrowsePath.root(),
+                model.typeDefinitionId()));
+      }
+
       AttributeSnapshot typeAttributes = model.rootAttributes();
 
       NodeClass typeNodeClass = (NodeClass) typeAttributes.getOrNull(AttributeId.NodeClass);
@@ -471,6 +505,17 @@ public final class NodeInstantiator {
                   path,
                   declaration.declarationNodeId()));
         }
+        if (declaration.rule() == ModellingRule.MANDATORY_PLACEHOLDER) {
+          diagnostics.add(
+              InstantiationDiagnostic.planError(
+                  InstantiationDiagnostic.Code.MANDATORY_PLACEHOLDER_UNSATISFIED,
+                  "MandatoryPlaceholder at "
+                      + path
+                      + " was excluded, but it requires at least one realization while its parent"
+                      + " path exists (Part 3 §6.4.4.4.5)",
+                  path,
+                  declaration.declarationNodeId()));
+        }
         skip(declaration, SkippedDeclaration.Reason.EXCLUDED);
         return;
       }
@@ -491,19 +536,28 @@ public final class NodeInstantiator {
             skip(declaration, SkippedDeclaration.Reason.VENDOR_RULE);
           }
         }
-        case OPTIONAL_PLACEHOLDER -> skip(declaration, SkippedDeclaration.Reason.PLACEHOLDER);
-        case MANDATORY_PLACEHOLDER -> {
+        case OPTIONAL_PLACEHOLDER, MANDATORY_PLACEHOLDER -> {
+          // The placeholder occurrence itself is never materialized; its realizations are planned
+          // as sibling paths by expansion.
           skip(declaration, SkippedDeclaration.Reason.PLACEHOLDER);
-          // Placeholder expansion does not exist yet; the ≥1-realization obligation becomes an
-          // error once a request can satisfy it.
-          diagnostics.add(
-              InstantiationDiagnostic.planWarning(
-                  InstantiationDiagnostic.Code.MANDATORY_PLACEHOLDER_UNSATISFIED,
-                  "MandatoryPlaceholder at "
-                      + path
-                      + " requires at least one realization; none is bound by this request",
-                  path,
-                  declaration.declarationNodeId()));
+
+          List<PlaceholderRealization> realizations =
+              request.placeholderExpansions().getOrDefault(path, List.of());
+
+          if (!realizations.isEmpty()) {
+            consumedExpansions.add(path);
+            expandPlaceholder(declaration, realizations);
+          } else if (declaration.rule() == ModellingRule.MANDATORY_PLACEHOLDER) {
+            diagnostics.add(
+                InstantiationDiagnostic.planError(
+                    InstantiationDiagnostic.Code.MANDATORY_PLACEHOLDER_UNSATISFIED,
+                    "MandatoryPlaceholder at "
+                        + path
+                        + " requires at least one realization; none is bound by this request"
+                        + " (Part 3 §6.4.4.4.5)",
+                    path,
+                    declaration.declarationNodeId()));
+          }
         }
         case EXPOSES_ITS_ARRAY -> {
           skip(declaration, SkippedDeclaration.Reason.EXPOSES_ITS_ARRAY);
@@ -520,11 +574,19 @@ public final class NodeInstantiator {
     private boolean isSelected(InstanceDeclaration declaration, boolean isOptional) {
       BrowsePath path = declaration.browsePath();
 
-      for (BrowsePath included : effectiveIncludedPaths()) {
-        // Selecting a nested path implies its ancestors — but only a path that resolves in the
-        // model implies anything; a mistyped include must not materialize its ancestors (it is
-        // reported by the UNMATCHED_PATH warning instead).
-        if (included.startsWith(path)) {
+      // Selecting a nested path implies its ancestors — but only a path that resolves (in the
+      // model or in an expanded placeholder's grafted subtree) implies anything; a mistyped
+      // include must not materialize its ancestors (it is reported by the UNMATCHED_PATH warning
+      // instead).
+      for (BrowsePath included : request.includedPaths()) {
+        if (included.startsWith(path) && resolvesInPlan(included)) {
+          return true;
+        }
+      }
+
+      // Binding realizations to a nested placeholder implies its ancestors the same way.
+      for (BrowsePath expansion : request.placeholderExpansions().keySet()) {
+        if (expansion.startsWith(path) && resolvesInPlan(expansion)) {
           return true;
         }
       }
@@ -536,18 +598,36 @@ public final class NodeInstantiator {
       return request.includePredicate().map(p -> p.test(declaration)).orElse(false);
     }
 
-    /** The request's included paths that resolve to a declaration in the model. */
-    private Set<BrowsePath> effectiveIncludedPaths() {
-      if (effectiveIncludedPaths == null) {
-        Set<BrowsePath> resolved = new HashSet<>();
-        for (BrowsePath included : request.includedPaths()) {
-          if (model.get(included).isPresent()) {
-            resolved.add(included);
+    /**
+     * Resolve the declaration occurrence a request path names: a declaration of the root model, or
+     * — inside an expanded placeholder's realized subtree — a declaration of the grafted
+     * member-type model. A grafted declaration is returned as the member model holds it, with its
+     * BrowsePath relative to the realization.
+     */
+    private Optional<InstanceDeclaration> declarationAt(BrowsePath path) {
+      Optional<InstanceDeclaration> declaration = model.get(path);
+      if (declaration.isPresent()) {
+        return declaration;
+      }
+
+      for (Map.Entry<BrowsePath, TypeInstantiationModel> graft : graftedModels.entrySet()) {
+        BrowsePath realizedPath = graft.getKey();
+        if (path.startsWith(realizedPath) && path.depth() > realizedPath.depth()) {
+          BrowsePath relative =
+              BrowsePath.of(path.elements().subList(realizedPath.depth(), path.depth()));
+          Optional<InstanceDeclaration> grafted = graft.getValue().get(relative);
+          if (grafted.isPresent()) {
+            return grafted;
           }
         }
-        effectiveIncludedPaths = resolved;
       }
-      return effectiveIncludedPaths;
+
+      return Optional.empty();
+    }
+
+    /** Whether a request path names a declaration this plan can reach. */
+    private boolean resolvesInPlan(BrowsePath path) {
+      return declarationAt(path).isPresent();
     }
 
     private void skip(InstanceDeclaration declaration, SkippedDeclaration.Reason reason) {
@@ -556,21 +636,224 @@ public final class NodeInstantiator {
 
     // endregion
 
+    // region Placeholder expansion
+
+    /**
+     * Realize the request's bindings for one placeholder. Each realization is planned as a sibling
+     * of the placeholder path, carrying the placeholder declaration's attributes over its
+     * (concrete-resolved) type's, attached by the same edges that attached the placeholder — and
+     * the effective type's full member hierarchy is grafted beneath it, relocated under the
+     * realized path and classified through the ordinary machinery. Grafting happens here, per
+     * realization, because placeholders are recorded shallowly in the model (Part 3 §6.4.4.4.4–.5).
+     */
+    private void expandPlaceholder(
+        InstanceDeclaration placeholder, List<PlaceholderRealization> realizations)
+        throws UaException {
+
+      BrowsePath placeholderPath = placeholder.browsePath();
+      BrowsePath parentPath = placeholderPath.parent();
+
+      // Every edge that attaches the placeholder attaches each realization: several references
+      // between one declaration pair map onto the same realized pair (Part 3 §6.4.3).
+      List<DeclarationEdge> attachingEdges =
+          Stream.concat(model.hierarchy().stream(), graftedEdges.stream())
+              .filter(edge -> edge.childPath().equals(placeholderPath))
+              .toList();
+
+      // Rows recorded from the placeholder declaration (HasTypeDefinition included) re-source at
+      // each realization; the HasTypeDefinition substitution then targets the effective type.
+      List<ReferenceRow> placeholderRows =
+          Stream.concat(model.references().stream(), graftedRows.stream())
+              .filter(row -> row.sourcePath().equals(placeholderPath))
+              .toList();
+
+      for (PlaceholderRealization realization : realizations) {
+        BrowsePath realizedPath = parentPath.append(realization.browseName());
+
+        if (planned.containsKey(realizedPath)
+            || skipped.containsKey(realizedPath)
+            || resolvesInPlan(realizedPath)) {
+          diagnostics.add(
+              InstantiationDiagnostic.planError(
+                  InstantiationDiagnostic.Code.PLACEHOLDER_EXPANSION_INVALID,
+                  "realization "
+                      + realization.browseName()
+                      + " of placeholder "
+                      + placeholderPath
+                      + " collides with the declaration or realization at "
+                      + realizedPath,
+                  realizedPath,
+                  realization.nodeId()));
+          continue;
+        }
+
+        InstanceDeclaration realized =
+            new InstanceDeclaration(
+                realizedPath,
+                realization.browseName(),
+                placeholder.nodeClass(),
+                placeholder.declarationNodeId(),
+                placeholder.declaringTypeId(),
+                placeholder.overriddenDeclarations(),
+                placeholder.modellingRuleId(),
+                placeholder.rule(),
+                placeholder.typeDefinitionId(),
+                realizationAttributes(placeholder, realization));
+
+        NodeId concreteTypeId =
+            realization.typeDefinitionId() != null
+                ? realization.typeDefinitionId()
+                : request.concreteTypes().get(realizedPath);
+
+        NodeId effectiveTypeId = planMember(realized, concreteTypeId, true);
+
+        Working working = planned.get(realizedPath);
+        if (working != null && working.nodeId == null && realization.nodeId() != null) {
+          working.nodeId = realization.nodeId();
+        }
+
+        for (DeclarationEdge edge : attachingEdges) {
+          graftedEdges.add(
+              new DeclarationEdge(edge.parentPath(), edge.referenceTypeId(), realizedPath));
+        }
+
+        for (ReferenceRow row : placeholderRows) {
+          graftedRows.add(relocateSource(row, realizedPath));
+        }
+
+        if (effectiveTypeId == null) {
+          // A Method placeholder realization has no member model to graft.
+          continue;
+        }
+
+        TypeInstantiationModel memberModel = memberModel(effectiveTypeId, realizedPath);
+        if (memberModel == null) {
+          // The effective type does not compile; the error is already on the plan.
+          continue;
+        }
+
+        // Registered before the subtree is classified so nested includes, nested expansion
+        // bindings, and collision checks resolve against this graft.
+        graftedModels.put(realizedPath, memberModel);
+
+        for (DeclarationEdge edge : memberModel.hierarchy()) {
+          graftedEdges.add(
+              new DeclarationEdge(
+                  realizedPath.concat(edge.parentPath()),
+                  edge.referenceTypeId(),
+                  realizedPath.concat(edge.childPath())));
+        }
+
+        for (ReferenceRow row : memberModel.references()) {
+          graftedRows.add(relocate(row, realizedPath));
+        }
+
+        for (InstanceDeclaration member : memberModel.declarations()) {
+          classify(member.withBrowsePath(realizedPath.concat(member.browsePath())));
+        }
+      }
+    }
+
+    /**
+     * The realization's attributes are the placeholder declaration's — the attribute policy's
+     * "declaration wins" tier — with BrowseName and DisplayName replaced by the realization's name:
+     * a placeholder's own names are markers like {@code <ChannelName>}, not instance names.
+     */
+    private static AttributeSnapshot realizationAttributes(
+        InstanceDeclaration placeholder, PlaceholderRealization realization) {
+
+      AttributeSnapshot declared = placeholder.attributes();
+
+      AttributeSnapshot.Builder b = AttributeSnapshot.builder();
+      for (AttributeId id : declared.attributeIds()) {
+        b.put(id, declared.isNull(id) ? null : declared.getOrNull(id));
+      }
+      b.put(AttributeId.BrowseName, realization.browseName());
+      b.put(AttributeId.DisplayName, new LocalizedText(realization.browseName().name()));
+      return b.build();
+    }
+
+    /**
+     * Relocate a member-model row under a realization: relative rows move both ends; absolute rows
+     * keep their verbatim target.
+     */
+    private static ReferenceRow relocate(ReferenceRow row, BrowsePath realizedPath) {
+      if (row.isRelative()) {
+        return ReferenceRow.relative(
+            realizedPath.concat(row.sourcePath()),
+            row.referenceTypeId(),
+            realizedPath.concat(Objects.requireNonNull(row.targetPath())));
+      }
+      return ReferenceRow.absolute(
+          realizedPath.concat(row.sourcePath()),
+          row.referenceTypeId(),
+          row.direction(),
+          Objects.requireNonNull(row.targetNodeId()));
+    }
+
+    /** Re-source a placeholder-declaration row at the realization's path. */
+    private static ReferenceRow relocateSource(ReferenceRow row, BrowsePath realizedPath) {
+      if (row.isRelative()) {
+        return ReferenceRow.relative(
+            realizedPath, row.referenceTypeId(), Objects.requireNonNull(row.targetPath()));
+      }
+      return ReferenceRow.absolute(
+          realizedPath,
+          row.referenceTypeId(),
+          row.direction(),
+          Objects.requireNonNull(row.targetNodeId()));
+    }
+
+    /**
+     * Expansion is a directive to create, so any binding that never reached an expandable
+     * placeholder — mistyped, excluded, or under an omitted ancestor — is an error, not a silent
+     * drop.
+     */
+    private void validateExpansions() {
+      for (BrowsePath path : sorted(request.placeholderExpansions().keySet())) {
+        if (!consumedExpansions.contains(path)) {
+          diagnostics.add(
+              InstantiationDiagnostic.planError(
+                  InstantiationDiagnostic.Code.PLACEHOLDER_EXPANSION_INVALID,
+                  "expandPlaceholder path "
+                      + path
+                      + " does not name an expandable placeholder in this plan",
+                  path,
+                  null));
+        }
+      }
+    }
+
+    // endregion
+
     // region Member resolution
 
     private void plan(InstanceDeclaration declaration) throws UaException {
+      planMember(declaration, request.concreteTypes().get(declaration.browsePath()), false);
+    }
+
+    /**
+     * Plan one member occurrence. {@code expandsSubtree} marks a placeholder realization, whose
+     * effective type's full member hierarchy is grafted beneath it — suppressing the
+     * CONCRETE_TYPE_NOT_EXPANDED warning that applies to ordinary members.
+     *
+     * @return the effective (concrete-resolved) member type; {@code null} for Methods.
+     */
+    private @Nullable NodeId planMember(
+        InstanceDeclaration declaration, @Nullable NodeId concreteTypeId, boolean expandsSubtree)
+        throws UaException {
+
       BrowsePath path = declaration.browsePath();
 
       if (declaration.nodeClass() == NodeClass.Method) {
         planMethod(declaration);
-        return;
+        return null;
       }
 
       NodeId declaredTypeId =
           Objects.requireNonNull(declaration.typeDefinitionId(), "typeDefinitionId");
       NodeId effectiveTypeId = declaredTypeId;
 
-      NodeId concreteTypeId = request.concreteTypes().get(path);
       if (concreteTypeId != null && !concreteTypeId.equals(declaredTypeId)) {
         if (isTypeSubtypeOfOrEqual(concreteTypeId, declaredTypeId)) {
           effectiveTypeId = concreteTypeId;
@@ -593,7 +876,7 @@ public final class NodeInstantiator {
       TypeInstantiationModel memberModel = memberModel(effectiveTypeId, path);
 
       if (memberModel != null) {
-        validateMemberType(declaration, memberModel, effectiveTypeId);
+        validateMemberType(declaration, memberModel, effectiveTypeId, expandsSubtree);
       }
 
       AttributeSnapshot effective = memberEffectiveAttributes(declaration, memberModel);
@@ -610,6 +893,8 @@ public final class NodeInstantiator {
               resolved.javaClass(),
               resolved.constructorTypeId(),
               effective));
+
+      return effectiveTypeId;
     }
 
     private void planMethod(InstanceDeclaration declaration) {
@@ -650,7 +935,8 @@ public final class NodeInstantiator {
     private void validateMemberType(
         InstanceDeclaration declaration,
         TypeInstantiationModel memberModel,
-        NodeId effectiveTypeId) {
+        NodeId effectiveTypeId,
+        boolean expandsSubtree) {
 
       BrowsePath path = declaration.browsePath();
       boolean isConcreteOverride = !effectiveTypeId.equals(declaration.typeDefinitionId());
@@ -700,9 +986,10 @@ public final class NodeInstantiator {
         }
       }
 
-      if (isConcreteOverride) {
+      if (isConcreteOverride && !expandsSubtree) {
         // The plan realizes the *declared* type's members; a concrete subtype's additional
         // members are not expanded in this release. Say so instead of silently omitting them.
+        // (A placeholder realization is exempt: its effective type's full hierarchy IS grafted.)
         boolean hasUnmodeledMembers =
             memberModel.declarations().stream()
                 .map(md -> path.concat(md.browsePath()))
@@ -920,11 +1207,17 @@ public final class NodeInstantiator {
                 rootNodeId, NodeIds.HasTypeDefinition, model.typeDefinitionId().expanded(), true));
       }
 
-      if (request.parentNodeId().isPresent() && request.parentReferenceTypeId().isPresent()) {
+      if (request.parentNodeId().isPresent()) {
         NodeId parentNodeId = request.parentNodeId().get();
-        NodeId parentReferenceTypeId = request.parentReferenceTypeId().get();
+        NodeId parentReferenceTypeId =
+            request.parentReferenceTypeId().orElseGet(this::placeholderParentReferenceTypeId);
 
-        if (!isReferenceSubtypeOfOrEqual(parentReferenceTypeId, NodeIds.HierarchicalReferences)) {
+        //noinspection StatementWithEmptyBody
+        if (parentReferenceTypeId == null) {
+          // A forPlaceholder request whose declaration attachment could not be read back; the
+          // error diagnostic is already recorded.
+        } else if (!isReferenceSubtypeOfOrEqual(
+            parentReferenceTypeId, NodeIds.HierarchicalReferences)) {
           diagnostics.add(
               InstantiationDiagnostic.planError(
                   InstantiationDiagnostic.Code.INVALID_PARENT,
@@ -952,84 +1245,140 @@ public final class NodeInstantiator {
       }
 
       for (DeclarationEdge edge : model.hierarchy()) {
-        Working parent = planned.get(edge.parentPath());
-        Working child = planned.get(edge.childPath());
-        if (parent == null || child == null) {
-          continue;
-        }
-        references.add(
-            new Reference(
-                Objects.requireNonNull(parent.nodeId),
-                edge.referenceTypeId(),
-                Objects.requireNonNull(child.nodeId).expanded(),
-                true));
+        resolveEdge(edge, references);
+      }
+      for (DeclarationEdge edge : graftedEdges) {
+        resolveEdge(edge, references);
       }
 
       ReferenceReplicationPolicy policy = request.referenceReplication();
 
       for (ReferenceRow row : model.references()) {
-        Working source = planned.get(row.sourcePath());
-        if (source == null || source.materialization != PlannedNode.Materialization.CREATE) {
-          // Skipped sources have no instance; reused and shared nodes already carry their own
-          // non-hierarchy references.
-          continue;
-        }
-
-        NodeId sourceNodeId = Objects.requireNonNull(source.nodeId);
-        NodeId referenceTypeId = row.referenceTypeId();
-
-        if (isReferenceSubtypeOfOrEqual(referenceTypeId, NodeIds.HasTypeDefinition)) {
-          // Substituted rather than copied: a concreteType selection redirects the instance's
-          // type; every created instance gets exactly its effective type.
-          references.add(
-              new Reference(
-                  sourceNodeId,
-                  referenceTypeId,
-                  Objects.requireNonNull(source.typeDefinitionId).expanded(),
-                  true));
-          continue;
-        }
-
-        if (isReferenceSubtypeOfOrEqual(referenceTypeId, NodeIds.HasModellingRule)) {
-          if (request.purpose() == InstantiationPurpose.INSTANCE_DECLARATION) {
-            references.add(
-                new Reference(
-                    sourceNodeId,
-                    referenceTypeId,
-                    Objects.requireNonNull(row.targetNodeId()),
-                    row.direction() == Reference.Direction.FORWARD));
-          }
-          continue;
-        }
-
-        if (row.isRelative()) {
-          if (policy.internal() == ReferenceReplicationPolicy.InternalReferences.OMIT) {
-            continue;
-          }
-          Working target = planned.get(row.targetPath());
-          if (target == null) {
-            // No planned edge to an omitted target.
-            continue;
-          }
-          references.add(
-              new Reference(
-                  sourceNodeId,
-                  referenceTypeId,
-                  Objects.requireNonNull(target.nodeId).expanded(),
-                  true));
-        } else {
-          if (policy.external() == ReferenceReplicationPolicy.ExternalReferences.COPY) {
-            references.add(
-                new Reference(
-                    sourceNodeId,
-                    referenceTypeId,
-                    Objects.requireNonNull(row.targetNodeId()),
-                    row.direction() == Reference.Direction.FORWARD));
-          }
-        }
+        resolveRow(row, policy, references);
+      }
+      for (ReferenceRow row : graftedRows) {
+        resolveRow(row, policy, references);
       }
 
       return references;
+    }
+
+    private void resolveEdge(DeclarationEdge edge, List<Reference> references) {
+      Working parent = planned.get(edge.parentPath());
+      Working child = planned.get(edge.childPath());
+      if (parent == null || child == null) {
+        return;
+      }
+      references.add(
+          new Reference(
+              Objects.requireNonNull(parent.nodeId),
+              edge.referenceTypeId(),
+              Objects.requireNonNull(child.nodeId).expanded(),
+              true));
+    }
+
+    private void resolveRow(
+        ReferenceRow row, ReferenceReplicationPolicy policy, List<Reference> references) {
+
+      Working source = planned.get(row.sourcePath());
+      if (source == null || source.materialization != PlannedNode.Materialization.CREATE) {
+        // Skipped sources have no instance; reused and shared nodes already carry their own
+        // non-hierarchy references.
+        return;
+      }
+
+      NodeId sourceNodeId = Objects.requireNonNull(source.nodeId);
+      NodeId referenceTypeId = row.referenceTypeId();
+
+      if (isReferenceSubtypeOfOrEqual(referenceTypeId, NodeIds.HasTypeDefinition)) {
+        // Substituted rather than copied: a concreteType selection redirects the instance's
+        // type; every created instance gets exactly its effective type.
+        references.add(
+            new Reference(
+                sourceNodeId,
+                referenceTypeId,
+                Objects.requireNonNull(source.typeDefinitionId).expanded(),
+                true));
+        return;
+      }
+
+      if (isReferenceSubtypeOfOrEqual(referenceTypeId, NodeIds.HasModellingRule)) {
+        if (request.purpose() == InstantiationPurpose.INSTANCE_DECLARATION) {
+          references.add(
+              new Reference(
+                  sourceNodeId,
+                  referenceTypeId,
+                  Objects.requireNonNull(row.targetNodeId()),
+                  row.direction() == Reference.Direction.FORWARD));
+        }
+        return;
+      }
+
+      if (row.isRelative()) {
+        if (policy.internal() == ReferenceReplicationPolicy.InternalReferences.OMIT) {
+          return;
+        }
+        Working target = planned.get(row.targetPath());
+        if (target == null) {
+          // No planned edge to an omitted target.
+          return;
+        }
+        references.add(
+            new Reference(
+                sourceNodeId,
+                referenceTypeId,
+                Objects.requireNonNull(target.nodeId).expanded(),
+                true));
+      } else {
+        if (policy.external() == ReferenceReplicationPolicy.ExternalReferences.COPY) {
+          references.add(
+              new Reference(
+                  sourceNodeId,
+                  referenceTypeId,
+                  Objects.requireNonNull(row.targetNodeId()),
+                  row.direction() == Reference.Direction.FORWARD));
+        }
+      }
+    }
+
+    /**
+     * A forPlaceholder request that did not set the parent ReferenceType explicitly attaches its
+     * realization with the ReferenceType connecting the placeholder declaration to its own parent,
+     * read back from the declaration node's inverse hierarchical references (deterministically the
+     * smallest ReferenceType NodeId if several parents attach it). Unresolvable — the declaration
+     * node is gone or carries no inverse hierarchical reference — is a plan error naming the fix.
+     */
+    private @Nullable NodeId placeholderParentReferenceTypeId() {
+      InstantiationRequest.PlaceholderOrigin origin = request.placeholderOrigin().orElse(null);
+      if (origin == null) {
+        // Unreachable via the builder: parent() requires both values, so a missing reference type
+        // implies a forPlaceholder request. Guard with the common default anyway.
+        return NodeIds.HasComponent;
+      }
+
+      NodeId declarationNodeId = origin.declaration().declarationNodeId();
+
+      Optional<NodeId> referenceTypeId =
+          server.getAddressSpaceManager().getManagedReferences(declarationNodeId).stream()
+              .filter(r -> !r.isForward())
+              .map(Reference::getReferenceTypeId)
+              .filter(typeId -> isReferenceSubtypeOfOrEqual(typeId, NodeIds.HierarchicalReferences))
+              .min(TypeSpaceRules.NODE_ID_ORDER);
+
+      if (referenceTypeId.isEmpty()) {
+        diagnostics.add(
+            InstantiationDiagnostic.planError(
+                InstantiationDiagnostic.Code.INVALID_PARENT,
+                "the ReferenceType attaching placeholder declaration "
+                    + declarationNodeId
+                    + " to its parent cannot be resolved; set parent(parentNodeId, referenceTypeId)"
+                    + " explicitly",
+                BrowsePath.root(),
+                declarationNodeId));
+        return null;
+      }
+
+      return referenceTypeId.get();
     }
 
     // endregion
@@ -1038,9 +1387,10 @@ public final class NodeInstantiator {
 
     private void warnUnmatchedPaths() {
       for (BrowsePath path : sorted(request.includedPaths())) {
-        if (model.get(path).isEmpty()) {
+        Optional<InstanceDeclaration> declaration = declarationAt(path);
+        if (declaration.isEmpty()) {
           warnUnmatched("includeOptional", path);
-        } else if (model.get(path).map(InstanceDeclaration::isPlaceholder).orElse(false)) {
+        } else if (declaration.get().isPlaceholder()) {
           diagnostics.add(
               InstantiationDiagnostic.planWarning(
                   InstantiationDiagnostic.Code.UNMATCHED_PATH,
@@ -1054,7 +1404,7 @@ public final class NodeInstantiator {
       }
 
       for (BrowsePath path : sorted(request.excludedPaths())) {
-        if (model.get(path).isEmpty()) {
+        if (!resolvesInPlan(path)) {
           warnUnmatched("excludeOptional", path);
         }
       }
@@ -1504,8 +1854,10 @@ public final class NodeInstantiator {
 
       // The commit validates only the batch's own nodes, so a parent that disappeared since plan
       // time would otherwise commit as a reference row sourced at a nonexistent NodeId — and a
-      // node later created at that id would silently acquire a phantom child.
-      if (request.parentNodeId().isPresent() && request.parentReferenceTypeId().isPresent()) {
+      // node later created at that id would silently acquire a phantom child. This covers a
+      // forPlaceholder request too, whose parent attachment resolves its ReferenceType lazily and
+      // so leaves parentReferenceTypeId absent even though a parent attachment is planned.
+      if (request.parentNodeId().isPresent()) {
         NodeId parentNodeId = request.parentNodeId().get();
         if (server.getAddressSpaceManager().getManagedNode(parentNodeId).isEmpty()
             && !target.containsNode(parentNodeId)) {

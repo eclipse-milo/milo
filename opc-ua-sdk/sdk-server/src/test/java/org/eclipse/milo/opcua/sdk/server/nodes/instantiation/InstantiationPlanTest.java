@@ -407,7 +407,6 @@ public class InstantiationPlanTest {
           fx.instantiator()
               .plan(objectRequest(typeNode.getNodeId(), "Dev").includeAllOptionals().build());
 
-      assertFalse(plan.hasErrors());
       assertEquals(
           SkippedDeclaration.Reason.PLACEHOLDER, skippedAt(plan, path("OptPlaceholder")).reason());
       assertEquals(
@@ -415,7 +414,9 @@ public class InstantiationPlanTest {
       assertEquals(
           SkippedDeclaration.Reason.EXPOSES_ITS_ARRAY, skippedAt(plan, path("Exposed")).reason());
 
-      assertTrue(hasWarning(plan, InstantiationDiagnostic.Code.MANDATORY_PLACEHOLDER_UNSATISFIED));
+      // A MandatoryPlaceholder left without a realization fails the plan; ExposesItsArray is
+      // advisory only.
+      assertTrue(hasError(plan, InstantiationDiagnostic.Code.MANDATORY_PLACEHOLDER_UNSATISFIED));
       assertTrue(hasWarning(plan, InstantiationDiagnostic.Code.EXPOSES_ITS_ARRAY_NOT_MATERIALIZED));
     }
 

@@ -120,6 +120,13 @@ public record InstantiationDiagnostic(
     EXPOSES_ITS_ARRAY_NOT_MATERIALIZED,
     /** A MandatoryPlaceholder's ≥1-realization obligation is unsatisfied by the request. */
     MANDATORY_PLACEHOLDER_UNSATISFIED,
+    /**
+     * A placeholder expansion cannot be honored: the bound path names no expandable placeholder in
+     * this plan (mistyped, excluded, or under an omitted ancestor), or a realization's BrowseName
+     * collides with a declared sibling or another realization. Expansion is a directive to create,
+     * so an unhonorable binding is an error, never a silent drop.
+     */
+    PLACEHOLDER_EXPANSION_INVALID,
     /** The type (or a dependency) changed between plan and apply; the plan is stale. */
     MODEL_CHANGED,
     /** A node constructor failed during apply. */
