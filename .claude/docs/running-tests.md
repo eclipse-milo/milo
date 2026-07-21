@@ -1,4 +1,4 @@
-# Testing Guide
+# Running Tests
 
 This is a multi-module project. When running specific tests, target the module using `-pl`
 to avoid applying the filter to all modules.

@@ -27,12 +27,11 @@ SDK for building OPC UA applications.
 | `mise exec -- mvn -q clean verify`   | Full build with tests and formatting check |
 | `mise exec -- mvn -q spotless:apply` | Fix code formatting issues                 |
 
-Before running any tests, read `.claude/docs/testing.md` for module targeting flags and
-test patterns.
+Before running any tests, read `.claude/docs/running-tests.md` for module targeting flags and invocation patterns.
 
 ## Additional Resources
 
-- Testing patterns: `.claude/docs/testing.md`
+- Test documentation and quality: `.claude/docs/test-documentation-and-quality-guidelines.md`
 - Java conventions: `.claude/docs/java-coding-conventions.md`
 - Dependencies: `.claude/docs/dependencies.md`
 
