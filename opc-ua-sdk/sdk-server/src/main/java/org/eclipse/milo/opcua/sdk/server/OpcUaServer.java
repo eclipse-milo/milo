@@ -43,6 +43,7 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
 import org.eclipse.milo.opcua.sdk.server.namespaces.OpcUaNamespace;
 import org.eclipse.milo.opcua.sdk.server.namespaces.ServerNamespace;
 import org.eclipse.milo.opcua.sdk.server.nodes.factories.EventFactory;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.TypeModelCache;
 import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTarget;
 import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTargetHandle;
 import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTargetListener;
@@ -138,6 +139,8 @@ public class OpcUaServer extends AbstractServiceHandler {
 
   private final ObjectTypeManager objectTypeManager = new ObjectTypeManager();
   private final VariableTypeManager variableTypeManager = new VariableTypeManager();
+
+  private final TypeModelCache typeModelCache = new TypeModelCache(this);
 
   private final Lazy<DataTypeTree> dataTypeTree = new Lazy<>();
   private final Lazy<ObjectTypeTree> objectTypeTree = new Lazy<>();
@@ -583,6 +586,17 @@ public class OpcUaServer extends AbstractServiceHandler {
 
   public VariableTypeManager getVariableTypeManager() {
     return variableTypeManager;
+  }
+
+  /**
+   * Get the Server's {@link TypeModelCache}, holding compiled {@link
+   * org.eclipse.milo.opcua.sdk.server.nodes.instantiation.TypeInstantiationModel}s of this Server's
+   * TypeDefinitions.
+   *
+   * @return the Server's {@link TypeModelCache}.
+   */
+  public TypeModelCache getTypeModelCache() {
+    return typeModelCache;
   }
 
   /**

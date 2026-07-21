@@ -41,6 +41,7 @@ public class AddressSpaceManager extends AddressSpaceComposite {
   public synchronized void register(NodeManager<UaNode> nodeManager) {
     if (!nodeManagers.contains(nodeManager)) {
       nodeManagers.add(nodeManager);
+      invalidateTypeModels();
     } else {
       logger.warn("NodeManager already registered: {}", nodeManager);
     }
@@ -49,14 +50,23 @@ public class AddressSpaceManager extends AddressSpaceComposite {
   /**
    * Unregister a {@link NodeManager} with this {@link AddressSpaceManager}.
    *
-   * @param nodeManager the {@link NodeManager} to register.
+   * @param nodeManager the {@link NodeManager} to unregister.
    */
   public synchronized void unregister(NodeManager<UaNode> nodeManager) {
     if (nodeManagers.contains(nodeManager)) {
       nodeManagers.remove(nodeManager);
+      invalidateTypeModels();
     } else {
       logger.warn("NodeManager not registered: {}", nodeManager);
     }
+  }
+
+  /**
+   * Conservatively invalidate all cached type instantiation models: a registration change can add
+   * or remove any node a cached model was compiled from.
+   */
+  private void invalidateTypeModels() {
+    getServer().getTypeModelCache().invalidateAll();
   }
 
   /**
