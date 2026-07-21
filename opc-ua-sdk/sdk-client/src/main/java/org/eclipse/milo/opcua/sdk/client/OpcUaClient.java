@@ -153,11 +153,11 @@ import org.eclipse.milo.opcua.stack.core.types.structured.WriteRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriteResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriteValue;
 import org.eclipse.milo.opcua.stack.core.util.ExecutionQueue;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
 import org.eclipse.milo.opcua.stack.core.util.Lists;
 import org.eclipse.milo.opcua.stack.core.util.LongSequence;
 import org.eclipse.milo.opcua.stack.core.util.ManifestUtil;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.eclipse.milo.opcua.stack.core.util.NonBlockingLazy;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
@@ -323,7 +323,7 @@ public class OpcUaClient {
   private final NamespaceTable namespaceTable = new NamespaceTable();
   private final ServerTable serverTable = new ServerTable();
 
-  private final Lazy<OperationLimits> operationLimits = new Lazy<>();
+  private final NonBlockingLazy<OperationLimits> operationLimits = new NonBlockingLazy<>();
 
   private final ObjectTypeManager objectTypeManager = new ObjectTypeManager();
 
@@ -339,12 +339,15 @@ public class OpcUaClient {
       DefaultDataTypeManager.createAndInitialize(namespaceTable);
   private final EncodingContext staticEncodingContext;
 
-  private final Lazy<DataTypeManager> dynamicDataTypeManager = new Lazy<>();
-  private final Lazy<EncodingContext> dynamicEncodingContext = new Lazy<>();
+  // These caches are computed via unbounded network I/O and reset by a SessionInitializer during
+  // session establishment. NonBlockingLazy computes without holding a lock, so resetting never
+  // blocks session establishment behind an in-progress computation.
+  private final NonBlockingLazy<DataTypeManager> dynamicDataTypeManager = new NonBlockingLazy<>();
+  private final NonBlockingLazy<EncodingContext> dynamicEncodingContext = new NonBlockingLazy<>();
 
-  private final Lazy<DataTypeTree> dataTypeTree = new Lazy<>();
-  private final Lazy<ObjectTypeTree> objectTypeTree = new Lazy<>();
-  private final Lazy<VariableTypeTree> variableTypeTree = new Lazy<>();
+  private final NonBlockingLazy<DataTypeTree> dataTypeTree = new NonBlockingLazy<>();
+  private final NonBlockingLazy<ObjectTypeTree> objectTypeTree = new NonBlockingLazy<>();
+  private final NonBlockingLazy<VariableTypeTree> variableTypeTree = new NonBlockingLazy<>();
 
   private final PublishingManager publishingManager;
   private final Map<UInteger, OpcUaSubscription> subscriptions = new ConcurrentHashMap<>();

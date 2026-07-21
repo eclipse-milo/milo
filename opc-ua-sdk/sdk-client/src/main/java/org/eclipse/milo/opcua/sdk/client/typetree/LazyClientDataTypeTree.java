@@ -270,7 +270,7 @@ public class LazyClientDataTypeTree extends DataTypeTree {
   }
 
   private List<ClientDataType> fetchDataTypeInfoBatch(
-      List<NodeId> nodeIds, NamespaceTable nsTable, OperationLimits limits) {
+      List<NodeId> nodeIds, NamespaceTable nsTable, OperationLimits limits) throws UaException {
 
     // Read attributes: BrowseName, IsAbstract, DataTypeDefinition
     var readValueIds = new ArrayList<ReadValueId>();
@@ -394,7 +394,7 @@ public class LazyClientDataTypeTree extends DataTypeTree {
   }
 
   private List<List<ReferenceDescription>> browseEncodings(
-      List<NodeId> dataTypeIds, OperationLimits limits) {
+      List<NodeId> dataTypeIds, OperationLimits limits) throws UaException {
 
     List<BrowseDescription> browseDescriptions =
         dataTypeIds.stream()
