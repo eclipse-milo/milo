@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -302,13 +302,5 @@ public class DataTypeTreeBuilder {
     return attributes;
   }
 
-  private static class Attributes {
-    final Boolean isAbstract;
-    final DataTypeDefinition definition;
-
-    private Attributes(Boolean isAbstract, DataTypeDefinition definition) {
-      this.isAbstract = isAbstract;
-      this.definition = definition;
-    }
-  }
+  private record Attributes(Boolean isAbstract, DataTypeDefinition definition) {}
 }

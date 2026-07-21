@@ -36,7 +36,7 @@ public class NonBlockingLazyTest {
   }
 
   @Test
-  void getOrThrow() throws Exception {
+  void getOrThrow() {
     var lazy = new NonBlockingLazy<>();
 
     assertThrows(
@@ -107,10 +107,11 @@ public class NonBlockingLazyTest {
 
           @Override
           public Object get() {
-            return switch (count.incrementAndGet()) {
-              case 1 -> instance1;
-              default -> instance2;
-            };
+            if (count.incrementAndGet() == 1) {
+              return instance1;
+            } else {
+              return instance2;
+            }
           }
         };
 
@@ -133,7 +134,7 @@ public class NonBlockingLazyTest {
   }
 
   @Test
-  void failedComputationIsNotCached() throws Exception {
+  void failedComputationIsNotCached() {
     var lazy = new NonBlockingLazy<String>();
 
     assertThrows(
