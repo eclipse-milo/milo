@@ -28,6 +28,7 @@ import org.eclipse.milo.opcua.sdk.core.nodes.ObjectNode;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceTypeTree;
 import org.eclipse.milo.opcua.sdk.server.AccessContext;
+import org.eclipse.milo.opcua.sdk.server.AddressSpaceManager;
 import org.eclipse.milo.opcua.sdk.server.NodeManager;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilterChain;
@@ -356,12 +357,28 @@ public abstract class UaNode implements UaServerNode {
 
   @Override
   public List<Reference> getReferences() {
-    // This Node's own NodeManager may not be registered with the AddressSpaceManager, e.g.
-    // transient event node trees created by EventFactory, so its References are included in
-    // addition to the (possibly overlapping) managed References.
-    var references =
-        new LinkedHashSet<Reference>(
-            context.getServer().getAddressSpaceManager().getManagedReferences(getNodeId()));
+    AddressSpaceManager addressSpaceManager = context.getServer().getAddressSpaceManager();
+
+    // A Node whose NodeManager is registered is part of the server address space, and the managed
+    // References aggregated across every registered NodeManager are authoritative: an inverse
+    // Reference is stored in the manager that added it, not necessarily this Node's own.
+    if (addressSpaceManager.isRegistered(context.getNodeManager())) {
+      return List.copyOf(addressSpaceManager.getManagedReferences(getNodeId()));
+    }
+
+    // This Node lives in a private, unregistered NodeManager. If a live Node is registered under
+    // the same NodeId — a ConditionRefresh snapshot deliberately reuses a live Condition's NodeId
+    // — return only the private manager's References so the live Node's References do not leak
+    // into the private tree.
+    if (addressSpaceManager.getManagedNode(getNodeId()).isPresent()) {
+      return context.getNodeManager().getReferences(getNodeId());
+    }
+
+    // No Node is registered under this NodeId — a transient EventFactory event tree, or a Node in
+    // a Namespace still under construction whose NodeManager is not yet registered. Registered
+    // managers may still hold References involving this Node, so union the managed and local
+    // References.
+    var references = new LinkedHashSet<>(addressSpaceManager.getManagedReferences(getNodeId()));
 
     references.addAll(context.getNodeManager().getReferences(getNodeId()));
 
