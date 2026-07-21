@@ -31,6 +31,7 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.LimitAlarmTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.NonExclusiveDeviationAlarmTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.NonExclusiveLimitAlarmTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.NonExclusiveRateOfChangeAlarmTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.OffNormalAlarmTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
@@ -73,6 +74,7 @@ public class ConditionBuilder {
   private UShort severity = ushort(1);
   private boolean withConfirm = false;
   private @Nullable NodeId inputNode;
+  private @Nullable NodeId normalState;
   private boolean withShelving = false;
   private @Nullable Duration maxTimeShelved;
 
@@ -209,6 +211,22 @@ public class ConditionBuilder {
    */
   public ConditionBuilder inputNode(NodeId inputNode) {
     this.inputNode = inputNode;
+    return this;
+  }
+
+  /**
+   * Set the NormalState Property value: the {@link NodeId} of the Variable whose value is the
+   * normal state of the Variable identified by InputNode.
+   *
+   * <p>Only meaningful for OffNormalAlarmType and its subtypes. The SDK does not read or subscribe
+   * to either Variable; the application compares them and drives {@link AlarmCondition#setActive}
+   * or {@link OffNormalAlarm#evaluate}.
+   *
+   * @param normalState the {@link NodeId} of the Variable holding the normal state value.
+   * @return this builder.
+   */
+  public ConditionBuilder normalState(NodeId normalState) {
+    this.normalState = normalState;
     return this;
   }
 
@@ -726,6 +744,10 @@ public class ConditionBuilder {
       initializeAlarmNode(alarmNode);
     }
 
+    if (node instanceof OffNormalAlarmTypeNode offNormalNode) {
+      offNormalNode.setNormalState(normalState != null ? normalState : NodeId.NULL_VALUE);
+    }
+
     if (node instanceof LimitAlarmTypeNode limitNode) {
       initializeLimitNode(limitNode);
     }
@@ -918,16 +940,20 @@ public class ConditionBuilder {
       return;
     }
 
-    UaNode serverNode =
-        context.getServer().getAddressSpaceManager().getManagedNode(NodeIds.Server).orElse(null);
-
-    if (serverNode != null) {
-      serverNode
-          .getNodeManager()
-          .addReferences(
-              new Reference(
-                  NodeIds.Server, NodeIds.HasEventSource, source.getNodeId().expanded(), true),
-              context.getNamespaceTable());
-    }
+    context
+        .getServer()
+        .getAddressSpaceManager()
+        .getManagedNode(NodeIds.Server)
+        .ifPresent(
+            serverNode ->
+                serverNode
+                    .getNodeManager()
+                    .addReferences(
+                        new Reference(
+                            NodeIds.Server,
+                            NodeIds.HasEventSource,
+                            source.getNodeId().expanded(),
+                            true),
+                        context.getNamespaceTable()));
   }
 }

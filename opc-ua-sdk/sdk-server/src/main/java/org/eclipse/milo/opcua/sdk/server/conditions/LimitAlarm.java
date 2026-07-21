@@ -13,15 +13,12 @@ package org.eclipse.milo.opcua.sdk.server.conditions;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 import org.eclipse.milo.opcua.sdk.server.model.objects.LimitAlarmTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableTypeNode;
-import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.jspecify.annotations.Nullable;
@@ -262,22 +259,6 @@ public abstract class LimitAlarm extends AlarmCondition {
     return state != null
         ? ACTIVE_TEXTS.whenTrue() + "/" + state.stateName()
         : ACTIVE_TEXTS.whenFalse();
-  }
-
-  /**
-   * Shared tail of the limit-alarm {@code create} entry points: instantiate the typed instance
-   * node, wrap it in its behavior class, and install method handlers.
-   */
-  static <T extends LimitAlarm> T build(
-      ConditionBuilder builder, NodeId typeDefinitionId, Function<LimitAlarmTypeNode, T> behavior)
-      throws UaException {
-
-    LimitAlarmTypeNode node = (LimitAlarmTypeNode) builder.buildNode(typeDefinitionId);
-
-    T alarm = behavior.apply(node);
-    alarm.installMethodHandlers(builder.getMethodNodes());
-
-    return alarm;
   }
 
   private static @Nullable Double doubleValue(@Nullable PropertyTypeNode property) {

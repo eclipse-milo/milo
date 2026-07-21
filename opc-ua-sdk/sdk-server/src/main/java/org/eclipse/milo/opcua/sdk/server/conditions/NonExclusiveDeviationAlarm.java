@@ -15,6 +15,7 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.NonExclusiveDeviationAlar
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 
 /**
  * Behavior for a NonExclusiveDeviationAlarm instance (Part 9 §5.8.22.2): a {@link
@@ -38,7 +39,8 @@ public class NonExclusiveDeviationAlarm extends NonExclusiveLimitAlarm {
    *
    * @param context the {@link UaNodeContext} the instance is created under.
    * @param configure receives the {@link ConditionBuilder} to configure; at least a High or Low
-   *     limit and the {@link ConditionBuilder#setpointNode setpointNode} must be configured.
+   *     limit and the {@link ConditionBuilder#setpointNode(NodeId) setpointNode} must be
+   *     configured.
    * @return the created {@link NonExclusiveDeviationAlarm}.
    * @throws UaException if instantiating the instance node fails.
    */

@@ -86,13 +86,10 @@ public class AcknowledgeableCondition extends Condition {
     ConditionBuilder builder = new ConditionBuilder(context);
     configure.accept(builder);
 
-    AcknowledgeableConditionTypeNode node =
-        (AcknowledgeableConditionTypeNode) builder.buildNode(NodeIds.AcknowledgeableConditionType);
-
-    var condition = new AcknowledgeableCondition(node);
-    condition.installMethodHandlers(builder.getMethodNodes());
-
-    return condition;
+    return build(
+        builder,
+        NodeIds.AcknowledgeableConditionType,
+        node -> new AcknowledgeableCondition((AcknowledgeableConditionTypeNode) node));
   }
 
   @Override

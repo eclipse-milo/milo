@@ -18,6 +18,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceTypeTree;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
@@ -162,6 +163,30 @@ public class Condition {
    */
   public ConditionTypeNode getNode() {
     return node;
+  }
+
+  /**
+   * Shared tail of the condition/alarm {@code create} entry points: instantiate the typed instance
+   * node from {@code typeDefinitionId}, wrap it in its behavior via {@code behavior}, and install
+   * the instance's method handlers. The {@code behavior} function re-casts the node to the concrete
+   * type it wraps, so a single {@link ConditionTypeNode}-typed helper serves every alarm family.
+   *
+   * @param builder the configured {@link ConditionBuilder}.
+   * @param typeDefinitionId the type definition to instantiate.
+   * @param behavior wraps the instantiated node in its behavior class.
+   * @return the created behavior.
+   * @throws UaException if instantiating the instance node fails.
+   */
+  static <T extends Condition> T build(
+      ConditionBuilder builder, NodeId typeDefinitionId, Function<ConditionTypeNode, T> behavior)
+      throws UaException {
+
+    ConditionTypeNode node = builder.buildNode(typeDefinitionId);
+
+    T condition = behavior.apply(node);
+    condition.installMethodHandlers(builder.getMethodNodes());
+
+    return condition;
   }
 
   /**

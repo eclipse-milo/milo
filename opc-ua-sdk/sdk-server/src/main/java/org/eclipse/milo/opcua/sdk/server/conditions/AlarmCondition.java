@@ -122,13 +122,10 @@ public class AlarmCondition extends AcknowledgeableCondition {
     ConditionBuilder builder = new ConditionBuilder(context);
     configure.accept(builder);
 
-    AlarmConditionTypeNode node =
-        (AlarmConditionTypeNode) builder.buildNode(NodeIds.AlarmConditionType);
-
-    var condition = new AlarmCondition(node);
-    condition.installMethodHandlers(builder.getMethodNodes());
-
-    return condition;
+    return build(
+        builder,
+        NodeIds.AlarmConditionType,
+        node -> new AlarmCondition((AlarmConditionTypeNode) node));
   }
 
   @Override
