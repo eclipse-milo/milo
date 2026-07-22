@@ -175,12 +175,12 @@ public final class ChunkEncoder {
    * SecureChannel profiles, where nonce construction cannot safely continue once the non-legacy
    * sequence stream approaches {@code UInt32.MaxValue}.
    *
-   * <p>The signal is measured relative to the current token: it trips once the stream enters the
-   * renewal window while the active token was installed before that window, and clears as soon as a
-   * renewal installs a fresh token inside the window. Without the token-relative comparison the
-   * never-reset stream counter would keep the signal latched true and trigger an OPN Renew for
-   * every remaining chunk, while the freshly installed token can safely carry the stream across the
-   * wrap.
+   * <p>The signal is measured relative to the current token: it trips once the stream has advanced
+   * to within the renewal margin of a full UInt32 cycle since the token was installed, and clears
+   * as soon as a renewal installs a fresh token. Measuring distance-since-install rather than
+   * absolute stream position keeps the signal from latching true after a renewal (which would
+   * trigger an OPN Renew for every remaining chunk) and re-arms it for tokens installed inside the
+   * renewal window, whose nonce stream runs out one full cycle after their own install position.
    *
    * @param channel the channel whose selected security profile determines whether AEAD renewal
    *     tracking applies.
@@ -193,10 +193,16 @@ public final class ChunkEncoder {
   }
 
   private synchronized boolean isNonLegacyRenewalWindowReachedForCurrentToken() {
-    long renewalTrip = ChannelSecurity.AEAD_RENEWAL_SEQUENCE_NUMBER - 1L;
+    // The current token first used LastSequenceNumber = install position - 1, and its nonce inputs
+    // repeat once the stream completes a full UInt32 cycle back to that value. Distance consumed
+    // since install must therefore be measured modulo the wrap: an absolute-position comparison
+    // would never re-trip for a token installed at or past the renewal window, leaving a long-lived
+    // token to run into AEAD nonce-reuse rejection instead of renewing.
+    long consumedByCurrentToken =
+        (lastNonLegacySequenceNumberForRenewal() - nonLegacyTokenInstallSequenceNumber + 1L)
+            & UInteger.MAX_VALUE;
 
-    return lastNonLegacySequenceNumberForRenewal() >= renewalTrip
-        && nonLegacyTokenInstallSequenceNumber < renewalTrip;
+    return consumedByCurrentToken >= ChannelSecurity.AEAD_RENEWAL_SEQUENCE_NUMBER;
   }
 
   private synchronized long lastNonLegacySequenceNumberForRenewal() {

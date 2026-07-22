@@ -403,6 +403,30 @@ class SecureChannelStrategiesTest {
     assertFalse(encoder.isSecureChannelRenewalRequired(channel));
   }
 
+  // A token installed inside the renewal window carries the stream across the MAX->0 wrap, but its
+  // nonce inputs repeat one full UInt32 cycle past its own install position, so the signal must
+  // re-trip before that. An absolute-position comparison never re-trips for such a token, and the
+  // channel faults on AEAD nonce-reuse rejection instead of renewing.
+  @Test
+  void aeadRenewalSignalReArmsForTokenInstalledInRenewalWindow() throws Exception {
+    ChunkEncoder encoder =
+        new ChunkEncoder(new ChannelParameters(8192, 8192, 8192, 0, 8192, 8192, 8192, 0));
+    ServerSecureChannel channel = new ServerSecureChannel();
+    channel.setSecurityPolicy(SecurityPolicy.ECC_nistP256_AesGcm);
+
+    long install = ChannelSecurity.AEAD_RENEWAL_SEQUENCE_NUMBER + 1L;
+    setNonLegacyTokenInstallSequenceNumber(encoder, install);
+
+    // The stream has wrapped and climbed back to one value short of the token's renewal distance.
+    long oneBeforeTrip =
+        (install + ChannelSecurity.AEAD_RENEWAL_SEQUENCE_NUMBER - 2L) & UInteger.MAX_VALUE;
+    setNonLegacyLastSequenceNumber(encoder, oneBeforeTrip);
+    assertFalse(encoder.isSecureChannelRenewalRequired(channel));
+
+    setNonLegacyLastSequenceNumber(encoder, (oneBeforeTrip + 1L) & UInteger.MAX_VALUE);
+    assertTrue(encoder.isSecureChannelRenewalRequired(channel));
+  }
+
   // The non-legacy sequence stream is shared across the asymmetric encoder, the symmetric encoder,
   // and the renewal signal. Allocation is confined to a single ChunkEncoder monitor; without that
   // monitor two threads could read the same counter and emit a duplicate SequenceNumber (a fatal
