@@ -43,7 +43,7 @@ Releases are published to Maven Central and snapshots to Sonatype.
 <dependency>
     <groupId>org.eclipse.milo</groupId>
     <artifactId>milo-sdk-client</artifactId>
-    <version>1.1.5</version>
+    <version>1.1.6</version>
 </dependency>
 ```
 
@@ -53,7 +53,7 @@ Releases are published to Maven Central and snapshots to Sonatype.
 <dependency>
     <groupId>org.eclipse.milo</groupId>
     <artifactId>milo-sdk-server</artifactId>
-    <version>1.1.5</version>
+    <version>1.1.6</version>
 </dependency>
 ```
 
