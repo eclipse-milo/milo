@@ -21,14 +21,18 @@ public class SubscriptionTransferTest extends AbstractClientServerTest {
     subscription.create();
 
     var client2 = TestClient.create(server, cfg -> {});
-    client2.connect();
+    try {
+      client2.connect();
 
-    TransferSubscriptionsResponse response =
-        client2.transferSubscriptions(
-            List.of(subscription.getSubscriptionId().orElseThrow()), false);
+      TransferSubscriptionsResponse response =
+          client2.transferSubscriptions(
+              List.of(subscription.getSubscriptionId().orElseThrow()), false);
 
-    TransferResult result = requireNonNull(response.getResults())[0];
+      TransferResult result = requireNonNull(response.getResults())[0];
 
-    assertEquals(StatusCodes.Bad_UserAccessDenied, result.getStatusCode().getValue());
+      assertEquals(StatusCodes.Bad_UserAccessDenied, result.getStatusCode().getValue());
+    } finally {
+      client2.disconnect();
+    }
   }
 }

@@ -18,7 +18,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.netty.channel.Channel;
-import java.net.ServerSocket;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -54,6 +53,7 @@ import org.eclipse.milo.opcua.sdk.server.identity.UsernameIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.X509IdentityValidator;
 import org.eclipse.milo.opcua.sdk.test.DelegatingSessionServiceSet;
 import org.eclipse.milo.opcua.sdk.test.TestNamespace;
+import org.eclipse.milo.opcua.sdk.test.TestPortAllocator;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -115,6 +115,9 @@ class EccSessionIntegrationTest {
   private static final String USERNAME = "user1";
   private static final String PASSWORD = "password";
   private static final int RENEWAL_TEST_LIFETIME_MILLIS = 1_500;
+
+  private static final Map<CertificateKey, CertificateMaterial> CERTIFICATES =
+      new LinkedHashMap<>();
 
   // Anonymous activation still exercises CreateSession/ActivateSession over each enhanced
   // SecureChannel.
@@ -1242,8 +1245,14 @@ class EccSessionIntegrationTest {
                 List.of(certificates))));
   }
 
-  private static CertificateMaterial certificate(
+  private static synchronized CertificateMaterial certificate(
       NodeId certificateTypeId, String commonName, String applicationUri) throws Exception {
+
+    CertificateKey key = new CertificateKey(certificateTypeId, commonName, applicationUri);
+    CertificateMaterial existing = CERTIFICATES.get(key);
+    if (existing != null) {
+      return existing;
+    }
 
     KeyPair keyPair;
     if (NodeIds.EccNistP256ApplicationCertificateType.equals(certificateTypeId)) {
@@ -1272,7 +1281,11 @@ class EccSessionIntegrationTest {
             .addDnsName("localhost")
             .build();
 
-    return new CertificateMaterial(certificateTypeId, keyPair, new X509Certificate[] {certificate});
+    CertificateMaterial created =
+        new CertificateMaterial(certificateTypeId, keyPair, new X509Certificate[] {certificate});
+    CERTIFICATES.put(key, created);
+
+    return created;
   }
 
   private static UserTokenPolicy anonymousPolicy() {
@@ -1346,9 +1359,7 @@ class EccSessionIntegrationTest {
   }
 
   private static int freePort() throws Exception {
-    try (ServerSocket socket = new ServerSocket(0)) {
-      return socket.getLocalPort();
-    }
+    return TestPortAllocator.allocatePort();
   }
 
   private static void disconnectQuietly(OpcUaClient client) {
@@ -1379,6 +1390,9 @@ class EccSessionIntegrationTest {
 
   private record CertificateMaterial(
       NodeId certificateTypeId, KeyPair keyPair, X509Certificate[] certificateChain) {}
+
+  private record CertificateKey(
+      NodeId certificateTypeId, String commonName, String applicationUri) {}
 
   private record TestCertificateGroup(
       NodeId certificateGroupId, Map<NodeId, CertificateMaterial> certificates)

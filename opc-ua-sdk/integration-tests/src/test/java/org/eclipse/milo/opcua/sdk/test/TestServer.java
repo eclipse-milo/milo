@@ -15,16 +15,13 @@ import static org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig.USER_TOKEN_POL
 import static org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig.USER_TOKEN_POLICY_X509;
 
 import java.io.File;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
+import java.nio.file.Files;
 import java.security.KeyPair;
 import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -59,9 +56,10 @@ import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransportConfig;
-import org.slf4j.LoggerFactory;
 
 public final class TestServer {
+
+  private static TestCertificateMaterial certificateMaterial;
 
   static {
     // Required for SecurityPolicy.Aes256_Sha256_RsaPss
@@ -147,19 +145,7 @@ public final class TestServer {
   public static TestServer create(
       OpcUaServerConfigLimits limits, Consumer<OpcUaServerConfigBuilder> customizeConfig)
       throws Exception {
-    int port = new Random().nextInt(65535 - 10000) + 10000;
-
-    try {
-      ServerSocket ss = new ServerSocket();
-      InetSocketAddress isa = new InetSocketAddress(InetAddress.getLocalHost(), port);
-      ss.bind(isa);
-      ss.close();
-
-      return create(port, limits, customizeConfig);
-    } catch (Throwable t) {
-      t.printStackTrace(System.err);
-      return create(limits, customizeConfig);
-    }
+    return create(TestPortAllocator.allocatePort(), limits, customizeConfig);
   }
 
   public static TestServer create(int port) throws Exception {
@@ -173,25 +159,11 @@ public final class TestServer {
   public static TestServer create(
       int port, OpcUaServerConfigLimits limits, Consumer<OpcUaServerConfigBuilder> customizeConfig)
       throws Exception {
-    File securityTempDir = new File(System.getProperty("java.io.tmpdir"), "security");
-    if (!securityTempDir.exists() && !securityTempDir.mkdirs()) {
-      throw new Exception("unable to create security temp dir: " + securityTempDir);
-    }
-    LoggerFactory.getLogger(TestServer.class)
-        .info("security temp dir: {}", securityTempDir.getAbsolutePath());
-
-    File pkiDir = securityTempDir.toPath().resolve("pki").toFile();
-    LoggerFactory.getLogger(TestServer.class).info("pki dir: {}", pkiDir.getAbsolutePath());
-
-    KeyStoreLoader loader = new KeyStoreLoader().load(securityTempDir);
-
-    KeyPair clientKeyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
-    SelfSignedCertificateBuilder clientCertBuilder =
-        new SelfSignedCertificateBuilder(clientKeyPair);
-    clientCertBuilder.setCommonName("TestClient");
-    clientCertBuilder.setApplicationUri("urn:eclipse:milo:test:reverse:client");
-    X509Certificate clientCertificate = clientCertBuilder.build();
-    X509Certificate[] clientCertificateChain = new X509Certificate[] {clientCertificate};
+    TestCertificateMaterial certificates = getCertificateMaterial();
+    KeyStoreLoader loader = certificates.keyStoreLoader();
+    KeyPair clientKeyPair = certificates.clientKeyPair();
+    X509Certificate clientCertificate = certificates.clientCertificate();
+    X509Certificate[] clientCertificateChain = certificates.clientCertificateChain();
 
     var trustListManager = new MemoryTrustListManager();
     trustListManager.addTrustedCertificate(clientCertificate);
@@ -221,20 +193,10 @@ public final class TestServer {
 
     var certificateManager = new DefaultCertificateManager(certificateQuarantine, defaultGroup);
 
-    // Generate test X509 identity certificates
-    KeyPair identityKeyPair1 = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
-    SelfSignedCertificateBuilder identityCertBuilder1 =
-        new SelfSignedCertificateBuilder(identityKeyPair1);
-    identityCertBuilder1.setCommonName("TestIdentity1");
-    identityCertBuilder1.setApplicationUri("urn:eclipse:milo:test:identity1");
-    X509Certificate identityCertificate1 = identityCertBuilder1.build();
-
-    KeyPair identityKeyPair2 = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
-    SelfSignedCertificateBuilder identityCertBuilder2 =
-        new SelfSignedCertificateBuilder(identityKeyPair2);
-    identityCertBuilder2.setCommonName("TestIdentity2");
-    identityCertBuilder2.setApplicationUri("urn:eclipse:milo:test:identity2");
-    X509Certificate identityCertificate2 = identityCertBuilder2.build();
+    TestIdentityCertificate identityCert1 = certificates.identityCert1();
+    TestIdentityCertificate identityCert2 = certificates.identityCert2();
+    X509Certificate identityCertificate1 = identityCert1.certificate();
+    X509Certificate identityCertificate2 = identityCert2.certificate();
 
     // Create trust list manager for user identity certificates
     var userIdentityTrustListManager = new MemoryTrustListManager();
@@ -329,9 +291,63 @@ public final class TestServer {
         clientCertificate,
         clientCertificateChain,
         clientKeyPair,
-        new TestIdentityCertificate(identityCertificate1, identityKeyPair1),
-        new TestIdentityCertificate(identityCertificate2, identityKeyPair2));
+        identityCert1,
+        identityCert2);
   }
+
+  private static synchronized TestCertificateMaterial getCertificateMaterial() throws Exception {
+    if (certificateMaterial == null) {
+      File securityTempDir = Files.createTempDirectory("milo-test-security-").toFile();
+      securityTempDir.deleteOnExit();
+
+      File keyStoreFile = securityTempDir.toPath().resolve("example-server.pfx").toFile();
+      keyStoreFile.deleteOnExit();
+
+      KeyStoreLoader loader = new KeyStoreLoader().load(securityTempDir);
+
+      KeyPair clientKeyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+      SelfSignedCertificateBuilder clientCertBuilder =
+          new SelfSignedCertificateBuilder(clientKeyPair);
+      clientCertBuilder.setCommonName("TestClient");
+      clientCertBuilder.setApplicationUri("urn:eclipse:milo:test:reverse:client");
+      X509Certificate clientCertificate = clientCertBuilder.build();
+      X509Certificate[] clientCertificateChain = new X509Certificate[] {clientCertificate};
+
+      TestIdentityCertificate identityCert1 =
+          createIdentityCertificate("TestIdentity1", "urn:eclipse:milo:test:identity1");
+      TestIdentityCertificate identityCert2 =
+          createIdentityCertificate("TestIdentity2", "urn:eclipse:milo:test:identity2");
+
+      certificateMaterial =
+          new TestCertificateMaterial(
+              loader,
+              clientCertificate,
+              clientCertificateChain,
+              clientKeyPair,
+              identityCert1,
+              identityCert2);
+    }
+
+    return certificateMaterial;
+  }
+
+  private static TestIdentityCertificate createIdentityCertificate(
+      String commonName, String applicationUri) throws Exception {
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    SelfSignedCertificateBuilder certificateBuilder = new SelfSignedCertificateBuilder(keyPair);
+    certificateBuilder.setCommonName(commonName);
+    certificateBuilder.setApplicationUri(applicationUri);
+
+    return new TestIdentityCertificate(certificateBuilder.build(), keyPair);
+  }
+
+  private record TestCertificateMaterial(
+      KeyStoreLoader keyStoreLoader,
+      X509Certificate clientCertificate,
+      X509Certificate[] clientCertificateChain,
+      KeyPair clientKeyPair,
+      TestIdentityCertificate identityCert1,
+      TestIdentityCertificate identityCert2) {}
 
   private static Set<EndpointConfig> createEndpointConfigs(X509Certificate certificate, int port) {
     Set<EndpointConfig> endpointConfigurations = new LinkedHashSet<>();

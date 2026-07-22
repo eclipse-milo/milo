@@ -604,14 +604,7 @@ public class ConditionRefreshTest extends AbstractClientServerTest {
 
       // Wait until the refresh is parked at snapshot creation: its guard is engaged from that
       // point until it completes, which the held Condition lock prevents.
-      long deadline = System.currentTimeMillis() + 5_000;
-      while (!isBlockedCreatingSnapshots(refreshThread)) {
-        if (System.currentTimeMillis() > deadline) {
-          fail("refresh did not block at snapshot creation");
-        }
-        //noinspection BusyWait
-        Thread.sleep(10);
-      }
+      awaitBlockedCreatingSnapshots(refreshThread);
 
       // A concurrent refresh of the same subscription is rejected...
       UaException e =
@@ -634,6 +627,11 @@ public class ConditionRefreshTest extends AbstractClientServerTest {
                 }
               });
       refresh2Thread.start();
+
+      // Both refreshes must finish creating their transient marker nodes before the Condition lock
+      // is released. Otherwise the first refresh can delete its markers while the second is still
+      // committing its markers, invalidating the second NodeManager batch generation.
+      awaitBlockedCreatingSnapshots(refresh2Thread);
 
       release.countDown();
 
@@ -659,6 +657,17 @@ public class ConditionRefreshTest extends AbstractClientServerTest {
 
     return Stream.of(thread.getStackTrace())
         .anyMatch(frame -> "createRefreshSnapshots".equals(frame.getMethodName()));
+  }
+
+  private static void awaitBlockedCreatingSnapshots(Thread thread) throws InterruptedException {
+    long deadline = System.currentTimeMillis() + 5_000;
+    while (!isBlockedCreatingSnapshots(thread)) {
+      if (System.currentTimeMillis() > deadline) {
+        fail("refresh did not block at snapshot creation");
+      }
+      //noinspection BusyWait
+      Thread.sleep(10);
+    }
   }
 
   @Test
