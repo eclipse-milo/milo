@@ -12,7 +12,6 @@ package org.eclipse.milo.opcua.sdk.client.session;
 
 import com.digitalpetri.fsm.Fsm;
 import com.digitalpetri.fsm.FsmContext;
-import com.digitalpetri.netty.fsm.ChannelFsm;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -22,6 +21,7 @@ import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
 import org.eclipse.milo.opcua.sdk.client.SessionActivityListener;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
+import org.eclipse.milo.opcua.stack.transport.client.ChannelStateObservable;
 
 public class SessionFsm {
 
@@ -143,8 +143,10 @@ public class SessionFsm {
   static final FsmContext.Key<ScheduledFuture> KEY_KEEP_ALIVE_SCHEDULED_FUTURE =
       new FsmContext.Key<>("keepAliveScheduledFuture", ScheduledFuture.class);
 
-  static final FsmContext.Key<ChannelFsm.TransitionListener> KEY_CHANNEL_FSM_TRANSITION_LISTENER =
-      new FsmContext.Key<>("channelFsmTransitionListener", ChannelFsm.TransitionListener.class);
+  static final FsmContext.Key<ChannelStateObservable.TransitionListener>
+      KEY_CHANNEL_STATE_TRANSITION_LISTENER =
+          new FsmContext.Key<>(
+              "channelStateTransitionListener", ChannelStateObservable.TransitionListener.class);
 
   static final FsmContext.Key<SessionInitializers> KEY_SESSION_INITIALIZERS =
       new FsmContext.Key<>("sessionInitializers", SessionInitializers.class);

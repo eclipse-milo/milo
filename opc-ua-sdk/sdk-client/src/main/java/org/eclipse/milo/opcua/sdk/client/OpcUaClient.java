@@ -28,6 +28,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -35,6 +37,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.client.model.ObjectTypeInitializer;
 import org.eclipse.milo.opcua.sdk.client.model.VariableTypeInitializer;
+import org.eclipse.milo.opcua.sdk.client.reverse.DiscoveryFirstReverseConnectClient;
+import org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectConnection;
+import org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectManager;
+import org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectSelector;
+import org.eclipse.milo.opcua.sdk.client.reverse.ReverseTcpClientTransport;
 import org.eclipse.milo.opcua.sdk.client.session.SessionFsm;
 import org.eclipse.milo.opcua.sdk.client.session.SessionFsmFactory;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaSubscription;
@@ -175,6 +182,9 @@ public class OpcUaClient {
 
   public static final String SDK_VERSION = ManifestUtil.read("X-SDK-Version").orElse("dev");
 
+  // Package-private and non-final so tests can shorten the bound. See disconnectAsync().
+  static long disconnectCloseSessionTimeoutMillis = 5_000L;
+
   static {
     Logger logger = LoggerFactory.getLogger(OpcUaClient.class);
     logger.info("Java version: {}", System.getProperty("java.version"));
@@ -215,6 +225,145 @@ public class OpcUaClient {
     OpcTcpClientTransportConfig transportConfig = transportConfigBuilder.build();
 
     return new OpcUaClient(config, new OpcTcpClientTransport(transportConfig));
+  }
+
+  /**
+   * Create an {@link OpcUaClient} configured to connect through a shared reverse-connect manager.
+   *
+   * <p>The returned client does not claim a reverse channel until {@link #connectAsync()} is
+   * invoked. The manager should already be running and listening for server-opened reverse
+   * connections. Once connected, Session creation and service requests use the normal client SDK
+   * path.
+   *
+   * <pre>{@code
+   * ReverseConnectManager manager =
+   *     ReverseConnectManager.builder()
+   *         .addBindAddress(new InetSocketAddress("0.0.0.0", 48060))
+   *         .build();
+   *
+   * manager.startup();
+   * OpcUaClient client =
+   *     OpcUaClient.createReverseConnect(
+   *         config,
+   *         manager,
+   *         ReverseConnectSelector.byServerUriAndEndpointUrl(serverUri, endpointUrl));
+   *
+   * try {
+   *   client.connectAsync().get();
+   * } finally {
+   *   client.disconnectAsync().get();
+   *   manager.shutdown();
+   * }
+   * }</pre>
+   *
+   * @param config the {@link OpcUaClientConfig}.
+   * @param manager the running {@link ReverseConnectManager} that owns client listener sockets.
+   * @param selector the one-shot selector used to claim a matching reverse connection.
+   * @return a new {@link OpcUaClient} configured with reverse TCP transport.
+   */
+  public static OpcUaClient createReverseConnect(
+      OpcUaClientConfig config, ReverseConnectManager manager, ReverseConnectSelector selector) {
+
+    return createReverseConnect(config, manager, selector, b -> {});
+  }
+
+  /**
+   * Create an {@link OpcUaClient} configured to connect through a shared reverse-connect manager.
+   *
+   * <p>The returned client does not claim a reverse channel until {@link #connectAsync()} is
+   * invoked. The manager should already be running and listening for server-opened reverse
+   * connections. The transport configuration controls the UASC handshake, timers, executors, and
+   * pipeline customization used after the manager claims a channel.
+   *
+   * @param config the {@link OpcUaClientConfig}.
+   * @param manager the running {@link ReverseConnectManager} that owns client listener sockets.
+   * @param selector the one-shot selector used to claim a matching reverse connection.
+   * @param configureTransport a Consumer that receives an {@link
+   *     OpcTcpClientTransportConfigBuilder} that can be used to configure the reverse transport.
+   * @return a new {@link OpcUaClient} configured with reverse TCP transport.
+   */
+  public static OpcUaClient createReverseConnect(
+      OpcUaClientConfig config,
+      ReverseConnectManager manager,
+      ReverseConnectSelector selector,
+      Consumer<OpcTcpClientTransportConfigBuilder> configureTransport) {
+
+    var transportConfigBuilder = OpcTcpClientTransportConfig.newBuilder();
+    configureTransport.accept(transportConfigBuilder);
+
+    OpcTcpClientTransportConfig transportConfig = transportConfigBuilder.build();
+
+    return new OpcUaClient(
+        config, new ReverseTcpClientTransport(transportConfig, manager, selector));
+  }
+
+  /**
+   * Create an {@link OpcUaClient} from one pre-claimed reverse-connect connection.
+   *
+   * <p>The returned client consumes {@code connection} when {@link #connectAsync()} is invoked.
+   * This mode is intended for dynamic inbound factories that observe a pending candidate, claim it
+   * with {@link ReverseConnectManager#claim(java.util.UUID)}, resolve a client config, and then
+   * attach the normal client SDK pipeline to the claimed channel. The connection is one-shot;
+   * reconnect requires a new reverse-connect candidate and client instance.
+   *
+   * <p>The supplied {@code config} must already contain the selected {@link EndpointDescription}.
+   * This factory consumes a reverse TCP channel; it does not perform endpoint discovery or endpoint
+   * selection. If a dynamic application needs to discover endpoints from an initial inbound reverse
+   * socket, use {@link DiscoveryFirstReverseConnectClient} for the discovery-first flow or call
+   * {@link DiscoveryClient#getEndpoints(ReverseConnectConnection)} directly before creating the
+   * production reverse client from a later matching connection.
+   *
+   * <pre>{@code
+   * ReverseConnectCandidateSnapshot candidate = manager.snapshot().pendingCandidates().get(0);
+   * ReverseConnectConnection connection =
+   *     manager.claim(candidate.id()).orElseThrow();
+   *
+   * OpcUaClient client = OpcUaClient.createReverseConnect(config, connection);
+   * try {
+   *   client.connectAsync().get();
+   * } finally {
+   *   client.disconnectAsync().get();
+   * }
+   * }</pre>
+   *
+   * @param config the {@link OpcUaClientConfig}.
+   * @param connection the pre-claimed reverse-connect connection.
+   * @return a new {@link OpcUaClient} configured with reverse TCP transport.
+   */
+  public static OpcUaClient createReverseConnect(
+      OpcUaClientConfig config, ReverseConnectConnection connection) {
+
+    return createReverseConnect(config, connection, b -> {});
+  }
+
+  /**
+   * Create an {@link OpcUaClient} from one pre-claimed reverse-connect connection.
+   *
+   * <p>The returned client consumes {@code connection} when {@link #connectAsync()} is invoked.
+   * This mode does not register selectors with a {@link ReverseConnectManager} and does not rearm
+   * after a failed handshake.
+   *
+   * <p>The caller remains responsible for endpoint discovery and client configuration before
+   * invoking this factory. The direct reverse transport only supplies the already-claimed channel
+   * used for the UASC handshake.
+   *
+   * @param config the {@link OpcUaClientConfig}.
+   * @param connection the pre-claimed reverse-connect connection.
+   * @param configureTransport a Consumer that receives an {@link
+   *     OpcTcpClientTransportConfigBuilder} that can be used to configure the reverse transport.
+   * @return a new {@link OpcUaClient} configured with reverse TCP transport.
+   */
+  public static OpcUaClient createReverseConnect(
+      OpcUaClientConfig config,
+      ReverseConnectConnection connection,
+      Consumer<OpcTcpClientTransportConfigBuilder> configureTransport) {
+
+    var transportConfigBuilder = OpcTcpClientTransportConfig.newBuilder();
+    configureTransport.accept(transportConfigBuilder);
+
+    OpcTcpClientTransportConfig transportConfig = transportConfigBuilder.build();
+
+    return new OpcUaClient(config, new ReverseTcpClientTransport(transportConfig, connection));
   }
 
   /**
@@ -583,14 +732,39 @@ public class OpcUaClient {
   /**
    * Close the session, if it's open, and disconnect the underlying transport.
    *
+   * <p>The wait for session closure is bounded; if the SessionFsm cannot fire {@code CloseSession}
+   * (for example, while shelved during {@code Creating}/{@code Activating} with a hung transport),
+   * the transport is disconnected after the bound to unblock the FSM.
+   *
    * @return a {@link CompletableFuture} that completes successfully with this {@link OpcUaClient},
    *     or completes exceptionally if an unexpected error occurs. Errors closing the session or the
    *     disconnecting the transport are swallowed.
    */
   public CompletableFuture<OpcUaClient> disconnectAsync() {
-    return sessionFsm
-        .closeSession()
-        .exceptionally(ex -> Unit.VALUE)
+    CompletableFuture<Unit> closeSession =
+        sessionFsm.closeSession().exceptionally(ex -> Unit.VALUE);
+
+    // If the SessionFsm is in a non-terminal state with a pending CreateSession or
+    // ActivateSession request (e.g. reverse-connect transport whose server has vanished
+    // without notifying the client), the CloseSession event is shelved and closeSession()
+    // never resolves on its own. Bound the wait so transport.disconnect() can run and
+    // fail the pending channelFuture, which unblocks the FSM.
+    var disconnectTrigger = new CompletableFuture<Unit>();
+    ScheduledFuture<?> timeoutTask =
+        transport
+            .getConfig()
+            .getScheduledExecutor()
+            .schedule(
+                () -> disconnectTrigger.complete(Unit.VALUE),
+                disconnectCloseSessionTimeoutMillis,
+                TimeUnit.MILLISECONDS);
+    closeSession.whenComplete(
+        (u, ex) -> {
+          timeoutTask.cancel(false);
+          disconnectTrigger.complete(Unit.VALUE);
+        });
+
+    return disconnectTrigger
         .thenCompose(u -> transport.disconnect().thenApply(c -> OpcUaClient.this))
         .exceptionally(ex -> OpcUaClient.this)
         .whenComplete(

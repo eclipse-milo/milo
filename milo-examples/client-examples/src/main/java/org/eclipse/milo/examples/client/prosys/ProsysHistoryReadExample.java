@@ -8,13 +8,15 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.eclipse.milo.examples.client;
+package org.eclipse.milo.examples.client.prosys;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.examples.client.ClientExample;
+import org.eclipse.milo.examples.client.ClientExampleRunner;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
@@ -31,10 +33,18 @@ import org.eclipse.milo.opcua.stack.core.types.structured.HistoryReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadRawModifiedDetails;
 import org.eclipse.milo.opcua.stack.core.util.Lists;
 
-public class HistoryReadExampleProsys implements ClientExample {
+/**
+ * Reads raw historical values from Prosys OPC UA Simulation Server.
+ *
+ * <p>This example is grouped under the Prosys package because it assumes the Simulation Server's
+ * default endpoint and a history-enabled {@code ns=3;s=Counter} node. It still uses the normal
+ * {@link ClientExampleRunner} client setup; only the endpoint and node selection are
+ * vendor-specific.
+ */
+public class ProsysHistoryReadExample implements ClientExample {
 
   public static void main(String[] args) throws Exception {
-    HistoryReadExampleProsys example = new HistoryReadExampleProsys();
+    ProsysHistoryReadExample example = new ProsysHistoryReadExample();
 
     new ClientExampleRunner(example, false).run();
   }

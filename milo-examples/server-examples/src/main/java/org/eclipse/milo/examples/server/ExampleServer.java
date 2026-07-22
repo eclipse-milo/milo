@@ -110,6 +110,21 @@ public class ExampleServer {
    */
   public ExampleServer(int tcpBindPort, Consumer<OpcUaServerConfigBuilder> configCustomizer)
       throws Exception {
+    this(tcpBindPort, configCustomizer, null);
+  }
+
+  /**
+   * Creates an ExampleServer with a custom TCP bind port, optional application URI, and additional
+   * configuration applied to the {@link OpcUaServerConfigBuilder} before the config is built.
+   *
+   * @param tcpBindPort the TCP port to bind the server on.
+   * @param configCustomizer a consumer that can modify the server config builder.
+   * @param applicationUri the application URI to advertise for examples that need distinct logical
+   *     servers, or {@code null} to use the URI from the server certificate.
+   */
+  public ExampleServer(
+      int tcpBindPort, Consumer<OpcUaServerConfigBuilder> configCustomizer, String applicationUri)
+      throws Exception {
     this.tcpBindPort = tcpBindPort;
     Path securityTempDir = Paths.get(System.getProperty("java.io.tmpdir"), "server", "security");
     Files.createDirectories(securityTempDir);
@@ -174,8 +189,9 @@ public class ExampleServer {
 
     X509Certificate certificate = loader.getServerCertificate();
 
-    // The configured application URI must match the one in the certificate(s)
-    String applicationUri =
+    // Use the certificate URI by default; selected examples can override the advertised
+    // application URI when they run with SecurityPolicy.None.
+    String certificateApplicationUri =
         CertificateUtil.getSanUri(certificate)
             .orElseThrow(
                 () ->
@@ -187,7 +203,7 @@ public class ExampleServer {
 
     var serverConfigBuilder =
         OpcUaServerConfig.builder()
-            .setApplicationUri(applicationUri)
+            .setApplicationUri(applicationUri != null ? applicationUri : certificateApplicationUri)
             .setApplicationName(LocalizedText.english("Eclipse Milo OPC UA Example Server"))
             .setEndpoints(endpointConfigurations)
             .setBuildInfo(

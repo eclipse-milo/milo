@@ -18,7 +18,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionSecurityDiagnosticsAccessMode;
 import org.eclipse.milo.opcua.sdk.server.identity.IdentityValidator;
+import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTarget;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
 import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
@@ -39,13 +41,20 @@ public class OpcUaServerConfigTest {
     OpcUaServerConfigLimits limits = new OpcUaServerConfigLimits() {};
     CertificateManager certificateManager = mock(CertificateManager.class);
     RoleMapper roleMapper = identity -> List.of();
+    var sessionSecurityDiagnosticsAccessMode = SessionSecurityDiagnosticsAccessMode.LEGACY;
     SecurityKeysListener securityKeysListener = keyset -> {};
     ExecutorService executor = mock(ExecutorService.class);
     ScheduledExecutorService scheduledExecutor = mock(ScheduledExecutorService.class);
+    ReverseConnectTarget reverseConnectTarget =
+        ReverseConnectTarget.builder()
+            .setClientListenerUrl("opc.tcp://localhost:4841")
+            .setEndpointUrl("opc.tcp://localhost:4840")
+            .build();
 
     OpcUaServerConfig original =
         OpcUaServerConfig.builder()
             .setEndpoints(endpoints)
+            .addReverseConnectTarget(reverseConnectTarget)
             .setApplicationName(applicationName)
             .setApplicationUri("urn:application")
             .setProductUri("urn:product")
@@ -55,6 +64,7 @@ public class OpcUaServerConfigTest {
             .setLimits(limits)
             .setCertificateManager(certificateManager)
             .setRoleMapper(roleMapper)
+            .setSessionSecurityDiagnosticsAccessMode(sessionSecurityDiagnosticsAccessMode)
             .setSecurityKeysListener(securityKeysListener)
             .setExecutor(executor)
             .setScheduledExecutor(scheduledExecutor)
@@ -63,6 +73,7 @@ public class OpcUaServerConfigTest {
     OpcUaServerConfig copy = OpcUaServerConfig.copy(original).build();
 
     assertSame(original.getEndpoints(), copy.getEndpoints());
+    assertEquals(original.getReverseConnectTargets(), copy.getReverseConnectTargets());
     assertSame(original.getApplicationName(), copy.getApplicationName());
     assertEquals(original.getApplicationUri(), copy.getApplicationUri());
     assertEquals(original.getProductUri(), copy.getProductUri());
@@ -72,6 +83,9 @@ public class OpcUaServerConfigTest {
     assertSame(original.getLimits(), copy.getLimits());
     assertSame(original.getCertificateManager(), copy.getCertificateManager());
     assertSame(original.getRoleMapper().orElseThrow(), copy.getRoleMapper().orElseThrow());
+    assertSame(
+        original.getSessionSecurityDiagnosticsAccessMode(),
+        copy.getSessionSecurityDiagnosticsAccessMode());
     assertSame(
         original.getSecurityKeysListener().orElseThrow(),
         copy.getSecurityKeysListener().orElseThrow());

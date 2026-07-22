@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -42,6 +43,11 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
 import org.eclipse.milo.opcua.sdk.server.namespaces.OpcUaNamespace;
 import org.eclipse.milo.opcua.sdk.server.namespaces.ServerNamespace;
 import org.eclipse.milo.opcua.sdk.server.nodes.factories.EventFactory;
+import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTarget;
+import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTargetHandle;
+import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTargetListener;
+import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTargetManager;
+import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTargetSnapshot;
 import org.eclipse.milo.opcua.sdk.server.servicesets.AttributeServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.DiscoveryServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.MethodServiceSet;
@@ -191,6 +197,7 @@ public class OpcUaServer extends AbstractServiceHandler {
   private final OpcUaServerConfig config;
   private final OpcServerTransportFactory transportFactory;
   private final ServerApplicationContext applicationContext;
+  private final ReverseConnectTargetManager reverseConnectTargetManager;
 
   public OpcUaServer(OpcUaServerConfig config, OpcServerTransportFactory transportFactory) {
     this(config, transportFactory, new ServiceSets() {});
@@ -213,6 +220,18 @@ public class OpcUaServer extends AbstractServiceHandler {
     this.transportFactory = transportFactory;
 
     applicationContext = new ServerApplicationContextImpl();
+    reverseConnectTargetManager =
+        new ReverseConnectTargetManager(
+            applicationContext,
+            applicationContext::getEndpointDescriptions,
+            // Use a non-mutating lookup so target validation does not eagerly install transports
+            // into the server's cache. Transports are populated by getOrCreateTransport during
+            // endpoint binding, before the reverse-connect manager starts scheduling attempts.
+            transports::get,
+            config.getApplicationUri(),
+            config.getExecutor(),
+            config.getScheduledExecutorService(),
+            config.getReverseConnectTargets());
 
     staticEncodingContext =
         new EncodingContext() {
@@ -339,8 +358,7 @@ public class OpcUaServer extends AbstractServiceHandler {
 
               TransportProfile transportProfile = endpoint.getTransportProfile();
 
-              OpcServerTransport transport =
-                  transports.computeIfAbsent(transportProfile, transportFactory::create);
+              OpcServerTransport transport = getOrCreateTransport(transportProfile);
 
               if (transport != null) {
                 try {
@@ -366,7 +384,24 @@ public class OpcUaServer extends AbstractServiceHandler {
               }
             });
 
-    if (boundEndpoints.isEmpty()) {
+    try {
+      // Validate after binding so the reverse-connect transport lookup finds the bound transport
+      // without having to create one as a side effect.
+      reverseConnectTargetManager.validateTargets();
+    } catch (Throwable t) {
+      rollbackStartup();
+      return CompletableFuture.failedFuture(t);
+    }
+
+    try {
+      reverseConnectTargetManager.startup();
+    } catch (Throwable t) {
+      rollbackStartup();
+      return CompletableFuture.failedFuture(t);
+    }
+
+    if (boundEndpoints.isEmpty() && !reverseConnectTargetManager.hasSchedulableTargets()) {
+      rollbackStartup();
       return CompletableFuture.failedFuture(
           new UaException(StatusCodes.Bad_ConfigurationError, "No endpoints bound"));
     } else {
@@ -416,6 +451,27 @@ public class OpcUaServer extends AbstractServiceHandler {
   }
 
   private void shutdownInternal() {
+    reverseConnectTargetManager.shutdown();
+
+    unbindTransports();
+
+    sessionManager.shutdown();
+
+    serverNamespace.shutdown();
+    opcUaNamespace.shutdown();
+
+    eventFactory.shutdown();
+
+    subscriptions.values().forEach(Subscription::deleteSubscription);
+  }
+
+  private void rollbackStartup() {
+    reverseConnectTargetManager.shutdown();
+    unbindTransports();
+    eventFactory.shutdown();
+  }
+
+  private void unbindTransports() {
     transports
         .values()
         .forEach(
@@ -427,15 +483,7 @@ public class OpcUaServer extends AbstractServiceHandler {
               }
             });
     transports.clear();
-
-    sessionManager.shutdown();
-
-    serverNamespace.shutdown();
-    opcUaNamespace.shutdown();
-
-    eventFactory.shutdown();
-
-    subscriptions.values().forEach(Subscription::deleteSubscription);
+    boundEndpoints.clear();
   }
 
   public OpcUaServerConfig getConfig() {
@@ -654,12 +702,127 @@ public class OpcUaServer extends AbstractServiceHandler {
   }
 
   /**
+   * Add a server-managed Reverse Connect target at runtime.
+   *
+   * <p>If this server is already running and the target is enabled and not paused, the target is
+   * validated against the configured {@code opc.tcp} endpoints and scheduled immediately. The
+   * returned handle can pause, resume, trigger, remove, or inspect the target after it has been
+   * registered.
+   *
+   * <pre>{@code
+   * ReverseConnectTarget target =
+   *     ReverseConnectTarget.builder()
+   *         .setClientListenerUrl("opc.tcp://client.example.com:48060")
+   *         .setEndpointUrl("opc.tcp://server.example.com:12686/milo")
+   *         .setRegistrationPeriod(uint(1_000))
+   *         .setConnectTimeout(uint(5_000))
+   *         .build();
+   *
+   * ReverseConnectTargetHandle handle = server.addReverseConnectTarget(target);
+   * try {
+   *   handle.trigger().get();
+   * } finally {
+   *   handle.remove().get();
+   * }
+   * }</pre>
+   *
+   * @param target the immutable target configuration to register.
+   * @return a runtime handle for the registered target.
+   * @throws IllegalArgumentException if another target with the same id is already registered or
+   *     the running server cannot use the target endpoint.
+   * @throws IllegalStateException if the server's reverse target manager has already shut down.
+   */
+  public ReverseConnectTargetHandle addReverseConnectTarget(ReverseConnectTarget target) {
+    return reverseConnectTargetManager.addTarget(target);
+  }
+
+  /**
+   * Replace an existing server-managed Reverse Connect target.
+   *
+   * <p>The replacement keeps the same target id, cancels scheduled work and any in-flight attempt
+   * owned by the previous target configuration, and applies the new enabled/paused state for future
+   * scheduling. Active reverse-opened channels already handed to the server path remain open.
+   *
+   * @param target the replacement target configuration.
+   * @return a completed future containing the updated target snapshot, or a failed future if the
+   *     target id is not registered, the running server cannot use the replacement endpoint, or the
+   *     server's reverse target manager has already shut down.
+   */
+  public CompletableFuture<ReverseConnectTargetSnapshot> updateReverseConnectTarget(
+      ReverseConnectTarget target) {
+
+    return reverseConnectTargetManager.update(target);
+  }
+
+  /**
+   * Remove a server-managed Reverse Connect target and close resources it owns.
+   *
+   * <p>Removal cancels any scheduled attempt, closes any in-flight attempt, and closes any active
+   * reverse-opened channels associated with the target.
+   *
+   * @param targetId the target id to remove.
+   * @return a completed future containing the final snapshot for the removed target, or a failed
+   *     future if the target id is not registered.
+   */
+  public CompletableFuture<ReverseConnectTargetSnapshot> removeReverseConnectTarget(UUID targetId) {
+    return reverseConnectTargetManager.remove(targetId);
+  }
+
+  /**
+   * Get immutable runtime snapshots for all server-managed Reverse Connect targets.
+   *
+   * @return a snapshot list ordered by target registration order.
+   */
+  public List<ReverseConnectTargetSnapshot> getReverseConnectTargetSnapshots() {
+    return reverseConnectTargetManager.snapshots();
+  }
+
+  /**
+   * Get the immutable runtime snapshot for a server-managed Reverse Connect target.
+   *
+   * @param targetId the target id to inspect.
+   * @return the target snapshot, or {@link Optional#empty()} if the target is not registered.
+   */
+  public Optional<ReverseConnectTargetSnapshot> getReverseConnectTargetSnapshot(UUID targetId) {
+    return reverseConnectTargetManager.snapshot(targetId);
+  }
+
+  /**
+   * Register a listener for server-managed Reverse Connect target lifecycle events.
+   *
+   * <p>Listener callbacks are dispatched on this server's configured executor.
+   *
+   * @param listener the listener to register.
+   */
+  public void addReverseConnectTargetListener(ReverseConnectTargetListener listener) {
+    reverseConnectTargetManager.addListener(listener);
+  }
+
+  /**
+   * Remove a previously registered Reverse Connect target listener.
+   *
+   * @param listener the listener to remove.
+   */
+  public void removeReverseConnectTargetListener(ReverseConnectTargetListener listener) {
+    reverseConnectTargetManager.removeListener(listener);
+  }
+
+  /**
    * Get the {@link EndpointConfig}s that were successfully bound during {@link #startup()}.
    *
-   * @return the {@link EndpointConfig}s that were successfully bound during {@link #startup()}.
+   * <p>The returned list is populated during {@link #startup()} and cleared by {@link #shutdown()}
+   * (and on a failed startup that rolls back). Callers querying after shutdown observe an empty
+   * list. A subsequent successful {@link #startup()} repopulates the list.
+   *
+   * @return the {@link EndpointConfig}s that are currently bound, or an empty list when the server
+   *     is not running.
    */
   public List<EndpointConfig> getBoundEndpoints() {
     return List.copyOf(boundEndpoints);
+  }
+
+  private OpcServerTransport getOrCreateTransport(TransportProfile transportProfile) {
+    return transports.computeIfAbsent(transportProfile, transportFactory::create);
   }
 
   /**

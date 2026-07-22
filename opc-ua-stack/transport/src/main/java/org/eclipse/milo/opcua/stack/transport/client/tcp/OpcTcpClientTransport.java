@@ -35,8 +35,10 @@ import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -49,15 +51,25 @@ import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.eclipse.milo.opcua.stack.transport.client.AbstractUascClientTransport;
+import org.eclipse.milo.opcua.stack.transport.client.ChannelStateObservable;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
+import org.eclipse.milo.opcua.stack.transport.client.CurrentChannelProvider;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.ClientSecureChannel;
-import org.eclipse.milo.opcua.stack.transport.client.uasc.InboundUascResponseHandler.DelegatingUascResponseHandler;
-import org.eclipse.milo.opcua.stack.transport.client.uasc.UascClientAcknowledgeHandler;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-public class OpcTcpClientTransport extends AbstractUascClientTransport {
+/**
+ * UA-TCP client transport for the normal outbound client connection path.
+ *
+ * <p>The transport owns the outbound socket lifecycle through a {@link ChannelFsm}, installs the
+ * client UASC pipeline, and exposes optional channel-state capabilities for higher-level client
+ * lifecycle code. Session management remains in the SDK layer; this transport only reports when its
+ * SecureChannel-backed Netty channel becomes available or leaves service.
+ */
+public class OpcTcpClientTransport extends AbstractUascClientTransport
+    implements ChannelStateObservable, CurrentChannelProvider {
 
   private static final FsmContext.Key<ClientApplicationContext> KEY_CLIENT_APPLICATION =
       new FsmContext.Key<>("clientApplication", ClientApplicationContext.class);
@@ -73,6 +85,17 @@ public class OpcTcpClientTransport extends AbstractUascClientTransport {
   private final OpcTcpClientTransportConfig config;
   private volatile ClientSecureChannel secureChannel;
 
+  private final List<ChannelStateObservable.TransitionListener> transitionListeners =
+      new CopyOnWriteArrayList<>();
+
+  /**
+   * Create an outbound UA-TCP client transport.
+   *
+   * <p>The supplied configuration provides the Netty resources, SecureChannel settings, timers, and
+   * pipeline customization used for the lifetime of this transport.
+   *
+   * @param config the TCP client transport configuration.
+   */
   public OpcTcpClientTransport(OpcTcpClientTransportConfig config) {
     super(config);
 
@@ -96,6 +119,15 @@ public class OpcTcpClientTransport extends AbstractUascClientTransport {
     var factory = new ChannelFsmFactory(fsmConfig);
 
     channelFsm = factory.newChannelFsm();
+
+    channelFsm.addTransitionListener(
+        (from, to, via) -> {
+          if (from != State.Connected && to == State.Connected) {
+            notifyTransitionListeners(true);
+          } else if (from == State.Connected && to != State.Connected) {
+            notifyTransitionListeners(false);
+          }
+        });
   }
 
   @Override
@@ -136,6 +168,35 @@ public class OpcTcpClientTransport extends AbstractUascClientTransport {
     return channelFsm;
   }
 
+  @Override
+  public void addTransitionListener(ChannelStateObservable.TransitionListener listener) {
+    transitionListeners.add(listener);
+  }
+
+  @Override
+  public void removeTransitionListener(ChannelStateObservable.TransitionListener listener) {
+    transitionListeners.remove(listener);
+  }
+
+  @Override
+  public @Nullable Channel getCurrentChannel() {
+    try {
+      return channelFsm.getChannel().getNow(null);
+    } catch (RuntimeException e) {
+      return null;
+    }
+  }
+
+  private void notifyTransitionListeners(boolean connected) {
+    for (ChannelStateObservable.TransitionListener listener : transitionListeners) {
+      try {
+        listener.onStateTransition(connected);
+      } catch (Throwable t) {
+        logger.warn("Channel state transition listener failed.", t);
+      }
+    }
+  }
+
   private class ClientChannelActions implements ChannelActions {
 
     private final Logger logger = LoggerFactory.getLogger(CHANNEL_FSM_LOGGER_NAME);
@@ -161,15 +222,13 @@ public class OpcTcpClientTransport extends AbstractUascClientTransport {
               new ChannelInitializer<SocketChannel>() {
                 @Override
                 protected void initChannel(SocketChannel ch) {
-                  var acknowledgeHandler =
-                      new UascClientAcknowledgeHandler(
-                          config, application, requestId::getAndIncrement, handshakeFuture);
-
-                  ch.pipeline()
-                      .addLast(new DelegatingUascResponseHandler(OpcTcpClientTransport.this));
-                  ch.pipeline().addLast(acknowledgeHandler);
-
-                  config.getChannelPipelineCustomizer().accept(ch.pipeline());
+                  OpcTcpClientChannelInitializer.initializeOutboundChannel(
+                      ch,
+                      config,
+                      application,
+                      OpcTcpClientTransport.this,
+                      requestId::getAndIncrement,
+                      handshakeFuture);
                 }
               });
 

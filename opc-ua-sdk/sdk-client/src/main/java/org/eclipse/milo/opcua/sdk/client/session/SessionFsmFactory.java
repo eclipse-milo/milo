@@ -12,7 +12,7 @@ package org.eclipse.milo.opcua.sdk.client.session;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_CHANNEL_FSM_TRANSITION_LISTENER;
+import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_CHANNEL_STATE_TRANSITION_LISTENER;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_CLOSE_FUTURE;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_CREATE_SESSION_CLIENT_NONCE;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_KEEP_ALIVE_FAILURE_COUNT;
@@ -31,7 +31,6 @@ import com.digitalpetri.fsm.Fsm;
 import com.digitalpetri.fsm.FsmContext;
 import com.digitalpetri.fsm.dsl.ActionContext;
 import com.digitalpetri.fsm.dsl.FsmBuilder;
-import com.digitalpetri.netty.fsm.ChannelFsm;
 import com.google.common.collect.Streams;
 import io.netty.channel.Channel;
 import java.security.KeyPair;
@@ -102,6 +101,8 @@ import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
+import org.eclipse.milo.opcua.stack.transport.client.ChannelStateObservable;
+import org.eclipse.milo.opcua.stack.transport.client.CurrentChannelProvider;
 import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransport;
 import org.slf4j.Logger;
@@ -642,26 +643,33 @@ public class SessionFsmFactory {
 
               OpcClientTransport transport = client.getTransport();
 
-              if (transport instanceof OpcTcpClientTransport) {
-                ChannelFsm channelFsm = ((OpcTcpClientTransport) transport).getChannelFsm();
-
-                ChannelFsm.TransitionListener listener =
-                    (from, to, via) -> {
-                      if (from == com.digitalpetri.netty.fsm.State.Connected
-                          && to != com.digitalpetri.netty.fsm.State.Connected) {
-
+              if (transport instanceof ChannelStateObservable observable) {
+                ChannelStateObservable.TransitionListener listener =
+                    connected -> {
+                      if (!connected) {
                         try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
                             MDCCloseable ignoredSessionId = putSessionId(event.session)) {
-
-                          LOGGER.debug("ChannelFsm transition from={} to={} via={}", from, to, via);
+                          LOGGER.debug("Client transport reported connection lost");
                         }
 
                         ctx.fireEvent(new Event.ConnectionLost());
                       }
                     };
 
-                channelFsm.addTransitionListener(listener);
-                KEY_CHANNEL_FSM_TRANSITION_LISTENER.set(ctx, listener);
+                observable.addTransitionListener(listener);
+                KEY_CHANNEL_STATE_TRANSITION_LISTENER.set(ctx, listener);
+
+                // The listener is registered only on the transition into Active. If the channel
+                // went inactive between the SecureChannel handshake and reaching Active, the
+                // transport already emitted connected=false before the listener was attached and
+                // recovery would otherwise wait for the next request to fail. Fire the lost-event
+                // synthetically so the FSM begins recovery immediately.
+                if (transport instanceof CurrentChannelProvider channelProvider) {
+                  Channel currentChannel = channelProvider.getCurrentChannel();
+                  if (currentChannel == null || !currentChannel.isActive()) {
+                    ctx.fireEvent(new Event.ConnectionLost());
+                  }
+                }
               }
 
               client
@@ -687,14 +695,12 @@ public class SessionFsmFactory {
                 scheduledFuture.cancel(false);
               }
 
-              ChannelFsm.TransitionListener listener =
-                  KEY_CHANNEL_FSM_TRANSITION_LISTENER.remove(ctx);
+              ChannelStateObservable.TransitionListener transitionListener =
+                  KEY_CHANNEL_STATE_TRANSITION_LISTENER.remove(ctx);
 
-              if (listener != null) {
-                OpcClientTransport clientTransport = client.getTransport();
-                if (clientTransport instanceof OpcTcpClientTransport tcpClientTransport) {
-                  tcpClientTransport.getChannelFsm().removeTransitionListener(listener);
-                }
+              if (transitionListener != null
+                  && client.getTransport() instanceof ChannelStateObservable observable) {
+                observable.removeTransitionListener(transitionListener);
               }
             });
 
@@ -799,10 +805,8 @@ public class SessionFsmFactory {
                             // manner to avoid having to wait for the underlying TCP stack's keep
                             // alive to kick in.
                             OpcClientTransport transport = client.getTransport();
-                            if (transport instanceof OpcTcpClientTransport) {
-                              ChannelFsm channelFsm =
-                                  ((OpcTcpClientTransport) transport).getChannelFsm();
-                              Channel channel = channelFsm.getChannel().getNow(null);
+                            if (transport instanceof CurrentChannelProvider channelProvider) {
+                              Channel channel = channelProvider.getCurrentChannel();
                               if (channel != null) {
                                 channel.close();
                               }

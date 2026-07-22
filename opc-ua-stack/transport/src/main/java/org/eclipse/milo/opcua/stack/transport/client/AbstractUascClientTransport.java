@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.stack.transport.client;
 
 import io.netty.channel.Channel;
 import io.netty.util.Timeout;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,6 +40,7 @@ public abstract class AbstractUascClientTransport
   protected final Map<Long, CompletableFuture<UaResponseMessageType>> pendingRequests =
       new ConcurrentHashMap<>();
   protected final Map<Long, Timeout> pendingTimeouts = new ConcurrentHashMap<>();
+  private final Map<Long, Object> pendingRequestWriteGates = new ConcurrentHashMap<>();
 
   protected final ExecutionQueue publishResponseQueue;
 
@@ -55,7 +57,34 @@ public abstract class AbstractUascClientTransport
   @Override
   public CompletableFuture<UaResponseMessageType> sendRequestMessage(
       UaRequestMessageType requestMessage) {
-    return getChannel().thenCompose(ch -> sendRequestMessage(requestMessage, ch));
+
+    var request = new UascRequest(requestId.getAndIncrement(), requestMessage);
+    var responseFuture = new CompletableFuture<UaResponseMessageType>();
+
+    pendingRequests.put(request.getRequestId(), responseFuture);
+    pendingRequestWriteGates.put(request.getRequestId(), new Object());
+    // Schedule the request timeout up front so a never-arriving channel (e.g., a reverse-connect
+    // transport whose server is offline) still fails the future when the timeout hint elapses.
+    // Without this, getChannel() can park forever waiting on the next claimed reverse connection.
+    scheduleRequestTimeout(request);
+
+    getChannel()
+        .whenComplete(
+            (channel, ex) -> {
+              if (ex != null) {
+                CompletableFuture<UaResponseMessageType> pending =
+                    removePendingRequest(request.getRequestId());
+                if (pending != null) {
+                  cancelRequestTimeout(request.getRequestId());
+                  pending.completeExceptionally(ex);
+                }
+                return;
+              }
+
+              writeRequestIfPending(request, channel);
+            });
+
+    return responseFuture;
   }
 
   protected CompletableFuture<UaResponseMessageType> sendRequestMessage(
@@ -65,33 +94,72 @@ public abstract class AbstractUascClientTransport
     var responseFuture = new CompletableFuture<UaResponseMessageType>();
 
     pendingRequests.put(request.getRequestId(), responseFuture);
+    pendingRequestWriteGates.put(request.getRequestId(), new Object());
     scheduleRequestTimeout(request);
 
+    writeRequestIfPending(request, channel);
+
+    return responseFuture;
+  }
+
+  private void writeRequestIfPending(UascRequest request, Channel channel) {
+    long requestId = request.getRequestId();
+    Object writeGate = pendingRequestWriteGates.get(requestId);
+
+    if (writeGate == null) {
+      return;
+    }
+
+    synchronized (writeGate) {
+      try {
+        if (pendingRequests.containsKey(requestId)) {
+          writeRequest(request, channel);
+        }
+      } finally {
+        pendingRequestWriteGates.remove(requestId, writeGate);
+      }
+    }
+  }
+
+  private void writeRequest(UascRequest request, Channel channel) {
     channel
         .writeAndFlush(request)
         .addListener(
             f -> {
               if (!f.isSuccess()) {
-                pendingRequests.remove(request.getRequestId());
-                cancelRequestTimeout(request.getRequestId());
+                CompletableFuture<UaResponseMessageType> pending =
+                    removePendingRequest(request.getRequestId());
+                if (pending != null) {
+                  cancelRequestTimeout(request.getRequestId());
+                  pending.completeExceptionally(f.cause());
 
-                responseFuture.completeExceptionally(f.cause());
-
-                logger.debug(
-                    "Write failed, request={}, requestHandle={}",
-                    requestMessage.getClass().getSimpleName(),
-                    request.getRequestId());
+                  logger.debug(
+                      "Write failed, request={}, requestHandle={}",
+                      request.getRequestMessage().getClass().getSimpleName(),
+                      request.getRequestId());
+                }
               } else {
                 if (logger.isTraceEnabled()) {
                   logger.trace(
                       "Write succeeded, request={}, requestId={}",
-                      requestMessage.getClass().getSimpleName(),
+                      request.getRequestMessage().getClass().getSimpleName(),
                       request.getRequestId());
                 }
               }
             });
+  }
 
-    return responseFuture;
+  private CompletableFuture<UaResponseMessageType> removePendingRequest(long requestId) {
+    Object writeGate = pendingRequestWriteGates.get(requestId);
+
+    if (writeGate != null) {
+      synchronized (writeGate) {
+        pendingRequestWriteGates.remove(requestId, writeGate);
+        return pendingRequests.remove(requestId);
+      }
+    } else {
+      return pendingRequests.remove(requestId);
+    }
   }
 
   private void scheduleRequestTimeout(UascRequest request) {
@@ -110,7 +178,7 @@ public abstract class AbstractUascClientTransport
 
                     if (removed != null && !removed.isCancelled()) {
                       CompletableFuture<UaResponseMessageType> future =
-                          pendingRequests.remove(request.getRequestId());
+                          removePendingRequest(request.getRequestId());
 
                       if (future != null) {
                         UaException exception =
@@ -138,7 +206,7 @@ public abstract class AbstractUascClientTransport
 
   @Override
   public void handleResponse(long requestId, UaResponseMessageType responseMessage) {
-    CompletableFuture<UaResponseMessageType> responseFuture = pendingRequests.remove(requestId);
+    CompletableFuture<UaResponseMessageType> responseFuture = removePendingRequest(requestId);
 
     if (responseFuture != null) {
       cancelRequestTimeout(requestId);
@@ -155,7 +223,7 @@ public abstract class AbstractUascClientTransport
 
   @Override
   public void handleSendFailure(long requestId, UaException exception) {
-    CompletableFuture<UaResponseMessageType> responseFuture = pendingRequests.remove(requestId);
+    CompletableFuture<UaResponseMessageType> responseFuture = removePendingRequest(requestId);
 
     if (responseFuture != null) {
       cancelRequestTimeout(requestId);
@@ -168,7 +236,7 @@ public abstract class AbstractUascClientTransport
 
   @Override
   public void handleReceiveFailure(long requestId, UaException exception) {
-    CompletableFuture<UaResponseMessageType> responseFuture = pendingRequests.remove(requestId);
+    CompletableFuture<UaResponseMessageType> responseFuture = removePendingRequest(requestId);
 
     if (responseFuture != null) {
       cancelRequestTimeout(requestId);
@@ -190,11 +258,20 @@ public abstract class AbstractUascClientTransport
   }
 
   private void failAndClearPending(UaException exception) {
-    pendingRequests.forEach(
-        (requestId, f) -> {
+    List<Long> requestIds = List.copyOf(pendingRequests.keySet());
+
+    requestIds.forEach(
+        requestId -> {
+          CompletableFuture<UaResponseMessageType> f = removePendingRequest(requestId);
+          if (f == null) {
+            return;
+          }
+
           cancelRequestTimeout(requestId);
           config.getExecutor().execute(() -> f.completeExceptionally(exception));
         });
+
     pendingRequests.clear();
+    pendingRequestWriteGates.clear();
   }
 }
