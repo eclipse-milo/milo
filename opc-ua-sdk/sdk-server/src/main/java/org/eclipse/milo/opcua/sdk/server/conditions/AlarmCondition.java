@@ -10,7 +10,6 @@
 
 package org.eclipse.milo.opcua.sdk.server.conditions;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -40,29 +39,6 @@ import org.jspecify.annotations.Nullable;
 public class AlarmCondition extends AcknowledgeableCondition {
 
   static final StateTexts ACTIVE_TEXTS = new StateTexts("Active", "Inactive");
-
-  /**
-   * Optional AlarmConditionType methods with no backing state in v1 (SilenceState, SuppressedState,
-   * OutOfServiceState, LatchedState, alarm groups, the {@code *2} comment variants): their instance
-   * nodes are deleted rather than left exposed without semantics.
-   */
-  private static final List<String> UNSUPPORTED_METHODS =
-      List.of(
-          "Silence",
-          "Suppress",
-          "Suppress2",
-          "Unsuppress",
-          "Unsuppress2",
-          "RemoveFromService",
-          "RemoveFromService2",
-          "PlaceInService",
-          "PlaceInService2",
-          "Reset",
-          "Reset2",
-          "GetGroupMemberships",
-          "TimedShelve2",
-          "Unshelve2",
-          "OneShotShelve2");
 
   /**
    * Shadow of ActiveState/Id, kept so Retain computation and per-transition checks don't re-read
@@ -265,13 +241,6 @@ public class AlarmCondition extends AcknowledgeableCondition {
   @Override
   void installMethodHandlers(Map<QualifiedName, UaMethodNode> methodNodes) {
     super.installMethodHandlers(methodNodes);
-
-    for (String methodName : UNSUPPORTED_METHODS) {
-      UaMethodNode methodNode = methodNodes.get(new QualifiedName(0, methodName));
-      if (methodNode != null) {
-        methodNode.delete();
-      }
-    }
 
     if (shelvingRuntime != null) {
       shelvingRuntime.installMethodHandlers(methodNodes);

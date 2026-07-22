@@ -16,8 +16,8 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 
 /**
- * A transient Event instance whose backing Event Node tree lives in a NodeManager that is never
- * registered with the Server's AddressSpaceManager, and is deleted when this instance is closed.
+ * A transient Event instance whose backing Event Node tree is created by the server's event
+ * instantiator and deleted when this instance is closed.
  *
  * <p>Typical usage, with the Node tree deleted on close even if an exception is thrown:
  *

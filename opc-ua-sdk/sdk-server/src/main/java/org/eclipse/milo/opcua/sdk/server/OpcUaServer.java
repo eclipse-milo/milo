@@ -18,10 +18,8 @@ import java.net.InetSocketAddress;
 import java.security.KeyPair;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
-import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -626,11 +624,10 @@ public class OpcUaServer extends AbstractServiceHandler {
   /**
    * Create a new {@link TransientEvent} of the type identified by {@code typeDefinitionId}.
    *
-   * <p>The Event Node is created with an auto-generated NodeId in a NodeManager that is never
-   * registered with the Server's AddressSpaceManager, and is deleted when the {@link
-   * TransientEvent} is closed. The EventType, EventId, Time, and ReceiveTime fields are
-   * pre-populated with sensible defaults that may be overwritten; all other fields must be
-   * populated by the caller before firing.
+   * <p>The Event Node is created with an auto-generated NodeId by the server's {@link
+   * EventInstantiator}, and is deleted when the {@link TransientEvent} is closed. The EventType,
+   * EventId, Time, and ReceiveTime fields are pre-populated with sensible defaults that may be
+   * overwritten; all other fields must be populated by the caller before firing.
    *
    * @param typeDefinitionId the {@link NodeId} of the ObjectTypeNode representing the Event type
    *     definition.
@@ -639,7 +636,7 @@ public class OpcUaServer extends AbstractServiceHandler {
    */
   public TransientEvent newEvent(NodeId typeDefinitionId) throws UaException {
     BaseEventTypeNode eventNode =
-        eventFactory.createTransientEvent(new NodeId(1, UUID.randomUUID()), typeDefinitionId);
+        eventInstantiator.createEvent(new NodeId(1, UUID.randomUUID()), typeDefinitionId);
 
     eventNode.setEventId(NonceUtil.generateNonce(16));
     eventNode.setTime(DateTime.now());

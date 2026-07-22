@@ -176,7 +176,7 @@ public class AlarmConditionTest extends AbstractClientServerTest {
     assertNull(node.getShelvingStateNode());
     assertNull(alarm.getShelvingState());
 
-    // Optional method nodes without backing state in v1 are deleted, not left dangling.
+    // Optional method nodes without backing state in v1 are not selected for instantiation.
     assertNull(node.getSilenceMethodNode());
     assertNull(node.getSuppressMethodNode());
     assertNull(node.getSuppress2MethodNode());

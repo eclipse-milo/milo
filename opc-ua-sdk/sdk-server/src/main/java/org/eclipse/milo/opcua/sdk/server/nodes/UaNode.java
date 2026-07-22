@@ -342,8 +342,8 @@ public abstract class UaNode implements UaServerNode {
 
   protected Optional<UaNode> getManagedNode(NodeId nodeId) {
     // This Node's own NodeManager is consulted first so that resolution works even when the
-    // NodeManager is not registered with the AddressSpaceManager, e.g. transient event node
-    // trees created by EventFactory.
+    // NodeManager is not registered with the AddressSpaceManager, e.g. a private ConditionRefresh
+    // snapshot tree.
     Optional<UaNode> node = context.getNodeManager().getNode(nodeId);
 
     return node.isPresent()
@@ -374,10 +374,9 @@ public abstract class UaNode implements UaServerNode {
       return context.getNodeManager().getReferences(getNodeId());
     }
 
-    // No Node is registered under this NodeId — a transient EventFactory event tree, or a Node in
-    // a Namespace still under construction whose NodeManager is not yet registered. Registered
-    // managers may still hold References involving this Node, so union the managed and local
-    // References.
+    // No Node is registered under this NodeId — for example, a Node in a Namespace still under
+    // construction whose NodeManager is not yet registered. Registered managers may still hold
+    // References involving this Node, so union the managed and local References.
     var references = new LinkedHashSet<>(addressSpaceManager.getManagedReferences(getNodeId()));
 
     references.addAll(context.getNodeManager().getReferences(getNodeId()));

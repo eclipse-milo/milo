@@ -71,9 +71,9 @@ public class AcknowledgeableCondition extends Condition {
   /**
    * Create an AcknowledgeableCondition instance in the address space and its wrapping behavior.
    *
-   * <p>The instance node is created via {@code NodeFactory} from the AcknowledgeableConditionType
-   * type definition; method handlers are installed on the instance's method nodes iff their backing
-   * state exists.
+   * <p>The instance node is created via the server's node instantiator from the
+   * AcknowledgeableConditionType type definition; method handlers are installed on the instance's
+   * method nodes iff their backing state exists.
    *
    * @param context the {@link UaNodeContext} the instance is created under.
    * @param configure receives the {@link ConditionBuilder} to configure.

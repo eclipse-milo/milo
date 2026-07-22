@@ -21,26 +21,21 @@ import java.util.Map;
 import java.util.Set;
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceTypeTree;
-import org.eclipse.milo.opcua.sdk.server.model.objects.AcknowledgeableConditionTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AlarmConditionTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ConditionTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ExclusiveDeviationAlarmTypeNode;
-import org.eclipse.milo.opcua.sdk.server.model.objects.ExclusiveLimitAlarmTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ExclusiveRateOfChangeAlarmTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.LimitAlarmTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.NonExclusiveDeviationAlarmTypeNode;
-import org.eclipse.milo.opcua.sdk.server.model.objects.NonExclusiveLimitAlarmTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.NonExclusiveRateOfChangeAlarmTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.OffNormalAlarmTypeNode;
-import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
-import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.factories.NodeFactory;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.BrowsePath;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationRequest;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationResult;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -52,15 +47,25 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EUInformation;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Builds Condition instances: instantiates the typed instance node via {@link NodeFactory}
- * (including opted-in optional components), wires HasCondition from the condition source and
- * ensures the source participates in the notifier hierarchy, sets the initial state, and installs
- * method handlers on the instance's method nodes iff their backing state exists.
+ * Builds Condition instances: instantiates the typed instance node via the server's node
+ * instantiator (including opted-in optional components), wires HasCondition from the condition
+ * source and ensures the source participates in the notifier hierarchy, sets the initial state, and
+ * installs method handlers on the instance's method nodes iff their backing state exists.
  *
  * <p>Consumed through each behavior class's {@code create(context, builder -> ...)} entry point,
  * e.g. {@link AcknowledgeableCondition#create}.
  */
 public class ConditionBuilder {
+
+  private static final BrowsePath ACTIVE_STATE_EFFECTIVE_DISPLAY_NAME =
+      BrowsePath.of(
+          new QualifiedName(0, "ActiveState"), new QualifiedName(0, "EffectiveDisplayName"));
+
+  private static final BrowsePath SHELVING_STATE_LAST_TRANSITION =
+      BrowsePath.of(new QualifiedName(0, "ShelvingState"), new QualifiedName(0, "LastTransition"));
+
+  private static final BrowsePath LIMIT_STATE_LAST_TRANSITION =
+      BrowsePath.of(new QualifiedName(0, "LimitState"), new QualifiedName(0, "LastTransition"));
 
   private final Map<QualifiedName, UaMethodNode> methodNodes = new HashMap<>();
 
@@ -640,11 +645,11 @@ public class ConditionBuilder {
     optionalIncludes.add("SupportsFilteredRetain");
     if (withConfirm) {
       optionalIncludes.add("ConfirmedState");
+      // Optional Methods are selected explicitly by the new instantiation engine.
+      optionalIncludes.add("Confirm");
     }
     if (withShelving) {
       optionalIncludes.add("ShelvingState");
-      // The ShelvedStateMachine's LastTransition (FiniteStateMachineType) is Optional.
-      optionalIncludes.add("LastTransition");
       if (maxTimeShelved != null) {
         optionalIncludes.add("MaxTimeShelved");
       }
@@ -668,49 +673,40 @@ public class ConditionBuilder {
       }
     }
 
-    if (!limits.isEmpty()) {
-      // ActiveState's EffectiveDisplayName reflects the limit sub-state (§5.2), and the exclusive
-      // LimitState machine's LastTransition records the modelled intra-side transitions.
-      optionalIncludes.add("EffectiveDisplayName");
-      optionalIncludes.add("LastTransition");
-    }
-
     if (engineeringUnits != null) {
       optionalIncludes.add("EngineeringUnits");
     }
 
-    var nodeFactory = new NodeFactory(context);
+    boolean includeLimitMembers = !limits.isEmpty();
 
-    UaNode instance =
-        nodeFactory.createNode(
-            nodeId,
-            typeDefinitionId,
-            new NodeFactory.InstantiationCallback() {
-              @Override
-              public boolean includeOptionalNode(
-                  NodeId typeDefinitionId, QualifiedName browseName) {
-                return optionalIncludes.contains(browseName.name());
-              }
+    InstantiationRequest<ConditionTypeNode> request =
+        InstantiationRequest.of(ConditionTypeNode.class, typeDefinitionId)
+            .nodeId(nodeId)
+            .browseName(browseName)
+            .displayName(
+                displayName != null ? displayName : LocalizedText.english(browseName.name()))
+            .target(context.getNodeManager())
+            .includeOptionals(
+                declaration ->
+                    optionalIncludes.contains(declaration.browseName().name())
+                        || (includeLimitMembers
+                            && ACTIVE_STATE_EFFECTIVE_DISPLAY_NAME.equals(declaration.browsePath()))
+                        || (withShelving
+                            && SHELVING_STATE_LAST_TRANSITION.equals(declaration.browsePath()))
+                        || (includeLimitMembers
+                            && LIMIT_STATE_LAST_TRANSITION.equals(declaration.browsePath())))
+            .afterCommit(
+                instantiation ->
+                    instantiation.materializedNodes().stream()
+                        .map(materialized -> materialized.node())
+                        .filter(UaMethodNode.class::isInstance)
+                        .map(UaMethodNode.class::cast)
+                        .forEach(method -> methodNodes.put(method.getBrowseName(), method)))
+            .build();
 
-              @Override
-              public void onMethodAdded(@Nullable UaObjectNode parent, UaMethodNode methodNode) {
-                methodNodes.put(methodNode.getBrowseName(), methodNode);
-              }
-            });
-
-    if (!(instance instanceof ConditionTypeNode node)) {
-      // NodeFactory already registered the instance tree; remove it so the failure doesn't leak
-      // orphaned nodes into the address space.
-      instance.delete();
-
-      throw new UaException(
-          StatusCodes.Bad_InternalError,
-          "expected a ConditionTypeNode instance for " + typeDefinitionId + ", got " + instance);
-    }
-
-    node.setBrowseName(browseName);
-    node.setDisplayName(
-        displayName != null ? displayName : LocalizedText.english(browseName.name()));
+    InstantiationResult<ConditionTypeNode> result =
+        context.getServer().getNodeInstantiator().instantiate(request);
+    ConditionTypeNode node = result.root();
 
     initializeNode(node, typeDefinitionId);
     wireConditionSource(node);
@@ -735,10 +731,6 @@ public class ConditionBuilder {
     node.setBranchId(NodeId.NULL_VALUE);
     node.setRetain(false);
     node.setSupportsFilteredRetain(false);
-
-    if (node instanceof AcknowledgeableConditionTypeNode ackNode) {
-      wireSubStates(ackNode);
-    }
 
     if (node instanceof AlarmConditionTypeNode alarmNode) {
       initializeAlarmNode(alarmNode);
@@ -832,69 +824,6 @@ public class ConditionBuilder {
         rateOfChangeNode.setEngineeringUnits(engineeringUnits);
       }
     }
-
-    // "EffectiveDisplayName" is opted in (buildNode) so ActiveState carries the limit sub-state
-    // text (§5.2), but the browse-name-only optional filter also matches AlarmConditionType's
-    // optional EnabledState EffectiveDisplayName. That is not wanted — prune it so a limit alarm's
-    // address-space shape matches a plain alarm, which never includes it.
-    TwoStateVariableTypeNode enabledState = node.getEnabledStateNode();
-    if (enabledState != null) {
-      PropertyTypeNode effectiveDisplayName = enabledState.getEffectiveDisplayNameNode();
-      if (effectiveDisplayName != null) {
-        effectiveDisplayName.delete();
-      }
-    }
-  }
-
-  /**
-   * Wire the present sub-states of EnabledState per §5.4 in a single pass: AckedState and
-   * ConfirmedState for every AcknowledgeableCondition, plus ActiveState and the ShelvingState
-   * sub-state machine (§5.8.10) for an AlarmCondition, plus the limit sub-states of ActiveState —
-   * the exclusive LimitState machine (§5.8.19.3) or the independent non-exclusive limit states
-   * (§5.8.20). The required inverse Reference from sub-state to super-state is added automatically
-   * by {@code UaNode.addReference}.
-   */
-  private void wireSubStates(AcknowledgeableConditionTypeNode node) {
-    TwoStateVariableTypeNode enabledState = node.getEnabledStateNode();
-    if (enabledState == null) {
-      return;
-    }
-
-    wireSubState(enabledState, node.getAckedStateNode());
-    wireSubState(enabledState, node.getConfirmedStateNode());
-
-    if (node instanceof AlarmConditionTypeNode alarmNode) {
-      TwoStateVariableTypeNode activeState = alarmNode.getActiveStateNode();
-
-      wireSubState(enabledState, activeState);
-      wireSubState(enabledState, alarmNode.getShelvingStateNode());
-
-      if (activeState != null) {
-        if (alarmNode instanceof ExclusiveLimitAlarmTypeNode exclusiveNode) {
-          wireSubState(activeState, exclusiveNode.getLimitStateNode());
-        }
-
-        if (alarmNode instanceof NonExclusiveLimitAlarmTypeNode nonExclusiveNode) {
-          wireSubState(activeState, nonExclusiveNode.getHighHighStateNode());
-          wireSubState(activeState, nonExclusiveNode.getHighStateNode());
-          wireSubState(activeState, nonExclusiveNode.getLowStateNode());
-          wireSubState(activeState, nonExclusiveNode.getLowLowStateNode());
-        }
-      }
-    }
-  }
-
-  private void wireSubState(UaNode superState, @Nullable UaNode subState) {
-    if (subState == null) {
-      return;
-    }
-
-    superState.addReference(
-        new Reference(
-            superState.getNodeId(),
-            NodeIds.HasTrueSubState,
-            subState.getNodeId().expanded(),
-            true));
   }
 
   private void wireConditionSource(ConditionTypeNode node) {

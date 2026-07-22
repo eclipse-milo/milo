@@ -197,7 +197,7 @@ public class EventRoutingTest extends AbstractClientServerTest {
       event.fire();
     }
 
-    // Field extraction resolved Message/Severity against the never-registered node tree.
+    // Field extraction resolved Message/Severity against the EventInstantiator's private tree.
     Variant[] eventFields = awaitEvent(serverEvents, "transient-lifecycle");
     assertEquals(ushort(TEST_SEVERITY), eventFields[1].value());
 

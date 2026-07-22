@@ -23,12 +23,11 @@ import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.factories.NodeFactory;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationRequest;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationResult;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
-import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 
 /**
  * An immutable per-branch event snapshot used by ConditionRefresh/ConditionRefresh2 replay.
@@ -45,9 +44,15 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 public final class ConditionEventSnapshot {
 
   private final BaseEventTypeNode eventNode;
+  private final Runnable cleanup;
 
   ConditionEventSnapshot(BaseEventTypeNode eventNode) {
+    this(eventNode, eventNode::delete);
+  }
+
+  private ConditionEventSnapshot(BaseEventTypeNode eventNode, Runnable cleanup) {
     this.eventNode = eventNode;
+    this.cleanup = cleanup;
   }
 
   /**
@@ -62,7 +67,7 @@ public final class ConditionEventSnapshot {
 
   /** Delete the snapshot's event node tree from its private manager. */
   public void delete() {
-    eventNode.delete();
+    cleanup.run();
   }
 
   /**
@@ -100,26 +105,16 @@ public final class ConditionEventSnapshot {
           }
         };
 
-    UaNode instance =
-        new NodeFactory(nodeContext)
-            .createNode(
-                conditionNode.getNodeId(),
-                typeDefinitionId,
-                new NodeFactory.InstantiationCallback() {
-                  @Override
-                  public boolean includeOptionalNode(
-                      NodeId typeDefinitionId, QualifiedName browseName) {
-                    return true;
-                  }
-                });
+    InstantiationRequest<BaseEventTypeNode> request =
+        InstantiationRequest.of(BaseEventTypeNode.class, typeDefinitionId)
+            .nodeId(conditionNode.getNodeId())
+            .target(nodeManager)
+            .includeAllOptionals()
+            .build();
 
-    if (!(instance instanceof BaseEventTypeNode snapshotNode)) {
-      instance.delete();
-
-      throw new UaException(
-          StatusCodes.Bad_InternalError,
-          "expected a BaseEventTypeNode instance for " + typeDefinitionId + ", got " + instance);
-    }
+    InstantiationResult<BaseEventTypeNode> result =
+        server.getNodeInstantiator().instantiate(request);
+    BaseEventTypeNode snapshotNode = result.root();
 
     copyVariableValues(server, conditionNode, snapshotNode, new HashSet<>());
 
@@ -127,7 +122,7 @@ public final class ConditionEventSnapshot {
     snapshotNode.setEventId(branch.getLastEventId());
     snapshotNode.setTime(branch.getLastEventTime());
 
-    return new ConditionEventSnapshot(snapshotNode);
+    return new ConditionEventSnapshot(snapshotNode, result::deleteCreated);
   }
 
   /**
