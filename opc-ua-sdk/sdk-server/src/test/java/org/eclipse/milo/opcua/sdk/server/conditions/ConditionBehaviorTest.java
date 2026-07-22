@@ -31,6 +31,7 @@ import org.eclipse.milo.opcua.sdk.server.model.variables.ConditionVariableTypeNo
 import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.TypeModelCache;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
@@ -79,6 +80,7 @@ public class ConditionBehaviorTest {
     Mockito.when(server.getAddressSpaceManager()).thenReturn(addressSpaceManager);
     Mockito.when(server.getObjectTypeManager()).thenReturn(new ObjectTypeManager());
     Mockito.when(server.getVariableTypeManager()).thenReturn(new VariableTypeManager());
+    Mockito.when(server.getTypeModelCache()).thenReturn(new TypeModelCache(server));
 
     var capturingNotifier =
         new EventNotifier() {
