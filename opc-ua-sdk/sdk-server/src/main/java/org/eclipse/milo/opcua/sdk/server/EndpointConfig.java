@@ -16,6 +16,7 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
@@ -33,6 +34,7 @@ public class EndpointConfig {
   private final String hostname;
   private final String path;
   private final Supplier<X509Certificate> certificateSupplier;
+  private final @Nullable EndpointCertificateConfig endpointCertificateConfig;
   private final SecurityPolicy securityPolicy;
   private final MessageSecurityMode securityMode;
   private final List<UserTokenPolicy> tokenPolicies;
@@ -44,6 +46,7 @@ public class EndpointConfig {
       String hostname,
       String path,
       Supplier<X509Certificate> certificateSupplier,
+      @Nullable EndpointCertificateConfig endpointCertificateConfig,
       SecurityPolicy securityPolicy,
       MessageSecurityMode securityMode,
       List<UserTokenPolicy> tokenPolicies) {
@@ -54,6 +57,7 @@ public class EndpointConfig {
     this.hostname = hostname;
     this.path = path;
     this.certificateSupplier = certificateSupplier;
+    this.endpointCertificateConfig = endpointCertificateConfig;
     this.securityPolicy = securityPolicy;
     this.securityMode = securityMode;
     this.tokenPolicies = List.copyOf(tokenPolicies);
@@ -84,6 +88,15 @@ public class EndpointConfig {
   @Nullable
   public X509Certificate getCertificate() {
     return certificateSupplier.get();
+  }
+
+  /**
+   * Get the certificate selection request for this endpoint.
+   *
+   * @return an {@link Optional} containing the certificate selection request, if configured.
+   */
+  public Optional<EndpointCertificateConfig> getEndpointCertificateConfig() {
+    return Optional.ofNullable(endpointCertificateConfig);
   }
 
   public SecurityPolicy getSecurityPolicy() {
@@ -135,6 +148,7 @@ public class EndpointConfig {
         && Objects.equal(hostname, that.hostname)
         && Objects.equal(path, that.path)
         && Objects.equal(getCertificate(), that.getCertificate())
+        && Objects.equal(endpointCertificateConfig, that.endpointCertificateConfig)
         && securityPolicy == that.securityPolicy
         && securityMode == that.securityMode
         && Objects.equal(tokenPolicies, that.tokenPolicies);
@@ -149,6 +163,7 @@ public class EndpointConfig {
         hostname,
         path,
         getCertificate(),
+        endpointCertificateConfig,
         securityPolicy,
         securityMode,
         tokenPolicies);
@@ -163,6 +178,7 @@ public class EndpointConfig {
         .add("hostname", hostname)
         .add("path", path)
         .add("certificate", getCertificate())
+        .add("endpointCertificateConfig", endpointCertificateConfig)
         .add("securityPolicy", securityPolicy)
         .add("securityMode", securityMode)
         .add("tokenPolicies", tokenPolicies)
@@ -185,6 +201,7 @@ public class EndpointConfig {
     String hostname = "localhost";
     String path = "";
     Supplier<X509Certificate> certificateSupplier = () -> null;
+    @Nullable EndpointCertificateConfig endpointCertificateConfig;
     SecurityPolicy securityPolicy = SecurityPolicy.None;
     MessageSecurityMode securityMode = MessageSecurityMode.None;
     List<UserTokenPolicy> tokenPolicies = new ArrayList<>();
@@ -224,6 +241,23 @@ public class EndpointConfig {
       return this;
     }
 
+    /**
+     * Set the certificate selection request for this endpoint.
+     *
+     * <p>Leave this unset when the endpoint should advertise the fixed certificate configured with
+     * {@link #setCertificate(X509Certificate)} or {@link #setCertificate(Supplier)}.
+     *
+     * @param endpointCertificateConfig the certificate selection request, or {@code null} to use
+     *     the configured certificate supplier.
+     * @return this builder.
+     */
+    public Builder setEndpointCertificateConfig(
+        @Nullable EndpointCertificateConfig endpointCertificateConfig) {
+
+      this.endpointCertificateConfig = endpointCertificateConfig;
+      return this;
+    }
+
     public Builder setSecurityPolicy(SecurityPolicy securityPolicy) {
       this.securityPolicy = securityPolicy;
       return this;
@@ -257,6 +291,7 @@ public class EndpointConfig {
           .setHostname(hostname)
           .setPath(path)
           .setCertificate(certificateSupplier)
+          .setEndpointCertificateConfig(endpointCertificateConfig)
           .setSecurityPolicy(securityPolicy)
           .setSecurityMode(securityMode)
           .addTokenPolicies(tokenPolicies);
@@ -268,11 +303,12 @@ public class EndpointConfig {
         if (securityPolicy == SecurityPolicy.None) {
           throw new IllegalArgumentException("securityPolicy: " + securityPolicy);
         }
-        if (securityMode == MessageSecurityMode.None) {
+        if (securityMode != MessageSecurityMode.Sign
+            && securityMode != MessageSecurityMode.SignAndEncrypt) {
           throw new IllegalArgumentException("securityMode: " + securityMode);
         }
-        if (certificateSupplier.get() == null) {
-          throw new IllegalStateException("security requires certificate");
+        if (certificateSupplier.get() == null && endpointCertificateConfig == null) {
+          throw new IllegalStateException("security requires certificate or certificate config");
         }
       }
 
@@ -300,6 +336,7 @@ public class EndpointConfig {
           hostname,
           path,
           certificateSupplier,
+          endpointCertificateConfig,
           securityPolicy,
           securityMode,
           tokenPolicies);

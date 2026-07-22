@@ -14,6 +14,7 @@ import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Optional;
+import org.eclipse.milo.opcua.stack.core.security.AbstractCertificateFactory;
 import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.CertificateQuarantine;
@@ -22,7 +23,6 @@ import org.eclipse.milo.opcua.stack.core.security.DefaultApplicationGroup;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateStore;
 import org.eclipse.milo.opcua.stack.core.security.MemoryTrustListManager;
-import org.eclipse.milo.opcua.stack.core.security.RsaSha256CertificateFactory;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 
@@ -46,7 +46,7 @@ public class TestCertificateManager implements CertificateManager {
         DefaultApplicationGroup.createAndInitialize(
             new MemoryTrustListManager(),
             new MemoryCertificateStore(),
-            new RsaSha256CertificateFactory() {
+            new AbstractCertificateFactory() {
               @Override
               protected KeyPair createRsaSha256KeyPair() {
                 return keyPair;

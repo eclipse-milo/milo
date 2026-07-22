@@ -20,14 +20,19 @@ import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * An implementation of the DefaultApplicationGroup CertificateGroup.
+ * Default OPC UA application certificate group backed by a {@link CertificateStore}.
  *
- * <p>Supports the {@link NodeIds#RsaSha256ApplicationCertificateType} CertificateType, which can be
- * used with 2048- and 4096-bit RSA keys.
+ * <p>By default, this group supports the {@link NodeIds#RsaSha256ApplicationCertificateType}
+ * CertificateType, which can be used with 2048- and 4096-bit RSA keys. Callers can configure
+ * additional certificate type IDs when a server manages multiple application identities.
  */
 public class DefaultApplicationGroup implements CertificateGroup {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(DefaultApplicationGroup.class);
 
   private final AtomicBoolean initialized = new AtomicBoolean(false);
 
@@ -36,33 +41,79 @@ public class DefaultApplicationGroup implements CertificateGroup {
   private final TrustListManager trustListManager;
   private final CertificateStore certificateStore;
   private final CertificateFactory certificateFactory;
+  private final List<NodeId> supportedCertificateTypeIds;
 
+  /**
+   * Create a default application group for RSA SHA-256 application certificates.
+   *
+   * @param trustListManager the {@link TrustListManager} for this group.
+   * @param certificateStore the {@link CertificateStore} for local certificate material.
+   * @param certificateFactory the {@link CertificateFactory} for missing certificates.
+   * @param certificateValidator the {@link CertificateValidator} for remote certificates.
+   */
   public DefaultApplicationGroup(
       TrustListManager trustListManager,
       CertificateStore certificateStore,
       CertificateFactory certificateFactory,
       CertificateValidator certificateValidator) {
 
+    this(
+        trustListManager,
+        certificateStore,
+        certificateFactory,
+        certificateValidator,
+        List.of(NodeIds.RsaSha256ApplicationCertificateType));
+  }
+
+  /**
+   * Create a default application group for the configured certificate type IDs.
+   *
+   * @param trustListManager the {@link TrustListManager} for this group.
+   * @param certificateStore the {@link CertificateStore} for local certificate material.
+   * @param certificateFactory the {@link CertificateFactory} for missing certificates.
+   * @param certificateValidator the {@link CertificateValidator} for remote certificates.
+   * @param supportedCertificateTypeIds the certificate type IDs this group supports.
+   * @throws IllegalArgumentException if {@code supportedCertificateTypeIds} is empty.
+   */
+  public DefaultApplicationGroup(
+      TrustListManager trustListManager,
+      CertificateStore certificateStore,
+      CertificateFactory certificateFactory,
+      CertificateValidator certificateValidator,
+      List<NodeId> supportedCertificateTypeIds) {
+
     this.trustListManager = trustListManager;
     this.certificateStore = certificateStore;
     this.certificateFactory = certificateFactory;
     this.certificateValidator = certificateValidator;
+    this.supportedCertificateTypeIds = List.copyOf(supportedCertificateTypeIds);
+
+    if (this.supportedCertificateTypeIds.isEmpty()) {
+      throw new IllegalArgumentException("supportedCertificateTypeIds must not be empty");
+    }
   }
 
-  public void initialize() throws Exception {
-    if (initialized.compareAndSet(false, true)) {
-      for (NodeId certificateTypeId : getSupportedCertificateTypeIds()) {
-        if (!certificateStore.contains(certificateTypeId)) {
-          KeyPair keyPair = certificateFactory.createKeyPair(certificateTypeId);
-          X509Certificate[] certificateChain =
-              certificateFactory.createCertificateChain(certificateTypeId, keyPair);
+  public synchronized void initialize() throws Exception {
+    if (initialized.get()) {
+      return;
+    }
 
-          certificateStore.set(
-              certificateTypeId,
-              new CertificateStore.Entry(keyPair.getPrivate(), certificateChain));
-        }
+    // Only latch the initialized flag after every configured certificate type has been
+    // successfully created/stored. If a later type fails (e.g. a factory throwing
+    // Bad_NotSupported for an ECC hook), the flag stays false so initialize() can be retried
+    // rather than leaving the group permanently half-initialized.
+    for (NodeId certificateTypeId : getSupportedCertificateTypeIds()) {
+      if (!certificateStore.contains(certificateTypeId)) {
+        KeyPair keyPair = certificateFactory.createKeyPair(certificateTypeId);
+        X509Certificate[] certificateChain =
+            certificateFactory.createCertificateChain(certificateTypeId, keyPair);
+
+        certificateStore.set(
+            certificateTypeId, new CertificateStore.Entry(keyPair.getPrivate(), certificateChain));
       }
     }
+
+    initialized.set(true);
   }
 
   @Override
@@ -72,7 +123,7 @@ public class DefaultApplicationGroup implements CertificateGroup {
 
   @Override
   public List<NodeId> getSupportedCertificateTypeIds() {
-    return List.of(NodeIds.RsaSha256ApplicationCertificateType);
+    return supportedCertificateTypeIds;
   }
 
   @Override
@@ -94,7 +145,11 @@ public class DefaultApplicationGroup implements CertificateGroup {
                   getCertificateGroupId(), certificateTypeId, entry.certificateChain));
         }
       } catch (Exception e) {
-        return List.of();
+        // A failure for one certificate type (e.g. a bad ECC alias password or a corrupt entry)
+        // must not discard healthy entries already collected for other types; keep accumulating
+        // so a single bad entry can't disable the group's other identities.
+        LOGGER.warn(
+            "Failed to read certificate entry for certificateTypeId={}", certificateTypeId, e);
       }
     }
 
@@ -103,7 +158,7 @@ public class DefaultApplicationGroup implements CertificateGroup {
 
   @Override
   public Optional<KeyPair> getKeyPair(NodeId certificateTypeId) {
-    if (certificateTypeId.equals(NodeIds.RsaSha256ApplicationCertificateType)) {
+    if (supportsCertificateType(certificateTypeId)) {
       try {
         CertificateStore.Entry entry = certificateStore.get(certificateTypeId);
 
@@ -119,7 +174,7 @@ public class DefaultApplicationGroup implements CertificateGroup {
 
   @Override
   public Optional<X509Certificate[]> getCertificateChain(NodeId certificateTypeId) {
-    if (certificateTypeId.equals(NodeIds.RsaSha256ApplicationCertificateType)) {
+    if (supportsCertificateType(certificateTypeId)) {
       try {
         CertificateStore.Entry entry = certificateStore.get(certificateTypeId);
 
@@ -137,7 +192,7 @@ public class DefaultApplicationGroup implements CertificateGroup {
       NodeId certificateTypeId, KeyPair keyPair, X509Certificate[] certificateChain)
       throws Exception {
 
-    if (certificateTypeId.equals(NodeIds.RsaSha256ApplicationCertificateType)) {
+    if (supportsCertificateType(certificateTypeId)) {
       certificateStore.set(
           certificateTypeId, new CertificateStore.Entry(keyPair.getPrivate(), certificateChain));
     } else {
@@ -153,6 +208,10 @@ public class DefaultApplicationGroup implements CertificateGroup {
   @Override
   public CertificateValidator getCertificateValidator() {
     return certificateValidator;
+  }
+
+  private boolean supportsCertificateType(NodeId certificateTypeId) {
+    return supportedCertificateTypeIds.contains(certificateTypeId);
   }
 
   /**
@@ -172,9 +231,40 @@ public class DefaultApplicationGroup implements CertificateGroup {
       CertificateValidator certificateValidator)
       throws Exception {
 
+    return createAndInitialize(
+        trustListManager,
+        certificateStore,
+        certificateFactory,
+        certificateValidator,
+        List.of(NodeIds.RsaSha256ApplicationCertificateType));
+  }
+
+  /**
+   * Create and initialize a {@link DefaultApplicationGroup}.
+   *
+   * @param trustListManager the {@link TrustListManager} to use.
+   * @param certificateStore the {@link CertificateStore} to use.
+   * @param certificateFactory the {@link CertificateFactory} to use.
+   * @param certificateValidator the {@link CertificateValidator} to use.
+   * @param supportedCertificateTypeIds the certificate type IDs this group supports.
+   * @return an initialized {@link DefaultApplicationGroup} instance.
+   * @throws Exception if an error occurs while initializing the {@link DefaultApplicationGroup}.
+   */
+  public static DefaultApplicationGroup createAndInitialize(
+      TrustListManager trustListManager,
+      CertificateStore certificateStore,
+      CertificateFactory certificateFactory,
+      CertificateValidator certificateValidator,
+      List<NodeId> supportedCertificateTypeIds)
+      throws Exception {
+
     var defaultApplicationGroup =
         new DefaultApplicationGroup(
-            trustListManager, certificateStore, certificateFactory, certificateValidator);
+            trustListManager,
+            certificateStore,
+            certificateFactory,
+            certificateValidator,
+            supportedCertificateTypeIds);
 
     defaultApplicationGroup.initialize();
 

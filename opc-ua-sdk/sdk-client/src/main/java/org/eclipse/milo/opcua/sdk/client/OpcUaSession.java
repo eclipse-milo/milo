@@ -24,6 +24,8 @@ import org.jspecify.annotations.Nullable;
 public class OpcUaSession extends ConcurrentHashMap<String, Object> implements UaSession {
 
   private volatile ByteString serverNonce = ByteString.NULL_VALUE;
+  private volatile ByteString clientNonce = ByteString.NULL_VALUE;
+  private volatile ByteString userTokenReceiverEphemeralPublicKey = ByteString.NULL_VALUE;
   private volatile @Nullable StatusCode lastActivateSessionServiceResult;
 
   private final NodeId authToken;
@@ -99,6 +101,53 @@ public class OpcUaSession extends ConcurrentHashMap<String, Object> implements U
 
   public void setServerNonce(ByteString serverNonce) {
     this.serverNonce = serverNonce;
+  }
+
+  /**
+   * Get the client nonce originally sent in CreateSession.
+   *
+   * <p>ActivateSession signatures for SecureChannel-enhancement policies continue to include the
+   * CreateSession client nonce when the session is reactivated on a new SecureChannel.
+   *
+   * @return the CreateSession client nonce.
+   */
+  public ByteString getClientNonce() {
+    return clientNonce;
+  }
+
+  /**
+   * Store the client nonce used to create this session.
+   *
+   * @param clientNonce the CreateSession client nonce.
+   */
+  public void setClientNonce(ByteString clientNonce) {
+    this.clientNonce = clientNonce;
+  }
+
+  /**
+   * Get the server session public key used for enhanced username-token reactivation.
+   *
+   * <p>The key is learned from the CreateSession additional header and reused when the session is
+   * reactivated on the same negotiated user-token policy. Both ECC and RSA-DH policies store their
+   * ephemeral receiver key here.
+   *
+   * @return the receiver public key advertised by the server for enhanced username-token
+   *     encryption.
+   */
+  public Optional<ByteString> getUserTokenReceiverEphemeralPublicKey() {
+    return userTokenReceiverEphemeralPublicKey.isNotNull()
+        ? Optional.of(userTokenReceiverEphemeralPublicKey)
+        : Optional.empty();
+  }
+
+  /**
+   * Store the server session public key returned during enhanced username-token negotiation.
+   *
+   * @param userTokenReceiverEphemeralPublicKey the receiver public key advertised by the server.
+   */
+  public void setUserTokenReceiverEphemeralPublicKey(
+      ByteString userTokenReceiverEphemeralPublicKey) {
+    this.userTokenReceiverEphemeralPublicKey = userTokenReceiverEphemeralPublicKey;
   }
 
   public void setLastActivateSessionServiceResult(

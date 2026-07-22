@@ -52,10 +52,12 @@ import org.eclipse.milo.opcua.stack.core.channel.messages.ErrorMessage;
 import org.eclipse.milo.opcua.stack.core.channel.messages.MessageType;
 import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryEncoder;
+import org.eclipse.milo.opcua.stack.core.security.CertificateCompatibility;
 import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -71,6 +73,7 @@ import org.eclipse.milo.opcua.stack.core.util.DigestUtil;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -147,6 +150,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
   public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
     chunkBuffers.releaseAll();
 
+    //noinspection DuplicatedCode
     if (cause instanceof IOException) {
       ctx.close();
       logger.debug(
@@ -278,9 +282,12 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
             CertificateValidator certificateValidator = certificateGroup.getCertificateValidator();
 
             certificateValidator.validateCertificateChain(
-                secureChannel.getRemoteCertificateChain(), null, null);
+                secureChannel.getRemoteCertificateChain(), null, null, securityPolicy.getProfile());
 
             X509Certificate[] chain = localCertificateChain.get();
+            if (securityPolicy.getProfile().secureChannelEnhancements()) {
+              CertificateCompatibility.checkCompatible(securityPolicy.getProfile(), chain[0]);
+            }
 
             secureChannel.setLocalCertificate(chain[0]);
             secureChannel.setLocalCertificateChain(chain);
@@ -340,6 +347,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
         throw new UaException(StatusCodes.Bad_SecurityChecksFailed, message);
       }
 
+      //noinspection DuplicatedCode
       int chunkSize = buffer.readerIndex(0).readableBytes();
 
       if (chunkSize > maxChunkSize) {
@@ -362,6 +370,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
 
         ByteBuf message;
         long requestId;
+        byte[] requestSignature;
 
         try {
           ChunkDecoder.DecodedMessage decodedMessage =
@@ -369,6 +378,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
 
           message = decodedMessage.getMessage();
           requestId = decodedMessage.getRequestId();
+          requestSignature = decodedMessage.getSignature();
         } catch (MessageAbortException e) {
           logger.warn(
               "Received message abort chunk; error={}, reason={}",
@@ -399,9 +409,19 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
                   StatusCodes.Bad_SecurityChecksFailed,
                   "secure channel renewal for secureChannelId=0");
             }
+          } else if (request.getRequestType() == SecurityTokenRequestType.Issue
+              && secureChannel.getChannelSecurity() != null) {
+            // An established channel can only be renewed, never re-issued. A second Issue would be
+            // chained off the current input key material on the renewal derivation path while the
+            // peer believes it performed a fresh issue, and would re-bind the channel
+            // thumbprint/security-mode contrary to the first-response-only binding of Part 6 6.7.5.
+            // Reject here, before any such mutation, so the original binding stays effective.
+            throw new UaException(
+                StatusCodes.Bad_SecurityChecksFailed,
+                "secure channel issue for an already-established channel");
           }
 
-          sendOpenSecureChannelResponse(ctx, requestId, header, request);
+          sendOpenSecureChannelResponse(ctx, requestId, header, request, requestSignature);
         } catch (Throwable t) {
           logger.error("Error decoding OpenSecureChannelRequest", t);
 
@@ -418,7 +438,8 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
       ChannelHandlerContext ctx,
       long requestId,
       AsymmetricSecurityHeader header,
-      OpenSecureChannelRequest request) {
+      OpenSecureChannelRequest request,
+      byte @Nullable [] requestSignature) {
 
     ByteBuf messageBuffer = BufferUtil.pooledBuffer();
 
@@ -430,9 +451,24 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
 
       checkMessageSize(messageBuffer);
 
+      byte[] additionalSignedBytes = getAdditionalSignedBytes(request, requestSignature);
+
       EncodedMessage encodedMessage =
           chunkEncoder.encodeAsymmetric(
-              secureChannel, requestId, messageBuffer, MessageType.OpenSecureChannel);
+              secureChannel,
+              requestId,
+              messageBuffer,
+              MessageType.OpenSecureChannel,
+              additionalSignedBytes);
+
+      if (additionalSignedBytes != null) {
+        byte[] signature = encodedMessage.getSignature();
+        if (signature == null) {
+          throw new UaException(
+              StatusCodes.Bad_SecurityChecksFailed, "missing OpenSecureChannel response signature");
+        }
+        secureChannel.setChannelThumbprint(ByteString.of(signature));
+      }
 
       if (!symmetricHandlerAdded) {
         var symmetricHandler =
@@ -472,6 +508,22 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
     } finally {
       messageBuffer.release();
     }
+  }
+
+  private byte @Nullable [] getAdditionalSignedBytes(
+      OpenSecureChannelRequest request, byte @Nullable [] requestSignature) throws UaException {
+
+    if (request.getRequestType() != SecurityTokenRequestType.Issue
+        || !secureChannel.getSecurityPolicyProfile().secureChannelEnhancements()) {
+      return null;
+    }
+
+    if (requestSignature == null) {
+      throw new UaException(
+          StatusCodes.Bad_SecurityChecksFailed, "missing OpenSecureChannel request signature");
+    }
+
+    return requestSignature;
   }
 
   private OpenSecureChannelResponse openSecureChannel(
@@ -569,14 +621,33 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
 
       NonceUtil.validateNonce(remoteNonce, secureChannel.getSecurityPolicy());
 
-      ByteString localNonce = generateNonce(secureChannel.getSecurityPolicy());
+      KeyPair localEphemeralKeyPair = null;
+      ByteString localNonce;
+
+      SecurityPolicyProfile profile = secureChannel.getSecurityPolicyProfile();
+      if (profile.usesEphemeralKeyAgreement()) {
+        localEphemeralKeyPair = ChannelSecurity.generateEphemeralKeyPair(profile);
+        localNonce = ChannelSecurity.encodeEphemeralPublicKey(profile, localEphemeralKeyPair);
+      } else {
+        localNonce = generateNonce(secureChannel.getSecurityPolicy());
+      }
 
       secureChannel.setLocalNonce(localNonce);
       secureChannel.setRemoteNonce(remoteNonce);
 
-      newKeys =
-          ChannelSecurity.generateKeyPair(
-              secureChannel, secureChannel.getRemoteNonce(), secureChannel.getLocalNonce());
+      if (localEphemeralKeyPair != null) {
+        newKeys =
+            ChannelSecurity.generateKeyPair(
+                secureChannel,
+                localEphemeralKeyPair,
+                secureChannel.getRemoteNonce(),
+                secureChannel.getLocalNonce(),
+                remoteNonce);
+      } else {
+        newKeys =
+            ChannelSecurity.generateKeyPair(
+                secureChannel, secureChannel.getRemoteNonce(), secureChannel.getLocalNonce());
+      }
     }
 
     ChannelSecurity oldSecrets = secureChannel.getChannelSecurity();
@@ -590,16 +661,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
     SecurityKeysListener listener = application.getSecurityKeysListener();
 
     if (listener != null && newKeys != null) {
-      var keyset =
-          new SecurityKeyset(
-              secureChannel.getChannelId(),
-              newToken.getTokenId().longValue(),
-              newKeys.getClientKeys().getEncryptionKey(),
-              newKeys.getClientKeys().getInitializationVector(),
-              newKeys.getServerKeys().getEncryptionKey(),
-              newKeys.getServerKeys().getInitializationVector(),
-              secureChannel.getSymmetricSignatureSize());
-      listener.onSecurityKeysCreated(keyset);
+      listener.onSecurityKeysCreated(SecurityKeyset.from(secureChannel, newKeys, newToken));
     }
 
     /*

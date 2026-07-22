@@ -521,6 +521,15 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${maven-surefire-plugin.version}</version>
+          <configuration>
+            <!--
+              Allow `-Dtest=...` runs to span a multi-module reactor (e.g. with `-am`) without
+              failing on the dependency modules that have no matching test. Without this, a
+              targeted run like `-pl opc-ua-sdk/sdk-server -am -Dtest=EndpointConfigTest` fails on
+              test-less modules pulled in by `-am`.
+            -->
+            <failIfNoSpecifiedTests>false</failIfNoSpecifiedTests>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>

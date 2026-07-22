@@ -11,6 +11,9 @@
 package org.eclipse.milo.opcua.stack.core.channel;
 
 import static org.eclipse.milo.opcua.stack.core.channel.ChunkDecoder.LegacySequenceNumberValidator.validateSequenceNumber;
+import static org.eclipse.milo.opcua.stack.core.channel.ChunkDecoder.NonLegacySequenceNumberValidator.aeadNonceSequenceNumber;
+import static org.eclipse.milo.opcua.stack.core.channel.ChunkDecoder.NonLegacySequenceNumberValidator.expectedSequenceNumber;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -47,5 +50,29 @@ public class ChunkDecoderTest {
 
     // failed to wrap around
     assertFalse(validateSequenceNumber(UInteger.MAX_VALUE, UInteger.MAX_VALUE + 1));
+  }
+
+  // AEAD nonce construction uses the previously sent SequenceNumber, while validation still checks
+  // the current SequenceHeader after tag verification exposes it.
+  @Test
+  void nonLegacySequenceNumbersStartAtZeroAndAdvanceExactly() {
+    assertTrue(ChunkDecoder.NonLegacySequenceNumberValidator.validateSequenceNumber(-1, 0));
+    assertFalse(ChunkDecoder.NonLegacySequenceNumberValidator.validateSequenceNumber(-1, 1));
+
+    assertTrue(ChunkDecoder.NonLegacySequenceNumberValidator.validateSequenceNumber(0, 1));
+    assertFalse(ChunkDecoder.NonLegacySequenceNumberValidator.validateSequenceNumber(0, 2));
+    assertFalse(ChunkDecoder.NonLegacySequenceNumberValidator.validateSequenceNumber(1, 1));
+
+    assertTrue(
+        ChunkDecoder.NonLegacySequenceNumberValidator.validateSequenceNumber(
+            UInteger.MAX_VALUE, 0));
+    assertFalse(
+        ChunkDecoder.NonLegacySequenceNumberValidator.validateSequenceNumber(
+            UInteger.MAX_VALUE, 1024));
+
+    assertEquals(0, expectedSequenceNumber(-1));
+    assertEquals(42, expectedSequenceNumber(41));
+    assertEquals(0, aeadNonceSequenceNumber(-1));
+    assertEquals(41, aeadNonceSequenceNumber(41));
   }
 }

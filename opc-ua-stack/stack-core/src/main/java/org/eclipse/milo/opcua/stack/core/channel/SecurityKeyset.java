@@ -10,6 +10,9 @@
 
 package org.eclipse.milo.opcua.stack.core.channel;
 
+import org.eclipse.milo.opcua.stack.core.channel.ChannelSecurity.SecurityKeys;
+import org.eclipse.milo.opcua.stack.core.types.structured.ChannelSecurityToken;
+
 /**
  * An immutable snapshot of the symmetric keyset derived during an OpenSecureChannel handshake,
  * suitable for writing to a Wireshark OPC UA key log file.
@@ -55,5 +58,26 @@ public record SecurityKeyset(
   @Override
   public byte[] serverInitializationVector() {
     return serverInitializationVector.clone();
+  }
+
+  /**
+   * Create a keyset snapshot from the derived channel keys and security token.
+   *
+   * @param secureChannel the channel the keys belong to.
+   * @param securityKeys the derived symmetric key material.
+   * @param token the security token associated with the keys.
+   * @return a keyset snapshot suitable for listener notification.
+   */
+  public static SecurityKeyset from(
+      SecureChannel secureChannel, SecurityKeys securityKeys, ChannelSecurityToken token) {
+
+    return new SecurityKeyset(
+        secureChannel.getChannelId(),
+        token.getTokenId().longValue(),
+        securityKeys.getClientKeys().getEncryptionKey(),
+        securityKeys.getClientKeys().getInitializationVector(),
+        securityKeys.getServerKeys().getEncryptionKey(),
+        securityKeys.getServerKeys().getInitializationVector(),
+        secureChannel.getSymmetricSignatureSize());
   }
 }

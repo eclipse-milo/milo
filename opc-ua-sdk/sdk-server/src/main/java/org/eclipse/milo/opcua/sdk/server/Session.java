@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.sdk.server;
 
 import java.net.InetAddress;
+import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -85,6 +86,9 @@ public class Session {
   private volatile Identity identity;
 
   private volatile ByteString lastNonce = ByteString.NULL_VALUE;
+  private volatile ByteString clientNonce = ByteString.NULL_VALUE;
+  private volatile @Nullable KeyPair userTokenEphemeralKeyPair;
+  private volatile ByteString userTokenEphemeralPublicKey = ByteString.NULL_VALUE;
 
   private volatile long lastActivityNanos = System.nanoTime();
   private volatile ScheduledFuture<?> checkTimeoutFuture;
@@ -307,8 +311,76 @@ public class Session {
     this.lastNonce = lastNonce;
   }
 
+  void setClientNonce(ByteString clientNonce) {
+    this.clientNonce = clientNonce;
+  }
+
+  /**
+   * Get the last server nonce issued for this session.
+   *
+   * <p>The value is the CreateSession nonce before first activation and then the newest
+   * ActivateSession nonce after each successful activation or reactivation.
+   *
+   * @return the latest server nonce issued to the client.
+   */
   public ByteString getLastNonce() {
     return lastNonce;
+  }
+
+  /**
+   * Get the client nonce from the original CreateSession request.
+   *
+   * <p>SecureChannel-enhancement ActivateSession signatures keep using this nonce when the session
+   * is later reactivated on a different SecureChannel.
+   *
+   * @return the CreateSession client nonce.
+   */
+  public ByteString getClientNonce() {
+    return clientNonce;
+  }
+
+  /**
+   * Get the server ephemeral key pair issued for enhanced username-token encryption.
+   *
+   * <p>The key pair is generated during CreateSession when the client asks for enhanced user-token
+   * key material. The username validator uses it during ActivateSession to decrypt the password
+   * secret.
+   *
+   * @return the session-scoped enhanced user-token key pair.
+   */
+  public Optional<KeyPair> getUserTokenEphemeralKeyPair() {
+    return Optional.ofNullable(userTokenEphemeralKeyPair);
+  }
+
+  /**
+   * Get the encoded server public key that was returned to the client.
+   *
+   * @return the encoded session public key advertised for enhanced username-token encryption.
+   */
+  public Optional<ByteString> getUserTokenEphemeralPublicKey() {
+    return userTokenEphemeralPublicKey.isNotNull()
+        ? Optional.of(userTokenEphemeralPublicKey)
+        : Optional.empty();
+  }
+
+  /**
+   * Store the session-scoped key pair returned to the client for enhanced username-token
+   * encryption.
+   *
+   * @param userTokenEphemeralKeyPair the private/public key pair retained for ActivateSession
+   *     decryption.
+   * @param userTokenEphemeralPublicKey the encoded public key returned in CreateSession.
+   */
+  public void setUserTokenEphemeralKeyPair(
+      KeyPair userTokenEphemeralKeyPair, ByteString userTokenEphemeralPublicKey) {
+    this.userTokenEphemeralKeyPair = userTokenEphemeralKeyPair;
+    this.userTokenEphemeralPublicKey = userTokenEphemeralPublicKey;
+  }
+
+  /** Clear the enhanced username-token key pair after it has been consumed by ActivateSession. */
+  public void clearUserTokenEphemeralKeyPair() {
+    userTokenEphemeralKeyPair = null;
+    userTokenEphemeralPublicKey = ByteString.NULL_VALUE;
   }
 
   private void checkTimeout() {

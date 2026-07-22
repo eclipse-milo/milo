@@ -14,6 +14,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_CHANNEL_FSM_TRANSITION_LISTENER;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_CLOSE_FUTURE;
+import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_CREATE_SESSION_CLIENT_NONCE;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_KEEP_ALIVE_FAILURE_COUNT;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_KEEP_ALIVE_SCHEDULED_FUTURE;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SESSION;
@@ -32,9 +33,7 @@ import com.digitalpetri.fsm.dsl.ActionContext;
 import com.digitalpetri.fsm.dsl.FsmBuilder;
 import com.digitalpetri.netty.fsm.ChannelFsm;
 import com.google.common.collect.Streams;
-import com.google.common.primitives.Bytes;
 import io.netty.channel.Channel;
-import java.nio.ByteBuffer;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.cert.CertificateEncodingException;
@@ -44,6 +43,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -52,12 +53,22 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.client.*;
+import org.eclipse.milo.opcua.sdk.client.identity.ChannelSignatureInputs;
+import org.eclipse.milo.opcua.sdk.client.identity.IdentityProvider;
+import org.eclipse.milo.opcua.sdk.client.identity.IdentityProviderContext;
 import org.eclipse.milo.opcua.sdk.client.identity.SignedIdentityToken;
 import org.eclipse.milo.opcua.sdk.client.session.SessionFsm.SessionFuture;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaSubscription;
 import org.eclipse.milo.opcua.stack.core.*;
-import org.eclipse.milo.opcua.stack.core.security.SecurityAlgorithm;
+import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
+import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
+import org.eclipse.milo.opcua.stack.core.security.ChannelBoundSignatureData;
+import org.eclipse.milo.opcua.stack.core.security.EccEncryptedSecret;
+import org.eclipse.milo.opcua.stack.core.security.EnhancedUserTokenAdditionalHeader;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
+import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
@@ -75,6 +86,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.CloseSessionRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateSessionRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateSessionResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.EphemeralKeyType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
@@ -89,7 +101,6 @@ import org.eclipse.milo.opcua.stack.core.types.structured.UserIdentityToken;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
-import org.eclipse.milo.opcua.stack.core.util.SignatureUtil;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransport;
@@ -635,25 +646,17 @@ public class SessionFsmFactory {
                 ChannelFsm channelFsm = ((OpcTcpClientTransport) transport).getChannelFsm();
 
                 ChannelFsm.TransitionListener listener =
-                    new ChannelFsm.TransitionListener() {
-                      @Override
-                      public void onStateTransition(
-                          com.digitalpetri.netty.fsm.State from,
-                          com.digitalpetri.netty.fsm.State to,
-                          com.digitalpetri.netty.fsm.Event via) {
+                    (from, to, via) -> {
+                      if (from == com.digitalpetri.netty.fsm.State.Connected
+                          && to != com.digitalpetri.netty.fsm.State.Connected) {
 
-                        if (from == com.digitalpetri.netty.fsm.State.Connected
-                            && to != com.digitalpetri.netty.fsm.State.Connected) {
+                        try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+                            MDCCloseable ignoredSessionId = putSessionId(event.session)) {
 
-                          try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
-                              MDCCloseable ignoredSessionId = putSessionId(event.session)) {
-
-                            LOGGER.debug(
-                                "ChannelFsm transition from={} to={} via={}", from, to, via);
-                          }
-
-                          ctx.fireEvent(new Event.ConnectionLost());
+                          LOGGER.debug("ChannelFsm transition from={} to={} via={}", from, to, via);
                         }
+
+                        ctx.fireEvent(new Event.ConnectionLost());
                       }
                     };
 
@@ -1123,6 +1126,18 @@ public class SessionFsmFactory {
       FsmContext<State, Event> ctx, OpcUaClient client) {
 
     EndpointDescription endpoint = client.getConfig().getEndpoint();
+    SecurityPolicy securityPolicy;
+    Optional<CertificateIdentity> certificateIdentity;
+
+    try {
+      securityPolicy = SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
+      certificateIdentity =
+          securityPolicy != SecurityPolicy.None
+              ? client.getCertificateIdentity(securityPolicy.getProfile())
+              : Optional.empty();
+    } catch (UaException e) {
+      return failedFuture(e);
+    }
 
     String gatewayServerUri = endpoint.getServer().getGatewayServerUri();
 
@@ -1134,11 +1149,14 @@ public class SessionFsmFactory {
     }
 
     ByteString clientNonce = NonceUtil.generateNonce(32);
+    // ActivateSession signatures keep using the CreateSession client nonce, including later
+    // reactivation on a different SecureChannel.
+    KEY_CREATE_SESSION_CLIENT_NONCE.set(ctx, clientNonce);
 
     ByteString clientCertificate =
-        client
-            .getConfig()
-            .getCertificate()
+        certificateIdentity
+            .map(CertificateIdentity::certificate)
+            .or(() -> client.getConfig().getCertificate())
             .map(
                 c -> {
                   try {
@@ -1159,9 +1177,22 @@ public class SessionFsmFactory {
             null,
             null);
 
+    RequestHeader requestHeader;
+    try {
+      requestHeader =
+          withAdditionalHeader(
+              client.newRequestHeader(),
+              buildCreateSessionAdditionalHeader(
+                  client.getConfig().getIdentityProvider(),
+                  client.getStaticEncodingContext(),
+                  endpoint));
+    } catch (Exception e) {
+      return failedFuture(e);
+    }
+
     CreateSessionRequest request =
         new CreateSessionRequest(
-            client.newRequestHeader(),
+            requestHeader,
             clientDescription,
             serverUri,
             client.getConfig().getEndpoint().getEndpointUrl(),
@@ -1183,9 +1214,6 @@ public class SessionFsmFactory {
         .thenCompose(
             response -> {
               try {
-                SecurityPolicy securityPolicy =
-                    SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
-
                 if (securityPolicy != SecurityPolicy.None) {
                   if (response.getServerCertificate().isNullOrEmpty()) {
                     throw new UaException(
@@ -1216,20 +1244,23 @@ public class SessionFsmFactory {
                       .validateCertificateChain(
                           serverCertificateChain,
                           endpoint.getServer().getApplicationUri(),
-                          new String[] {EndpointUtil.getHost(endpoint.getEndpointUrl())});
+                          new String[] {EndpointUtil.getHost(endpoint.getEndpointUrl())},
+                          securityPolicy.getProfile());
 
                   SignatureData serverSignature = response.getServerSignature();
 
                   byte[] dataBytes =
-                      Bytes.concat(clientCertificate.bytesOrEmpty(), clientNonce.bytesOrEmpty());
+                      ChannelBoundSignatureData.serverSignatureData(
+                          securityPolicy.getProfile(),
+                          client.getTransport().getChannelThumbprint(),
+                          clientNonce,
+                          certificateBytes(certificateFromEndpoint),
+                          clientCertificate,
+                          response.getServerNonce(),
+                          clientCertificate);
 
-                  byte[] signatureBytes = serverSignature.getSignature().bytesOrEmpty();
-
-                  SignatureUtil.verify(
-                      SecurityAlgorithm.fromUri(serverSignature.getAlgorithm()),
-                      serverCertificate,
-                      dataBytes,
-                      signatureBytes);
+                  ChannelBoundSignatureData.verify(
+                      securityPolicy, serverCertificate, dataBytes, serverSignature);
                 }
 
                 if (client.getConfig().isSessionEndpointValidationEnabled()) {
@@ -1246,6 +1277,49 @@ public class SessionFsmFactory {
                 return failedFuture(e);
               }
             });
+  }
+
+  static ExtensionObject buildCreateSessionAdditionalHeader(
+      IdentityProvider identityProvider, EncodingContext context, EndpointDescription endpoint)
+      throws Exception {
+
+    return identityProvider.getCreateSessionAdditionalHeader(context, endpoint);
+  }
+
+  /**
+   * Build the ActivateSession request AdditionalHeader requesting a fresh enhanced user-token key.
+   *
+   * <p>Part 6, 6.8.2 requires the receiver EphemeralKey to be single-use. The client repeats the
+   * negotiated {@code ECDHPolicyUri} on every ActivateSession so the server rotates the key and
+   * returns a fresh one in the response. Returns {@code null} for legacy/non-enhanced policies so
+   * those requests carry no AdditionalHeader.
+   */
+  private static ExtensionObject buildActivateSessionAdditionalHeader(
+      EncodingContext context, Optional<SecurityPolicy> userTokenSecurityPolicy) throws Exception {
+
+    if (userTokenSecurityPolicy.isEmpty()
+        || !userTokenSecurityPolicy.get().getProfile().usesEnhancedUserTokenSecret()) {
+      return null;
+    }
+
+    return EnhancedUserTokenAdditionalHeader.createRequest(context, userTokenSecurityPolicy.get());
+  }
+
+  private static RequestHeader withAdditionalHeader(
+      RequestHeader requestHeader, ExtensionObject additionalHeader) {
+
+    if (additionalHeader == null) {
+      return requestHeader;
+    }
+
+    return new RequestHeader(
+        requestHeader.getAuthenticationToken(),
+        requestHeader.getTimestamp(),
+        requestHeader.getRequestHandle(),
+        requestHeader.getReturnDiagnostics(),
+        requestHeader.getAuditEntryId(),
+        requestHeader.getTimeoutHint(),
+        additionalHeader);
   }
 
   /**
@@ -1326,25 +1400,252 @@ public class SessionFsmFactory {
         && Objects.equals(endpoint1.getSecurityLevel(), endpoint2.getSecurityLevel());
   }
 
+  static Optional<ByteString> verifyCreateSessionEnhancedUserTokenKey(
+      OpcUaClient client,
+      EndpointDescription endpoint,
+      CreateSessionResponse response,
+      SecurityPolicy userTokenSecurityPolicy)
+      throws Exception {
+
+    return verifyCreateSessionEnhancedUserTokenKey(
+        client.getStaticEncodingContext(),
+        client.getConfig().getCertificateValidator(),
+        endpoint,
+        response,
+        userTokenSecurityPolicy);
+  }
+
+  static Optional<ByteString> verifyCreateSessionEnhancedUserTokenKey(
+      EncodingContext encodingContext,
+      CertificateValidator certificateValidator,
+      EndpointDescription endpoint,
+      CreateSessionResponse response,
+      SecurityPolicy userTokenSecurityPolicy)
+      throws Exception {
+
+    if (userTokenSecurityPolicy == null
+        || !userTokenSecurityPolicy.getProfile().usesEnhancedUserTokenSecret()) {
+      return Optional.empty();
+    }
+
+    ByteString responseServerCertificate = response.getServerCertificate();
+    ByteString endpointServerCertificate = endpoint.getServerCertificate();
+
+    if (responseServerCertificate == null
+        || responseServerCertificate.isNullOrEmpty()
+        || endpointServerCertificate == null
+        || endpointServerCertificate.isNullOrEmpty()) {
+
+      throw new UaException(
+          StatusCodes.Bad_ConfigurationError,
+          "enhanced user-token negotiation requires an advertised server certificate");
+    }
+
+    EphemeralKeyType ephemeralKey =
+        EnhancedUserTokenAdditionalHeader.decodeResponse(
+                encodingContext,
+                response.getResponseHeader().getAdditionalHeader(),
+                userTokenSecurityPolicy)
+            .orElseThrow(
+                () ->
+                    new UaException(
+                        StatusCodes.Bad_SecurityChecksFailed,
+                        "server did not return enhanced user-token key material"));
+
+    /*
+     * The signed ephemeral key is only meaningful if it is anchored to the endpoint certificate the
+     * client selected. SecureChannel validation already covers this for secured endpoints; None and
+     * HTTPS-style token-encryption paths need the same explicit certificate match and trust check
+     * before the username secret is encrypted.
+     */
+    List<X509Certificate> serverCertificateChain =
+        CertificateUtil.decodeCertificates(responseServerCertificate.bytesOrEmpty());
+    X509Certificate serverCertificate = serverCertificateChain.get(0);
+
+    X509Certificate certificateFromEndpoint =
+        CertificateUtil.decodeCertificate(endpointServerCertificate.bytesOrEmpty());
+
+    if (!serverCertificate.equals(certificateFromEndpoint)) {
+      throw new UaException(
+          StatusCodes.Bad_SecurityChecksFailed,
+          "Certificate from CreateSessionResponse did not match certificate from"
+              + " EndpointDescription!");
+    }
+
+    SecurityPolicy endpointSecurityPolicy = SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
+    if (endpointSecurityPolicy == SecurityPolicy.None
+        || !Stack.TCP_UASC_UABINARY_TRANSPORT_URI.equals(endpoint.getTransportProfileUri())) {
+
+      certificateValidator.validateCertificateChain(
+          serverCertificateChain,
+          endpoint.getServer().getApplicationUri(),
+          new String[] {EndpointUtil.getHost(endpoint.getEndpointUrl())},
+          userTokenSecurityPolicy.getProfile());
+    }
+
+    EccEncryptedSecret.verifyEphemeralKey(
+        userTokenSecurityPolicy.getProfile(), serverCertificate, ephemeralKey);
+
+    return Optional.of(ephemeralKey.getPublicKey());
+  }
+
+  /**
+   * Decode and verify a refreshed enhanced user-token ephemeral key from an ActivateSession
+   * response.
+   *
+   * <p>Part 6, 6.8.2 makes the receiver EphemeralKey single-use: each successful ActivateSession
+   * returns a fresh signed key that the client must use for the next activation. Unlike
+   * CreateSession, an ActivateSession response carries no server certificate, so the key signature
+   * is verified against the certificate advertised by the selected endpoint, which was already
+   * matched and trusted during CreateSession.
+   *
+   * @param encodingContext the client encoding context.
+   * @param endpoint the selected endpoint whose advertised certificate signed the key.
+   * @param response the ActivateSession response that may carry a refreshed key.
+   * @param userTokenSecurityPolicy the negotiated enhanced user-token policy, or {@code null}.
+   * @return the refreshed receiver public key, or empty when the server returned no fresh key.
+   * @throws Exception if the header is malformed or the key signature fails verification.
+   */
+  static Optional<ByteString> verifyActivateSessionEnhancedUserTokenKey(
+      EncodingContext encodingContext,
+      EndpointDescription endpoint,
+      ActivateSessionResponse response,
+      SecurityPolicy userTokenSecurityPolicy)
+      throws Exception {
+
+    if (userTokenSecurityPolicy == null
+        || !userTokenSecurityPolicy.getProfile().usesEnhancedUserTokenSecret()) {
+      return Optional.empty();
+    }
+
+    Optional<EphemeralKeyType> ephemeralKey =
+        EnhancedUserTokenAdditionalHeader.decodeResponse(
+            encodingContext,
+            response.getResponseHeader().getAdditionalHeader(),
+            userTokenSecurityPolicy);
+
+    if (ephemeralKey.isEmpty()) {
+      // The server did not rotate the key on this activation; the caller keeps the most recent key.
+      return Optional.empty();
+    }
+
+    ByteString endpointServerCertificate = endpoint.getServerCertificate();
+    if (endpointServerCertificate == null || endpointServerCertificate.isNullOrEmpty()) {
+      throw new UaException(
+          StatusCodes.Bad_ConfigurationError,
+          "enhanced user-token negotiation requires an advertised server certificate");
+    }
+
+    X509Certificate signingCertificate =
+        CertificateUtil.decodeCertificate(endpointServerCertificate.bytesOrEmpty());
+
+    EccEncryptedSecret.verifyEphemeralKey(
+        userTokenSecurityPolicy.getProfile(), signingCertificate, ephemeralKey.get());
+
+    return Optional.of(ephemeralKey.get().getPublicKey());
+  }
+
+  private static IdentityProviderContext buildIdentityProviderContext(
+      OpcUaClient client,
+      EndpointDescription endpoint,
+      ByteString serverNonce,
+      SecurityPolicy userTokenSecurityPolicy,
+      ByteString receiverEphemeralPublicKey,
+      ByteString serverCertificate,
+      ByteString clientNonce)
+      throws UaException {
+
+    SecurityPolicy endpointSecurityPolicy = SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
+    SecurityPolicy certificateSecurityPolicy =
+        userTokenSecurityPolicy != null && userTokenSecurityPolicy != SecurityPolicy.None
+            ? userTokenSecurityPolicy
+            : endpointSecurityPolicy;
+
+    Optional<CertificateIdentity> certificateIdentity =
+        certificateSecurityPolicy != SecurityPolicy.None
+            ? client.getCertificateIdentity(certificateSecurityPolicy.getProfile())
+            : Optional.empty();
+
+    KeyPair keyPair =
+        certificateIdentity
+            .map(CertificateIdentity::keyPair)
+            .or(() -> client.getConfig().getKeyPair())
+            .orElse(null);
+
+    X509Certificate[] certificateChain =
+        certificateIdentity
+            .map(CertificateIdentity::certificateChain)
+            .or(() -> client.getConfig().getCertificateChain())
+            .or(
+                () ->
+                    client
+                        .getConfig()
+                        .getCertificate()
+                        .map(certificate -> new X509Certificate[] {certificate}))
+            .orElse(null);
+
+    // Resolve the SecureChannel-bound signature inputs the same way buildClientSignature does, so a
+    // channel-bound user-token signature (enhanced policies) reconstructs identically on the
+    // server.
+    ByteString serverChannelCertificate = resolveServerChannelCertificateBytes(endpoint);
+
+    ChannelSignatureInputs channelSignatureInputs =
+        new ChannelSignatureInputs(
+            client.getTransport().getChannelThumbprint(),
+            clientNonce,
+            serverCertificate,
+            serverChannelCertificate,
+            getClientCertificate(client, endpointSecurityPolicy));
+
+    return new IdentityProviderContext(
+        endpoint,
+        serverNonce,
+        userTokenSecurityPolicy,
+        receiverEphemeralPublicKey,
+        keyPair,
+        certificateChain,
+        channelSignatureInputs);
+  }
+
   @SuppressWarnings("Duplicates")
   private static CompletableFuture<OpcUaSession> activateSession(
       FsmContext<State, Event> ctx, OpcUaClient client, CreateSessionResponse csr) {
 
     try {
       EndpointDescription endpoint = client.getConfig().getEndpoint();
+      ByteString clientNonce = KEY_CREATE_SESSION_CLIENT_NONCE.get(ctx);
 
       ByteString csrNonce = csr.getServerNonce();
+      Optional<SecurityPolicy> userTokenSecurityPolicy =
+          client.getConfig().getIdentityProvider().getEnhancedUserTokenSecurityPolicy(endpoint);
+      Optional<ByteString> receiverEphemeralPublicKey =
+          verifyCreateSessionEnhancedUserTokenKey(
+              client, endpoint, csr, userTokenSecurityPolicy.orElse(null));
 
       SignedIdentityToken signedIdentityToken =
-          client.getConfig().getIdentityProvider().getIdentityToken(endpoint, csrNonce);
+          client
+              .getConfig()
+              .getIdentityProvider()
+              .getIdentityToken(
+                  buildIdentityProviderContext(
+                      client,
+                      endpoint,
+                      csrNonce,
+                      userTokenSecurityPolicy.orElse(null),
+                      receiverEphemeralPublicKey.orElse(null),
+                      csr.getServerCertificate(),
+                      clientNonce));
 
       UserIdentityToken userIdentityToken = signedIdentityToken.getToken();
       SignatureData userTokenSignature = signedIdentityToken.getSignature();
 
       ActivateSessionRequest request =
           new ActivateSessionRequest(
-              client.newRequestHeader(csr.getAuthenticationToken()),
-              buildClientSignature(client.getConfig(), csrNonce),
+              withAdditionalHeader(
+                  client.newRequestHeader(csr.getAuthenticationToken()),
+                  buildActivateSessionAdditionalHeader(
+                      client.getStaticEncodingContext(), userTokenSecurityPolicy)),
+              buildClientSignature(client, csr.getServerCertificate(), csrNonce, clientNonce),
               new SignedSoftwareCertificate[0],
               client.getConfig().getSessionLocaleIds(),
               ExtensionObject.encode(client.getStaticEncodingContext(), userIdentityToken),
@@ -1362,29 +1663,50 @@ public class SessionFsmFactory {
           .thenApply(ActivateSessionResponse.class::cast)
           .thenCompose(
               asr -> {
-                ByteString asrNonce = asr.getServerNonce();
+                try {
+                  ByteString asrNonce = asr.getServerNonce();
 
-                // TODO check for repeated nonce?
+                  // TODO check for repeated nonce?
 
-                OpcUaSession session =
-                    new OpcUaSession(
-                        csr.getAuthenticationToken(),
-                        csr.getSessionId(),
-                        client.getConfig().getSessionName().get(),
-                        csr.getRevisedSessionTimeout(),
-                        csr.getMaxRequestMessageSize(),
-                        csr.getServerCertificate(),
-                        csr.getServerSoftwareCertificates());
+                  OpcUaSession session =
+                      new OpcUaSession(
+                          csr.getAuthenticationToken(),
+                          csr.getSessionId(),
+                          client.getConfig().getSessionName().get(),
+                          csr.getRevisedSessionTimeout(),
+                          csr.getMaxRequestMessageSize(),
+                          csr.getServerCertificate(),
+                          csr.getServerSoftwareCertificates());
 
-                session.setLastActivateSessionServiceResult(
-                    asr.getResponseHeader().getServiceResult());
-                session.setServerNonce(asrNonce);
+                  session.setLastActivateSessionServiceResult(
+                      asr.getResponseHeader().getServiceResult());
+                  session.setClientNonce(clientNonce);
+                  session.setServerNonce(asrNonce);
 
-                return completedFuture(session);
+                  // Prefer the single-use key the server rotated in this response; fall back to the
+                  // CreateSession key when the server did not return a fresh one.
+                  Optional<ByteString> refreshedKey =
+                      verifyActivateSessionEnhancedUserTokenKey(
+                          client.getStaticEncodingContext(),
+                          endpoint,
+                          asr,
+                          userTokenSecurityPolicy.orElse(null));
+                  refreshedKey
+                      .or(() -> receiverEphemeralPublicKey)
+                      .ifPresent(session::setUserTokenReceiverEphemeralPublicKey);
+
+                  return completedFuture(session);
+                } catch (Exception ex) {
+                  return SessionFsmFactory.<OpcUaSession>failedActivation(ex);
+                }
               });
     } catch (Exception ex) {
       return failedFuture(ex);
     }
+  }
+
+  private static <T> CompletableFuture<T> failedActivation(Throwable ex) {
+    return failedFuture(ex);
   }
 
   private static CompletableFuture<OpcUaSession> reactivateSession(
@@ -1397,21 +1719,43 @@ public class SessionFsmFactory {
       EndpointDescription endpoint = client.getConfig().getEndpoint();
 
       ByteString serverNonce = session.getServerNonce();
+      Optional<SecurityPolicy> userTokenSecurityPolicy =
+          client.getConfig().getIdentityProvider().getEnhancedUserTokenSecurityPolicy(endpoint);
 
-      SignedIdentityToken signedIdentityToken =
-          client.getConfig().getIdentityProvider().getIdentityToken(endpoint, serverNonce);
+      // Reactivation may have to await an in-progress reconnection, so build the request (and
+      // therefore the channel-bound client and user-token signatures) only once the new channel is
+      // ready. Reading getChannelThumbprint() before the handshake completes would sign over the
+      // dead channel's thumbprint and be rejected. The user-token signature is built here too
+      // because enhanced (ECC or RSA-DH) policies bind it to the same channel thumbprint.
+      Callable<UaRequestMessageType> requestSupplier =
+          () -> {
+            SignedIdentityToken signedIdentityToken =
+                client
+                    .getConfig()
+                    .getIdentityProvider()
+                    .getIdentityToken(
+                        buildIdentityProviderContext(
+                            client,
+                            endpoint,
+                            serverNonce,
+                            userTokenSecurityPolicy.orElse(null),
+                            session.getUserTokenReceiverEphemeralPublicKey().orElse(null),
+                            session.getServerCertificate(),
+                            session.getClientNonce()));
 
-      UserIdentityToken userIdentityToken = signedIdentityToken.getToken();
-      SignatureData userTokenSignature = signedIdentityToken.getSignature();
-
-      var request =
-          new ActivateSessionRequest(
-              client.newRequestHeader(session.getAuthenticationToken()),
-              buildClientSignature(client.getConfig(), serverNonce),
-              new SignedSoftwareCertificate[0],
-              client.getConfig().getSessionLocaleIds(),
-              ExtensionObject.encode(client.getStaticEncodingContext(), userIdentityToken),
-              userTokenSignature);
+            return new ActivateSessionRequest(
+                withAdditionalHeader(
+                    client.newRequestHeader(session.getAuthenticationToken()),
+                    buildActivateSessionAdditionalHeader(
+                        client.getStaticEncodingContext(), userTokenSecurityPolicy)),
+                buildClientSignature(
+                    client, session.getServerCertificate(), serverNonce, session.getClientNonce()),
+                new SignedSoftwareCertificate[0],
+                client.getConfig().getSessionLocaleIds(),
+                ExtensionObject.encode(
+                    client.getStaticEncodingContext(), signedIdentityToken.getToken()),
+                signedIdentityToken.getSignature());
+          };
 
       try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
           MDCCloseable ignoredSessionId = putSessionId(session)) {
@@ -1419,21 +1763,68 @@ public class SessionFsmFactory {
         LOGGER.debug("Sending ActivateSessionRequest...");
       }
 
-      return client
-          .getTransport()
-          .sendRequestMessage(request)
+      return sendWhenChannelReady(client.getTransport(), requestSupplier)
           .thenApply(ActivateSessionResponse.class::cast)
           .thenCompose(
               asr -> {
-                session.setLastActivateSessionServiceResult(
-                    asr.getResponseHeader().getServiceResult());
-                session.setServerNonce(asr.getServerNonce());
+                try {
+                  session.setLastActivateSessionServiceResult(
+                      asr.getResponseHeader().getServiceResult());
+                  session.setServerNonce(asr.getServerNonce());
 
-                return completedFuture(session);
+                  // Adopt the single-use key the server rotated for the next reactivation; keep the
+                  // existing key when the server returned no fresh one.
+                  verifyActivateSessionEnhancedUserTokenKey(
+                          client.getStaticEncodingContext(),
+                          endpoint,
+                          asr,
+                          userTokenSecurityPolicy.orElse(null))
+                      .ifPresent(session::setUserTokenReceiverEphemeralPublicKey);
+
+                  return completedFuture(session);
+                } catch (Exception ex) {
+                  return SessionFsmFactory.<OpcUaSession>failedActivation(ex);
+                }
               });
     } catch (Exception ex) {
       return failedFuture(ex);
     }
+  }
+
+  /**
+   * Send a request whose contents may bind to the carrying SecureChannel, building it only once the
+   * transport's channel is ready.
+   *
+   * <p>{@link OpcClientTransport#sendRequestMessage} awaits an in-progress reconnect internally, so
+   * a channel-bound request built eagerly (e.g. an enhanced-policy ActivateSession signature over
+   * {@link OpcClientTransport#getChannelThumbprint()}) could sign over the dead channel's
+   * thumbprint and be sent on the channel that replaces it. For {@link OpcTcpClientTransport} the
+   * ChannelFsm's channel future completes only after the handshake publishes the new channel's
+   * thumbprint, so awaiting it before invoking {@code requestSupplier} guarantees a fresh read.
+   * Other transports have no channel binding and build immediately.
+   *
+   * @param transport the {@link OpcClientTransport} to send on.
+   * @param requestSupplier supplies the request to send, invoked once the channel is ready; any
+   *     exception it throws completes the returned future exceptionally.
+   * @return a {@link CompletableFuture} that completes successfully with the {@link
+   *     UaResponseMessageType} or completes exceptionally if an error occurred.
+   */
+  static CompletableFuture<UaResponseMessageType> sendWhenChannelReady(
+      OpcClientTransport transport, Callable<UaRequestMessageType> requestSupplier) {
+
+    CompletableFuture<?> channelReady =
+        transport instanceof OpcTcpClientTransport tcpTransport
+            ? tcpTransport.getChannelFsm().getChannel()
+            : completedFuture(null);
+
+    return channelReady.thenCompose(
+        ignored -> {
+          try {
+            return transport.sendRequestMessage(requestSupplier.call());
+          } catch (Exception e) {
+            return failedFuture(e);
+          }
+        });
   }
 
   @SuppressWarnings("Duplicates")
@@ -1647,8 +2038,52 @@ public class SessionFsmFactory {
   }
 
   @SuppressWarnings("Duplicates")
+  private static ByteString getClientCertificate(OpcUaClient client, SecurityPolicy securityPolicy)
+      throws UaException {
+
+    Optional<X509Certificate> certificate =
+        client
+            .getCertificateIdentity(securityPolicy.getProfile())
+            .map(CertificateIdentity::certificate)
+            .or(() -> client.getConfig().getCertificate());
+
+    // A genuinely absent certificate yields NULL_VALUE; an encoding failure on a present
+    // certificate is surfaced (like certificateBytes) rather than being swallowed into a silently
+    // wrong signature.
+    return certificate.isPresent() ? certificateBytes(certificate.get()) : ByteString.NULL_VALUE;
+  }
+
+  private static ByteString certificateBytes(X509Certificate certificate) throws UaException {
+    try {
+      return ByteString.of(certificate.getEncoded());
+    } catch (CertificateEncodingException e) {
+      throw new UaException(StatusCodes.Bad_CertificateInvalid, e);
+    }
+  }
+
+  /**
+   * Build the ActivateSession {@code clientSignature} over the channel-bound signature data.
+   *
+   * <p>For legacy (non-enhancement) policies the {@code serverCertificate} {@code ByteString} is
+   * passed straight through to {@link ChannelBoundSignatureData#clientSignatureData} and signed
+   * verbatim: the raw bytes exactly as received in {@code CreateSessionResponse.serverCertificate}
+   * (here {@code csr.getServerCertificate()}) or replayed from the session on reactivation. The
+   * blob is intentionally <b>not</b> re-decoded to sign only the first (leaf) certificate encoding.
+   * Signing the transmitted bytes as-is aligns with the OPC UA reference (.NET) stack and the wire
+   * semantics. A chain-returning peer that verifies against only a re-extracted leaf would reject
+   * this signature; Milo's server avoids that by verifying with a leaf-then-chain dual attempt (see
+   * {@code SessionManager.verifyClientSignature}). The byte layout is pinned by {@code
+   * ChannelBoundSignatureDataTest}.
+   */
+  @SuppressWarnings("Duplicates")
   private static SignatureData buildClientSignature(
-      OpcUaClientConfig config, ByteString serverNonce) throws Exception {
+      OpcUaClient client,
+      ByteString serverCertificate,
+      ByteString serverNonce,
+      ByteString clientNonce)
+      throws Exception {
+
+    OpcUaClientConfig config = client.getConfig();
 
     EndpointDescription endpoint = config.getEndpoint();
 
@@ -1657,21 +2092,53 @@ public class SessionFsmFactory {
     if (securityPolicy == SecurityPolicy.None) {
       return new SignatureData(null, null);
     } else {
-      SecurityAlgorithm signatureAlgorithm = securityPolicy.getAsymmetricSignatureAlgorithm();
-      PrivateKey privateKey = config.getKeyPair().map(KeyPair::getPrivate).orElse(null);
-      List<X509Certificate> serverCertificates =
-          CertificateUtil.decodeCertificates(endpoint.getServerCertificate().bytesOrEmpty());
+      Optional<CertificateIdentity> certificateIdentity =
+          client.getCertificateIdentity(securityPolicy.getProfile());
+      PrivateKey privateKey =
+          certificateIdentity
+              .map(CertificateIdentity::keyPair)
+              .map(KeyPair::getPrivate)
+              .or(() -> config.getKeyPair().map(KeyPair::getPrivate))
+              .orElseThrow(
+                  () ->
+                      new UaException(
+                          StatusCodes.Bad_ConfigurationError,
+                          "client certificate identity is required for session signature"));
+      ByteString clientCertificate = getClientCertificate(client, securityPolicy);
+      ByteString serverChannelCertificate = resolveServerChannelCertificateBytes(endpoint);
 
-      // Signature data is serverCert + serverNonce signed with our private key.
-      byte[] serverNonceBytes = serverNonce.bytesOrEmpty();
-      byte[] serverCertificateBytes = serverCertificates.get(0).getEncoded();
-      byte[] dataToSign = Bytes.concat(serverCertificateBytes, serverNonceBytes);
+      byte[] dataToSign =
+          ChannelBoundSignatureData.clientSignatureData(
+              securityPolicy.getProfile(),
+              client.getTransport().getChannelThumbprint(),
+              serverNonce,
+              serverCertificate,
+              serverChannelCertificate,
+              clientCertificate,
+              clientNonce);
 
-      byte[] signature =
-          SignatureUtil.sign(signatureAlgorithm, privateKey, ByteBuffer.wrap(dataToSign));
-
-      return new SignatureData(signatureAlgorithm.getUri(), ByteString.of(signature));
+      // ECC policies sign with ECDSA/EdDSA, RSA-DH and legacy policies with the policy's algorithm;
+      // the wire algorithm URI is populated only for legacy policies (Part 4 §7.36).
+      return ChannelBoundSignatureData.sign(securityPolicy, privateKey, dataToSign);
     }
+  }
+
+  /**
+   * Resolve the {@code ServerChannelCertificate} bytes for the channel-bound session signatures:
+   * the leaf encoding of the endpoint's server certificate, or {@link ByteString#NULL_VALUE} when
+   * the endpoint advertises no certificate. Shared by {@link #buildIdentityProviderContext} and
+   * {@link #buildClientSignature} so both fill the slot identically.
+   */
+  private static ByteString resolveServerChannelCertificateBytes(EndpointDescription endpoint)
+      throws UaException {
+
+    ByteString serverCertificate = endpoint.getServerCertificate();
+
+    if (serverCertificate == null || serverCertificate.isNullOrEmpty()) {
+      return ByteString.NULL_VALUE;
+    }
+
+    return certificateBytes(CertificateUtil.decodeCertificate(serverCertificate.bytesOrEmpty()));
   }
 
   private static class SessionFaultListener implements ServiceFaultListener {

@@ -12,9 +12,13 @@ package org.eclipse.milo.opcua.stack.core.util.validation;
 
 import com.google.common.base.Preconditions;
 import java.io.IOException;
+import java.security.AlgorithmParameters;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.Provider;
 import java.security.PublicKey;
+import java.security.Security;
 import java.security.SignatureException;
 import java.security.cert.CertPath;
 import java.security.cert.CertPathBuilder;
@@ -35,6 +39,9 @@ import java.security.cert.TrustAnchor;
 import java.security.cert.X509CRL;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.ECGenParameterSpec;
+import java.security.spec.ECParameterSpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -49,8 +56,12 @@ import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.asn1.x509.GeneralNames;
 import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,6 +78,14 @@ public class CertificateValidationUtil {
   private static final int SUBJECT_ALT_NAME_DNS_NAME = 2;
   private static final int SUBJECT_ALT_NAME_IP_ADDRESS = 7;
 
+  private static final String BC_PROVIDER_NAME = "BC";
+
+  // Brainpool curves are not verifiable by the JDK's default JCA providers (SunEC parses the SPKI
+  // but throws "Curve not supported" at signature time). When a certificate in the picture uses one
+  // of these curves, signature verification is routed to Bouncy Castle.
+  private static final ECParameterSpec BRAINPOOL_P256R1 = brainpoolParameterSpec("brainpoolP256r1");
+  private static final ECParameterSpec BRAINPOOL_P384R1 = brainpoolParameterSpec("brainpoolP384r1");
+
   /**
    * Given a possibly partial certificate chain with at least one certificate in it, builds a path
    * to a trust anchor using a collection of trusted and issuer certificates as possible
@@ -78,8 +97,8 @@ public class CertificateValidationUtil {
    *
    * <p>The {@link CertPath} and {@link TrustAnchor} from the result is meant to be further
    * validated by {@link #validateTrustedCertPath(CertPath, TrustAnchor, Collection, Set, boolean)},
-   * which can return more detailed failure {@link StatusCodes} in its exceptions because it is
-   * dealing with a known trusted path.
+   * which can return more detailed failure {@link StatusCodes} in its exceptions after the trusted
+   * path is known.
    *
    * @param certificateChain a possibly partial certificate chain to build a trusted path from.
    * @param trustedCertificates a collection of known trusted certificates.
@@ -186,10 +205,39 @@ public class CertificateValidationUtil {
       boolean endEntityIsClient)
       throws UaException {
 
+    validateTrustedCertPath(certPath, trustAnchor, crls, validationChecks, endEntityIsClient, null);
+  }
+
+  /**
+   * Validates the trusted certificate path represented by a {@link TrustAnchor} and a {@link
+   * CertPath} against policy-aware OPC UA certificate usage rules.
+   *
+   * @param certPath a {@link CertPath} containing 0 or more certificates leading to the trust
+   *     anchor.
+   * @param trustAnchor a {@link TrustAnchor} containing the root of trust for the path being
+   *     validated.
+   * @param crls a collection of {@link X509CRL}s.
+   * @param validationChecks the set of {@link ValidationCheck}s to enforce.
+   * @param endEntityIsClient {@code true} if the end-entity is a client, {@code false} if it is a
+   *     server.
+   * @param securityPolicyProfile the policy profile the end-entity certificate will be used with,
+   *     or {@code null} for legacy RSA-era usage checks.
+   * @throws UaException if a check from the set of {@link ValidationCheck}s failed.
+   */
+  public static void validateTrustedCertPath(
+      CertPath certPath,
+      TrustAnchor trustAnchor,
+      Collection<X509CRL> crls,
+      Set<ValidationCheck> validationChecks,
+      boolean endEntityIsClient,
+      @Nullable SecurityPolicyProfile securityPolicyProfile)
+      throws UaException {
+
     X509Certificate anchorCert = trustAnchor.getTrustedCert();
     boolean anchorIsEndEntity = certPath.getCertificates().isEmpty();
 
-    checkAnchorValidity(anchorCert, validationChecks, anchorIsEndEntity, endEntityIsClient);
+    checkAnchorValidity(
+        anchorCert, validationChecks, anchorIsEndEntity, endEntityIsClient, securityPolicyProfile);
 
     if (!anchorIsEndEntity) {
       // anchorCert is an issuer; validate the rest of the certPath
@@ -198,8 +246,19 @@ public class CertificateValidationUtil {
 
         PKIXParameters parameters = new PKIXParameters(Set.of(trustAnchor));
 
+        // The SUN PKIX validator verifies each link's signature using the default JCA providers,
+        // which cannot handle Brainpool curves. Route signature verification to Bouncy Castle when
+        // any certificate in the path uses such a curve, leaving the SUN validation flow (usage and
+        // revocation checkers) otherwise unchanged.
+        List<X509Certificate> pathCertificates = new ArrayList<>();
+        certPath.getCertificates().stream()
+            .map(X509Certificate.class::cast)
+            .forEach(pathCertificates::add);
+        configureSignatureProvider(parameters, pathCertificates, List.of(anchorCert));
+
         parameters.addCertPathChecker(
-            new OpcUaCertificateUsageChecker(certPath, validationChecks, endEntityIsClient));
+            new OpcUaCertificateUsageChecker(
+                certPath, validationChecks, endEntityIsClient, securityPolicyProfile));
 
         try {
           // Try to add our own custom revocation checker that can
@@ -292,7 +351,8 @@ public class CertificateValidationUtil {
       X509Certificate anchorCert,
       Set<ValidationCheck> validationChecks,
       boolean endEntity,
-      boolean endEntityIsClient)
+      boolean endEntityIsClient,
+      @Nullable SecurityPolicyProfile securityPolicyProfile)
       throws UaException {
 
     Set<String> criticalExtensions = anchorCert.getCriticalExtensionOIDs();
@@ -312,7 +372,7 @@ public class CertificateValidationUtil {
 
     if (endEntity) {
       try {
-        checkEndEntityKeyUsage(anchorCert);
+        checkEndEntityKeyUsage(anchorCert, securityPolicyProfile);
       } catch (UaException e) {
         if (validationChecks.contains(ValidationCheck.KEY_USAGE_END_ENTITY)
             || criticalExtensions.contains(KEY_USAGE_OID)) {
@@ -326,7 +386,7 @@ public class CertificateValidationUtil {
       }
 
       try {
-        checkEndEntityExtendedKeyUsage(anchorCert, endEntityIsClient);
+        checkEndEntityExtendedKeyUsage(anchorCert, endEntityIsClient, securityPolicyProfile);
       } catch (UaException e) {
         if (validationChecks.contains(ValidationCheck.EXTENDED_KEY_USAGE_END_ENTITY)
             || criticalExtensions.contains(EXTENDED_KEY_USAGE_OID)) {
@@ -376,6 +436,15 @@ public class CertificateValidationUtil {
 
         builderParams.addCertStore(certStore);
       }
+
+      // The default PKIX CertPathBuilder verifies each link's signature using the default JCA
+      // providers, which cannot handle Brainpool curves. Route signature verification to Bouncy
+      // Castle when any candidate certificate uses such a curve, leaving every other PKIX behavior
+      // (path building, anchor selection) unchanged.
+      List<X509Certificate> anchorCertificates =
+          trustAnchors.stream().map(TrustAnchor::getTrustedCert).collect(Collectors.toList());
+      configureSignatureProvider(
+          builderParams, certificateChain, intermediates, anchorCertificates);
 
       // Disable revocation checking in the CertPathBuilder; it will be
       // checked by a PKIXCertPathValidator after the CertPath is built.
@@ -429,14 +498,27 @@ public class CertificateValidationUtil {
       return false;
     }
 
+    // Verify the certificate signature with its own public key.
+    PublicKey key = cert.getPublicKey();
+
     try {
-      // Verify the certificate signature with its own public key
-      PublicKey key = cert.getPublicKey();
       cert.verify(key);
       return true;
-    } catch (SignatureException | InvalidKeyException e) {
-      // Invalid signature or key: not self-signed
-      return false;
+    } catch (SignatureException | InvalidKeyException | NoSuchAlgorithmException e) {
+      // The default JCA providers could not verify the signature. This happens for curves the
+      // built-in providers cannot handle (e.g. Brainpool on SunEC, which throws SignatureException
+      // "Curve not supported"), so retry with the resolved Bouncy Castle provider before concluding
+      // the certificate is not self-signed. A genuine signature/key mismatch fails under BC too,
+      // and is reported as "not self-signed".
+      try {
+        cert.verify(key, bouncyCastleProvider());
+        return true;
+      } catch (SignatureException | InvalidKeyException | NoSuchAlgorithmException bcException) {
+        // Invalid signature or key under both providers: not self-signed.
+        return false;
+      } catch (Exception bcException) {
+        throw new UaException(StatusCodes.Bad_CertificateInvalid, bcException);
+      }
     } catch (Exception e) {
       throw new UaException(StatusCodes.Bad_CertificateInvalid, e);
     }
@@ -518,6 +600,58 @@ public class CertificateValidationUtil {
   }
 
   public static void checkEndEntityKeyUsage(X509Certificate certificate) throws UaException {
+    checkEndEntityKeyUsage(certificate, null);
+  }
+
+  /**
+   * Check end-entity KeyUsage with {@link ValidationCheck} suppression applied.
+   *
+   * <p>ECC and Edwards-curve profiles always enforce their policy-specific KeyUsage rules. For
+   * legacy RSA-era profiles (and the {@code null} profile) the end-entity KeyUsage check is
+   * suppressible: {@link ValidationCheck#KEY_USAGE_END_ENTITY} is not part of {@link
+   * ValidationCheck#NO_OPTIONAL_CHECKS}, so a failure is suppressed unless that check is active or
+   * the KeyUsage extension is marked critical. This keeps legacy certificates that lack the
+   * KeyUsage extension, or omit {@code nonRepudiation}/{@code dataEncipherment}, from being
+   * rejected by default while still allowing strict enforcement to be opted into.
+   *
+   * @param certificate the end-entity certificate to check.
+   * @param securityPolicyProfile the policy profile the certificate will be used with, or {@code
+   *     null} for legacy RSA-era usage checks.
+   * @param validationChecks the set of active {@link ValidationCheck}s.
+   * @throws UaException if the KeyUsage check fails and is not suppressible.
+   */
+  public static void checkEndEntityKeyUsage(
+      X509Certificate certificate,
+      @Nullable SecurityPolicyProfile securityPolicyProfile,
+      Set<ValidationCheck> validationChecks)
+      throws UaException {
+
+    try {
+      checkEndEntityKeyUsage(certificate, securityPolicyProfile);
+    } catch (UaException e) {
+      // ECC/Edwards profiles always enforce their policy-specific KeyUsage rules.
+      if (isEccOrEdwardsApplicationProfile(securityPolicyProfile)) {
+        throw e;
+      }
+
+      Set<String> criticalExtensions = certificate.getCriticalExtensionOIDs();
+
+      if (validationChecks.contains(ValidationCheck.KEY_USAGE_END_ENTITY)
+          || (criticalExtensions != null && criticalExtensions.contains(KEY_USAGE_OID))) {
+
+        throw e;
+      }
+
+      LOGGER.warn(
+          "check suppressed: certificate failed end-entity KeyUsage check: {}",
+          certificate.getSubjectX500Principal().getName());
+    }
+  }
+
+  public static void checkEndEntityKeyUsage(
+      X509Certificate certificate, @Nullable SecurityPolicyProfile securityPolicyProfile)
+      throws UaException {
+
     boolean[] keyUsage = certificate.getKeyUsage();
 
     if (keyUsage == null) {
@@ -525,17 +659,27 @@ public class CertificateValidationUtil {
           StatusCodes.Bad_CertificateUseNotAllowed, "KeyUsage extension not found");
     }
 
-    boolean digitalSignature = keyUsage[0];
-    boolean nonRepudiation = keyUsage[1];
-    boolean keyEncipherment = keyUsage[2];
-    boolean dataEncipherment = keyUsage[3];
-    boolean keyCertSign = keyUsage[5];
+    boolean digitalSignature = hasKeyUsage(keyUsage, 0);
+    boolean keyCertSign = hasKeyUsage(keyUsage, 5);
 
     if (!digitalSignature) {
       throw new UaException(
           StatusCodes.Bad_CertificateUseNotAllowed,
           "required KeyUsage 'digitalSignature' not found");
     }
+
+    if (keyCertSignRequiredForSelfSigned(securityPolicyProfile)) {
+      if (!keyCertSign && certificateIsSelfSigned(certificate)) {
+        throw new UaException(
+            StatusCodes.Bad_CertificateUseNotAllowed, "required KeyUsage 'keyCertSign' not found");
+      }
+
+      return;
+    }
+
+    boolean nonRepudiation = hasKeyUsage(keyUsage, 1);
+    boolean keyEncipherment = hasKeyUsage(keyUsage, 2);
+    boolean dataEncipherment = hasKeyUsage(keyUsage, 3);
 
     if (!nonRepudiation) {
       throw new UaException(
@@ -563,6 +707,19 @@ public class CertificateValidationUtil {
   public static void checkEndEntityExtendedKeyUsage(
       X509Certificate certificate, boolean endEntityIsClient) throws UaException {
 
+    checkEndEntityExtendedKeyUsage(certificate, endEntityIsClient, null);
+  }
+
+  public static void checkEndEntityExtendedKeyUsage(
+      X509Certificate certificate,
+      boolean endEntityIsClient,
+      @Nullable SecurityPolicyProfile securityPolicyProfile)
+      throws UaException {
+
+    if (isEccOrEdwardsApplicationProfile(securityPolicyProfile)) {
+      return;
+    }
+
     try {
       List<String> extendedKeyUsage = certificate.getExtendedKeyUsage();
 
@@ -585,6 +742,33 @@ public class CertificateValidationUtil {
     } catch (CertificateParsingException e) {
       throw new UaException(StatusCodes.Bad_CertificateUseNotAllowed);
     }
+  }
+
+  private static boolean keyCertSignRequiredForSelfSigned(
+      @Nullable SecurityPolicyProfile securityPolicyProfile) {
+
+    return isEccOrEdwardsApplicationProfile(securityPolicyProfile);
+  }
+
+  private static boolean isEccOrEdwardsApplicationProfile(
+      @Nullable SecurityPolicyProfile securityPolicyProfile) {
+
+    if (securityPolicyProfile == null) {
+      return false;
+    }
+
+    AuthAxis authAxis = securityPolicyProfile.authAxis();
+
+    return authAxis == AuthAxis.ECDSA_NIST_P256_SHA256
+        || authAxis == AuthAxis.ECDSA_NIST_P384_SHA384
+        || authAxis == AuthAxis.ECDSA_BRAINPOOL_P256R1_SHA256
+        || authAxis == AuthAxis.ECDSA_BRAINPOOL_P384R1_SHA384
+        || authAxis == AuthAxis.ED25519
+        || authAxis == AuthAxis.ED448;
+  }
+
+  private static boolean hasKeyUsage(boolean[] keyUsage, int bitIndex) {
+    return keyUsage.length > bitIndex && keyUsage[bitIndex];
   }
 
   /**
@@ -679,5 +863,105 @@ public class CertificateValidationUtil {
     } catch (CertificateParsingException e) {
       throw new UaException(StatusCodes.Bad_CertificateInvalid, e);
     }
+  }
+
+  /**
+   * Configure the signature provider used by a PKIX path build or validation when the certificate
+   * material requires a curve the JDK's default JCA providers cannot verify.
+   *
+   * <p>Brainpool ECDSA signatures cannot be verified by the built-in providers (SunEC throws "Curve
+   * not supported"). When a Brainpool certificate is present, the resolved Bouncy Castle provider
+   * is registered (append-only, lowest precedence) so it can be selected by name as the PKIX
+   * signature provider; this leaves provider selection for every other algorithm unchanged. For
+   * non-Brainpool material no signature provider is set, so the default JCA behavior is fully
+   * preserved.
+   *
+   * @param parameters the {@link PKIXParameters} (or {@link PKIXBuilderParameters}) to configure.
+   * @param certificateGroups the certificate collections that make up the path and trust material.
+   */
+  @SafeVarargs
+  private static void configureSignatureProvider(
+      PKIXParameters parameters, Collection<X509Certificate>... certificateGroups) {
+
+    boolean needsBouncyCastle =
+        Arrays.stream(certificateGroups)
+            .flatMap(Collection::stream)
+            .anyMatch(CertificateValidationUtil::usesUnsupportedCurve);
+
+    if (!needsBouncyCastle) {
+      return;
+    }
+
+    Provider provider = bouncyCastleProvider();
+
+    // PKIXParameters resolves the signature provider by name, so the resolved instance must be a
+    // registered provider. Register it append-only (lowest precedence) when absent; this is
+    // monotonic and race-safe and never changes selection for algorithms the default providers
+    // already handle.
+    if (Security.getProvider(provider.getName()) == null) {
+      Security.addProvider(provider);
+    }
+
+    parameters.setSigProvider(provider.getName());
+  }
+
+  /**
+   * Return {@code true} if {@code certificate} uses an EC curve the JDK's default JCA providers
+   * cannot verify (currently the Brainpool curves used by OPC UA ECC policies).
+   *
+   * @param certificate the certificate to inspect.
+   * @return {@code true} if the certificate's public key uses an unsupported curve.
+   */
+  private static boolean usesUnsupportedCurve(X509Certificate certificate) {
+    if (!(certificate.getPublicKey() instanceof ECPublicKey ecPublicKey)) {
+      return false;
+    }
+
+    ECParameterSpec params = ecPublicKey.getParams();
+
+    return isSameCurve(BRAINPOOL_P256R1, params) || isSameCurve(BRAINPOOL_P384R1, params);
+  }
+
+  private static boolean isSameCurve(
+      @Nullable ECParameterSpec expected, @Nullable ECParameterSpec actual) {
+
+    if (expected == null || actual == null) {
+      return false;
+    }
+
+    return Objects.equals(expected.getCurve(), actual.getCurve())
+        && Objects.equals(expected.getGenerator(), actual.getGenerator())
+        && Objects.equals(expected.getOrder(), actual.getOrder())
+        && expected.getCofactor() == actual.getCofactor();
+  }
+
+  @Nullable
+  private static ECParameterSpec brainpoolParameterSpec(String curveName) {
+    try {
+      AlgorithmParameters parameters =
+          AlgorithmParameters.getInstance("EC", new BouncyCastleProvider());
+      parameters.init(new ECGenParameterSpec(curveName));
+
+      return parameters.getParameterSpec(ECParameterSpec.class);
+    } catch (GeneralSecurityException e) {
+      // Bouncy Castle is on the classpath wherever ECC policies are configured, but if the curve
+      // cannot be resolved here, Brainpool detection simply degrades to "not detected" rather than
+      // failing class initialization.
+      LOGGER.debug("could not resolve Brainpool curve '{}' for signature routing", curveName, e);
+      return null;
+    }
+  }
+
+  /**
+   * Resolve the Bouncy Castle {@link Provider}, preferring an already-registered instance and
+   * falling back to a new instance otherwise. Mirrors the resolution used elsewhere in the stack
+   * (e.g. {@code SecurityProviderResolver}).
+   *
+   * @return the resolved Bouncy Castle {@link Provider}.
+   */
+  private static Provider bouncyCastleProvider() {
+    Provider provider = Security.getProvider(BC_PROVIDER_NAME);
+
+    return provider != null ? provider : new BouncyCastleProvider();
   }
 }

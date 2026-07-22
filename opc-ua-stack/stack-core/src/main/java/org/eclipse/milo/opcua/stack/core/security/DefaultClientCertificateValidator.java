@@ -19,6 +19,7 @@ import java.util.Set;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.util.validation.CertificateValidationUtil;
 import org.eclipse.milo.opcua.stack.core.util.validation.ValidationCheck;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +63,20 @@ public class DefaultClientCertificateValidator implements CertificateValidator {
 
   @Override
   public void validateCertificateChain(
-      List<X509Certificate> certificateChain, String applicationUri, String[] validHostNames)
+      List<X509Certificate> certificateChain,
+      @Nullable String applicationUri,
+      @Nullable String[] validHostNames)
+      throws UaException {
+
+    validateCertificateChain(certificateChain, applicationUri, validHostNames, null);
+  }
+
+  @Override
+  public void validateCertificateChain(
+      List<X509Certificate> certificateChain,
+      @Nullable String applicationUri,
+      @Nullable String[] validHostNames,
+      @Nullable SecurityPolicyProfile securityPolicyProfile)
       throws UaException {
 
     PKIXCertPathBuilderResult certPathResult;
@@ -91,7 +105,13 @@ public class DefaultClientCertificateValidator implements CertificateValidator {
           certPathResult.getTrustAnchor(),
           crls,
           validationChecks,
-          false);
+          false,
+          securityPolicyProfile);
+
+      if (securityPolicyProfile != null) {
+        CertificateCompatibility.checkCompatible(
+            securityPolicyProfile, certificateChain.get(0), validationChecks);
+      }
     } catch (UaException e) {
       LOGGER.debug("validateCertificateChain failed, underlying status: {}", e.getStatusCode(), e);
 

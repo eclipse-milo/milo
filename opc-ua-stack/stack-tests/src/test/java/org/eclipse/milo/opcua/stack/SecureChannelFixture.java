@@ -147,4 +147,76 @@ public abstract class SecureChannelFixture extends SecurityFixture {
 
     return new SecureChannel[] {clientChannel, serverChannel};
   }
+
+  protected SecureChannel[] generateAeadChannels(SecurityPolicy securityPolicy) throws Exception {
+    return generateAeadChannels(securityPolicy, MessageSecurityMode.SignAndEncrypt);
+  }
+
+  protected SecureChannel[] generateAeadChannels(
+      SecurityPolicy securityPolicy, MessageSecurityMode messageSecurity) throws Exception {
+    super.setUp();
+
+    // AEAD chunk tests need installed keys before ECC OpenSecureChannel key agreement is wired
+    // through the transports. Deterministic key material keeps these tests focused on chunk
+    // protection rather than on ephemeral key exchange.
+    ClientSecureChannel clientChannel =
+        new ClientSecureChannel(
+            clientKeyPair,
+            clientCertificate,
+            List.of(clientCertificate),
+            serverCertificate,
+            List.of(serverCertificate),
+            securityPolicy,
+            messageSecurity);
+
+    ServerSecureChannel serverChannel = new ServerSecureChannel();
+    serverChannel.setSecurityPolicy(securityPolicy);
+    serverChannel.setMessageSecurityMode(messageSecurity);
+
+    serverChannel.setKeyPair(serverKeyPair);
+    serverChannel.setLocalCertificate(serverCertificate);
+    serverChannel.setLocalCertificateChain(new X509Certificate[] {serverCertificate});
+    serverChannel.setRemoteCertificate(clientCertificateBytes);
+
+    byte[] clientEncryptionKey =
+        deterministicBytes(securityPolicy.getProfile().symmetricEncryptionKeySize(), 0x10);
+    byte[] clientInitializationVector = deterministicBytes(12, 0x40);
+    byte[] serverEncryptionKey =
+        deterministicBytes(securityPolicy.getProfile().symmetricEncryptionKeySize(), 0x70);
+    byte[] serverInitializationVector = deterministicBytes(12, 0xa0);
+
+    ChannelSecurity.SecurityKeys clientSecrets =
+        ChannelSecurity.createAeadKeyPair(
+            clientEncryptionKey,
+            clientInitializationVector,
+            serverEncryptionKey,
+            serverInitializationVector);
+
+    ChannelSecurity.SecurityKeys serverSecrets =
+        ChannelSecurity.createAeadKeyPair(
+            clientEncryptionKey,
+            clientInitializationVector,
+            serverEncryptionKey,
+            serverInitializationVector);
+
+    ChannelSecurityToken clientToken =
+        new ChannelSecurityToken(uint(0), uint(1), DateTime.now(), uint(60000));
+    ChannelSecurityToken serverToken =
+        new ChannelSecurityToken(uint(0), uint(1), DateTime.now(), uint(60000));
+
+    clientChannel.setChannelSecurity(new ChannelSecurity(clientSecrets, clientToken));
+    serverChannel.setChannelSecurity(new ChannelSecurity(serverSecrets, serverToken));
+
+    return new SecureChannel[] {clientChannel, serverChannel};
+  }
+
+  private static byte[] deterministicBytes(int length, int seed) {
+    byte[] bytes = new byte[length];
+
+    for (int i = 0; i < bytes.length; i++) {
+      bytes[i] = (byte) (seed + i);
+    }
+
+    return bytes;
+  }
 }

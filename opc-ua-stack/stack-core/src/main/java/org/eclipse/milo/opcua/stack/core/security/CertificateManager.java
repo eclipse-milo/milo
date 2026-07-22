@@ -76,6 +76,21 @@ public interface CertificateManager {
   List<CertificateGroup> getCertificateGroups();
 
   /**
+   * Get the usable certificate identities managed by this {@link CertificateManager}.
+   *
+   * <p>An identity is usable when its certificate group has both a non-empty certificate chain and
+   * a key pair for the certificate type.
+   *
+   * @return the usable certificate identities managed by this {@link CertificateManager}.
+   */
+  default List<CertificateIdentity> getCertificateIdentities() {
+    return getCertificateGroups().stream()
+        .flatMap(group -> group.getCertificateIdentities().stream())
+        .sorted(CertificateIdentityOrdering.STABLE)
+        .toList();
+  }
+
+  /**
    * Get the Server's {@link CertificateQuarantine}.
    *
    * @return the Server's {@link CertificateQuarantine}.

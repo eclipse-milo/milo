@@ -14,6 +14,7 @@ import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Optional;
+import org.eclipse.milo.opcua.stack.core.security.AbstractCertificateFactory;
 import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.CertificateQuarantine;
@@ -22,9 +23,9 @@ import org.eclipse.milo.opcua.stack.core.security.DefaultApplicationGroup;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateStore;
 import org.eclipse.milo.opcua.stack.core.security.MemoryTrustListManager;
-import org.eclipse.milo.opcua.stack.core.security.RsaSha256CertificateFactory;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 
 public class TestCertificateManager implements CertificateManager {
 
@@ -32,6 +33,7 @@ public class TestCertificateManager implements CertificateManager {
 
   private final KeyPair keyPair;
   private final X509Certificate certificate;
+  private final ByteString certificateThumbprint;
   private final DefaultApplicationGroup certificateGroup;
 
   public TestCertificateManager(
@@ -40,12 +42,13 @@ public class TestCertificateManager implements CertificateManager {
 
     this.keyPair = keyPair;
     this.certificate = certificate;
+    certificateThumbprint = CertificateUtil.thumbprint(certificate);
 
     certificateGroup =
         DefaultApplicationGroup.createAndInitialize(
             new MemoryTrustListManager(),
             new MemoryCertificateStore(),
-            new RsaSha256CertificateFactory() {
+            new AbstractCertificateFactory() {
               @Override
               protected KeyPair createRsaSha256KeyPair() {
                 return keyPair;
@@ -61,12 +64,12 @@ public class TestCertificateManager implements CertificateManager {
 
   @Override
   public Optional<KeyPair> getKeyPair(ByteString thumbprint) {
-    return Optional.of(keyPair);
+    return matchesCertificate(thumbprint) ? Optional.of(keyPair) : Optional.empty();
   }
 
   @Override
   public Optional<X509Certificate> getCertificate(ByteString thumbprint) {
-    return Optional.of(certificate);
+    return matchesCertificate(thumbprint) ? Optional.of(certificate) : Optional.empty();
   }
 
   @Override
@@ -76,7 +79,7 @@ public class TestCertificateManager implements CertificateManager {
 
   @Override
   public Optional<CertificateGroup> getCertificateGroup(ByteString thumbprint) {
-    return Optional.of(certificateGroup);
+    return matchesCertificate(thumbprint) ? Optional.of(certificateGroup) : Optional.empty();
   }
 
   @Override
@@ -92,5 +95,9 @@ public class TestCertificateManager implements CertificateManager {
   @Override
   public CertificateQuarantine getCertificateQuarantine() {
     return certificateQuarantine;
+  }
+
+  private boolean matchesCertificate(ByteString thumbprint) {
+    return certificateThumbprint.equals(thumbprint);
   }
 }

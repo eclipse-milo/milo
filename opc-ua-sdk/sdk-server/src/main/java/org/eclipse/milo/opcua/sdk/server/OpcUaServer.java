@@ -10,7 +10,6 @@
 
 package org.eclipse.milo.opcua.sdk.server;
 
-import static java.util.stream.Collectors.toList;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 
 import com.google.common.collect.Sets;
@@ -19,14 +18,10 @@ import java.net.InetSocketAddress;
 import java.security.KeyPair;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -75,8 +70,16 @@ import org.eclipse.milo.opcua.stack.core.channel.messages.ErrorMessage;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingManager;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingManager;
+import org.eclipse.milo.opcua.stack.core.security.CertificateCompatibility;
+import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
+import org.eclipse.milo.opcua.stack.core.security.CertificateIdentitySelectionContext;
+import org.eclipse.milo.opcua.stack.core.security.CertificateIdentitySelector;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
+import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateIdentitySelector;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfiles;
+import org.eclipse.milo.opcua.stack.core.security.SecurityProviderResolver;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.DataTypeManager;
 import org.eclipse.milo.opcua.stack.core.types.DefaultDataTypeManager;
@@ -87,10 +90,9 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
-import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
-import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
+import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.core.util.FutureUtils;
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
@@ -116,8 +118,6 @@ public class OpcUaServer extends AbstractServiceHandler {
   }
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
-
-  private final Lazy<ApplicationDescription> applicationDescription = new Lazy<>();
 
   private final Map<UInteger, Subscription> subscriptions = new ConcurrentHashMap<>();
   private final AtomicLong monitoredItemCount = new AtomicLong(0L);
@@ -148,9 +148,13 @@ public class OpcUaServer extends AbstractServiceHandler {
 
   private final ServerDiagnosticsSummary diagnosticsSummary = new ServerDiagnosticsSummary(this);
 
-  private final Lazy<List<EndpointDescription>> endpointDescriptions = new Lazy<>();
+  private final Lazy<List<ResolvedEndpoint>> resolvedEndpoints = new Lazy<>();
 
   private final List<EndpointConfig> boundEndpoints = new CopyOnWriteArrayList<>();
+  private final CertificateIdentitySelector endpointCertificateIdentitySelector =
+      DefaultCertificateIdentitySelector.create();
+  private final SecurityProviderResolver securityProviderResolver =
+      SecurityProviderResolver.create();
 
   /**
    * SecureChannel id sequence, starting at a random value in [1..{@link Integer#MAX_VALUE}], and
@@ -319,10 +323,12 @@ public class OpcUaServer extends AbstractServiceHandler {
   public CompletableFuture<OpcUaServer> startup() {
     eventFactory.startup();
 
-    config.getEndpoints().stream()
-        .sorted(Comparator.comparing(EndpointConfig::getTransportProfile))
+    getResolvedEndpoints().stream()
+        .sorted(Comparator.comparing(e -> e.endpointConfig().getTransportProfile()))
         .forEach(
-            endpoint -> {
+            resolvedEndpoint -> {
+              EndpointConfig endpoint = resolvedEndpoint.endpointConfig();
+
               logger.info(
                   "Binding endpoint {} to {}:{} [{}/{}]",
                   endpoint.getEndpointUrl(),
@@ -662,16 +668,251 @@ public class OpcUaServer extends AbstractServiceHandler {
    * <p>If any of the EndpointConfig returned by {@link OpcUaServerConfig#getEndpoints()} has
    * changed, e.g., because the certificate has changed, the cached EndpointDescriptions need to be
    * reset.
+   *
+   * <p><b>Limitation:</b> resetting the cache re-resolves which endpoints are advertised, but
+   * socket binding is performed once during {@link #startup()} and is not re-attempted here. An
+   * endpoint that was unsatisfiable at startup (and therefore never bound) may become advertised
+   * after a reset (e.g. following post-startup certificate provisioning), in which case its URL is
+   * advertised without a listening socket behind it. Conversely, an endpoint bound at startup
+   * remains bound even if it no longer resolves. Re-binding after a reset is not currently
+   * supported; a server restart is required to change the set of bound sockets.
    */
   public void resetEndpointDescriptionCache() {
-    endpointDescriptions.reset();
+    resolvedEndpoints.reset();
+  }
+
+  private List<ResolvedEndpoint> getResolvedEndpoints() {
+    return resolvedEndpoints.get(
+        () -> {
+          // Resolve (validate + select certificate) each configured endpoint first. Endpoints that
+          // cannot be satisfied are omitted here so that the ApplicationDescription advertised in
+          // every EndpointDescription, and the discovery URLs returned by GetEndpoints, are derived
+          // from the same set of endpoints that actually resolved -- never from raw config that
+          // includes unsatisfiable endpoints.
+          Set<EndpointConfig> configs = config.getEndpoints();
+
+          List<ResolvedCertificate> resolved =
+              configs.stream().map(this::resolveCertificate).flatMap(Optional::stream).toList();
+
+          int omittedCount = configs.size() - resolved.size();
+          if (omittedCount > 0) {
+            logger.warn(
+                "Omitted {} of {} configured endpoint(s) from advertisement; see preceding "
+                    + "per-endpoint warnings for the specific reasons.",
+                omittedCount,
+                configs.size());
+          }
+
+          List<String> resolvedEndpointUrls =
+              resolved.stream().map(r -> r.endpointConfig().getEndpointUrl()).distinct().toList();
+
+          ApplicationDescription applicationDescription =
+              buildApplicationDescription(resolvedEndpointUrls);
+          UserTokenPolicyIds userTokenPolicyIds =
+              UserTokenPolicyIds.assign(
+                  resolved.stream().map(ResolvedCertificate::endpointConfig).toList());
+
+          return resolved.stream()
+              .map(r -> buildResolvedEndpoint(r, applicationDescription, userTokenPolicyIds))
+              .toList();
+        });
+  }
+
+  /**
+   * Validate an {@link EndpointConfig} and select the certificate to advertise for it.
+   *
+   * <p>This is the first phase of endpoint resolution: it performs all validation that may cause an
+   * endpoint to be omitted from advertisement, without yet constructing an {@link
+   * EndpointDescription}. Separating this phase lets the shared {@link ApplicationDescription} (and
+   * therefore its {@code discoveryUrls}) be derived solely from endpoints that successfully
+   * resolved.
+   *
+   * @param endpoint the configured endpoint to resolve.
+   * @return a {@link ResolvedCertificate} if the endpoint can be advertised, otherwise an empty
+   *     {@link Optional}.
+   */
+  private Optional<ResolvedCertificate> resolveCertificate(EndpointConfig endpoint) {
+    SecurityPolicyProfile profile = SecurityPolicyProfiles.get(endpoint.getSecurityPolicy());
+
+    try {
+      CertificateIdentity certificateIdentity = null;
+      X509Certificate certificate = endpoint.getCertificate();
+
+      if (endpoint.getSecurityPolicy() != SecurityPolicy.None) {
+        securityProviderResolver.resolve(profile);
+
+        if (endpoint.getEndpointCertificateConfig().isPresent()) {
+          certificateIdentity = resolveCertificateIdentity(endpoint, profile, certificate);
+          certificate = certificateIdentity.certificate();
+        } else if (certificate != null && profile.secureChannelEnhancements()) {
+          // The legacy fixed-certificate API (setCertificate) advertises the certificate verbatim,
+          // bypassing the CertificateIdentitySelector compatibility checks. Enhanced policies (e.g.
+          // ECC) require a matching certificate family, so an RSA fixed certificate paired with an
+          // ECC policy can never complete a handshake. Omit such endpoints from advertisement
+          // rather than advertise an unusable endpoint.
+          CertificateCompatibility.checkCompatible(profile, certificate);
+        }
+      }
+
+      return Optional.of(new ResolvedCertificate(endpoint, certificateIdentity, certificate));
+    } catch (UaException | EndpointResolutionException e) {
+      logOmittedEndpoint(endpoint, e.getMessage());
+      return Optional.empty();
+    }
+  }
+
+  private ResolvedEndpoint buildResolvedEndpoint(
+      ResolvedCertificate resolved,
+      ApplicationDescription applicationDescription,
+      UserTokenPolicyIds userTokenPolicyIds) {
+
+    EndpointConfig endpoint = resolved.endpointConfig();
+
+    return new ResolvedEndpoint(
+        endpoint,
+        resolved.certificateIdentity(),
+        new EndpointDescription(
+            endpoint.getEndpointUrl(),
+            applicationDescription,
+            certificateByteString(resolved.certificate()),
+            endpoint.getSecurityMode(),
+            endpoint.getSecurityPolicy().getUri(),
+            userTokenPolicyIds.policiesFor(endpoint),
+            endpoint.getTransportProfile().getUri(),
+            ubyte(getSecurityLevel(endpoint.getSecurityPolicy(), endpoint.getSecurityMode()))));
+  }
+
+  /**
+   * An {@link EndpointConfig} that resolved successfully, paired with the certificate to advertise.
+   */
+  private record ResolvedCertificate(
+      EndpointConfig endpointConfig,
+      @Nullable CertificateIdentity certificateIdentity,
+      @Nullable X509Certificate certificate) {}
+
+  private CertificateIdentity resolveCertificateIdentity(
+      EndpointConfig endpoint, SecurityPolicyProfile profile, @Nullable X509Certificate certificate)
+      throws UaException, EndpointResolutionException {
+
+    CertificateManager certificateManager = config.getCertificateManager();
+
+    if (certificateManager == null) {
+      throw new EndpointResolutionException("no CertificateManager configured");
+    }
+
+    EndpointCertificateConfig certificateConfig =
+        endpoint.getEndpointCertificateConfig().orElse(null);
+
+    NodeId certificateGroupId =
+        certificateConfig != null ? certificateConfig.getCertificateGroupId() : null;
+    NodeId certificateTypeId =
+        certificateConfig != null ? certificateConfig.getCertificateTypeId().orElse(null) : null;
+
+    CertificateIdentitySelectionContext context =
+        CertificateIdentitySelectionContext.forEndpointAdvertisement(
+            certificateManager, profile, certificateGroupId, certificateTypeId, certificate);
+
+    CertificateIdentity selectedIdentity =
+        endpointCertificateIdentitySelector
+            .select(context)
+            .orElseThrow(
+                () -> new EndpointResolutionException("no compatible certificate identity found"));
+
+    if (certificate != null
+        && !CertificateUtil.thumbprint(certificate).equals(selectedIdentity.thumbprint())) {
+      throw new EndpointResolutionException(
+          "explicit endpoint certificate is not available as a compatible local identity");
+    }
+
+    return selectedIdentity;
+  }
+
+  private void logOmittedEndpoint(EndpointConfig endpoint, String reason) {
+    String certificateGroup =
+        endpoint
+            .getEndpointCertificateConfig()
+            .map(config -> config.getCertificateGroupId().toParseableString())
+            .orElse("<any>");
+    String certificateType =
+        endpoint
+            .getEndpointCertificateConfig()
+            .flatMap(EndpointCertificateConfig::getCertificateTypeId)
+            .map(NodeId::toParseableString)
+            .orElse("<policy-preferred>");
+
+    logger.warn(
+        "Omitting endpoint advertisement: endpointUrl={}, securityPolicyUri={}, securityMode={},"
+            + " certificateGroup={}, certificateType={}, reason={}",
+        endpoint.getEndpointUrl(),
+        endpoint.getSecurityPolicy().getUri(),
+        endpoint.getSecurityMode(),
+        certificateGroup,
+        certificateType,
+        reason);
+  }
+
+  private ByteString certificateByteString(@Nullable X509Certificate certificate) {
+    if (certificate != null) {
+      try {
+        return ByteString.of(certificate.getEncoded());
+      } catch (CertificateEncodingException e) {
+        logger.error("Error decoding certificate.", e);
+        return ByteString.NULL_VALUE;
+      }
+    } else {
+      return ByteString.NULL_VALUE;
+    }
+  }
+
+  /**
+   * Build the {@link ApplicationDescription} embedded in every advertised {@link
+   * EndpointDescription}.
+   *
+   * <p>The {@code discoveryUrls} are derived from {@code resolvedEndpointUrls} -- the URLs of
+   * endpoints that successfully resolved -- rather than from raw {@link
+   * OpcUaServerConfig#getEndpoints()}. This keeps the embedded ApplicationDescription consistent
+   * with the discovery URLs advertised by {@code DefaultDiscoveryServiceSet}, which is likewise
+   * derived from the resolved {@link EndpointDescription}s, so unsatisfiable/omitted endpoints do
+   * not leak phantom discovery URLs into either path. As with the discovery service, {@code
+   * /discovery} URLs are preferred when present and all resolved URLs are used otherwise.
+   *
+   * @param resolvedEndpointUrls the distinct endpoint URLs of endpoints that resolved successfully.
+   * @return the {@link ApplicationDescription} to embed in resolved {@link EndpointDescription}s.
+   */
+  private ApplicationDescription buildApplicationDescription(List<String> resolvedEndpointUrls) {
+    List<String> discoveryUrls =
+        resolvedEndpointUrls.stream().filter(url -> url.endsWith("/discovery")).distinct().toList();
+
+    if (discoveryUrls.isEmpty()) {
+      discoveryUrls = resolvedEndpointUrls.stream().distinct().toList();
+    }
+
+    return new ApplicationDescription(
+        config.getApplicationUri(),
+        config.getProductUri(),
+        config.getApplicationName(),
+        ApplicationType.Server,
+        null,
+        null,
+        discoveryUrls.toArray(new String[0]));
+  }
+
+  private short getSecurityLevel(SecurityPolicy securityPolicy, MessageSecurityMode securityMode) {
+    return securityPolicy.getProfile().getSecurityLevel(securityMode);
+  }
+
+  private static final class EndpointResolutionException extends Exception {
+
+    private EndpointResolutionException(String message) {
+      super(message);
+    }
   }
 
   private class ServerApplicationContextImpl implements ServerApplicationContext {
 
     @Override
     public List<EndpointDescription> getEndpointDescriptions() {
-      return endpointDescriptions.get(() -> transformEndpoints(config.getEndpoints()));
+      return getResolvedEndpoints().stream().map(ResolvedEndpoint::endpointDescription).toList();
     }
 
     @Override
@@ -772,14 +1013,7 @@ public class OpcUaServer extends AbstractServiceHandler {
                               context.getChannel().remoteAddress(),
                               ex);
                         } else {
-                          if (logger.isTraceEnabled()) {
-                            logger.trace(
-                                "Service request completed: path={} handle={} service={} remote={}",
-                                path,
-                                requestMessage.getRequestHeader().getRequestHandle(),
-                                service,
-                                context.getChannel().remoteAddress());
-                          }
+                          logServiceRequestCompleted(path, requestMessage, service, context);
                         }
                       });
 
@@ -788,14 +1022,7 @@ public class OpcUaServer extends AbstractServiceHandler {
           try {
             UaResponseMessageType response = serviceHandler.handle(context, requestMessage);
 
-            if (logger.isTraceEnabled()) {
-              logger.trace(
-                  "Service request completed: path={} handle={} service={} remote={}",
-                  path,
-                  requestMessage.getRequestHeader().getRequestHandle(),
-                  service,
-                  context.getChannel().remoteAddress());
-            }
+            logServiceRequestCompleted(path, requestMessage, service, context);
 
             future.complete(response);
           } catch (UaException e) {
@@ -814,6 +1041,22 @@ public class OpcUaServer extends AbstractServiceHandler {
         logger.warn("No ServiceHandler registered for path={} service={}", path, service);
 
         future.completeExceptionally(new UaException(StatusCodes.Bad_NotImplemented));
+      }
+    }
+
+    private void logServiceRequestCompleted(
+        String path,
+        UaRequestMessageType requestMessage,
+        Service service,
+        ServiceRequestContext context) {
+
+      if (logger.isTraceEnabled()) {
+        logger.trace(
+            "Service request completed: path={} handle={} service={} remote={}",
+            path,
+            requestMessage.getRequestHeader().getRequestHandle(),
+            service,
+            context.getChannel().remoteAddress());
       }
     }
 
@@ -847,228 +1090,6 @@ public class OpcUaServer extends AbstractServiceHandler {
       }
 
       return false;
-    }
-
-    private List<EndpointDescription> transformEndpoints(Set<EndpointConfig> endpoints) {
-      Map<UserTokenPolicyKey, String> userTokenPolicyIds = assignUserTokenPolicyIds(endpoints);
-
-      return endpoints.stream().map(e -> transformEndpoint(e, userTokenPolicyIds)).toList();
-    }
-
-    private EndpointDescription transformEndpoint(
-        EndpointConfig endpoint, Map<UserTokenPolicyKey, String> userTokenPolicyIds) {
-      return new EndpointDescription(
-          endpoint.getEndpointUrl(),
-          getApplicationDescription(),
-          certificateByteString(endpoint.getCertificate()),
-          endpoint.getSecurityMode(),
-          endpoint.getSecurityPolicy().getUri(),
-          transformUserTokenPolicies(endpoint, userTokenPolicyIds),
-          endpoint.getTransportProfile().getUri(),
-          ubyte(getSecurityLevel(endpoint.getSecurityPolicy(), endpoint.getSecurityMode())));
-    }
-
-    private UserTokenPolicy[] transformUserTokenPolicies(
-        EndpointConfig endpoint, Map<UserTokenPolicyKey, String> userTokenPolicyIds) {
-
-      return endpoint.getTokenPolicies().stream()
-          .map(
-              tokenPolicy -> {
-                UserTokenPolicyKey key = UserTokenPolicyKey.from(endpoint, tokenPolicy);
-                String assignedPolicyId = userTokenPolicyIds.get(key);
-
-                String policyId =
-                    policyIdChanged(tokenPolicy.getPolicyId(), assignedPolicyId)
-                        ? assignedPolicyId
-                        : tokenPolicy.getPolicyId();
-
-                return new UserTokenPolicy(
-                    policyId,
-                    tokenPolicy.getTokenType(),
-                    tokenPolicy.getIssuedTokenType(),
-                    tokenPolicy.getIssuerEndpointUrl(),
-                    key.securityPolicyUri());
-              })
-          .toArray(UserTokenPolicy[]::new);
-    }
-
-    private Map<UserTokenPolicyKey, String> assignUserTokenPolicyIds(
-        Set<EndpointConfig> endpoints) {
-      Map<String, List<UserTokenPolicyKey>> keysByPolicyId = new LinkedHashMap<>();
-
-      for (EndpointConfig endpoint : endpoints) {
-        for (UserTokenPolicy tokenPolicy : endpoint.getTokenPolicies()) {
-          UserTokenPolicyKey key = UserTokenPolicyKey.from(endpoint, tokenPolicy);
-          List<UserTokenPolicyKey> keys =
-              keysByPolicyId.computeIfAbsent(key.policyId(), ignored -> new ArrayList<>());
-
-          if (!keys.contains(key)) {
-            keys.add(key);
-          }
-        }
-      }
-
-      Set<String> reservedPolicyIds = new LinkedHashSet<>(keysByPolicyId.keySet());
-      Map<UserTokenPolicyKey, String> assignedPolicyIds = new HashMap<>();
-
-      for (List<UserTokenPolicyKey> keys : keysByPolicyId.values()) {
-        if (keys.size() == 1) {
-          UserTokenPolicyKey key = keys.get(0);
-          assignedPolicyIds.put(key, key.policyId());
-        } else {
-          UserTokenPolicyKey firstKey = keys.get(0);
-          assignedPolicyIds.put(firstKey, firstKey.policyId());
-
-          for (int i = 1; i < keys.size(); i++) {
-            UserTokenPolicyKey key = keys.get(i);
-            assignedPolicyIds.put(key, uniquePolicyId(key, reservedPolicyIds));
-          }
-        }
-      }
-
-      return assignedPolicyIds;
-    }
-
-    private boolean policyIdChanged(@Nullable String configuredPolicyId, String assignedPolicyId) {
-      if (Objects.equals(configuredPolicyId, assignedPolicyId)) {
-        return false;
-      } else {
-        return !(isNullOrEmpty(configuredPolicyId) && assignedPolicyId.isEmpty());
-      }
-    }
-
-    private String uniquePolicyId(UserTokenPolicyKey key, Set<String> reservedPolicyIds) {
-      String base =
-          key.policyId().isEmpty()
-              ? key.tokenType().name().toLowerCase(Locale.ROOT)
-              : key.policyId();
-
-      String securityPolicyName = securityPolicyName(key.securityPolicyUri());
-
-      String candidate = base + "-" + securityPolicyName;
-      if (reservedPolicyIds.add(candidate)) {
-        return candidate;
-      }
-
-      candidate = base + "-" + key.tokenType().name() + "-" + securityPolicyName;
-      if (reservedPolicyIds.add(candidate)) {
-        return candidate;
-      }
-
-      for (int i = 2; ; i++) {
-        String indexedCandidate = candidate + "-" + i;
-        if (reservedPolicyIds.add(indexedCandidate)) {
-          return indexedCandidate;
-        }
-      }
-    }
-
-    private String securityPolicyName(String securityPolicyUri) {
-      int index = securityPolicyUri.lastIndexOf('#');
-      String name = index >= 0 ? securityPolicyUri.substring(index + 1) : securityPolicyUri;
-
-      return name.replaceAll("[^A-Za-z0-9_.-]", "-");
-    }
-
-    private boolean isNullOrEmpty(@Nullable String value) {
-      return value == null || value.isEmpty();
-    }
-
-    private record UserTokenPolicyKey(
-        String policyId,
-        UserTokenType tokenType,
-        @Nullable String issuedTokenType,
-        @Nullable String issuerEndpointUrl,
-        String securityPolicyUri) {
-
-      static UserTokenPolicyKey from(EndpointConfig endpoint, UserTokenPolicy tokenPolicy) {
-        String policyId = tokenPolicy.getPolicyId();
-
-        return new UserTokenPolicyKey(
-            policyId == null ? "" : policyId,
-            tokenPolicy.getTokenType(),
-            tokenPolicy.getIssuedTokenType(),
-            tokenPolicy.getIssuerEndpointUrl(),
-            endpoint.getEffectiveTokenSecurityPolicyUri(tokenPolicy));
-      }
-    }
-
-    private ByteString certificateByteString(@Nullable X509Certificate certificate) {
-      if (certificate != null) {
-        try {
-          return ByteString.of(certificate.getEncoded());
-        } catch (CertificateEncodingException e) {
-          logger.error("Error decoding certificate.", e);
-          return ByteString.NULL_VALUE;
-        }
-      } else {
-        return ByteString.NULL_VALUE;
-      }
-    }
-
-    private ApplicationDescription getApplicationDescription() {
-      return applicationDescription.get(
-          () -> {
-            List<String> discoveryUrls =
-                config.getEndpoints().stream()
-                    .map(EndpointConfig::getEndpointUrl)
-                    .filter(url -> url.endsWith("/discovery"))
-                    .distinct()
-                    .collect(toList());
-
-            if (discoveryUrls.isEmpty()) {
-              discoveryUrls =
-                  config.getEndpoints().stream()
-                      .map(EndpointConfig::getEndpointUrl)
-                      .distinct()
-                      .toList();
-            }
-
-            return new ApplicationDescription(
-                config.getApplicationUri(),
-                config.getProductUri(),
-                config.getApplicationName(),
-                ApplicationType.Server,
-                null,
-                null,
-                discoveryUrls.toArray(new String[0]));
-          });
-    }
-
-    private short getSecurityLevel(
-        SecurityPolicy securityPolicy, MessageSecurityMode securityMode) {
-      short securityLevel = 0;
-
-      switch (securityPolicy) {
-        case Aes256_Sha256_RsaPss:
-        case Basic256Sha256:
-          securityLevel |= 0x08;
-          break;
-        case Aes128_Sha256_RsaOaep:
-          securityLevel |= 0x04;
-          break;
-        case Basic256:
-        case Basic128Rsa15:
-          securityLevel |= 0x01;
-          break;
-        case None:
-        default:
-          break;
-      }
-
-      switch (securityMode) {
-        case SignAndEncrypt:
-          securityLevel |= 0x80;
-          break;
-        case Sign:
-          securityLevel |= 0x40;
-          break;
-        default:
-          securityLevel |= 0x20;
-          break;
-      }
-
-      return securityLevel;
     }
   }
 

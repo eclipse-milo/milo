@@ -10,25 +10,16 @@
 
 package org.eclipse.milo.opcua.stack.core.channel;
 
-import static org.eclipse.milo.opcua.stack.core.channel.ChunkDecoder.LegacySequenceNumberValidator.validateSequenceNumber;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.util.ReferenceCountUtil;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
-import java.security.InvalidKeyException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.Signature;
-import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import javax.crypto.Cipher;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.headers.AsymmetricSecurityHeader;
@@ -36,13 +27,39 @@ import org.eclipse.milo.opcua.stack.core.channel.headers.SecureMessageHeader;
 import org.eclipse.milo.opcua.stack.core.channel.headers.SequenceHeader;
 import org.eclipse.milo.opcua.stack.core.channel.headers.SymmetricSecurityHeader;
 import org.eclipse.milo.opcua.stack.core.channel.messages.ErrorMessage;
-import org.eclipse.milo.opcua.stack.core.security.SecurityAlgorithm;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.util.BufferUtil;
-import org.eclipse.milo.opcua.stack.core.util.SignatureUtil;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Decodes OPC UA Secure Conversation chunks into complete service payload messages.
+ *
+ * <p>The decoder mirrors {@link ChunkEncoder}: asymmetric chunks are used for OpenSecureChannel
+ * traffic protected with endpoint certificates, and symmetric chunks are used after a channel token
+ * has installed directional symmetric keys. The symmetric path accepts the current token and,
+ * during token renewal, the previous token retained by {@link ChannelSecurity}.
+ *
+ * <p>Each chunk is processed in the order required by UASC framing: read the security header,
+ * decrypt when needed, verify the signature or authentication data, validate the sequence header,
+ * remove padding, and append the body bytes to the decoded message. Abort chunks are surfaced as
+ * {@link MessageAbortException}; security and framing failures are surfaced as {@link
+ * MessageDecodeException}.
+ *
+ * <p>AEAD profiles always authenticate the chunk with a nonce derived from the current token id and
+ * the last accepted sequence number. In {@code SignAndEncrypt}, the secure message and symmetric
+ * security headers are associated data while the SequenceHeader and body are decrypted and
+ * authenticated together. In {@code Sign}, the plaintext secure message header, symmetric security
+ * header, SequenceHeader, and body are authenticated by a tag-only signature footer. The decoder
+ * predicts the nonce before trusting the current SequenceHeader, so replayed or corrupted chunks
+ * are rejected before their sequence number can advance the stream.
+ *
+ * <p>A decoder instance tracks incoming sequence numbers for the stream it is assigned to. Use one
+ * decoder per ordered channel stream so sequence validation reflects the peer's actual message
+ * order.
+ */
 public final class ChunkDecoder {
 
   private final AsymmetricDecoder asymmetricDecoder = new AsymmetricDecoder();
@@ -58,12 +75,41 @@ public final class ChunkDecoder {
     this.encodingLimits = encodingLimits;
   }
 
+  /** Decodes one OpenSecureChannel message from chunks carrying asymmetric security headers. */
   public DecodedMessage decodeAsymmetric(SecureChannel channel, List<ByteBuf> chunkBuffers)
       throws MessageAbortException, MessageDecodeException {
 
-    return decode(asymmetricDecoder, channel, chunkBuffers);
+    return decodeAsymmetric(channel, chunkBuffers, null);
   }
 
+  /**
+   * Decodes one OpenSecureChannel message and, when supplied, appends extra bytes to the
+   * application-signature verification input.
+   *
+   * <p>The extra bytes are not part of the encoded chunk. They are the peer bytes that
+   * SecureChannel-enhancement profiles require the asymmetric signature to cover, such as the first
+   * OpenSecureChannel request signature when verifying the first response.
+   *
+   * @param channel the SecureChannel state used for certificates, policy, and nonces.
+   * @param chunkBuffers the chunk buffers that make up one OpenSecureChannel message.
+   * @param additionalSignedBytes extra bytes expected after the chunk bytes in the signature input.
+   * @return the decoded message and the last asymmetric signature, when one was present.
+   * @throws MessageAbortException if the peer sent an abort chunk.
+   * @throws MessageDecodeException if framing, decryption, or signature verification fails.
+   */
+  public DecodedMessage decodeAsymmetric(
+      SecureChannel channel, List<ByteBuf> chunkBuffers, byte @Nullable [] additionalSignedBytes)
+      throws MessageAbortException, MessageDecodeException {
+
+    return decode(asymmetricDecoder, channel, chunkBuffers, additionalSignedBytes);
+  }
+
+  /**
+   * Decodes one service message from chunks carrying symmetric security headers.
+   *
+   * <p>Before decoding chunk bodies, this method verifies that every chunk references the channel's
+   * current token or previous renewal token.
+   */
   public DecodedMessage decodeSymmetric(SecureChannel channel, List<ByteBuf> chunkBuffers)
       throws MessageAbortException, MessageDecodeException {
 
@@ -80,11 +126,14 @@ public final class ChunkDecoder {
       }
     }
 
-    return decode(symmetricDecoder, channel, chunkBuffers);
+    return decode(symmetricDecoder, channel, chunkBuffers, null);
   }
 
   private static DecodedMessage decode(
-      AbstractDecoder decoder, SecureChannel channel, List<ByteBuf> chunkBuffers)
+      AbstractDecoder decoder,
+      SecureChannel channel,
+      List<ByteBuf> chunkBuffers,
+      byte @Nullable [] additionalSignedBytes)
       throws MessageAbortException, MessageDecodeException {
 
     CompositeByteBuf composite = BufferUtil.compositeBuffer();
@@ -92,7 +141,8 @@ public final class ChunkDecoder {
     boolean decoded = false;
 
     try {
-      DecodedMessage decodedMessage = decoder.decode(channel, composite, buffersToDecode);
+      DecodedMessage decodedMessage =
+          decoder.decode(channel, composite, buffersToDecode, additionalSignedBytes);
       decoded = true;
       return decodedMessage;
     } catch (UaException e) {
@@ -113,9 +163,12 @@ public final class ChunkDecoder {
       SecureChannel secureChannel, List<ByteBuf> chunkBuffers) throws UaException {
 
     ChannelSecurity channelSecurity = secureChannel.getChannelSecurity();
-    long currentTokenId = channelSecurity.getCurrentToken().getTokenId().longValue();
+    long currentTokenId =
+        channelSecurity != null ? channelSecurity.getCurrentToken().getTokenId().longValue() : 0L;
     long previousTokenId =
-        channelSecurity.getPreviousToken().map(t -> t.getTokenId().longValue()).orElse(-1L);
+        channelSecurity != null
+            ? channelSecurity.getPreviousToken().map(t -> t.getTokenId().longValue()).orElse(-1L)
+            : -1L;
 
     for (ByteBuf chunkBuffer : chunkBuffers) {
       // tokenId starts after messageType + chunkType + messageSize + secureChannelId
@@ -138,10 +191,12 @@ public final class ChunkDecoder {
 
     private final ByteBuf message;
     private final long requestId;
+    private final byte @Nullable [] signature;
 
-    private DecodedMessage(ByteBuf message, long requestId) {
+    private DecodedMessage(ByteBuf message, long requestId, byte @Nullable [] signature) {
       this.message = message;
       this.requestId = requestId;
+      this.signature = signature;
     }
 
     public ByteBuf getMessage() {
@@ -151,6 +206,18 @@ public final class ChunkDecoder {
     public long getRequestId() {
       return requestId;
     }
+
+    /**
+     * Returns the last application-signature bytes read from this message.
+     *
+     * <p>OpenSecureChannel issue/response handlers keep this value as the SecureChannel-enhancement
+     * binding input. Symmetric and unsigned messages return {@code null}.
+     *
+     * @return the last asymmetric signature, or {@code null}.
+     */
+    public byte @Nullable [] getSignature() {
+      return signature;
+    }
   }
 
   private abstract class AbstractDecoder {
@@ -158,16 +225,22 @@ public final class ChunkDecoder {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     DecodedMessage decode(
-        SecureChannel channel, CompositeByteBuf composite, List<ByteBuf> chunkBuffers)
+        SecureChannel channel,
+        CompositeByteBuf composite,
+        List<ByteBuf> chunkBuffers,
+        byte @Nullable [] additionalSignedBytes)
         throws MessageAbortException, UaException {
 
-      int signatureSize = getSignatureSize(channel);
       int cipherTextBlockSize = getCipherTextBlockSize(channel);
 
       boolean encrypted = isEncryptionEnabled(channel);
       boolean signed = isSigningEnabled(channel);
+      int signatureSize = signed || encrypted ? getSignatureSize(channel) : 0;
+      boolean aead = isAead(channel);
+      boolean aeadEncryption = encrypted && aead;
 
       long requestId = -1L;
+      byte[] lastSignature = null;
 
       for (Iterator<ByteBuf> iterator = chunkBuffers.iterator(); iterator.hasNext(); ) {
         ByteBuf chunkBuffer = iterator.next();
@@ -184,15 +257,20 @@ public final class ChunkDecoder {
         int encryptedStart = chunkBuffer.readerIndex();
         chunkBuffer.readerIndex(0);
 
-        if (signed) {
-          verifyChunk(channel, chunkBuffer);
+        if (signed && !aeadEncryption) {
+          lastSignature =
+              verifyChunk(channel, chunkBuffer, additionalSignedBytes, lastSequenceNumber);
         }
 
-        final int paddingOverhead = encrypted ? (cipherTextBlockSize > 256 ? 2 : 1) : 0;
+        final int paddingOverhead =
+            encrypted ? getPaddingOverhead(channel, cipherTextBlockSize) : 0;
         final int paddingSize =
-            encrypted ? getPaddingSize(cipherTextBlockSize, signatureSize, chunkBuffer) : 0;
+            encrypted
+                ? getPaddingSize(channel, cipherTextBlockSize, signatureSize, chunkBuffer)
+                : 0;
+        final int footerSignatureSize = aeadEncryption ? 0 : signatureSize;
         final int bodyEnd =
-            chunkBuffer.readableBytes() - signatureSize - paddingOverhead - paddingSize;
+            chunkBuffer.readableBytes() - footerSignatureSize - paddingOverhead - paddingSize;
 
         chunkBuffer.readerIndex(encryptedStart);
 
@@ -200,7 +278,8 @@ public final class ChunkDecoder {
         long sequenceNumber = sequenceHeader.getSequenceNumber();
         requestId = sequenceHeader.getRequestId();
 
-        if (!validateSequenceNumber(lastSequenceNumber, sequenceNumber)) {
+        if (!validateSequenceNumber(
+            channel.getSecurityPolicyProfile(), lastSequenceNumber, sequenceNumber)) {
           throw new UaException(
               StatusCodes.Bad_SecurityChecksFailed,
               String.format(
@@ -213,18 +292,13 @@ public final class ChunkDecoder {
         ByteBuf bodyBuffer = chunkBuffer.readSlice(bodyEnd - chunkBuffer.readerIndex());
 
         if (encrypted) {
-          int expectedPaddingSize = chunkBuffer.readableBytes() - signatureSize - paddingOverhead;
-          if (paddingSize != expectedPaddingSize) {
-            throw new UaException(StatusCodes.Bad_SecurityChecksFailed, "bad padding size");
-          }
-          byte expectedPaddingByte = (byte) (paddingSize & 0xFF);
-          for (int i = chunkBuffer.readerIndex();
-              i < chunkBuffer.readerIndex() + paddingSize + 1;
-              i++) {
-            if (chunkBuffer.getByte(i) != expectedPaddingByte) {
-              throw new UaException(StatusCodes.Bad_SecurityChecksFailed, "bad padding sequence");
-            }
-          }
+          verifyPadding(
+              channel,
+              cipherTextBlockSize,
+              signatureSize,
+              paddingOverhead,
+              paddingSize,
+              chunkBuffer);
         }
 
         if (chunkType == 'A') {
@@ -250,7 +324,7 @@ public final class ChunkDecoder {
         throw new UaException(StatusCodes.Bad_TcpMessageTooLarge, errorMessage);
       }
 
-      return new DecodedMessage(composite, requestId);
+      return new DecodedMessage(composite, requestId, lastSignature);
     }
 
     private void decryptChunk(SecureChannel channel, ByteBuf chunkBuffer) throws UaException {
@@ -266,7 +340,7 @@ public final class ChunkDecoder {
       ByteBuffer chunkNioBuffer = chunkBuffer.nioBuffer();
 
       try {
-        Cipher cipher = getCipher(channel);
+        Cipher cipher = getCipher(channel, chunkBuffer);
 
         assert (chunkBuffer.readableBytes() % cipherTextBlockSize == 0);
 
@@ -292,27 +366,40 @@ public final class ChunkDecoder {
       }
     }
 
-    private int getPaddingSize(int cipherTextBlockSize, int signatureSize, ByteBuf buffer) {
-      int lastPaddingByteOffset = buffer.readableBytes() - signatureSize - 1;
-
-      return cipherTextBlockSize <= 256
-          ? buffer.getUnsignedByte(lastPaddingByteOffset)
-          : buffer.getUnsignedShortLE(lastPaddingByteOffset - 1);
-    }
-
     protected abstract void readSecurityHeader(SecureChannel channel, ByteBuf chunkBuffer)
         throws UaException;
 
-    protected abstract Cipher getCipher(SecureChannel channel) throws UaException;
+    protected abstract Cipher getCipher(SecureChannel channel, ByteBuf chunkBuffer)
+        throws UaException;
 
     protected abstract int getCipherTextBlockSize(SecureChannel channel);
 
     protected abstract int getSignatureSize(SecureChannel channel);
 
-    protected abstract void verifyChunk(SecureChannel channel, ByteBuf chunkBuffer)
+    protected abstract byte[] verifyChunk(
+        SecureChannel channel,
+        ByteBuf chunkBuffer,
+        byte @Nullable [] additionalSignedBytes,
+        long lastSequenceNumber)
+        throws UaException;
+
+    protected abstract int getPaddingOverhead(SecureChannel channel, int cipherTextBlockSize);
+
+    protected abstract int getPaddingSize(
+        SecureChannel channel, int cipherTextBlockSize, int signatureSize, ByteBuf buffer);
+
+    protected abstract void verifyPadding(
+        SecureChannel channel,
+        int cipherTextBlockSize,
+        int signatureSize,
+        int paddingOverhead,
+        int paddingSize,
+        ByteBuf buffer)
         throws UaException;
 
     protected abstract boolean isAsymmetric();
+
+    protected abstract boolean isAead(SecureChannel channel);
 
     protected abstract boolean isEncryptionEnabled(SecureChannel channel);
 
@@ -327,16 +414,10 @@ public final class ChunkDecoder {
     }
 
     @Override
-    public Cipher getCipher(SecureChannel channel) throws UaException {
-      try {
-        String transformation =
-            channel.getSecurityPolicy().getAsymmetricEncryptionAlgorithm().getTransformation();
-        Cipher cipher = Cipher.getInstance(transformation);
-        cipher.init(Cipher.DECRYPT_MODE, channel.getKeyPair().getPrivate());
-        return cipher;
-      } catch (GeneralSecurityException e) {
-        throw new UaException(StatusCodes.Bad_InternalError, e);
-      }
+    public Cipher getCipher(SecureChannel channel, ByteBuf chunkBuffer) throws UaException {
+      return SecureChannelStrategies.asymmetricEncryption(channel.getSecurityPolicyProfile())
+          .getDecryptionCipher(
+              channel.getSecurityPolicyProfile(), channel.getKeyPair().getPrivate());
     }
 
     @Override
@@ -350,40 +431,69 @@ public final class ChunkDecoder {
     }
 
     @Override
-    public void verifyChunk(SecureChannel channel, ByteBuf chunkBuffer) throws UaException {
-      String transformation =
-          channel.getSecurityPolicy().getAsymmetricSignatureAlgorithm().getTransformation();
+    public byte[] verifyChunk(
+        SecureChannel channel,
+        ByteBuf chunkBuffer,
+        byte @Nullable [] additionalSignedBytes,
+        long lastSequenceNumber)
+        throws UaException {
       int signatureSize = channel.getRemoteAsymmetricSignatureSize();
 
-      ByteBuffer chunkNioBuffer = chunkBuffer.nioBuffer(0, chunkBuffer.writerIndex());
-      ((Buffer) chunkNioBuffer).position(0);
-      ((Buffer) chunkNioBuffer).limit(chunkBuffer.writerIndex() - signatureSize);
+      ByteBuffer signedBytes = chunkBuffer.nioBuffer(0, chunkBuffer.writerIndex() - signatureSize);
+      ByteBuffer signatureBuffer =
+          chunkBuffer.nioBuffer(chunkBuffer.writerIndex() - signatureSize, signatureSize);
 
-      try {
-        Signature signature = Signature.getInstance(transformation);
+      byte[] signatureBytes = new byte[signatureSize];
+      signatureBuffer.get(signatureBytes);
 
-        signature.initVerify(channel.getRemoteCertificate().getPublicKey());
-        signature.update(chunkNioBuffer);
+      SecureChannelStrategies.authentication(channel.getSecurityPolicyProfile())
+          .verify(
+              channel.getSecurityPolicyProfile(),
+              channel.getRemoteCertificate(),
+              signatureBytes,
+              additionalSignedBytes != null && additionalSignedBytes.length > 0
+                  ? new ByteBuffer[] {signedBytes, ByteBuffer.wrap(additionalSignedBytes)}
+                  : new ByteBuffer[] {signedBytes});
 
-        byte[] signatureBytes = new byte[signatureSize];
-        ((Buffer) chunkNioBuffer).limit(chunkNioBuffer.position() + signatureSize);
-        chunkNioBuffer.get(signatureBytes);
+      return signatureBytes;
+    }
 
-        if (!signature.verify(signatureBytes)) {
-          throw new UaException(StatusCodes.Bad_SecurityChecksFailed, "could not verify signature");
-        }
-      } catch (NoSuchAlgorithmException e) {
-        throw new UaException(StatusCodes.Bad_InternalError, e);
-      } catch (SignatureException e) {
-        throw new UaException(StatusCodes.Bad_ApplicationSignatureInvalid, e);
-      } catch (InvalidKeyException e) {
-        throw new UaException(StatusCodes.Bad_CertificateInvalid, e);
-      }
+    @Override
+    protected int getPaddingOverhead(SecureChannel channel, int cipherTextBlockSize) {
+      return SecureChannelStrategies.asymmetricEncryption(channel.getSecurityPolicyProfile())
+          .paddingOverhead(cipherTextBlockSize);
+    }
+
+    @Override
+    protected int getPaddingSize(
+        SecureChannel channel, int cipherTextBlockSize, int signatureSize, ByteBuf buffer) {
+
+      return SecureChannelStrategies.asymmetricEncryption(channel.getSecurityPolicyProfile())
+          .getPaddingSize(cipherTextBlockSize, signatureSize, buffer);
+    }
+
+    @Override
+    protected void verifyPadding(
+        SecureChannel channel,
+        int cipherTextBlockSize,
+        int signatureSize,
+        int paddingOverhead,
+        int paddingSize,
+        ByteBuf buffer)
+        throws UaException {
+
+      SecureChannelStrategies.asymmetricEncryption(channel.getSecurityPolicyProfile())
+          .verifyPadding(cipherTextBlockSize, signatureSize, paddingOverhead, paddingSize, buffer);
     }
 
     @Override
     protected boolean isAsymmetric() {
       return true;
+    }
+
+    @Override
+    protected boolean isAead(SecureChannel channel) {
+      return false;
     }
 
     @Override
@@ -393,7 +503,7 @@ public final class ChunkDecoder {
 
     @Override
     public boolean isSigningEnabled(SecureChannel channel) {
-      return channel.isAsymmetricEncryptionEnabled();
+      return channel.isAsymmetricSigningEnabled();
     }
   }
 
@@ -402,10 +512,11 @@ public final class ChunkDecoder {
     private volatile ChannelSecurity.SecurityKeys securityKeys;
     private volatile Cipher cipher = null;
     private volatile long cipherId = -1;
+    private volatile long receivedTokenId = 0L;
 
     @Override
     public void readSecurityHeader(SecureChannel channel, ByteBuf chunkBuffer) throws UaException {
-      long receivedTokenId = SymmetricSecurityHeader.decode(chunkBuffer).getTokenId();
+      receivedTokenId = SymmetricSecurityHeader.decode(chunkBuffer).getTokenId();
 
       ChannelSecurity channelSecurity = channel.getChannelSecurity();
 
@@ -437,13 +548,12 @@ public final class ChunkDecoder {
                 "unknown secure channel token: " + receivedTokenId);
           }
 
-          if (channel.isSymmetricEncryptionEnabled()
-              && channelSecurity.getPreviousKeys().isPresent()) {
-            securityKeys = channelSecurity.getPreviousKeys().get();
-          }
+          securityKeys = channelSecurity.getPreviousKeys().orElse(null);
         }
 
-        if (cipherId != receivedTokenId && channel.isSymmetricEncryptionEnabled()) {
+        if (cipherId != receivedTokenId
+            && channel.isSymmetricEncryptionEnabled()
+            && !chunkProtection(channel).isAead()) {
           cipher = initCipher(channel);
           cipherId = receivedTokenId;
         }
@@ -451,46 +561,89 @@ public final class ChunkDecoder {
     }
 
     @Override
-    public Cipher getCipher(SecureChannel channel) {
+    public Cipher getCipher(SecureChannel channel, ByteBuf chunkBuffer) throws UaException {
+      SecureChannelStrategies.ChunkProtectionStrategy chunkProtection = chunkProtection(channel);
+
+      if (chunkProtection.isAead()) {
+        long aeadSequenceNumber =
+            NonLegacySequenceNumberValidator.aeadNonceSequenceNumber(lastSequenceNumber);
+        ByteBuffer aad = chunkBuffer.nioBuffer(0, chunkBuffer.readerIndex());
+
+        return chunkProtection.getDecryptionCipher(
+            channel, securityKeys, receivedTokenId, aeadSequenceNumber, aad);
+      }
+
       assert cipher != null;
       return cipher;
     }
 
     @Override
     public int getCipherTextBlockSize(SecureChannel channel) {
-      return channel.getSymmetricBlockSize();
+      return channel.isSymmetricEncryptionEnabled()
+          ? chunkProtection(channel).cipherTextBlockSize(channel.getSecurityPolicyProfile())
+          : 1;
     }
 
     @Override
     public int getSignatureSize(SecureChannel channel) {
-      return channel.getSymmetricSignatureSize();
+      return chunkProtection(channel).signatureSize(channel.getSecurityPolicyProfile());
     }
 
     @Override
-    public void verifyChunk(SecureChannel channel, ByteBuf chunkBuffer) throws UaException {
-      SecurityAlgorithm securityAlgorithm =
-          channel.getSecurityPolicy().getSymmetricSignatureAlgorithm();
-      byte[] secretKey = channel.getDecryptionKeys(securityKeys).getSignatureKey();
-      int signatureSize = channel.getSymmetricSignatureSize();
+    public byte[] verifyChunk(
+        SecureChannel channel,
+        ByteBuf chunkBuffer,
+        byte @Nullable [] additionalSignedBytes,
+        long lastSequenceNumber)
+        throws UaException {
+      SecureChannelStrategies.ChunkProtectionStrategy chunkProtection = chunkProtection(channel);
 
-      ByteBuffer chunkNioBuffer = chunkBuffer.nioBuffer(0, chunkBuffer.writerIndex());
-      ((Buffer) chunkNioBuffer).position(0);
-      ((Buffer) chunkNioBuffer).limit(chunkBuffer.writerIndex() - signatureSize);
-
-      byte[] signature = SignatureUtil.hmac(securityAlgorithm, secretKey, chunkNioBuffer);
-
-      byte[] signatureBytes = new byte[signatureSize];
-      ((Buffer) chunkNioBuffer).limit(chunkNioBuffer.position() + signatureSize);
-      chunkNioBuffer.get(signatureBytes);
-
-      if (!MessageDigest.isEqual(signature, signatureBytes)) {
-        throw new UaException(StatusCodes.Bad_SecurityChecksFailed, "could not verify signature");
+      if (chunkProtection.isAead()) {
+        long aeadSequenceNumber =
+            NonLegacySequenceNumberValidator.aeadNonceSequenceNumber(lastSequenceNumber);
+        chunkProtection.verify(
+            channel, securityKeys, receivedTokenId, aeadSequenceNumber, chunkBuffer);
+      } else {
+        chunkProtection.verify(channel, securityKeys, chunkBuffer);
       }
+
+      return null;
+    }
+
+    @Override
+    protected int getPaddingOverhead(SecureChannel channel, int cipherTextBlockSize) {
+      return chunkProtection(channel).paddingOverhead(cipherTextBlockSize);
+    }
+
+    @Override
+    protected int getPaddingSize(
+        SecureChannel channel, int cipherTextBlockSize, int signatureSize, ByteBuf buffer) {
+
+      return chunkProtection(channel).getPaddingSize(cipherTextBlockSize, signatureSize, buffer);
+    }
+
+    @Override
+    protected void verifyPadding(
+        SecureChannel channel,
+        int cipherTextBlockSize,
+        int signatureSize,
+        int paddingOverhead,
+        int paddingSize,
+        ByteBuf buffer)
+        throws UaException {
+
+      chunkProtection(channel)
+          .verifyPadding(cipherTextBlockSize, signatureSize, paddingOverhead, paddingSize, buffer);
     }
 
     @Override
     protected boolean isAsymmetric() {
       return false;
+    }
+
+    @Override
+    protected boolean isAead(SecureChannel channel) {
+      return chunkProtection(channel).isAead();
     }
 
     @Override
@@ -504,23 +657,24 @@ public final class ChunkDecoder {
     }
 
     private Cipher initCipher(SecureChannel channel) throws UaException {
-      try {
-        String transformation =
-            channel.getSecurityPolicy().getSymmetricEncryptionAlgorithm().getTransformation();
-
-        ChannelSecurity.SecretKeys decryptionKeys = channel.getDecryptionKeys(securityKeys);
-
-        SecretKeySpec keySpec = new SecretKeySpec(decryptionKeys.getEncryptionKey(), "AES");
-        IvParameterSpec ivSpec = new IvParameterSpec(decryptionKeys.getInitializationVector());
-
-        Cipher cipher = Cipher.getInstance(transformation);
-        cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
-
-        return cipher;
-      } catch (GeneralSecurityException e) {
-        throw new UaException(StatusCodes.Bad_InternalError, e);
-      }
+      return chunkProtection(channel).getDecryptionCipher(channel, securityKeys);
     }
+
+    private SecureChannelStrategies.ChunkProtectionStrategy chunkProtection(SecureChannel channel) {
+      return SecureChannelStrategies.chunkProtection(channel.getSecurityPolicyProfile());
+    }
+  }
+
+  private static boolean validateSequenceNumber(
+      SecurityPolicyProfile profile, long lastSequenceNumber, long sequenceNumber) {
+
+    return switch (profile.sequenceNumberMode()) {
+      case LEGACY ->
+          LegacySequenceNumberValidator.validateSequenceNumber(lastSequenceNumber, sequenceNumber);
+      case NON_LEGACY ->
+          NonLegacySequenceNumberValidator.validateSequenceNumber(
+              lastSequenceNumber, sequenceNumber);
+    };
   }
 
   /**
@@ -552,6 +706,30 @@ public final class ChunkDecoder {
       } else {
         return sequenceNumber == lastSequenceNumber + 1;
       }
+    }
+  }
+
+  /** Validates the strict non-legacy sequence stream used by SecureChannel Enhancement profiles. */
+  static class NonLegacySequenceNumberValidator {
+
+    private NonLegacySequenceNumberValidator() {}
+
+    static boolean validateSequenceNumber(long lastSequenceNumber, long sequenceNumber) {
+      return sequenceNumber == expectedSequenceNumber(lastSequenceNumber);
+    }
+
+    static long expectedSequenceNumber(long lastSequenceNumber) {
+      if (lastSequenceNumber == -1L || lastSequenceNumber == UInteger.MAX_VALUE) {
+        return 0L;
+      } else {
+        return lastSequenceNumber + 1;
+      }
+    }
+
+    // Before any chunk has been accepted, the AEAD nonce uses LastSequenceNumber=0. After that, the
+    // nonce follows the last sequence number that passed validation.
+    static long aeadNonceSequenceNumber(long lastSequenceNumber) {
+      return lastSequenceNumber == -1L ? 0L : lastSequenceNumber;
     }
   }
 }

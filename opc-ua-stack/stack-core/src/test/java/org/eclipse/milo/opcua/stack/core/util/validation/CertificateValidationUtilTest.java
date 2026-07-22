@@ -43,7 +43,10 @@ import java.util.List;
 import java.util.Set;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.CRLReason;
+import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.cert.CertIOException;
 import org.bouncycastle.cert.X509CRLHolder;
 import org.bouncycastle.cert.X509v2CRLBuilder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
@@ -54,6 +57,7 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
@@ -120,6 +124,78 @@ public class CertificateValidationUtilTest {
         emptySet(),
         ValidationCheck.ALL_OPTIONAL_CHECKS,
         true);
+  }
+
+  @Test
+  void profileAwareEccValidationAcceptsMinimalSelfSignedCertificate() throws Exception {
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateNistP256KeyPair();
+    X509Certificate certificate =
+        SelfSignedCertificateBuilder.forEccApplicationCertificate(keyPair)
+            .setApplicationUri("urn:eclipse:milo:test")
+            .addDnsName("localhost")
+            .build();
+
+    PKIXCertPathBuilderResult result =
+        buildTrustedCertPath(List.of(certificate), Set.of(certificate), emptySet());
+
+    validateTrustedCertPath(
+        result.getCertPath(),
+        result.getTrustAnchor(),
+        emptySet(),
+        ValidationCheck.ALL_OPTIONAL_CHECKS,
+        false,
+        SecurityPolicy.ECC_nistP256_AesGcm.getProfile());
+  }
+
+  @Test
+  void legacyValidationRejectsMinimalEccCertificateWithoutProfile() throws Exception {
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateNistP256KeyPair();
+    X509Certificate certificate =
+        SelfSignedCertificateBuilder.forEccApplicationCertificate(keyPair)
+            .setApplicationUri("urn:eclipse:milo:test")
+            .addDnsName("localhost")
+            .build();
+
+    PKIXCertPathBuilderResult result =
+        buildTrustedCertPath(List.of(certificate), Set.of(certificate), emptySet());
+
+    assertThrows(
+        UaException.class,
+        () ->
+            validateTrustedCertPath(
+                result.getCertPath(),
+                result.getTrustAnchor(),
+                emptySet(),
+                ValidationCheck.ALL_OPTIONAL_CHECKS,
+                false));
+  }
+
+  @Test
+  void profileAwareEccValidationRejectsMissingDigitalSignature() throws Exception {
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateNistP256KeyPair();
+    X509Certificate certificate =
+        new SelfSignedCertificateBuilder(
+                keyPair, new KeyUsageCertificateGenerator(KeyUsage.keyCertSign))
+            .setApplicationUri("urn:eclipse:milo:test")
+            .addDnsName("localhost")
+            .build();
+
+    PKIXCertPathBuilderResult result =
+        buildTrustedCertPath(List.of(certificate), Set.of(certificate), emptySet());
+
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                validateTrustedCertPath(
+                    result.getCertPath(),
+                    result.getTrustAnchor(),
+                    emptySet(),
+                    ValidationCheck.ALL_OPTIONAL_CHECKS,
+                    false,
+                    SecurityPolicy.ECC_nistP256_AesGcm.getProfile()));
+
+    assertEquals(StatusCodes.Bad_CertificateUseNotAllowed, exception.getStatusCode().getValue());
   }
 
   @Test
@@ -481,5 +557,22 @@ public class CertificateValidationUtilTest {
     JcaX509CertificateConverter converter = new JcaX509CertificateConverter();
     converter.setProvider("BC");
     return converter.getCertificate(certBuilder.build(signer));
+  }
+
+  private static final class KeyUsageCertificateGenerator extends SelfSignedCertificateGenerator {
+    private final int keyUsage;
+
+    KeyUsageCertificateGenerator(int keyUsage) {
+      this.keyUsage = keyUsage;
+    }
+
+    @Override
+    protected void addExtendedKeyUsage(X509v3CertificateBuilder certificateBuilder) {}
+
+    @Override
+    protected void addKeyUsage(X509v3CertificateBuilder certificateBuilder) throws CertIOException {
+
+      certificateBuilder.addExtension(Extension.keyUsage, false, new KeyUsage(keyUsage));
+    }
   }
 }

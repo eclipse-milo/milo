@@ -41,13 +41,13 @@ import org.eclipse.milo.opcua.sdk.server.identity.X509IdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.util.HostnameUtil;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
+import org.eclipse.milo.opcua.stack.core.security.AbstractCertificateFactory;
 import org.eclipse.milo.opcua.stack.core.security.DefaultApplicationGroup;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.DefaultServerCertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.FileBasedCertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.FileBasedTrustListManager;
 import org.eclipse.milo.opcua.stack.core.security.KeyStoreCertificateStore;
-import org.eclipse.milo.opcua.stack.core.security.RsaSha256CertificateFactory;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -137,7 +137,7 @@ public class ExampleServer {
         FileBasedCertificateQuarantine.create(pkiDir.toPath().resolve("rejected").resolve("certs"));
 
     var certificateFactory =
-        new RsaSha256CertificateFactory() {
+        new AbstractCertificateFactory() {
           @Override
           protected KeyPair createRsaSha256KeyPair() {
             return loader.getServerKeyPair();

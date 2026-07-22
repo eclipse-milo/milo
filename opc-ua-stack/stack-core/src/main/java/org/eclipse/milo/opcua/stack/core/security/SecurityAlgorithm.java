@@ -26,6 +26,9 @@ public enum SecurityAlgorithm {
   /** Symmetric Signature; transformation to be used with {@link Mac#getInstance(String)}. */
   HmacSha256("http://www.w3.org/2000/09/xmldsig#hmac-sha256", "HmacSHA256"),
 
+  /** Symmetric Signature; transformation to be used with {@link Mac#getInstance(String)}. */
+  HmacSha384("http://www.w3.org/2001/04/xmldsig-more#hmac-sha384", "HmacSHA384"),
+
   /** Symmetric Encryption; transformation to be used with {@link Cipher#getInstance(String)}. */
   Aes128("http://www.w3.org/2001/04/xmlenc#aes128-cbc", "AES/CBC/NoPadding"),
 
@@ -87,7 +90,12 @@ public enum SecurityAlgorithm {
   /**
    * Cryptographic Hash; transformation to be used with {@link MessageDigest#getInstance(String)}.
    */
-  Sha256("http://www.w3.org/2001/04/xmlenc#sha256", "SHA-256");
+  Sha256("http://www.w3.org/2001/04/xmlenc#sha256", "SHA-256"),
+
+  /**
+   * Cryptographic Hash; transformation to be used with {@link MessageDigest#getInstance(String)}.
+   */
+  Sha384("http://www.w3.org/2001/04/xmldsig-more#sha384", "SHA-384");
 
   private final String uri;
   private final String transformation;

@@ -73,6 +73,17 @@ public class DefaultServerCertificateValidator implements CertificateValidator {
       @Nullable String[] validHostnames)
       throws UaException {
 
+    validateCertificateChain(certificateChain, applicationUri, validHostnames, null);
+  }
+
+  @Override
+  public void validateCertificateChain(
+      List<X509Certificate> certificateChain,
+      @Nullable String applicationUri,
+      @Nullable String[] validHostnames,
+      @Nullable SecurityPolicyProfile securityPolicyProfile)
+      throws UaException {
+
     PKIXCertPathBuilderResult certPathResult;
 
     try {
@@ -109,7 +120,13 @@ public class DefaultServerCertificateValidator implements CertificateValidator {
           certPathResult.getTrustAnchor(),
           crls,
           validationChecks,
-          true);
+          true,
+          securityPolicyProfile);
+
+      if (securityPolicyProfile != null) {
+        CertificateCompatibility.checkCompatible(
+            securityPolicyProfile, certificateChain.get(0), validationChecks);
+      }
     } catch (UaException e) {
       long statusCode = e.getStatusCode().value();
 

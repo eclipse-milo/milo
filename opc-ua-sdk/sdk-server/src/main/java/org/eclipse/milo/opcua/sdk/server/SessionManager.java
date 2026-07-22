@@ -17,9 +17,7 @@ import static org.eclipse.milo.opcua.stack.core.util.DigestUtil.sha1;
 
 import com.google.common.base.Objects;
 import com.google.common.math.DoubleMath;
-import com.google.common.primitives.Bytes;
 import java.math.RoundingMode;
-import java.nio.ByteBuffer;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
@@ -43,7 +41,9 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.channel.SecureChannel;
 import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
-import org.eclipse.milo.opcua.stack.core.security.SecurityAlgorithm;
+import org.eclipse.milo.opcua.stack.core.security.ChannelBoundSignatureData;
+import org.eclipse.milo.opcua.stack.core.security.EccEncryptedSecret;
+import org.eclipse.milo.opcua.stack.core.security.EnhancedUserTokenAdditionalHeader;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
@@ -63,6 +63,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.CloseSessionResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateSessionRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateSessionResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.EphemeralKeyType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
 import org.eclipse.milo.opcua.stack.core.types.structured.SignatureData;
 import org.eclipse.milo.opcua.stack.core.types.structured.SignedSoftwareCertificate;
@@ -71,7 +72,6 @@ import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
-import org.eclipse.milo.opcua.stack.core.util.SignatureUtil;
 import org.eclipse.milo.opcua.stack.core.util.TaskQueue;
 import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
 import org.jspecify.annotations.NonNull;
@@ -346,17 +346,16 @@ public class SessionManager {
       certificateGroup
           .getCertificateValidator()
           .validateCertificateChain(
-              clientCertificateChain, clientDescription.getApplicationUri(), null);
+              clientCertificateChain,
+              clientDescription.getApplicationUri(),
+              null,
+              securityPolicy.getProfile());
     }
 
     // SignatureData must be created using only the bytes of the client
     // leaf certificate, not the bytes of the client certificate chain.
     SignatureData serverSignature =
-        getServerSignature(
-            securityPolicy,
-            securityConfiguration.getKeyPair(),
-            clientNonce,
-            securityConfiguration.getClientCertificateBytes());
+        getServerSignature(securityPolicy, securityConfiguration, clientNonce, serverNonce);
 
     NodeId sessionId = new NodeId(1, "Session:" + UUID.randomUUID());
     String sessionName = request.getSessionName();
@@ -377,7 +376,11 @@ public class SessionManager {
             securityConfiguration);
 
     session.setLastNonce(serverNonce);
+    session.setClientNonce(clientNonce);
     session.setClientAddress(context.clientAddress());
+
+    ExtensionObject additionalHeader =
+        createSessionAdditionalHeader(request, securityConfiguration, session);
 
     // Enforce the session limit and register the new session atomically so that concurrent
     // CreateSession requests cannot exceed the maximum. Done after validation so that a request
@@ -422,7 +425,7 @@ public class SessionManager {
     fireSessionCreated(session);
 
     return new CreateSessionResponse(
-        createResponseHeader(request),
+        createResponseHeader(request, StatusCode.GOOD, additionalHeader),
         sessionId,
         authenticationToken,
         revisedSessionTimeout,
@@ -432,6 +435,179 @@ public class SessionManager {
         new SignedSoftwareCertificate[0],
         serverSignature,
         uint(maxRequestMessageSize));
+  }
+
+  private @Nullable ExtensionObject createSessionAdditionalHeader(
+      CreateSessionRequest request, SecurityConfiguration securityConfiguration, Session session)
+      throws UaException {
+
+    /*
+     * Enhanced ECC and RSA-DH username-token policies need a server ephemeral key before
+     * ActivateSession can encrypt the password. The client requests that key by policy URI in the
+     * CreateSession RequestHeader AdditionalHeader, and the server answers with a signed
+     * EphemeralKeyType in the response AdditionalHeader.
+     */
+    return resolveUserTokenEphemeralKeyHeader(
+        request.getRequestHeader().getAdditionalHeader(), securityConfiguration, session);
+  }
+
+  /**
+   * Resolve the response AdditionalHeader for an enhanced user-token key negotiation, honoring the
+   * Part 4 "ignore unrecognized header" and Part 6, 6.8.2 "report failures in-parameter" rules.
+   *
+   * <p>An unrecognized request header (absent, undecodable, or not an AdditionalParametersType)
+   * yields {@code null}, so the service proceeds with no additional header. A request for an
+   * unknown or non-enhanced policy URI succeeds and returns {@code ECDHKey =
+   * StatusCode(Bad_SecurityPolicyRejected)} rather than a service fault, matching the convention
+   * the Milo client already accepts.
+   *
+   * @param additionalHeader the request AdditionalHeader, if any.
+   * @param securityConfiguration the security configuration used to select the signing key pair.
+   * @param session the session that owns the negotiated key material.
+   * @return the response AdditionalHeader, or {@code null} when no negotiation was requested.
+   * @throws UaException if the header payload is malformed or key material cannot be created.
+   */
+  private @Nullable ExtensionObject resolveUserTokenEphemeralKeyHeader(
+      @Nullable ExtensionObject additionalHeader,
+      SecurityConfiguration securityConfiguration,
+      Session session)
+      throws UaException {
+
+    EnhancedUserTokenAdditionalHeader.NegotiationRequest negotiationRequest =
+        EnhancedUserTokenAdditionalHeader.decodeRequest(
+            server.getStaticEncodingContext(), additionalHeader);
+
+    if (negotiationRequest
+        instanceof EnhancedUserTokenAdditionalHeader.NegotiationRequest.Supported supported) {
+      return issueUserTokenEphemeralKey(supported.securityPolicy(), securityConfiguration, session);
+    } else if (negotiationRequest
+        instanceof EnhancedUserTokenAdditionalHeader.NegotiationRequest.Unsupported unsupported) {
+      logger.debug(
+          "rejecting enhanced user-token negotiation for unavailable policy: {}",
+          unsupported.securityPolicyUri());
+
+      return EnhancedUserTokenAdditionalHeader.createResponse(
+          server.getStaticEncodingContext(),
+          new StatusCode(StatusCodes.Bad_SecurityPolicyRejected));
+    } else {
+      return null;
+    }
+  }
+
+  /**
+   * Rotate the session's enhanced user-token ephemeral key after a successful ActivateSession.
+   *
+   * <p>Part 6, 6.8.2 requires the receiver EphemeralKey to be single-use: once an ActivateSession
+   * consumes it, the server must reject the same key and hand the client a fresh one. The client
+   * requests the new key by repeating the {@code ECDHPolicyUri} in the ActivateSession request
+   * AdditionalHeader, and the server returns a new signed {@link EphemeralKeyType} in the response
+   * AdditionalHeader. Generating a new key pair here replaces the one just consumed, so any replay
+   * of the previous EphemeralKey fails the receiver-key match in {@link
+   * EccEncryptedSecret#decrypt}.
+   *
+   * <p>A request for an unknown or non-enhanced policy URI does not fail the activation; it returns
+   * an {@code ECDHKey} status code as described on {@link #resolveUserTokenEphemeralKeyHeader}.
+   *
+   * @param request the ActivateSession request whose AdditionalHeader may request a fresh key.
+   * @param securityConfiguration the security configuration the session is (now) bound to.
+   * @param session the session being activated.
+   * @return the response AdditionalHeader carrying the fresh signed key, an in-parameter status
+   *     code, or {@code null} when no enhanced user-token key was requested.
+   * @throws UaException if the header payload is malformed or key material cannot be created.
+   */
+  private @Nullable ExtensionObject activateSessionAdditionalHeader(
+      ActivateSessionRequest request, SecurityConfiguration securityConfiguration, Session session)
+      throws UaException {
+
+    return resolveUserTokenEphemeralKeyHeader(
+        request.getRequestHeader().getAdditionalHeader(), securityConfiguration, session);
+  }
+
+  /**
+   * Generate, store, and sign a fresh enhanced user-token ephemeral key for {@code session}.
+   *
+   * <p>Shared by CreateSession (initial issue) and ActivateSession (single-use rotation). Storing
+   * the new key pair on the session overwrites any previously issued one, which is what enforces
+   * the Part 6, 6.8.2 single-use property.
+   *
+   * @param securityPolicy the requested enhanced user-token security policy.
+   * @param securityConfiguration the security configuration used to select the signing key pair.
+   * @param session the session that owns the key material and whose endpoint advertises the policy.
+   * @return the encoded response AdditionalHeader carrying the signed {@link EphemeralKeyType}.
+   * @throws UaException if the policy is unavailable on the endpoint or key material cannot be
+   *     created.
+   */
+  private ExtensionObject issueUserTokenEphemeralKey(
+      SecurityPolicy securityPolicy, SecurityConfiguration securityConfiguration, Session session)
+      throws UaException {
+
+    if (!EnhancedUserTokenAdditionalHeader.hasUsernameTokenSecurityPolicy(
+        session.getEndpoint(), securityPolicy)) {
+      throw new UaException(
+          StatusCodes.Bad_SecurityPolicyRejected,
+          "requested enhanced user-token policy is not available on the selected endpoint");
+    }
+
+    KeyPair signingKeyPair = selectUserTokenSigningKeyPair(securityConfiguration, session);
+
+    KeyPair ephemeralKeyPair =
+        EccEncryptedSecret.generateEphemeralKeyPair(securityPolicy.getProfile());
+    ByteString ephemeralPublicKey =
+        EccEncryptedSecret.encodeEphemeralPublicKey(
+            securityPolicy.getProfile(), ephemeralKeyPair.getPublic());
+    EphemeralKeyType ephemeralKey =
+        EccEncryptedSecret.createEphemeralKey(
+            securityPolicy.getProfile(), signingKeyPair, ephemeralKeyPair);
+
+    session.setUserTokenEphemeralKeyPair(ephemeralKeyPair, ephemeralPublicKey);
+
+    return EnhancedUserTokenAdditionalHeader.createResponse(
+        server.getStaticEncodingContext(), securityPolicy, ephemeralKey);
+  }
+
+  private KeyPair selectUserTokenSigningKeyPair(
+      SecurityConfiguration securityConfiguration, Session session) throws UaException {
+
+    /*
+     * The client verifies the EphemeralKeyType signature with the certificate advertised by the
+     * selected endpoint. SecureChannel key material is used only when it is the same endpoint
+     * identity; otherwise the key is resolved from the certificate manager by endpoint thumbprint.
+     */
+    if (securityConfiguration.getKeyPair() != null
+        && securityConfiguration.getServerCertificate() != null
+        && serverCertificateMatchesEndpoint(securityConfiguration, session)) {
+      return securityConfiguration.getKeyPair();
+    }
+
+    ByteString endpointCertificateBytes = session.getEndpoint().getServerCertificate();
+
+    if (endpointCertificateBytes == null || endpointCertificateBytes.isNullOrEmpty()) {
+      throw new UaException(
+          StatusCodes.Bad_ConfigurationError,
+          "enhanced user-token negotiation requires an advertised server certificate");
+    }
+
+    X509Certificate endpointCertificate =
+        CertificateUtil.decodeCertificate(endpointCertificateBytes.bytesOrEmpty());
+
+    return server
+        .getConfig()
+        .getCertificateManager()
+        .getKeyPair(CertificateUtil.thumbprint(endpointCertificate))
+        .orElseThrow(
+            () ->
+                new UaException(
+                    StatusCodes.Bad_ConfigurationError,
+                    "no server application key pair found for advertised certificate"));
+  }
+
+  private static boolean serverCertificateMatchesEndpoint(
+      SecurityConfiguration securityConfiguration, Session session) throws UaException {
+
+    ByteString endpointCertificateBytes = session.getEndpoint().getServerCertificate();
+
+    return endpointCertificateBytes != null
+        && endpointCertificateBytes.equals(securityConfiguration.getServerCertificateBytes());
   }
 
   /**
@@ -627,7 +803,8 @@ public class SessionManager {
         serverCertificate,
         serverCertificateChain,
         clientCertificate,
-        clientCertificateChain);
+        clientCertificateChain,
+        secureChannel.getChannelThumbprint());
   }
 
   /**
@@ -696,11 +873,11 @@ public class SessionManager {
       if (session == null) {
         throw new UaException(StatusCodes.Bad_SessionIdInvalid);
       } else {
-        verifyClientSignature(session, request);
-
         SecurityConfiguration securityConfiguration = session.getSecurityConfiguration();
 
         if (session.getSecureChannelId() == secureChannelId) {
+          verifyClientSignature(session, request, securityConfiguration, session.getEndpoint());
+
           /*
            * Identity change
            */
@@ -721,12 +898,26 @@ public class SessionManager {
           session.setLastNonce(serverNonce);
           session.setLocaleIds(request.getLocaleIds());
 
+          ExtensionObject additionalHeader =
+              activateSessionAdditionalHeader(request, securityConfiguration, session);
+
           return new ActivateSessionResponse(
-              createResponseHeader(request), serverNonce, results, new DiagnosticInfo[0]);
+              createResponseHeader(request, StatusCode.GOOD, additionalHeader),
+              serverNonce,
+              results,
+              new DiagnosticInfo[0]);
         } else {
           /*
-           * Associate session with new secure channel if client certificate and identity token match.
+           * Reactivation signatures are bound to the SecureChannel carrying this request. Verify
+           * with the candidate channel configuration before moving the Session to it.
            */
+          SecurityConfiguration newSecurityConfiguration =
+              createSecurityConfiguration(context.getSecureChannel());
+
+          EndpointDescription endpoint = findSessionEndpoint(context);
+
+          verifyClientSignature(session, request, newSecurityConfiguration, endpoint);
+
           ByteString clientCertificateBytes =
               context.getSecureChannel().getRemoteCertificateBytes();
 
@@ -734,43 +925,66 @@ public class SessionManager {
               decodeIdentityToken(
                   request.getUserIdentityToken(), session.getEndpoint().getUserIdentityTokens());
 
-          Identity identity =
-              validateIdentityToken(session, identityToken, request.getUserTokenSignature());
+          /*
+           * The user-token signature for enhanced (ECC/RSA-DH) policies is bound to the SecureChannel
+           * carrying this request, and the IdentityValidator reconstructs those channel-bound inputs
+           * from the Session's SecurityConfiguration and Endpoint. Make the candidate channel context
+           * current before validating the identity token and roll it back if activation does not
+           * complete, so a rejected reactivation leaves the Session bound to its existing channel.
+           */
+          EndpointDescription previousEndpoint = session.getEndpoint();
+          session.setEndpoint(endpoint);
+          session.setSecurityConfiguration(newSecurityConfiguration);
 
-          boolean sameIdentity = identity.equalTo(session.getIdentity());
+          boolean activated = false;
 
-          boolean sameCertificate =
-              Objects.equal(
-                  clientCertificateBytes, securityConfiguration.getClientCertificateBytes());
+          try {
+            Identity identity =
+                validateIdentityToken(session, identityToken, request.getUserTokenSignature());
 
-          if (sameIdentity && sameCertificate) {
-            SecurityConfiguration newSecurityConfiguration =
-                createSecurityConfiguration(context.getSecureChannel());
+            boolean sameIdentity = identity.equalTo(session.getIdentity());
 
-            EndpointDescription endpoint = findSessionEndpoint(context);
-            session.setEndpoint(endpoint);
+            // Compare against the original Session's client certificate (the prior configuration
+            // captured above), confirming the same client is reactivating.
+            boolean sameCertificate =
+                Objects.equal(
+                    clientCertificateBytes, securityConfiguration.getClientCertificateBytes());
 
-            session.setSecureChannelId(secureChannelId);
-            session.setSecurityConfiguration(newSecurityConfiguration);
+            if (sameIdentity && sameCertificate) {
+              session.setSecureChannelId(secureChannelId);
 
-            logger.debug(
-                "Session id={} is now associated with secureChannelId={}",
-                session.getSessionId(),
-                secureChannelId);
+              logger.debug(
+                  "Session id={} is now associated with secureChannelId={}",
+                  session.getSessionId(),
+                  secureChannelId);
 
-            StatusCode[] results = new StatusCode[clientSoftwareCertificates.length];
-            Arrays.fill(results, StatusCode.GOOD);
+              StatusCode[] results = new StatusCode[clientSoftwareCertificates.length];
+              Arrays.fill(results, StatusCode.GOOD);
 
-            ByteString serverNonce = NonceUtil.generateNonce(32);
+              ByteString serverNonce = NonceUtil.generateNonce(32);
 
-            session.setClientAddress(context.clientAddress());
-            session.setLastNonce(serverNonce);
-            session.setLocaleIds(request.getLocaleIds());
+              session.setClientAddress(context.clientAddress());
+              session.setLastNonce(serverNonce);
+              session.setLocaleIds(request.getLocaleIds());
 
-            return new ActivateSessionResponse(
-                createResponseHeader(request), serverNonce, results, new DiagnosticInfo[0]);
-          } else {
-            throw new UaException(StatusCodes.Bad_SecurityChecksFailed);
+              ExtensionObject additionalHeader =
+                  activateSessionAdditionalHeader(request, newSecurityConfiguration, session);
+
+              activated = true;
+
+              return new ActivateSessionResponse(
+                  createResponseHeader(request, StatusCode.GOOD, additionalHeader),
+                  serverNonce,
+                  results,
+                  new DiagnosticInfo[0]);
+            } else {
+              throw new UaException(StatusCodes.Bad_SecurityChecksFailed);
+            }
+          } finally {
+            if (!activated) {
+              session.setEndpoint(previousEndpoint);
+              session.setSecurityConfiguration(securityConfiguration);
+            }
           }
         }
       }
@@ -779,7 +993,8 @@ public class SessionManager {
         throw new UaException(StatusCodes.Bad_SecurityChecksFailed);
       }
 
-      verifyClientSignature(session, request);
+      verifyClientSignature(
+          session, request, session.getSecurityConfiguration(), session.getEndpoint());
 
       UserIdentityToken identityToken =
           decodeIdentityToken(
@@ -808,8 +1023,14 @@ public class SessionManager {
       session.setLocaleIds(request.getLocaleIds());
       session.setLastNonce(serverNonce);
 
+      ExtensionObject additionalHeader =
+          activateSessionAdditionalHeader(request, session.getSecurityConfiguration(), session);
+
       return new ActivateSessionResponse(
-          createResponseHeader(request), serverNonce, results, new DiagnosticInfo[0]);
+          createResponseHeader(request, StatusCode.GOOD, additionalHeader),
+          serverNonce,
+          results,
+          new DiagnosticInfo[0]);
     }
   }
 
@@ -854,25 +1075,38 @@ public class SessionManager {
             });
   }
 
-  private static void verifyClientSignature(Session session, ActivateSessionRequest request)
+  private static void verifyClientSignature(
+      Session session,
+      ActivateSessionRequest request,
+      SecurityConfiguration securityConfiguration,
+      EndpointDescription endpoint)
       throws UaException {
-    SecurityConfiguration securityConfiguration = session.getSecurityConfiguration();
-
     if (securityConfiguration.getSecurityPolicy() != SecurityPolicy.None) {
       SignatureData clientSignature = request.getClientSignature();
-      ByteString serverCertificateBs = securityConfiguration.getServerCertificateBytes();
+      SecurityPolicy securityPolicy = securityConfiguration.getSecurityPolicy();
+      ByteString serverCertificateBs =
+          securityPolicy.getProfile().secureChannelEnhancements()
+              ? endpoint.getServerCertificate()
+              : securityConfiguration.getServerCertificateBytes();
       ByteString lastNonceBs = session.getLastNonce();
 
       try {
         byte[] dataBytes =
-            Bytes.concat(serverCertificateBs.bytesOrEmpty(), lastNonceBs.bytesOrEmpty());
+            ChannelBoundSignatureData.clientSignatureData(
+                securityPolicy.getProfile(),
+                securityConfiguration.getChannelThumbprint(),
+                lastNonceBs,
+                serverCertificateBs,
+                securityConfiguration.getServerChannelCertificateBytes(),
+                securityConfiguration.getClientChannelCertificateBytes(),
+                session.getClientNonce());
 
         try {
-          SignatureUtil.verify(
-              SecurityAlgorithm.fromUri(clientSignature.getAlgorithm()),
+          verifyApplicationSignature(
+              securityPolicy,
               securityConfiguration.getClientCertificate(),
-              dataBytes,
-              clientSignature.getSignature().bytesOrEmpty());
+              clientSignature,
+              dataBytes);
         } catch (UaException e) {
           throw new UaException(StatusCodes.Bad_ApplicationSignatureInvalid, e);
         }
@@ -886,14 +1120,21 @@ public class SessionManager {
           throw e;
         } else {
           byte[] dataBytes =
-              Bytes.concat(serverCertificateChainBs.bytesOrEmpty(), lastNonceBs.bytesOrEmpty());
+              ChannelBoundSignatureData.clientSignatureData(
+                  securityPolicy.getProfile(),
+                  securityConfiguration.getChannelThumbprint(),
+                  lastNonceBs,
+                  serverCertificateChainBs,
+                  securityConfiguration.getServerChannelCertificateBytes(),
+                  securityConfiguration.getClientChannelCertificateBytes(),
+                  session.getClientNonce());
 
           try {
-            SignatureUtil.verify(
-                SecurityAlgorithm.fromUri(clientSignature.getAlgorithm()),
+            verifyApplicationSignature(
+                securityPolicy,
                 securityConfiguration.getClientCertificate(),
-                dataBytes,
-                clientSignature.getSignature().bytesOrEmpty());
+                clientSignature,
+                dataBytes);
           } catch (UaException ex) {
             throw new UaException(StatusCodes.Bad_ApplicationSignatureInvalid, e);
           }
@@ -1015,26 +1256,50 @@ public class SessionManager {
 
   private SignatureData getServerSignature(
       SecurityPolicy securityPolicy,
-      KeyPair keyPair,
+      SecurityConfiguration securityConfiguration,
       ByteString clientNonce,
-      ByteString clientCertificate)
+      ByteString serverNonce)
       throws UaException {
 
     if (securityPolicy == SecurityPolicy.None) {
       return new SignatureData(null, null);
     } else {
       try {
-        SecurityAlgorithm algorithm = securityPolicy.getAsymmetricSignatureAlgorithm();
+        KeyPair keyPair = securityConfiguration.getKeyPair();
+        ByteString clientCertificate = securityConfiguration.getClientCertificateBytes();
 
-        byte[] data = Bytes.concat(clientCertificate.bytes(), clientNonce.bytes());
+        if (keyPair == null || clientCertificate.isNullOrEmpty() || clientNonce.isNullOrEmpty()) {
+          throw new UaException(StatusCodes.Bad_SecurityChecksFailed);
+        }
 
-        byte[] signature =
-            SignatureUtil.sign(algorithm, keyPair.getPrivate(), ByteBuffer.wrap(data));
+        byte[] data =
+            ChannelBoundSignatureData.serverSignatureData(
+                securityPolicy.getProfile(),
+                securityConfiguration.getChannelThumbprint(),
+                clientNonce,
+                securityConfiguration.getServerChannelCertificateBytes(),
+                securityConfiguration.getClientChannelCertificateBytes(),
+                serverNonce,
+                clientCertificate);
 
-        return new SignatureData(algorithm.getUri(), ByteString.of(signature));
+        // ECC policies sign with ECDSA/EdDSA, RSA-DH and legacy policies with the policy's
+        // algorithm; the wire algorithm URI is populated only for legacy policies (Part 4 §7.36).
+        return ChannelBoundSignatureData.sign(securityPolicy, keyPair.getPrivate(), data);
       } catch (UaRuntimeException e) {
         throw new UaException(StatusCodes.Bad_SecurityChecksFailed);
       }
     }
+  }
+
+  private static void verifyApplicationSignature(
+      SecurityPolicy securityPolicy,
+      X509Certificate certificate,
+      SignatureData signature,
+      byte[] dataBytes)
+      throws UaException {
+
+    // ECC policies verify with ECDSA/EdDSA, RSA-DH and legacy policies with the policy's algorithm;
+    // for legacy policies the algorithm is read from the wire URI (Part 4 §7.36).
+    ChannelBoundSignatureData.verify(securityPolicy, certificate, dataBytes, signature);
   }
 }
