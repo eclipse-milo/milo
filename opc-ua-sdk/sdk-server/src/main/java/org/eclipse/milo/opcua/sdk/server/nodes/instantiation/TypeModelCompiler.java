@@ -12,9 +12,11 @@ package org.eclipse.milo.opcua.sdk.server.nodes.instantiation;
 
 import static java.util.Objects.requireNonNull;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -355,9 +357,59 @@ public class TypeModelCompiler {
       CompileContext ctx,
       Set<NodeId> pathNodeIds) {
 
+    Deque<ChildWalkFrame> frames = new ArrayDeque<>();
+    frames.push(childWalkFrame(sourceNodeId, parentPath, declaringTypeId, null, ctx));
+
+    while (!frames.isEmpty()) {
+      ChildWalkFrame frame = frames.peek();
+      if (frame.hasNext()) {
+        Child child = frame.next();
+        ChildExpansion expansion =
+            processChild(
+                child.reference,
+                child.targetId,
+                child.node,
+                frame.parentPath,
+                frame.declaringTypeId,
+                table,
+                ctx,
+                pathNodeIds);
+
+        if (expansion != null) {
+          frames.push(
+              childWalkFrame(
+                  expansion.targetId, expansion.path, expansion.declaringTypeId, expansion, ctx));
+        }
+      } else {
+        frames.pop();
+
+        ChildExpansion expansion = frame.expansion;
+        if (expansion != null) {
+          pathNodeIds.remove(expansion.targetId);
+
+          if (expansion.memberTypeId != null) {
+            expandMemberType(
+                expansion.declaration,
+                expansion.memberTypeId,
+                expansion.path,
+                expansion.targetId,
+                table,
+                ctx);
+          }
+        }
+      }
+    }
+  }
+
+  private ChildWalkFrame childWalkFrame(
+      NodeId sourceNodeId,
+      BrowsePath parentPath,
+      NodeId declaringTypeId,
+      @Nullable ChildExpansion expansion,
+      CompileContext ctx) {
+
     List<Reference> refs = getReferences(sourceNodeId, ctx);
 
-    record Child(Reference reference, NodeId targetId, UaNode node) {}
     List<Child> children = new ArrayList<>();
 
     for (Reference r : refs) {
@@ -418,20 +470,10 @@ public class TypeModelCompiler {
             .thenComparing(c -> c.reference.getReferenceTypeId().toParseableString())
             .thenComparing(c -> c.targetId.toParseableString()));
 
-    for (Child child : children) {
-      processChild(
-          child.reference,
-          child.targetId,
-          child.node,
-          parentPath,
-          declaringTypeId,
-          table,
-          ctx,
-          pathNodeIds);
-    }
+    return new ChildWalkFrame(parentPath, declaringTypeId, children, expansion);
   }
 
-  private void processChild(
+  private @Nullable ChildExpansion processChild(
       Reference reference,
       NodeId targetId,
       UaNode node,
@@ -471,7 +513,7 @@ public class TypeModelCompiler {
                 path,
                 targetId));
       }
-      return;
+      return null;
     }
     table.pathOccupants.put(path, targetId);
 
@@ -502,7 +544,7 @@ public class TypeModelCompiler {
                 path,
                 targetId));
       }
-      return;
+      return null;
     }
 
     if (ruleIds.isEmpty()) {
@@ -520,7 +562,7 @@ public class TypeModelCompiler {
                   + ")",
               path,
               targetId));
-      return;
+      return null;
     }
 
     if (ruleRefs.size() > 1) {
@@ -569,7 +611,7 @@ public class TypeModelCompiler {
                 nodeClass + " declaration at " + path + " has no HasTypeDefinition reference",
                 path,
                 targetId));
-        return;
+        return null;
       }
 
       if (memberTypeXnis.size() > 1) {
@@ -587,7 +629,7 @@ public class TypeModelCompiler {
                     + "; exactly one is required",
                 path,
                 targetId));
-        return;
+        return null;
       }
 
       ExpandedNodeId memberTypeXni = memberTypeXnis.get(0);
@@ -603,7 +645,7 @@ public class TypeModelCompiler {
                     + " is not resolvable in this server",
                 path,
                 targetId));
-        return;
+        return null;
       }
     }
 
@@ -660,7 +702,7 @@ public class TypeModelCompiler {
           }
         }
       }
-      return;
+      return null;
     }
 
     if (path.depth() >= MAX_DEPTH) {
@@ -670,7 +712,7 @@ public class TypeModelCompiler {
               "declaration hierarchy exceeds depth " + MAX_DEPTH + " at " + path,
               path,
               targetId));
-      return;
+      return null;
     }
 
     if (!pathNodeIds.add(targetId)) {
@@ -680,20 +722,13 @@ public class TypeModelCompiler {
               "declaration " + targetId + " reached again along its own path at " + path,
               path,
               targetId));
-      return;
+      return null;
     }
 
-    try {
-      // Explicit on-declaration children first: they win over same-path member-type defaults
-      // (Part 3 §6.3.3.3).
-      walkChildren(targetId, path, declaringTypeId, table, ctx, pathNodeIds);
-    } finally {
-      pathNodeIds.remove(targetId);
-    }
-
-    if (memberTypeId != null) {
-      expandMemberType(declaration, memberTypeId, path, targetId, table, ctx);
-    }
+    // Explicit on-declaration children are traversed before member-type expansion, so they win over
+    // same-path member-type defaults (Part 3 §6.3.3.3). The continuation also removes targetId from
+    // the active path after its children have been processed.
+    return new ChildExpansion(targetId, path, declaringTypeId, declaration, memberTypeId);
   }
 
   /**
@@ -1694,6 +1729,43 @@ public class TypeModelCompiler {
 
   private static List<ModelDiagnostic> dedupe(List<ModelDiagnostic> diagnostics) {
     return List.copyOf(new LinkedHashSet<>(diagnostics));
+  }
+
+  private record Child(Reference reference, NodeId targetId, UaNode node) {}
+
+  private record ChildExpansion(
+      NodeId targetId,
+      BrowsePath path,
+      NodeId declaringTypeId,
+      InstanceDeclaration declaration,
+      @Nullable NodeId memberTypeId) {}
+
+  private static final class ChildWalkFrame {
+    final BrowsePath parentPath;
+    final NodeId declaringTypeId;
+    final List<Child> children;
+    final @Nullable ChildExpansion expansion;
+
+    int nextChild;
+
+    ChildWalkFrame(
+        BrowsePath parentPath,
+        NodeId declaringTypeId,
+        List<Child> children,
+        @Nullable ChildExpansion expansion) {
+      this.parentPath = parentPath;
+      this.declaringTypeId = declaringTypeId;
+      this.children = children;
+      this.expansion = expansion;
+    }
+
+    boolean hasNext() {
+      return nextChild < children.size();
+    }
+
+    Child next() {
+      return children.get(nextChild++);
+    }
   }
 
   private static final class CompileContext {
