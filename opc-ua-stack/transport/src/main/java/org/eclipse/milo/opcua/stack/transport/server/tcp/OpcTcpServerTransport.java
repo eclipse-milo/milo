@@ -88,23 +88,19 @@ public class OpcTcpServerTransport implements OpcServerTransport {
 
     boundAddresses.clear();
 
-    channelReferences.forEach(
-        channel -> {
-          try {
-            channel.close().sync();
-          } catch (InterruptedException ignored) {
-          }
-        });
+    channelReferences.forEach(channel -> channel.close().syncUninterruptibly());
     channelReferences.clear();
 
+    Set<Channel> childChannels;
     synchronized (childChannelReferences) {
-      childChannelReferences.forEach(
-          channel -> {
-            LoggerFactory.getLogger(getClass()).info("Closing child channel: {}", channel);
-            channel.close();
-          });
+      childChannels = new HashSet<>(childChannelReferences);
       childChannelReferences.clear();
     }
+    childChannels.forEach(
+        channel -> {
+          LoggerFactory.getLogger(getClass()).info("Closing child channel: {}", channel);
+          channel.close().syncUninterruptibly();
+        });
 
     serverBootstrap.reset();
   }

@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.stack.transport.client.tcp;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+import static org.eclipse.milo.opcua.stack.transport.TestPortAllocator.allocatePort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -92,6 +93,7 @@ import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransportConfig;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -104,9 +106,19 @@ class OpcTcpTransportTest extends SecurityFixture {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpcTcpTransportTest.class);
 
+  private InetSocketAddress serverAddress;
+  private OpcServerTransport serverTransport;
+
   static {
     // Required for SecurityPolicy.Aes256_Sha256_RsaPss
     Security.addProvider(new BouncyCastleProvider());
+  }
+
+  @AfterEach
+  void unbindServerTransport() throws Exception {
+    if (serverTransport != null) {
+      serverTransport.unbind();
+    }
   }
 
   private static Stream<Arguments> provideSecurityParameters() {
@@ -765,7 +777,7 @@ class OpcTcpTransportTest extends SecurityFixture {
     }
   }
 
-  private static void createSession(OpcTcpClientTransport transport) throws Exception {
+  private void createSession(OpcTcpClientTransport transport) throws Exception {
     var header =
         new RequestHeader(
             NodeId.NULL_VALUE, DateTime.now(), uint(0), uint(0), null, uint(5_000), null);
@@ -776,7 +788,7 @@ class OpcTcpTransportTest extends SecurityFixture {
             new ApplicationDescription(
                 "", "", LocalizedText.NULL_VALUE, ApplicationType.Client, null, null, null),
             null,
-            "opc.tcp://localhost:12685",
+            endpointUrl(),
             "sessionName",
             ByteString.NULL_VALUE,
             ByteString.NULL_VALUE,
@@ -1056,13 +1068,14 @@ class OpcTcpTransportTest extends SecurityFixture {
           }
         };
 
-    var transport = new OpcTcpServerTransport(config);
-    transport.bind(applicationContext, new InetSocketAddress("localhost", 12685));
-    return transport;
+    serverAddress = new InetSocketAddress("localhost", allocatePort());
+    serverTransport = new OpcTcpServerTransport(config);
+    serverTransport.bind(applicationContext, serverAddress);
+    return serverTransport;
   }
 
-  private static ChannelParameters openRawTcpChannel(Socket socket) throws Exception {
-    socket.connect(new InetSocketAddress("localhost", 12685));
+  private ChannelParameters openRawTcpChannel(Socket socket) throws Exception {
+    socket.connect(serverAddress);
     socket.setSoTimeout(3_000);
 
     EncodingLimits encodingLimits = DefaultEncodingContext.INSTANCE.getEncodingLimits();
@@ -1073,7 +1086,7 @@ class OpcTcpTransportTest extends SecurityFixture {
             encodingLimits.getMaxChunkSize(),
             encodingLimits.getMaxMessageSize(),
             encodingLimits.getMaxChunkCount(),
-            "opc.tcp://localhost:12685");
+            endpointUrl());
 
     ByteBuf helloBuffer = TcpMessageEncoder.encode(hello);
     try {
@@ -1354,7 +1367,7 @@ class OpcTcpTransportTest extends SecurityFixture {
       SecurityPolicy securityPolicy, MessageSecurityMode messageSecurityMode, byte[] certificate) {
 
     return new EndpointDescription(
-        "opc.tcp://localhost:12685",
+        endpointUrl(),
         new ApplicationDescription(
             "uri:server",
             "productUri",
@@ -1362,7 +1375,7 @@ class OpcTcpTransportTest extends SecurityFixture {
             ApplicationType.Server,
             null,
             null,
-            new String[] {"opc.tcp://localhost:12685"}),
+            new String[] {endpointUrl()}),
         ByteString.of(certificate),
         messageSecurityMode,
         securityPolicy.getUri(),
@@ -1371,6 +1384,10 @@ class OpcTcpTransportTest extends SecurityFixture {
         },
         TransportProfile.TCP_UASC_UABINARY.getUri(),
         ubyte(0));
+  }
+
+  private String endpointUrl() {
+    return "opc.tcp://localhost:" + serverAddress.getPort();
   }
 
   private static CertificateMaterial nistP256Certificate(String commonName) throws Exception {
