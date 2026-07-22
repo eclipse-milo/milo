@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
-import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.ValueRank;
 import org.eclipse.milo.opcua.sdk.server.AbstractLifecycle;
 import org.eclipse.milo.opcua.sdk.server.Lifecycle;
@@ -31,8 +30,7 @@ import org.eclipse.milo.opcua.sdk.server.model.variables.SessionDiagnosticsArray
 import org.eclipse.milo.opcua.sdk.server.model.variables.SessionDiagnosticsVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.AttributeObserver;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
-import org.eclipse.milo.opcua.sdk.server.nodes.factories.NodeFactory;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationRequest;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -59,7 +57,6 @@ public class SessionDiagnosticsVariableArray extends AbstractLifecycle {
   private SessionListener sessionListener;
 
   private final OpcUaServer server;
-  private final NodeFactory nodeFactory;
 
   private final SessionDiagnosticsArrayTypeNode node;
   private final NodeManager<UaNode> diagnosticsNodeManager;
@@ -71,20 +68,6 @@ public class SessionDiagnosticsVariableArray extends AbstractLifecycle {
     this.diagnosticsNodeManager = diagnosticsNodeManager;
 
     this.server = node.getNodeContext().getServer();
-
-    this.nodeFactory =
-        new NodeFactory(
-            new UaNodeContext() {
-              @Override
-              public OpcUaServer getServer() {
-                return server;
-              }
-
-              @Override
-              public NodeManager<UaNode> getNodeManager() {
-                return diagnosticsNodeManager;
-              }
-            });
   }
 
   @Override
@@ -182,26 +165,25 @@ public class SessionDiagnosticsVariableArray extends AbstractLifecycle {
       String id = Util.buildBrowseNamePath(node) + "[" + index + "]";
       NodeId elementNodeId = new NodeId(1, id);
 
+      InstantiationRequest<SessionDiagnosticsVariableTypeNode> request =
+          InstantiationRequest.of(
+                  SessionDiagnosticsVariableTypeNode.class, NodeIds.SessionDiagnosticsVariableType)
+              .nodeId(elementNodeId)
+              .browseName(new QualifiedName(1, "SessionDiagnostics"))
+              .displayName(new LocalizedText(node.getDisplayName().locale(), "SessionDiagnostics"))
+              .rootAttribute(AttributeId.ArrayDimensions, null)
+              .rootAttribute(AttributeId.ValueRank, ValueRank.Scalar.getValue())
+              .rootAttribute(AttributeId.DataType, NodeIds.SessionDiagnosticsDataType)
+              .rootAttribute(AttributeId.AccessLevel, AccessLevel.toValue(AccessLevel.READ_ONLY))
+              .rootAttribute(
+                  AttributeId.UserAccessLevel, AccessLevel.toValue(AccessLevel.READ_ONLY))
+              .parent(node.getNodeId(), NodeIds.HasComponent)
+              .target(diagnosticsNodeManager)
+              .legacyPathStrings()
+              .build();
+
       SessionDiagnosticsVariableTypeNode elementNode =
-          (SessionDiagnosticsVariableTypeNode)
-              nodeFactory.createNode(elementNodeId, NodeIds.SessionDiagnosticsVariableType);
-
-      elementNode.setBrowseName(new QualifiedName(1, "SessionDiagnostics"));
-      elementNode.setDisplayName(
-          new LocalizedText(node.getDisplayName().locale(), "SessionDiagnostics"));
-      elementNode.setArrayDimensions(null);
-      elementNode.setValueRank(ValueRank.Scalar.getValue());
-      elementNode.setDataType(NodeIds.SessionDiagnosticsDataType);
-      elementNode.setAccessLevel(AccessLevel.toValue(AccessLevel.READ_ONLY));
-      elementNode.setUserAccessLevel(AccessLevel.toValue(AccessLevel.READ_ONLY));
-
-      elementNode.addReference(
-          new Reference(
-              elementNode.getNodeId(),
-              NodeIds.HasComponent,
-              node.getNodeId().expanded(),
-              Reference.Direction.INVERSE));
-      diagnosticsNodeManager.addNode(elementNode);
+          server.getNodeInstantiator().instantiate(request).root();
 
       SessionDiagnosticsVariable sessionDiagnosticsVariable =
           new SessionDiagnosticsVariable(elementNode, session);

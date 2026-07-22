@@ -13,7 +13,6 @@ package org.eclipse.milo.opcua.sdk.server.diagnostics.objects;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.server.AbstractLifecycle;
 import org.eclipse.milo.opcua.sdk.server.NodeManager;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
@@ -26,15 +25,13 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.SessionsDiagnosticsSummar
 import org.eclipse.milo.opcua.sdk.server.model.variables.SessionSecurityDiagnosticsArrayTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.SessionSecurityDiagnosticsTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.factories.NodeFactory;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationRequest;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +58,6 @@ public class SessionsDiagnosticsSummaryObject extends AbstractLifecycle {
   private SessionListener sessionListener;
 
   private final OpcUaServer server;
-  private final NodeFactory nodeFactory;
   private final NodeManager<UaNode> diagnosticsNodeManager;
 
   private final SessionsDiagnosticsSummaryTypeNode node;
@@ -73,20 +69,6 @@ public class SessionsDiagnosticsSummaryObject extends AbstractLifecycle {
     this.diagnosticsNodeManager = diagnosticsNodeManager;
 
     this.server = node.getNodeContext().getServer();
-
-    this.nodeFactory =
-        new NodeFactory(
-            new UaNodeContext() {
-              @Override
-              public OpcUaServer getServer() {
-                return server;
-              }
-
-              @Override
-              public NodeManager<UaNode> getNodeManager() {
-                return diagnosticsNodeManager;
-              }
-            });
   }
 
   @Override
@@ -134,22 +116,20 @@ public class SessionsDiagnosticsSummaryObject extends AbstractLifecycle {
       String sessionName = session.getSessionName();
       QualifiedName browseName = new QualifiedName(1, sessionNameBrowseName(sessionName));
 
-      SessionDiagnosticsObjectTypeNode sdoNode =
-          (SessionDiagnosticsObjectTypeNode)
-              nodeFactory.createNode(
-                  new NodeId(1, UUID.randomUUID()),
-                  NodeIds.SessionDiagnosticsObjectType,
-                  securityDiagnosticsAccessControl(node));
-      sdoNode.setBrowseName(browseName);
-      sdoNode.setDisplayName(LocalizedText.english(sessionName));
+      InstantiationRequest<SessionDiagnosticsObjectTypeNode> request =
+          InstantiationRequest.of(
+                  SessionDiagnosticsObjectTypeNode.class, NodeIds.SessionDiagnosticsObjectType)
+              .nodeId(new NodeId(1, UUID.randomUUID()))
+              .browseName(browseName)
+              .displayName(LocalizedText.english(sessionName))
+              .parent(node.getNodeId(), NodeIds.HasComponent)
+              .target(diagnosticsNodeManager)
+              .legacyPathStrings()
+              .onNode(securityDiagnosticsAccessControl(node))
+              .build();
 
-      sdoNode.addReference(
-          new Reference(
-              sdoNode.getNodeId(),
-              NodeIds.HasComponent,
-              node.getNodeId().expanded(),
-              Reference.Direction.INVERSE));
-      diagnosticsNodeManager.addNode(sdoNode);
+      SessionDiagnosticsObjectTypeNode sdoNode =
+          server.getNodeInstantiator().instantiate(request).root();
 
       SessionDiagnosticsObject sdo =
           new SessionDiagnosticsObject(sdoNode, session, diagnosticsNodeManager);
@@ -162,31 +142,28 @@ public class SessionsDiagnosticsSummaryObject extends AbstractLifecycle {
   }
 
   /**
-   * Creates a callback that applies the standard security diagnostics array's access policy only to
-   * the security diagnostics subtree of a dynamically instantiated Session diagnostics Object.
+   * Creates a hook that applies the standard security diagnostics array's access policy only to the
+   * security diagnostics subtree of a dynamically instantiated Session diagnostics Object, while
+   * the nodes are still staged — before anything is published.
    *
    * @param summaryNode the standard summary node containing the security diagnostics array.
-   * @return a callback that applies security attributes to security diagnostics Variables.
+   * @return a hook that applies security attributes to security diagnostics Variables.
    */
-  static NodeFactory.InstantiationCallback securityDiagnosticsAccessControl(
+  static InstantiationRequest.OnNode securityDiagnosticsAccessControl(
       SessionsDiagnosticsSummaryTypeNode summaryNode) {
 
-    return new NodeFactory.InstantiationCallback() {
-      @Override
-      public void onVariableAdded(
-          @Nullable UaNode parent, UaVariableNode instance, NodeId typeDefinitionId) {
+    return (declaration, node, parent, graph) -> {
+      if (node instanceof UaVariableNode instance
+          && (instance instanceof SessionSecurityDiagnosticsTypeNode
+              || parent instanceof SessionSecurityDiagnosticsTypeNode)) {
 
-        if (instance instanceof SessionSecurityDiagnosticsTypeNode
-            || parent instanceof SessionSecurityDiagnosticsTypeNode) {
+        // Ordinary SessionDiagnostics intentionally retain their separate standard permissions.
+        SessionSecurityDiagnosticsArrayTypeNode securityArray =
+            summaryNode.getSessionSecurityDiagnosticsArrayNode();
 
-          // Ordinary SessionDiagnostics intentionally retain their separate standard permissions.
-          SessionSecurityDiagnosticsArrayTypeNode securityArray =
-              summaryNode.getSessionSecurityDiagnosticsArrayNode();
-
-          instance.setRolePermissions(securityArray.getRolePermissions());
-          instance.setUserRolePermissions(securityArray.getUserRolePermissions());
-          instance.setAccessRestrictions(securityArray.getAccessRestrictions());
-        }
+        instance.setRolePermissions(securityArray.getRolePermissions());
+        instance.setUserRolePermissions(securityArray.getUserRolePermissions());
+        instance.setAccessRestrictions(securityArray.getAccessRestrictions());
       }
     };
   }

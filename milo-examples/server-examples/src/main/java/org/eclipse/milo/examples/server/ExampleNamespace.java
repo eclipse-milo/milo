@@ -51,8 +51,8 @@ import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.factories.NodeFactory;
 import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilters;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationRequest;
 import org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
@@ -192,7 +192,7 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
                   try {
                     BaseEventTypeNode eventNode =
                         getServer()
-                            .getEventFactory()
+                            .getEventInstantiator()
                             .createEvent(newNodeId(UUID.randomUUID()), NodeIds.BaseEventType);
 
                     eventNode.setBrowseName(new QualifiedName(1, "foo"));
@@ -543,29 +543,31 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
     rootNode.addOrganizes(dataAccessFolder);
 
     try {
-      AnalogItemTypeNode node =
-          (AnalogItemTypeNode)
-              getNodeFactory()
-                  .createNode(
-                      newNodeId("HelloWorld/DataAccess/AnalogValue"),
-                      NodeIds.AnalogItemType,
-                      new NodeFactory.InstantiationCallback() {
-                        @Override
-                        public boolean includeOptionalNode(
-                            NodeId typeDefinitionId, QualifiedName browseName) {
-                          return true;
-                        }
-                      });
+      // The whole instance is described by one request: identity, placement, attribute values,
+      // optional-member selection, and member initialization (EURange, via an onNode hook against
+      // the staged graph) — no mutation of the created nodes afterwards.
+      InstantiationRequest<AnalogItemTypeNode> request =
+          InstantiationRequest.of(AnalogItemTypeNode.class, NodeIds.AnalogItemType)
+              .nodeId(newNodeId("HelloWorld/DataAccess/AnalogValue"))
+              .browseName(newQualifiedName("AnalogValue"))
+              .displayName(LocalizedText.english("AnalogValue"))
+              .rootAttribute(AttributeId.DataType, NodeIds.Double)
+              .value(new DataValue(new Variant(3.14d)))
+              .includeAllOptionals()
+              .parent(dataAccessFolder.getNodeId(), NodeIds.Organizes)
+              .target(getNodeManager())
+              .onNode(
+                  (declaration, node, parent, graph) -> {
+                    if (declaration != null
+                        && declaration.browseName().equals(new QualifiedName(0, "EURange"))
+                        && node instanceof UaVariableNode variableNode) {
 
-      node.setBrowseName(newQualifiedName("AnalogValue"));
-      node.setDisplayName(LocalizedText.english("AnalogValue"));
-      node.setDataType(NodeIds.Double);
-      node.setValue(new DataValue(new Variant(3.14d)));
+                      variableNode.setValue(new DataValue(new Variant(new Range(0.0, 100.0))));
+                    }
+                  })
+              .build();
 
-      node.setEuRange(new Range(0.0, 100.0));
-
-      getNodeManager().addNode(node);
-      dataAccessFolder.addOrganizes(node);
+      getServer().getNodeInstantiator().instantiate(request);
     } catch (UaException e) {
       logger.error("Error creating AnalogItemType instance: {}", e.getMessage(), e);
     }
@@ -680,7 +682,8 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
     objectTypeNode.addComponent(bar);
 
     // Tell the ObjectTypeManager about our new type.
-    // This lets us use NodeFactory to instantiate instances of the type.
+    // This lets the instantiation engine construct instances of the type with a registered Java
+    // class instead of the base node class.
     getServer()
         .getObjectTypeManager()
         .registerObjectType(
@@ -709,23 +712,20 @@ public class ExampleNamespace extends ManagedNamespaceWithLifecycle {
     getNodeManager().addNode(foo);
     getNodeManager().addNode(bar);
 
-    // Use NodeFactory to create instance of MyObjectType called "MyObject".
-    // NodeFactory takes care of recursively instantiating MyObject member nodes
-    // as well as adding all nodes to the address space.
+    // Create an instance of MyObjectType called "MyObject" through the NodeInstantiator.
+    // One request describes the whole instance — identity, placement under the root folder, and
+    // the recursively instantiated member nodes — committed to the address space as a unit.
     try {
-      UaObjectNode myObject =
-          (UaObjectNode)
-              getNodeFactory()
-                  .createNode(newNodeId("HelloWorld/MyObject"), objectTypeNode.getNodeId());
-      myObject.setBrowseName(newQualifiedName("MyObject"));
-      myObject.setDisplayName(LocalizedText.english("MyObject"));
+      InstantiationRequest<UaObjectNode> request =
+          InstantiationRequest.of(UaObjectNode.class, objectTypeNode.getNodeId())
+              .nodeId(newNodeId("HelloWorld/MyObject"))
+              .browseName(newQualifiedName("MyObject"))
+              .displayName(LocalizedText.english("MyObject"))
+              .parent(rootFolder.getNodeId(), NodeIds.Organizes)
+              .target(getNodeManager())
+              .build();
 
-      // Add forward and inverse references from the root folder.
-      rootFolder.addOrganizes(myObject);
-
-      myObject.addReference(
-          new Reference(
-              myObject.getNodeId(), NodeIds.Organizes, rootFolder.getNodeId().expanded(), false));
+      getServer().getNodeInstantiator().instantiate(request);
     } catch (UaException e) {
       logger.error("Error creating MyObjectType instance: {}", e.getMessage(), e);
     }

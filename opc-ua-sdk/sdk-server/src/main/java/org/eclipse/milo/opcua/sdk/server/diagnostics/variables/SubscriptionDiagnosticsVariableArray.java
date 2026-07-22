@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
-import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.ValueRank;
 import org.eclipse.milo.opcua.sdk.server.AbstractLifecycle;
 import org.eclipse.milo.opcua.sdk.server.NodeManager;
@@ -29,8 +28,7 @@ import org.eclipse.milo.opcua.sdk.server.model.variables.SubscriptionDiagnostics
 import org.eclipse.milo.opcua.sdk.server.model.variables.SubscriptionDiagnosticsTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.AttributeObserver;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
-import org.eclipse.milo.opcua.sdk.server.nodes.factories.NodeFactory;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationRequest;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.Subscription;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.SubscriptionCreatedEvent;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.SubscriptionDeletedEvent;
@@ -60,7 +58,6 @@ public abstract class SubscriptionDiagnosticsVariableArray extends AbstractLifec
       Collections.synchronizedList(new ArrayList<>());
 
   private final OpcUaServer server;
-  private final NodeFactory nodeFactory;
   private final NodeManager<UaNode> diagnosticsNodeManager;
 
   private final SubscriptionDiagnosticsArrayTypeNode node;
@@ -72,20 +69,6 @@ public abstract class SubscriptionDiagnosticsVariableArray extends AbstractLifec
     this.diagnosticsNodeManager = diagnosticsNodeManager;
 
     this.server = node.getNodeContext().getServer();
-
-    this.nodeFactory =
-        new NodeFactory(
-            new UaNodeContext() {
-              @Override
-              public OpcUaServer getServer() {
-                return server;
-              }
-
-              @Override
-              public NodeManager<UaNode> getNodeManager() {
-                return diagnosticsNodeManager;
-              }
-            });
   }
 
   protected abstract List<Subscription> getSubscriptions();
@@ -189,26 +172,27 @@ public abstract class SubscriptionDiagnosticsVariableArray extends AbstractLifec
       String id = Util.buildBrowseNamePath(node) + "[" + index + "]";
       NodeId elementNodeId = new NodeId(1, id);
 
+      InstantiationRequest<SubscriptionDiagnosticsTypeNode> request =
+          InstantiationRequest.of(
+                  SubscriptionDiagnosticsTypeNode.class, NodeIds.SubscriptionDiagnosticsType)
+              .nodeId(elementNodeId)
+              .browseName(new QualifiedName(1, subscription.getId().toString()))
+              .displayName(
+                  new LocalizedText(
+                      node.getDisplayName().locale(), subscription.getId().toString()))
+              .rootAttribute(AttributeId.ArrayDimensions, null)
+              .rootAttribute(AttributeId.ValueRank, ValueRank.Scalar.getValue())
+              .rootAttribute(AttributeId.DataType, NodeIds.SubscriptionDiagnosticsDataType)
+              .rootAttribute(AttributeId.AccessLevel, AccessLevel.toValue(AccessLevel.READ_ONLY))
+              .rootAttribute(
+                  AttributeId.UserAccessLevel, AccessLevel.toValue(AccessLevel.READ_ONLY))
+              .parent(node.getNodeId(), NodeIds.HasComponent)
+              .target(diagnosticsNodeManager)
+              .legacyPathStrings()
+              .build();
+
       SubscriptionDiagnosticsTypeNode elementNode =
-          (SubscriptionDiagnosticsTypeNode)
-              nodeFactory.createNode(elementNodeId, NodeIds.SubscriptionDiagnosticsType);
-
-      elementNode.setBrowseName(new QualifiedName(1, subscription.getId().toString()));
-      elementNode.setDisplayName(
-          new LocalizedText(node.getDisplayName().locale(), subscription.getId().toString()));
-      elementNode.setArrayDimensions(null);
-      elementNode.setValueRank(ValueRank.Scalar.getValue());
-      elementNode.setDataType(NodeIds.SubscriptionDiagnosticsDataType);
-      elementNode.setAccessLevel(AccessLevel.toValue(AccessLevel.READ_ONLY));
-      elementNode.setUserAccessLevel(AccessLevel.toValue(AccessLevel.READ_ONLY));
-
-      elementNode.addReference(
-          new Reference(
-              elementNode.getNodeId(),
-              NodeIds.HasComponent,
-              node.getNodeId().expanded(),
-              Reference.Direction.INVERSE));
-      diagnosticsNodeManager.addNode(elementNode);
+          server.getNodeInstantiator().instantiate(request).root();
 
       SubscriptionDiagnosticsVariable diagnosticsVariable =
           new SubscriptionDiagnosticsVariable(elementNode, subscription);

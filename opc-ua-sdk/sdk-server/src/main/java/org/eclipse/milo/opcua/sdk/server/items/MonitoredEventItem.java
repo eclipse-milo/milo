@@ -188,7 +188,7 @@ public class MonitoredEventItem extends BaseMonitoredItem<Variant[]> implements 
 
       overflowEvent =
           server
-              .getEventFactory()
+              .getEventInstantiator()
               .createEvent(new NodeId(1, eventId), NodeIds.EventQueueOverflowEventType);
 
       overflowEvent.setBrowseName(new QualifiedName(1, "EventQueueOverflow"));

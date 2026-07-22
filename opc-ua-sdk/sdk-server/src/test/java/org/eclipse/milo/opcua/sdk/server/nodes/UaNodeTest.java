@@ -21,6 +21,7 @@ import org.eclipse.milo.opcua.sdk.server.ObjectTypeManager;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.UaNodeManager;
 import org.eclipse.milo.opcua.sdk.server.VariableTypeManager;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.TypeModelCache;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
@@ -52,6 +53,7 @@ public class UaNodeTest {
     Mockito.when(server.getVariableTypeManager()).thenReturn(variableTypeManager);
     Mockito.when(server.getStaticEncodingContext()).thenReturn(DefaultEncodingContext.INSTANCE);
     Mockito.when(server.getEncodingManager()).thenReturn(OpcUaEncodingManager.getInstance());
+    Mockito.when(server.getTypeModelCache()).thenReturn(new TypeModelCache(server));
 
     nodeManager = new UaNodeManager();
     addressSpaceManager.register(nodeManager);

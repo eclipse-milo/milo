@@ -37,7 +37,7 @@ import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.factories.NodeFactory;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationRequest;
 import org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
@@ -145,28 +145,30 @@ public class TestNamespace extends ManagedNamespaceWithLifecycle {
         .addStartupTask(
             () -> {
               try {
-                AnalogItemTypeNode node =
-                    (AnalogItemTypeNode)
-                        getNodeFactory()
-                            .createNode(
-                                newNodeId("TestAnalogValue"),
-                                NodeIds.AnalogItemType,
-                                new NodeFactory.InstantiationCallback() {
-                                  @Override
-                                  public boolean includeOptionalNode(
-                                      NodeId typeDefinitionId, QualifiedName browseName) {
-                                    return true;
-                                  }
-                                });
+                InstantiationRequest<AnalogItemTypeNode> request =
+                    InstantiationRequest.of(AnalogItemTypeNode.class, NodeIds.AnalogItemType)
+                        .nodeId(newNodeId("TestAnalogValue"))
+                        .browseName(newQualifiedName("TestAnalogValue"))
+                        .displayName(LocalizedText.english("TestAnalogValue"))
+                        .rootAttribute(AttributeId.DataType, NodeIds.Double)
+                        .value(new DataValue(new Variant(3.14d)))
+                        .includeAllOptionals()
+                        .target(getNodeManager())
+                        .onNode(
+                            (declaration, node, parent, graph) -> {
+                              if (declaration != null
+                                  && declaration
+                                      .browseName()
+                                      .equals(new QualifiedName(0, "EURange"))
+                                  && node instanceof UaVariableNode variableNode) {
 
-                node.setBrowseName(newQualifiedName("TestAnalogValue"));
-                node.setDisplayName(LocalizedText.english("TestAnalogValue"));
-                node.setDataType(NodeIds.Double);
-                node.setValue(new DataValue(new Variant(3.14d)));
+                                variableNode.setValue(
+                                    new DataValue(new Variant(new Range(0.0, 100.0))));
+                              }
+                            })
+                        .build();
 
-                node.setEuRange(new Range(0.0, 100.0));
-
-                getNodeManager().addNode(node);
+                getServer().getNodeInstantiator().instantiate(request);
               } catch (UaException e) {
                 throw new RuntimeException(e);
               }
@@ -486,7 +488,7 @@ public class TestNamespace extends ManagedNamespaceWithLifecycle {
                   try {
                     BaseEventTypeNode eventNode =
                         getServer()
-                            .getEventFactory()
+                            .getEventInstantiator()
                             .createEvent(newNodeId(UUID.randomUUID()), NodeIds.BaseEventType);
 
                     eventNode.setBrowseName(new QualifiedName(1, "foo"));
