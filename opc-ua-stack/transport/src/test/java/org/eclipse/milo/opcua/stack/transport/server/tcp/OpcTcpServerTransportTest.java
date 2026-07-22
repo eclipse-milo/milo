@@ -10,17 +10,24 @@
 
 package org.eclipse.milo.opcua.stack.transport.server.tcp;
 
+import static org.eclipse.milo.opcua.stack.transport.TestPortAllocator.allocatePort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
@@ -74,6 +81,43 @@ class OpcTcpServerTransportTest {
 
       assertEquals("transport is unbound", exception.getMessage());
       assertThrows(SocketTimeoutException.class, listener::accept);
+    }
+  }
+
+  // Unbind is the server teardown barrier; returning with accepted channels still open lets one
+  // test invocation leak network activity into the next.
+  @Test
+  void unbindClosesAcceptedChannelsBeforeReturning() throws Exception {
+    eventLoop = new NioEventLoopGroup(1);
+    var acceptedChannel = new AtomicReference<Channel>();
+    var channelAccepted = new CountDownLatch(1);
+
+    OpcTcpServerTransportConfig config =
+        OpcTcpServerTransportConfig.newBuilder()
+            .setEventLoop(eventLoop)
+            .setChannelPipelineCustomizer(
+                pipeline -> {
+                  acceptedChannel.set(pipeline.channel());
+                  channelAccepted.countDown();
+                })
+            .build();
+
+    var transport = new OpcTcpServerTransport(config);
+    var bindAddress = new InetSocketAddress("localhost", allocatePort());
+
+    try (var socket = new Socket()) {
+      transport.bind(newServerApplicationContext(), bindAddress);
+      socket.connect(bindAddress);
+
+      assertTrue(channelAccepted.await(3, TimeUnit.SECONDS));
+      Channel channel = acceptedChannel.get();
+
+      transport.unbind();
+
+      assertFalse(channel.isOpen());
+      assertTrue(channel.closeFuture().isDone());
+    } finally {
+      transport.unbind();
     }
   }
 
