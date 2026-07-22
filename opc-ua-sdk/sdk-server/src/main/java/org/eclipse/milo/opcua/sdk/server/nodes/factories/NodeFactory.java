@@ -207,14 +207,7 @@ public class NodeFactory {
           throw new UaException(StatusCodes.Bad_InternalError);
         }
       } else {
-        // Non-root Nodes are all instance declarations.
-        // Iteration is parent-before-child, so if the parent declaration was an optional the
-        // callback declined, none of its children are instantiated either; instantiating them
-        // would register orphaned nodes that belong to no hierarchy.
-        if (!nodes.containsKey(browsePath.parent)) {
-          continue;
-        }
-
+        // Non-root Nodes are all instance declarations
         NodeId instanceNodeId = instanceNodeId(rootNodeId, browsePath);
 
         if (node instanceof UaMethodNode declaration) {
@@ -313,36 +306,9 @@ public class NodeFactory {
 
                 if (!NodeIds.HasModellingRule.equals(referenceTypeId)) {
                   if (target.targetNodeId != null) {
-                    // A non-hierarchical reference between two instance declarations describes a
-                    // reference between their instances, not a literal reference back into the
-                    // type declaration. Resolve such targets through the declaration table; if an
-                    // optional target was not instantiated, omit the reference. HasTypeDefinition
-                    // deliberately remains a literal reference to the type node.
-                    BrowsePath targetPath = null;
-                    if (!NodeIds.HasTypeDefinition.equals(referenceTypeId)) {
-                      targetPath =
-                          target
-                              .targetNodeId
-                              .toNodeId(namespaceTable)
-                              .map(nodeTable::getDeclarationPath)
-                              .orElse(null);
-                    }
-
-                    if (targetPath != null) {
-                      UaNode targetNode = nodes.get(targetPath);
-                      if (targetNode != null) {
-                        node.addReference(
-                            new Reference(
-                                node.getNodeId(),
-                                referenceTypeId,
-                                targetNode.getNodeId().expanded(),
-                                t.forward));
-                      }
-                    } else {
-                      node.addReference(
-                          new Reference(
-                              node.getNodeId(), referenceTypeId, target.targetNodeId, t.forward));
-                    }
+                    node.addReference(
+                        new Reference(
+                            node.getNodeId(), referenceTypeId, target.targetNodeId, true));
                   } else {
                     BrowsePath targetPath = target.targetPath;
 
@@ -354,7 +320,7 @@ public class NodeFactory {
                               node.getNodeId(),
                               referenceTypeId,
                               targetNode.getNodeId().expanded(),
-                              t.forward));
+                              true));
                     }
                   }
                 }

@@ -24,24 +24,12 @@ class ReferenceTable {
 
   void addReference(BrowsePath sourcePath, NodeId referenceTypeId, ExpandedNodeId targetNodeId) {
 
-    addReference(sourcePath, referenceTypeId, targetNodeId, true);
-  }
-
-  void addReference(
-      BrowsePath sourcePath, NodeId referenceTypeId, ExpandedNodeId targetNodeId, boolean forward) {
-
-    references.add(new RefRow(sourcePath, referenceTypeId, new RefTarget(targetNodeId), forward));
+    references.add(new RefRow(sourcePath, referenceTypeId, new RefTarget(targetNodeId)));
   }
 
   void addReference(BrowsePath sourcePath, NodeId referenceTypeId, BrowsePath targetPath) {
 
-    addReference(sourcePath, referenceTypeId, targetPath, true);
-  }
-
-  void addReference(
-      BrowsePath sourcePath, NodeId referenceTypeId, BrowsePath targetPath, boolean forward) {
-
-    references.add(new RefRow(sourcePath, referenceTypeId, new RefTarget(targetPath), forward));
+    references.add(new RefRow(sourcePath, referenceTypeId, new RefTarget(targetPath)));
   }
 
   List<RefRow> getReferences(BrowsePath sourcePath) {
@@ -102,13 +90,11 @@ class ReferenceTable {
     final BrowsePath browsePath;
     final NodeId nodeId;
     final RefTarget target;
-    final boolean forward;
 
-    RefRow(BrowsePath browsePath, NodeId nodeId, RefTarget target, boolean forward) {
+    RefRow(BrowsePath browsePath, NodeId nodeId, RefTarget target) {
       this.browsePath = browsePath;
       this.nodeId = nodeId;
       this.target = target;
-      this.forward = forward;
     }
 
     @Override
@@ -118,13 +104,12 @@ class ReferenceTable {
       RefRow row = (RefRow) o;
       return Objects.equals(browsePath, row.browsePath)
           && Objects.equals(nodeId, row.nodeId)
-          && Objects.equals(target, row.target)
-          && forward == row.forward;
+          && Objects.equals(target, row.target);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(browsePath, nodeId, target, forward);
+      return Objects.hash(browsePath, nodeId, target);
     }
   }
 

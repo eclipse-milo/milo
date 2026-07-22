@@ -42,11 +42,9 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 public class EventFactory extends AbstractLifecycle {
 
   private final NodeManager<UaNode> nodeManager = new UaNodeManager();
-  private final NodeManager<UaNode> transientNodeManager = new UaNodeManager();
 
   private final OpcUaServer server;
   private final NodeFactory nodeFactory;
-  private final NodeFactory transientNodeFactory;
 
   public EventFactory(OpcUaServer server) {
     this(server, server.getObjectTypeManager(), server.getVariableTypeManager());
@@ -62,12 +60,6 @@ public class EventFactory extends AbstractLifecycle {
     nodeFactory =
         new NodeFactory(
             new EventNodeContext(server, nodeManager), objectTypeManager, variableTypeManager);
-
-    transientNodeFactory =
-        new NodeFactory(
-            new EventNodeContext(server, transientNodeManager),
-            objectTypeManager,
-            variableTypeManager);
   }
 
   @Override
@@ -93,35 +85,6 @@ public class EventFactory extends AbstractLifecycle {
    * @throws UaException if an error occurs creating the Event instance.
    */
   public BaseEventTypeNode createEvent(NodeId nodeId, NodeId typeDefinitionId) throws UaException {
-    return createEvent(nodeFactory, nodeId, typeDefinitionId);
-  }
-
-  /**
-   * Create an Event instance of the type identified by {@code typeDefinitionId} in a {@link
-   * NodeManager} that is never registered with the Server's AddressSpaceManager.
-   *
-   * <p>Transient Event Nodes are invisible to the Server's services and cannot leak into the
-   * address space, but Event field selection still resolves against them because resolution
-   * consults the Node's own NodeManager.
-   *
-   * <p>Event Nodes must be deleted by the caller once they have been posted to the event bus or
-   * their lifetime has otherwise expired.
-   *
-   * @param nodeId the {@link NodeId} to use for the Event {@link ObjectNode}.
-   * @param typeDefinitionId the {@link NodeId} of the {@link ObjectTypeNode} representing the type
-   *     definition.
-   * @return an Event {@link ObjectNode} instance.
-   * @throws UaException if an error occurs creating the Event instance.
-   */
-  public BaseEventTypeNode createTransientEvent(NodeId nodeId, NodeId typeDefinitionId)
-      throws UaException {
-
-    return createEvent(transientNodeFactory, nodeId, typeDefinitionId);
-  }
-
-  private static BaseEventTypeNode createEvent(
-      NodeFactory nodeFactory, NodeId nodeId, NodeId typeDefinitionId) throws UaException {
-
     BaseEventTypeNode eventNode =
         (BaseEventTypeNode)
             nodeFactory.createNode(
