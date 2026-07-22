@@ -70,6 +70,16 @@ public class AddressSpaceManager extends AddressSpaceComposite {
   }
 
   /**
+   * Check if {@code nodeManager} is registered with this {@link AddressSpaceManager}.
+   *
+   * @param nodeManager the {@link NodeManager} to check.
+   * @return {@code true} if {@code nodeManager} is registered.
+   */
+  public boolean isRegistered(NodeManager<UaNode> nodeManager) {
+    return nodeManagers.contains(nodeManager);
+  }
+
+  /**
    * Get the managed {@link UaNode} identified by {@code nodeId} from the first registered {@link
    * NodeManager} that has it, if there is one.
    *

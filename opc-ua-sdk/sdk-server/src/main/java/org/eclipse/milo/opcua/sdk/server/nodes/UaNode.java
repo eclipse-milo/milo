@@ -14,6 +14,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -27,6 +28,7 @@ import org.eclipse.milo.opcua.sdk.core.nodes.ObjectNode;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceTypeTree;
 import org.eclipse.milo.opcua.sdk.server.AccessContext;
+import org.eclipse.milo.opcua.sdk.server.AddressSpaceManager;
 import org.eclipse.milo.opcua.sdk.server.NodeManager;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilterChain;
@@ -339,19 +341,47 @@ public abstract class UaNode implements UaServerNode {
   }
 
   protected Optional<UaNode> getManagedNode(NodeId nodeId) {
-    // return getNodeManager(nodeId).flatMap(n -> n.getNode(nodeId));
-    return context.getServer().getAddressSpaceManager().getManagedNode(nodeId);
+    // This Node's own NodeManager is consulted first so that resolution works even when the
+    // NodeManager is not registered with the AddressSpaceManager, e.g. a private ConditionRefresh
+    // snapshot tree.
+    Optional<UaNode> node = context.getNodeManager().getNode(nodeId);
+
+    return node.isPresent()
+        ? node
+        : context.getServer().getAddressSpaceManager().getManagedNode(nodeId);
   }
 
   protected Optional<UaNode> getManagedNode(ExpandedNodeId nodeId) {
-    // return getNodeManager(nodeId).flatMap(n -> n.getNode(nodeId));
-    return context.getServer().getAddressSpaceManager().getManagedNode(nodeId);
+    return nodeId.toNodeId(context.getNamespaceTable()).flatMap(this::getManagedNode);
   }
 
   @Override
   public List<Reference> getReferences() {
-    return List.copyOf(
-        context.getServer().getAddressSpaceManager().getManagedReferences(getNodeId()));
+    AddressSpaceManager addressSpaceManager = context.getServer().getAddressSpaceManager();
+
+    // A Node whose NodeManager is registered is part of the server address space, and the managed
+    // References aggregated across every registered NodeManager are authoritative: an inverse
+    // Reference is stored in the manager that added it, not necessarily this Node's own.
+    if (addressSpaceManager.isRegistered(context.getNodeManager())) {
+      return List.copyOf(addressSpaceManager.getManagedReferences(getNodeId()));
+    }
+
+    // This Node lives in a private, unregistered NodeManager. If a live Node is registered under
+    // the same NodeId — a ConditionRefresh snapshot deliberately reuses a live Condition's NodeId
+    // — return only the private manager's References so the live Node's References do not leak
+    // into the private tree.
+    if (addressSpaceManager.getManagedNode(getNodeId()).isPresent()) {
+      return context.getNodeManager().getReferences(getNodeId());
+    }
+
+    // No Node is registered under this NodeId — for example, a Node in a Namespace still under
+    // construction whose NodeManager is not yet registered. Registered managers may still hold
+    // References involving this Node, so union the managed and local References.
+    var references = new LinkedHashSet<>(addressSpaceManager.getManagedReferences(getNodeId()));
+
+    references.addAll(context.getNodeManager().getReferences(getNodeId()));
+
+    return List.copyOf(references);
   }
 
   /**

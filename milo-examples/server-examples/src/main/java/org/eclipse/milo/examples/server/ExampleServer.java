@@ -73,7 +73,7 @@ public class ExampleServer {
     try {
       NonceUtil.blockUntilSecureRandomSeeded(10, TimeUnit.SECONDS);
     } catch (ExecutionException | InterruptedException | TimeoutException e) {
-      e.printStackTrace();
+      e.printStackTrace(System.err);
       System.exit(-1);
     }
   }
@@ -92,6 +92,7 @@ public class ExampleServer {
 
   private final OpcUaServer server;
   private final ExampleNamespace exampleNamespace;
+  private final AlarmConditionsNamespace alarmConditionsNamespace;
 
   public ExampleServer() throws Exception {
     this(DEFAULT_TCP_BIND_PORT, builder -> {});
@@ -238,6 +239,9 @@ public class ExampleServer {
 
     exampleNamespace = new ExampleNamespace(server);
     exampleNamespace.startup();
+
+    alarmConditionsNamespace = new AlarmConditionsNamespace(server);
+    alarmConditionsNamespace.startup();
   }
 
   private Set<EndpointConfig> createEndpointConfigs(X509Certificate certificate) {
@@ -319,6 +323,7 @@ public class ExampleServer {
   }
 
   public CompletableFuture<OpcUaServer> shutdown() {
+    alarmConditionsNamespace.shutdown();
     exampleNamespace.shutdown();
 
     return server.shutdown();
