@@ -2,10 +2,14 @@ name: Deploy SNAPSHOT to Maven Central
 permissions:
   contents: read
 on:
+  push:
+    branches:
+      - 'integration/1.2'
   workflow_dispatch:
 
 jobs:
   publish:
+    if: github.repository == 'eclipse-milo/milo'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
