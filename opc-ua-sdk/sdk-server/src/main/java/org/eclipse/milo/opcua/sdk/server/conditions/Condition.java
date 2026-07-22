@@ -749,7 +749,7 @@ public class Condition {
     return Optional.empty();
   }
 
-  /** Release runtime resources owned by this Condition during server shutdown. */
+  /** Release runtime resources when this Condition is unregistered or the server shuts down. */
   void shutdown() {}
 
   /**

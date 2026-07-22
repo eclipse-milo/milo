@@ -30,15 +30,21 @@ public interface ConditionManager {
   /**
    * Register {@code condition}: it joins refresh replay and EventId-keyed dispatch.
    *
+   * <p>Registering a different Condition under an already-registered ConditionId displaces the
+   * existing Condition and releases its runtime resources.
+   *
    * @param condition the {@link Condition} to register.
    */
   void register(Condition condition);
 
   /**
-   * Unregister {@code condition}.
+   * Unregister {@code condition} and release its runtime resources.
    *
    * <p>An in-flight method call against the Condition completes against the Condition's own state;
    * subsequent EventId lookups through this manager no longer resolve to it.
+   *
+   * <p>Unregistering is terminal: released runtime resources (e.g. shelving timers) are not
+   * restored if the same Condition instance is registered again.
    *
    * @param condition the {@link Condition} to unregister.
    */

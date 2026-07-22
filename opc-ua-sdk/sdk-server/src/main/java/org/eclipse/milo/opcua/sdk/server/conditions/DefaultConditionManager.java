@@ -46,6 +46,11 @@ import org.slf4j.LoggerFactory;
  * replay delivers immutable {@link ConditionEventSnapshot}s taken per Condition under that
  * Condition's lock.
  *
+ * <p>The exception is releasing a Condition's runtime resources: {@link #unregister}, {@link
+ * #shutdown}, and a {@link #register} that displaces an existing Condition invoke {@link
+ * Condition#shutdown}, which may acquire the target Condition's lock. Do not call them while
+ * holding a different Condition's lock.
+ *
  * <p>Via {@link #onConditionEventOverflow}: an event monitored item that discarded a
  * condition-derived notification receives a RefreshRequired marker once its queue has capacity
  * again (§5.11.4).
@@ -69,21 +74,29 @@ public class DefaultConditionManager implements ConditionManager {
 
   @Override
   public void register(Condition condition) {
+    NodeId conditionId = condition.getConditionId();
+
     if (shutdown.get()) {
-      condition.shutdown();
+      shutdownCondition(conditionId, condition);
       return;
     }
 
-    conditions.put(condition.getConditionId(), condition);
+    Condition displaced = conditions.put(conditionId, condition);
+    if (displaced != null && displaced != condition) {
+      shutdownCondition(conditionId, displaced);
+    }
 
-    if (shutdown.get() && conditions.remove(condition.getConditionId(), condition)) {
-      condition.shutdown();
+    if (shutdown.get() && conditions.remove(conditionId, condition)) {
+      shutdownCondition(conditionId, condition);
     }
   }
 
   @Override
   public void unregister(Condition condition) {
-    conditions.remove(condition.getConditionId(), condition);
+    NodeId conditionId = condition.getConditionId();
+    if (conditions.remove(conditionId, condition)) {
+      shutdownCondition(conditionId, condition);
+    }
   }
 
   @Override
@@ -301,17 +314,16 @@ public class DefaultConditionManager implements ConditionManager {
   @Override
   public void shutdown() {
     if (shutdown.compareAndSet(false, true)) {
-      conditions.forEach(
-          (conditionId, condition) -> {
-            if (conditions.remove(conditionId, condition)) {
-              try {
-                condition.shutdown();
-              } catch (Throwable t) {
-                logger.warn("Error shutting down Condition {}", conditionId, t);
-              }
-            }
-          });
+      conditions.forEach((conditionId, condition) -> unregister(condition));
       refreshInProgress.clear();
+    }
+  }
+
+  private void shutdownCondition(NodeId conditionId, Condition condition) {
+    try {
+      condition.shutdown();
+    } catch (Throwable t) {
+      logger.warn("Error shutting down Condition {}", conditionId, t);
     }
   }
 
