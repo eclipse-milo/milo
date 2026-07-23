@@ -15,6 +15,7 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.SystemDiagnosticAlarmType
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 
 /**
  * Behavior for a SystemDiagnosticAlarm instance (Part 9 §5.8.24.6): an {@link OffNormalAlarm}
@@ -46,6 +47,52 @@ public class SystemDiagnosticAlarm extends OffNormalAlarm {
     ConditionBuilder builder = new ConditionBuilder(context);
     configure.accept(builder);
 
+    return build(
+        builder,
+        NodeIds.SystemDiagnosticAlarmType,
+        node -> new SystemDiagnosticAlarm((SystemDiagnosticAlarmTypeNode) node));
+  }
+
+  /**
+   * Attach behavior to a complete, pre-existing instance.
+   *
+   * @param node the complete generated typed node.
+   * @return the attached, unregistered behavior.
+   */
+  public static SystemDiagnosticAlarm attach(SystemDiagnosticAlarmTypeNode node) {
+    return attach(node, options -> {});
+  }
+
+  /**
+   * Attach behavior to a complete, pre-existing instance.
+   *
+   * @param node the complete generated typed node.
+   * @param configure receives source-wiring options.
+   * @return the attached, unregistered behavior.
+   */
+  public static SystemDiagnosticAlarm attach(
+      SystemDiagnosticAlarmTypeNode node, Consumer<AttachOptions> configure) {
+    return attach(
+        node,
+        configure,
+        attached -> new SystemDiagnosticAlarm((SystemDiagnosticAlarmTypeNode) attached));
+  }
+
+  /**
+   * Complete and attach behavior to a pre-existing instance without replacing its identity.
+   *
+   * @param context the context whose NodeManager owns the instance.
+   * @param nodeId the existing ConditionId.
+   * @param configure receives the adopt-mode builder.
+   * @return the adopted, unregistered behavior.
+   * @throws UaException if validation or in-place completion fails.
+   */
+  public static SystemDiagnosticAlarm adopt(
+      UaNodeContext context, NodeId nodeId, Consumer<ConditionBuilder> configure)
+      throws UaException {
+    ConditionBuilder builder =
+        ConditionBuilder.forAdoption(context, nodeId, SystemDiagnosticAlarmTypeNode.class);
+    configure.accept(builder);
     return build(
         builder,
         NodeIds.SystemDiagnosticAlarmType,

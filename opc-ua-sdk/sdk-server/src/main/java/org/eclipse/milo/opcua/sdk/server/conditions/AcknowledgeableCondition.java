@@ -10,13 +10,13 @@
 
 package org.eclipse.milo.opcua.sdk.server.conditions;
 
-import java.util.Map;
 import java.util.function.Consumer;
+import org.eclipse.milo.opcua.sdk.server.conditions.ConditionNodeTraversal.DiscoveredMethod;
+import org.eclipse.milo.opcua.sdk.server.conditions.ConditionNodeTraversal.MethodSurface;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AcknowledgeableConditionType;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AcknowledgeableConditionTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableTypeNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -24,7 +24,7 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -84,6 +84,61 @@ public class AcknowledgeableCondition extends Condition {
       UaNodeContext context, Consumer<ConditionBuilder> configure) throws UaException {
 
     ConditionBuilder builder = new ConditionBuilder(context);
+    configure.accept(builder);
+
+    return build(
+        builder,
+        NodeIds.AcknowledgeableConditionType,
+        node -> new AcknowledgeableCondition((AcknowledgeableConditionTypeNode) node));
+  }
+
+  /**
+   * Attach behavior to a complete, pre-existing AcknowledgeableCondition instance.
+   *
+   * <p>The node's identity and state are retained. The returned behavior is not registered; pass it
+   * to {@link ConditionManager#register(Condition)} before serving client calls.
+   *
+   * @param node the complete generated typed node.
+   * @return the attached behavior.
+   */
+  public static AcknowledgeableCondition attach(AcknowledgeableConditionTypeNode node) {
+    return attach(node, options -> {});
+  }
+
+  /**
+   * Attach behavior to a complete, pre-existing AcknowledgeableCondition instance.
+   *
+   * @param node the complete generated typed node.
+   * @param configure receives source-wiring options.
+   * @return the attached behavior.
+   */
+  public static AcknowledgeableCondition attach(
+      AcknowledgeableConditionTypeNode node, Consumer<AttachOptions> configure) {
+
+    return attach(
+        node,
+        configure,
+        attached -> new AcknowledgeableCondition((AcknowledgeableConditionTypeNode) attached));
+  }
+
+  /**
+   * Complete and attach behavior to a pre-existing AcknowledgeableCondition instance.
+   *
+   * <p>Existing identities and stored values are preserved unless explicitly overridden. The
+   * returned behavior is not registered.
+   *
+   * @param context the context whose NodeManager owns the loaded instance.
+   * @param nodeId the existing ConditionId.
+   * @param configure receives the adopt-mode builder.
+   * @return the adopted behavior.
+   * @throws UaException if validation or in-place completion fails.
+   */
+  public static AcknowledgeableCondition adopt(
+      UaNodeContext context, NodeId nodeId, Consumer<ConditionBuilder> configure)
+      throws UaException {
+
+    ConditionBuilder builder =
+        ConditionBuilder.forAdoption(context, nodeId, AcknowledgeableConditionTypeNode.class);
     configure.accept(builder);
 
     return build(
@@ -256,13 +311,14 @@ public class AcknowledgeableCondition extends Condition {
   }
 
   @Override
-  void installMethodHandlers(Map<QualifiedName, UaMethodNode> methodNodes) {
-    super.installMethodHandlers(methodNodes);
+  void installMethodHandlers(MethodSurface methodSurface) {
+    super.installMethodHandlers(methodSurface);
 
-    UaMethodNode acknowledge = methodNodes.get(new QualifiedName(0, "Acknowledge"));
+    DiscoveredMethod acknowledge = methodSurface.get("Acknowledge");
     if (acknowledge != null) {
-      acknowledge.setInvocationHandler(
-          new AcknowledgeableConditionType.AcknowledgeMethod(acknowledge) {
+      installMethodHandler(
+          acknowledge,
+          new AcknowledgeableConditionType.AcknowledgeMethod(acknowledge.node()) {
             @Override
             protected void invoke(
                 InvocationContext context, ByteString eventId, LocalizedText comment)
@@ -272,11 +328,12 @@ public class AcknowledgeableCondition extends Condition {
           });
     }
 
-    UaMethodNode confirm = methodNodes.get(new QualifiedName(0, "Confirm"));
+    DiscoveredMethod confirm = methodSurface.get("Confirm");
     if (confirm != null) {
       if (hasConfirmedState()) {
-        confirm.setInvocationHandler(
-            new AcknowledgeableConditionType.ConfirmMethod(confirm) {
+        installMethodHandler(
+            confirm,
+            new AcknowledgeableConditionType.ConfirmMethod(confirm.node()) {
               @Override
               protected void invoke(
                   InvocationContext context, ByteString eventId, LocalizedText comment)
@@ -286,7 +343,7 @@ public class AcknowledgeableCondition extends Condition {
             });
       } else {
         // No backing ConfirmedState: the method is not provided by this instance.
-        confirm.delete();
+        deleteUnsupportedMethod(methodSurface, "Confirm");
       }
     }
   }

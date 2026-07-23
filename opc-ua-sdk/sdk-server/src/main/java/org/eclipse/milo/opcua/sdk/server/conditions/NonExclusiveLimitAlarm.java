@@ -21,6 +21,7 @@ import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -78,6 +79,53 @@ public class NonExclusiveLimitAlarm extends LimitAlarm {
     configure.accept(builder);
     builder.validateLimits(true);
 
+    return build(
+        builder,
+        NodeIds.NonExclusiveLimitAlarmType,
+        node -> new NonExclusiveLimitAlarm((NonExclusiveLimitAlarmTypeNode) node));
+  }
+
+  /**
+   * Attach behavior to a complete, pre-existing instance.
+   *
+   * @param node the complete generated typed node.
+   * @return the attached, unregistered behavior.
+   */
+  public static NonExclusiveLimitAlarm attach(NonExclusiveLimitAlarmTypeNode node) {
+    return attach(node, options -> {});
+  }
+
+  /**
+   * Attach behavior to a complete, pre-existing instance.
+   *
+   * @param node the complete generated typed node.
+   * @param configure receives source-wiring options.
+   * @return the attached, unregistered behavior.
+   */
+  public static NonExclusiveLimitAlarm attach(
+      NonExclusiveLimitAlarmTypeNode node, Consumer<AttachOptions> configure) {
+    return attach(
+        node,
+        configure,
+        attached -> new NonExclusiveLimitAlarm((NonExclusiveLimitAlarmTypeNode) attached));
+  }
+
+  /**
+   * Complete and attach behavior to a pre-existing instance without replacing its identity.
+   *
+   * @param context the context whose NodeManager owns the instance.
+   * @param nodeId the existing ConditionId.
+   * @param configure receives the adopt-mode builder.
+   * @return the adopted, unregistered behavior.
+   * @throws UaException if validation or in-place completion fails.
+   */
+  public static NonExclusiveLimitAlarm adopt(
+      UaNodeContext context, NodeId nodeId, Consumer<ConditionBuilder> configure)
+      throws UaException {
+    ConditionBuilder builder =
+        ConditionBuilder.forAdoption(context, nodeId, NonExclusiveLimitAlarmTypeNode.class);
+    configure.accept(builder);
+    builder.validateLimits(true);
     return build(
         builder,
         NodeIds.NonExclusiveLimitAlarmType,

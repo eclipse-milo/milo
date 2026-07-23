@@ -10,9 +10,9 @@
 
 package org.eclipse.milo.opcua.sdk.server.conditions;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import org.eclipse.milo.opcua.sdk.server.conditions.ConditionNodeTraversal.MethodSurface;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AlarmConditionTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ShelvedStateMachineTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableTypeNode;
@@ -22,7 +22,6 @@ import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -104,6 +103,63 @@ public class AlarmCondition extends AcknowledgeableCondition {
         node -> new AlarmCondition((AlarmConditionTypeNode) node));
   }
 
+  /**
+   * Attach behavior to a complete, pre-existing AlarmCondition instance.
+   *
+   * <p>The returned behavior is not registered with the {@link ConditionManager}.
+   *
+   * @param node the complete generated typed node.
+   * @return the attached behavior.
+   */
+  public static AlarmCondition attach(AlarmConditionTypeNode node) {
+    return attach(node, options -> {});
+  }
+
+  /**
+   * Attach behavior to a complete, pre-existing AlarmCondition instance.
+   *
+   * @param node the complete generated typed node.
+   * @param configure receives source-wiring options.
+   * @return the attached behavior.
+   */
+  public static AlarmCondition attach(
+      AlarmConditionTypeNode node, Consumer<AttachOptions> configure) {
+    return attach(
+        node, configure, attached -> new AlarmCondition((AlarmConditionTypeNode) attached));
+  }
+
+  /**
+   * Complete and attach behavior to a pre-existing AlarmCondition instance.
+   *
+   * <p>Existing identities and stored values are preserved unless explicitly overridden. The
+   * returned behavior is not registered.
+   *
+   * <p>A generated subtype is accepted without converting its address-space type. For example, an
+   * ExclusiveLimitAlarmType node can be adopted here when only generic alarm behavior is
+   * appropriate: its HasTypeDefinition, EventType, subtype fields, and NodeIds remain unchanged,
+   * while the returned object exposes {@link AlarmCondition} behavior rather than limit-specific
+   * evaluation.
+   *
+   * @param context the context whose NodeManager owns the loaded instance.
+   * @param nodeId the existing ConditionId.
+   * @param configure receives the adopt-mode builder.
+   * @return the adopted behavior.
+   * @throws UaException if validation or in-place completion fails.
+   */
+  public static AlarmCondition adopt(
+      UaNodeContext context, NodeId nodeId, Consumer<ConditionBuilder> configure)
+      throws UaException {
+
+    ConditionBuilder builder =
+        ConditionBuilder.forAdoption(context, nodeId, AlarmConditionTypeNode.class);
+    configure.accept(builder);
+
+    return build(
+        builder,
+        NodeIds.AlarmConditionType,
+        node -> new AlarmCondition((AlarmConditionTypeNode) node));
+  }
+
   @Override
   public AlarmConditionTypeNode getNode() {
     return (AlarmConditionTypeNode) super.getNode();
@@ -177,6 +233,7 @@ public class AlarmCondition extends AcknowledgeableCondition {
     if (shelvingRuntime != null) {
       shelvingRuntime.shutdown();
     }
+    super.shutdown();
   }
 
   @Override
@@ -239,11 +296,32 @@ public class AlarmCondition extends AcknowledgeableCondition {
   }
 
   @Override
-  void installMethodHandlers(Map<QualifiedName, UaMethodNode> methodNodes) {
-    super.installMethodHandlers(methodNodes);
+  void installMethodHandlers(MethodSurface methodSurface) {
+    super.installMethodHandlers(methodSurface);
+
+    // Loaded NodeSets may contain newer AlarmCondition methods whose backing states and behavior
+    // Milo does not yet implement. Remove only default-handler Methods proven to be exclusive
+    // instance copies; shared Methods and application-installed handlers remain untouched.
+    for (String unsupported :
+        new String[] {
+          "Silence",
+          "Suppress",
+          "Suppress2",
+          "Unsuppress",
+          "Unsuppress2",
+          "RemoveFromService",
+          "RemoveFromService2",
+          "PlaceInService",
+          "PlaceInService2",
+          "Reset",
+          "Reset2",
+          "GetGroupMemberships"
+        }) {
+      deleteUnsupportedMethod(methodSurface, unsupported);
+    }
 
     if (shelvingRuntime != null) {
-      shelvingRuntime.installMethodHandlers(methodNodes);
+      shelvingRuntime.installMethodHandlers(methodSurface);
     }
 
     // Acknowledge-auto-silences (§5.8.2) is a no-op until SilenceState ships.

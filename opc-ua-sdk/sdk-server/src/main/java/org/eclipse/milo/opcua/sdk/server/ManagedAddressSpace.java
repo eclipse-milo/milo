@@ -278,6 +278,12 @@ public abstract class ManagedAddressSpace implements AddressSpace {
             .getNode(objectId)
             .orElseThrow(() -> new UaException(StatusCodes.Bad_NodeIdUnknown));
 
+    MethodInvocationHandler conditionHandler =
+        server.getConditionManager().findMethodInvocationHandler(objectId, methodId).orElse(null);
+    if (conditionHandler != null) {
+      return conditionHandler;
+    }
+
     UaMethodNode methodNode = null;
 
     if (node instanceof UaObjectNode objectNode) {

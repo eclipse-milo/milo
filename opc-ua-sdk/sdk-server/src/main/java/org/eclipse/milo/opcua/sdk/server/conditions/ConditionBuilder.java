@@ -15,12 +15,9 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 
 import java.time.Duration;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import org.eclipse.milo.opcua.sdk.core.Reference;
-import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceTypeTree;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AlarmConditionTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ConditionTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ExclusiveDeviationAlarmTypeNode;
@@ -29,13 +26,15 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.LimitAlarmTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.NonExclusiveDeviationAlarmTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.NonExclusiveRateOfChangeAlarmTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.OffNormalAlarmTypeNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.BrowsePath;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.ConflictPolicy;
 import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationRequest;
 import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationResult;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.MethodInstantiation;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -67,8 +66,6 @@ public class ConditionBuilder {
   private static final BrowsePath LIMIT_STATE_LAST_TRANSITION =
       BrowsePath.of(new QualifiedName(0, "LimitState"), new QualifiedName(0, "LastTransition"));
 
-  private final Map<QualifiedName, UaMethodNode> methodNodes = new HashMap<>();
-
   private @Nullable NodeId nodeId;
   private @Nullable QualifiedName browseName;
   private @Nullable LocalizedText displayName;
@@ -97,9 +94,82 @@ public class ConditionBuilder {
   private @Nullable EUInformation engineeringUnits;
 
   private final UaNodeContext context;
+  private final @Nullable ConditionTypeNode adoptedNode;
+  private final @Nullable NodeId adoptedTypeDefinitionId;
+
+  private boolean displayNameConfigured;
+  private boolean conditionNameConfigured;
+  private boolean conditionClassConfigured;
+  private boolean severityConfigured;
+  private boolean inputNodeConfigured;
+  private boolean normalStateConfigured;
+  private boolean maxTimeShelvedConfigured;
 
   ConditionBuilder(UaNodeContext context) {
     this.context = context;
+    adoptedNode = null;
+    adoptedTypeDefinitionId = null;
+  }
+
+  private ConditionBuilder(
+      UaNodeContext context, ConditionTypeNode adoptedNode, NodeId adoptedTypeDefinitionId) {
+    this.context = context;
+    this.adoptedNode = adoptedNode;
+    this.adoptedTypeDefinitionId = adoptedTypeDefinitionId;
+    nodeId = adoptedNode.getNodeId();
+    browseName = adoptedNode.getBrowseName();
+  }
+
+  static ConditionBuilder forAdoption(
+      UaNodeContext context, NodeId nodeId, Class<? extends ConditionTypeNode> expectedNodeClass)
+      throws UaException {
+
+    UaNode node =
+        context
+            .getNodeManager()
+            .getNode(nodeId)
+            .orElseThrow(
+                () ->
+                    new UaException(
+                        StatusCodes.Bad_NodeIdUnknown,
+                        "condition node does not exist in the supplied NodeManager: " + nodeId));
+
+    if (!expectedNodeClass.isInstance(node)) {
+      throw new UaException(
+          StatusCodes.Bad_TypeMismatch,
+          "condition node "
+              + nodeId
+              + " is "
+              + node.getClass().getName()
+              + ", expected "
+              + expectedNodeClass.getName()
+              + " or a generated subtype");
+    }
+
+    Set<NodeId> typeDefinitions = new HashSet<>();
+    for (var reference : node.getReferences()) {
+      if (reference.isForward()
+          && NodeIds.HasTypeDefinition.equals(reference.getReferenceTypeId())) {
+        reference
+            .getTargetNodeId()
+            .toNodeId(context.getNamespaceTable())
+            .ifPresent(typeDefinitions::add);
+      }
+    }
+
+    if (typeDefinitions.size() != 1) {
+      throw new UaException(
+          StatusCodes.Bad_TypeMismatch,
+          "condition node "
+              + nodeId
+              + " must have exactly one resolvable HasTypeDefinition reference");
+    }
+
+    ConditionTypeNode conditionNode = expectedNodeClass.cast(node);
+    ConditionNodeTraversal.discoverMethodSurface(conditionNode);
+    ConditionNodeTraversal.discoverAssignedNodeIds(conditionNode);
+
+    return new ConditionBuilder(context, conditionNode, typeDefinitions.iterator().next());
   }
 
   /**
@@ -109,6 +179,10 @@ public class ConditionBuilder {
    * @return this builder.
    */
   public ConditionBuilder nodeId(NodeId nodeId) {
+    if (adoptedNode != null && !adoptedNode.getNodeId().equals(nodeId)) {
+      throw new IllegalArgumentException(
+          "adopt cannot replace NodeId " + adoptedNode.getNodeId() + " with " + nodeId);
+    }
     this.nodeId = nodeId;
     return this;
   }
@@ -120,6 +194,10 @@ public class ConditionBuilder {
    * @return this builder.
    */
   public ConditionBuilder browseName(QualifiedName browseName) {
+    if (adoptedNode != null && !adoptedNode.getBrowseName().equals(browseName)) {
+      throw new IllegalArgumentException(
+          "adopt cannot replace BrowseName " + adoptedNode.getBrowseName() + " with " + browseName);
+    }
     this.browseName = browseName;
     return this;
   }
@@ -134,6 +212,7 @@ public class ConditionBuilder {
    */
   public ConditionBuilder displayName(LocalizedText displayName) {
     this.displayName = displayName;
+    displayNameConfigured = true;
     return this;
   }
 
@@ -163,6 +242,7 @@ public class ConditionBuilder {
    */
   public ConditionBuilder conditionName(String conditionName) {
     this.conditionName = conditionName;
+    conditionNameConfigured = true;
     return this;
   }
 
@@ -179,6 +259,7 @@ public class ConditionBuilder {
       NodeId conditionClassId, LocalizedText conditionClassName) {
     this.conditionClassId = conditionClassId;
     this.conditionClassName = conditionClassName;
+    conditionClassConfigured = true;
     return this;
   }
 
@@ -192,6 +273,7 @@ public class ConditionBuilder {
    */
   public ConditionBuilder severity(UShort severity) {
     this.severity = severity;
+    severityConfigured = true;
     return this;
   }
 
@@ -216,6 +298,7 @@ public class ConditionBuilder {
    */
   public ConditionBuilder inputNode(NodeId inputNode) {
     this.inputNode = inputNode;
+    inputNodeConfigured = true;
     return this;
   }
 
@@ -232,6 +315,7 @@ public class ConditionBuilder {
    */
   public ConditionBuilder normalState(NodeId normalState) {
     this.normalState = normalState;
+    normalStateConfigured = true;
     return this;
   }
 
@@ -261,6 +345,7 @@ public class ConditionBuilder {
   public ConditionBuilder withShelving(Duration maxTimeShelved) {
     this.withShelving = true;
     this.maxTimeShelved = maxTimeShelved;
+    maxTimeShelvedConfigured = true;
     return this;
   }
 
@@ -296,6 +381,20 @@ public class ConditionBuilder {
   }
 
   /**
+   * Configure the SeverityHighHigh Property without replacing the HighHighLimit value.
+   *
+   * <p>During adoption, an existing HighHighLimit satisfies the corresponding-limit requirement.
+   * During creation, {@link #highHighLimit(double)} must also be configured.
+   *
+   * @param severity the SeverityHighHigh Property value, in the range 1-1000.
+   * @return this builder.
+   */
+  public ConditionBuilder highHighSeverity(UShort severity) {
+    limitConfig(ExclusiveLimitState.HIGH_HIGH).severity = severity;
+    return this;
+  }
+
+  /**
    * Configure the HighLimit Property value.
    *
    * @param limit the HighLimit Property value.
@@ -319,6 +418,20 @@ public class ConditionBuilder {
     LimitConfig config = limitConfig(ExclusiveLimitState.HIGH);
     config.limit = limit;
     config.severity = severity;
+    return this;
+  }
+
+  /**
+   * Configure the SeverityHigh Property without replacing the HighLimit value.
+   *
+   * <p>During adoption, an existing HighLimit satisfies the corresponding-limit requirement. During
+   * creation, {@link #highLimit(double)} must also be configured.
+   *
+   * @param severity the SeverityHigh Property value, in the range 1-1000.
+   * @return this builder.
+   */
+  public ConditionBuilder highSeverity(UShort severity) {
+    limitConfig(ExclusiveLimitState.HIGH).severity = severity;
     return this;
   }
 
@@ -350,6 +463,20 @@ public class ConditionBuilder {
   }
 
   /**
+   * Configure the SeverityLow Property without replacing the LowLimit value.
+   *
+   * <p>During adoption, an existing LowLimit satisfies the corresponding-limit requirement. During
+   * creation, {@link #lowLimit(double)} must also be configured.
+   *
+   * @param severity the SeverityLow Property value, in the range 1-1000.
+   * @return this builder.
+   */
+  public ConditionBuilder lowSeverity(UShort severity) {
+    limitConfig(ExclusiveLimitState.LOW).severity = severity;
+    return this;
+  }
+
+  /**
    * Configure the LowLowLimit Property value.
    *
    * @param limit the LowLowLimit Property value.
@@ -373,6 +500,20 @@ public class ConditionBuilder {
     LimitConfig config = limitConfig(ExclusiveLimitState.LOW_LOW);
     config.limit = limit;
     config.severity = severity;
+    return this;
+  }
+
+  /**
+   * Configure the SeverityLowLow Property without replacing the LowLowLimit value.
+   *
+   * <p>During adoption, an existing LowLowLimit satisfies the corresponding-limit requirement.
+   * During creation, {@link #lowLowLimit(double)} must also be configured.
+   *
+   * @param severity the SeverityLowLow Property value, in the range 1-1000.
+   * @return this builder.
+   */
+  public ConditionBuilder lowLowSeverity(UShort severity) {
+    limitConfig(ExclusiveLimitState.LOW_LOW).severity = severity;
     return this;
   }
 
@@ -465,29 +606,36 @@ public class ConditionBuilder {
    * @throws IllegalArgumentException if the configuration is invalid.
    */
   void validateLimits(boolean requireHighOrLow) {
-    if (limits.values().stream().allMatch(config -> config.limit == null)) {
+    boolean anyLimit = false;
+    for (ExclusiveLimitState limit : ExclusiveLimitState.values()) {
+      anyLimit |= configuredLimit(limit) != null;
+    }
+    if (!anyLimit) {
       throw new IllegalArgumentException("at least one limit must be configured");
     }
 
-    for (Map.Entry<ExclusiveLimitState, LimitConfig> entry : limits.entrySet()) {
-      String name = entry.getKey().stateName();
-      LimitConfig config = entry.getValue();
+    for (ExclusiveLimitState limit : ExclusiveLimitState.values()) {
+      String name = limit.stateName();
+      Double value = configuredLimit(limit);
+      UShort configuredSeverity = configuredSeverity(limit);
+      Double configuredDeadband = configuredDeadband(limit);
 
-      if (config.limit == null) {
+      if (value == null && (configuredSeverity != null || configuredDeadband != null)) {
         throw new IllegalArgumentException(
             "Severity" + name + "/" + name + "Deadband configured without " + name + "Limit");
       }
-      if (!Double.isFinite(config.limit)) {
-        throw new IllegalArgumentException(name + "Limit must be finite: " + config.limit);
+      if (value != null && !Double.isFinite(value)) {
+        throw new IllegalArgumentException(name + "Limit must be finite: " + value);
       }
-      if (config.deadband != null && (!Double.isFinite(config.deadband) || config.deadband < 0.0)) {
+      if (configuredDeadband != null
+          && (!Double.isFinite(configuredDeadband) || configuredDeadband < 0.0)) {
         throw new IllegalArgumentException(
-            name + "Deadband must be finite and non-negative: " + config.deadband);
+            name + "Deadband must be finite and non-negative: " + configuredDeadband);
       }
-      if (config.severity != null
-          && (config.severity.intValue() < 1 || config.severity.intValue() > 1000)) {
+      if (configuredSeverity != null
+          && (configuredSeverity.intValue() < 1 || configuredSeverity.intValue() > 1000)) {
         throw new IllegalArgumentException(
-            "Severity" + name + " must be in the range 1..1000: " + config.severity);
+            "Severity" + name + " must be in the range 1..1000: " + configuredSeverity);
       }
     }
 
@@ -575,12 +723,56 @@ public class ConditionBuilder {
 
   private @Nullable Double configuredLimit(ExclusiveLimitState limit) {
     LimitConfig config = limits.get(limit);
-    return config != null ? config.limit : null;
+    if (config != null && config.limit != null) {
+      return config.limit;
+    }
+
+    if (adoptedNode instanceof LimitAlarmTypeNode limitNode) {
+      return switch (limit) {
+        case HIGH_HIGH -> limitNode.getHighHighLimit();
+        case HIGH -> limitNode.getHighLimit();
+        case LOW -> limitNode.getLowLimit();
+        case LOW_LOW -> limitNode.getLowLowLimit();
+      };
+    }
+
+    return null;
+  }
+
+  private @Nullable UShort configuredSeverity(ExclusiveLimitState limit) {
+    LimitConfig config = limits.get(limit);
+    if (config != null && config.severity != null) {
+      return config.severity;
+    }
+
+    if (adoptedNode instanceof LimitAlarmTypeNode limitNode) {
+      return switch (limit) {
+        case HIGH_HIGH -> limitNode.getSeverityHighHigh();
+        case HIGH -> limitNode.getSeverityHigh();
+        case LOW -> limitNode.getSeverityLow();
+        case LOW_LOW -> limitNode.getSeverityLowLow();
+      };
+    }
+
+    return null;
   }
 
   private @Nullable Double configuredDeadband(ExclusiveLimitState limit) {
     LimitConfig config = limits.get(limit);
-    return config != null ? config.deadband : null;
+    if (config != null && config.deadband != null) {
+      return config.deadband;
+    }
+
+    if (adoptedNode instanceof LimitAlarmTypeNode limitNode) {
+      return switch (limit) {
+        case HIGH_HIGH -> limitNode.getHighHighDeadband();
+        case HIGH -> limitNode.getHighDeadband();
+        case LOW -> limitNode.getLowDeadband();
+        case LOW_LOW -> limitNode.getLowLowDeadband();
+      };
+    }
+
+    return null;
   }
 
   /**
@@ -617,70 +809,88 @@ public class ConditionBuilder {
    * @throws IllegalArgumentException if no setpointNode is configured.
    */
   void requireSetpointNode() {
-    if (setpointNode == null) {
+    NodeId configuredSetpoint = setpointNode;
+    if (configuredSetpoint == null
+        && adoptedNode instanceof ExclusiveDeviationAlarmTypeNode deviationNode) {
+      configuredSetpoint = deviationNode.getSetpointNode();
+    }
+    if (configuredSetpoint == null
+        && adoptedNode instanceof NonExclusiveDeviationAlarmTypeNode deviationNode) {
+      configuredSetpoint = deviationNode.getSetpointNode();
+    }
+
+    if (configuredSetpoint == null) {
       throw new IllegalArgumentException("setpointNode must be set for a deviation alarm");
     }
   }
 
-  /**
-   * Get the instance method nodes recorded during {@link #buildNode}, keyed by BrowseName, for
-   * {@link Condition#installMethodHandlers}.
-   */
-  Map<QualifiedName, UaMethodNode> getMethodNodes() {
-    return Map.copyOf(methodNodes);
-  }
-
-  /**
-   * Instantiate the Condition instance node of {@code typeDefinitionId}, set its initial state per
-   * §4.12, and wire the condition source.
-   *
-   * <p>Method nodes created during instantiation are recorded for {@link #getMethodNodes()}.
-   */
+  /** Instantiate or complete the Condition node, initialize it, and wire its condition source. */
   ConditionTypeNode buildNode(NodeId typeDefinitionId) throws UaException {
     NodeId nodeId = requireNonNull(this.nodeId, "nodeId must be set");
     QualifiedName browseName = requireNonNull(this.browseName, "browseName must be set");
+    boolean adopting = adoptedNode != null;
+    NodeId effectiveTypeDefinitionId =
+        adopting ? requireNonNull(adoptedTypeDefinitionId) : typeDefinitionId;
+    Map<BrowsePath, NodeId> assignedNodeIds =
+        adopting
+            ? ConditionNodeTraversal.discoverAssignedNodeIds(requireNonNull(adoptedNode))
+            : Map.of();
+    ConditionNodeTraversal.MethodSurface adoptedMethodSurface =
+        adopting ? ConditionNodeTraversal.discoverMethodSurface(requireNonNull(adoptedNode)) : null;
 
     Set<String> optionalIncludes = new HashSet<>();
     optionalIncludes.add("TransitionTime");
     optionalIncludes.add("SupportsFilteredRetain");
+
+    if (adopting
+        && (assignedNodeIds.containsKey(BrowsePath.of(new QualifiedName(0, "ConfirmedState")))
+            || assignedNodeIds.containsKey(BrowsePath.of(new QualifiedName(0, "Confirm"))))) {
+      withConfirm = true;
+    }
     if (withConfirm) {
       optionalIncludes.add("ConfirmedState");
-      // Optional Methods are selected explicitly by the new instantiation engine.
       optionalIncludes.add("Confirm");
+    }
+
+    if (adopting
+        && (assignedNodeIds.containsKey(BrowsePath.of(new QualifiedName(0, "ShelvingState")))
+            || assignedNodeIds.containsKey(
+                BrowsePath.of(new QualifiedName(0, "MaxTimeShelved"))))) {
+      withShelving = true;
     }
     if (withShelving) {
       optionalIncludes.add("ShelvingState");
-      if (maxTimeShelved != null) {
+      if (maxTimeShelved != null
+          || (adopting
+              && assignedNodeIds.containsKey(
+                  BrowsePath.of(new QualifiedName(0, "MaxTimeShelved"))))) {
         optionalIncludes.add("MaxTimeShelved");
       }
     }
 
-    for (Map.Entry<ExclusiveLimitState, LimitConfig> entry : limits.entrySet()) {
-      String name = entry.getKey().stateName();
-      LimitConfig config = entry.getValue();
-
-      if (config.limit != null) {
+    for (ExclusiveLimitState limit : ExclusiveLimitState.values()) {
+      String name = limit.stateName();
+      if (configuredLimit(limit) != null) {
         optionalIncludes.add(name + "Limit");
-        // The per-limit TwoStateVariables of the non-exclusive types ("HighHighState", ...);
-        // no-ops on the exclusive types, whose LimitState machine is Mandatory.
         optionalIncludes.add(name + "State");
       }
-      if (config.severity != null) {
+      if (configuredSeverity(limit) != null) {
         optionalIncludes.add("Severity" + name);
       }
-      if (config.deadband != null) {
+      if (configuredDeadband(limit) != null) {
         optionalIncludes.add(name + "Deadband");
       }
     }
 
-    if (engineeringUnits != null) {
+    if (engineeringUnits != null || storedEngineeringUnits() != null) {
       optionalIncludes.add("EngineeringUnits");
     }
 
-    boolean includeLimitMembers = !limits.isEmpty();
+    boolean includeLimitMembers =
+        adoptedNode instanceof LimitAlarmTypeNode || hasConfiguredLimits();
 
-    InstantiationRequest<ConditionTypeNode> request =
-        InstantiationRequest.of(ConditionTypeNode.class, typeDefinitionId)
+    InstantiationRequest.Builder<ConditionTypeNode> requestBuilder =
+        InstantiationRequest.of(rootClassForRequest(), effectiveTypeDefinitionId)
             .nodeId(nodeId)
             .browseName(browseName)
             .displayName(
@@ -688,33 +898,54 @@ public class ConditionBuilder {
             .target(context.getNodeManager())
             .includeOptionals(
                 declaration ->
-                    optionalIncludes.contains(declaration.browseName().name())
+                    assignedNodeIds.containsKey(declaration.browsePath())
+                        || optionalIncludes.contains(declaration.browseName().name())
                         || (includeLimitMembers
                             && ACTIVE_STATE_EFFECTIVE_DISPLAY_NAME.equals(declaration.browsePath()))
                         || (withShelving
                             && SHELVING_STATE_LAST_TRANSITION.equals(declaration.browsePath()))
                         || (includeLimitMembers
-                            && LIMIT_STATE_LAST_TRANSITION.equals(declaration.browsePath())))
-            .afterCommit(
-                instantiation ->
-                    instantiation.materializedNodes().stream()
-                        .map(materialized -> materialized.node())
-                        .filter(UaMethodNode.class::isInstance)
-                        .map(UaMethodNode.class::cast)
-                        .forEach(method -> methodNodes.put(method.getBrowseName(), method)))
-            .build();
+                            && LIMIT_STATE_LAST_TRANSITION.equals(declaration.browsePath())));
+
+    if (adopting) {
+      requestBuilder.conflictPolicy(ConflictPolicy.REUSE_COMPATIBLE);
+      ConditionNodeTraversal.DiscoveredMethod enableMethod =
+          requireNonNull(adoptedMethodSurface).get("Enable");
+      if (enableMethod != null && !enableMethod.exclusivelyOwned()) {
+        requestBuilder.methodInstantiation(MethodInstantiation.SHARE);
+      }
+      assignedNodeIds.forEach(
+          (path, assignedNodeId) -> {
+            if (!path.isRoot()) {
+              requestBuilder.assignNodeId(path, assignedNodeId);
+            }
+          });
+    }
+
+    InstantiationRequest<ConditionTypeNode> request = requestBuilder.build();
 
     InstantiationResult<ConditionTypeNode> result =
         context.getServer().getNodeInstantiator().instantiate(request);
     ConditionTypeNode node = result.root();
 
-    initializeNode(node, typeDefinitionId);
-    wireConditionSource(node);
+    if (adopting) {
+      initializeAdoptedNode(node, effectiveTypeDefinitionId);
+    } else {
+      initializeCreatedNode(node, effectiveTypeDefinitionId);
+    }
+    ConditionWiring.wire(node, conditionSource);
 
     return node;
   }
 
-  private void initializeNode(ConditionTypeNode node, NodeId typeDefinitionId) {
+  @SuppressWarnings("unchecked")
+  private Class<ConditionTypeNode> rootClassForRequest() {
+    return adoptedNode != null
+        ? (Class<ConditionTypeNode>) adoptedNode.getClass()
+        : ConditionTypeNode.class;
+  }
+
+  private void initializeCreatedNode(ConditionTypeNode node, NodeId typeDefinitionId) {
     DateTime now = DateTime.now();
     QualifiedName browseName = requireNonNull(this.browseName);
 
@@ -737,6 +968,73 @@ public class ConditionBuilder {
     }
 
     if (node instanceof OffNormalAlarmTypeNode offNormalNode) {
+      offNormalNode.setNormalState(normalState != null ? normalState : NodeId.NULL_VALUE);
+    }
+
+    if (node instanceof LimitAlarmTypeNode limitNode) {
+      initializeLimitNode(limitNode);
+    }
+  }
+
+  private void initializeAdoptedNode(ConditionTypeNode node, NodeId typeDefinitionId) {
+    QualifiedName browseName = requireNonNull(this.browseName);
+
+    if (displayNameConfigured) {
+      node.setDisplayName(requireNonNull(displayName));
+    }
+
+    if (node.getEventType() == null) {
+      node.setEventType(typeDefinitionId);
+    }
+    if (node.getEventId() == null) {
+      node.setEventId(ByteString.NULL_VALUE);
+    }
+    if (node.getTime() == null) {
+      node.setTime(DateTime.now());
+    }
+    if (node.getReceiveTime() == null) {
+      node.setReceiveTime(DateTime.NULL_VALUE);
+    }
+    if (node.getMessage() == null) {
+      node.setMessage(LocalizedText.NULL_VALUE);
+    }
+    if (severityConfigured || node.getSeverity() == null) {
+      node.setSeverity(severity);
+    }
+
+    if (conditionNameConfigured || node.getConditionName() == null) {
+      node.setConditionName(conditionName != null ? conditionName : browseName.name());
+    }
+    if (conditionClassConfigured || node.getConditionClassId() == null) {
+      node.setConditionClassId(conditionClassId);
+    }
+    if (conditionClassConfigured || node.getConditionClassName() == null) {
+      node.setConditionClassName(conditionClassName);
+    }
+    if (node.getBranchId() == null) {
+      node.setBranchId(NodeId.NULL_VALUE);
+    }
+    if (node.getRetain() == null) {
+      node.setRetain(false);
+    }
+    if (node.getSupportsFilteredRetain() == null) {
+      node.setSupportsFilteredRetain(false);
+    }
+
+    if (node instanceof AlarmConditionTypeNode alarmNode) {
+      if (inputNodeConfigured || alarmNode.getInputNode() == null) {
+        alarmNode.setInputNode(inputNode != null ? inputNode : NodeId.NULL_VALUE);
+      }
+      if (alarmNode.getSuppressedOrShelved() == null) {
+        alarmNode.setSuppressedOrShelved(false);
+      }
+      if (maxTimeShelvedConfigured) {
+        alarmNode.setMaxTimeShelved((double) requireNonNull(maxTimeShelved).toMillis());
+      }
+    }
+
+    if (node instanceof OffNormalAlarmTypeNode offNormalNode
+        && (normalStateConfigured || offNormalNode.getNormalState() == null)) {
       offNormalNode.setNormalState(normalState != null ? normalState : NodeId.NULL_VALUE);
     }
 
@@ -826,63 +1124,22 @@ public class ConditionBuilder {
     }
   }
 
-  private void wireConditionSource(ConditionTypeNode node) {
-    UaNode source = conditionSource;
-    if (source == null) {
-      return;
+  private boolean hasConfiguredLimits() {
+    for (ExclusiveLimitState limit : ExclusiveLimitState.values()) {
+      if (configuredLimit(limit) != null) {
+        return true;
+      }
     }
-
-    node.setSourceNode(source.getNodeId());
-
-    LocalizedText sourceDisplayName = source.getDisplayName();
-    String sourceName = sourceDisplayName != null ? sourceDisplayName.text() : null;
-    node.setSourceName(sourceName != null ? sourceName : source.getBrowseName().name());
-
-    source.addReference(
-        new Reference(source.getNodeId(), NodeIds.HasCondition, node.getNodeId().expanded(), true));
-
-    ensureEventSourceWiring(source);
+    return false;
   }
 
-  /**
-   * Ensure the condition source is the target of a HasEventSource (or subtype) Reference so events
-   * fired for it resolve into the notifier hierarchy; if it is not, wire it from the Server Object.
-   */
-  private void ensureEventSourceWiring(UaNode source) {
-    ReferenceTypeTree referenceTypeTree = context.getServer().getReferenceTypeTree();
-
-    boolean hasEventSourceParent =
-        context
-            .getServer()
-            .getAddressSpaceManager()
-            .getManagedReferences(source.getNodeId())
-            .stream()
-            .anyMatch(
-                r ->
-                    r.isInverse()
-                        // isSubtypeOf is strict — it does not match the type itself.
-                        && (NodeIds.HasEventSource.equals(r.getReferenceTypeId())
-                            || referenceTypeTree.isSubtypeOf(
-                                r.getReferenceTypeId(), NodeIds.HasEventSource)));
-
-    if (hasEventSourceParent) {
-      return;
+  private @Nullable EUInformation storedEngineeringUnits() {
+    if (adoptedNode instanceof ExclusiveRateOfChangeAlarmTypeNode rateOfChangeNode) {
+      return rateOfChangeNode.getEngineeringUnits();
     }
-
-    context
-        .getServer()
-        .getAddressSpaceManager()
-        .getManagedNode(NodeIds.Server)
-        .ifPresent(
-            serverNode ->
-                serverNode
-                    .getNodeManager()
-                    .addReferences(
-                        new Reference(
-                            NodeIds.Server,
-                            NodeIds.HasEventSource,
-                            source.getNodeId().expanded(),
-                            true),
-                        context.getNamespaceTable()));
+    if (adoptedNode instanceof NonExclusiveRateOfChangeAlarmTypeNode rateOfChangeNode) {
+      return rateOfChangeNode.getEngineeringUnits();
+    }
+    return null;
   }
 }

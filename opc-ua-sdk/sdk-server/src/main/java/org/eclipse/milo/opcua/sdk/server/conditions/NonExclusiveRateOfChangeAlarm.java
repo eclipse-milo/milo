@@ -15,6 +15,7 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.NonExclusiveRateOfChangeA
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 
 /**
  * Behavior for a NonExclusiveRateOfChangeAlarm instance (Part 9 §5.8.23.2): a {@link
@@ -49,6 +50,54 @@ public class NonExclusiveRateOfChangeAlarm extends NonExclusiveLimitAlarm {
     configure.accept(builder);
     builder.validateLimits(true);
 
+    return build(
+        builder,
+        NodeIds.NonExclusiveRateOfChangeAlarmType,
+        node -> new NonExclusiveRateOfChangeAlarm((NonExclusiveRateOfChangeAlarmTypeNode) node));
+  }
+
+  /**
+   * Attach behavior to a complete, pre-existing instance.
+   *
+   * @param node the complete generated typed node.
+   * @return the attached, unregistered behavior.
+   */
+  public static NonExclusiveRateOfChangeAlarm attach(NonExclusiveRateOfChangeAlarmTypeNode node) {
+    return attach(node, options -> {});
+  }
+
+  /**
+   * Attach behavior to a complete, pre-existing instance.
+   *
+   * @param node the complete generated typed node.
+   * @param configure receives source-wiring options.
+   * @return the attached, unregistered behavior.
+   */
+  public static NonExclusiveRateOfChangeAlarm attach(
+      NonExclusiveRateOfChangeAlarmTypeNode node, Consumer<AttachOptions> configure) {
+    return attach(
+        node,
+        configure,
+        attached ->
+            new NonExclusiveRateOfChangeAlarm((NonExclusiveRateOfChangeAlarmTypeNode) attached));
+  }
+
+  /**
+   * Complete and attach behavior to a pre-existing instance without replacing its identity.
+   *
+   * @param context the context whose NodeManager owns the instance.
+   * @param nodeId the existing ConditionId.
+   * @param configure receives the adopt-mode builder.
+   * @return the adopted, unregistered behavior.
+   * @throws UaException if validation or in-place completion fails.
+   */
+  public static NonExclusiveRateOfChangeAlarm adopt(
+      UaNodeContext context, NodeId nodeId, Consumer<ConditionBuilder> configure)
+      throws UaException {
+    ConditionBuilder builder =
+        ConditionBuilder.forAdoption(context, nodeId, NonExclusiveRateOfChangeAlarmTypeNode.class);
+    configure.accept(builder);
+    builder.validateLimits(true);
     return build(
         builder,
         NodeIds.NonExclusiveRateOfChangeAlarmType,

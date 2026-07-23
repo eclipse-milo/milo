@@ -16,14 +16,18 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import org.eclipse.milo.opcua.sdk.core.Reference;
-import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceTypeTree;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
+import org.eclipse.milo.opcua.sdk.server.conditions.ConditionNodeTraversal.DiscoveredMethod;
+import org.eclipse.milo.opcua.sdk.server.conditions.ConditionNodeTraversal.MethodSurface;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext;
+import org.eclipse.milo.opcua.sdk.server.methods.MethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ConditionType;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ConditionTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.ConditionVariableTypeNode;
@@ -33,17 +37,17 @@ import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilter;
+import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilterChain;
 import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilterContext;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
@@ -81,9 +85,24 @@ public class Condition {
 
   static final StateTexts ENABLED_TEXTS = new StateTexts("Enabled", "Disabled");
 
+  enum BehaviorFilterKind {
+    DISABLED_READ,
+    UNSHELVE_TIME
+  }
+
+  interface BehaviorOwnedAttributeFilter extends AttributeFilter {
+    BehaviorFilterKind kind();
+  }
+
+  private record FilterRegistration(UaVariableNode node, AttributeFilter filter) {}
+
   private final ReentrantLock lock = new ReentrantLock();
 
   private final ConditionBranch trunk = new ConditionBranch(null);
+
+  private final Set<FilterRegistration> filterRegistrations = ConcurrentHashMap.newKeySet();
+  private final Map<NodeId, MethodInvocationHandler> sharedMethodHandlers =
+      new ConcurrentHashMap<>();
 
   private volatile ConditionMethodInterceptor interceptor = NOOP_INTERCEPTOR;
 
@@ -189,11 +208,57 @@ public class Condition {
       throws UaException {
 
     ConditionTypeNode node = builder.buildNode(typeDefinitionId);
+    MethodSurface methodSurface = ConditionNodeTraversal.discoverMethodSurface(node);
+    ConditionNodeTraversal.validateMethodSurface(node, methodSurface);
 
     T condition = behavior.apply(node);
-    condition.installMethodHandlers(builder.getMethodNodes());
+    condition.rehydrateCurrentBranch();
+    condition.installMethodHandlers(methodSurface);
 
     return condition;
+  }
+
+  /**
+   * Shared implementation for the concrete behavior {@code attach} factories.
+   *
+   * <p>Discovery is completed before constructors populate missing runtime defaults, so malformed
+   * method surfaces fail before attachment mutates the instance.
+   */
+  static <T extends Condition> T attach(
+      ConditionTypeNode node,
+      Consumer<AttachOptions> configure,
+      Function<ConditionTypeNode, T> behavior) {
+
+    AttachOptions options = new AttachOptions();
+    configure.accept(options);
+
+    MethodSurface methodSurface;
+    try {
+      methodSurface = ConditionNodeTraversal.discoverMethodSurface(node);
+      ConditionNodeTraversal.validateMethodSurface(node, methodSurface);
+    } catch (UaException e) {
+      throw new UaRuntimeException(e.getStatusCode().getValue(), e);
+    }
+
+    T condition = behavior.apply(node);
+    condition.rehydrateCurrentBranch();
+    condition.installMethodHandlers(methodSurface);
+    ConditionWiring.wire(node, options.conditionSource());
+
+    return condition;
+  }
+
+  /**
+   * Seed the current branch with a loaded instance's current EventId and Time. This adds only the
+   * identity currently visible on the node; a later pre-live snapshot restore can still replace it
+   * with the full historical acceptance window.
+   */
+  final void rehydrateCurrentBranch() {
+    ByteString eventId = node.getEventId();
+    if (eventId != null && !eventId.isNull()) {
+      DateTime time = node.getTime();
+      trunk.recordEvent(eventId, time != null ? time : DateTime.NULL_VALUE);
+    }
   }
 
   /**
@@ -702,13 +767,17 @@ public class Condition {
    *
    * <p>Subclasses override to install their own level's handlers and call {@code super}.
    *
-   * @param methodNodes the instance's method nodes, keyed by BrowseName.
+   * @param methodSurface the instance's Methods and their ownership provenance.
    */
-  void installMethodHandlers(Map<QualifiedName, UaMethodNode> methodNodes) {
-    UaMethodNode enable = methodNodes.get(new QualifiedName(0, "Enable"));
+  void installMethodHandlers(MethodSurface methodSurface) {
+    deleteUnsupportedMethod(methodSurface, "ConditionRefresh");
+    deleteUnsupportedMethod(methodSurface, "ConditionRefresh2");
+
+    DiscoveredMethod enable = methodSurface.get("Enable");
     if (enable != null) {
-      enable.setInvocationHandler(
-          new ConditionType.EnableMethod(enable) {
+      installMethodHandler(
+          enable,
+          new ConditionType.EnableMethod(enable.node()) {
             @Override
             protected void invoke(InvocationContext context) throws UaException {
               handleEnable(context);
@@ -716,10 +785,11 @@ public class Condition {
           });
     }
 
-    UaMethodNode disable = methodNodes.get(new QualifiedName(0, "Disable"));
+    DiscoveredMethod disable = methodSurface.get("Disable");
     if (disable != null) {
-      disable.setInvocationHandler(
-          new ConditionType.DisableMethod(disable) {
+      installMethodHandler(
+          disable,
+          new ConditionType.DisableMethod(disable.node()) {
             @Override
             protected void invoke(InvocationContext context) throws UaException {
               handleDisable(context);
@@ -727,10 +797,11 @@ public class Condition {
           });
     }
 
-    UaMethodNode addComment = methodNodes.get(new QualifiedName(0, "AddComment"));
+    DiscoveredMethod addComment = methodSurface.get("AddComment");
     if (addComment != null) {
-      addComment.setInvocationHandler(
-          new ConditionType.AddCommentMethod(addComment) {
+      installMethodHandler(
+          addComment,
+          new ConditionType.AddCommentMethod(addComment.node()) {
             @Override
             protected void invoke(
                 InvocationContext context, ByteString eventId, LocalizedText comment)
@@ -738,6 +809,27 @@ public class Condition {
               handleAddComment(context, eventId, comment);
             }
           });
+    }
+  }
+
+  final void installMethodHandler(
+      DiscoveredMethod discovered, MethodInvocationHandler invocationHandler) {
+
+    UaMethodNode method = discovered.node();
+
+    if (discovered.exclusivelyOwned()) {
+      method.setInvocationHandler(invocationHandler);
+    } else if (method.getInvocationHandler() == MethodInvocationHandler.NOT_IMPLEMENTED) {
+      sharedMethodHandlers.put(method.getNodeId(), invocationHandler);
+    }
+  }
+
+  static void deleteUnsupportedMethod(MethodSurface methodSurface, String browseName) {
+    DiscoveredMethod discovered = methodSurface.get(browseName);
+    if (discovered != null
+        && discovered.exclusivelyOwned()
+        && discovered.node().getInvocationHandler() == MethodInvocationHandler.NOT_IMPLEMENTED) {
+      discovered.node().delete();
     }
   }
 
@@ -749,8 +841,18 @@ public class Condition {
     return Optional.empty();
   }
 
+  Optional<MethodInvocationHandler> findMethodInvocationHandler(NodeId methodId) {
+    return Optional.ofNullable(sharedMethodHandlers.get(methodId));
+  }
+
   /** Release runtime resources when this Condition is unregistered or the server shuts down. */
-  void shutdown() {}
+  void shutdown() {
+    for (FilterRegistration registration : filterRegistrations) {
+      registration.node().getFilterChain().remove(registration.filter());
+    }
+    filterRegistrations.clear();
+    sharedMethodHandlers.clear();
+  }
 
   /**
    * Apply the NULL-comment convention used by comment-taking methods: a NULL comment leaves the
@@ -886,7 +988,13 @@ public class Condition {
       @Nullable ConditionVariableTypeNode variable, Variant initialValue) {
 
     if (variable != null && variable.getSourceTimestamp() == null) {
-      setConditionVariable(variable, initialValue, DateTime.now());
+      DataValue current = variable.getValue();
+      DateTime now = DateTime.now();
+      if (current == null || current.getValue() == null || current.getValue().getValue() == null) {
+        setConditionVariable(variable, initialValue, now);
+      } else {
+        variable.setSourceTimestamp(now);
+      }
     }
   }
 
@@ -913,11 +1021,12 @@ public class Condition {
     }
 
     if (target instanceof UaVariableNode variable) {
-      variable.getFilterChain().addLast(filter);
+      installBehaviorReadFilter(variable, filter);
     }
 
     for (Reference reference : target.getReferences()) {
-      if (reference.isForward() && isChildReference(reference.getReferenceTypeId())) {
+      if (reference.isForward()
+          && ConditionNodeTraversal.isAggregate(target, reference.getReferenceTypeId())) {
         // Resolve through the node's own NodeManager first: the owning manager may not be
         // registered with the AddressSpaceManager yet (e.g. Conditions created before namespace
         // startup), and skipping children here would silently leave them ungated.
@@ -930,24 +1039,29 @@ public class Condition {
     }
   }
 
-  /**
-   * Check if {@code referenceTypeId} aggregates child nodes: the common concrete types are matched
-   * directly (also serving contexts with no ReferenceTypeTree, e.g. unit-test mocks), other
-   * Aggregates subtypes through the server's {@link ReferenceTypeTree}.
-   */
-  private boolean isChildReference(NodeId referenceTypeId) {
-    if (NodeIds.HasComponent.equals(referenceTypeId)
-        || NodeIds.HasProperty.equals(referenceTypeId)
-        || NodeIds.HasOrderedComponent.equals(referenceTypeId)) {
-      return true;
+  final void installBehaviorReadFilter(
+      UaVariableNode variable, BehaviorOwnedAttributeFilter filter) {
+
+    AttributeFilterChain filterChain = variable.getFilterChain();
+    synchronized (filterChain) {
+      for (AttributeFilter installed : filterChain.getFilters()) {
+        if (installed instanceof BehaviorOwnedAttributeFilter behaviorFilter
+            && behaviorFilter.kind() == filter.kind()) {
+          filterChain.remove(installed);
+        }
+      }
+      filterChain.addLast(filter);
     }
 
-    ReferenceTypeTree referenceTypeTree = server.getReferenceTypeTree();
-    return referenceTypeTree != null
-        && referenceTypeTree.isSubtypeOf(referenceTypeId, NodeIds.Aggregates);
+    filterRegistrations.add(new FilterRegistration(variable, filter));
   }
 
-  private class DisabledReadFilter implements AttributeFilter {
+  private class DisabledReadFilter implements BehaviorOwnedAttributeFilter {
+    @Override
+    public BehaviorFilterKind kind() {
+      return BehaviorFilterKind.DISABLED_READ;
+    }
+
     @Override
     public @Nullable Object readAttribute(AttributeFilterContext ctx, AttributeId attributeId)
         throws UaException {

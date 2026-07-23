@@ -56,6 +56,54 @@ public class ExclusiveDeviationAlarm extends ExclusiveLimitAlarm {
         node -> new ExclusiveDeviationAlarm((ExclusiveDeviationAlarmTypeNode) node));
   }
 
+  /**
+   * Attach behavior to a complete, pre-existing instance.
+   *
+   * @param node the complete generated typed node.
+   * @return the attached, unregistered behavior.
+   */
+  public static ExclusiveDeviationAlarm attach(ExclusiveDeviationAlarmTypeNode node) {
+    return attach(node, options -> {});
+  }
+
+  /**
+   * Attach behavior to a complete, pre-existing instance.
+   *
+   * @param node the complete generated typed node.
+   * @param configure receives source-wiring options.
+   * @return the attached, unregistered behavior.
+   */
+  public static ExclusiveDeviationAlarm attach(
+      ExclusiveDeviationAlarmTypeNode node, Consumer<AttachOptions> configure) {
+    return attach(
+        node,
+        configure,
+        attached -> new ExclusiveDeviationAlarm((ExclusiveDeviationAlarmTypeNode) attached));
+  }
+
+  /**
+   * Complete and attach behavior to a pre-existing instance without replacing its identity.
+   *
+   * @param context the context whose NodeManager owns the instance.
+   * @param nodeId the existing ConditionId.
+   * @param configure receives the adopt-mode builder.
+   * @return the adopted, unregistered behavior.
+   * @throws UaException if validation or in-place completion fails.
+   */
+  public static ExclusiveDeviationAlarm adopt(
+      UaNodeContext context, NodeId nodeId, Consumer<ConditionBuilder> configure)
+      throws UaException {
+    ConditionBuilder builder =
+        ConditionBuilder.forAdoption(context, nodeId, ExclusiveDeviationAlarmTypeNode.class);
+    configure.accept(builder);
+    builder.validateDeviationLimits(false);
+    builder.requireSetpointNode();
+    return build(
+        builder,
+        NodeIds.ExclusiveDeviationAlarmType,
+        node -> new ExclusiveDeviationAlarm((ExclusiveDeviationAlarmTypeNode) node));
+  }
+
   @Override
   public ExclusiveDeviationAlarmTypeNode getNode() {
     return (ExclusiveDeviationAlarmTypeNode) super.getNode();

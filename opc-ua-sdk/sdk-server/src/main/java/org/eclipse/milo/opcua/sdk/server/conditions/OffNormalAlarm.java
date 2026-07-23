@@ -64,6 +64,50 @@ public class OffNormalAlarm extends DiscreteAlarm {
         node -> new OffNormalAlarm((OffNormalAlarmTypeNode) node));
   }
 
+  /**
+   * Attach behavior to a complete, pre-existing instance.
+   *
+   * @param node the complete generated typed node.
+   * @return the attached, unregistered behavior.
+   */
+  public static OffNormalAlarm attach(OffNormalAlarmTypeNode node) {
+    return attach(node, options -> {});
+  }
+
+  /**
+   * Attach behavior to a complete, pre-existing instance.
+   *
+   * @param node the complete generated typed node.
+   * @param configure receives source-wiring options.
+   * @return the attached, unregistered behavior.
+   */
+  public static OffNormalAlarm attach(
+      OffNormalAlarmTypeNode node, Consumer<AttachOptions> configure) {
+    return attach(
+        node, configure, attached -> new OffNormalAlarm((OffNormalAlarmTypeNode) attached));
+  }
+
+  /**
+   * Complete and attach behavior to a pre-existing instance without replacing its identity.
+   *
+   * @param context the context whose NodeManager owns the instance.
+   * @param nodeId the existing ConditionId.
+   * @param configure receives the adopt-mode builder.
+   * @return the adopted, unregistered behavior.
+   * @throws UaException if validation or in-place completion fails.
+   */
+  public static OffNormalAlarm adopt(
+      UaNodeContext context, NodeId nodeId, Consumer<ConditionBuilder> configure)
+      throws UaException {
+    ConditionBuilder builder =
+        ConditionBuilder.forAdoption(context, nodeId, OffNormalAlarmTypeNode.class);
+    configure.accept(builder);
+    return build(
+        builder,
+        NodeIds.OffNormalAlarmType,
+        node -> new OffNormalAlarm((OffNormalAlarmTypeNode) node));
+  }
+
   @Override
   public OffNormalAlarmTypeNode getNode() {
     return (OffNormalAlarmTypeNode) super.getNode();

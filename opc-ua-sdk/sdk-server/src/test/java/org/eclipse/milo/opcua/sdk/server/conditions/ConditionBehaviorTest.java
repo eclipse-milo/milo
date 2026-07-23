@@ -34,6 +34,7 @@ import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.TypeModelCache;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -43,6 +44,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -310,6 +312,27 @@ public class ConditionBehaviorTest {
     assertEquals(Boolean.TRUE, node.getRetain());
     // Construction is silent: reconciling state must not generate events.
     assertTrue(events.isEmpty());
+  }
+
+  @Test
+  void constructorPreservesConditionVariableValuesWhenTimestampIsMissing() {
+    AcknowledgeableConditionTypeNode node = buildConditionNode(false);
+    StatusCode quality = new StatusCode(StatusCodes.Uncertain);
+    UShort lastSeverity = ushort(321);
+    LocalizedText comment = LocalizedText.english("loaded comment");
+
+    node.getQualityNode().setValue(new DataValue(new Variant(quality)));
+    node.getLastSeverityNode().setValue(new DataValue(new Variant(lastSeverity)));
+    node.getCommentNode().setValue(new DataValue(new Variant(comment)));
+
+    new AcknowledgeableCondition(node);
+
+    assertEquals(quality, node.getQuality());
+    assertEquals(lastSeverity, node.getLastSeverity());
+    assertEquals(comment, node.getComment());
+    assertTrue(node.getQualityNode().getSourceTimestamp() != null);
+    assertTrue(node.getLastSeverityNode().getSourceTimestamp() != null);
+    assertTrue(node.getCommentNode().getSourceTimestamp() != null);
   }
 
   @Test

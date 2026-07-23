@@ -58,6 +58,54 @@ public class NonExclusiveDeviationAlarm extends NonExclusiveLimitAlarm {
         node -> new NonExclusiveDeviationAlarm((NonExclusiveDeviationAlarmTypeNode) node));
   }
 
+  /**
+   * Attach behavior to a complete, pre-existing instance.
+   *
+   * @param node the complete generated typed node.
+   * @return the attached, unregistered behavior.
+   */
+  public static NonExclusiveDeviationAlarm attach(NonExclusiveDeviationAlarmTypeNode node) {
+    return attach(node, options -> {});
+  }
+
+  /**
+   * Attach behavior to a complete, pre-existing instance.
+   *
+   * @param node the complete generated typed node.
+   * @param configure receives source-wiring options.
+   * @return the attached, unregistered behavior.
+   */
+  public static NonExclusiveDeviationAlarm attach(
+      NonExclusiveDeviationAlarmTypeNode node, Consumer<AttachOptions> configure) {
+    return attach(
+        node,
+        configure,
+        attached -> new NonExclusiveDeviationAlarm((NonExclusiveDeviationAlarmTypeNode) attached));
+  }
+
+  /**
+   * Complete and attach behavior to a pre-existing instance without replacing its identity.
+   *
+   * @param context the context whose NodeManager owns the instance.
+   * @param nodeId the existing ConditionId.
+   * @param configure receives the adopt-mode builder.
+   * @return the adopted, unregistered behavior.
+   * @throws UaException if validation or in-place completion fails.
+   */
+  public static NonExclusiveDeviationAlarm adopt(
+      UaNodeContext context, NodeId nodeId, Consumer<ConditionBuilder> configure)
+      throws UaException {
+    ConditionBuilder builder =
+        ConditionBuilder.forAdoption(context, nodeId, NonExclusiveDeviationAlarmTypeNode.class);
+    configure.accept(builder);
+    builder.validateDeviationLimits(true);
+    builder.requireSetpointNode();
+    return build(
+        builder,
+        NodeIds.NonExclusiveDeviationAlarmType,
+        node -> new NonExclusiveDeviationAlarm((NonExclusiveDeviationAlarmTypeNode) node));
+  }
+
   @Override
   public NonExclusiveDeviationAlarmTypeNode getNode() {
     return (NonExclusiveDeviationAlarmTypeNode) super.getNode();

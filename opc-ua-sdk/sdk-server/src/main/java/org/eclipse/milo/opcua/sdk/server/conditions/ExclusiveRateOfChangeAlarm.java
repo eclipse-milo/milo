@@ -15,6 +15,7 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.ExclusiveRateOfChangeAlar
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 
 /**
  * Behavior for an ExclusiveRateOfChangeAlarm instance (Part 9 §5.8.23.3): an {@link
@@ -49,6 +50,53 @@ public class ExclusiveRateOfChangeAlarm extends ExclusiveLimitAlarm {
     configure.accept(builder);
     builder.validateLimits(false);
 
+    return build(
+        builder,
+        NodeIds.ExclusiveRateOfChangeAlarmType,
+        node -> new ExclusiveRateOfChangeAlarm((ExclusiveRateOfChangeAlarmTypeNode) node));
+  }
+
+  /**
+   * Attach behavior to a complete, pre-existing instance.
+   *
+   * @param node the complete generated typed node.
+   * @return the attached, unregistered behavior.
+   */
+  public static ExclusiveRateOfChangeAlarm attach(ExclusiveRateOfChangeAlarmTypeNode node) {
+    return attach(node, options -> {});
+  }
+
+  /**
+   * Attach behavior to a complete, pre-existing instance.
+   *
+   * @param node the complete generated typed node.
+   * @param configure receives source-wiring options.
+   * @return the attached, unregistered behavior.
+   */
+  public static ExclusiveRateOfChangeAlarm attach(
+      ExclusiveRateOfChangeAlarmTypeNode node, Consumer<AttachOptions> configure) {
+    return attach(
+        node,
+        configure,
+        attached -> new ExclusiveRateOfChangeAlarm((ExclusiveRateOfChangeAlarmTypeNode) attached));
+  }
+
+  /**
+   * Complete and attach behavior to a pre-existing instance without replacing its identity.
+   *
+   * @param context the context whose NodeManager owns the instance.
+   * @param nodeId the existing ConditionId.
+   * @param configure receives the adopt-mode builder.
+   * @return the adopted, unregistered behavior.
+   * @throws UaException if validation or in-place completion fails.
+   */
+  public static ExclusiveRateOfChangeAlarm adopt(
+      UaNodeContext context, NodeId nodeId, Consumer<ConditionBuilder> configure)
+      throws UaException {
+    ConditionBuilder builder =
+        ConditionBuilder.forAdoption(context, nodeId, ExclusiveRateOfChangeAlarmTypeNode.class);
+    configure.accept(builder);
+    builder.validateLimits(false);
     return build(
         builder,
         NodeIds.ExclusiveRateOfChangeAlarmType,

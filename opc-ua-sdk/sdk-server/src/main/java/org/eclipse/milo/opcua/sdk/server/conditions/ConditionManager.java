@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.sdk.server.conditions;
 import java.util.Optional;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredEventItem;
+import org.eclipse.milo.opcua.sdk.server.methods.MethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
@@ -70,6 +71,24 @@ public interface ConditionManager {
    */
   default Optional<UaMethodNode> findMethodNode(NodeId conditionId, NodeId methodId) {
     return findCondition(conditionId).flatMap(condition -> condition.findMethodNode(methodId));
+  }
+
+  /**
+   * Find behavior-owned dispatch for a shared Method without installing a handler on the shared
+   * Method node itself.
+   *
+   * <p>The default implementation keeps custom ConditionManager implementations source-compatible
+   * while allowing each registered Condition to serve a type-shared or instance-shared Method
+   * independently.
+   *
+   * @param conditionId the ConditionId supplied as the call's ObjectId.
+   * @param methodId the shared MethodId.
+   * @return the invocation handler for this Condition and Method, if behavior owns dispatch.
+   */
+  default Optional<MethodInvocationHandler> findMethodInvocationHandler(
+      NodeId conditionId, NodeId methodId) {
+    return findCondition(conditionId)
+        .flatMap(condition -> condition.findMethodInvocationHandler(methodId));
   }
 
   /**

@@ -11,12 +11,13 @@
 package org.eclipse.milo.opcua.sdk.server.conditions;
 
 import java.time.Instant;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import org.eclipse.milo.opcua.sdk.server.conditions.ConditionNodeTraversal.DiscoveredMethod;
+import org.eclipse.milo.opcua.sdk.server.conditions.ConditionNodeTraversal.MethodSurface;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ShelvedStateMachineType;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ShelvedStateMachineTypeNode;
@@ -24,7 +25,6 @@ import org.eclipse.milo.opcua.sdk.server.model.variables.FiniteStateVariableType
 import org.eclipse.milo.opcua.sdk.server.model.variables.FiniteTransitionVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilter;
 import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilterContext;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
@@ -34,7 +34,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.jspecify.annotations.Nullable;
@@ -91,17 +90,35 @@ final class ShelvingRuntime {
     lastTransition = node.getLastTransitionNode();
 
     NodeId currentStateId = currentState != null ? currentState.getId() : null;
+    boolean recognizedState = false;
     for (ShelvedState shelvedState : ShelvedState.values()) {
       if (shelvedState.stateId().equals(currentStateId)) {
         state = shelvedState;
+        recognizedState = true;
+        break;
+      }
+    }
+
+    if (!recognizedState || state == ShelvedState.TIMED_SHELVED) {
+      // A loaded TimedShelved state does not persist the requested shelving duration, so its
+      // deadline cannot be reconstructed. Unknown state ids are equally unusable. Normalize either
+      // incoherent state silently, without modelling a transition or generating an event.
+      state = ShelvedState.UNSHELVED;
+    } else if (state == ShelvedState.ONE_SHOT_SHELVED) {
+      Double maxTimeShelved = alarm.getNode().getMaxTimeShelved();
+      if (maxTimeShelved != null && Double.isFinite(maxTimeShelved)) {
+        unshelveDeadline = reconstructOneShotDeadline(maxTimeShelved);
+        if (unshelveDeadline == null
+            || unshelveDeadline.getJavaTime() <= System.currentTimeMillis()) {
+          state = ShelvedState.UNSHELVED;
+          unshelveDeadline = null;
+        }
       }
     }
 
     readSnapshot = new ReadSnapshot(state, unshelveDeadline);
-
-    if (currentStateId == null) {
-      setCurrentState(ShelvedState.UNSHELVED);
-    }
+    setCurrentState(state);
+    alarm.getNode().setSuppressedOrShelved(state != ShelvedState.UNSHELVED);
 
     // Seed LastTransition so its property nodes exist before read filters are installed.
     if (lastTransition != null && lastTransition.getTransitionTime() == null) {
@@ -111,6 +128,10 @@ final class ShelvingRuntime {
     }
 
     node.setUnshelveTime(0.0);
+
+    if (unshelveDeadline != null) {
+      scheduleExpiryTimer(unshelveDeadline);
+    }
   }
 
   ShelvedStateMachineTypeNode getNode() {
@@ -128,15 +149,20 @@ final class ShelvingRuntime {
   void installUnshelveTimeFilter() {
     PropertyTypeNode unshelveTime = node.getUnshelveTimeNode();
     if (unshelveTime != null) {
-      unshelveTime.getFilterChain().addLast(new UnshelveTimeFilter());
+      alarm.installBehaviorReadFilter(unshelveTime, new UnshelveTimeFilter());
     }
   }
 
-  void installMethodHandlers(Map<QualifiedName, UaMethodNode> methodNodes) {
-    UaMethodNode timedShelve = methodNodes.get(new QualifiedName(0, "TimedShelve"));
+  void installMethodHandlers(MethodSurface methodSurface) {
+    Condition.deleteUnsupportedMethod(methodSurface, "TimedShelve2");
+    Condition.deleteUnsupportedMethod(methodSurface, "OneShotShelve2");
+    Condition.deleteUnsupportedMethod(methodSurface, "Unshelve2");
+
+    DiscoveredMethod timedShelve = methodSurface.get("TimedShelve");
     if (timedShelve != null) {
-      timedShelve.setInvocationHandler(
-          new ShelvedStateMachineType.TimedShelveMethod(timedShelve) {
+      alarm.installMethodHandler(
+          timedShelve,
+          new ShelvedStateMachineType.TimedShelveMethod(timedShelve.node()) {
             @Override
             protected void invoke(InvocationContext context, Double shelvingTime)
                 throws UaException {
@@ -145,10 +171,11 @@ final class ShelvingRuntime {
           });
     }
 
-    UaMethodNode oneShotShelve = methodNodes.get(new QualifiedName(0, "OneShotShelve"));
+    DiscoveredMethod oneShotShelve = methodSurface.get("OneShotShelve");
     if (oneShotShelve != null) {
-      oneShotShelve.setInvocationHandler(
-          new ShelvedStateMachineType.OneShotShelveMethod(oneShotShelve) {
+      alarm.installMethodHandler(
+          oneShotShelve,
+          new ShelvedStateMachineType.OneShotShelveMethod(oneShotShelve.node()) {
             @Override
             protected void invoke(InvocationContext context) throws UaException {
               handleOneShotShelve(context);
@@ -156,10 +183,11 @@ final class ShelvingRuntime {
           });
     }
 
-    UaMethodNode unshelve = methodNodes.get(new QualifiedName(0, "Unshelve"));
+    DiscoveredMethod unshelve = methodSurface.get("Unshelve");
     if (unshelve != null) {
-      unshelve.setInvocationHandler(
-          new ShelvedStateMachineType.UnshelveMethod(unshelve) {
+      alarm.installMethodHandler(
+          unshelve,
+          new ShelvedStateMachineType.UnshelveMethod(unshelve.node()) {
             @Override
             protected void invoke(InvocationContext context) throws UaException {
               handleUnshelve(context);
@@ -422,6 +450,24 @@ final class ShelvingRuntime {
     return new DateTime(Instant.ofEpochMilli(javaTime));
   }
 
+  private @Nullable DateTime reconstructOneShotDeadline(double maxTimeShelved) {
+    if (maxTimeShelved <= 0.0 || lastTransition == null) {
+      return null;
+    }
+
+    NodeId transitionId = lastTransition.getId();
+    boolean enteredOneShot =
+        NodeIds.ShelvedStateMachineType_UnshelvedToOneShotShelved.equals(transitionId)
+            || NodeIds.ShelvedStateMachineType_TimedShelvedToOneShotShelved.equals(transitionId);
+    DateTime transitionTime = lastTransition.getTransitionTime();
+
+    if (!enteredOneShot || transitionTime == null || transitionTime.isNull()) {
+      return null;
+    }
+
+    return deadline(transitionTime, maxTimeShelved);
+  }
+
   private void scheduleExpiryTimer(DateTime deadline) {
     if (shutdown) {
       return;
@@ -558,7 +604,12 @@ final class ShelvingRuntime {
   }
 
   /** Computes the remaining UnshelveTime on read (§5.8.11: the value counts down). */
-  private class UnshelveTimeFilter implements AttributeFilter {
+  private class UnshelveTimeFilter implements Condition.BehaviorOwnedAttributeFilter {
+    @Override
+    public Condition.BehaviorFilterKind kind() {
+      return Condition.BehaviorFilterKind.UNSHELVE_TIME;
+    }
+
     @Override
     public @Nullable Object getAttribute(AttributeFilterContext ctx, AttributeId attributeId) {
       if (attributeId == AttributeId.Value) {

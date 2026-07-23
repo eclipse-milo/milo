@@ -15,6 +15,7 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.TripAlarmTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 
 /**
  * Behavior for a TripAlarm instance (Part 9 §5.8.24.4): an {@link OffNormalAlarm} representing an
@@ -47,6 +48,45 @@ public class TripAlarm extends OffNormalAlarm {
     ConditionBuilder builder = new ConditionBuilder(context);
     configure.accept(builder);
 
+    return build(builder, NodeIds.TripAlarmType, node -> new TripAlarm((TripAlarmTypeNode) node));
+  }
+
+  /**
+   * Attach behavior to a complete, pre-existing instance.
+   *
+   * @param node the complete generated typed node.
+   * @return the attached, unregistered behavior.
+   */
+  public static TripAlarm attach(TripAlarmTypeNode node) {
+    return attach(node, options -> {});
+  }
+
+  /**
+   * Attach behavior to a complete, pre-existing instance.
+   *
+   * @param node the complete generated typed node.
+   * @param configure receives source-wiring options.
+   * @return the attached, unregistered behavior.
+   */
+  public static TripAlarm attach(TripAlarmTypeNode node, Consumer<AttachOptions> configure) {
+    return attach(node, configure, attached -> new TripAlarm((TripAlarmTypeNode) attached));
+  }
+
+  /**
+   * Complete and attach behavior to a pre-existing instance without replacing its identity.
+   *
+   * @param context the context whose NodeManager owns the instance.
+   * @param nodeId the existing ConditionId.
+   * @param configure receives the adopt-mode builder.
+   * @return the adopted, unregistered behavior.
+   * @throws UaException if validation or in-place completion fails.
+   */
+  public static TripAlarm adopt(
+      UaNodeContext context, NodeId nodeId, Consumer<ConditionBuilder> configure)
+      throws UaException {
+    ConditionBuilder builder =
+        ConditionBuilder.forAdoption(context, nodeId, TripAlarmTypeNode.class);
+    configure.accept(builder);
     return build(builder, NodeIds.TripAlarmType, node -> new TripAlarm((TripAlarmTypeNode) node));
   }
 

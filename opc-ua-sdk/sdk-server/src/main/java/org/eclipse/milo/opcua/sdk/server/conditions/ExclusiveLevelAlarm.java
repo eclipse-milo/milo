@@ -15,6 +15,7 @@ import org.eclipse.milo.opcua.sdk.server.model.objects.ExclusiveLevelAlarmTypeNo
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 
 /**
  * Behavior for an ExclusiveLevelAlarm instance (Part 9 §5.8.21.3): an {@link ExclusiveLimitAlarm}
@@ -47,6 +48,53 @@ public class ExclusiveLevelAlarm extends ExclusiveLimitAlarm {
     configure.accept(builder);
     builder.validateLimits(false);
 
+    return build(
+        builder,
+        NodeIds.ExclusiveLevelAlarmType,
+        node -> new ExclusiveLevelAlarm((ExclusiveLevelAlarmTypeNode) node));
+  }
+
+  /**
+   * Attach behavior to a complete, pre-existing instance.
+   *
+   * @param node the complete generated typed node.
+   * @return the attached, unregistered behavior.
+   */
+  public static ExclusiveLevelAlarm attach(ExclusiveLevelAlarmTypeNode node) {
+    return attach(node, options -> {});
+  }
+
+  /**
+   * Attach behavior to a complete, pre-existing instance.
+   *
+   * @param node the complete generated typed node.
+   * @param configure receives source-wiring options.
+   * @return the attached, unregistered behavior.
+   */
+  public static ExclusiveLevelAlarm attach(
+      ExclusiveLevelAlarmTypeNode node, Consumer<AttachOptions> configure) {
+    return attach(
+        node,
+        configure,
+        attached -> new ExclusiveLevelAlarm((ExclusiveLevelAlarmTypeNode) attached));
+  }
+
+  /**
+   * Complete and attach behavior to a pre-existing instance without replacing its identity.
+   *
+   * @param context the context whose NodeManager owns the instance.
+   * @param nodeId the existing ConditionId.
+   * @param configure receives the adopt-mode builder.
+   * @return the adopted, unregistered behavior.
+   * @throws UaException if validation or in-place completion fails.
+   */
+  public static ExclusiveLevelAlarm adopt(
+      UaNodeContext context, NodeId nodeId, Consumer<ConditionBuilder> configure)
+      throws UaException {
+    ConditionBuilder builder =
+        ConditionBuilder.forAdoption(context, nodeId, ExclusiveLevelAlarmTypeNode.class);
+    configure.accept(builder);
+    builder.validateLimits(false);
     return build(
         builder,
         NodeIds.ExclusiveLevelAlarmType,
