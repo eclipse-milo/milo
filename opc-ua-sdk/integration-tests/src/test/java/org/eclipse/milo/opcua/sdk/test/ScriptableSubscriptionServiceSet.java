@@ -171,6 +171,42 @@ public class ScriptableSubscriptionServiceSet extends DelegatingSubscriptionServ
       UInteger[] available,
       boolean moreNotifications) {
 
+    SubscriptionAcknowledgement[] acks = request.getSubscriptionAcknowledgements();
+    int ackCount = acks != null ? acks.length : 0;
+    var results = new StatusCode[ackCount];
+    Arrays.fill(results, StatusCode.GOOD);
+
+    return buildPublishResponse(
+        request,
+        subscriptionId,
+        sequenceNumber,
+        notificationData,
+        available,
+        moreNotifications,
+        results);
+  }
+
+  /**
+   * Build a {@link PublishResponse} for {@code request} whose acknowledgement results are {@code
+   * results} rather than all {@code Good}.
+   *
+   * <p>Part 4 §5.14.5.2: "The size and order of the list matches the size and order of the
+   * subscriptionAcknowledgements request parameter." Callers scripting a rejected acknowledgement
+   * are responsible for honouring that, since it is the pairing the client has to rely on to tell
+   * which acknowledgement failed.
+   *
+   * @param results one {@link StatusCode} per acknowledgement in {@code request}, in the same
+   *     order.
+   */
+  public PublishResponse buildPublishResponse(
+      PublishRequest request,
+      UInteger subscriptionId,
+      long sequenceNumber,
+      ExtensionObject[] notificationData,
+      UInteger[] available,
+      boolean moreNotifications,
+      StatusCode[] results) {
+
     var responseHeader =
         new ResponseHeader(
             DateTime.now(),
@@ -179,11 +215,6 @@ public class ScriptableSubscriptionServiceSet extends DelegatingSubscriptionServ
             null,
             null,
             null);
-
-    SubscriptionAcknowledgement[] acks = request.getSubscriptionAcknowledgements();
-    int ackCount = acks != null ? acks.length : 0;
-    var results = new StatusCode[ackCount];
-    Arrays.fill(results, StatusCode.GOOD);
 
     ExtensionObject[] data =
         (notificationData == null || notificationData.length == 0) ? null : notificationData;

@@ -139,27 +139,41 @@ public class PublishingManager {
   }
 
   void sendPublishRequest(OpcUaSession session, AtomicLong pendingCount) {
+    // Acknowledgements are removed from the Subscription's queue as they are drained into this
+    // request, so this request now owns them: if it fails they have to be put back, or the client
+    // has silently decided never to acknowledge those NotificationMessages.
+    var drainedAcknowledgements = new ArrayList<DrainedAcknowledgements>();
+
     try {
       var subscriptionAcknowledgements = new ArrayList<SubscriptionAcknowledgement>();
 
-      subscriptionDetails
-          .values()
-          .forEach(
-              subscription -> {
-                synchronized (subscription.availableAcknowledgements) {
-                  subscription.availableAcknowledgements.forEach(
-                      sequenceNumber ->
-                          subscription
-                              .subscription
-                              .getSubscriptionId()
-                              .ifPresent(
-                                  subscriptionId ->
-                                      subscriptionAcknowledgements.add(
-                                          new SubscriptionAcknowledgement(
-                                              subscriptionId, sequenceNumber))));
-                  subscription.availableAcknowledgements.clear();
-                }
-              });
+      for (SubscriptionDetails details : subscriptionDetails.values()) {
+        Optional<UInteger> subscriptionId = details.subscription.getSubscriptionId();
+
+        if (subscriptionId.isEmpty()) {
+          // No SubscriptionAcknowledgement can be built without one; leave them queued rather than
+          // discard them.
+          continue;
+        }
+
+        List<UInteger> sequenceNumbers;
+
+        synchronized (details.availableAcknowledgements) {
+          if (details.availableAcknowledgements.isEmpty()) {
+            continue;
+          }
+
+          sequenceNumbers = List.copyOf(details.availableAcknowledgements);
+          details.availableAcknowledgements.clear();
+        }
+
+        for (UInteger sequenceNumber : sequenceNumbers) {
+          subscriptionAcknowledgements.add(
+              new SubscriptionAcknowledgement(subscriptionId.get(), sequenceNumber));
+        }
+
+        drainedAcknowledgements.add(new DrainedAcknowledgements(details, sequenceNumbers));
+      }
 
       RequestHeader requestHeader =
           client.newRequestHeader(session.getAuthenticationToken(), getTimeoutHint());
@@ -202,6 +216,8 @@ public class PublishingManager {
                       publishResponse.getResponseHeader().getRequestHandle(),
                       publishResponse.getNotificationMessage().getSequenceNumber());
 
+                  reportRefusedAcknowledgements(subscriptionAcknowledgements, publishResponse);
+
                   UInteger subscriptionId = publishResponse.getSubscriptionId();
                   SubscriptionDetails details = subscriptionDetails.get(subscriptionId);
 
@@ -231,16 +247,108 @@ public class PublishingManager {
                       .getTransport()
                       .getConfig()
                       .getExecutor()
-                      .execute(() -> handlePublishFailure(ex, requestHandle, pendingCount));
+                      .execute(
+                          () ->
+                              handlePublishFailure(
+                                  ex, requestHandle, pendingCount, drainedAcknowledgements));
                 }
               });
     } catch (Exception e) {
       // The caller took a pending-publish permit before invoking this method. If building or
       // sending the request fails synchronously no completion handler will ever run, so release
-      // the permit here; otherwise it leaks and Publish traffic eventually stops for good.
+      // the permit here; otherwise it leaks and Publish traffic eventually stops for good. The
+      // acknowledgements already drained are in the same position: nothing will put them back
+      // unless it happens here.
+      restoreAcknowledgements(drainedAcknowledgements);
+
       pendingCount.getAndUpdate(p -> (p > 0) ? p - 1 : 0);
 
       logger.error("Error sending PublishRequest", e);
+    }
+  }
+
+  /**
+   * Report every acknowledgement the Server refused in {@code response}.
+   *
+   * <p>Part 4 §5.14.5.2 gives the PublishResponse a "List of results for the acknowledgements",
+   * whose "size and order... matches the size and order of the subscriptionAcknowledgements request
+   * parameter", so the result at index {@code i} belongs to the acknowledgement at index {@code i}
+   * of the request that produced it.
+   *
+   * <p>A refused acknowledgement is reported and then forgotten, never re-queued. The reasons a
+   * Server refuses one are statements that there is nothing left to acknowledge —
+   * Bad_SequenceNumberUnknown means it is not holding a NotificationMessage with that sequence
+   * number, Bad_SubscriptionIdInvalid that the Subscription itself is gone — so repeating the
+   * acknowledgement could only be refused the same way, forever.
+   *
+   * <p>Runs inline on the transport's PublishResponse handler and performs no I/O.
+   *
+   * @param acknowledgements the acknowledgements carried by the PublishRequest, in request order.
+   * @param response the {@link PublishResponse} that answered it.
+   */
+  private void reportRefusedAcknowledgements(
+      List<SubscriptionAcknowledgement> acknowledgements, PublishResponse response) {
+
+    StatusCode[] results = response.getResults();
+
+    if (acknowledgements.isEmpty() || results == null || results.length == 0) {
+      return;
+    }
+
+    int count = Math.min(results.length, acknowledgements.size());
+
+    if (results.length != acknowledgements.size()) {
+      logger.debug(
+          "PublishResponse carried {} acknowledgement result(s) for a PublishRequest with {} "
+              + "acknowledgement(s); pairing the first {}",
+          results.length,
+          acknowledgements.size(),
+          count);
+    }
+
+    for (int i = 0; i < count; i++) {
+      StatusCode result = results[i];
+
+      if (result != null && result.isBad()) {
+        SubscriptionAcknowledgement acknowledgement = acknowledgements.get(i);
+
+        logger.warn(
+            "Server refused SubscriptionAcknowledgement, subscriptionId={}, sequenceNumber={}: {}",
+            acknowledgement.getSubscriptionId(),
+            acknowledgement.getSequenceNumber(),
+            result);
+      }
+    }
+  }
+
+  /**
+   * Put back the acknowledgements drained into a PublishRequest that failed, so that a later
+   * PublishRequest carries them.
+   *
+   * <p>They go back at the head of the queue, ahead of anything queued since, because they are
+   * older. A sequence number that is queued again already — a duplicate NotificationMessage can
+   * re-queue one while the request carrying the first acknowledgement is still in flight — is not
+   * added a second time.
+   *
+   * @param drainedAcknowledgements what the failed request drained, per Subscription.
+   */
+  private static void restoreAcknowledgements(
+      List<DrainedAcknowledgements> drainedAcknowledgements) {
+
+    for (DrainedAcknowledgements drained : drainedAcknowledgements) {
+      List<UInteger> availableAcknowledgements = drained.details().availableAcknowledgements;
+
+      synchronized (availableAcknowledgements) {
+        var restored = new ArrayList<UInteger>(drained.sequenceNumbers().size());
+
+        for (UInteger sequenceNumber : drained.sequenceNumbers()) {
+          if (!availableAcknowledgements.contains(sequenceNumber)) {
+            restored.add(sequenceNumber);
+          }
+        }
+
+        availableAcknowledgements.addAll(0, restored);
+      }
     }
   }
 
@@ -250,8 +358,22 @@ public class PublishingManager {
    * @param ex the failure.
    * @param requestHandle the requestHandle of the PublishRequest that failed.
    * @param pendingCount the pending-publish permits held for the Session the request was sent on.
+   * @param drainedAcknowledgements the acknowledgements the failed request was carrying.
    */
-  private void handlePublishFailure(Throwable ex, UInteger requestHandle, AtomicLong pendingCount) {
+  private void handlePublishFailure(
+      Throwable ex,
+      UInteger requestHandle,
+      AtomicLong pendingCount,
+      List<DrainedAcknowledgements> drainedAcknowledgements) {
+
+    // The acknowledgements went down with the request. Part 4 §5.14.7.1: "The Client should
+    // acknowledge all Messages in this list for which it will not request retransmission" — and
+    // these are messages the client has and will not request again, so abandoning the
+    // acknowledgement leaves the Server holding them, and re-advertising them in
+    // availableSequenceNumbers, until its retransmission queue evicts them. Restoring them here,
+    // before the permit is released, is what puts them on the next PublishRequest.
+    restoreAcknowledgements(drainedAcknowledgements);
+
     StatusCode statusCode =
         UaException.extract(ex).map(UaException::getStatusCode).orElse(StatusCode.BAD);
 
@@ -748,6 +870,15 @@ public class PublishingManager {
 
     return uint((long) timeoutHint);
   }
+
+  /**
+   * The acknowledgements taken from one Subscription's queue for a single PublishRequest.
+   *
+   * @param details the Subscription they were taken from.
+   * @param sequenceNumbers the sequence numbers acknowledged, oldest first.
+   */
+  private record DrainedAcknowledgements(
+      SubscriptionDetails details, List<UInteger> sequenceNumbers) {}
 
   /** State shared by the steps of a single Republish recovery. */
   private static class Recovery {
