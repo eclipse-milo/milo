@@ -225,14 +225,22 @@ public class OpcUaSubscription {
 
       assert diff != null;
 
-      ModifySubscriptionResponse response =
-          client.modifySubscription(
-              serverState.getSubscriptionId(),
-              diff.publishingInterval().orElse(serverState.getPublishingInterval()),
-              diff.lifetimeCount().orElse(serverState.getLifetimeCount()),
-              diff.maxKeepAliveCount().orElse(serverState.getMaxKeepAliveCount()),
-              diff.maxNotificationsPerPublish().orElse(maxNotificationsPerPublish),
-              diff.priority().orElse(priority));
+      ModifySubscriptionResponse response;
+      try {
+        response =
+            client.modifySubscription(
+                serverState.getSubscriptionId(),
+                diff.publishingInterval().orElse(serverState.getPublishingInterval()),
+                diff.lifetimeCount().orElse(serverState.getLifetimeCount()),
+                diff.maxKeepAliveCount().orElse(serverState.getMaxKeepAliveCount()),
+                diff.maxNotificationsPerPublish().orElse(maxNotificationsPerPublish),
+                diff.priority().orElse(priority));
+      } catch (Exception e) {
+        // The service call failed, so the Subscription remains UNSYNCHRONIZED. Restore the pending
+        // modifications so the next modify() retries them instead of finding nothing to send.
+        restorePendingModifications(diff);
+        throw e;
+      }
 
       resetWatchdogTimer();
 
@@ -269,6 +277,39 @@ public class OpcUaSubscription {
           }
         },
         client.getTransport().getConfig().getExecutor());
+  }
+
+  /**
+   * Restore {@code diff} as the pending {@link Modifications} after a failed modify service call,
+   * so that a subsequent {@link #modify()} retries the same parameters.
+   *
+   * <p>Any Modifications requested while the failed service call was in flight take precedence over
+   * the values being restored.
+   *
+   * @param diff the {@link Modifications} the failed service call attempted to apply.
+   */
+  private void restorePendingModifications(Modifications diff) {
+    Modifications pending = modifications;
+
+    if (pending == null) {
+      modifications = diff;
+    } else {
+      if (pending.publishingInterval == null) {
+        pending.publishingInterval = diff.publishingInterval;
+      }
+      if (pending.lifetimeCount == null) {
+        pending.lifetimeCount = diff.lifetimeCount;
+      }
+      if (pending.maxKeepAliveCount == null) {
+        pending.maxKeepAliveCount = diff.maxKeepAliveCount;
+      }
+      if (pending.maxNotificationsPerPublish == null) {
+        pending.maxNotificationsPerPublish = diff.maxNotificationsPerPublish;
+      }
+      if (pending.priority == null) {
+        pending.priority = diff.priority;
+      }
+    }
   }
 
   /**
