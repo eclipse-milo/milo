@@ -255,6 +255,22 @@ public class ScriptableSubscriptionServiceSet extends DelegatingSubscriptionServ
   }
 
   /**
+   * The number of Publish requests currently parked, i.e. received but not yet matched to a
+   * responder. A test that needs the client's Publish pipeline to be full before it starts
+   * scripting can wait on this rather than on elapsed time.
+   *
+   * @return the number of Publish requests currently parked.
+   */
+  public int getParkedRequestCount() {
+    lock.lock();
+    try {
+      return parked.size();
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  /**
    * Fail every currently parked Publish request. Call from test teardown to avoid leaking futures
    * held by the server dispatch.
    */

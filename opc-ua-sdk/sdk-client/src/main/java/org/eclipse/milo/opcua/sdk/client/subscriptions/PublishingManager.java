@@ -188,9 +188,15 @@ public class PublishingManager {
 
       client
           .sendRequestAsync(request)
-          .whenCompleteAsync(
+          .whenComplete(
               (response, ex) -> {
                 if (response instanceof PublishResponse publishResponse) {
+                  // This handler runs inline on the transport's serial PublishResponse queue (see
+                  // AbstractUascClientTransport#handleResponse), which is the only place the order
+                  // the Server sent NotificationMessages in still exists. Queueing the work here,
+                  // rather than hopping through the general-purpose executor first, is what carries
+                  // that order into processingQueue, which is itself serial. Nothing that can block
+                  // belongs in this handler.
                   logger.debug(
                       "Received PublishResponse, requestHandle={}, sequenceNumber={}",
                       publishResponse.getResponseHeader().getRequestHandle(),
@@ -200,44 +206,26 @@ public class PublishingManager {
                   SubscriptionDetails details = subscriptionDetails.get(subscriptionId);
 
                   if (details != null) {
+                    // Cheap and non-blocking: cancels and re-schedules a timer. The watchdog
+                    // watches for the Server going quiet, so it is reset when the response is
+                    // received rather than when it is eventually processed.
                     details.subscription.resetWatchdogTimer();
                   }
 
                   processingQueue.execute(
                       () -> processPublishResponse(publishResponse, pendingCount));
                 } else {
-                  StatusCode statusCode =
-                      UaException.extract(ex)
-                          .map(UaException::getStatusCode)
-                          .orElse(StatusCode.BAD);
-
-                  pendingCount.getAndUpdate(p -> (p > 0) ? p - 1 : 0);
-
-                  long code = statusCode.value();
-
-                  if (code == StatusCodes.Bad_SessionClosed
-                      || code == StatusCodes.Bad_SessionIdInvalid) {
-                    // The Session is gone, not the Subscription: no PublishResponse can arrive
-                    // until the Session is re-activated, so the watchdog must be suspended rather
-                    // than destroyed. The Session FSM treats both codes as Session faults and
-                    // reconnects, after which TransferSubscriptions may well keep the Subscription
-                    // alive; cancelling here would de-register the watchdog's
-                    // SessionActivityListener and leave it unable to ever arm again.
-                    subscriptionDetails.values().forEach(d -> d.subscription.pauseWatchdogTimer());
-                  } else if (code != StatusCodes.Bad_NoSubscription
-                      && code != StatusCodes.Bad_TooManyPublishRequests) {
-
-                    maybeSendPublishRequests();
-                  }
-
-                  logger.debug(
-                      "Publish service failure (requestHandle={}): {}",
-                      requestHandle,
-                      statusCode,
-                      ex);
+                  // The failure path is dispatched asynchronously: it may run on a wheel timer
+                  // thread (request timeout) or inline on the caller's thread (a request that
+                  // fails before it is sent), and it re-enters maybeSendPublishRequests(), which
+                  // would otherwise recurse into sendPublishRequest() on that same thread.
+                  client
+                      .getTransport()
+                      .getConfig()
+                      .getExecutor()
+                      .execute(() -> handlePublishFailure(ex, requestHandle, pendingCount));
                 }
-              },
-              client.getTransport().getConfig().getExecutor());
+              });
     } catch (Exception e) {
       // The caller took a pending-publish permit before invoking this method. If building or
       // sending the request fails synchronously no completion handler will ever run, so release
@@ -248,14 +236,44 @@ public class PublishingManager {
     }
   }
 
+  /**
+   * Handle a PublishRequest that failed rather than returning a PublishResponse.
+   *
+   * @param ex the failure.
+   * @param requestHandle the requestHandle of the PublishRequest that failed.
+   * @param pendingCount the pending-publish permits held for the Session the request was sent on.
+   */
+  private void handlePublishFailure(Throwable ex, UInteger requestHandle, AtomicLong pendingCount) {
+    StatusCode statusCode =
+        UaException.extract(ex).map(UaException::getStatusCode).orElse(StatusCode.BAD);
+
+    pendingCount.getAndUpdate(p -> (p > 0) ? p - 1 : 0);
+
+    long code = statusCode.value();
+
+    if (code == StatusCodes.Bad_SessionClosed || code == StatusCodes.Bad_SessionIdInvalid) {
+      // The Session is gone, not the Subscription: no PublishResponse can arrive until the Session
+      // is re-activated, so the watchdog must be suspended rather than destroyed. The Session FSM
+      // treats both codes as Session faults and reconnects, after which TransferSubscriptions may
+      // well keep the Subscription alive; cancelling here would de-register the watchdog's
+      // SessionActivityListener and leave it unable to ever arm again.
+      subscriptionDetails.values().forEach(d -> d.subscription.pauseWatchdogTimer());
+    } else if (code != StatusCodes.Bad_NoSubscription
+        && code != StatusCodes.Bad_TooManyPublishRequests) {
+
+      maybeSendPublishRequests();
+    }
+
+    logger.debug("Publish service failure (requestHandle={}): {}", requestHandle, statusCode, ex);
+  }
+
   private void processPublishResponse(PublishResponse response, AtomicLong pendingCount) {
     UInteger subscriptionId = response.getSubscriptionId();
 
     SubscriptionDetails details = subscriptionDetails.get(subscriptionId);
 
     if (details == null) {
-      pendingCount.getAndUpdate(p -> (p > 0) ? p - 1 : 0);
-      maybeSendPublishRequests();
+      releasePendingPublish(pendingCount);
       return;
     }
 
@@ -276,6 +294,35 @@ public class PublishingManager {
         receivedSequenceNumber);
 
     if (SequenceNumbers.isLegal(receivedSequenceNumber)) {
+      if (!isKeepAlive) {
+        // Acknowledge only NotificationMessages that were actually received: Part 4 §5.14.5.2 lets
+        // the Server delete an acknowledged message from its retransmission queue, so
+        // acknowledging one that never arrived destroys the only copy of it. A message that has
+        // already been accounted for was still received, so it is still acknowledged.
+        details.availableAcknowledgements.add(notificationMessage.getSequenceNumber());
+      }
+
+      long expectedSequenceNumber = SequenceNumbers.successor(details.lastSequenceNumber);
+
+      if (receivedSequenceNumber != expectedSequenceNumber
+          && !SequenceNumbers.isAhead(receivedSequenceNumber, expectedSequenceNumber)) {
+
+        // Neither the message expected next nor ahead of it, so it has already been accounted for:
+        // a duplicate, or a message the client recovered via Republish before this copy of it
+        // arrived. Accounting must only ever move forwards; processing this message again would
+        // hand it to the application a second time and roll lastSequenceNumber back, making every
+        // message already received after it look missing and provoking a Republish for each one.
+        logger.debug(
+            "Discarding NotificationMessage already accounted for, subscriptionId={}, "
+                + "lastSequenceNumber={}, receivedSequenceNumber={}",
+            subscriptionId,
+            details.lastSequenceNumber,
+            receivedSequenceNumber);
+
+        releasePendingPublish(pendingCount);
+        return;
+      }
+
       recoverMissingNotificationMessages(details, response, receivedSequenceNumber);
 
       // Part 4 §5.14.1.1: a keep-alive "contains the sequence number of the next
@@ -286,13 +333,6 @@ public class PublishingManager {
           isKeepAlive
               ? SequenceNumbers.predecessor(receivedSequenceNumber)
               : receivedSequenceNumber;
-
-      if (!isKeepAlive) {
-        // Acknowledge only NotificationMessages that were actually received: Part 4 §5.14.5.2 lets
-        // the Server delete an acknowledged message from its retransmission queue, so
-        // acknowledging one that never arrived destroys the only copy of it.
-        details.availableAcknowledgements.add(notificationMessage.getSequenceNumber());
-      }
     } else {
       // Part 4 §5.14.1.1: "The value 0 is never used for the sequence number." There is no sequence
       // arithmetic that can be done with an illegal value, so deliver the message but leave the
@@ -321,12 +361,22 @@ public class PublishingManager {
                   "Notification delivery threw an unexpected Exception: {}", ex.getMessage(), ex);
             }
 
-            pendingCount.getAndUpdate(p -> (p > 0) ? p - 1 : 0);
-
-            maybeSendPublishRequests();
+            releasePendingPublish(pendingCount);
           },
           client.getTransport().getConfig().getExecutor());
     }
+  }
+
+  /**
+   * Release the pending-publish permit taken for a PublishRequest whose response has been dealt
+   * with, and send a replacement PublishRequest if one is wanted.
+   *
+   * @param pendingCount the pending-publish permits held for the Session the request was sent on.
+   */
+  private void releasePendingPublish(AtomicLong pendingCount) {
+    pendingCount.getAndUpdate(p -> (p > 0) ? p - 1 : 0);
+
+    maybeSendPublishRequests();
   }
 
   /**
