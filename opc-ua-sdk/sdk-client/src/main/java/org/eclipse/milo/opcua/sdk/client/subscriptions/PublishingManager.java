@@ -63,11 +63,36 @@ public class PublishingManager {
    */
   private static final long DEFAULT_MAX_RECOVERABLE_GAP = 64L;
 
+  /**
+   * The value of {@link #pendingPublishCeiling} while the Server has never refused a PublishRequest
+   * for holding too many, i.e. while nothing but the client's own target applies.
+   */
+  private static final long NO_PENDING_PUBLISH_CEILING = Long.MAX_VALUE;
+
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private final ConcurrentMap<NodeId, AtomicLong> pendingCountMap = new ConcurrentHashMap<>();
 
   private final Map<UInteger, SubscriptionDetails> subscriptionDetails = new ConcurrentHashMap<>();
+
+  /**
+   * Incremented every time a Subscription is registered with or unregistered from this manager.
+   *
+   * <p>Each PublishRequest records the value in effect when it was sent, which is what lets a
+   * failure be told apart from a failure that is still relevant: a Server's answer describes the
+   * Subscription set the request was sent for, and once that set has changed the answer no longer
+   * describes the client.
+   */
+  private final AtomicLong subscriptionGeneration = new AtomicLong(0L);
+
+  /**
+   * The number of PublishRequests the Server has been observed to queue for this Session, or {@link
+   * #NO_PENDING_PUBLISH_CEILING} if it has never refused one.
+   *
+   * <p>Learned from Bad_TooManyPublishRequests and never allowed below one, since a ceiling of zero
+   * is a pipeline that never refills.
+   */
+  private final AtomicLong pendingPublishCeiling = new AtomicLong(NO_PENDING_PUBLISH_CEILING);
 
   private final OpcUaClient client;
 
@@ -80,6 +105,10 @@ public class PublishingManager {
         new SessionActivityListener() {
           @Override
           public void onSessionActive(UaSession session) {
+            // A Session has its own queue of PublishRequests, so what an earlier one was willing to
+            // hold says nothing about this one.
+            pendingPublishCeiling.set(NO_PENDING_PUBLISH_CEILING);
+
             maybeSendPublishRequests();
           }
         });
@@ -91,13 +120,28 @@ public class PublishingManager {
     subscription
         .getSubscriptionId()
         .ifPresent(
-            id -> subscriptionDetails.put(id, new SubscriptionDetails(subscription, executor)));
+            id -> {
+              subscriptionDetails.put(id, new SubscriptionDetails(subscription, executor));
+              subscriptionGeneration.incrementAndGet();
+            });
+
+    // The client wants a deeper pipeline than it did when any ceiling was learned, and Part 4
+    // §5.14.5.1 requires a Server to accept at least one more queued PublishRequest per
+    // Subscription, so it is worth finding out whether this one now will.
+    pendingPublishCeiling.set(NO_PENDING_PUBLISH_CEILING);
 
     maybeSendPublishRequests();
   }
 
   void removeSubscription(OpcUaSubscription subscription) {
-    subscription.getSubscriptionId().ifPresent(subscriptionDetails::remove);
+    subscription
+        .getSubscriptionId()
+        .ifPresent(
+            id -> {
+              if (subscriptionDetails.remove(id) != null) {
+                subscriptionGeneration.incrementAndGet();
+              }
+            });
 
     maybeSendPublishRequests();
   }
@@ -143,6 +187,10 @@ public class PublishingManager {
     // request, so this request now owns them: if it fails they have to be put back, or the client
     // has silently decided never to acknowledge those NotificationMessages.
     var drainedAcknowledgements = new ArrayList<DrainedAcknowledgements>();
+
+    // Read before the request is built, so that a Subscription registered or unregistered while it
+    // is in flight is seen as a change by the failure handler rather than missed.
+    long generation = subscriptionGeneration.get();
 
     try {
       var subscriptionAcknowledgements = new ArrayList<SubscriptionAcknowledgement>();
@@ -250,7 +298,11 @@ public class PublishingManager {
                       .execute(
                           () ->
                               handlePublishFailure(
-                                  ex, requestHandle, pendingCount, drainedAcknowledgements));
+                                  ex,
+                                  requestHandle,
+                                  pendingCount,
+                                  drainedAcknowledgements,
+                                  generation));
                 }
               });
     } catch (Exception e) {
@@ -359,12 +411,14 @@ public class PublishingManager {
    * @param requestHandle the requestHandle of the PublishRequest that failed.
    * @param pendingCount the pending-publish permits held for the Session the request was sent on.
    * @param drainedAcknowledgements the acknowledgements the failed request was carrying.
+   * @param generation the {@link #subscriptionGeneration} in effect when the request was sent.
    */
   private void handlePublishFailure(
       Throwable ex,
       UInteger requestHandle,
       AtomicLong pendingCount,
-      List<DrainedAcknowledgements> drainedAcknowledgements) {
+      List<DrainedAcknowledgements> drainedAcknowledgements,
+      long generation) {
 
     // The acknowledgements went down with the request. Part 4 §5.14.7.1: "The Client should
     // acknowledge all Messages in this list for which it will not request retransmission" — and
@@ -377,7 +431,7 @@ public class PublishingManager {
     StatusCode statusCode =
         UaException.extract(ex).map(UaException::getStatusCode).orElse(StatusCode.BAD);
 
-    pendingCount.getAndUpdate(p -> (p > 0) ? p - 1 : 0);
+    long outstanding = pendingCount.updateAndGet(p -> (p > 0) ? p - 1 : 0);
 
     long code = statusCode.value();
 
@@ -388,9 +442,37 @@ public class PublishingManager {
       // well keep the Subscription alive; cancelling here would de-register the watchdog's
       // SessionActivityListener and leave it unable to ever arm again.
       subscriptionDetails.values().forEach(d -> d.subscription.pauseWatchdogTimer());
-    } else if (code != StatusCodes.Bad_NoSubscription
-        && code != StatusCodes.Bad_TooManyPublishRequests) {
+    } else if (code == StatusCodes.Bad_NoSubscription) {
+      // Part 4 §5.14.8.1: when the last Subscription of a Session is deleted, "all Publish requests
+      // still queued for that Session are de-queued and shall be returned with Bad_NoSubscription".
+      // Replacing a request the Server answered that way with another one for the same Subscription
+      // set could only be answered the same way, so the refill is suppressed — but only while the
+      // answer still describes this client. A Subscription registered or unregistered since the
+      // request was sent makes it stale: an application that deletes its last Subscription and
+      // immediately creates another takes the whole de-queued burst *after* addSubscription() has
+      // run, and addSubscription() cannot start Publish traffic for the new Subscription because
+      // the de-queued requests still hold every pending-publish permit. Suppressing the refill here
+      // as well would leave the new Subscription with no PublishRequest ever sent for it: no other
+      // caller of maybeSendPublishRequests() is left to run, and the watchdog only reports the
+      // silence, it does not recover from it.
+      if (generation != subscriptionGeneration.get()) {
+        maybeSendPublishRequests();
+      }
+    } else if (code == StatusCodes.Bad_TooManyPublishRequests) {
+      // Part 4 §5.14.5.1: after this error a Client "shall not issue another Publish request before
+      // one of its outstanding Publish requests is returned". Not replacing this one is the letter
+      // of that; remembering how many the Server was in fact holding is what stops the next
+      // PublishResponse to be delivered from restoring the very outstanding count that drew the
+      // fault, since the target would otherwise still be subscriptionCount + 1 and the refill loop
+      // closes the whole deficit at once.
+      //
+      // Never below one: a ceiling of zero is a pipeline that can never refill. The same clause
+      // requires a Server to accept at least subscriptionCount + 1 queued Publish requests, which
+      // is exactly what the client aims for, so a conformant Server never gets here.
+      long ceiling = Math.max(1L, outstanding);
 
+      pendingPublishCeiling.getAndUpdate(c -> Math.min(c, ceiling));
+    } else {
       maybeSendPublishRequests();
     }
 
@@ -813,7 +895,15 @@ public class PublishingManager {
           StatusCode status = scn.getStatus();
 
           if (status.value() == StatusCodes.Bad_Timeout) {
-            details.subscription.getSubscriptionId().ifPresent(subscriptionDetails::remove);
+            details
+                .subscription
+                .getSubscriptionId()
+                .ifPresent(
+                    id -> {
+                      if (subscriptionDetails.remove(id) != null) {
+                        subscriptionGeneration.incrementAndGet();
+                      }
+                    });
           }
 
           details.subscription.notifyStatusChanged(status);
@@ -825,11 +915,15 @@ public class PublishingManager {
   }
 
   private long getMaxPendingPublishes() {
+    if (subscriptionDetails.isEmpty()) {
+      return 0;
+    }
+
     long maxPendingPublishRequests = client.getConfig().getMaxPendingPublishRequests().longValue();
 
-    return subscriptionDetails.isEmpty()
-        ? 0
-        : Math.min(subscriptionDetails.size() + 1, maxPendingPublishRequests);
+    long target = Math.min(subscriptionDetails.size() + 1L, maxPendingPublishRequests);
+
+    return Math.min(target, pendingPublishCeiling.get());
   }
 
   private UInteger getTimeoutHint() {
