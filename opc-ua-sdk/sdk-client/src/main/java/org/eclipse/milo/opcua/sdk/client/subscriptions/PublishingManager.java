@@ -15,15 +15,18 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
 import org.eclipse.milo.opcua.sdk.client.SessionActivityListener;
@@ -41,11 +44,14 @@ import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemNotificat
 import org.eclipse.milo.opcua.stack.core.types.structured.NotificationMessage;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.RepublishRequest;
+import org.eclipse.milo.opcua.stack.core.types.structured.RepublishResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
 import org.eclipse.milo.opcua.stack.core.types.structured.StatusChangeNotification;
 import org.eclipse.milo.opcua.stack.core.types.structured.SubscriptionAcknowledgement;
 import org.eclipse.milo.opcua.stack.core.util.TaskQueue;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,13 +121,30 @@ public class PublishingManager {
    */
   private final AtomicLong pendingPublishCeiling = new AtomicLong(NO_PENDING_PUBLISH_CEILING);
 
+  /**
+   * The number of times a Session has become Active, i.e. the number of times the client has had to
+   * recover the Subscriptions it holds before resuming Publish traffic.
+   */
+  private final AtomicLong sessionActivations = new AtomicLong(0L);
+
+  /**
+   * The highest {@link #sessionActivations} value whose recovery has finished, one way or the
+   * other.
+   *
+   * <p>Publish traffic is allowed only while this has caught up with {@link #sessionActivations};
+   * see {@link #isPublishingAllowed()}. The pair is monotonic, and the recovery of the newest
+   * activation always finishes, so the pipeline cannot be held shut by a recovery that is over.
+   */
+  private final AtomicLong recoveredActivations = new AtomicLong(0L);
+
   private final OpcUaClient client;
 
   public PublishingManager(OpcUaClient client) {
     this.client = client;
 
     // When a Session gets re-activated after a connection loss we need to make sure PublishRequests
-    // are being sent again.
+    // are being sent again -- but only after every Subscription has had the chance to collect what
+    // the Server generated while the Session was unusable. See recoverAndResumePublishing().
     client.addSessionActivityListener(
         new SessionActivityListener() {
           @Override
@@ -130,7 +153,7 @@ public class PublishingManager {
             // hold says nothing about this one.
             pendingPublishCeiling.set(NO_PENDING_PUBLISH_CEILING);
 
-            maybeSendPublishRequests();
+            recoverAndResumePublishing(session);
           }
         });
   }
@@ -197,6 +220,31 @@ public class PublishingManager {
     }
   }
 
+  /**
+   * Record what a Server said it was still holding for {@code subscriptionId} when it accepted a
+   * TransferSubscriptions request for it.
+   *
+   * <p>Part 4 §5.14.7.1 gives each successful TransferResult "the sequence numbers of the
+   * NotificationMessages that are available for retransmission". It is the exact input the
+   * reconnect recovery needs: it says which NotificationMessages the Republish loop of Part 4 §6.7
+   * can still collect, and therefore where that loop starts and where it stops.
+   *
+   * <p>Called by the Session FSM while the Session that transfer was part of is still on its way to
+   * Active, so the list is in place before the recovery that consumes it runs.
+   *
+   * @param subscriptionId the SubscriptionId that was transferred.
+   * @param availableSequenceNumbers the availableSequenceNumbers of its TransferResult.
+   */
+  public void notifySubscriptionTransferred(
+      UInteger subscriptionId, UInteger @Nullable [] availableSequenceNumbers) {
+
+    SubscriptionDetails details = subscriptionDetails.get(subscriptionId);
+
+    if (details != null) {
+      details.transferredSequenceNumbers.set(availableSequenceNumbers);
+    }
+  }
+
   private void maybeSendPublishRequests() {
     long maxPendingPublishes = getMaxPendingPublishes();
 
@@ -206,6 +254,19 @@ public class PublishingManager {
           .whenComplete(
               (session, ex) -> {
                 if (session != null) {
+                  if (!isPublishingAllowed()) {
+                    // The Republish loop Part 4 §6.7 requires before Publish resumes has not
+                    // finished yet. Tested here, once the Session is in hand, rather than on the
+                    // way
+                    // in: a caller that found no Session is parked on the one being established,
+                    // and
+                    // must not send the instant it arrives either. Whatever deficit builds up while
+                    // the pipeline is shut is made good by resumePublishing(), which every recovery
+                    // reaches.
+                    logger.debug("Publish suspended pending reconnect recovery");
+                    return;
+                  }
+
                   AtomicLong pendingCount =
                       pendingCountMap.computeIfAbsent(
                           session.getSessionId(), id -> new AtomicLong(0L));
@@ -231,6 +292,380 @@ public class PublishingManager {
                 }
               });
     }
+  }
+
+  /**
+   * @return {@code true} if PublishRequests may be sent, i.e. if every Session activation so far
+   *     has had its reconnect recovery run.
+   */
+  private boolean isPublishingAllowed() {
+    return recoveredActivations.get() >= sessionActivations.get();
+  }
+
+  /**
+   * Recover every registered Subscription on the newly Active {@code session} and only then let
+   * PublishRequests flow again.
+   *
+   * <p>Part 4 §6.7: "After re-establishing the connection the Client shall call Republish in a
+   * loop, starting with the next expected sequence number and incrementing the sequence number
+   * until the Server returns the status Bad_MessageNotAvailable. After the Republish returns
+   * Bad_MessageNotAvailable the Client shall start sending Publish requests with the normal Publish
+   * handling. This sequence ensures that the lost NotificationMessages queued in the Server are not
+   * overwritten by new Publish responses." A Server's retransmission queue is finite — Part 4
+   * §5.14.1.1: "In the case of a retransmission queue overflow, the oldest sent NotificationMessage
+   * gets deleted" — so every NotificationMessage sent in answer to a resumed PublishRequest can
+   * evict one the client has not collected yet, which is what the ordering prevents.
+   *
+   * <p>Runs on the transport's executor, as one of the Session activity callbacks, and returns
+   * immediately: the recovery is a chain of Republish round trips and nothing here waits for it.
+   *
+   * @param session the Session that has just become Active.
+   */
+  private void recoverAndResumePublishing(UaSession session) {
+    long activation = sessionActivations.incrementAndGet();
+
+    try {
+      recoverSubscriptions(session, activation)
+          .whenComplete((unit, ex) -> resumePublishing(activation));
+    } catch (Exception e) {
+      // Nothing is going to complete the recovery that never started, and a pipeline that stays
+      // shut is worse than one that resumes without having drained: it never recovers at all.
+      logger.error("Reconnect recovery could not be started", e);
+
+      resumePublishing(activation);
+    }
+  }
+
+  /**
+   * Let PublishRequests flow again now that the recovery of Session activation {@code activation}
+   * is over, and send the ones that were not sent while it ran.
+   *
+   * @param activation the {@link #sessionActivations} value the finished recovery belongs to.
+   */
+  private void resumePublishing(long activation) {
+    recoveredActivations.getAndUpdate(recovered -> Math.max(recovered, activation));
+
+    maybeSendPublishRequests();
+  }
+
+  /**
+   * Run the Part 4 §6.7 Republish loop for every registered Subscription, all of them at once: they
+   * have independent sequence numbers, independent processing queues, and independent Republish
+   * round trips, so one Subscription's recovery is not a reason for another's to wait.
+   *
+   * @param session the Session that has just become Active.
+   * @param activation the {@link #sessionActivations} value this recovery belongs to.
+   * @return a {@link CompletableFuture} that completes, never exceptionally, when the last of them
+   *     is done.
+   */
+  private CompletableFuture<Unit> recoverSubscriptions(UaSession session, long activation) {
+    List<SubscriptionDetails> details = List.copyOf(subscriptionDetails.values());
+
+    if (details.isEmpty()) {
+      return CompletableFuture.completedFuture(Unit.VALUE);
+    }
+
+    var futures = new ArrayList<CompletableFuture<Unit>>(details.size());
+
+    for (SubscriptionDetails d : details) {
+      futures.add(recoverSubscription(session, d, activation));
+    }
+
+    return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
+        .handle((unit, ex) -> Unit.VALUE);
+  }
+
+  /**
+   * Run the Part 4 §6.7 Republish loop for one Subscription.
+   *
+   * <p>The loop runs with the Subscription's processing queue paused, exactly as the reactive gap
+   * repair in {@link #processPublishResponse} does, which is what orders the NotificationMessages
+   * it collects ahead of any PublishResponse for the same Subscription: none is processed, and
+   * therefore none is delivered, until the loop is done.
+   *
+   * @param session the Session that has just become Active.
+   * @param details the {@link SubscriptionDetails} for the Subscription to recover.
+   * @param activation the {@link #sessionActivations} value this recovery belongs to.
+   * @return a {@link CompletableFuture} that completes, never exceptionally, when the loop is done.
+   */
+  private CompletableFuture<Unit> recoverSubscription(
+      UaSession session, SubscriptionDetails details, long activation) {
+
+    var recovered = new CompletableFuture<Unit>();
+
+    boolean queued =
+        details.processingQueue.execute(
+            () -> {
+              // Safe from here because this task is running on the queue it pauses, so no other
+              // task for this Subscription can be in flight.
+              details.processingQueue.pause();
+
+              try {
+                republishUntilUnavailable(session, details, activation)
+                    .whenComplete((unit, ex) -> finishRecovery(details, recovered));
+              } catch (Exception e) {
+                logger.error(
+                    "Reconnect recovery failed, subscriptionId={}", details.subscriptionId, e);
+
+                finishRecovery(details, recovered);
+              }
+            });
+
+    if (!queued) {
+      // The queue is shut down or saturated, so the task above will never run and there is no loop
+      // to wait for.
+      recovered.complete(Unit.VALUE);
+    }
+
+    return recovered;
+  }
+
+  /**
+   * Hand a Subscription's processing queue back and report its recovery finished, whatever happened
+   * to it. Every branch of a recovery ends here: a paused queue that is never resumed stops the
+   * Subscription being delivered to, and a recovery that is never reported finished stops the whole
+   * client's Publish traffic.
+   *
+   * @param details the {@link SubscriptionDetails} for the Subscription that was recovered.
+   * @param recovered the {@link CompletableFuture} to complete.
+   */
+  private static void finishRecovery(
+      SubscriptionDetails details, CompletableFuture<Unit> recovered) {
+
+    try {
+      details.processingQueue.resume();
+    } finally {
+      recovered.complete(Unit.VALUE);
+    }
+  }
+
+  /**
+   * Request, one at a time, the NotificationMessages the Server generated for one Subscription
+   * while the client could not collect them, starting at the sequence number expected next.
+   *
+   * <p>Where the Session was replaced and the Subscription transferred to it, the TransferResult
+   * has already named the sequence numbers the Server still holds (Part 4 §5.14.7.1), and that list
+   * is what the loop follows: it starts at the oldest of them the client is missing and ends where
+   * the list does, without spending a round trip to be told about a sequence number the Server has
+   * already said it does not have. Anything older than that oldest one is gone — Part 4 §5.14.1.1
+   * deletes the oldest NotificationMessage first — and is reported as lost data rather than
+   * requested.
+   *
+   * <p>Where the Session was merely re-activated there is no such list, and the loop is the one
+   * Part 4 §6.7 describes: increment until the Server answers Bad_MessageNotAvailable, bounded by
+   * {@link #DEFAULT_MAX_RECOVERABLE_GAP} so that a Subscription whose state the client has lost
+   * track of cannot cost an unbounded number of round trips.
+   *
+   * @param session the Session that has just become Active.
+   * @param details the {@link SubscriptionDetails} for the Subscription to recover.
+   * @param activation the {@link #sessionActivations} value this recovery belongs to.
+   * @return a {@link CompletableFuture} that completes, never exceptionally, when the loop is done.
+   */
+  private CompletableFuture<Unit> republishUntilUnavailable(
+      UaSession session, SubscriptionDetails details, long activation) {
+
+    UInteger[] advertised = details.transferredSequenceNumbers.getAndSet(null);
+
+    long expectedSequenceNumber = SequenceNumbers.successor(details.lastSequenceNumber);
+    long firstSequenceNumber = expectedSequenceNumber;
+    long maxRepublishes = DEFAULT_MAX_RECOVERABLE_GAP;
+    Set<Long> heldByServer = null;
+
+    if (advertised != null && advertised.length > 0) {
+      heldByServer = legalSequenceNumbers(advertised);
+      maxRepublishes = heldByServer.size();
+
+      long oldestHeld = oldestHeldAtOrAfter(heldByServer, expectedSequenceNumber);
+
+      if (oldestHeld == SequenceNumbers.NONE) {
+        logger.debug(
+            "Nothing the Server advertised on transfer is missing, subscriptionId={}, "
+                + "expectedSequenceNumber={}",
+            details.subscriptionId,
+            expectedSequenceNumber);
+
+        return CompletableFuture.completedFuture(Unit.VALUE);
+      }
+
+      if (oldestHeld != expectedSequenceNumber) {
+        logger.warn(
+            "The oldest NotificationMessage the Server can retransmit after the transfer is "
+                + "sequenceNumber={}, so the {} starting at sequenceNumber={} are gone; treating "
+                + "them as lost data, subscriptionId={}",
+            oldestHeld,
+            SequenceNumbers.forwardDistance(expectedSequenceNumber, oldestHeld),
+            expectedSequenceNumber,
+            details.subscriptionId);
+
+        details.lastSequenceNumber = SequenceNumbers.predecessor(oldestHeld);
+        details.subscription.notifyNotificationDataLost();
+
+        firstSequenceNumber = oldestHeld;
+      }
+    }
+
+    return republishNext(
+        session, details, firstSequenceNumber, maxRepublishes, heldByServer, activation);
+  }
+
+  /**
+   * Request the NotificationMessage with {@code sequenceNumber} and, if it arrives, the one after
+   * it.
+   *
+   * @param session the Session that has just become Active.
+   * @param details the {@link SubscriptionDetails} for the Subscription being recovered.
+   * @param sequenceNumber the sequence number to request.
+   * @param maxRepublishes the number of requests, including this one, the loop may still make.
+   * @param heldByServer the sequence numbers the Server said it holds, or {@code null} if it did
+   *     not say and the loop has to run until it answers Bad_MessageNotAvailable.
+   * @param activation the {@link #sessionActivations} value this recovery belongs to.
+   * @return a {@link CompletableFuture} that completes, never exceptionally, when the loop is done.
+   */
+  private CompletableFuture<Unit> republishNext(
+      UaSession session,
+      SubscriptionDetails details,
+      long sequenceNumber,
+      long maxRepublishes,
+      @Nullable Set<Long> heldByServer,
+      long activation) {
+
+    if (maxRepublishes <= 0
+        || !details.registered
+        || activation != sessionActivations.get()
+        || (heldByServer != null && !heldByServer.contains(sequenceNumber))) {
+
+      // Either the loop has run its course, or the Subscription is gone, or the Session this
+      // recovery was for has been superseded by one with a recovery of its own.
+      return CompletableFuture.completedFuture(Unit.VALUE);
+    }
+
+    return republish(session, details.subscriptionId, uint(sequenceNumber))
+        .handle(
+            (response, ex) -> {
+              if (ex != null) {
+                StatusCode statusCode =
+                    UaException.extract(ex).map(UaException::getStatusCode).orElse(StatusCode.BAD);
+
+                if (statusCode.value() == StatusCodes.Bad_MessageNotAvailable) {
+                  // The termination condition of Part 4 §6.7's loop, and not lost data: the Server
+                  // is holding nothing with this sequence number because it never sent one, which
+                  // is the normal case when nothing was missed.
+                  logger.debug(
+                      "Reconnect recovery complete, subscriptionId={}, sequenceNumber={} is not "
+                          + "available for retransmission",
+                      details.subscriptionId,
+                      sequenceNumber);
+                } else {
+                  logger.warn(
+                      "Republish service failure during reconnect recovery, subscriptionId={}, "
+                          + "sequenceNumber={}: {}",
+                      details.subscriptionId,
+                      sequenceNumber,
+                      statusCode);
+                }
+
+                return false;
+              }
+
+              // The processing queue is paused for the duration of the loop, so nothing else is
+              // accounting for this Subscription's sequence numbers and nothing else is queueing
+              // deliveries for it. Advancing lastSequenceNumber here is what stops the first
+              // PublishResponse after the recovery from finding a gap the recovery has just closed
+              // and delivering these NotificationMessages a second time.
+              details.availableAcknowledgements.add(uint(sequenceNumber));
+              details.lastSequenceNumber = sequenceNumber;
+
+              NotificationMessage notificationMessage = response.getNotificationMessage();
+
+              details
+                  .subscription
+                  .getDeliveryQueue()
+                  .execute(() -> deliverNotificationMessage(details, notificationMessage));
+
+              return true;
+            })
+        .thenCompose(
+            recovered ->
+                recovered
+                    ? republishNext(
+                        session,
+                        details,
+                        SequenceNumbers.successor(sequenceNumber),
+                        maxRepublishes - 1,
+                        heldByServer,
+                        activation)
+                    : CompletableFuture.completedFuture(Unit.VALUE));
+  }
+
+  /**
+   * Call the Republish service on {@code session}.
+   *
+   * <p>Bound to the Session the recovery is for, rather than made through {@link
+   * OpcUaClient#republishAsync}, which resolves the Session again for every call: a recovery that
+   * outlives the Session it began on must not have its remaining requests silently re-issued on the
+   * next one, which has a recovery of its own, and must never park waiting for a Session that does
+   * not exist yet — a request parked there is a recovery that never finishes and a Publish pipeline
+   * that never reopens.
+   *
+   * @param session the Session to send the request on.
+   * @param subscriptionId the SubscriptionId to request a NotificationMessage of.
+   * @param sequenceNumber the sequence number to request.
+   * @return a {@link CompletableFuture} that completes with the {@link RepublishResponse}.
+   */
+  private CompletableFuture<RepublishResponse> republish(
+      UaSession session, UInteger subscriptionId, UInteger sequenceNumber) {
+
+    var request =
+        new RepublishRequest(
+            client.newRequestHeader(session.getAuthenticationToken()),
+            subscriptionId,
+            sequenceNumber);
+
+    return client.sendRequestAsync(request).thenApply(RepublishResponse.class::cast);
+  }
+
+  /**
+   * @param sequenceNumbers the availableSequenceNumbers of a TransferResult.
+   * @return the legal sequence numbers among them.
+   */
+  private static Set<Long> legalSequenceNumbers(UInteger[] sequenceNumbers) {
+    var legal = new HashSet<Long>(sequenceNumbers.length);
+
+    for (UInteger sequenceNumber : sequenceNumbers) {
+      if (sequenceNumber != null && SequenceNumbers.isLegal(sequenceNumber.longValue())) {
+        legal.add(sequenceNumber.longValue());
+      }
+    }
+
+    return legal;
+  }
+
+  /**
+   * @param heldByServer the sequence numbers the Server said it holds.
+   * @param expectedSequenceNumber the sequence number the client expects next.
+   * @return the oldest of {@code heldByServer} that the client has not accounted for, or {@link
+   *     SequenceNumbers#NONE} if the Server holds nothing the client is missing.
+   */
+  private static long oldestHeldAtOrAfter(Set<Long> heldByServer, long expectedSequenceNumber) {
+    long oldest = SequenceNumbers.NONE;
+    long oldestDistance = Long.MAX_VALUE;
+
+    for (long sequenceNumber : heldByServer) {
+      if (sequenceNumber != expectedSequenceNumber
+          && !SequenceNumbers.isAhead(sequenceNumber, expectedSequenceNumber)) {
+        // Already accounted for: received, recovered, or given up on.
+        continue;
+      }
+
+      long distance = SequenceNumbers.forwardDistance(expectedSequenceNumber, sequenceNumber);
+
+      if (distance < oldestDistance) {
+        oldestDistance = distance;
+        oldest = sequenceNumber;
+      }
+    }
+
+    return oldest;
   }
 
   void sendPublishRequest(OpcUaSession session, AtomicLong pendingCount) {
@@ -1081,6 +1516,18 @@ public class PublishingManager {
     /** Sequence numbers of received NotificationMessages awaiting acknowledgement. */
     private final List<UInteger> availableAcknowledgements =
         Collections.synchronizedList(new ArrayList<>());
+
+    /**
+     * The availableSequenceNumbers of the TransferResult that last transferred this Subscription to
+     * a new Session, or {@code null} if the client has not been told what the Server holds since
+     * the last time it asked for it.
+     *
+     * <p>Set while the Session the transfer was part of is on its way to Active and consumed by the
+     * recovery that runs when it gets there, so it is never applied to a later Session, which will
+     * have a TransferResult of its own or, if it merely re-activated this one, none at all.
+     */
+    private final AtomicReference<UInteger @Nullable []> transferredSequenceNumbers =
+        new AtomicReference<>();
 
     /**
      * Serial queue on which this Subscription's PublishResponses are processed, in the order the

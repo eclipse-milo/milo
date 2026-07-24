@@ -1509,6 +1509,28 @@ public class SessionFsmFactory {
                   }
                 }
 
+                // Part 4 §5.14.7.1: a successful TransferResult carries "the sequence numbers of
+                // the
+                // NotificationMessages that are available for retransmission", which is what tells
+                // the client which NotificationMessages the Republish loop Part 4 §6.7 requires
+                // before Publish resumes can still collect. Recorded here, inline, rather than
+                // dispatched: the loop runs when this Session becomes Active, and the list has to
+                // be
+                // in place before it does. Indexed against the SubscriptionIds the request was
+                // built
+                // from, which is what the results are a "list of results for the subscriptions to
+                // transfer" of.
+                for (int i = 0; i < results.length && i < subscriptionIdsArray.length; i++) {
+                  TransferResult result = results[i];
+
+                  if (result.getStatusCode().isGood()) {
+                    client
+                        .getPublishingManager()
+                        .notifySubscriptionTransferred(
+                            subscriptionIdsArray[i], result.getAvailableSequenceNumbers());
+                  }
+                }
+
                 client
                     .getTransport()
                     .getConfig()
