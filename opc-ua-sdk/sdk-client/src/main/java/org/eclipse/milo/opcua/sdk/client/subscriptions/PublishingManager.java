@@ -18,9 +18,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
@@ -39,7 +41,6 @@ import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemNotificat
 import org.eclipse.milo.opcua.stack.core.types.structured.NotificationMessage;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishResponse;
-import org.eclipse.milo.opcua.stack.core.types.structured.RepublishResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
 import org.eclipse.milo.opcua.stack.core.types.structured.StatusChangeNotification;
 import org.eclipse.milo.opcua.stack.core.types.structured.SubscriptionAcknowledgement;
@@ -52,13 +53,13 @@ public class PublishingManager {
 
   /**
    * Upper bound on the number of missing NotificationMessages the client will try to recover when
-   * the Server does not tell it how many it is holding, i.e. when the PublishResponse carries no
+   * the Server does not tell it what it is holding, i.e. when the PublishResponse carries no
    * availableSequenceNumbers.
    *
-   * <p>Recovery is one synchronous Republish call per missing message, so the gap has to be bounded
-   * by something: a sequence number that is far ahead — because it is corrupt, or because it comes
-   * from a Subscription whose state the client has lost track of — would otherwise block the
-   * processing queue for up to 2^32 round trips.
+   * <p>Recovery is one Republish call per missing message, so the gap has to be bounded by
+   * something: a sequence number that is far ahead — because it is corrupt, or because it comes
+   * from a Subscription whose state the client has lost track of — would otherwise cost up to 2^32
+   * round trips. When the Server does advertise availableSequenceNumbers, that list is the bound.
    */
   private static final long DEFAULT_MAX_RECOVERABLE_GAP = 64L;
 
@@ -68,14 +69,10 @@ public class PublishingManager {
 
   private final Map<UInteger, SubscriptionDetails> subscriptionDetails = new ConcurrentHashMap<>();
 
-  private final TaskQueue processingQueue;
-
   private final OpcUaClient client;
 
   public PublishingManager(OpcUaClient client) {
     this.client = client;
-
-    processingQueue = new TaskQueue(client.getTransport().getConfig().getExecutor());
 
     // When a Session gets re-activated after a connection loss we need to make sure PublishRequests
     // are being sent again.
@@ -89,9 +86,12 @@ public class PublishingManager {
   }
 
   void addSubscription(OpcUaSubscription subscription) {
+    Executor executor = client.getTransport().getConfig().getExecutor();
+
     subscription
         .getSubscriptionId()
-        .ifPresent(id -> subscriptionDetails.put(id, new SubscriptionDetails(subscription)));
+        .ifPresent(
+            id -> subscriptionDetails.put(id, new SubscriptionDetails(subscription, executor)));
 
     maybeSendPublishRequests();
   }
@@ -195,8 +195,8 @@ public class PublishingManager {
                   // AbstractUascClientTransport#handleResponse), which is the only place the order
                   // the Server sent NotificationMessages in still exists. Queueing the work here,
                   // rather than hopping through the general-purpose executor first, is what carries
-                  // that order into processingQueue, which is itself serial. Nothing that can block
-                  // belongs in this handler.
+                  // that order into the Subscription's processing queue, which is itself serial.
+                  // Nothing that can block belongs in this handler.
                   logger.debug(
                       "Received PublishResponse, requestHandle={}, sequenceNumber={}",
                       publishResponse.getResponseHeader().getRequestHandle(),
@@ -210,10 +210,18 @@ public class PublishingManager {
                     // watches for the Server going quiet, so it is reset when the response is
                     // received rather than when it is eventually processed.
                     details.subscription.resetWatchdogTimer();
-                  }
 
-                  processingQueue.execute(
-                      () -> processPublishResponse(publishResponse, pendingCount));
+                    details.processingQueue.execute(
+                        () -> processPublishResponse(publishResponse, pendingCount));
+                  } else {
+                    // Nothing to process, but the permit still has to be released, and doing it
+                    // here would re-enter sendPublishRequest() on this thread.
+                    client
+                        .getTransport()
+                        .getConfig()
+                        .getExecutor()
+                        .execute(() -> releasePendingPublish(pendingCount));
+                  }
                 } else {
                   // The failure path is dispatched asynchronously: it may run on a wheel timer
                   // thread (request timeout) or inline on the caller's thread (a request that
@@ -267,6 +275,17 @@ public class PublishingManager {
     logger.debug("Publish service failure (requestHandle={}): {}", requestHandle, statusCode, ex);
   }
 
+  /**
+   * Process a PublishResponse.
+   *
+   * <p>Runs on the Subscription's own processing queue, which is serial, so the sequence-number
+   * accounting below needs no further synchronization and sees PublishResponses in the order the
+   * Server sent them. Nothing here may block: the queue runs on the transport's executor, which is
+   * also what completes the responses to any request this method might make.
+   *
+   * @param response the {@link PublishResponse} to process.
+   * @param pendingCount the pending-publish permits held for the Session the request was sent on.
+   */
   private void processPublishResponse(PublishResponse response, AtomicLong pendingCount) {
     UInteger subscriptionId = response.getSubscriptionId();
 
@@ -292,6 +311,8 @@ public class PublishingManager {
         isKeepAlive,
         details.lastSequenceNumber,
         receivedSequenceNumber);
+
+    List<UInteger> missingSequenceNumbers = List.of();
 
     if (SequenceNumbers.isLegal(receivedSequenceNumber)) {
       if (!isKeepAlive) {
@@ -323,7 +344,7 @@ public class PublishingManager {
         return;
       }
 
-      recoverMissingNotificationMessages(details, response, receivedSequenceNumber);
+      missingSequenceNumbers = missingSequenceNumbers(details, response, receivedSequenceNumber);
 
       // Part 4 §5.14.1.1: a keep-alive "contains the sequence number of the next
       // NotificationMessage that is to be sent", so it accounts for everything up to that sequence
@@ -342,6 +363,43 @@ public class PublishingManager {
           receivedSequenceNumber,
           subscriptionId);
     }
+
+    if (missingSequenceNumbers.isEmpty()) {
+      deliverAndReleasePendingPublish(details, notificationMessage, pendingCount);
+    } else {
+      // Recovery is a Republish round trip per missing NotificationMessage and must not be waited
+      // for here. Pausing this Subscription's processing queue is what keeps it ordered: no later
+      // PublishResponse for this Subscription is processed — and, crucially, none is delivered —
+      // until every recovered NotificationMessage, and then the one that revealed the gap, has
+      // been handed to the delivery queue. Other Subscriptions have their own queues and are
+      // unaffected. pause() is safe to call from here because this task is running on the queue it
+      // pauses, so no other task for this Subscription can be in flight.
+      details.processingQueue.pause();
+
+      republishMissingNotificationMessages(details, subscriptionId, missingSequenceNumbers)
+          .whenComplete(
+              (unit, ex) -> {
+                try {
+                  deliverAndReleasePendingPublish(details, notificationMessage, pendingCount);
+                } finally {
+                  details.processingQueue.resume();
+                }
+              });
+    }
+  }
+
+  /**
+   * Deliver {@code notificationMessage} to the application and release the pending-publish permit
+   * once it has been delivered.
+   *
+   * @param details the {@link SubscriptionDetails} for the Subscription the message belongs to.
+   * @param notificationMessage the {@link NotificationMessage} to deliver.
+   * @param pendingCount the pending-publish permits held for the Session the request was sent on.
+   */
+  private void deliverAndReleasePendingPublish(
+      SubscriptionDetails details,
+      NotificationMessage notificationMessage,
+      AtomicLong pendingCount) {
 
     CompletionStage<Unit> callback =
         details
@@ -380,32 +438,65 @@ public class PublishingManager {
   }
 
   /**
-   * Recover, via Republish, the NotificationMessages missing between the last sequence number
-   * accounted for and {@code receivedSequenceNumber}.
+   * Determine which NotificationMessages are missing between the last sequence number accounted for
+   * and {@code receivedSequenceNumber}, and which of those the Server can still retransmit.
    *
-   * <p>Recovered messages are delivered ahead of the message that revealed the gap and are
-   * acknowledged; if any of them cannot be recovered the Subscription is notified that notification
-   * data was lost. A gap too large to be plausibly recoverable is reported as lost data instead of
-   * being iterated: see {@link #DEFAULT_MAX_RECOVERABLE_GAP}.
+   * <p>Part 4 §5.14.1.1: "In the case of a retransmission queue overflow, the oldest sent
+   * NotificationMessage gets deleted." The availableSequenceNumbers of a PublishResponse are what
+   * is left in that queue, so anything older than the oldest of them is gone for good and
+   * Republishing it can only be answered Bad_MessageNotAvailable. Recovery therefore starts at the
+   * oldest sequence number the Server says it still holds, and what precedes it is reported as lost
+   * data. A gap too large to be recoverable — more than the Server is holding, or more than {@link
+   * #DEFAULT_MAX_RECOVERABLE_GAP} when it does not say — is reported as lost data in its entirety.
+   *
+   * <p>Runs on the Subscription's processing queue and performs no I/O.
    *
    * @param details the {@link SubscriptionDetails} for the Subscription the response belongs to.
    * @param response the {@link PublishResponse} being processed.
    * @param receivedSequenceNumber the sequence number of the received NotificationMessage.
+   * @return the sequence numbers to request via Republish, oldest first; empty if there is no gap
+   *     or nothing in it can be recovered.
    */
-  private void recoverMissingNotificationMessages(
+  private List<UInteger> missingSequenceNumbers(
       SubscriptionDetails details, PublishResponse response, long receivedSequenceNumber) {
 
     long expectedSequenceNumber = SequenceNumbers.successor(details.lastSequenceNumber);
 
     if (!SequenceNumbers.isAhead(receivedSequenceNumber, expectedSequenceNumber)) {
-      return;
+      return List.of();
     }
 
     UInteger subscriptionId = response.getSubscriptionId();
+    UInteger[] availableSequenceNumbers = response.getAvailableSequenceNumbers();
+    boolean advertised = availableSequenceNumbers != null && availableSequenceNumbers.length > 0;
 
-    long missingCount =
-        SequenceNumbers.forwardDistance(expectedSequenceNumber, receivedSequenceNumber);
-    long maxRecoverableGap = maxRecoverableGap(response.getAvailableSequenceNumbers());
+    long firstRecoverable = expectedSequenceNumber;
+    long maxRecoverableGap = DEFAULT_MAX_RECOVERABLE_GAP;
+    boolean dataLost = false;
+
+    if (advertised) {
+      maxRecoverableGap = availableSequenceNumbers.length;
+
+      long oldestAvailable = oldestAvailable(availableSequenceNumbers, receivedSequenceNumber);
+
+      if (oldestAvailable != SequenceNumbers.NONE
+          && SequenceNumbers.isAhead(oldestAvailable, expectedSequenceNumber)) {
+
+        logger.warn(
+            "The oldest NotificationMessage the Server can retransmit is sequenceNumber={}, so "
+                + "the {} starting at sequenceNumber={} are gone; treating them as lost data, "
+                + "subscriptionId={}",
+            oldestAvailable,
+            SequenceNumbers.forwardDistance(expectedSequenceNumber, oldestAvailable),
+            expectedSequenceNumber,
+            subscriptionId);
+
+        firstRecoverable = oldestAvailable;
+        dataLost = true;
+      }
+    }
+
+    long missingCount = SequenceNumbers.forwardDistance(firstRecoverable, receivedSequenceNumber);
 
     if (missingCount > maxRecoverableGap) {
       logger.warn(
@@ -413,59 +504,164 @@ public class PublishingManager {
               + "Server can retransmit; treating it as lost data and resynchronizing to "
               + "sequenceNumber={}, subscriptionId={}",
           missingCount,
-          expectedSequenceNumber,
+          firstRecoverable,
           maxRecoverableGap,
           receivedSequenceNumber,
           subscriptionId);
 
       details.subscription.notifyNotificationDataLost();
 
-      return;
+      return List.of();
     }
 
-    boolean republishSuccess = true;
-    long sequenceNumber = expectedSequenceNumber;
+    if (dataLost) {
+      details.subscription.notifyNotificationDataLost();
+    }
+
+    var sequenceNumbers = new ArrayList<UInteger>((int) missingCount);
+    long sequenceNumber = firstRecoverable;
 
     for (long i = 0; i < missingCount; i++) {
-      UInteger retransmitSequenceNumber = uint(sequenceNumber);
-
-      try {
-        RepublishResponse republishResponse =
-            client.republish(subscriptionId, retransmitSequenceNumber);
-
-        NotificationMessage republishNotificationMessage =
-            republishResponse.getNotificationMessage();
-
-        details.availableAcknowledgements.add(retransmitSequenceNumber);
-
-        details
-            .subscription
-            .getDeliveryQueue()
-            .execute(() -> deliverNotificationMessage(details, republishNotificationMessage));
-      } catch (UaException e) {
-        logger.warn("Republish service failure, sequenceNumber={}", sequenceNumber, e);
-
-        republishSuccess = false;
-      }
+      sequenceNumbers.add(uint(sequenceNumber));
 
       sequenceNumber = SequenceNumbers.successor(sequenceNumber);
     }
 
-    if (!republishSuccess) {
-      details.subscription.notifyNotificationDataLost();
-    }
+    return sequenceNumbers;
   }
 
   /**
-   * @param availableSequenceNumbers the availableSequenceNumbers from a PublishResponse, possibly
-   *     {@code null} or empty.
-   * @return the largest gap the client will try to recover: what the Server says it is still
-   *     holding, or {@link #DEFAULT_MAX_RECOVERABLE_GAP} if it says nothing.
+   * @param availableSequenceNumbers a non-empty availableSequenceNumbers from a PublishResponse.
+   * @param receivedSequenceNumber the sequence number of the received NotificationMessage.
+   * @return the oldest sequence number the Server advertised as available for retransmission, or
+   *     {@link SequenceNumbers#NONE} if it advertised none the client can make sense of.
    */
-  private static long maxRecoverableGap(UInteger[] availableSequenceNumbers) {
-    return (availableSequenceNumbers != null && availableSequenceNumbers.length > 0)
-        ? availableSequenceNumbers.length
-        : DEFAULT_MAX_RECOVERABLE_GAP;
+  private static long oldestAvailable(
+      UInteger[] availableSequenceNumbers, long receivedSequenceNumber) {
+
+    long oldest = SequenceNumbers.NONE;
+    long oldestAge = -1;
+
+    for (UInteger availableSequenceNumber : availableSequenceNumbers) {
+      if (availableSequenceNumber == null) {
+        continue;
+      }
+
+      long sequenceNumber = availableSequenceNumber.longValue();
+
+      // A sequence number that is illegal, or that the Server has not sent yet, says nothing about
+      // what its retransmission queue still holds.
+      if (!SequenceNumbers.isLegal(sequenceNumber)
+          || SequenceNumbers.isAhead(sequenceNumber, receivedSequenceNumber)) {
+        continue;
+      }
+
+      long age = SequenceNumbers.forwardDistance(sequenceNumber, receivedSequenceNumber);
+
+      if (age > oldestAge) {
+        oldestAge = age;
+        oldest = sequenceNumber;
+      }
+    }
+
+    return oldest;
+  }
+
+  /**
+   * Recover, via Republish, the NotificationMessages identified by {@code sequenceNumbers}.
+   *
+   * <p>The requests are made one at a time and asynchronously: each recovered NotificationMessage
+   * is handed to the delivery queue as it arrives, so the application sees them in sequence order
+   * and ahead of the message that revealed the gap, and no thread ever waits for a round trip. If
+   * any of them cannot be recovered the Subscription is notified that notification data was lost.
+   *
+   * @param details the {@link SubscriptionDetails} for the Subscription the messages belong to.
+   * @param subscriptionId the Server-assigned identifier of that Subscription.
+   * @param sequenceNumbers the sequence numbers to request, oldest first.
+   * @return a {@link CompletableFuture} that completes when the last of them has been dealt with.
+   */
+  private CompletableFuture<Unit> republishMissingNotificationMessages(
+      SubscriptionDetails details, UInteger subscriptionId, List<UInteger> sequenceNumbers) {
+
+    var recovery = new Recovery();
+
+    CompletableFuture<Unit> chain = CompletableFuture.completedFuture(Unit.VALUE);
+
+    for (UInteger sequenceNumber : sequenceNumbers) {
+      chain =
+          chain.thenCompose(
+              unit ->
+                  republishNotificationMessage(details, subscriptionId, sequenceNumber, recovery));
+    }
+
+    return chain.whenComplete(
+        (unit, ex) -> {
+          if (ex != null || recovery.dataLost) {
+            details.subscription.notifyNotificationDataLost();
+          }
+        });
+  }
+
+  /**
+   * Request one NotificationMessage via Republish and, if it arrives, acknowledge it and hand it to
+   * the delivery queue.
+   *
+   * @param details the {@link SubscriptionDetails} for the Subscription the message belongs to.
+   * @param subscriptionId the Server-assigned identifier of that Subscription.
+   * @param sequenceNumber the sequence number to request.
+   * @param recovery the state shared by every step of this recovery.
+   * @return a {@link CompletableFuture} that completes, never exceptionally, once the request has
+   *     been answered one way or the other.
+   */
+  private CompletableFuture<Unit> republishNotificationMessage(
+      SubscriptionDetails details,
+      UInteger subscriptionId,
+      UInteger sequenceNumber,
+      Recovery recovery) {
+
+    if (recovery.abandoned) {
+      return CompletableFuture.completedFuture(Unit.VALUE);
+    }
+
+    return client
+        .republishAsync(subscriptionId, sequenceNumber)
+        .handle(
+            (republishResponse, ex) -> {
+              if (ex != null) {
+                StatusCode statusCode =
+                    UaException.extract(ex).map(UaException::getStatusCode).orElse(StatusCode.BAD);
+
+                recovery.dataLost = true;
+
+                if (statusCode.value() != StatusCodes.Bad_MessageNotAvailable) {
+                  // Bad_MessageNotAvailable is an answer about this one NotificationMessage: the
+                  // Server no longer holds it, but it may well still hold the ones after it, so
+                  // the rest of the recovery is still worth attempting. Any other failure is the
+                  // service call itself failing — a lost Session, a closed connection, a timeout —
+                  // and repeating it for every remaining sequence number can only fail the same
+                  // way.
+                  recovery.abandoned = true;
+                }
+
+                logger.warn(
+                    "Republish service failure, subscriptionId={}, sequenceNumber={}: {}",
+                    subscriptionId,
+                    sequenceNumber,
+                    statusCode);
+              } else {
+                NotificationMessage notificationMessage =
+                    republishResponse.getNotificationMessage();
+
+                details.availableAcknowledgements.add(sequenceNumber);
+
+                details
+                    .subscription
+                    .getDeliveryQueue()
+                    .execute(() -> deliverNotificationMessage(details, notificationMessage));
+              }
+
+              return Unit.VALUE;
+            });
   }
 
   private void deliverNotificationMessage(
@@ -553,11 +749,31 @@ public class PublishingManager {
     return uint((long) timeoutHint);
   }
 
+  /** State shared by the steps of a single Republish recovery. */
+  private static class Recovery {
+
+    /** {@code true} if at least one NotificationMessage could not be recovered. */
+    private volatile boolean dataLost = false;
+
+    /** {@code true} if the sequence numbers not yet requested are not worth requesting. */
+    private volatile boolean abandoned = false;
+  }
+
   private static class SubscriptionDetails {
 
     /** Sequence numbers of received NotificationMessages awaiting acknowledgement. */
     private final List<UInteger> availableAcknowledgements =
         Collections.synchronizedList(new ArrayList<>());
+
+    /**
+     * Serial queue on which this Subscription's PublishResponses are processed, in the order the
+     * Server sent them.
+     *
+     * <p>One queue per Subscription rather than one for the client: a Subscription that is
+     * recovering a gap pauses its own queue for the duration, and a Subscription with nothing
+     * missing must not have to wait behind it.
+     */
+    private final TaskQueue processingQueue;
 
     /**
      * The sequence number of the last NotificationMessage accounted for, i.e. received, recovered
@@ -569,8 +785,10 @@ public class PublishingManager {
 
     private final OpcUaSubscription subscription;
 
-    private SubscriptionDetails(OpcUaSubscription subscription) {
+    private SubscriptionDetails(OpcUaSubscription subscription, Executor executor) {
       this.subscription = subscription;
+
+      processingQueue = new TaskQueue(executor);
     }
   }
 }
