@@ -29,7 +29,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -1438,6 +1437,14 @@ public class OpcUaSubscription {
     }
   }
 
+  /**
+   * Permanently cancel the watchdog timer: the pending expiry is cancelled, the {@link
+   * SessionActivityListener} is de-registered, and the timer is discarded.
+   *
+   * <p>This is for teardown of the Subscription itself, e.g. {@link #reset()}. It cannot be undone;
+   * a new timer is only created by {@link #create()}. To suspend the timer while the Session is
+   * unavailable use {@link #pauseWatchdogTimer()} instead.
+   */
   synchronized void cancelWatchdogTimer() {
     WatchdogTimer watchdog = this.watchdogTimer;
     if (watchdog != null) {
@@ -1446,6 +1453,24 @@ public class OpcUaSubscription {
       this.watchdogTimer = null;
       logger.debug(
           "id={}, watchdog timer cancelled",
+          getServerState().map(ServerState::getSubscriptionId).orElse(null));
+    }
+  }
+
+  /**
+   * Suspend the watchdog timer: the pending expiry is cancelled, but the timer remains registered
+   * as a {@link SessionActivityListener} and is re-armed when the Session becomes active again.
+   *
+   * <p>This is for temporary Session unavailability, where no PublishResponse can arrive and the
+   * Server's keep-alive obligation is therefore in abeyance, but the Subscription itself may well
+   * survive (e.g. via TransferSubscriptions once the Session is re-activated).
+   */
+  synchronized void pauseWatchdogTimer() {
+    WatchdogTimer watchdog = this.watchdogTimer;
+    if (watchdog != null) {
+      watchdog.pause();
+      logger.debug(
+          "id={}, watchdog timer paused",
           getServerState().map(ServerState::getSubscriptionId).orElse(null));
     }
   }
@@ -1665,20 +1690,66 @@ public class OpcUaSubscription {
 
   private class WatchdogTimer implements SessionActivityListener {
 
-    private final AtomicReference<ScheduledFuture<?>> scheduledFuture = new AtomicReference<>();
+    /**
+     * Guards every transition of this timer. The state below is read and written by unrelated
+     * threads - the transport executor completing a PublishResponse, the Session FSM notifying
+     * activity listeners, and the scheduled executor running an expiry - and each transition spans
+     * a cancel/schedule/store sequence that must be atomic as a whole.
+     */
+    private final Object lock = new Object();
+
+    /** The pending expiry, or {@code null} if the timer is not armed. Guarded by {@link #lock}. */
+    private @Nullable ScheduledFuture<?> scheduledFuture;
+
+    /** Terminal once set: a cancelled timer never arms again. Guarded by {@link #lock}. */
+    private boolean cancelled = false;
+
+    /**
+     * Incremented on every transition, and captured by each expiry when it is scheduled, so that an
+     * expiry which has already begun running - and which {@code ScheduledFuture.cancel(false)}
+     * therefore cannot stop - is recognised as stale and ignored. Guarded by {@link #lock}.
+     */
+    private long epoch = 0L;
 
     void reset() {
-      ScheduledFuture<?> sf = scheduledFuture.get();
-      if (sf != null) sf.cancel(false);
+      synchronized (lock) {
+        if (cancelled) {
+          return;
+        }
 
-      scheduleNext();
+        cancelPending();
+        scheduleNext();
+      }
     }
 
+    /** Cancel the pending expiry, leaving the timer able to arm again. */
+    void pause() {
+      synchronized (lock) {
+        cancelPending();
+      }
+    }
+
+    /** Cancel the pending expiry permanently; subsequent calls to {@link #reset()} are no-ops. */
     void cancel() {
-      ScheduledFuture<?> sf = scheduledFuture.getAndSet(null);
-      if (sf != null) sf.cancel(false);
+      synchronized (lock) {
+        cancelled = true;
+
+        cancelPending();
+      }
     }
 
+    /** Must be called while holding {@link #lock}. */
+    private void cancelPending() {
+      epoch++;
+
+      ScheduledFuture<?> sf = scheduledFuture;
+      if (sf != null) {
+        sf.cancel(false);
+        scheduledFuture = null;
+      }
+    }
+
+    /** Must be called while holding {@link #lock}. */
     private void scheduleNext() {
       getServerState()
           .ifPresent(
@@ -1688,22 +1759,33 @@ public class OpcUaSubscription {
                         (state.publishingInterval * (state.maxKeepAliveCount.longValue() + 1))
                             * watchdogMultiplier);
 
-                ScheduledFuture<?> nextSf =
+                long scheduledEpoch = epoch;
+
+                scheduledFuture =
                     client
                         .getTransport()
                         .getConfig()
                         .getScheduledExecutor()
                         .schedule(
-                            () -> notifyWatchdogTimerElapsed(delay), delay, TimeUnit.MILLISECONDS);
-
-                scheduledFuture.set(nextSf);
+                            () -> notifyWatchdogTimerElapsed(scheduledEpoch, delay),
+                            delay,
+                            TimeUnit.MILLISECONDS);
 
                 logger.debug(
                     "id={} watchdog timer scheduled for +{}ms", state.subscriptionId, delay);
               });
     }
 
-    private void notifyWatchdogTimerElapsed(long delay) {
+    private void notifyWatchdogTimerElapsed(long scheduledEpoch, long delay) {
+      synchronized (lock) {
+        if (cancelled || scheduledEpoch != epoch) {
+          // This expiry was cancelled or superseded while it was already running.
+          return;
+        }
+
+        scheduledFuture = null;
+      }
+
       SubscriptionListener listener = OpcUaSubscription.this.listener;
 
       if (listener != null) {
@@ -1729,9 +1811,9 @@ public class OpcUaSubscription {
 
     @Override
     public void onSessionInactive(UaSession session) {
-      cancel();
+      pause();
       logger.debug(
-          "id={}, watchdog timer cancelled via onSessionInactive()",
+          "id={}, watchdog timer paused via onSessionInactive()",
           getServerState().map(ServerState::getSubscriptionId).orElse(null));
     }
   }

@@ -205,7 +205,13 @@ public class PublishingManager {
 
                   if (code == StatusCodes.Bad_SessionClosed
                       || code == StatusCodes.Bad_SessionIdInvalid) {
-                    subscriptionDetails.values().forEach(d -> d.subscription.cancelWatchdogTimer());
+                    // The Session is gone, not the Subscription: no PublishResponse can arrive
+                    // until the Session is re-activated, so the watchdog must be suspended rather
+                    // than destroyed. The Session FSM treats both codes as Session faults and
+                    // reconnects, after which TransferSubscriptions may well keep the Subscription
+                    // alive; cancelling here would de-register the watchdog's
+                    // SessionActivityListener and leave it unable to ever arm again.
+                    subscriptionDetails.values().forEach(d -> d.subscription.pauseWatchdogTimer());
                   } else if (code != StatusCodes.Bad_NoSubscription
                       && code != StatusCodes.Bad_TooManyPublishRequests) {
 
