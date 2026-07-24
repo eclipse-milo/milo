@@ -667,21 +667,36 @@ public class OpcUaSubscription {
   /**
    * Delete any MonitoredItems that have been removed from the Subscription.
    *
+   * <p>A MonitoredItem is only removed from the pending deletion queue once the Server has reported
+   * an operation-level result for it. A deletion that never reached the Server, e.g. because the
+   * service call failed, remains pending and is attempted again by the next call.
+   *
    * @return a List of the MonitoredItems that were deleted.
    */
   public List<MonitoredItemServiceOperationResult> deleteMonitoredItems() {
-    List<OpcUaMonitoredItem> itemsToDelete =
-        this.itemsToDelete.stream()
-            .filter(item -> item.getSyncState() != OpcUaMonitoredItem.SyncState.INITIAL)
-            .collect(Collectors.toList());
+    // Items that were never created on the Server don't need to be deleted from it.
+    this.itemsToDelete.removeIf(
+        item -> item.getSyncState() == OpcUaMonitoredItem.SyncState.INITIAL);
 
-    this.itemsToDelete.clear();
+    List<OpcUaMonitoredItem> itemsToDelete = List.copyOf(this.itemsToDelete);
 
-    if (!itemsToDelete.isEmpty()) {
-      return deleteMonitoredItems(itemsToDelete);
-    } else {
+    if (itemsToDelete.isEmpty()) {
       return Collections.emptyList();
     }
+
+    List<MonitoredItemServiceOperationResult> results = deleteMonitoredItems(itemsToDelete);
+
+    for (MonitoredItemServiceOperationResult result : results) {
+      // An operation-level result means the Server acted on the deletion, either by deleting the
+      // item or by reporting Bad_MonitoredItemIdInvalid because it was already gone. Either way
+      // the item no longer exists on the Server and applyDeleteResult() has detached it. Anything
+      // else, e.g. a service fault, leaves the item on the Server, so it stays queued.
+      if (result.operationResult().isPresent()) {
+        this.itemsToDelete.remove(result.monitoredItem());
+      }
+    }
+
+    return results;
   }
 
   private List<MonitoredItemServiceOperationResult> deleteMonitoredItems(
@@ -1417,6 +1432,10 @@ public class OpcUaSubscription {
    * cleared. If the Subscription is created again, the call {@link #synchronizeMonitoredItems()} or
    * {@link #createMonitoredItems()} to create the items on the Server again.
    *
+   * <p>MonitoredItems that were removed from the Subscription but not yet deleted from the Server
+   * are discarded: they belong to a Subscription that no longer exists, so there is nothing left to
+   * delete.
+   *
    * <p>This is called automatically when the Subscription is deleted, but can also be called
    * manually when necessary if it has been determined the Subscription no longer exists on the
    * Server.
@@ -1432,6 +1451,16 @@ public class OpcUaSubscription {
 
       monitoredItemPartitionSize.reset();
       monitoredItems.values().forEach(OpcUaMonitoredItem::reset);
+
+      // MonitoredItemIds are scoped to the Subscription that no longer exists, so the items
+      // pending deletion are already gone and their ids must never be sent again. Detach them
+      // completely, including the ClientHandle, so they can be added to a Subscription again.
+      itemsToDelete.forEach(
+          item -> {
+            item.reset();
+            item.setClientHandle(null);
+          });
+      itemsToDelete.clear();
 
       syncState = SyncState.INITIAL;
     }
