@@ -122,11 +122,21 @@ public class OpcUaSubscription {
     deliveryQueue = new TaskQueue(client.getTransport().getConfig().getExecutor());
   }
 
+  /**
+   * Create a Subscription with the given PublishingInterval.
+   *
+   * <p>The MaxKeepAliveCount and LifetimeCount are derived from {@code publishingInterval}, as they
+   * would be by {@link #setPublishingInterval(Double)}.
+   *
+   * @param client the {@link OpcUaClient} this Subscription belongs to.
+   * @param publishingInterval the PublishingInterval to request.
+   */
   public OpcUaSubscription(OpcUaClient client, double publishingInterval) {
-    this.client = client;
-    this.publishingInterval = publishingInterval;
+    this(client);
 
-    deliveryQueue = new TaskQueue(client.getTransport().getConfig().getExecutor());
+    // Delegate to the setter so the MaxKeepAliveCount and LifetimeCount are derived from
+    // this PublishingInterval instead of being left at their default-derived values.
+    setPublishingInterval(publishingInterval);
   }
 
   /**
