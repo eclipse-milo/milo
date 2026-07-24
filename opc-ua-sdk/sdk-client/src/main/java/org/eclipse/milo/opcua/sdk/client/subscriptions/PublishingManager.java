@@ -49,6 +49,27 @@ import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Keeps a Session supplied with PublishRequests and dispatches the PublishResponses that answer
+ * them to the Subscriptions they belong to.
+ *
+ * <p>Every method is safe to call from any thread. The work one PublishResponse generates is split
+ * across three execution contexts, and the Javadoc of each method below names the one it runs in:
+ * the transport's serial PublishResponse handler, which is where the order the Server sent
+ * NotificationMessages in still exists and where nothing may block; each Subscription's own serial
+ * processing queue, where sequence-number accounting and Republish recovery happen; and each
+ * Subscription's own serial delivery queue, where application callbacks are invoked.
+ *
+ * <p>A registration ({@link SubscriptionDetails}) is bound to the SubscriptionId it was registered
+ * under and is never reused: {@link OpcUaSubscription#reset()} unregisters it, and a subsequent
+ * {@link OpcUaSubscription#create()} registers a new one, even though the same {@link
+ * OpcUaSubscription} object represents both. Part 4 §5.13.1.1 makes the SubscriptionId "the
+ * Server-assigned identifier for the Subscription", so a NotificationMessage received under one
+ * SubscriptionId is not a statement about any other, and work queued for one registration must
+ * never be applied to another. That is why nothing here asks the live Subscription object what its
+ * current SubscriptionId is: the id an entry is registered under is captured once, when the entry
+ * is created, and every question about identity is answered from it.
+ */
 public class PublishingManager {
 
   /**
@@ -114,6 +135,15 @@ public class PublishingManager {
         });
   }
 
+  /**
+   * Register {@code subscription} under the SubscriptionId it currently holds.
+   *
+   * <p>Called by {@link OpcUaSubscription#create()} while it holds that Subscription's lifecycle
+   * lock, so the id read here is the one the Server just assigned and cannot be cleared by a
+   * concurrent {@link OpcUaSubscription#reset()} before the entry is created.
+   *
+   * @param subscription the Subscription to register.
+   */
   void addSubscription(OpcUaSubscription subscription) {
     Executor executor = client.getTransport().getConfig().getExecutor();
 
@@ -121,7 +151,7 @@ public class PublishingManager {
         .getSubscriptionId()
         .ifPresent(
             id -> {
-              subscriptionDetails.put(id, new SubscriptionDetails(subscription, executor));
+              subscriptionDetails.put(id, new SubscriptionDetails(subscription, id, executor));
               subscriptionGeneration.incrementAndGet();
             });
 
@@ -133,17 +163,38 @@ public class PublishingManager {
     maybeSendPublishRequests();
   }
 
+  /**
+   * Unregister every entry held for {@code subscription}.
+   *
+   * <p>Entries are matched by identity rather than by the Subscription's current SubscriptionId:
+   * the caller is discarding this Subscription, and an entry that outlived the id it was registered
+   * under would keep answering PublishResponses for a Subscription the client no longer has.
+   *
+   * @param subscription the Subscription to unregister.
+   */
   void removeSubscription(OpcUaSubscription subscription) {
-    subscription
-        .getSubscriptionId()
-        .ifPresent(
-            id -> {
-              if (subscriptionDetails.remove(id) != null) {
-                subscriptionGeneration.incrementAndGet();
-              }
-            });
+    for (SubscriptionDetails details : subscriptionDetails.values()) {
+      if (details.subscription == subscription) {
+        unregister(details);
+      }
+    }
 
     maybeSendPublishRequests();
+  }
+
+  /**
+   * Remove {@code details} from the registry, if it is still the entry registered under its
+   * SubscriptionId, and mark it unregistered so that work already queued for it is discarded rather
+   * than applied to whatever Subscription exists by the time it runs.
+   *
+   * @param details the entry to unregister.
+   */
+  private void unregister(SubscriptionDetails details) {
+    if (subscriptionDetails.remove(details.subscriptionId, details)) {
+      details.registered = false;
+
+      subscriptionGeneration.incrementAndGet();
+    }
   }
 
   private void maybeSendPublishRequests() {
@@ -196,14 +247,6 @@ public class PublishingManager {
       var subscriptionAcknowledgements = new ArrayList<SubscriptionAcknowledgement>();
 
       for (SubscriptionDetails details : subscriptionDetails.values()) {
-        Optional<UInteger> subscriptionId = details.subscription.getSubscriptionId();
-
-        if (subscriptionId.isEmpty()) {
-          // No SubscriptionAcknowledgement can be built without one; leave them queued rather than
-          // discard them.
-          continue;
-        }
-
         List<UInteger> sequenceNumbers;
 
         synchronized (details.availableAcknowledgements) {
@@ -216,8 +259,13 @@ public class PublishingManager {
         }
 
         for (UInteger sequenceNumber : sequenceNumbers) {
+          // Part 4 §5.14.5.2 pairs a sequenceNumber with the subscriptionId of the Subscription the
+          // NotificationMessage was "received on", and lets the Server delete the message with that
+          // sequence number from that Subscription's retransmission queue. The id the entry is
+          // registered under is that Subscription; the live object's current id may by now be a
+          // different one, under which these sequence numbers were never sent.
           subscriptionAcknowledgements.add(
-              new SubscriptionAcknowledgement(subscriptionId.get(), sequenceNumber));
+              new SubscriptionAcknowledgement(details.subscriptionId, sequenceNumber));
         }
 
         drainedAcknowledgements.add(new DrainedAcknowledgements(details, sequenceNumbers));
@@ -868,8 +916,36 @@ public class PublishingManager {
             });
   }
 
+  /**
+   * Deliver {@code notificationMessage} to the application, unless the Subscription it was received
+   * on is gone.
+   *
+   * <p>Runs on the Subscription's delivery queue, which is a queue of the {@link OpcUaSubscription}
+   * object rather than of any one Subscription it has represented: it is neither drained nor
+   * replaced by {@link OpcUaSubscription#reset()}, so a message can still be waiting here — behind
+   * an application callback that has not returned — when the Subscription it belongs to is
+   * discarded and another created in its place. Delivering it then would tell the application that
+   * a MonitoredItem of the current Subscription has a value that Subscription never reported, and,
+   * for a Bad_Timeout StatusChangeNotification, would tear down a Subscription that has not timed
+   * out. The entry's registration is what distinguishes the two: it is dropped the moment its
+   * Subscription is.
+   *
+   * @param details the entry for the Subscription the message was received on.
+   * @param notificationMessage the {@link NotificationMessage} to deliver.
+   */
   private void deliverNotificationMessage(
       SubscriptionDetails details, NotificationMessage notificationMessage) {
+
+    if (!details.registered) {
+      logger.debug(
+          "Discarding NotificationMessage for a Subscription that no longer exists, "
+              + "subscriptionId={}, sequenceNumber={}",
+          details.subscriptionId,
+          notificationMessage.getSequenceNumber());
+
+      return;
+    }
+
     ExtensionObject[] notificationData = notificationMessage.getNotificationData();
 
     if (notificationData == null || notificationData.length == 0) {
@@ -895,15 +971,10 @@ public class PublishingManager {
           StatusCode status = scn.getStatus();
 
           if (status.value() == StatusCodes.Bad_Timeout) {
-            details
-                .subscription
-                .getSubscriptionId()
-                .ifPresent(
-                    id -> {
-                      if (subscriptionDetails.remove(id) != null) {
-                        subscriptionGeneration.incrementAndGet();
-                      }
-                    });
+            // The Subscription this message was received on no longer exists on the Server, so its
+            // entry goes with it. Keyed on the entry's own id: the live object's current id belongs
+            // to whatever Subscription it represents now, which has not timed out.
+            unregister(details);
           }
 
           details.subscription.notifyStatusChanged(status);
@@ -984,7 +1055,28 @@ public class PublishingManager {
     private volatile boolean abandoned = false;
   }
 
+  /**
+   * One Subscription's registration with this manager.
+   *
+   * <p>An entry represents a single Subscription, not the {@link OpcUaSubscription} object that
+   * currently stands for it: the object outlives the Subscription and can be made to stand for
+   * another, so an entry is bound to the SubscriptionId it was registered under and is discarded,
+   * never re-bound, when that Subscription goes away.
+   */
   private static class SubscriptionDetails {
+
+    /**
+     * The Server-assigned identifier of the Subscription this entry represents, and the key it is
+     * registered under. Immutable, unlike {@link OpcUaSubscription#getSubscriptionId()}.
+     */
+    private final UInteger subscriptionId;
+
+    /**
+     * {@code false} once this entry has been unregistered, i.e. once the Subscription it represents
+     * is known to be gone. Work queued for it before then is discarded rather than applied to the
+     * Subscription the {@link #subscription} object represents now.
+     */
+    private volatile boolean registered = true;
 
     /** Sequence numbers of received NotificationMessages awaiting acknowledgement. */
     private final List<UInteger> availableAcknowledgements =
@@ -1010,8 +1102,11 @@ public class PublishingManager {
 
     private final OpcUaSubscription subscription;
 
-    private SubscriptionDetails(OpcUaSubscription subscription, Executor executor) {
+    private SubscriptionDetails(
+        OpcUaSubscription subscription, UInteger subscriptionId, Executor executor) {
+
       this.subscription = subscription;
+      this.subscriptionId = subscriptionId;
 
       processingQueue = new TaskQueue(executor);
     }

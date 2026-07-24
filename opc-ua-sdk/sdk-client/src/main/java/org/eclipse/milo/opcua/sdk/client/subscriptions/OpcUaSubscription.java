@@ -65,6 +65,25 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * A Subscription on a Server, and the client-side object that represents it.
+ *
+ * <p>The two are not the same thing and do not have the same lifetime. A Subscription exists on the
+ * Server from {@link #create()} until it is deleted, times out, or {@link #reset()} discards the
+ * client's knowledge of it; this object exists for as long as the application holds it, and may
+ * represent several Subscriptions in sequence.
+ *
+ * <p><b>Threading:</b> the lifecycle transitions — {@link #create()}, {@link #modify()}, {@link
+ * #delete()}, {@link #setPublishingMode(boolean)} and {@link #reset()} — are each a check of the
+ * current state followed by a blocking service call and an update of that state, so they are
+ * serialized against each other: one runs to completion before the next begins, and a second
+ * concurrent {@link #create()} is answered {@code Bad_InvalidState} rather than creating a second
+ * Subscription on the Server that no client object could then name or delete. They are not
+ * serialized against the accessors or the parameter setters, which read and write individual
+ * volatile fields and never block. MonitoredItem management is not serialized either: it is
+ * concurrent with the lifecycle only in the sense that it reports {@code Bad_InvalidState} when the
+ * Subscription is gone.
+ */
 public class OpcUaSubscription {
 
   private static final int DEFAULT_MAX_MONITORED_ITEMS_PER_CALL = 10000;
@@ -74,6 +93,18 @@ public class OpcUaSubscription {
   private static final double DEFAULT_TARGET_KEEP_ALIVE_INTERVAL = 10000.0;
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
+
+  /**
+   * Serializes the lifecycle transitions, each of which is a check-then-act around a blocking
+   * service call: without it two of them interleave, and the Server ends up in a state no single
+   * client-side field describes — most visibly a second Subscription created by a concurrent {@link
+   * #create()} whose SubscriptionId is immediately overwritten, leaving it running on the Server
+   * with nothing left that can name it.
+   *
+   * <p>Held across the service call, so a transition that has begun always finishes before the next
+   * one starts. The accessors and parameter setters do not take it and never block on it.
+   */
+  private final Object lifecycleLock = new Object();
 
   private volatile SyncState syncState = SyncState.INITIAL;
   private volatile @Nullable ServerState serverState;
@@ -152,47 +183,56 @@ public class OpcUaSubscription {
   /**
    * Create this Subscription on the Server.
    *
+   * <p>Serialized against the other lifecycle transitions; see the class documentation. A call made
+   * while this Subscription already exists on the Server, including one made concurrently with the
+   * call that created it, fails with {@code Bad_InvalidState}.
+   *
    * @throws UaException if a service- or operation-level error occurs.
    */
   public void create() throws UaException {
-    if (syncState == SyncState.INITIAL) {
-      if (maxKeepAliveCount == null) {
-        maxKeepAliveCount =
-            calculateMaxKeepAliveCount(publishingInterval, DEFAULT_TARGET_KEEP_ALIVE_INTERVAL);
+    synchronized (lifecycleLock) {
+      if (syncState == SyncState.INITIAL) {
+        if (maxKeepAliveCount == null) {
+          maxKeepAliveCount =
+              calculateMaxKeepAliveCount(publishingInterval, DEFAULT_TARGET_KEEP_ALIVE_INTERVAL);
+        }
+        if (lifetimeCount == null) {
+          lifetimeCount = calculateLifetimeCount(maxKeepAliveCount);
+        }
+
+        CreateSubscriptionResponse response =
+            client.createSubscription(
+                publishingInterval,
+                lifetimeCount,
+                maxKeepAliveCount,
+                maxNotificationsPerPublish,
+                true,
+                priority);
+
+        // Before the SyncState says the Subscription exists: a SYNCHRONIZED Subscription with no
+        // ServerState has no SubscriptionId to offer, and every operation that needs one answers
+        // Bad_InvalidState until it appears.
+        serverState =
+            new ServerState(
+                response.getSubscriptionId(),
+                response.getRevisedPublishingInterval(),
+                response.getRevisedLifetimeCount(),
+                response.getRevisedMaxKeepAliveCount(),
+                maxNotificationsPerPublish,
+                priority,
+                true);
+
+        syncState = SyncState.SYNCHRONIZED;
+
+        watchdogTimer = new WatchdogTimer();
+        client.addSessionActivityListener(watchdogTimer);
+        resetWatchdogTimer();
+
+        client.addSubscription(this);
+        client.getPublishingManager().addSubscription(this);
+      } else {
+        throw new UaException(StatusCodes.Bad_InvalidState);
       }
-      if (lifetimeCount == null) {
-        lifetimeCount = calculateLifetimeCount(maxKeepAliveCount);
-      }
-
-      CreateSubscriptionResponse response =
-          client.createSubscription(
-              publishingInterval,
-              lifetimeCount,
-              maxKeepAliveCount,
-              maxNotificationsPerPublish,
-              true,
-              priority);
-
-      syncState = SyncState.SYNCHRONIZED;
-
-      serverState =
-          new ServerState(
-              response.getSubscriptionId(),
-              response.getRevisedPublishingInterval(),
-              response.getRevisedLifetimeCount(),
-              response.getRevisedMaxKeepAliveCount(),
-              maxNotificationsPerPublish,
-              priority,
-              true);
-
-      watchdogTimer = new WatchdogTimer();
-      client.addSessionActivityListener(watchdogTimer);
-      resetWatchdogTimer();
-
-      client.addSubscription(this);
-      client.getPublishingManager().addSubscription(this);
-    } else {
-      throw new UaException(StatusCodes.Bad_InvalidState);
     }
   }
 
@@ -218,56 +258,61 @@ public class OpcUaSubscription {
   /**
    * Call the ModifySubscription service to update the Subscription's parameters on the Server.
    *
+   * <p>Serialized against the other lifecycle transitions; see the class documentation.
+   *
    * @throws UaException if a service- or operation-level error occurs.
    */
   public void modify() throws UaException {
-    if (syncState == SyncState.INITIAL) {
-      throw new UaException(StatusCodes.Bad_InvalidState);
-    } else if (syncState == SyncState.UNSYNCHRONIZED) {
-      ServerState serverState = this.serverState;
-      if (serverState == null) {
+    synchronized (lifecycleLock) {
+      if (syncState == SyncState.INITIAL) {
         throw new UaException(StatusCodes.Bad_InvalidState);
-      }
+      } else if (syncState == SyncState.UNSYNCHRONIZED) {
+        ServerState serverState = this.serverState;
+        if (serverState == null) {
+          throw new UaException(StatusCodes.Bad_InvalidState);
+        }
 
-      Modifications diff = modifications;
-      modifications = null;
+        Modifications diff = modifications;
+        modifications = null;
 
-      assert diff != null;
+        assert diff != null;
 
-      ModifySubscriptionResponse response;
-      try {
-        response =
-            client.modifySubscription(
+        ModifySubscriptionResponse response;
+        try {
+          response =
+              client.modifySubscription(
+                  serverState.getSubscriptionId(),
+                  diff.publishingInterval().orElse(serverState.getPublishingInterval()),
+                  diff.lifetimeCount().orElse(serverState.getLifetimeCount()),
+                  diff.maxKeepAliveCount().orElse(serverState.getMaxKeepAliveCount()),
+                  diff.maxNotificationsPerPublish().orElse(maxNotificationsPerPublish),
+                  diff.priority().orElse(priority));
+        } catch (Exception e) {
+          // The service call failed, so the Subscription remains UNSYNCHRONIZED. Restore the
+          // pending modifications so the next modify() retries them instead of finding nothing to
+          // send.
+          restorePendingModifications(diff);
+          throw e;
+        }
+
+        this.serverState =
+            new ServerState(
                 serverState.getSubscriptionId(),
-                diff.publishingInterval().orElse(serverState.getPublishingInterval()),
-                diff.lifetimeCount().orElse(serverState.getLifetimeCount()),
-                diff.maxKeepAliveCount().orElse(serverState.getMaxKeepAliveCount()),
-                diff.maxNotificationsPerPublish().orElse(maxNotificationsPerPublish),
-                diff.priority().orElse(priority));
-      } catch (Exception e) {
-        // The service call failed, so the Subscription remains UNSYNCHRONIZED. Restore the pending
-        // modifications so the next modify() retries them instead of finding nothing to send.
-        restorePendingModifications(diff);
-        throw e;
-      }
+                response.getRevisedPublishingInterval(),
+                response.getRevisedLifetimeCount(),
+                response.getRevisedMaxKeepAliveCount(),
+                maxNotificationsPerPublish,
+                priority,
+                serverState.isPublishingEnabled());
 
-      this.serverState =
-          new ServerState(
-              serverState.getSubscriptionId(),
-              response.getRevisedPublishingInterval(),
-              response.getRevisedLifetimeCount(),
-              response.getRevisedMaxKeepAliveCount(),
-              maxNotificationsPerPublish,
-              priority,
-              serverState.isPublishingEnabled());
+        // Must happen after the revised parameters are installed: the watchdog delay is
+        // derived from the current ServerState, so re-arming any earlier would use the
+        // pre-modify PublishingInterval and MaxKeepAliveCount.
+        resetWatchdogTimer();
 
-      // Must happen after the revised parameters are installed: the watchdog delay is
-      // derived from the current ServerState, so re-arming any earlier would use the
-      // pre-modify PublishingInterval and MaxKeepAliveCount.
-      resetWatchdogTimer();
-
-      if (modifications == null) {
-        syncState = SyncState.SYNCHRONIZED;
+        if (modifications == null) {
+          syncState = SyncState.SYNCHRONIZED;
+        }
       }
     }
   }
@@ -327,26 +372,30 @@ public class OpcUaSubscription {
   /**
    * Delete this Subscription from the Server.
    *
+   * <p>Serialized against the other lifecycle transitions; see the class documentation.
+   *
    * @throws UaException if a service- or operation-level error occurs.
    */
   public void delete() throws UaException {
-    if (syncState != SyncState.INITIAL) {
-      ServerState serverState = this.serverState;
-      if (serverState == null) {
-        throw new UaException(StatusCodes.Bad_InvalidState);
-      }
+    synchronized (lifecycleLock) {
+      if (syncState != SyncState.INITIAL) {
+        ServerState serverState = this.serverState;
+        if (serverState == null) {
+          throw new UaException(StatusCodes.Bad_InvalidState);
+        }
 
-      DeleteSubscriptionsResponse response =
-          client.deleteSubscriptions(List.of(serverState.getSubscriptionId()));
+        DeleteSubscriptionsResponse response =
+            client.deleteSubscriptions(List.of(serverState.getSubscriptionId()));
 
-      StatusCode result = requireNonNull(response.getResults())[0];
+        StatusCode result = requireNonNull(response.getResults())[0];
 
-      if (result.isGood() || result.value() == StatusCodes.Bad_SubscriptionIdInvalid) {
-        reset();
-      }
+        if (result.isGood() || result.value() == StatusCodes.Bad_SubscriptionIdInvalid) {
+          reset();
+        }
 
-      if (!result.isGood()) {
-        throw new UaException(result);
+        if (!result.isGood()) {
+          throw new UaException(result);
+        }
       }
     }
   }
@@ -936,35 +985,39 @@ public class OpcUaSubscription {
   /**
    * Set the publishing mode, i.e. enable or disable publishing, for this Subscription.
    *
+   * <p>Serialized against the other lifecycle transitions; see the class documentation.
+   *
    * @param enabled {@code true} to enable publishing, {@code false} to disable publishing.
    * @throws UaException if a service- or operation-level error occurs.
    */
   public void setPublishingMode(boolean enabled) throws UaException {
-    if (syncState == SyncState.INITIAL) {
-      throw new UaException(StatusCodes.Bad_InvalidState);
-    } else {
-      ServerState serverState = this.serverState;
-      if (serverState == null) {
+    synchronized (lifecycleLock) {
+      if (syncState == SyncState.INITIAL) {
         throw new UaException(StatusCodes.Bad_InvalidState);
-      }
-
-      SetPublishingModeResponse response =
-          client.setPublishingMode(enabled, List.of(serverState.getSubscriptionId()));
-
-      StatusCode result = requireNonNull(response.getResults())[0];
-
-      if (result.isGood()) {
-        this.serverState =
-            new ServerState(
-                serverState.getSubscriptionId(),
-                serverState.getPublishingInterval(),
-                serverState.getLifetimeCount(),
-                serverState.getMaxKeepAliveCount(),
-                maxNotificationsPerPublish,
-                priority,
-                enabled);
       } else {
-        throw new UaException(result);
+        ServerState serverState = this.serverState;
+        if (serverState == null) {
+          throw new UaException(StatusCodes.Bad_InvalidState);
+        }
+
+        SetPublishingModeResponse response =
+            client.setPublishingMode(enabled, List.of(serverState.getSubscriptionId()));
+
+        StatusCode result = requireNonNull(response.getResults())[0];
+
+        if (result.isGood()) {
+          this.serverState =
+              new ServerState(
+                  serverState.getSubscriptionId(),
+                  serverState.getPublishingInterval(),
+                  serverState.getLifetimeCount(),
+                  serverState.getMaxKeepAliveCount(),
+                  maxNotificationsPerPublish,
+                  priority,
+                  enabled);
+        } else {
+          throw new UaException(result);
+        }
       }
     }
   }
@@ -1439,30 +1492,36 @@ public class OpcUaSubscription {
    * <p>This is called automatically when the Subscription is deleted, but can also be called
    * manually when necessary if it has been determined the Subscription no longer exists on the
    * Server.
+   *
+   * <p>Serialized against the other lifecycle transitions; see the class documentation. In
+   * particular, a reset never lands in the middle of a {@link #create()}: it either discards the
+   * Subscription that existed before it, or the one that call goes on to create.
    */
   public void reset() {
-    if (syncState != SyncState.INITIAL) {
-      cancelWatchdogTimer();
-      client.removeSubscription(this);
-      client.getPublishingManager().removeSubscription(this);
+    synchronized (lifecycleLock) {
+      if (syncState != SyncState.INITIAL) {
+        cancelWatchdogTimer();
+        client.removeSubscription(this);
+        client.getPublishingManager().removeSubscription(this);
 
-      serverState = null;
-      modifications = null;
+        serverState = null;
+        modifications = null;
 
-      monitoredItemPartitionSize.reset();
-      monitoredItems.values().forEach(OpcUaMonitoredItem::reset);
+        monitoredItemPartitionSize.reset();
+        monitoredItems.values().forEach(OpcUaMonitoredItem::reset);
 
-      // MonitoredItemIds are scoped to the Subscription that no longer exists, so the items
-      // pending deletion are already gone and their ids must never be sent again. Detach them
-      // completely, including the ClientHandle, so they can be added to a Subscription again.
-      itemsToDelete.forEach(
-          item -> {
-            item.reset();
-            item.setClientHandle(null);
-          });
-      itemsToDelete.clear();
+        // MonitoredItemIds are scoped to the Subscription that no longer exists, so the items
+        // pending deletion are already gone and their ids must never be sent again. Detach them
+        // completely, including the ClientHandle, so they can be added to a Subscription again.
+        itemsToDelete.forEach(
+            item -> {
+              item.reset();
+              item.setClientHandle(null);
+            });
+        itemsToDelete.clear();
 
-      syncState = SyncState.INITIAL;
+        syncState = SyncState.INITIAL;
+      }
     }
   }
 
