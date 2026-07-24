@@ -127,96 +127,107 @@ public class PublishingManager {
   }
 
   void sendPublishRequest(OpcUaSession session, AtomicLong pendingCount) {
-    var subscriptionAcknowledgements = new ArrayList<SubscriptionAcknowledgement>();
+    try {
+      var subscriptionAcknowledgements = new ArrayList<SubscriptionAcknowledgement>();
 
-    subscriptionDetails
-        .values()
-        .forEach(
-            subscription -> {
-              synchronized (subscription.availableAcknowledgements) {
-                subscription.availableAcknowledgements.forEach(
-                    sequenceNumber ->
-                        subscription
-                            .subscription
-                            .getSubscriptionId()
-                            .ifPresent(
-                                subscriptionId ->
-                                    subscriptionAcknowledgements.add(
-                                        new SubscriptionAcknowledgement(
-                                            subscriptionId, sequenceNumber))));
-                subscription.availableAcknowledgements.clear();
-              }
-            });
+      subscriptionDetails
+          .values()
+          .forEach(
+              subscription -> {
+                synchronized (subscription.availableAcknowledgements) {
+                  subscription.availableAcknowledgements.forEach(
+                      sequenceNumber ->
+                          subscription
+                              .subscription
+                              .getSubscriptionId()
+                              .ifPresent(
+                                  subscriptionId ->
+                                      subscriptionAcknowledgements.add(
+                                          new SubscriptionAcknowledgement(
+                                              subscriptionId, sequenceNumber))));
+                  subscription.availableAcknowledgements.clear();
+                }
+              });
 
-    RequestHeader requestHeader =
-        client.newRequestHeader(session.getAuthenticationToken(), getTimeoutHint());
+      RequestHeader requestHeader =
+          client.newRequestHeader(session.getAuthenticationToken(), getTimeoutHint());
 
-    UInteger requestHandle = requestHeader.getRequestHandle();
+      UInteger requestHandle = requestHeader.getRequestHandle();
 
-    var request =
-        new PublishRequest(
-            requestHeader,
-            subscriptionAcknowledgements.toArray(new SubscriptionAcknowledgement[0]));
+      var request =
+          new PublishRequest(
+              requestHeader,
+              subscriptionAcknowledgements.toArray(new SubscriptionAcknowledgement[0]));
 
-    if (logger.isDebugEnabled()) {
-      String[] ackStrings =
-          subscriptionAcknowledgements.stream()
-              .map(
-                  ack ->
-                      String.format(
-                          "id=%s/seq=%s", ack.getSubscriptionId(), ack.getSequenceNumber()))
-              .toArray(String[]::new);
+      if (logger.isDebugEnabled()) {
+        String[] ackStrings =
+            subscriptionAcknowledgements.stream()
+                .map(
+                    ack ->
+                        String.format(
+                            "id=%s/seq=%s", ack.getSubscriptionId(), ack.getSequenceNumber()))
+                .toArray(String[]::new);
 
-      logger.debug(
-          "Sending PublishRequest, requestHandle={}, acknowledgements={}",
-          requestHandle,
-          Arrays.toString(ackStrings));
+        logger.debug(
+            "Sending PublishRequest, requestHandle={}, acknowledgements={}",
+            requestHandle,
+            Arrays.toString(ackStrings));
+      }
+
+      client
+          .sendRequestAsync(request)
+          .whenCompleteAsync(
+              (response, ex) -> {
+                if (response instanceof PublishResponse publishResponse) {
+                  logger.debug(
+                      "Received PublishResponse, requestHandle={}, sequenceNumber={}",
+                      publishResponse.getResponseHeader().getRequestHandle(),
+                      publishResponse.getNotificationMessage().getSequenceNumber());
+
+                  UInteger subscriptionId = publishResponse.getSubscriptionId();
+                  SubscriptionDetails details = subscriptionDetails.get(subscriptionId);
+
+                  if (details != null) {
+                    details.subscription.resetWatchdogTimer();
+                  }
+
+                  processingQueue.execute(
+                      () -> processPublishResponse(publishResponse, pendingCount));
+                } else {
+                  StatusCode statusCode =
+                      UaException.extract(ex)
+                          .map(UaException::getStatusCode)
+                          .orElse(StatusCode.BAD);
+
+                  pendingCount.getAndUpdate(p -> (p > 0) ? p - 1 : 0);
+
+                  long code = statusCode.value();
+
+                  if (code == StatusCodes.Bad_SessionClosed
+                      || code == StatusCodes.Bad_SessionIdInvalid) {
+                    subscriptionDetails.values().forEach(d -> d.subscription.cancelWatchdogTimer());
+                  } else if (code != StatusCodes.Bad_NoSubscription
+                      && code != StatusCodes.Bad_TooManyPublishRequests) {
+
+                    maybeSendPublishRequests();
+                  }
+
+                  logger.debug(
+                      "Publish service failure (requestHandle={}): {}",
+                      requestHandle,
+                      statusCode,
+                      ex);
+                }
+              },
+              client.getTransport().getConfig().getExecutor());
+    } catch (Exception e) {
+      // The caller took a pending-publish permit before invoking this method. If building or
+      // sending the request fails synchronously no completion handler will ever run, so release
+      // the permit here; otherwise it leaks and Publish traffic eventually stops for good.
+      pendingCount.getAndUpdate(p -> (p > 0) ? p - 1 : 0);
+
+      logger.error("Error sending PublishRequest", e);
     }
-
-    client
-        .sendRequestAsync(request)
-        .whenCompleteAsync(
-            (response, ex) -> {
-              if (response instanceof PublishResponse publishResponse) {
-                logger.debug(
-                    "Received PublishResponse, requestHandle={}, sequenceNumber={}",
-                    publishResponse.getResponseHeader().getRequestHandle(),
-                    publishResponse.getNotificationMessage().getSequenceNumber());
-
-                UInteger subscriptionId = publishResponse.getSubscriptionId();
-                SubscriptionDetails details = subscriptionDetails.get(subscriptionId);
-
-                if (details != null) {
-                  details.subscription.resetWatchdogTimer();
-                }
-
-                processingQueue.execute(
-                    () -> processPublishResponse(publishResponse, pendingCount));
-              } else {
-                StatusCode statusCode =
-                    UaException.extract(ex).map(UaException::getStatusCode).orElse(StatusCode.BAD);
-
-                pendingCount.getAndUpdate(p -> (p > 0) ? p - 1 : 0);
-
-                long code = statusCode.value();
-
-                if (code == StatusCodes.Bad_SessionClosed
-                    || code == StatusCodes.Bad_SessionIdInvalid) {
-                  subscriptionDetails.values().forEach(d -> d.subscription.cancelWatchdogTimer());
-                } else if (code != StatusCodes.Bad_NoSubscription
-                    && code != StatusCodes.Bad_TooManyPublishRequests) {
-
-                  maybeSendPublishRequests();
-                }
-
-                logger.debug(
-                    "Publish service failure (requestHandle={}): {}",
-                    requestHandle,
-                    statusCode,
-                    ex);
-              }
-            },
-            client.getTransport().getConfig().getExecutor());
   }
 
   private void processPublishResponse(PublishResponse response, AtomicLong pendingCount) {
@@ -393,7 +404,9 @@ public class PublishingManager {
     double timeoutHint = maxKeepAlive * maxPendingPublishes * 1.5;
 
     if (Double.isInfinite(timeoutHint) || timeoutHint > UInteger.MAX_VALUE) {
-      maxKeepAlive = 0d;
+      // The timeoutHint is encoded as a UInt32; clamp rather than let an out-of-range value
+      // reach uint(), which would throw and leave this request unsent.
+      timeoutHint = UInteger.MAX_VALUE;
     }
 
     logger.debug(
