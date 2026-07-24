@@ -15,7 +15,6 @@ import static org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig.USER_TOKEN_POL
 import static org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig.USER_TOKEN_POLICY_X509;
 
 import java.io.File;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.security.KeyPair;
@@ -101,10 +100,14 @@ public final class TestServer {
     int port = new Random().nextInt(65535 - 10000) + 10000;
 
     try {
-      ServerSocket ss = new ServerSocket();
-      InetSocketAddress isa = new InetSocketAddress(InetAddress.getLocalHost(), port);
-      ss.bind(isa);
-      ss.close();
+      // Probe the port on the wildcard address so it must be free on every interface. The Server
+      // binds "localhost" (127.0.0.1), while InetAddress.getLocalHost() resolves to a different
+      // loopback address on some hosts (127.0.1.1 on Debian/Ubuntu), so probing that address lets
+      // a port already in use on 127.0.0.1 pass and then fail the real bind with
+      // Bad_ConfigurationError / "No endpoints bound".
+      try (ServerSocket ss = new ServerSocket()) {
+        ss.bind(new InetSocketAddress(port));
+      }
 
       return create(port, limits);
     } catch (Throwable t) {

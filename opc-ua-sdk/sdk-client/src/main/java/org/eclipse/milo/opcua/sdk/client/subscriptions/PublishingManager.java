@@ -50,6 +50,18 @@ import org.slf4j.LoggerFactory;
 
 public class PublishingManager {
 
+  /**
+   * Upper bound on the number of missing NotificationMessages the client will try to recover when
+   * the Server does not tell it how many it is holding, i.e. when the PublishResponse carries no
+   * availableSequenceNumbers.
+   *
+   * <p>Recovery is one synchronous Republish call per missing message, so the gap has to be bounded
+   * by something: a sequence number that is far ahead — because it is corrupt, or because it comes
+   * from a Subscription whose state the client has lost track of — would otherwise block the
+   * processing queue for up to 2^32 round trips.
+   */
+  private static final long DEFAULT_MAX_RECOVERABLE_GAP = 64L;
+
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private final ConcurrentMap<NodeId, AtomicLong> pendingCountMap = new ConcurrentHashMap<>();
@@ -254,63 +266,41 @@ public class PublishingManager {
             || notificationMessage.getNotificationData().length == 0;
 
     long receivedSequenceNumber = notificationMessage.getSequenceNumber().longValue();
-    long expectedSequenceNumber = details.lastSequenceNumber + 1;
 
     logger.debug(
         "Processing PublishResponse, subscriptionId={}, isKeepAlive={}, "
-            + "lastSequenceNumber={}, receivedSequenceNumber={}, expectedSequenceNumber={}",
+            + "lastSequenceNumber={}, receivedSequenceNumber={}",
         subscriptionId,
         isKeepAlive,
         details.lastSequenceNumber,
-        receivedSequenceNumber,
-        expectedSequenceNumber);
+        receivedSequenceNumber);
 
-    if (receivedSequenceNumber > expectedSequenceNumber) {
-      boolean republishSuccess = true;
+    if (SequenceNumbers.isLegal(receivedSequenceNumber)) {
+      recoverMissingNotificationMessages(details, response, receivedSequenceNumber);
 
-      for (long sequenceNumber = expectedSequenceNumber;
-          sequenceNumber < receivedSequenceNumber;
-          sequenceNumber++) {
+      // Part 4 §5.14.1.1: a keep-alive "contains the sequence number of the next
+      // NotificationMessage that is to be sent", so it accounts for everything up to that sequence
+      // number's predecessor and is *not* evidence that the sequence number it carries was
+      // received. A data message accounts for itself.
+      details.lastSequenceNumber =
+          isKeepAlive
+              ? SequenceNumbers.predecessor(receivedSequenceNumber)
+              : receivedSequenceNumber;
 
-        try {
-          RepublishResponse republishResponse =
-              client.republish(subscriptionId, uint(sequenceNumber));
-
-          NotificationMessage republishNotificationMessage =
-              republishResponse.getNotificationMessage();
-
-          details
-              .subscription
-              .getDeliveryQueue()
-              .execute(() -> deliverNotificationMessage(details, republishNotificationMessage));
-        } catch (UaException e) {
-          logger.warn("Republish service failure, sequenceNumber={}", sequenceNumber, e);
-
-          republishSuccess = false;
-        }
+      if (!isKeepAlive) {
+        // Acknowledge only NotificationMessages that were actually received: Part 4 §5.14.5.2 lets
+        // the Server delete an acknowledged message from its retransmission queue, so
+        // acknowledging one that never arrived destroys the only copy of it.
+        details.availableAcknowledgements.add(notificationMessage.getSequenceNumber());
       }
-
-      if (!republishSuccess) {
-        details.subscription.notifyNotificationDataLost();
-      }
-
-      details.lastSequenceNumber = expectedSequenceNumber;
-    }
-
-    if (receivedSequenceNumber == 1 || !isKeepAlive) {
-      // Set the last sequence number only if either:
-      // - this was the first PublishResponse received
-      // - this *is not* a keep-alive PublishResponse
-      details.lastSequenceNumber = receivedSequenceNumber;
-    }
-
-    UInteger[] availableSequenceNumbers = response.getAvailableSequenceNumbers();
-    if (availableSequenceNumbers != null && availableSequenceNumbers.length > 0) {
-      synchronized (details.availableAcknowledgements) {
-        details.availableAcknowledgements.clear();
-
-        Collections.addAll(details.availableAcknowledgements, availableSequenceNumbers);
-      }
+    } else {
+      // Part 4 §5.14.1.1: "The value 0 is never used for the sequence number." There is no sequence
+      // arithmetic that can be done with an illegal value, so deliver the message but leave the
+      // sequence accounting untouched.
+      logger.warn(
+          "Received NotificationMessage with illegal sequenceNumber={}, subscriptionId={}",
+          receivedSequenceNumber,
+          subscriptionId);
     }
 
     CompletionStage<Unit> callback =
@@ -337,6 +327,95 @@ public class PublishingManager {
           },
           client.getTransport().getConfig().getExecutor());
     }
+  }
+
+  /**
+   * Recover, via Republish, the NotificationMessages missing between the last sequence number
+   * accounted for and {@code receivedSequenceNumber}.
+   *
+   * <p>Recovered messages are delivered ahead of the message that revealed the gap and are
+   * acknowledged; if any of them cannot be recovered the Subscription is notified that notification
+   * data was lost. A gap too large to be plausibly recoverable is reported as lost data instead of
+   * being iterated: see {@link #DEFAULT_MAX_RECOVERABLE_GAP}.
+   *
+   * @param details the {@link SubscriptionDetails} for the Subscription the response belongs to.
+   * @param response the {@link PublishResponse} being processed.
+   * @param receivedSequenceNumber the sequence number of the received NotificationMessage.
+   */
+  private void recoverMissingNotificationMessages(
+      SubscriptionDetails details, PublishResponse response, long receivedSequenceNumber) {
+
+    long expectedSequenceNumber = SequenceNumbers.successor(details.lastSequenceNumber);
+
+    if (!SequenceNumbers.isAhead(receivedSequenceNumber, expectedSequenceNumber)) {
+      return;
+    }
+
+    UInteger subscriptionId = response.getSubscriptionId();
+
+    long missingCount =
+        SequenceNumbers.forwardDistance(expectedSequenceNumber, receivedSequenceNumber);
+    long maxRecoverableGap = maxRecoverableGap(response.getAvailableSequenceNumbers());
+
+    if (missingCount > maxRecoverableGap) {
+      logger.warn(
+          "Gap of {} NotificationMessage(s) starting at sequenceNumber={} exceeds the {} the "
+              + "Server can retransmit; treating it as lost data and resynchronizing to "
+              + "sequenceNumber={}, subscriptionId={}",
+          missingCount,
+          expectedSequenceNumber,
+          maxRecoverableGap,
+          receivedSequenceNumber,
+          subscriptionId);
+
+      details.subscription.notifyNotificationDataLost();
+
+      return;
+    }
+
+    boolean republishSuccess = true;
+    long sequenceNumber = expectedSequenceNumber;
+
+    for (long i = 0; i < missingCount; i++) {
+      UInteger retransmitSequenceNumber = uint(sequenceNumber);
+
+      try {
+        RepublishResponse republishResponse =
+            client.republish(subscriptionId, retransmitSequenceNumber);
+
+        NotificationMessage republishNotificationMessage =
+            republishResponse.getNotificationMessage();
+
+        details.availableAcknowledgements.add(retransmitSequenceNumber);
+
+        details
+            .subscription
+            .getDeliveryQueue()
+            .execute(() -> deliverNotificationMessage(details, republishNotificationMessage));
+      } catch (UaException e) {
+        logger.warn("Republish service failure, sequenceNumber={}", sequenceNumber, e);
+
+        republishSuccess = false;
+      }
+
+      sequenceNumber = SequenceNumbers.successor(sequenceNumber);
+    }
+
+    if (!republishSuccess) {
+      details.subscription.notifyNotificationDataLost();
+    }
+  }
+
+  /**
+   * @param availableSequenceNumbers the availableSequenceNumbers from a PublishResponse, possibly
+   *     {@code null} or empty.
+   * @return the largest gap the client will try to recover: what the Server says it is still
+   *     holding, or {@link #DEFAULT_MAX_RECOVERABLE_GAP} if it says nothing.
+   */
+  private static long maxRecoverableGap(UInteger[] availableSequenceNumbers) {
+    return (availableSequenceNumbers != null && availableSequenceNumbers.length > 0)
+        ? availableSequenceNumbers.length
+        : DEFAULT_MAX_RECOVERABLE_GAP;
   }
 
   private void deliverNotificationMessage(
@@ -426,10 +505,17 @@ public class PublishingManager {
 
   private static class SubscriptionDetails {
 
+    /** Sequence numbers of received NotificationMessages awaiting acknowledgement. */
     private final List<UInteger> availableAcknowledgements =
         Collections.synchronizedList(new ArrayList<>());
 
-    private volatile long lastSequenceNumber = 0L;
+    /**
+     * The sequence number of the last NotificationMessage accounted for, i.e. received, recovered
+     * via Republish, or given up on. {@link SequenceNumbers#NONE} until the first PublishResponse
+     * has been processed, at which point the next NotificationMessage expected is {@link
+     * SequenceNumbers#FIRST}.
+     */
+    private volatile long lastSequenceNumber = SequenceNumbers.NONE;
 
     private final OpcUaSubscription subscription;
 
