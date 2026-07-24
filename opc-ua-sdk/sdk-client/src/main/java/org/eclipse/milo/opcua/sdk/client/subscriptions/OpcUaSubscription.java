@@ -1506,13 +1506,18 @@ public class OpcUaSubscription {
 
     SubscriptionListener listener = this.listener;
     if (listener != null) {
-      listener.onDataReceived(this, items, values);
+      // Unmodifiable views: the Lists below are the ones the fan-out iterates.
+      List<OpcUaMonitoredItem> itemsView = Collections.unmodifiableList(items);
+      List<DataValue> valuesView = Collections.unmodifiableList(values);
+
+      deliverToListener(
+          "onDataReceived", () -> listener.onDataReceived(this, itemsView, valuesView));
     }
 
     for (int i = 0; i < items.size(); i++) {
       OpcUaMonitoredItem item = items.get(i);
       DataValue value = values.get(i);
-      item.notifyDataValueReceived(value);
+      deliverToListener("DataValueListener", () -> item.notifyDataValueReceived(value));
     }
   }
 
@@ -1537,23 +1542,38 @@ public class OpcUaSubscription {
 
     SubscriptionListener listener = this.listener;
     if (listener != null) {
-      listener.onEventReceived(this, items, eventValuesList);
+      // Unmodifiable views: the Lists below are the ones the fan-out iterates.
+      List<OpcUaMonitoredItem> itemsView = Collections.unmodifiableList(items);
+      List<Variant[]> fieldsView = Collections.unmodifiableList(eventValuesList);
+
+      deliverToListener(
+          "onEventReceived", () -> listener.onEventReceived(this, itemsView, fieldsView));
     }
 
     for (int i = 0; i < items.size(); i++) {
       OpcUaMonitoredItem item = items.get(i);
       Variant[] eventValues = eventValuesList.get(i);
-      item.notifyEventValuesReceived(eventValues);
+      deliverToListener("EventValueListener", () -> item.notifyEventValuesReceived(eventValues));
     }
   }
 
+  /**
+   * Called from {@link PublishingManager} while already executing on {@link #deliveryQueue}, so the
+   * listener is invoked inline to keep it ordered with the data and event callbacks and inside the
+   * delivery task the backpressure mechanism waits on.
+   */
   void notifyKeepAliveReceived() {
     SubscriptionListener listener = this.listener;
     if (listener != null) {
-      deliveryQueue.execute(() -> listener.onKeepAliveReceived(this));
+      deliverToListener("onKeepAliveReceived", () -> listener.onKeepAliveReceived(this));
     }
   }
 
+  /**
+   * Called from {@link PublishingManager} while already executing on {@link #deliveryQueue}, so the
+   * listener is invoked inline to keep it ordered with the data and event callbacks and inside the
+   * delivery task the backpressure mechanism waits on.
+   */
   void notifyStatusChanged(StatusCode status) {
     if (status.getValue() == StatusCodes.Bad_Timeout) {
       reset();
@@ -1561,10 +1581,14 @@ public class OpcUaSubscription {
 
     SubscriptionListener listener = this.listener;
     if (listener != null) {
-      deliveryQueue.execute(() -> listener.onStatusChanged(this, status));
+      deliverToListener("onStatusChanged", () -> listener.onStatusChanged(this, status));
     }
   }
 
+  /**
+   * Unlike the notification callbacks above, this is called from <i>off</i> the {@link
+   * #deliveryQueue} and must therefore be enqueued onto it.
+   */
   void notifyNotificationDataLost() {
     SubscriptionListener listener = this.listener;
     if (listener != null) {
@@ -1572,12 +1596,38 @@ public class OpcUaSubscription {
     }
   }
 
+  /**
+   * Unlike the notification callbacks above, this is called from <i>off</i> the {@link
+   * #deliveryQueue} and must therefore be enqueued onto it.
+   */
   public void notifyTransferFailed(StatusCode status) {
     reset();
 
     SubscriptionListener listener = this.listener;
     if (listener != null) {
       deliveryQueue.execute(() -> listener.onTransferFailed(this, status));
+    }
+  }
+
+  /**
+   * Invoke an application-supplied callback, containing any Exception it throws.
+   *
+   * <p>The {@link SubscriptionListener} and each MonitoredItem's listener are independent sinks for
+   * the same notification: one of them failing must not cost the others their notification, and
+   * must not abort delivery of the remaining NotificationData in the same NotificationMessage.
+   *
+   * @param callback the name of the callback being invoked, for logging.
+   * @param delivery the callback invocation.
+   */
+  private void deliverToListener(String callback, Runnable delivery) {
+    try {
+      delivery.run();
+    } catch (Exception e) {
+      logger.warn(
+          "id={}, {} threw an unhandled Exception",
+          getServerState().map(ServerState::getSubscriptionId).orElse(null),
+          callback,
+          e);
     }
   }
 
@@ -1797,6 +1847,11 @@ public class OpcUaSubscription {
     /**
      * Called when a Subscription receives a keep-alive notification from the Server.
      *
+     * <p>Take care not to block unnecessarily in this callback because subscription notifications
+     * are processed synchronously as a backpressure mechanism. Blocking inside this callback will
+     * prevent subsequent notifications from being processed and new PublishRequests from being
+     * sent.
+     *
      * @param subscription the Subscription that received the keep-alive notification.
      */
     default void onKeepAliveReceived(OpcUaSubscription subscription) {}
@@ -1833,6 +1888,11 @@ public class OpcUaSubscription {
      *   <li>Bad_Timeout: the Subscription has timed out and no longer exists on the Server.
      *   <li>Good_Transferred: the Subscription was transferred to another Session.
      * </ul>
+     *
+     * <p>Take care not to block unnecessarily in this callback because subscription notifications
+     * are processed synchronously as a backpressure mechanism. Blocking inside this callback will
+     * prevent subsequent notifications from being processed and new PublishRequests from being
+     * sent.
      *
      * @param subscription the Subscription whose status has changed.
      * @param status the new status of the Subscription.
