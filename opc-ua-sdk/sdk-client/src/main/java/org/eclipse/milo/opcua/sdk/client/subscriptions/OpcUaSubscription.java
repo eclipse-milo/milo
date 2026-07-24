@@ -252,8 +252,6 @@ public class OpcUaSubscription {
         throw e;
       }
 
-      resetWatchdogTimer();
-
       this.serverState =
           new ServerState(
               serverState.getSubscriptionId(),
@@ -263,6 +261,11 @@ public class OpcUaSubscription {
               maxNotificationsPerPublish,
               priority,
               serverState.isPublishingEnabled());
+
+      // Must happen after the revised parameters are installed: the watchdog delay is
+      // derived from the current ServerState, so re-arming any earlier would use the
+      // pre-modify PublishingInterval and MaxKeepAliveCount.
+      resetWatchdogTimer();
 
       if (modifications == null) {
         syncState = SyncState.SYNCHRONIZED;
