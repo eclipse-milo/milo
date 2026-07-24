@@ -20,6 +20,7 @@ import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportConfigBuilder;
 
 public final class TestClient {
 
@@ -27,6 +28,25 @@ public final class TestClient {
 
   public static OpcUaClient create(
       OpcUaServer server, Consumer<OpcUaClientConfigBuilder> configCustomizer) throws UaException {
+
+    return create(server, transportConfigBuilder -> {}, configCustomizer);
+  }
+
+  /**
+   * Create a test client, allowing customization of both the transport config (e.g. to inject a
+   * controllable {@code ExecutorService}) and the client config.
+   *
+   * @param server the {@link OpcUaServer} to connect to.
+   * @param transportCustomizer customizes the {@link OpcTcpClientTransportConfigBuilder}.
+   * @param configCustomizer customizes the {@link OpcUaClientConfigBuilder}.
+   * @return a configured {@link OpcUaClient}.
+   * @throws UaException if the client could not be created.
+   */
+  public static OpcUaClient create(
+      OpcUaServer server,
+      Consumer<OpcTcpClientTransportConfigBuilder> transportCustomizer,
+      Consumer<OpcUaClientConfigBuilder> configCustomizer)
+      throws UaException {
 
     EndpointConfig endpoint = server.getConfig().getEndpoints().iterator().next();
 
@@ -39,7 +59,7 @@ public final class TestClient {
                         Objects.equals(
                             e.getSecurityPolicyUri(), endpoint.getSecurityPolicy().getUri()))
                 .findFirst(),
-        transportConfigBuilder -> {},
+        transportCustomizer,
         clientConfigBuilder -> {
           clientConfigBuilder
               .setApplicationName(LocalizedText.english("eclipse milo test client"))
