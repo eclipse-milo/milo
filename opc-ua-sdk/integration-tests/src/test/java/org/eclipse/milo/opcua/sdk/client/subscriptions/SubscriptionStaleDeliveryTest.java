@@ -208,16 +208,23 @@ public class SubscriptionStaleDeliveryTest {
 
         fixture.listener.release();
 
+        // Wait on the report, not on the reset: notifyStatusChanged() resets the Subscription
+        // before it tells the application, so syncState reaching INITIAL does not mean the
+        // StatusChangeNotification has been delivered yet.
         assertTrue(
-            fixture.awaitTrue(
-                () -> fixture.subscription.getSyncState() == OpcUaSubscription.SyncState.INITIAL),
-            "control: a Bad_Timeout StatusChangeNotification must reset the Subscription it was"
-                + " received for, even when an application callback in the same NotificationMessage"
-                + " ran first");
+            fixture.awaitTrue(() -> !fixture.listener.statusChanges().isEmpty()),
+            "control: the Bad_Timeout must be reported to the application, even when an application"
+                + " callback in the same NotificationMessage ran first");
         assertEquals(
             List.of(new StatusCode(StatusCodes.Bad_Timeout)),
             fixture.listener.statusChanges(),
-            "control: the Bad_Timeout must be reported to the application");
+            "control: the Bad_Timeout, and nothing else, must be reported to the application");
+        assertEquals(
+            OpcUaSubscription.SyncState.INITIAL,
+            fixture.subscription.getSyncState(),
+            "control: a Bad_Timeout StatusChangeNotification must reset the Subscription it was"
+                + " received for; the reset happens before the report, so it has already happened"
+                + " by the time the report arrives");
       }
     }
 
