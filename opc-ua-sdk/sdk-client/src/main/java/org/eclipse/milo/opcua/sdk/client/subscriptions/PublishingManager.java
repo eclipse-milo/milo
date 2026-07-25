@@ -91,10 +91,48 @@ public class PublishingManager {
   private static final long DEFAULT_MAX_RECOVERABLE_GAP = 64L;
 
   /**
-   * The value of {@link #pendingPublishCeiling} while the Server has never refused a PublishRequest
-   * for holding too many, i.e. while nothing but the client's own target applies.
+   * The ceiling of a {@link PendingPublishCeiling} while the Server has never refused a
+   * PublishRequest for holding too many, i.e. while nothing but the client's own target applies.
    */
   private static final long NO_PENDING_PUBLISH_CEILING = Long.MAX_VALUE;
+
+  /**
+   * The number of successful Publish round trips that must pass before the client asks a Server
+   * that once refused a PublishRequest whether it would now queue one more.
+   *
+   * <p>Counted in the Server's own answers rather than in elapsed time: a round trip is a
+   * PublishRequest the Server accepted, answered, and had the answer delivered from, which is
+   * exactly the evidence that the condition behind the refusal may have passed, and it needs no
+   * clock.
+   *
+   * <p>Eight is chosen to be comfortably clear of the window Part 4 §5.14.5.1 is measured in — "one
+   * of its outstanding Publish requests is returned" buys exactly one replacement, so the immediate
+   * response to the fault is a property of the first returning request — while still being a small
+   * number of NotificationMessages: a Subscription publishing once a second reaches the first probe
+   * in under ten seconds.
+   */
+  private static final long PROBE_COOLDOWN_BASE_SUCCESSES = 8L;
+
+  /**
+   * The factor the cooldown grows by when a probe is refused.
+   *
+   * <p>Doubling is what bounds the cost of leniency: a Server that always refuses is asked at
+   * roughly successes 8, 24, 56, 120, 248, ..., so the number of probes it sees grows only
+   * logarithmically in the number of responses it delivers, and the interval between two probes is
+   * never shorter than the interval before it.
+   */
+  private static final long PROBE_COOLDOWN_GROWTH = 2L;
+
+  /**
+   * The longest cooldown a repeatedly refused probe can grow to, in successful Publish round trips.
+   *
+   * <p>A cap is needed because the alternative to a bounded backoff is one that gives up: without
+   * it the interval doubles until a Server whose cap really was raised is never asked again. At 512
+   * a Subscription publishing once a second probes about every eight minutes in the worst case,
+   * which costs a Server that will never accept more essentially nothing and still finds a
+   * condition that has passed within minutes.
+   */
+  private static final long PROBE_COOLDOWN_MAX_SUCCESSES = 512L;
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -113,13 +151,11 @@ public class PublishingManager {
   private final AtomicLong subscriptionGeneration = new AtomicLong(0L);
 
   /**
-   * The number of PublishRequests the Server has been observed to queue for this Session, or {@link
-   * #NO_PENDING_PUBLISH_CEILING} if it has never refused one.
-   *
-   * <p>Learned from Bad_TooManyPublishRequests and never allowed below one, since a ceiling of zero
-   * is a pipeline that never refills.
+   * What the client has learned from Bad_TooManyPublishRequests about how many PublishRequests the
+   * Server will queue for this Session, and what it has to see before asking for one more.
    */
-  private final AtomicLong pendingPublishCeiling = new AtomicLong(NO_PENDING_PUBLISH_CEILING);
+  private final AtomicReference<PendingPublishCeiling> pendingPublishCeiling =
+      new AtomicReference<>(PendingPublishCeiling.NONE);
 
   /**
    * The number of times a Session has become Active, i.e. the number of times the client has had to
@@ -159,8 +195,9 @@ public class PublishingManager {
           @Override
           public void onSessionActive(UaSession session) {
             // A Session has its own queue of PublishRequests, so what an earlier one was willing to
-            // hold says nothing about this one.
-            pendingPublishCeiling.set(NO_PENDING_PUBLISH_CEILING);
+            // hold says nothing about this one — and neither does how reluctant it was to accept
+            // more.
+            pendingPublishCeiling.set(PendingPublishCeiling.NONE);
 
             recoverAndResumePublishing(session);
           }
@@ -199,8 +236,9 @@ public class PublishingManager {
 
     // The client wants a deeper pipeline than it did when any ceiling was learned, and Part 4
     // §5.14.5.1 requires a Server to accept at least one more queued PublishRequest per
-    // Subscription, so it is worth finding out whether this one now will.
-    pendingPublishCeiling.set(NO_PENDING_PUBLISH_CEILING);
+    // Subscription, so it is worth finding out whether this one now will — immediately, rather than
+    // after the cooldown a probe would have to serve.
+    pendingPublishCeiling.set(PendingPublishCeiling.NONE);
 
     maybeSendPublishRequests();
   }
@@ -1001,9 +1039,24 @@ public class PublishingManager {
       // Never below one: a ceiling of zero is a pipeline that can never refill. The same clause
       // requires a Server to accept at least subscriptionCount + 1 queued Publish requests, which
       // is exactly what the client aims for, so a conformant Server never gets here.
+      //
+      // The ceiling is not permanent — see maybeRaisePendingPublishCeiling() — and this is where a
+      // probe that was refused is charged for: the ceiling drops back and the next probe costs
+      // geometrically more successful Publish round trips than the one that was refused.
       long ceiling = Math.max(1L, outstanding);
 
-      pendingPublishCeiling.getAndUpdate(c -> Math.min(c, ceiling));
+      PendingPublishCeiling before = pendingPublishCeiling.getAndUpdate(c -> c.refused(ceiling));
+
+      if (before.probing()) {
+        PendingPublishCeiling after = before.refused(ceiling);
+
+        logger.debug(
+            "Server refused the probe raising the pending Publish ceiling to {}; the ceiling is {} "
+                + "again and the next probe costs {} successful Publish round trips",
+            before.ceiling(),
+            after.ceiling(),
+            after.cooldown());
+      }
 
       if (outstanding == 0) {
         // This failure was itself the last outstanding request being returned, so the clause's
@@ -1217,7 +1270,72 @@ public class PublishingManager {
   private void releasePendingPublish(AtomicLong pendingCount) {
     pendingCount.getAndUpdate(p -> (p > 0) ? p - 1 : 0);
 
+    // This is the one place that knows a PublishRequest went out and came back without being
+    // refused, so it is where a ceiling learned from Bad_TooManyPublishRequests is paid off. Done
+    // before the refill below, so a raise takes effect in the very refill this return pays for.
+    maybeRaisePendingPublishCeiling();
+
     maybeSendPublishRequests();
+  }
+
+  /**
+   * Count one successful Publish round trip against any ceiling learned from
+   * Bad_TooManyPublishRequests, and raise that ceiling by one if enough of them have gone by.
+   *
+   * <p>Part 4 §5.14.5.1 says what a Client must do the moment a Server refuses a PublishRequest for
+   * holding too many, and nothing about how long it must go on believing it. The condition behind
+   * the refusal is often momentary — a queue briefly full, a cap raised again a second later — and
+   * the only two events that clear the ceiling outright, a Subscription being added and a Session
+   * being activated, need never happen again in the life of a long-lived client. Left alone, one
+   * transient refusal costs such a client a permanently shallower pipeline, i.e. throughput, for no
+   * reason.
+   *
+   * <p>So the ceiling recovers, under three rules that together keep leniency from turning into
+   * hammering:
+   *
+   * <ul>
+   *   <li>it recovers by <b>one request</b> at a time, never straight back to the target: restoring
+   *       the whole deficit at once would send the Server exactly the burst that drew the fault,
+   *       which is what the ceiling exists to prevent;
+   *   <li>each raise costs a <b>cooldown</b> of successful Publish round trips — {@link
+   *       #PROBE_COOLDOWN_BASE_SUCCESSES} of them to begin with — which is also what keeps a single
+   *       probe in flight: the one extra request a raise adds is answered long before another whole
+   *       cooldown of requests has been;
+   *   <li>a probe the Server refuses <b>lengthens</b> the next cooldown geometrically, up to {@link
+   *       #PROBE_COOLDOWN_MAX_SUCCESSES}. A Server that always refuses therefore sees a number of
+   *       probes growing only logarithmically in the number of responses it delivers.
+   * </ul>
+   *
+   * <p>Counting the Server's own answers, rather than watching a clock, is what makes the schedule
+   * cost the Server nothing when it has nothing to say: a Subscription that is publishing pays for
+   * its probes, and one that is silent — or a Session whose Publish pipeline is stalled — does not
+   * probe at all.
+   *
+   * <p>Runs on the transport's executor, as part of releasing a pending-publish permit, and
+   * performs no I/O.
+   */
+  private void maybeRaisePendingPublishCeiling() {
+    if (pendingPublishCeiling.get().ceiling() == NO_PENDING_PUBLISH_CEILING) {
+      // Nothing has been learned, so there is nothing to recover from and no reason to count.
+      return;
+    }
+
+    long natural = getNaturalMaxPendingPublishes();
+
+    PendingPublishCeiling before = pendingPublishCeiling.getAndUpdate(c -> c.roundTrip(natural));
+
+    // roundTrip() is a function of the state it is applied to, so the transition this call made is
+    // the one from the state it replaced, whatever any concurrent update has done since.
+    PendingPublishCeiling after = before.roundTrip(natural);
+
+    if (after.ceiling() > before.ceiling()) {
+      logger.debug(
+          "Probing whether the Server will now queue {} PublishRequests, after {} successful "
+              + "Publish round trips at a ceiling of {}",
+          after.ceiling(),
+          before.successes() + 1,
+          before.ceiling());
+    }
   }
 
   /**
@@ -1611,15 +1729,23 @@ public class PublishingManager {
   }
 
   private long getMaxPendingPublishes() {
+    return Math.min(getNaturalMaxPendingPublishes(), pendingPublishCeiling.get().ceiling());
+  }
+
+  /**
+   * @return the number of PublishRequests the client would keep outstanding if no Server had ever
+   *     refused one, i.e. {@code min(subscriptionCount + 1, maxPendingPublishRequests)}, or zero if
+   *     there is no Subscription to publish for. It is the target any learned ceiling recovers
+   *     towards and never exceeds.
+   */
+  private long getNaturalMaxPendingPublishes() {
     if (subscriptionDetails.isEmpty()) {
       return 0;
     }
 
     long maxPendingPublishRequests = client.getConfig().getMaxPendingPublishRequests().longValue();
 
-    long target = Math.min(subscriptionDetails.size() + 1L, maxPendingPublishRequests);
-
-    return Math.min(target, pendingPublishCeiling.get());
+    return Math.min(subscriptionDetails.size() + 1L, maxPendingPublishRequests);
   }
 
   private UInteger getTimeoutHint() {
@@ -1675,6 +1801,86 @@ public class PublishingManager {
    * Session it ran on, or {@code null} once that Session has become inactive.
    */
   private record RecoveredActivation(long activation, @Nullable UaSession session) {}
+
+  /**
+   * How many PublishRequests the Server has been observed to queue for a Session, and what the
+   * client has to see before it asks whether it would now queue one more.
+   *
+   * <p>Immutable, and every transition is a function of the state it is applied to, so the whole of
+   * it — the ceiling, the cooldown, and whether a probe is outstanding — is read and replaced as
+   * one value rather than as four fields that a concurrent refusal could interleave with a raise.
+   *
+   * @param ceiling the number of PublishRequests the Server was holding when it refused one, or
+   *     {@link #NO_PENDING_PUBLISH_CEILING} if it has never refused one. Never below one: a ceiling
+   *     of zero is a pipeline that can never refill.
+   * @param successes successful Publish round trips counted towards the next probe.
+   * @param cooldown successful Publish round trips a probe currently costs.
+   * @param probing {@code true} while the newest raise is still answerable, i.e. from the raise
+   *     until either a Bad_TooManyPublishRequests is charged to it or the ceiling it installed has
+   *     stood for a whole cooldown. Deliberately not cleared by the first successful round trip
+   *     after the raise: a refused PublishRequest and a delivered NotificationMessage are handled
+   *     on paths of different lengths, so which the client finishes with first is a race, and a
+   *     delivery that could clear this flag would leave the refusal behind it uncharged — which is
+   *     precisely the case a Server that always refuses produces, and would have it probed at a
+   *     constant rate.
+   */
+  private record PendingPublishCeiling(
+      long ceiling, long successes, long cooldown, boolean probing) {
+
+    /** No Server has refused a PublishRequest, so only the client's own target applies. */
+    static final PendingPublishCeiling NONE =
+        new PendingPublishCeiling(
+            NO_PENDING_PUBLISH_CEILING, 0L, PROBE_COOLDOWN_BASE_SUCCESSES, false);
+
+    /**
+     * @param observed the number of PublishRequests the Server was in fact holding.
+     * @return the state after a Bad_TooManyPublishRequests. The ceiling only ever descends, since a
+     *     Server that refused at {@code observed} has said nothing to withdraw what it refused at
+     *     less; a refusal that answers a probe also lengthens the next cooldown geometrically,
+     *     which is what stops a Server that always refuses from being asked at a constant rate.
+     *     Only the first refusal after a raise is charged for it, so a raise a Server answers with
+     *     more than one refusal costs one lengthening rather than several.
+     */
+    PendingPublishCeiling refused(long observed) {
+      return new PendingPublishCeiling(
+          Math.min(ceiling, observed),
+          0L,
+          probing
+              ? Math.min(PROBE_COOLDOWN_MAX_SUCCESSES, cooldown * PROBE_COOLDOWN_GROWTH)
+              : cooldown,
+          false);
+    }
+
+    /**
+     * @param natural the number of PublishRequests the client would keep outstanding if nothing had
+     *     ever been refused. The ceiling never rises above it: it is what recovery aims at, not a
+     *     value to overshoot.
+     * @return the state after one successful Publish round trip, which is either a payment towards
+     *     the next probe or — when it completes the cooldown — the raise that <i>is</i> that probe.
+     */
+    PendingPublishCeiling roundTrip(long natural) {
+      if (ceiling >= natural) {
+        // Fully recovered: there is nothing left to ask for. The raise that got here stops being
+        // answerable once the ceiling it installed has stood for a whole cooldown, so that a
+        // Bad_TooManyPublishRequests long afterwards is treated as a new condition on the Server
+        // rather than as the answer to this probe. Charging it as one would let a client that lives
+        // through many unrelated transient conditions ratchet its cooldown up to the cap.
+        return new PendingPublishCeiling(
+            ceiling, successes + 1, cooldown, probing && successes + 1 < cooldown);
+      }
+
+      if (successes + 1 < cooldown) {
+        // Still paying for the next probe.
+        return new PendingPublishCeiling(ceiling, successes + 1, cooldown, probing);
+      }
+
+      // One more request than the Server last refused, and no more than that: the question is
+      // whether it will now take one more, and one extra PublishRequest asks it. No second raise
+      // follows until a whole further cooldown of round trips has been answered, which is what
+      // keeps a single probe in flight.
+      return new PendingPublishCeiling(ceiling + 1, 0L, cooldown, true);
+    }
+  }
 
   /** State shared by the steps of a single Republish recovery. */
   private static class Recovery {
