@@ -39,7 +39,6 @@ import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -1447,26 +1446,26 @@ public class SessionFsmFactory {
       return completedFuture(Unit.VALUE);
     }
 
-    CompletableFuture<Unit> transferFuture = new CompletableFuture<>();
+    // Pair each Subscription with its SubscriptionId once, up front. A concurrent reset() removes a
+    // Subscription from the client before clearing its id, so the id is an unsynchronized read that
+    // can disappear between the snapshot above and the request below; deriving the ids separately
+    // would leave the results indexed against a list the request was not built from, shifting every
+    // position at or after a dropped Subscription.
+    record Transferable(OpcUaSubscription subscription, UInteger subscriptionId) {}
 
-    // A Subscription can be reset() concurrently, clearing its id, so the ids sent and the
-    // Subscriptions they came from are captured together: the TransferResults are indexed
-    // against the ids the request carried, and pairing them back through a list whose shape
-    // can since have changed would apply a result to the wrong Subscription.
-    var transferable = new ArrayList<OpcUaSubscription>(subscriptions.size());
-    var subscriptionIds = new ArrayList<UInteger>(subscriptions.size());
+    List<Transferable> transferable =
+        subscriptions.stream()
+            .flatMap(s -> s.getSubscriptionId().map(id -> new Transferable(s, id)).stream())
+            .toList();
 
-    for (OpcUaSubscription subscription : subscriptions) {
-      subscription
-          .getSubscriptionId()
-          .ifPresent(
-              id -> {
-                transferable.add(subscription);
-                subscriptionIds.add(id);
-              });
+    if (transferable.isEmpty()) {
+      return completedFuture(Unit.VALUE);
     }
 
-    UInteger[] subscriptionIdsArray = subscriptionIds.toArray(new UInteger[0]);
+    CompletableFuture<Unit> transferFuture = new CompletableFuture<>();
+
+    UInteger[] subscriptionIdsArray =
+        transferable.stream().map(Transferable::subscriptionId).toArray(UInteger[]::new);
 
     TransferSubscriptionsRequest request =
         new TransferSubscriptionsRequest(
@@ -1496,13 +1495,14 @@ public class SessionFsmFactory {
 
                   if (LOGGER.isDebugEnabled()) {
                     try {
+                      Stream<UInteger> subscriptionIds = Stream.of(subscriptionIdsArray);
                       Stream<StatusCode> statusCodes =
                           Stream.of(results).map(TransferResult::getStatusCode);
 
                       //noinspection UnstableApiUsage
                       String[] ss =
                           Streams.zip(
-                                  subscriptionIds.stream(),
+                                  subscriptionIds,
                                   statusCodes,
                                   (i, s) -> {
                                     assert s != null;
@@ -1541,12 +1541,15 @@ public class SessionFsmFactory {
                   }
                 }
 
+                // Bounded by the requested Subscriptions as well: Part 4 §5.14.7.2 defines results
+                // as one per requested SubscriptionId, but a Server returning a longer list must
+                // not reach past the end of them.
                 for (int i = 0; i < results.length && i < transferable.size(); i++) {
                   TransferResult result = results[i];
 
                   if (!result.getStatusCode().isGood()) {
                     handleTransferFailure(
-                        ctx, session, transferable.get(i), result.getStatusCode());
+                        ctx, session, transferable.get(i).subscription(), result.getStatusCode());
                   }
                 }
 
