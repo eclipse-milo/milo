@@ -349,7 +349,14 @@ public class ScriptableSubscriptionServiceSet extends DelegatingSubscriptionServ
       lock.unlock();
     }
 
-    return responder.respondTo(request);
+    // Same guard as fulfill(): a responder that throws must produce a failed future rather than
+    // let the exception escape into the server's async dispatch, where the response future would
+    // never be completed and the client's PublishRequest would hang until its timeoutHint.
+    try {
+      return responder.respondTo(request);
+    } catch (RuntimeException e) {
+      return CompletableFuture.failedFuture(e);
+    }
   }
 
   @Override
