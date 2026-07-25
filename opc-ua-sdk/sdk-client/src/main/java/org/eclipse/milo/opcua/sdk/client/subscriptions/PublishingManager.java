@@ -128,14 +128,23 @@ public class PublishingManager {
   private final AtomicLong sessionActivations = new AtomicLong(0L);
 
   /**
-   * The highest {@link #sessionActivations} value whose recovery has finished, one way or the
-   * other.
+   * The newest Session activation whose recovery has finished, one way or the other, and the
+   * Session that recovery ran on.
    *
-   * <p>Publish traffic is allowed only while this has caught up with {@link #sessionActivations};
-   * see {@link #isPublishingAllowed()}. The pair is monotonic, and the recovery of the newest
-   * activation always finishes, so the pipeline cannot be held shut by a recovery that is over.
+   * <p>Publish traffic is allowed only while this describes the Session a request would be sent on;
+   * see {@link #isPublishingAllowed(UaSession)}. The activation must have caught up with {@link
+   * #sessionActivations} <i>and</i> the Session in hand must be the one recovered: an activation is
+   * only counted when the {@code onSessionActive} callbacks run, but the Session future completes
+   * in a separate task that can release callbacks parked on it first, and in that window the
+   * counters alone still describe the previous activation. The Session reference is cleared the
+   * moment its Session becomes inactive, because a re-activation can hand back the same Session
+   * object, and in the same window the reference alone would still match it.
+   *
+   * <p>The pair is monotonic, and the recovery of the newest activation always finishes, so the
+   * pipeline cannot be held shut by a recovery that is over.
    */
-  private final AtomicLong recoveredActivations = new AtomicLong(0L);
+  private final AtomicReference<RecoveredActivation> lastRecoveredActivation =
+      new AtomicReference<>(new RecoveredActivation(0L, null));
 
   private final OpcUaClient client;
 
@@ -154,6 +163,16 @@ public class PublishingManager {
             pendingPublishCeiling.set(NO_PENDING_PUBLISH_CEILING);
 
             recoverAndResumePublishing(session);
+          }
+
+          @Override
+          public void onSessionInactive(UaSession session) {
+            // The Session is gone, and the recovery that ran for it says nothing about the next
+            // activation — which may hand back this very Session object, re-activated. Shut the
+            // gate here rather than when the next activation is counted: the next Session future
+            // can complete, releasing callbacks parked on it, before the activation callbacks run.
+            lastRecoveredActivation.getAndUpdate(
+                r -> r.session() == session ? new RecoveredActivation(r.activation(), null) : r);
           }
         });
   }
@@ -211,13 +230,19 @@ public class PublishingManager {
    * than applied to whatever Subscription exists by the time it runs.
    *
    * @param details the entry to unregister.
+   * @return {@code true} if {@code details} was still the registered entry and this call removed
+   *     it; {@code false} if something else unregistered it first.
    */
-  private void unregister(SubscriptionDetails details) {
+  private boolean unregister(SubscriptionDetails details) {
     if (subscriptionDetails.remove(details.subscriptionId, details)) {
       details.registered = false;
 
       subscriptionGeneration.incrementAndGet();
+
+      return true;
     }
+
+    return false;
   }
 
   /**
@@ -254,15 +279,13 @@ public class PublishingManager {
           .whenComplete(
               (session, ex) -> {
                 if (session != null) {
-                  if (!isPublishingAllowed()) {
+                  if (!isPublishingAllowed(session)) {
                     // The Republish loop Part 4 §6.7 requires before Publish resumes has not
-                    // finished yet. Tested here, once the Session is in hand, rather than on the
-                    // way
-                    // in: a caller that found no Session is parked on the one being established,
-                    // and
-                    // must not send the instant it arrives either. Whatever deficit builds up while
-                    // the pipeline is shut is made good by resumePublishing(), which every recovery
-                    // reaches.
+                    // finished yet for this Session. Tested here, once the Session is in hand,
+                    // rather than on the way in: a caller that found no Session is parked on the
+                    // one being established, and must not send the instant it arrives either.
+                    // Whatever deficit builds up while the pipeline is shut is made good by
+                    // resumePublishing(), which every recovery reaches.
                     logger.debug("Publish suspended pending reconnect recovery");
                     return;
                   }
@@ -295,11 +318,15 @@ public class PublishingManager {
   }
 
   /**
-   * @return {@code true} if PublishRequests may be sent, i.e. if every Session activation so far
-   *     has had its reconnect recovery run.
+   * @param session the Session a PublishRequest would be sent on.
+   * @return {@code true} if PublishRequests may be sent on {@code session}, i.e. if every Session
+   *     activation so far has had its reconnect recovery run and {@code session} is the Session the
+   *     newest of those recoveries ran on.
    */
-  private boolean isPublishingAllowed() {
-    return recoveredActivations.get() >= sessionActivations.get();
+  private boolean isPublishingAllowed(UaSession session) {
+    RecoveredActivation recovered = lastRecoveredActivation.get();
+
+    return recovered.activation() >= sessionActivations.get() && recovered.session() == session;
   }
 
   /**
@@ -326,13 +353,13 @@ public class PublishingManager {
 
     try {
       recoverSubscriptions(session, activation)
-          .whenComplete((unit, ex) -> resumePublishing(activation));
+          .whenComplete((unit, ex) -> resumePublishing(activation, session));
     } catch (Exception e) {
       // Nothing is going to complete the recovery that never started, and a pipeline that stays
       // shut is worse than one that resumes without having drained: it never recovers at all.
       logger.error("Reconnect recovery could not be started", e);
 
-      resumePublishing(activation);
+      resumePublishing(activation, session);
     }
   }
 
@@ -341,9 +368,17 @@ public class PublishingManager {
    * is over, and send the ones that were not sent while it ran.
    *
    * @param activation the {@link #sessionActivations} value the finished recovery belongs to.
+   * @param session the Session that recovery ran on.
    */
-  private void resumePublishing(long activation) {
-    recoveredActivations.getAndUpdate(recovered -> Math.max(recovered, activation));
+  private void resumePublishing(long activation, UaSession session) {
+    lastRecoveredActivation.getAndUpdate(
+        r -> r.activation() >= activation ? r : new RecoveredActivation(activation, session));
+
+    // The watchdog watches for the Server going quiet, but no PublishResponse — the only event
+    // that feeds it — can arrive while Publish traffic is suspended, so it is re-armed only now,
+    // not the moment the Session became active: a recovery longer than the watchdog delay must
+    // not fire it on a Subscription whose recovery is proceeding normally.
+    subscriptionDetails.values().forEach(d -> d.subscription.resetWatchdogTimer());
 
     maybeSendPublishRequests();
   }
@@ -752,17 +787,26 @@ public class PublishingManager {
                   UInteger subscriptionId = publishResponse.getSubscriptionId();
                   SubscriptionDetails details = subscriptionDetails.get(subscriptionId);
 
+                  boolean queued = false;
+
                   if (details != null) {
                     // Cheap and non-blocking: cancels and re-schedules a timer. The watchdog
                     // watches for the Server going quiet, so it is reset when the response is
                     // received rather than when it is eventually processed.
                     details.subscription.resetWatchdogTimer();
 
-                    details.processingQueue.execute(
-                        () -> processPublishResponse(publishResponse, pendingCount));
-                  } else {
-                    // Nothing to process, but the permit still has to be released, and doing it
-                    // here would re-enter sendPublishRequest() on this thread.
+                    // The entry resolved here rides along with the task: by the time the task
+                    // runs, the entry registered under this SubscriptionId may be a different
+                    // one, and this task was queued for this one.
+                    queued =
+                        details.processingQueue.execute(
+                            () -> processPublishResponse(details, publishResponse, pendingCount));
+                  }
+
+                  if (!queued) {
+                    // Nothing to process — no entry, or a queue already shut down — but the
+                    // permit still has to be released, and doing it here would re-enter
+                    // sendPublishRequest() on this thread.
                     client
                         .getTransport()
                         .getConfig()
@@ -911,8 +955,13 @@ public class PublishingManager {
     // before the permit is released, is what puts them on the next PublishRequest.
     restoreAcknowledgements(drainedAcknowledgements);
 
+    // A null failure means the request completed with a response that was not a PublishResponse;
+    // there is no exception to extract a StatusCode from, but the permit release and the refill
+    // below still have to happen.
     StatusCode statusCode =
-        UaException.extract(ex).map(UaException::getStatusCode).orElse(StatusCode.BAD);
+        ex == null
+            ? StatusCode.BAD
+            : UaException.extract(ex).map(UaException::getStatusCode).orElse(StatusCode.BAD);
 
     long outstanding = pendingCount.updateAndGet(p -> (p > 0) ? p - 1 : 0);
 
@@ -955,6 +1004,14 @@ public class PublishingManager {
       long ceiling = Math.max(1L, outstanding);
 
       pendingPublishCeiling.getAndUpdate(c -> Math.min(c, ceiling));
+
+      if (outstanding == 0) {
+        // This failure was itself the last outstanding request being returned, so the clause's
+        // condition for issuing another is met — and nothing else is left in flight whose
+        // completion would refill the pipeline. Without this the pipeline stays empty until an
+        // unrelated event (a Subscription added or a Session re-activated) restarts it.
+        maybeSendPublishRequests();
+      }
     } else {
       maybeSendPublishRequests();
     }
@@ -970,15 +1027,24 @@ public class PublishingManager {
    * Server sent them. Nothing here may block: the queue runs on the transport's executor, which is
    * also what completes the responses to any request this method might make.
    *
+   * @param details the entry the response was routed to when it was received. Not looked up again
+   *     here: the entry now registered under the response's SubscriptionId may be a different one —
+   *     the Server can assign a new Subscription an id it has used before — and work queued for one
+   *     registration must never be applied to another.
    * @param response the {@link PublishResponse} to process.
    * @param pendingCount the pending-publish permits held for the Session the request was sent on.
    */
-  private void processPublishResponse(PublishResponse response, AtomicLong pendingCount) {
-    UInteger subscriptionId = response.getSubscriptionId();
+  private void processPublishResponse(
+      SubscriptionDetails details, PublishResponse response, AtomicLong pendingCount) {
 
-    SubscriptionDetails details = subscriptionDetails.get(subscriptionId);
+    UInteger subscriptionId = details.subscriptionId;
 
-    if (details == null) {
+    if (!details.registered) {
+      logger.debug(
+          "Discarding PublishResponse for a Subscription that no longer exists, "
+              + "subscriptionId={}",
+          subscriptionId);
+
       releasePendingPublish(pendingCount);
       return;
     }
@@ -1015,20 +1081,46 @@ public class PublishingManager {
       if (receivedSequenceNumber != expectedSequenceNumber
           && !SequenceNumbers.isAhead(receivedSequenceNumber, expectedSequenceNumber)) {
 
-        // Neither the message expected next nor ahead of it, so it has already been accounted for:
-        // a duplicate, or a message the client recovered via Republish before this copy of it
-        // arrived. Accounting must only ever move forwards; processing this message again would
-        // hand it to the application a second time and roll lastSequenceNumber back, making every
-        // message already received after it look missing and provoking a Republish for each one.
-        logger.debug(
-            "Discarding NotificationMessage already accounted for, subscriptionId={}, "
-                + "lastSequenceNumber={}, receivedSequenceNumber={}",
+        long backwardDistance =
+            SequenceNumbers.forwardDistance(receivedSequenceNumber, expectedSequenceNumber);
+
+        UInteger[] availableSequenceNumbers = response.getAvailableSequenceNumbers();
+
+        long duplicateWindow =
+            Math.max(
+                DEFAULT_MAX_RECOVERABLE_GAP,
+                availableSequenceNumbers == null ? 0 : availableSequenceNumbers.length);
+
+        if (backwardDistance <= duplicateWindow) {
+          // Neither the message expected next nor ahead of it, so it has already been accounted
+          // for: a duplicate, or a message the client recovered via Republish before this copy of
+          // it arrived. Accounting must only ever move forwards; processing this message again
+          // would hand it to the application a second time and roll lastSequenceNumber back,
+          // making every message already received after it look missing and provoking a Republish
+          // for each one.
+          logger.debug(
+              "Discarding NotificationMessage already accounted for, subscriptionId={}, "
+                  + "lastSequenceNumber={}, receivedSequenceNumber={}",
+              subscriptionId,
+              details.lastSequenceNumber,
+              receivedSequenceNumber);
+
+          releasePendingPublish(pendingCount);
+          return;
+        }
+
+        // Too far behind to be a duplicate of anything recently recovered or retransmitted: the
+        // Server's numbering has regressed, e.g. because it restarted and renumbered a restored
+        // Subscription. Deliver the message and resynchronize the accounting to it — discarding
+        // instead would silently drop every NotificationMessage until the Server's numbering
+        // catches back up to where it used to be.
+        logger.warn(
+            "NotificationMessage sequence number regressed by {}; resynchronizing to it, "
+                + "subscriptionId={}, lastSequenceNumber={}, receivedSequenceNumber={}",
+            backwardDistance,
             subscriptionId,
             details.lastSequenceNumber,
             receivedSequenceNumber);
-
-        releasePendingPublish(pendingCount);
-        return;
       }
 
       missingSequenceNumbers = missingSequenceNumbers(details, response, receivedSequenceNumber);
@@ -1109,6 +1201,10 @@ public class PublishingManager {
             releasePendingPublish(pendingCount);
           },
           client.getTransport().getConfig().getExecutor());
+    } else {
+      // The delivery queue is shut down, so the message will never be delivered — but the permit
+      // still has to be released, or the pipeline permanently shrinks by one.
+      releasePendingPublish(pendingCount);
     }
   }
 
@@ -1196,6 +1292,16 @@ public class PublishingManager {
           receivedSequenceNumber,
           subscriptionId);
 
+      if (advertised) {
+        // Part 4 §5.14.7.1: "The Client should acknowledge all Messages in this list for which it
+        // will not request retransmission." Nothing in this gap will be requested, and an
+        // unacknowledged NotificationMessage stays in the Server's retransmission queue —
+        // re-advertised in every PublishResponse and holding its memory — for the life of the
+        // Subscription.
+        acknowledgeAbandonedSequenceNumbers(
+            details, availableSequenceNumbers, receivedSequenceNumber);
+      }
+
       details.subscription.notifyNotificationDataLost();
 
       return List.of();
@@ -1215,6 +1321,43 @@ public class PublishingManager {
     }
 
     return sequenceNumbers;
+  }
+
+  /**
+   * Queue an acknowledgement for every NotificationMessage the Server advertised as available for
+   * retransmission but which the client has decided not to recover, so the Server can delete them
+   * instead of holding them for a retransmission that will never be requested.
+   *
+   * @param details the {@link SubscriptionDetails} for the Subscription the messages belong to.
+   * @param availableSequenceNumbers the availableSequenceNumbers of the PublishResponse whose gap
+   *     is being given up on.
+   * @param receivedSequenceNumber the sequence number of the received NotificationMessage.
+   */
+  private static void acknowledgeAbandonedSequenceNumbers(
+      SubscriptionDetails details,
+      UInteger[] availableSequenceNumbers,
+      long receivedSequenceNumber) {
+
+    synchronized (details.availableAcknowledgements) {
+      for (UInteger sequenceNumber : availableSequenceNumbers) {
+        if (sequenceNumber == null) {
+          continue;
+        }
+
+        long value = sequenceNumber.longValue();
+
+        // A sequence number that is illegal, or that the Server has not sent yet, is not one the
+        // client is abandoning.
+        if (!SequenceNumbers.isLegal(value)
+            || SequenceNumbers.isAhead(value, receivedSequenceNumber)) {
+          continue;
+        }
+
+        if (!details.availableAcknowledgements.contains(sequenceNumber)) {
+          details.availableAcknowledgements.add(sequenceNumber);
+        }
+      }
+    }
   }
 
   /**
@@ -1270,6 +1413,29 @@ public class PublishingManager {
   private CompletableFuture<Unit> republishMissingNotificationMessages(
       SubscriptionDetails details, UInteger subscriptionId, List<UInteger> sequenceNumbers) {
 
+    // Bound to the Session in hand when the gap was found, exactly as the reconnect recovery is:
+    // a repair that outlives its Session must not have its remaining requests silently re-issued
+    // on the next one, which has a recovery of its own, and must never park waiting for a Session
+    // that does not exist yet — the processing queue stays paused until this repair completes,
+    // and a parked repair would hold the reconnect recovery, and with it every Subscription's
+    // Publish traffic, shut.
+    CompletableFuture<OpcUaSession> sessionFuture = client.getSessionAsync();
+
+    OpcUaSession session =
+        sessionFuture.isDone() && !sessionFuture.isCompletedExceptionally()
+            ? sessionFuture.getNow(null)
+            : null;
+
+    if (session == null) {
+      logger.warn(
+          "No Session in hand to repair the gap on; treating it as lost data, subscriptionId={}",
+          subscriptionId);
+
+      details.subscription.notifyNotificationDataLost();
+
+      return CompletableFuture.completedFuture(Unit.VALUE);
+    }
+
     var recovery = new Recovery();
 
     CompletableFuture<Unit> chain = CompletableFuture.completedFuture(Unit.VALUE);
@@ -1278,7 +1444,8 @@ public class PublishingManager {
       chain =
           chain.thenCompose(
               unit ->
-                  republishNotificationMessage(details, subscriptionId, sequenceNumber, recovery));
+                  republishNotificationMessage(
+                      session, details, subscriptionId, sequenceNumber, recovery));
     }
 
     return chain.whenComplete(
@@ -1293,6 +1460,7 @@ public class PublishingManager {
    * Request one NotificationMessage via Republish and, if it arrives, acknowledge it and hand it to
    * the delivery queue.
    *
+   * @param session the Session the repair is bound to.
    * @param details the {@link SubscriptionDetails} for the Subscription the message belongs to.
    * @param subscriptionId the Server-assigned identifier of that Subscription.
    * @param sequenceNumber the sequence number to request.
@@ -1301,6 +1469,7 @@ public class PublishingManager {
    *     been answered one way or the other.
    */
   private CompletableFuture<Unit> republishNotificationMessage(
+      UaSession session,
       SubscriptionDetails details,
       UInteger subscriptionId,
       UInteger sequenceNumber,
@@ -1310,8 +1479,7 @@ public class PublishingManager {
       return CompletableFuture.completedFuture(Unit.VALUE);
     }
 
-    return client
-        .republishAsync(subscriptionId, sequenceNumber)
+    return republish(session, subscriptionId, sequenceNumber)
         .handle(
             (republishResponse, ex) -> {
               if (ex != null) {
@@ -1378,6 +1546,15 @@ public class PublishingManager {
           details.subscriptionId,
           notificationMessage.getSequenceNumber());
 
+      ExtensionObject[] discardedData = notificationMessage.getNotificationData();
+
+      if (discardedData != null && discardedData.length > 0) {
+        // These notifications were received — and may already have been acknowledged, letting the
+        // Server delete its only retransmission copy — but can no longer be attributed: report
+        // them as lost data rather than discarding them without a trace.
+        details.subscription.notifyNotificationDataLost();
+      }
+
       return;
     }
 
@@ -1408,8 +1585,21 @@ public class PublishingManager {
           if (status.value() == StatusCodes.Bad_Timeout) {
             // The Subscription this message was received on no longer exists on the Server, so its
             // entry goes with it. Keyed on the entry's own id: the live object's current id belongs
-            // to whatever Subscription it represents now, which has not timed out.
-            unregister(details);
+            // to whatever Subscription it represents now, which has not timed out. The registered
+            // check at the top of this method is stale by now — application callbacks of arbitrary
+            // duration have run since — so the teardown happens only if this entry is still the
+            // registered one, and the reset only if the object still represents the Subscription
+            // the entry was registered for.
+            if (!unregister(details)) {
+              logger.debug(
+                  "Discarding Bad_Timeout StatusChangeNotification for a Subscription that no "
+                      + "longer exists, subscriptionId={}",
+                  details.subscriptionId);
+
+              continue;
+            }
+
+            details.subscription.resetIfIncarnation(details.incarnation);
           }
 
           details.subscription.notifyStatusChanged(status);
@@ -1480,6 +1670,12 @@ public class PublishingManager {
   private record DrainedAcknowledgements(
       SubscriptionDetails details, List<UInteger> sequenceNumbers) {}
 
+  /**
+   * A finished reconnect recovery: the {@link #sessionActivations} value it belonged to and the
+   * Session it ran on, or {@code null} once that Session has become inactive.
+   */
+  private record RecoveredActivation(long activation, @Nullable UaSession session) {}
+
   /** State shared by the steps of a single Republish recovery. */
   private static class Recovery {
 
@@ -1505,6 +1701,13 @@ public class PublishingManager {
      * registered under. Immutable, unlike {@link OpcUaSubscription#getSubscriptionId()}.
      */
     private final UInteger subscriptionId;
+
+    /**
+     * The incarnation of the {@link OpcUaSubscription} object at the moment this entry was
+     * registered, i.e. while it still represented the Subscription this entry represents. A reset
+     * changes it, so comparing it again later asks whether the object still does.
+     */
+    private final long incarnation;
 
     /**
      * {@code false} once this entry has been unregistered, i.e. once the Subscription it represents
@@ -1554,6 +1757,8 @@ public class PublishingManager {
 
       this.subscription = subscription;
       this.subscriptionId = subscriptionId;
+
+      incarnation = subscription.getIncarnation();
 
       processingQueue = new TaskQueue(executor);
     }

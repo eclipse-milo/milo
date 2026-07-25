@@ -98,10 +98,12 @@ import org.slf4j.LoggerFactory;
  * overtakes a transition already in flight wins: the transition's result is discarded when it
  * arrives rather than applied to a Subscription this object no longer represents.
  *
- * <p>None of this is serialized against the accessors or the parameter setters, which read and
- * write individual volatile fields and never block. MonitoredItem management is not serialized
- * either: it is concurrent with the lifecycle only in the sense that it reports {@code
- * Bad_InvalidState} when the Subscription is gone.
+ * <p>The accessors read individual volatile fields and are not serialized against any of this. The
+ * parameter setters take the lifecycle lock for their check-then-act on the pending modifications —
+ * a setter racing a {@link #reset()} must not re-mark a discarded Subscription unsynchronized — but
+ * the lock is never held across a service call, so they still never block on one. MonitoredItem
+ * management is not serialized either: it is concurrent with the lifecycle only in the sense that
+ * it reports {@code Bad_InvalidState} when the Subscription is gone.
  */
 public class OpcUaSubscription {
 
@@ -132,7 +134,9 @@ public class OpcUaSubscription {
    * <p>Nothing waits on this monitor either, for the same reason: a transition that has to wait for
    * the one ahead of it is queued in {@link #transitionWaiters} instead.
    *
-   * <p>The accessors and parameter setters do not take it and never block on it.
+   * <p>The accessors do not take it. The parameter setters take it only for their short
+   * check-then-act on {@link #modifications} and {@link #syncState}; nothing they do under it can
+   * block.
    */
   private final Object lifecycleLock = new Object();
 
@@ -696,7 +700,11 @@ public class OpcUaSubscription {
     }
 
     if (next != null) {
-      next.complete(Unit.VALUE);
+      // Completed asynchronously rather than on this stack: a queued transition that completes
+      // synchronously — nothing pending to send, or an immediate Bad_InvalidState — would re-enter
+      // this method inline, one frame per waiter, and enough waiters is a StackOverflowError that
+      // leaves the slot claimed forever.
+      next.completeAsync(() -> Unit.VALUE, client.getTransport().getConfig().getExecutor());
     }
   }
 
@@ -1636,25 +1644,27 @@ public class OpcUaSubscription {
    * @see #modifyAsync()
    */
   public void setPublishingInterval(Double publishingInterval) {
-    this.publishingInterval = publishingInterval;
+    synchronized (lifecycleLock) {
+      this.publishingInterval = publishingInterval;
 
-    if (syncState != SyncState.INITIAL) {
-      if (modifications == null) {
-        modifications = new Modifications();
+      if (syncState != SyncState.INITIAL) {
+        if (modifications == null) {
+          modifications = new Modifications();
+        }
+
+        modifications.publishingInterval = publishingInterval;
+
+        syncState = SyncState.UNSYNCHRONIZED;
       }
 
-      modifications.publishingInterval = publishingInterval;
+      if (lifetimeAndKeepAliveCalculated) {
+        UInteger maxKeepAliveCount =
+            calculateMaxKeepAliveCount(publishingInterval, DEFAULT_TARGET_KEEP_ALIVE_INTERVAL);
+        UInteger lifetimeCount = calculateLifetimeCount(maxKeepAliveCount);
 
-      syncState = SyncState.UNSYNCHRONIZED;
-    }
-
-    if (lifetimeAndKeepAliveCalculated) {
-      UInteger maxKeepAliveCount =
-          calculateMaxKeepAliveCount(publishingInterval, DEFAULT_TARGET_KEEP_ALIVE_INTERVAL);
-      UInteger lifetimeCount = calculateLifetimeCount(maxKeepAliveCount);
-
-      setMaxKeepAliveCount(maxKeepAliveCount);
-      setLifetimeCount(lifetimeCount);
+        setMaxKeepAliveCount(maxKeepAliveCount);
+        setLifetimeCount(lifetimeCount);
+      }
     }
   }
 
@@ -1674,16 +1684,18 @@ public class OpcUaSubscription {
    * @see #modifyAsync()
    */
   public void setLifetimeCount(UInteger lifetimeCount) {
-    this.lifetimeCount = lifetimeCount;
+    synchronized (lifecycleLock) {
+      this.lifetimeCount = lifetimeCount;
 
-    if (syncState != SyncState.INITIAL) {
-      if (modifications == null) {
-        modifications = new Modifications();
+      if (syncState != SyncState.INITIAL) {
+        if (modifications == null) {
+          modifications = new Modifications();
+        }
+
+        modifications.lifetimeCount = lifetimeCount;
+
+        syncState = SyncState.UNSYNCHRONIZED;
       }
-
-      modifications.lifetimeCount = lifetimeCount;
-
-      syncState = SyncState.UNSYNCHRONIZED;
     }
   }
 
@@ -1703,16 +1715,18 @@ public class OpcUaSubscription {
    * @see #modifyAsync()
    */
   public void setMaxKeepAliveCount(UInteger maxKeepAliveCount) {
-    this.maxKeepAliveCount = maxKeepAliveCount;
+    synchronized (lifecycleLock) {
+      this.maxKeepAliveCount = maxKeepAliveCount;
 
-    if (syncState != SyncState.INITIAL) {
-      if (modifications == null) {
-        modifications = new Modifications();
+      if (syncState != SyncState.INITIAL) {
+        if (modifications == null) {
+          modifications = new Modifications();
+        }
+
+        modifications.maxKeepAliveCount = maxKeepAliveCount;
+
+        syncState = SyncState.UNSYNCHRONIZED;
       }
-
-      modifications.maxKeepAliveCount = maxKeepAliveCount;
-
-      syncState = SyncState.UNSYNCHRONIZED;
     }
   }
 
@@ -1732,16 +1746,18 @@ public class OpcUaSubscription {
    * @see #modifyAsync()
    */
   public void setPriority(UByte priority) {
-    this.priority = priority;
+    synchronized (lifecycleLock) {
+      this.priority = priority;
 
-    if (syncState != SyncState.INITIAL) {
-      if (modifications == null) {
-        modifications = new Modifications();
+      if (syncState != SyncState.INITIAL) {
+        if (modifications == null) {
+          modifications = new Modifications();
+        }
+
+        modifications.priority = priority;
+
+        syncState = SyncState.UNSYNCHRONIZED;
       }
-
-      modifications.priority = priority;
-
-      syncState = SyncState.UNSYNCHRONIZED;
     }
   }
 
@@ -1761,16 +1777,18 @@ public class OpcUaSubscription {
    * @see #modifyAsync()
    */
   public void setMaxNotificationsPerPublish(UInteger maxNotificationsPerPublish) {
-    this.maxNotificationsPerPublish = maxNotificationsPerPublish;
+    synchronized (lifecycleLock) {
+      this.maxNotificationsPerPublish = maxNotificationsPerPublish;
 
-    if (syncState != SyncState.INITIAL) {
-      if (modifications == null) {
-        modifications = new Modifications();
+      if (syncState != SyncState.INITIAL) {
+        if (modifications == null) {
+          modifications = new Modifications();
+        }
+
+        modifications.maxNotificationsPerPublish = maxNotificationsPerPublish;
+
+        syncState = SyncState.UNSYNCHRONIZED;
       }
-
-      modifications.maxNotificationsPerPublish = maxNotificationsPerPublish;
-
-      syncState = SyncState.UNSYNCHRONIZED;
     }
   }
 
@@ -1933,6 +1951,40 @@ public class OpcUaSubscription {
         itemsToDelete.clear();
 
         syncState = SyncState.INITIAL;
+      }
+    }
+  }
+
+  /**
+   * Get the incarnation of this object, i.e. which Subscription it currently represents.
+   *
+   * <p>Captured by {@link PublishingManager} when it registers an entry for this object, and
+   * compared again by {@link #resetIfIncarnation(long)}: a change means this object has stopped
+   * representing the Subscription the caller knew it as.
+   *
+   * @return the current {@link #incarnation}.
+   */
+  long getIncarnation() {
+    synchronized (lifecycleLock) {
+      return incarnation;
+    }
+  }
+
+  /**
+   * {@link #reset()} this Subscription, but only if it still represents the incarnation the caller
+   * knew it as.
+   *
+   * <p>This is the teardown for a Bad_Timeout StatusChangeNotification, which is a statement about
+   * the Subscription the message was received on: applied unconditionally, a stale one — delivered
+   * behind application callbacks of arbitrary duration — would tear down a Subscription created
+   * after it was received.
+   *
+   * @param incarnation the {@link #incarnation} the caller is acting on behalf of.
+   */
+  void resetIfIncarnation(long incarnation) {
+    synchronized (lifecycleLock) {
+      if (this.incarnation == incarnation) {
+        reset();
       }
     }
   }
@@ -2101,12 +2153,12 @@ public class OpcUaSubscription {
    * Called from {@link PublishingManager} while already executing on {@link #deliveryQueue}, so the
    * listener is invoked inline to keep it ordered with the data and event callbacks and inside the
    * delivery task the backpressure mechanism waits on.
+   *
+   * <p>The teardown a Bad_Timeout implies is not done here: the caller applies it via {@link
+   * #resetIfIncarnation(long)}, guarded by the identity of the Subscription the notification was
+   * received on, which this object no longer knows.
    */
   void notifyStatusChanged(StatusCode status) {
-    if (status.getValue() == StatusCodes.Bad_Timeout) {
-      reset();
-    }
-
     SubscriptionListener listener = this.listener;
     if (listener != null) {
       deliverToListener("onStatusChanged", () -> listener.onStatusChanged(this, status));
@@ -2303,9 +2355,12 @@ public class OpcUaSubscription {
 
     @Override
     public void onSessionActive(UaSession session) {
-      reset();
+      // Deliberately not re-armed here: the PublishingManager holds Publish traffic shut until
+      // the Part 4 §6.7 Republish recovery for this activation has finished, so no
+      // PublishResponse — the only event that feeds this timer — can arrive yet. The timer is
+      // re-armed, via resetWatchdogTimer(), when publishing resumes.
       logger.debug(
-          "id={}, watchdog timer reset via onSessionActive()",
+          "id={}, watchdog timer awaiting reconnect recovery after onSessionActive()",
           getServerState().map(ServerState::getSubscriptionId).orElse(null));
     }
 
