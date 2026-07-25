@@ -25,6 +25,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
@@ -164,6 +165,21 @@ public class PublishingManager {
   private final AtomicLong sessionActivations = new AtomicLong(0L);
 
   /**
+   * Whether a Session has ever become inactive, and therefore whether an activation is a
+   * <i>re</i>-activation that the Part 4 §6.7 Republish drain has a reason to run for.
+   *
+   * <p>On the first activation the Session, and every Subscription registered against it, were
+   * created moments earlier on that same Session: the Server cannot be holding a
+   * NotificationMessage the client has not collected, so the drain can only spend a round trip per
+   * Subscription being told Bad_MessageNotAvailable. It is not merely wasteful — the drain holds
+   * the publish gate shut until it ends (see {@link #isPublishingAllowed(UaSession)}), so it also
+   * delays the first PublishRequest of every Subscription created before the {@code
+   * onSessionActive} callbacks run. That window is reachable: {@code connect()} returns when the
+   * Session future completes, which happens in a task submitted before the callback fan-out.
+   */
+  private final AtomicBoolean sessionEverInactive = new AtomicBoolean(false);
+
+  /**
    * The newest Session activation whose recovery has finished, one way or the other, and the
    * Session that recovery ran on.
    *
@@ -204,6 +220,10 @@ public class PublishingManager {
 
           @Override
           public void onSessionInactive(UaSession session) {
+            // From here on an activation is a re-activation, and the Server may be holding
+            // NotificationMessages generated while the Session was unusable.
+            sessionEverInactive.set(true);
+
             // The Session is gone, and the recovery that ran for it says nothing about the next
             // activation — which may hand back this very Session object, re-activated. Shut the
             // gate here rather than when the next activation is counted: the next Session future
@@ -435,6 +455,20 @@ public class PublishingManager {
     List<SubscriptionDetails> details = List.copyOf(subscriptionDetails.values());
 
     if (details.isEmpty()) {
+      return CompletableFuture.completedFuture(Unit.VALUE);
+    }
+
+    // A transfer names what the Server still holds, so a Subscription carrying that list has
+    // something to collect whatever else is true; see republishUntilUnavailable().
+    boolean transferred =
+        details.stream().anyMatch(d -> d.transferredSequenceNumbers.get() != null);
+
+    if (!sessionEverInactive.get() && !transferred) {
+      logger.debug(
+          "First Session activation, so nothing predates it: skipping recovery of {}"
+              + " Subscription(s)",
+          details.size());
+
       return CompletableFuture.completedFuture(Unit.VALUE);
     }
 
