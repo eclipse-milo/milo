@@ -1095,157 +1095,165 @@ public class SessionFsmFactory {
   private static CompletableFuture<Unit> closeSession(
       FsmContext<State, Event> ctx, OpcUaClient client, OpcUaSession session) {
 
-    CompletableFuture<Unit> closeFuture = new CompletableFuture<>();
+    try {
+      CompletableFuture<Unit> closeFuture = new CompletableFuture<>();
 
-    RequestHeader requestHeader =
-        client.newRequestHeader(session.getAuthenticationToken(), uint(5000));
+      RequestHeader requestHeader =
+          client.newRequestHeader(session.getAuthenticationToken(), uint(5000));
 
-    CloseSessionRequest request = new CloseSessionRequest(requestHeader, true);
+      CloseSessionRequest request = new CloseSessionRequest(requestHeader, true);
 
-    try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
-        MDCCloseable ignoredSessionId = putSessionId(session)) {
+      try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+          MDCCloseable ignoredSessionId = putSessionId(session)) {
 
-      LOGGER.debug("Sending CloseSessionRequest...");
+        LOGGER.debug("Sending CloseSessionRequest...");
+      }
+
+      client
+          .getTransport()
+          .sendRequestMessage(request)
+          .whenCompleteAsync(
+              (csr, ex2) -> closeFuture.complete(Unit.VALUE),
+              client.getTransport().getConfig().getExecutor());
+
+      return closeFuture;
+    } catch (Exception ex) {
+      return failedFuture(ex);
     }
-
-    client
-        .getTransport()
-        .sendRequestMessage(request)
-        .whenCompleteAsync(
-            (csr, ex2) -> closeFuture.complete(Unit.VALUE),
-            client.getTransport().getConfig().getExecutor());
-
-    return closeFuture;
   }
 
   @SuppressWarnings("Duplicates")
   private static CompletableFuture<CreateSessionResponse> createSession(
       FsmContext<State, Event> ctx, OpcUaClient client) {
 
-    EndpointDescription endpoint = client.getConfig().getEndpoint();
+    try {
+      EndpointDescription endpoint = client.getConfig().getEndpoint();
 
-    String gatewayServerUri = endpoint.getServer().getGatewayServerUri();
+      String gatewayServerUri = endpoint.getServer().getGatewayServerUri();
 
-    String serverUri;
-    if (gatewayServerUri != null && !gatewayServerUri.isEmpty()) {
-      serverUri = endpoint.getServer().getApplicationUri();
-    } else {
-      serverUri = null;
-    }
+      String serverUri;
+      if (gatewayServerUri != null && !gatewayServerUri.isEmpty()) {
+        serverUri = endpoint.getServer().getApplicationUri();
+      } else {
+        serverUri = null;
+      }
 
-    ByteString clientNonce = NonceUtil.generateNonce(32);
+      ByteString clientNonce = NonceUtil.generateNonce(32);
 
-    ByteString clientCertificate =
-        client
-            .getConfig()
-            .getCertificate()
-            .map(
-                c -> {
-                  try {
-                    return ByteString.of(c.getEncoded());
-                  } catch (CertificateEncodingException e) {
-                    return ByteString.NULL_VALUE;
+      ByteString clientCertificate =
+          client
+              .getConfig()
+              .getCertificate()
+              .map(
+                  c -> {
+                    try {
+                      return ByteString.of(c.getEncoded());
+                    } catch (CertificateEncodingException e) {
+                      return ByteString.NULL_VALUE;
+                    }
+                  })
+              .orElse(ByteString.NULL_VALUE);
+
+      ApplicationDescription clientDescription =
+          new ApplicationDescription(
+              client.getConfig().getApplicationUri(),
+              client.getConfig().getProductUri(),
+              client.getConfig().getApplicationName(),
+              ApplicationType.Client,
+              null,
+              null,
+              null);
+
+      CreateSessionRequest request =
+          new CreateSessionRequest(
+              client.newRequestHeader(),
+              clientDescription,
+              serverUri,
+              client.getConfig().getEndpoint().getEndpointUrl(),
+              client.getConfig().getSessionName().get(),
+              clientNonce,
+              clientCertificate,
+              client.getConfig().getSessionTimeout().doubleValue(),
+              client.getConfig().getMaxResponseMessageSize());
+
+      try (MDCCloseable ignored = putInstanceId(ctx)) {
+
+        LOGGER.debug("Sending CreateSessionRequest...");
+      }
+
+      return client
+          .getTransport()
+          .sendRequestMessage(request)
+          .thenApply(CreateSessionResponse.class::cast)
+          .thenCompose(
+              response -> {
+                try {
+                  SecurityPolicy securityPolicy =
+                      SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
+
+                  if (securityPolicy != SecurityPolicy.None) {
+                    if (response.getServerCertificate().isNullOrEmpty()) {
+                      throw new UaException(
+                          StatusCodes.Bad_SecurityChecksFailed,
+                          "Certificate missing from CreateSessionResponse");
+                    }
+
+                    List<X509Certificate> serverCertificateChain =
+                        CertificateUtil.decodeCertificates(
+                            response.getServerCertificate().bytesOrEmpty());
+
+                    X509Certificate serverCertificate = serverCertificateChain.get(0);
+
+                    X509Certificate certificateFromEndpoint =
+                        CertificateUtil.decodeCertificate(
+                            endpoint.getServerCertificate().bytesOrEmpty());
+
+                    if (!serverCertificate.equals(certificateFromEndpoint)) {
+                      throw new UaException(
+                          StatusCodes.Bad_SecurityChecksFailed,
+                          "Certificate from CreateSessionResponse did not "
+                              + "match certificate from EndpointDescription!");
+                    }
+
+                    client
+                        .getConfig()
+                        .getCertificateValidator()
+                        .validateCertificateChain(
+                            serverCertificateChain,
+                            endpoint.getServer().getApplicationUri(),
+                            new String[] {EndpointUtil.getHost(endpoint.getEndpointUrl())});
+
+                    SignatureData serverSignature = response.getServerSignature();
+
+                    byte[] dataBytes =
+                        Bytes.concat(clientCertificate.bytesOrEmpty(), clientNonce.bytesOrEmpty());
+
+                    byte[] signatureBytes = serverSignature.getSignature().bytesOrEmpty();
+
+                    SignatureUtil.verify(
+                        SecurityAlgorithm.fromUri(serverSignature.getAlgorithm()),
+                        serverCertificate,
+                        dataBytes,
+                        signatureBytes);
                   }
-                })
-            .orElse(ByteString.NULL_VALUE);
 
-    ApplicationDescription clientDescription =
-        new ApplicationDescription(
-            client.getConfig().getApplicationUri(),
-            client.getConfig().getProductUri(),
-            client.getConfig().getApplicationName(),
-            ApplicationType.Client,
-            null,
-            null,
-            null);
-
-    CreateSessionRequest request =
-        new CreateSessionRequest(
-            client.newRequestHeader(),
-            clientDescription,
-            serverUri,
-            client.getConfig().getEndpoint().getEndpointUrl(),
-            client.getConfig().getSessionName().get(),
-            clientNonce,
-            clientCertificate,
-            client.getConfig().getSessionTimeout().doubleValue(),
-            client.getConfig().getMaxResponseMessageSize());
-
-    try (MDCCloseable ignored = putInstanceId(ctx)) {
-
-      LOGGER.debug("Sending CreateSessionRequest...");
-    }
-
-    return client
-        .getTransport()
-        .sendRequestMessage(request)
-        .thenApply(CreateSessionResponse.class::cast)
-        .thenCompose(
-            response -> {
-              try {
-                SecurityPolicy securityPolicy =
-                    SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
-
-                if (securityPolicy != SecurityPolicy.None) {
-                  if (response.getServerCertificate().isNullOrEmpty()) {
-                    throw new UaException(
-                        StatusCodes.Bad_SecurityChecksFailed,
-                        "Certificate missing from CreateSessionResponse");
+                  if (client.getConfig().isSessionEndpointValidationEnabled()) {
+                    validateSessionEndpoints(
+                        endpoint.getTransportProfileUri(),
+                        client.getConfig().getDiscoveryEndpoints(),
+                        List.of(
+                            Objects.requireNonNullElse(
+                                response.getServerEndpoints(), new EndpointDescription[0])));
                   }
 
-                  List<X509Certificate> serverCertificateChain =
-                      CertificateUtil.decodeCertificates(
-                          response.getServerCertificate().bytesOrEmpty());
-
-                  X509Certificate serverCertificate = serverCertificateChain.get(0);
-
-                  X509Certificate certificateFromEndpoint =
-                      CertificateUtil.decodeCertificate(
-                          endpoint.getServerCertificate().bytesOrEmpty());
-
-                  if (!serverCertificate.equals(certificateFromEndpoint)) {
-                    throw new UaException(
-                        StatusCodes.Bad_SecurityChecksFailed,
-                        "Certificate from CreateSessionResponse did not "
-                            + "match certificate from EndpointDescription!");
-                  }
-
-                  client
-                      .getConfig()
-                      .getCertificateValidator()
-                      .validateCertificateChain(
-                          serverCertificateChain,
-                          endpoint.getServer().getApplicationUri(),
-                          new String[] {EndpointUtil.getHost(endpoint.getEndpointUrl())});
-
-                  SignatureData serverSignature = response.getServerSignature();
-
-                  byte[] dataBytes =
-                      Bytes.concat(clientCertificate.bytesOrEmpty(), clientNonce.bytesOrEmpty());
-
-                  byte[] signatureBytes = serverSignature.getSignature().bytesOrEmpty();
-
-                  SignatureUtil.verify(
-                      SecurityAlgorithm.fromUri(serverSignature.getAlgorithm()),
-                      serverCertificate,
-                      dataBytes,
-                      signatureBytes);
+                  return completedFuture(response);
+                } catch (UaException e) {
+                  return failedFuture(e);
                 }
-
-                if (client.getConfig().isSessionEndpointValidationEnabled()) {
-                  validateSessionEndpoints(
-                      endpoint.getTransportProfileUri(),
-                      client.getConfig().getDiscoveryEndpoints(),
-                      List.of(
-                          Objects.requireNonNullElse(
-                              response.getServerEndpoints(), new EndpointDescription[0])));
-                }
-
-                return completedFuture(response);
-              } catch (UaException e) {
-                return failedFuture(e);
-              }
-            });
+              });
+    } catch (Exception ex) {
+      return failedFuture(ex);
+    }
   }
 
   /**
@@ -1594,6 +1602,15 @@ public class SessionFsmFactory {
                   transferFuture.completeExceptionally(ex);
                 }
               }
+            })
+        // The whenComplete above has its own result future discarded, so a response its handling
+        // can't make sense of - e.g. a Good response carrying no results at all - would otherwise
+        // leave transferFuture uncompleted and the FSM parked in Transferring with no event
+        // pending and no timeout. A no-op when the callback completed transferFuture itself.
+        .exceptionally(
+            ex -> {
+              transferFuture.completeExceptionally(ex);
+              return null;
             });
 
     return transferFuture;
