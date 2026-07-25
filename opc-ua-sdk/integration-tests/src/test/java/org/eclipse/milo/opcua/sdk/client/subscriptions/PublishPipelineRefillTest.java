@@ -16,7 +16,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfigBuilder;
 import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.test.ScriptableSubscriptionServiceSet;
@@ -40,6 +42,12 @@ public class PublishPipelineRefillTest {
 
   /** One Subscription targets min(1 + 1, UInteger.MAX_VALUE) = 2 outstanding Publish requests. */
   private static final int PIPELINE_TARGET = 2;
+
+  /**
+   * The target of a client configured for a single pending PublishRequest: min(1 + 1, 1) = 1, so
+   * exactly one Publish request is ever outstanding.
+   */
+  private static final int SINGLE_REQUEST_PIPELINE_TARGET = 1;
 
   private static final long PIPELINE_FILL_TIMEOUT_MILLIS = 10_000;
 
@@ -228,6 +236,75 @@ public class PublishPipelineRefillTest {
     }
   }
 
+  /**
+   * The other half of Part 4 §5.14.5.1: a Client "shall not issue another Publish request before
+   * one of its outstanding Publish requests is returned". The refused request is <i>itself</i> one
+   * being returned, so when it was the only one outstanding that condition is met the moment the
+   * fault has been accounted for — and nothing else is left in flight whose return could ever meet
+   * it again.
+   *
+   * <p>"Exactly one outstanding" is reached by configuring maxPendingPublishRequests = 1: the
+   * client targets min(subscriptionCount + 1, maxPendingPublishRequests), which with one
+   * Subscription is min(2, 1) = 1. The ceiling the fault installs is max(1, outstanding) = 1, i.e.
+   * the target the client already had, so a pipeline that stays empty here cannot be blamed on the
+   * clamp.
+   *
+   * <p>This does not contradict {@link TooManyPublishRequests}: there two requests are outstanding,
+   * the fault returns one of them, one is still in flight, and the deficit is filled by exactly one
+   * replacement when that one comes back. The rule is one replacement per returned request, and the
+   * refused request is a returned request.
+   */
+  @Nested
+  class TooManyPublishRequestsReturningTheOnlyOutstandingRequest {
+
+    /**
+     * Control: the identical one-deep pipeline faulted with a status code the failure handler
+     * refills for unconditionally. It proves the fixture can observe a one-deep pipeline being
+     * refilled at all, so the test below fails because of what Bad_TooManyPublishRequests does and
+     * not because a refill is unobservable here.
+     */
+    @Test
+    void publishRequestsResumeWhenTheOnlyOutstandingRequestFailsWithAnotherStatusCode()
+        throws Exception {
+
+      try (Fixture fixture = Fixture.withSinglePendingPublishRequest()) {
+        fixture.createSubscription();
+        assertTrue(fixture.awaitFullPipeline(), "the Publish pipeline never filled");
+
+        int before = fixture.scriptable.getPublishRequestCount();
+
+        fixture.scriptable.enqueueServiceFault(StatusCodes.Bad_InternalError);
+
+        assertTrue(
+            awaitTrue(
+                () -> fixture.scriptable.getPublishRequestCount() > before, REFILL_TIMEOUT_MILLIS),
+            "the only outstanding Publish request failed and was not replaced");
+      }
+    }
+
+    @Test
+    void publishRequestsResumeWhenBadTooManyPublishRequestsReturnsTheLastOne() throws Exception {
+
+      try (Fixture fixture = Fixture.withSinglePendingPublishRequest()) {
+        fixture.createSubscription();
+        assertTrue(fixture.awaitFullPipeline(), "the Publish pipeline never filled");
+
+        int before = fixture.scriptable.getPublishRequestCount();
+
+        fixture.scriptable.enqueueServiceFault(StatusCodes.Bad_TooManyPublishRequests);
+
+        assertTrue(
+            awaitTrue(
+                () -> fixture.scriptable.getPublishRequestCount() > before, REFILL_TIMEOUT_MILLIS),
+            "the Publish pipeline was left empty: the request the Server refused was the only one"
+                + " outstanding, so returning it met Part 4 §5.14.5.1's condition for issuing"
+                + " another, and no other request is left in flight whose return could restart the"
+                + " pipeline. Publish traffic is halted until something unrelated — a Subscription"
+                + " added, a Session activated — happens to restart it");
+      }
+    }
+  }
+
   private static boolean awaitTrue(BooleanSupplierThrowing condition, long timeoutMillis)
       throws Exception {
 
@@ -257,7 +334,28 @@ public class PublishPipelineRefillTest {
     private final OpcUaClient client;
     private final ScriptableSubscriptionServiceSet scriptable;
 
+    /** The number of Publish requests this fixture's client keeps outstanding. */
+    private final int pipelineTarget;
+
     Fixture() throws Exception {
+      this(PIPELINE_TARGET, cfg -> {});
+    }
+
+    /**
+     * A fixture whose client keeps a single PublishRequest outstanding, so a fault that answers it
+     * leaves nothing in flight.
+     */
+    static Fixture withSinglePendingPublishRequest() throws Exception {
+      return new Fixture(
+          SINGLE_REQUEST_PIPELINE_TARGET,
+          cfg -> cfg.setMaxPendingPublishRequests(uint(SINGLE_REQUEST_PIPELINE_TARGET)));
+    }
+
+    private Fixture(int pipelineTarget, Consumer<OpcUaClientConfigBuilder> configCustomizer)
+        throws Exception {
+
+      this.pipelineTarget = pipelineTarget;
+
       TestServer testServer = TestServer.create();
       server = testServer.getServer();
 
@@ -269,7 +367,13 @@ public class PublishPipelineRefillTest {
       server.startup().get();
 
       // Long request timeout so parked Publish requests do not time out during the test.
-      client = TestClient.create(server, cfg -> cfg.setRequestTimeout(uint(60_000)));
+      client =
+          TestClient.create(
+              server,
+              cfg -> {
+                cfg.setRequestTimeout(uint(60_000));
+                configCustomizer.accept(cfg);
+              });
       client.connect();
     }
 
@@ -280,14 +384,13 @@ public class PublishPipelineRefillTest {
     }
 
     /**
-     * Wait until the client has {@value #PIPELINE_TARGET} Publish requests outstanding, all of them
-     * parked by the harness. The Server therefore holds them exactly as a Server holding queued
-     * Publish requests for a Session would.
+     * Wait until the client has its whole pipeline outstanding, all of it parked by the harness.
+     * The Server therefore holds the requests exactly as a Server holding queued Publish requests
+     * for a Session would.
      */
     boolean awaitFullPipeline() throws Exception {
       return awaitTrue(
-          () -> scriptable.getParkedRequestCount() >= PIPELINE_TARGET,
-          PIPELINE_FILL_TIMEOUT_MILLIS);
+          () -> scriptable.getParkedRequestCount() >= pipelineTarget, PIPELINE_FILL_TIMEOUT_MILLIS);
     }
 
     @Override
