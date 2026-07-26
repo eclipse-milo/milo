@@ -292,6 +292,67 @@ public class SessionFsmTest {
   }
 
   /**
+   * Verify that the SessionFsm stops trying to reactivate once the transport has been deliberately
+   * disconnected, instead of retrying against a connection that can never come back.
+   *
+   * <p>An explicit Disconnect takes the ChannelFsm Connected to Disconnecting to NotConnected, and
+   * NotConnected has no outbound edge other than Connect: it never reconnects on its own, and
+   * getChannel() fails immediately with a plain "not connected". Every reactivation attempt
+   * therefore fails with an exception that carries no StatusCode, which Reactivating routes
+   * straight back to ReactivatingWait, so the FSM cycles between the two at the 16s backoff cap for
+   * as long as the client lives.
+   *
+   * <p>Not treating the deliberate disconnect as a lost connection is not sufficient on its own:
+   * the keep-alive is sent over the same dead channel and reaches the identical cycle one interval
+   * later.
+   */
+  @Test
+  public void testDeliberateTransportDisconnectDoesNotReactivateForever() throws Exception {
+    OpcUaServer server = TestServer.create().getServer();
+    server.startup().get();
+
+    // Short keep-alive interval so the keep-alive path, which reaches the same retry cycle as the
+    // ChannelFsm transition listener does, has had several chances to run inside the observation
+    // window below.
+    OpcUaClient client = TestClient.create(server, cfg -> cfg.setKeepAliveInterval(uint(1000)));
+
+    try {
+      client.connect();
+
+      SessionFsm sessionFsm = client.getSessionFsm();
+      ChannelFsm channelFsm = ((OpcTcpClientTransport) client.getTransport()).getChannelFsm();
+
+      channelFsm.disconnect().get(10, TimeUnit.SECONDS);
+
+      assertEquals(
+          com.digitalpetri.netty.fsm.State.NotConnected,
+          channelFsm.getState(),
+          "ChannelFsm did not end up NotConnected");
+
+      // Bounded negative observation: the reactivation backoff starts at 1s and doubles, so this
+      // window covers several attempts, and nothing that could happen after it can end the cycle -
+      // no event reconnects the ChannelFsm, and a reactivation failure over a dead channel never
+      // escalates.
+      long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(15);
+      State state = sessionFsm.getState();
+      while (System.nanoTime() < deadline) {
+        //noinspection BusyWait
+        Thread.sleep(100);
+        state = sessionFsm.getState();
+      }
+
+      assertFalse(
+          state == State.ReactivatingWait || state == State.Reactivating,
+          "SessionFsm is still retrying reactivation (state="
+              + state
+              + ") over a transport that will never reconnect");
+    } finally {
+      client.disconnect();
+      server.shutdown().get();
+    }
+  }
+
+  /**
    * Verify that a Session is not left to expire because the configured keep-alive interval is
    * longer than the session timeout the Server revised the request down to.
    *

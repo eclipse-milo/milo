@@ -1063,6 +1063,35 @@ public class SessionFsmFactory {
                   .orElse(false);
             });
 
+    // Neither retrying the reactivation nor creating a new Session can succeed while the transport
+    // is disconnected for good, and both routes retry indefinitely, so this has to be evaluated
+    // before the escalation to CreatingWait below.
+    Predicate<Event> isReactivateSessionFailureTerminal =
+        isReactivateSessionFailure.and(e -> isTransportDisconnectedForGood(client));
+
+    fb.when(State.Reactivating)
+        .on(isReactivateSessionFailureTerminal)
+        .transitionTo(State.Inactive)
+        .executeFirst(
+            ctx -> {
+              KEY_WAIT_TIME.remove(ctx);
+
+              Event.ReactivateSessionFailure e = (Event.ReactivateSessionFailure) ctx.event();
+
+              OpcUaSession session = KEY_SESSION.remove(ctx);
+
+              try (MDCCloseable ignoredInstanceId = putInstanceId(ctx)) {
+                LOGGER.warn(
+                    "Transport is disconnected and will not reconnect on its own; abandoning"
+                        + " Session {}.",
+                    session != null ? session.getSessionId() : null);
+              }
+
+              // The Session can't be closed on the Server without a channel to send the request
+              // over; it is left to expire when the Session timeout elapses (Part 4 §5.6.2).
+              handleFailureToOpenSession(client, ctx, e.failure);
+            });
+
     fb.when(State.Reactivating)
         .on(isReactivateSessionFailureFatal)
         .transitionTo(State.CreatingWait)
@@ -1144,6 +1173,29 @@ public class SessionFsmFactory {
     fb.onInternalTransition(State.Reactivating)
         .via(Event.CloseSession.class)
         .execute(ctx -> ctx.shelveEvent(ctx.event()));
+  }
+
+  /**
+   * Check whether the transport is disconnected in a way that nothing will undo on its own.
+   *
+   * <p>The ChannelFsm is configured persistent, so a channel that drops unexpectedly is reconnected
+   * without any help from the Session. {@code NotConnected} is the exception: it is reached only
+   * when the application deliberately disconnects the transport, its only outbound edge is an
+   * explicit Connect, and every request attempted from it fails immediately. A Session has nothing
+   * left to reactivate over until the application connects again.
+   *
+   * @param client the {@link OpcUaClient} the Session belongs to.
+   * @return {@code true} if the transport is disconnected and will not reconnect on its own.
+   */
+  private static boolean isTransportDisconnectedForGood(OpcUaClient client) {
+    OpcClientTransport transport = client.getTransport();
+
+    if (transport instanceof OpcTcpClientTransport tcpClientTransport) {
+      return tcpClientTransport.getChannelFsm().getState()
+          == com.digitalpetri.netty.fsm.State.NotConnected;
+    } else {
+      return false;
+    }
   }
 
   private static void handleGetSessionEvent(ActionContext<State, Event> ctx) {
