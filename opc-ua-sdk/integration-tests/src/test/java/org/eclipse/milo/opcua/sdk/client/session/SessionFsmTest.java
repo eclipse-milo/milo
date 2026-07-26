@@ -10,21 +10,26 @@
 
 package org.eclipse.milo.opcua.sdk.client.session;
 
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.digitalpetri.netty.fsm.ChannelFsm;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfig;
 import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
+import org.eclipse.milo.opcua.sdk.client.SessionActivityListener;
+import org.eclipse.milo.opcua.sdk.client.UaSession;
 import org.eclipse.milo.opcua.sdk.client.identity.X509IdentityProvider;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
@@ -39,6 +44,8 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
+import org.eclipse.milo.opcua.stack.core.util.Unit;
+import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransport;
 import org.junit.jupiter.api.Test;
 
 public class SessionFsmTest {
@@ -194,6 +201,88 @@ public class SessionFsmTest {
           "Session "
               + firstSessionId
               + " was left open on the Server after ActivateSession failed");
+    } finally {
+      client.disconnect();
+      server.shutdown().get();
+    }
+  }
+
+  /**
+   * Verify that a SecureChannel lost while the SessionInitializers are running does not leave the
+   * FSM sitting in Active with a Session bound to a dead channel.
+   *
+   * <p>The ChannelFsm.TransitionListener that turns a channel drop into Event.ConnectionLost is
+   * only registered by the Initializing to Active transition action, and it reacts solely to the
+   * edge leaving Connected. netty-channel-fsm notifies listeners synchronously, from a
+   * TransitionAction, over the snapshot of its listener list taken while the event is evaluated, so
+   * a Connected to ReconnectWait edge evaluated before the listener is registered is lost
+   * permanently: the rest of the reconnect cycle (ReconnectWait to Reconnecting to Connected) has
+   * no edge leaving Connected. Initializer failures are swallowed, so InitializeSuccess fires and
+   * the FSM enters Active regardless.
+   *
+   * <p>Each reconnect establishes a brand new SecureChannel, so the Session the FSM is holding is
+   * no longer usable; the Server answers it with Bad_SecureChannelIdInvalid (Part 4 5.6.3).
+   */
+  @Test
+  public void testConnectionLostDuringInitializationIsNotMissed() throws Exception {
+    OpcUaServer server = TestServer.create().getServer();
+    server.startup().get();
+
+    // A keep-alive interval well beyond this test's own bounds: the keep-alive is the fallback that
+    // eventually notices the dead channel, and it would mask the transition being pinned here.
+    OpcUaClient client = TestClient.create(server, cfg -> cfg.setKeepAliveInterval(uint(60_000)));
+
+    var sessionInactive = new CountDownLatch(1);
+
+    client.addSessionActivityListener(
+        new SessionActivityListener() {
+          @Override
+          public void onSessionInactive(UaSession session) {
+            sessionInactive.countDown();
+          }
+        });
+
+    // Added last, so it runs after the built-in initializers: closes the channel and does not
+    // complete until the ChannelFsm has evaluated the Connected -> ReconnectWait edge and notified
+    // its listeners. That orders the drop strictly before the SDK registers its own listener,
+    // rather than relying on the race being won.
+    client.addSessionInitializer(
+        (c, session) -> {
+          ChannelFsm channelFsm = ((OpcTcpClientTransport) c.getTransport()).getChannelFsm();
+
+          var leftConnected = new CompletableFuture<Unit>();
+
+          channelFsm.addTransitionListener(
+              (from, to, via) -> {
+                if (from == com.digitalpetri.netty.fsm.State.Connected
+                    && to != com.digitalpetri.netty.fsm.State.Connected) {
+
+                  leftConnected.complete(Unit.VALUE);
+                }
+              });
+
+          channelFsm
+              .getChannel()
+              .whenComplete(
+                  (channel, ex) -> {
+                    if (channel != null) {
+                      channel.close();
+                    } else {
+                      leftConnected.completeExceptionally(ex);
+                    }
+                  });
+
+          // Hand the continuation to another thread so the rest of the establishment sequence does
+          // not run inline on the ChannelFsm's evaluation thread.
+          return leftConnected.thenApplyAsync(u -> u);
+        });
+
+    try {
+      client.connectAsync().get(30, TimeUnit.SECONDS);
+
+      assertTrue(
+          sessionInactive.await(10, TimeUnit.SECONDS),
+          "SessionFsm remained Active after the channel was lost during Session initialization");
     } finally {
       client.disconnect();
       server.shutdown().get();

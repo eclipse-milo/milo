@@ -670,6 +670,17 @@ public class SessionFsmFactory {
 
                 channelFsm.addTransitionListener(listener);
                 KEY_CHANNEL_FSM_TRANSITION_LISTENER.set(ctx, listener);
+
+                // ChannelFsm notifies its listeners synchronously while evaluating a transition,
+                // so a connection loss that occurred while the Session was being created,
+                // activated, or initialized was dispatched before the listener above existed and
+                // will never be delivered to it: the reconnect cycle leaves and re-enters
+                // Connected without another transition originating from Connected. Synthesize the
+                // missed event rather than leaving the Session bound to a secure channel that no
+                // longer exists.
+                if (channelFsm.getState() != com.digitalpetri.netty.fsm.State.Connected) {
+                  ctx.fireEvent(new Event.ConnectionLost());
+                }
               }
 
               client
