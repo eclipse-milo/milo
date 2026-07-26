@@ -16,6 +16,7 @@ import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_CHANNEL_F
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_CLOSE_FUTURE;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_KEEP_ALIVE_FAILURE_COUNT;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_KEEP_ALIVE_SCHEDULED_FUTURE;
+import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_PENDING_SESSION;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SESSION;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SESSION_ACTIVITY_LISTENERS;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SESSION_FUTURE;
@@ -384,6 +385,10 @@ public class SessionFsmFactory {
             ctx -> {
               Event.CreateSessionSuccess event = (Event.CreateSessionSuccess) ctx.event();
 
+              // The Session now exists on the Server; remember it so it can be closed if the
+              // remainder of the establishment sequence fails.
+              KEY_PENDING_SESSION.set(ctx, event.response);
+
               activateSession(ctx, client, event.response)
                   .whenComplete(
                       (session, ex) -> {
@@ -626,6 +631,9 @@ public class SessionFsmFactory {
               KEY_KEEP_ALIVE_SCHEDULED_FUTURE.set(ctx, scheduledFuture);
 
               KEY_SESSION.set(ctx, event.session);
+
+              // The Session is established; it's reachable via KEY_SESSION from here on.
+              KEY_PENDING_SESSION.remove(ctx);
 
               SessionFuture sessionFuture = KEY_SESSION_FUTURE.get(ctx);
 
@@ -989,6 +997,16 @@ public class SessionFsmFactory {
               Event.ReactivateSessionFailure e = (Event.ReactivateSessionFailure) ctx.event();
 
               handleFailureToOpenSession(client, ctx, e.failure);
+
+              // Reactivation is being abandoned in favor of creating a new Session. The old one may
+              // still exist on the Server (the fault might have been e.g.
+              // Bad_IdentityTokenRejected rather than Bad_SessionIdInvalid), so close it
+              // best-effort; a fault in response to this is expected and ignored.
+              OpcUaSession session = KEY_SESSION.remove(ctx);
+
+              if (session != null) {
+                closeSession(ctx, client, session);
+              }
             });
 
     // If reactivating fails for any other reason, move back to ReactivatingWait and keep trying to
@@ -1090,21 +1108,36 @@ public class SessionFsmFactory {
           .getExecutor()
           .execute(() -> sessionFuture.future.completeExceptionally(failure));
     }
+
+    // If CreateSession already succeeded the Session exists on the Server, and a new one is about
+    // to be created in its place. Close it best-effort so the Server isn't left holding an orphan
+    // until the Session timeout expires; failure to close changes nothing about the outcome here.
+    CreateSessionResponse pendingSession = KEY_PENDING_SESSION.remove(ctx);
+
+    if (pendingSession != null) {
+      closeSession(
+          ctx, client, pendingSession.getSessionId(), pendingSession.getAuthenticationToken());
+    }
   }
 
   private static CompletableFuture<Unit> closeSession(
       FsmContext<State, Event> ctx, OpcUaClient client, OpcUaSession session) {
 
+    return closeSession(ctx, client, session.getSessionId(), session.getAuthenticationToken());
+  }
+
+  private static CompletableFuture<Unit> closeSession(
+      FsmContext<State, Event> ctx, OpcUaClient client, NodeId sessionId, NodeId authToken) {
+
     try {
       CompletableFuture<Unit> closeFuture = new CompletableFuture<>();
 
-      RequestHeader requestHeader =
-          client.newRequestHeader(session.getAuthenticationToken(), uint(5000));
+      RequestHeader requestHeader = client.newRequestHeader(authToken, uint(5000));
 
       CloseSessionRequest request = new CloseSessionRequest(requestHeader, true);
 
       try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
-          MDCCloseable ignoredSessionId = putSessionId(session)) {
+          MDCCloseable ignoredSessionId = putSessionId(sessionId)) {
 
         LOGGER.debug("Sending CloseSessionRequest...");
       }

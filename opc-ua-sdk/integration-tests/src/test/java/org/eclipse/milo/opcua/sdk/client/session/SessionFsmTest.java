@@ -12,21 +12,33 @@ package org.eclipse.milo.opcua.sdk.client.session;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.security.KeyPair;
+import java.security.cert.X509Certificate;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfig;
 import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
+import org.eclipse.milo.opcua.sdk.client.identity.X509IdentityProvider;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
+import org.eclipse.milo.opcua.sdk.server.Session;
+import org.eclipse.milo.opcua.sdk.server.SessionListener;
 import org.eclipse.milo.opcua.sdk.test.TestClient;
 import org.eclipse.milo.opcua.sdk.test.TestServer;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
+import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
 import org.junit.jupiter.api.Test;
 
 public class SessionFsmTest {
@@ -108,5 +120,83 @@ public class SessionFsmTest {
     sessionFsm.closeSession();
 
     assertThrows(ExecutionException.class, () -> sessionFuture.get(5, TimeUnit.SECONDS));
+  }
+
+  /**
+   * Verify that a Session which CreateSession already established on the Server is closed when the
+   * rest of the establishment sequence fails.
+   *
+   * <p>ActivateSession failing moves the FSM from Activating to CreatingWait, where it retries on a
+   * backoff. Each retry establishes another Server-side Session, so unless the abandoned one is
+   * closed the Server accumulates orphans that survive until their Session timeout expires (120s
+   * with the default configuration).
+   */
+  @Test
+  public void testSessionClosedWhenActivateSessionFails() throws Exception {
+    OpcUaServer server = TestServer.create().getServer();
+    server.startup().get();
+
+    var sessionsCreated = new LinkedBlockingQueue<NodeId>();
+    Set<NodeId> sessionsClosed = ConcurrentHashMap.newKeySet();
+
+    server
+        .getSessionManager()
+        .addSessionListener(
+            new SessionListener() {
+              @Override
+              public void onSessionCreated(Session session) {
+                sessionsCreated.add(session.getSessionId());
+              }
+
+              @Override
+              public void onSessionClosed(Session session) {
+                sessionsClosed.add(session.getSessionId());
+              }
+            });
+
+    // An identity certificate the Server does not trust, so ActivateSession is rejected after
+    // CreateSession has already succeeded.
+    KeyPair untrustedKeyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    var certificateBuilder = new SelfSignedCertificateBuilder(untrustedKeyPair);
+    certificateBuilder.setCommonName("UntrustedIdentity");
+    certificateBuilder.setApplicationUri("urn:eclipse:milo:test:untrusted");
+    X509Certificate untrustedCertificate = certificateBuilder.build();
+
+    OpcUaClient client =
+        TestClient.create(
+            server,
+            cfg ->
+                cfg.setIdentityProvider(
+                    new X509IdentityProvider(untrustedCertificate, untrustedKeyPair.getPrivate())));
+
+    try {
+      client.connectAsync();
+
+      NodeId firstSessionId = sessionsCreated.poll(30, TimeUnit.SECONDS);
+      assertNotNull(firstSessionId, "Server never created a Session");
+
+      // Observing the Session created by the next attempt proves the first attempt has already
+      // failed and been abandoned.
+      NodeId secondSessionId = sessionsCreated.poll(30, TimeUnit.SECONDS);
+      assertNotNull(secondSessionId, "Server never created a second Session");
+
+      // The close is sent before the retry is scheduled, but the Server dispatches requests onto
+      // an executor, so the two are not strictly ordered; wait for the close rather than requiring
+      // it to have been observed already.
+      long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+      while (!sessionsClosed.contains(firstSessionId) && System.nanoTime() < deadline) {
+        //noinspection BusyWait
+        Thread.sleep(100);
+      }
+
+      assertTrue(
+          sessionsClosed.contains(firstSessionId),
+          "Session "
+              + firstSessionId
+              + " was left open on the Server after ActivateSession failed");
+    } finally {
+      client.disconnect();
+      server.shutdown().get();
+    }
   }
 }
