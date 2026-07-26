@@ -107,6 +107,13 @@ public class SessionFsmFactory {
 
   private static final int MAX_WAIT_SECONDS = 16;
 
+  /**
+   * Lower bound, in milliseconds, on the keep-alive interval derived from a revised session
+   * timeout, so that a Server revising the timeout down to a very small value can't turn the
+   * keep-alive into a flood of requests.
+   */
+  private static final long MIN_KEEP_ALIVE_INTERVAL = 1000L;
+
   private SessionFsmFactory() {}
 
   public static SessionFsm newSessionFsm(OpcUaClient client) {
@@ -615,7 +622,32 @@ public class SessionFsmFactory {
               // reset the wait time
               KEY_WAIT_TIME.remove(ctx);
 
-              long keepAliveInterval = client.getConfig().getKeepAliveInterval().longValue();
+              // The Server is free to revise the requested session timeout downwards, and it
+              // terminates the Session if the Client issues no request within the revised
+              // interval (Part 4 §5.7.2.2). Keep-alives scheduled from the configured interval
+              // alone would let the Session expire between them, so bound the interval at half
+              // the revised timeout, leaving room for one keep-alive to be missed. The clamp only
+              // ever lowers the interval; a configured value that is already safe is untouched.
+              long configuredInterval = client.getConfig().getKeepAliveInterval().longValue();
+              long revisedTimeout = event.session.getSessionTimeout().longValue();
+
+              long keepAliveInterval =
+                  Math.min(
+                      configuredInterval, Math.max(MIN_KEEP_ALIVE_INTERVAL, revisedTimeout / 2));
+
+              if (keepAliveInterval != configuredInterval) {
+                try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+                    MDCCloseable ignoredSessionId = putSessionId(event.session)) {
+
+                  LOGGER.warn(
+                      "Server revised the session timeout to {}ms; the configured keep-alive"
+                          + " interval of {}ms leaves too little margin before the Session"
+                          + " expires, using {}ms instead.",
+                      revisedTimeout,
+                      configuredInterval,
+                      keepAliveInterval);
+                }
+              }
 
               // A new counter instance per epoch, so a keep-alive sent on a previous epoch can
               // recognize that the one it captured is no longer the current one.

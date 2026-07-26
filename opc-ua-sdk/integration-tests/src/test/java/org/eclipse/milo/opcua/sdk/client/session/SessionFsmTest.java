@@ -11,6 +11,8 @@
 package org.eclipse.milo.opcua.sdk.client.session;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -283,6 +285,63 @@ public class SessionFsmTest {
       assertTrue(
           sessionInactive.await(10, TimeUnit.SECONDS),
           "SessionFsm remained Active after the channel was lost during Session initialization");
+    } finally {
+      client.disconnect();
+      server.shutdown().get();
+    }
+  }
+
+  /**
+   * Verify that a Session is not left to expire because the configured keep-alive interval is
+   * longer than the session timeout the Server revised the request down to.
+   *
+   * <p>CreateSession answers with a RevisedSessionTimeout the Server is free to lower, and the
+   * Server terminates the Session if the Client issues no request within that interval (OPC UA Part
+   * 4, 5.7.2.2). The revised value is stored on the Session and exposed via {@link
+   * UaSession#getSessionTimeout()}; the keep-alive has to be bounded by it as well, because
+   * scheduling from the configured interval alone let the Session die between keep-alives and left
+   * the client churning Active to ReactivatingWait to Creating and back for as long as it stayed
+   * connected.
+   */
+  @Test
+  public void testKeepAliveIntervalHonorsRevisedSessionTimeout() throws Exception {
+    OpcUaServer server = TestServer.create().getServer();
+    server.startup().get();
+
+    // The Server floors its revision at 5000ms, so any smaller request yields a revised timeout of
+    // exactly 5000ms, well below the keep-alive interval configured here.
+    OpcUaClient client =
+        TestClient.create(
+            server, cfg -> cfg.setSessionTimeout(uint(1000)).setKeepAliveInterval(uint(20_000)));
+
+    var sessionClosed = new CountDownLatch(1);
+
+    server
+        .getSessionManager()
+        .addSessionListener(
+            new SessionListener() {
+              @Override
+              public void onSessionClosed(Session session) {
+                sessionClosed.countDown();
+              }
+            });
+
+    try {
+      client.connect();
+
+      UaSession session = client.getSessionFsm().getSession().get(10, TimeUnit.SECONDS);
+      assertEquals(
+          5000.0,
+          session.getSessionTimeout().doubleValue(),
+          "Server did not revise the session timeout to 5000");
+
+      // No application traffic, so the only thing that can keep the Session alive is the
+      // keep-alive. Long enough to cover two revised timeouts, short enough to end before the
+      // configured 20s keep-alive would fire and mask the expiry.
+      assertFalse(
+          sessionClosed.await(12, TimeUnit.SECONDS),
+          "Server terminated the Session: the keep-alive interval (20000ms) is longer than the"
+              + " revised session timeout (5000ms)");
     } finally {
       client.disconnect();
       server.shutdown().get();
