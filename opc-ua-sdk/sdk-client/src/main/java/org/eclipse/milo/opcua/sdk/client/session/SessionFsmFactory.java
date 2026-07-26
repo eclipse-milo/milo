@@ -114,6 +114,19 @@ public class SessionFsmFactory {
    */
   private static final long MIN_KEEP_ALIVE_INTERVAL = 1000L;
 
+  /**
+   * StatusCodes that mean the Server no longer has a usable Session for us, i.e. the Session it
+   * would have to be reactivated against is gone or was never activated.
+   */
+  private static final Predicate<StatusCode> SESSION_ERROR =
+      statusCode -> {
+        long status = statusCode.value();
+
+        return status == StatusCodes.Bad_SessionClosed
+            || status == StatusCodes.Bad_SessionIdInvalid
+            || status == StatusCodes.Bad_SessionNotActivated;
+      };
+
   private SessionFsmFactory() {}
 
   public static SessionFsm newSessionFsm(OpcUaClient client) {
@@ -1031,18 +1044,27 @@ public class SessionFsmFactory {
   private static void configureReactivatingState(FsmBuilder<State, Event> fb, OpcUaClient client) {
     Predicate<Event> isReactivateSessionFailure = e -> e instanceof Event.ReactivateSessionFailure;
 
-    Predicate<Event> isReactivateSessionFailureServiceFault =
+    // Part 4 §6.7: a Client shall create a new Session if ActivateSession fails. Escalate on the
+    // StatusCode rather than the exception type so that a Server reporting a definitive
+    // session-level error with a channel-level Error message instead of an application-level
+    // ServiceFault - the same defective behavior guarded against on the transfer path below -
+    // escalates as well. Failures that carry no such StatusCode, e.g. Bad_Timeout or
+    // Bad_ConnectionClosed, are connectivity problems; Part 4 §5.7.2.1 says to keep trying to
+    // reactivate over a new connection, so those stay on the ReactivatingWait retry loop.
+    Predicate<Event> isReactivateSessionFailureFatal =
         isReactivateSessionFailure.and(
             e -> {
               Event.ReactivateSessionFailure event = (Event.ReactivateSessionFailure) e;
               return UaException.extract(event.failure)
-                  .map(ex -> ex instanceof UaServiceFaultException)
+                  .map(
+                      ex ->
+                          ex instanceof UaServiceFaultException
+                              || SESSION_ERROR.test(ex.getStatusCode()))
                   .orElse(false);
             });
 
-    // If reactivating fails due to a ServiceFault, move to CreatingWait
     fb.when(State.Reactivating)
-        .on(isReactivateSessionFailureServiceFault)
+        .on(isReactivateSessionFailureFatal)
         .transitionTo(State.CreatingWait)
         .executeFirst(
             ctx -> {
@@ -1831,15 +1853,6 @@ public class SessionFsmFactory {
   }
 
   private static class SessionFaultListener implements ServiceFaultListener {
-
-    private static final Predicate<StatusCode> SESSION_ERROR =
-        statusCode -> {
-          long status = statusCode.value();
-
-          return status == StatusCodes.Bad_SessionClosed
-              || status == StatusCodes.Bad_SessionIdInvalid
-              || status == StatusCodes.Bad_SessionNotActivated;
-        };
 
     private static final Predicate<StatusCode> SECURE_CHANNEL_ERROR =
         statusCode -> {
