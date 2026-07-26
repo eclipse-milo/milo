@@ -616,7 +616,10 @@ public class SessionFsmFactory {
               KEY_WAIT_TIME.remove(ctx);
 
               long keepAliveInterval = client.getConfig().getKeepAliveInterval().longValue();
-              KEY_KEEP_ALIVE_FAILURE_COUNT.set(ctx, 0L);
+
+              // A new counter instance per epoch, so a keep-alive sent on a previous epoch can
+              // recognize that the one it captured is no longer the current one.
+              KEY_KEEP_ALIVE_FAILURE_COUNT.set(ctx, new AtomicLong(0L));
 
               ScheduledFuture<?> scheduledFuture =
                   client
@@ -753,9 +756,25 @@ public class SessionFsmFactory {
             ctx -> {
               Event.KeepAlive event = (Event.KeepAlive) ctx.event();
 
+              // Capture the counter belonging to the epoch this keep-alive is sent on. Leaving
+              // Active cancels the scheduling of new keep-alives but does not cancel one that has
+              // already been sent, and the Event.ServiceFault route leaves Active without taking
+              // the channel down, so the request below can still be pending when the Session is
+              // re-activated (Part 4 §5.6.3) and complete against a later epoch.
+              AtomicLong failureCount = KEY_KEEP_ALIVE_FAILURE_COUNT.get(ctx);
+
               sendKeepAlive(client, event.session)
                   .whenComplete(
                       (response, ex) -> {
+                        if (ctx.currentState() != State.Active
+                            || KEY_SESSION.get(ctx) != event.session
+                            || KEY_KEEP_ALIVE_FAILURE_COUNT.get(ctx) != failureCount) {
+
+                          // The epoch this keep-alive was sent on is over; whatever it observed is
+                          // no longer relevant to the Session the FSM has now.
+                          return;
+                        }
+
                         if (response != null) {
                           DataValue[] results = response.getResults();
 
@@ -772,17 +791,9 @@ public class SessionFsmFactory {
                             }
                           }
 
-                          KEY_KEEP_ALIVE_FAILURE_COUNT.set(ctx, 0L);
+                          failureCount.set(0L);
                         } else {
-                          Long keepAliveFailureCount = KEY_KEEP_ALIVE_FAILURE_COUNT.get(ctx);
-
-                          if (keepAliveFailureCount == null) {
-                            keepAliveFailureCount = 1L;
-                          } else {
-                            keepAliveFailureCount += 1L;
-                          }
-
-                          KEY_KEEP_ALIVE_FAILURE_COUNT.set(ctx, keepAliveFailureCount);
+                          long keepAliveFailureCount = failureCount.incrementAndGet();
 
                           long keepAliveFailuresAllowed =
                               client.getConfig().getKeepAliveFailuresAllowed().longValue();
