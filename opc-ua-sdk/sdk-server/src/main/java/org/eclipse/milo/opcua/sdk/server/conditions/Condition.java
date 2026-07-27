@@ -85,6 +85,19 @@ public class Condition {
 
   static final StateTexts ENABLED_TEXTS = new StateTexts("Enabled", "Disabled");
 
+  /**
+   * The ClientUserId recorded when the acting client has no user identity: an Anonymous identity
+   * token, an identity token of an unrecognized type, or an internal call carrying no Session at
+   * all — all of which yield {@code null} from {@link #clientUserId(InvocationContext)}.
+   *
+   * <p>ClientUserId is a <i>mandatory</i> String Property of ConditionType (§5.5.2) and a {@link
+   * Variant} cannot carry a typed null, so storing {@code null} leaves the Property reading a Null
+   * Variant — the wrong DataType for a mandatory String, which conformant clients reject. The empty
+   * String is the closest in-band spelling of "no identity available"; unlike leaving the previous
+   * value in place it cannot misattribute an operator action to whoever happened to act before.
+   */
+  static final String NO_CLIENT_USER_ID = "";
+
   enum BehaviorFilterKind {
     DISABLED_READ,
     UNSHELVE_TIME
@@ -130,9 +143,9 @@ public class Condition {
   /**
    * Create Condition behavior wrapping {@code node}.
    *
-   * <p>Missing state defaults (EnabledState, variable SourceTimestamps) are populated, and reads of
-   * the node's condition variables are gated to return {@code Bad_ConditionDisabled} while the
-   * Condition is disabled.
+   * <p>Missing state defaults (EnabledState, variable SourceTimestamps, ClientUserId) are
+   * populated, and reads of the node's condition variables are gated to return {@code
+   * Bad_ConditionDisabled} while the Condition is disabled.
    *
    * @param node the {@link ConditionTypeNode} to wrap.
    */
@@ -149,6 +162,7 @@ public class Condition {
     ensureConditionVariableDefaults(quality, new Variant(StatusCode.GOOD));
     ensureConditionVariableDefaults(lastSeverity, new Variant(UShort.MIN));
     ensureConditionVariableDefaults(comment, new Variant(LocalizedText.NULL_VALUE));
+    ensureClientUserIdDefault();
 
     enabled = booleanId(enabledState, true);
 
@@ -365,7 +379,8 @@ public class Condition {
    * clearing requires empty text with a locale.
    *
    * @param comment the comment to apply.
-   * @param clientUserId the ClientUserId to record for the change, may be {@code null}.
+   * @param clientUserId the ClientUserId to record for the change; {@code null} records {@link
+   *     #NO_CLIENT_USER_ID}, since ClientUserId is a mandatory String Property.
    */
   public void setComment(@Nullable LocalizedText comment, @Nullable String clientUserId) {
     withStateChange(
@@ -601,6 +616,9 @@ public class Condition {
     if (snapshot.comment() != null) {
       setConditionVariable(comment, new Variant(snapshot.comment()), time);
     }
+    // A null here means "not captured", not "an unidentified user acted": restore keeps whatever
+    // the instance already holds (at worst the constructor's NO_CLIENT_USER_ID default), rather
+    // than normalizing as applyComment does.
     if (snapshot.clientUserId() != null) {
       node.setClientUserId(snapshot.clientUserId());
     }
@@ -859,12 +877,17 @@ public class Condition {
    * stored Comment unchanged; any non-NULL comment (including empty text with a locale) is stored.
    * AddComment rejects NULL before reaching this helper, while Acknowledge and Confirm ignore it.
    * The ClientUserId is recorded for every accepted comment-taking action.
+   *
+   * <p>This is the single choke point through which every comment-taking action — Acknowledge,
+   * Confirm, AddComment, and the {@link #setComment(LocalizedText, String)} API — records the
+   * acting identity, so an absent identity is normalized to {@link #NO_CLIENT_USER_ID} here rather
+   * than at each call site.
    */
   void applyComment(@Nullable LocalizedText comment, @Nullable String clientUserId, DateTime time) {
     if (comment != null && comment.isNotNull()) {
       setConditionVariable(this.comment, new Variant(comment), time);
     }
-    node.setClientUserId(clientUserId);
+    node.setClientUserId(clientUserId != null ? clientUserId : NO_CLIENT_USER_ID);
   }
 
   /**
@@ -914,6 +937,12 @@ public class Condition {
     return server;
   }
 
+  /**
+   * The acting Session's ClientUserId, or {@code null} if there is none: an internal call with no
+   * Session, or a Session whose identity token carries no user id (Anonymous, or an unrecognized
+   * token type). Callers record the absence as {@link #NO_CLIENT_USER_ID} via {@link
+   * #applyComment(LocalizedText, String, DateTime)}.
+   */
   static @Nullable String clientUserId(InvocationContext context) {
     return context.getSession().map(Session::getClientUserId).orElse(null);
   }
@@ -977,6 +1006,25 @@ public class Condition {
 
     if (state != null && state.getId() == null) {
       setTwoState(state, value, texts, DateTime.now());
+    }
+  }
+
+  /**
+   * Populate ClientUserId with {@link #NO_CLIENT_USER_ID} if the wrapped instance has the Property
+   * but no value.
+   *
+   * <p>Unlike the other mandatory ConditionType members, ClientUserId gets no usable value from
+   * instantiating the type definition: the ConditionType declaration's own value is Null. Without
+   * this, a Condition reads a Null Variant for a mandatory String Property from birth until its
+   * first comment-taking action — as does one loaded from a NodeSet that omits the value.
+   *
+   * <p>An instance whose ClientUserId Property node is missing entirely is left alone: that is a
+   * structural defect in the model, not a missing default, and the other {@code ensure*Defaults}
+   * helpers are likewise no-ops for absent nodes.
+   */
+  private void ensureClientUserIdDefault() {
+    if (node.getClientUserIdNode() != null && node.getClientUserId() == null) {
+      node.setClientUserId(NO_CLIENT_USER_ID);
     }
   }
 

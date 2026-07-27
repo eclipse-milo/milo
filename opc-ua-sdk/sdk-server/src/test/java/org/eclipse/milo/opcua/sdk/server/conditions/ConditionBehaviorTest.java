@@ -13,22 +13,30 @@ package org.eclipse.milo.opcua.sdk.server.conditions;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
+import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.server.AddressSpaceManager;
 import org.eclipse.milo.opcua.sdk.server.EventListener;
 import org.eclipse.milo.opcua.sdk.server.EventNotifier;
 import org.eclipse.milo.opcua.sdk.server.NodeManager;
 import org.eclipse.milo.opcua.sdk.server.ObjectTypeManager;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
+import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.UaNodeManager;
 import org.eclipse.milo.opcua.sdk.server.VariableTypeManager;
+import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AcknowledgeableConditionTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.ConditionVariableTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableTypeNode;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.TypeModelCache;
@@ -48,6 +56,9 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 /**
@@ -154,6 +165,7 @@ public class ConditionBehaviorTest {
     addConditionVariable(node, "Quality", NodeIds.StatusCode);
     addConditionVariable(node, "LastSeverity", NodeIds.UInt16);
     addConditionVariable(node, "Comment", NodeIds.LocalizedText);
+    addClientUserIdProperty(node);
 
     return node;
   }
@@ -201,6 +213,39 @@ public class ConditionBehaviorTest {
 
     nodeManager.addNode(variable);
     parent.addComponent(variable);
+  }
+
+  /**
+   * Add the mandatory ClientUserId Property with the value the ConditionType declaration carries: a
+   * Null Variant. Instantiation copies that declaration value, so this is the state every freshly
+   * created Condition instance starts from.
+   */
+  private void addClientUserIdProperty(AcknowledgeableConditionTypeNode parent) {
+    var property =
+        new PropertyTypeNode(
+            nodeContext,
+            new NodeId(1, "TestCondition/ClientUserId"),
+            new QualifiedName(0, "ClientUserId"),
+            LocalizedText.english("ClientUserId"),
+            LocalizedText.NULL_VALUE,
+            UInteger.MIN,
+            UInteger.MIN,
+            null,
+            null,
+            null,
+            new DataValue(Variant.NULL_VALUE),
+            NodeIds.String,
+            -1,
+            null);
+
+    nodeManager.addNode(property);
+
+    parent.addReference(
+        new Reference(
+            parent.getNodeId(), NodeIds.HasProperty, property.getNodeId().expanded(), true));
+    property.addReference(
+        new Reference(
+            property.getNodeId(), NodeIds.HasProperty, parent.getNodeId().expanded(), false));
   }
 
   @Test
@@ -361,6 +406,148 @@ public class ConditionBehaviorTest {
     // Clearing requires empty text with a locale (§5.5.6).
     condition.setComment(new LocalizedText("en", ""), "user3");
     assertEquals("", commentText(condition));
+  }
+
+  /**
+   * ClientUserId is a <i>mandatory</i> String Property of ConditionType (Part 9 §5.5.2), but the
+   * value the type declaration carries — and therefore the value instantiation copies — is a Null
+   * Variant. Without a seeded default the Property reads the wrong DataType (Null, not String) from
+   * birth until the Condition's first comment-taking action.
+   */
+  @Test
+  void constructorSeedsClientUserIdWhenTheInstanceCarriesNoValue() {
+    AcknowledgeableConditionTypeNode node = buildConditionNode(false);
+    assertNull(node.getClientUserId(), "fixture precondition: the declared value is Null");
+
+    new AcknowledgeableCondition(node);
+
+    assertEquals("", node.getClientUserId());
+  }
+
+  /** A loaded instance's stored operator identity is state to preserve, not a missing default. */
+  @Test
+  void constructorPreservesAnExistingClientUserId() {
+    AcknowledgeableConditionTypeNode node = buildConditionNode(false);
+    node.setClientUserId("loaded-operator");
+
+    new AcknowledgeableCondition(node);
+
+    assertEquals("loaded-operator", node.getClientUserId());
+  }
+
+  /**
+   * Invocation contexts for which {@link Condition#clientUserId(InvocationContext)} yields {@code
+   * null}: a Session whose identity token carries no user id — {@link Session#getClientUserId()}
+   * returns {@code null} for an AnonymousIdentityToken, and clients connect anonymously by default
+   * — and an invocation carrying no Session at all.
+   */
+  static Stream<Arguments> contextsWithoutAUserIdentity() {
+    Session anonymousSession = Mockito.mock(Session.class);
+    // Stated explicitly rather than relying on the mock default: this is the value an Anonymous
+    // identity token produces.
+    Mockito.when(anonymousSession.getClientUserId()).thenReturn(null);
+
+    return Stream.of(
+        Arguments.of("anonymous session", invocationContext(anonymousSession)),
+        Arguments.of("no session", invocationContext(null)));
+  }
+
+  /**
+   * Every comment-taking method records the acting identity, and a client without one must not
+   * leave ClientUserId reading a Null Variant — a mandatory String Property with the wrong
+   * DataType, which conformant clients reject.
+   *
+   * <p>The recorded value is the empty String rather than the previous id: ClientUserId identifies
+   * who performed the <i>last</i> operator action (§5.5.2), so retaining "operator1" here would
+   * attribute an anonymous action to a different, named user.
+   */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("contextsWithoutAUserIdentity")
+  void commentTakingMethodsWithoutAUserIdentityRecordAnEmptyClientUserId(
+      String description, InvocationContext context) throws Exception {
+
+    AcknowledgeableCondition condition = newCondition(true);
+
+    condition.setComment(LocalizedText.english("earlier note"), "operator1");
+    assertEquals("operator1", condition.getNode().getClientUserId());
+
+    condition.setAcked(false);
+    condition.handleAcknowledge(
+        context, condition.currentBranch().getLastEventId(), LocalizedText.english("acked"));
+    assertEquals("", condition.getNode().getClientUserId(), description + ": after Acknowledge");
+
+    // Re-attribute before each method so all three are shown to displace a named id, not just the
+    // first one to run.
+    condition.getNode().setClientUserId("operator1");
+    condition.handleConfirm(
+        context, condition.currentBranch().getLastEventId(), LocalizedText.english("confirmed"));
+    assertEquals("", condition.getNode().getClientUserId(), description + ": after Confirm");
+
+    condition.getNode().setClientUserId("operator1");
+    condition.handleAddComment(
+        context, condition.currentBranch().getLastEventId(), LocalizedText.english("commented"));
+    assertEquals("", condition.getNode().getClientUserId(), description + ": after AddComment");
+  }
+
+  /**
+   * A {@code null} ClientUserId in a snapshot means "not captured", not "an unidentified user
+   * acted", so restore must leave the seeded value alone instead of normalizing it the way {@link
+   * Condition#applyComment} does — an empty or partial snapshot cannot put the mandatory String
+   * Property back to Null.
+   */
+  @Test
+  void restoringASnapshotWithoutAClientUserIdKeepsTheSeededValue() {
+    AcknowledgeableCondition condition = newCondition(false);
+    assertEquals("", condition.getNode().getClientUserId());
+
+    condition.restoreSnapshot(ConditionSnapshot.empty());
+
+    assertEquals("", condition.getNode().getClientUserId());
+  }
+
+  /** Control for the test above: an identified session is still recorded verbatim. */
+  @Test
+  void commentTakingMethodsRecordTheSessionsClientUserId() throws Exception {
+    Session session = Mockito.mock(Session.class);
+    Mockito.when(session.getClientUserId()).thenReturn("operator2");
+
+    AcknowledgeableCondition condition = newCondition(true);
+
+    condition.setAcked(false);
+    condition.handleAcknowledge(
+        invocationContext(session),
+        condition.currentBranch().getLastEventId(),
+        LocalizedText.english("acked"));
+
+    assertEquals("operator2", condition.getNode().getClientUserId());
+  }
+
+  /**
+   * A minimal {@link InvocationContext}: the condition methods consult only the Session, so the
+   * remaining accessors are left unimplemented to keep an accidental dependency on them visible.
+   */
+  private static InvocationContext invocationContext(@Nullable Session session) {
+    return new InvocationContext() {
+      @Override
+      public Optional<Session> getSession() {
+        return Optional.ofNullable(session);
+      }
+
+      @Override
+      public OpcUaServer getServer() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public NodeId getObjectId() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public UaMethodNode getMethodNode() {
+        throw new UnsupportedOperationException();
+      }
+    };
   }
 
   @Test
