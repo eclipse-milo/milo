@@ -16,7 +16,7 @@ import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 
 /**
- *
+ * Implements the P_SHA pseudo-random functions used to derive symmetric keys.
  *
  * <pre>
  * <b>P_SHA-1(secret, seed)</b> =
