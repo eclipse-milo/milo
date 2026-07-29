@@ -39,6 +39,7 @@ import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -1448,10 +1449,24 @@ public class SessionFsmFactory {
 
     CompletableFuture<Unit> transferFuture = new CompletableFuture<>();
 
-    UInteger[] subscriptionIdsArray =
-        subscriptions.stream()
-            .flatMap(s -> s.getSubscriptionId().stream())
-            .toArray(UInteger[]::new);
+    // A Subscription can be reset() concurrently, clearing its id, so the ids sent and the
+    // Subscriptions they came from are captured together: the TransferResults are indexed
+    // against the ids the request carried, and pairing them back through a list whose shape
+    // can since have changed would apply a result to the wrong Subscription.
+    var transferable = new ArrayList<OpcUaSubscription>(subscriptions.size());
+    var subscriptionIds = new ArrayList<UInteger>(subscriptions.size());
+
+    for (OpcUaSubscription subscription : subscriptions) {
+      subscription
+          .getSubscriptionId()
+          .ifPresent(
+              id -> {
+                transferable.add(subscription);
+                subscriptionIds.add(id);
+              });
+    }
+
+    UInteger[] subscriptionIdsArray = subscriptionIds.toArray(new UInteger[0]);
 
     TransferSubscriptionsRequest request =
         new TransferSubscriptionsRequest(
@@ -1481,15 +1496,13 @@ public class SessionFsmFactory {
 
                   if (LOGGER.isDebugEnabled()) {
                     try {
-                      Stream<UInteger> subscriptionIds =
-                          subscriptions.stream().flatMap(s -> s.getSubscriptionId().stream());
                       Stream<StatusCode> statusCodes =
                           Stream.of(results).map(TransferResult::getStatusCode);
 
                       //noinspection UnstableApiUsage
                       String[] ss =
                           Streams.zip(
-                                  subscriptionIds,
+                                  subscriptionIds.stream(),
                                   statusCodes,
                                   (i, s) -> {
                                     assert s != null;
@@ -1509,17 +1522,14 @@ public class SessionFsmFactory {
                   }
                 }
 
-                // Part 4 §5.14.7.1: a successful TransferResult carries "the sequence numbers of
-                // the
-                // NotificationMessages that are available for retransmission", which is what tells
-                // the client which NotificationMessages the Republish loop Part 4 §6.7 requires
-                // before Publish resumes can still collect. Recorded here, inline, rather than
-                // dispatched: the loop runs when this Session becomes Active, and the list has to
-                // be
-                // in place before it does. Indexed against the SubscriptionIds the request was
-                // built
-                // from, which is what the results are a "list of results for the subscriptions to
-                // transfer" of.
+                // Part 4 §5.14.7.1: a successful TransferResult carries "the sequence numbers
+                // of the NotificationMessages that are available for retransmission", which is
+                // what tells the client which NotificationMessages the Republish loop Part 4
+                // §6.7 requires before Publish resumes can still collect. Recorded here, inline,
+                // rather than dispatched: the loop runs when this Session becomes Active, and
+                // the list has to be in place before it does. Indexed against the
+                // SubscriptionIds the request was built from, which is what the results are a
+                // "list of results for the subscriptions to transfer" of.
                 for (int i = 0; i < results.length && i < subscriptionIdsArray.length; i++) {
                   TransferResult result = results[i];
 
@@ -1537,11 +1547,11 @@ public class SessionFsmFactory {
                     .getExecutor()
                     .execute(
                         () -> {
-                          for (int i = 0; i < results.length; i++) {
+                          for (int i = 0; i < results.length && i < transferable.size(); i++) {
                             TransferResult result = results[i];
 
                             if (!result.getStatusCode().isGood()) {
-                              OpcUaSubscription subscription = subscriptions.get(i);
+                              OpcUaSubscription subscription = transferable.get(i);
 
                               subscription.notifyTransferFailed(result.getStatusCode());
                             }
