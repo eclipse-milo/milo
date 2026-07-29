@@ -1493,7 +1493,9 @@ public class OpcUaBinaryDecoder implements UaDecoder {
           StatusCodes.Bad_DecodingError, "no codec registered: " + dataTypeId);
     }
 
-    UaStructuredType[] flatArray = (UaStructuredType[]) Array.newInstance(codec.getType(), length);
+    // Kept as Object[]: DataTypeCodec.getType() is unbounded, so generic codecs may report a
+    // component type that is not a UaStructuredType (the encoder supports such matrices too).
+    Object[] flatArray = (Object[]) Array.newInstance(codec.getType(), length);
 
     for (int i = 0; i < length; i++) {
       flatArray[i] = codec.decode(context, this);
