@@ -250,7 +250,17 @@ public class PublishingManager {
         .getSubscriptionId()
         .ifPresent(
             id -> {
-              subscriptionDetails.put(id, new SubscriptionDetails(subscription, id, executor));
+              SubscriptionDetails displaced =
+                  subscriptionDetails.put(id, new SubscriptionDetails(subscription, id, executor));
+
+              if (displaced != null) {
+                // The Server has reused this SubscriptionId while an entry was still registered
+                // under it. Displacement removed that entry from the map, so unregister() — which
+                // matches by (key, value) — can never succeed for it again; without this, work
+                // still queued for it would be applied as if its Subscription existed, forever.
+                displaced.registered = false;
+              }
+
               subscriptionGeneration.incrementAndGet();
             });
 
