@@ -402,7 +402,6 @@ public class OpcUaBinaryDecoder implements UaDecoder {
         boolean arrayEncoded = (encodingMask & 0x80) == 0x80;
 
         if (arrayEncoded) {
-          Class<?> backingClass = OpcUaDataType.getBackingClass(typeId);
           int length = decodeInt32();
 
           if (length == -1) {
@@ -410,14 +409,7 @@ public class OpcUaBinaryDecoder implements UaDecoder {
           } else {
             checkArrayLength(length);
 
-            // TODO speed this up by switching on BuiltinDataType instead of using reflection
-            Object flatArray = Array.newInstance(backingClass, length);
-
-            for (int i = 0; i < length; i++) {
-              Object element = decodeBuiltinType(typeId);
-
-              Array.set(flatArray, i, element);
-            }
+            Object flatArray = decodeBuiltinTypeArray(typeId, length);
 
             int[] dimensions = dimensionsEncoded ? decodeDimensions() : new int[] {length};
 
@@ -533,6 +525,203 @@ public class OpcUaBinaryDecoder implements UaDecoder {
       case 23 -> decodeDataValue();
       case 24 -> decodeVariant();
       case 25 -> decodeDiagnosticInfo();
+      default ->
+          throw new UaSerializationException(
+              StatusCodes.Bad_DecodingError, "unknown builtin type: " + typeId);
+    };
+  }
+
+  /**
+   * Decode {@code length} elements of the builtin type identified by {@code typeId} into a new
+   * array.
+   *
+   * <p>The component type of the returned array is the builtin type's backing class, i.e. the same
+   * {@link Class} that {@link OpcUaDataType#getBackingClass(int)} reports for {@code typeId}.
+   * Callers rely on this: {@link Matrix} and {@link Variant} both derive their DataType from the
+   * component type, including when the array is empty.
+   *
+   * @param typeId the id of the builtin type to decode.
+   * @param length the number of elements to decode.
+   * @return an array of {@code length} decoded elements.
+   * @throws UaSerializationException if {@code typeId} is not a builtin type id.
+   */
+  private Object decodeBuiltinTypeArray(int typeId, int length) throws UaSerializationException {
+    return switch (typeId) {
+      case 1 -> {
+        Boolean[] values = new Boolean[length];
+        for (int i = 0; i < length; i++) {
+          values[i] = decodeBoolean();
+        }
+        yield values;
+      }
+      case 2 -> {
+        Byte[] values = new Byte[length];
+        for (int i = 0; i < length; i++) {
+          values[i] = decodeSByte();
+        }
+        yield values;
+      }
+      case 3 -> {
+        UByte[] values = new UByte[length];
+        for (int i = 0; i < length; i++) {
+          values[i] = decodeByte();
+        }
+        yield values;
+      }
+      case 4 -> {
+        Short[] values = new Short[length];
+        for (int i = 0; i < length; i++) {
+          values[i] = decodeInt16();
+        }
+        yield values;
+      }
+      case 5 -> {
+        UShort[] values = new UShort[length];
+        for (int i = 0; i < length; i++) {
+          values[i] = decodeUInt16();
+        }
+        yield values;
+      }
+      case 6 -> {
+        Integer[] values = new Integer[length];
+        for (int i = 0; i < length; i++) {
+          values[i] = decodeInt32();
+        }
+        yield values;
+      }
+      case 7 -> {
+        UInteger[] values = new UInteger[length];
+        for (int i = 0; i < length; i++) {
+          values[i] = decodeUInt32();
+        }
+        yield values;
+      }
+      case 8 -> {
+        Long[] values = new Long[length];
+        for (int i = 0; i < length; i++) {
+          values[i] = decodeInt64();
+        }
+        yield values;
+      }
+      case 9 -> {
+        ULong[] values = new ULong[length];
+        for (int i = 0; i < length; i++) {
+          values[i] = decodeUInt64();
+        }
+        yield values;
+      }
+      case 10 -> {
+        Float[] values = new Float[length];
+        for (int i = 0; i < length; i++) {
+          values[i] = decodeFloat();
+        }
+        yield values;
+      }
+      case 11 -> {
+        Double[] values = new Double[length];
+        for (int i = 0; i < length; i++) {
+          values[i] = decodeDouble();
+        }
+        yield values;
+      }
+      case 12 -> {
+        String[] values = new String[length];
+        for (int i = 0; i < length; i++) {
+          values[i] = decodeString();
+        }
+        yield values;
+      }
+      case 13 -> {
+        DateTime[] values = new DateTime[length];
+        for (int i = 0; i < length; i++) {
+          values[i] = decodeDateTime();
+        }
+        yield values;
+      }
+      case 14 -> {
+        UUID[] values = new UUID[length];
+        for (int i = 0; i < length; i++) {
+          values[i] = decodeGuid();
+        }
+        yield values;
+      }
+      case 15 -> {
+        ByteString[] values = new ByteString[length];
+        for (int i = 0; i < length; i++) {
+          values[i] = decodeByteString();
+        }
+        yield values;
+      }
+      case 16 -> {
+        XmlElement[] values = new XmlElement[length];
+        for (int i = 0; i < length; i++) {
+          values[i] = decodeXmlElement();
+        }
+        yield values;
+      }
+      case 17 -> {
+        NodeId[] values = new NodeId[length];
+        for (int i = 0; i < length; i++) {
+          values[i] = decodeNodeId();
+        }
+        yield values;
+      }
+      case 18 -> {
+        ExpandedNodeId[] values = new ExpandedNodeId[length];
+        for (int i = 0; i < length; i++) {
+          values[i] = decodeExpandedNodeId();
+        }
+        yield values;
+      }
+      case 19 -> {
+        StatusCode[] values = new StatusCode[length];
+        for (int i = 0; i < length; i++) {
+          values[i] = decodeStatusCode();
+        }
+        yield values;
+      }
+      case 20 -> {
+        QualifiedName[] values = new QualifiedName[length];
+        for (int i = 0; i < length; i++) {
+          values[i] = decodeQualifiedName();
+        }
+        yield values;
+      }
+      case 21 -> {
+        LocalizedText[] values = new LocalizedText[length];
+        for (int i = 0; i < length; i++) {
+          values[i] = decodeLocalizedText();
+        }
+        yield values;
+      }
+      case 22 -> {
+        ExtensionObject[] values = new ExtensionObject[length];
+        for (int i = 0; i < length; i++) {
+          values[i] = decodeExtensionObject();
+        }
+        yield values;
+      }
+      case 23 -> {
+        DataValue[] values = new DataValue[length];
+        for (int i = 0; i < length; i++) {
+          values[i] = decodeDataValue();
+        }
+        yield values;
+      }
+      case 24 -> {
+        Variant[] values = new Variant[length];
+        for (int i = 0; i < length; i++) {
+          values[i] = decodeVariant();
+        }
+        yield values;
+      }
+      case 25 -> {
+        DiagnosticInfo[] values = new DiagnosticInfo[length];
+        for (int i = 0; i < length; i++) {
+          values[i] = decodeDiagnosticInfo();
+        }
+        yield values;
+      }
       default ->
           throw new UaSerializationException(
               StatusCodes.Bad_DecodingError, "unknown builtin type: " + typeId);
@@ -1275,15 +1464,7 @@ public class OpcUaBinaryDecoder implements UaDecoder {
 
     int length = calculateMatrixLength(dimensions);
 
-    // TODO speed this up by switching on BuiltinDataType instead of using reflection
-    Class<?> backingClass = dataType.getBackingClass();
-    Object flatArray = Array.newInstance(backingClass, length);
-
-    for (int i = 0; i < length; i++) {
-      Object element = decodeBuiltinType(dataType.getTypeId());
-
-      Array.set(flatArray, i, element);
-    }
+    Object flatArray = decodeBuiltinTypeArray(dataType.getTypeId(), length);
 
     return new Matrix(flatArray, dimensions, dataType);
   }
