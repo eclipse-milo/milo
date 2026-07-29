@@ -62,45 +62,16 @@ public final class UShort extends UNumber implements Comparable<UShort> {
   private final int value;
 
   /**
-   * Figure out the size of the precache.
-   *
-   * @return The parsed value of the system property {@link #PRECACHE_PROPERTY} or {@link
-   *     #DEFAULT_PRECACHE_SIZE} if the property is not set, not a number or retrieving results in a
-   *     {@link SecurityException}. If the parsed value is zero or negative no cache will be
-   *     created. The value is capped at {@link #MAX_VALUE}+1, the number of distinct <code>
-   *     unsigned short
-   *     </code> values.
-   */
-  private static int getPrecacheSize() {
-    String prop;
-    long propParsed;
-
-    try {
-      prop = System.getProperty(PRECACHE_PROPERTY);
-    } catch (SecurityException e) {
-      // security manager stopped us so use default
-      return DEFAULT_PRECACHE_SIZE;
-    }
-    if (prop == null) return DEFAULT_PRECACHE_SIZE;
-    if (prop.isEmpty()) return DEFAULT_PRECACHE_SIZE;
-    try {
-      propParsed = Long.parseLong(prop);
-    } catch (NumberFormatException e) {
-      // not a valid number
-      return DEFAULT_PRECACHE_SIZE;
-    }
-    // treat negative value as no cache...
-    if (propParsed < 0) return 0;
-    return (int) Math.min(propParsed, MAX_VALUE + 1L);
-  }
-
-  /**
    * Generate a cached value for initial unsigned short values.
    *
-   * @return Array of cached values for UShort, or null if caching is disabled.
+   * <p>The cache size is read from the system property {@link #PRECACHE_PROPERTY}, defaulting to
+   * {@link #DEFAULT_PRECACHE_SIZE} and capped at {@link #MAX_VALUE}+1, the number of distinct
+   * <code>unsigned short</code> values.
+   *
+   * @return array of cached values for UShort, or null if caching is disabled.
    */
   private static UShort[] mkValues() {
-    int precacheSize = getPrecacheSize();
+    int precacheSize = getPrecacheSize(PRECACHE_PROPERTY, DEFAULT_PRECACHE_SIZE, MAX_VALUE + 1L);
 
     if (precacheSize <= 0) return null;
 
@@ -112,8 +83,8 @@ public final class UShort extends UNumber implements Comparable<UShort> {
   /**
    * Retrieve a cached value.
    *
-   * @param value Cached value to retrieve
-   * @return Cached value if one exists. Null otherwise.
+   * @param value the value to retrieve a cached instance of.
+   * @return cached value if one exists, null otherwise.
    */
   private static UShort getCached(int value) {
     if (VALUES != null && value >= 0 && value < VALUES.length) return VALUES[value];
