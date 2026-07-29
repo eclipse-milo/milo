@@ -1357,16 +1357,13 @@ public class OpcUaBinaryDecoder implements UaDecoder {
             StatusCodes.Bad_DecodingError, "no codec registered: " + dataTypeId);
       }
 
-      Class<?> clazz = codec.getType();
-      Object array = Array.newInstance(clazz, length);
+      UaStructuredType[] array = (UaStructuredType[]) Array.newInstance(codec.getType(), length);
 
       for (int i = 0; i < length; i++) {
-        Object value = codec.decode(context, this);
-
-        Array.set(array, i, value);
+        array[i] = codec.decode(context, this);
       }
 
-      return (UaStructuredType[]) array;
+      return array;
     }
   }
 
@@ -1489,13 +1486,10 @@ public class OpcUaBinaryDecoder implements UaDecoder {
           StatusCodes.Bad_DecodingError, "no codec registered: " + dataTypeId);
     }
 
-    Class<?> clazz = codec.getType();
-    Object flatArray = Array.newInstance(clazz, length);
+    UaStructuredType[] flatArray = (UaStructuredType[]) Array.newInstance(codec.getType(), length);
 
     for (int i = 0; i < length; i++) {
-      Object value = codec.decode(context, this);
-
-      Array.set(flatArray, i, value);
+      flatArray[i] = codec.decode(context, this);
     }
 
     return new Matrix(flatArray, dimensions, OpcUaDataType.ExtensionObject, dataTypeId.expanded());
