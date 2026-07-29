@@ -42,6 +42,10 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI16;
+import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI32;
+import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI64;
+import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI8;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
@@ -613,8 +617,10 @@ public class OpcUaBinaryEncoder implements UaEncoder {
         valueClass = Integer.class;
         enumeration = true;
       } else if (OptionSetUInteger.class.isAssignableFrom(valueClass)) {
-        assert value instanceof OptionSetUInteger<?>;
-        valueClass = ((OptionSetUInteger<?>) value).getValue().getClass();
+        // Derived from the element class rather than from value, which for an array or a Matrix is
+        // the container and not an OptionSetUInteger. This also resolves empty arrays, where there
+        // is no element to inspect.
+        valueClass = optionSetBackingClass(valueClass);
         optionSet = true;
       }
 
@@ -951,6 +957,28 @@ public class OpcUaBinaryEncoder implements UaEncoder {
     } else {
       return o.getClass();
     }
+  }
+
+  /**
+   * Resolve the unsigned integer class an {@link OptionSetUInteger} is encoded as.
+   *
+   * <p>Derived from the class hierarchy rather than from an instance so that arrays, Matrices, and
+   * empty arrays all resolve without an element to inspect.
+   *
+   * @param optionSetClass the {@link OptionSetUInteger} subclass.
+   * @return the backing class the option set is encoded as.
+   * @throws UaSerializationException if {@code optionSetClass} has no OptionSetUI8/16/32/64
+   *     ancestor.
+   */
+  private static Class<?> optionSetBackingClass(Class<?> optionSetClass) {
+    if (OptionSetUI8.class.isAssignableFrom(optionSetClass)) return UByte.class;
+    if (OptionSetUI16.class.isAssignableFrom(optionSetClass)) return UShort.class;
+    if (OptionSetUI32.class.isAssignableFrom(optionSetClass)) return UInteger.class;
+    if (OptionSetUI64.class.isAssignableFrom(optionSetClass)) return ULong.class;
+
+    throw new UaSerializationException(
+        StatusCodes.Bad_EncodingError,
+        "no OptionSetUI8/16/32/64 ancestor for " + optionSetClass.getName());
   }
 
   private void encodeLengthPrefixedString(String value, Charset charset)
