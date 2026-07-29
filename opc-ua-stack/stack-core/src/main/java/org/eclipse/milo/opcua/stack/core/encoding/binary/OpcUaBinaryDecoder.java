@@ -22,7 +22,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
@@ -62,7 +61,15 @@ public class OpcUaBinaryDecoder implements UaDecoder {
   private int currentByte = 0;
   private int bitsRemaining = 0;
 
-  private final AtomicInteger depth = new AtomicInteger(0);
+  /**
+   * Nesting level of the decode in progress, used to bound recursion.
+   *
+   * <p>Not synchronized, and does not need to be: a decoder instance is confined to one thread at a
+   * time, the same way the mutable {@link #buffer} field is. {@code SerializationQueue} shares an
+   * instance behind a task queue that serializes decodes, and the client and server UASC handlers
+   * each own a channel-confined instance.
+   */
+  private int depth = 0;
 
   private final EncodingContext context;
 
@@ -235,13 +242,13 @@ public class OpcUaBinaryDecoder implements UaDecoder {
   }
 
   public DiagnosticInfo decodeDiagnosticInfo() throws UaSerializationException {
-    if (depth.get() >= context.getEncodingLimits().getMaxRecursionDepth()) {
+    if (depth >= context.getEncodingLimits().getMaxRecursionDepth()) {
       throw new UaSerializationException(
           StatusCodes.Bad_EncodingLimitsExceeded,
           "max recursion depth exceeded: " + context.getEncodingLimits().getMaxRecursionDepth());
     }
 
-    depth.incrementAndGet();
+    depth++;
     try {
       int mask = buffer.readByte();
 
@@ -267,7 +274,7 @@ public class OpcUaBinaryDecoder implements UaDecoder {
             innerDiagnosticInfo);
       }
     } finally {
-      depth.decrementAndGet();
+      depth--;
     }
   }
 
@@ -384,13 +391,13 @@ public class OpcUaBinaryDecoder implements UaDecoder {
   }
 
   public Variant decodeVariant() throws UaSerializationException {
-    if (depth.get() >= context.getEncodingLimits().getMaxRecursionDepth()) {
+    if (depth >= context.getEncodingLimits().getMaxRecursionDepth()) {
       throw new UaSerializationException(
           StatusCodes.Bad_EncodingLimitsExceeded,
           "max recursion depth exceeded: " + context.getEncodingLimits().getMaxRecursionDepth());
     }
 
-    depth.incrementAndGet();
+    depth++;
     try {
       int encodingMask = buffer.readByte();
 
@@ -441,7 +448,7 @@ public class OpcUaBinaryDecoder implements UaDecoder {
         }
       }
     } finally {
-      depth.decrementAndGet();
+      depth--;
     }
   }
 
