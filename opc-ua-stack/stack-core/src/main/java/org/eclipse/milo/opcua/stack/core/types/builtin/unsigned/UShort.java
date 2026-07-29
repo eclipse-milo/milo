@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.stack.core.types.builtin.unsigned;
 
+import java.io.InvalidObjectException;
 import java.io.ObjectStreamException;
 import org.jspecify.annotations.NonNull;
 
@@ -187,11 +188,14 @@ public final class UShort extends UNumber implements Comparable<UShort> {
   /**
    * Replace version read through deserialization with cached version.
    *
-   * @return cached instance of this object's value if one exists, otherwise this object
+   * @return cached instance of this object's value if one exists, otherwise this object.
+   * @throws InvalidObjectException if the deserialized value is out of range.
    */
   private Object readResolve() throws ObjectStreamException {
     // the value read could be invalid so check it
-    rangeCheck();
+    if (value < MIN_VALUE || value > MAX_VALUE) {
+      throw new InvalidObjectException("Value is out of range : " + value);
+    }
 
     UShort cached = getCached(value);
 
