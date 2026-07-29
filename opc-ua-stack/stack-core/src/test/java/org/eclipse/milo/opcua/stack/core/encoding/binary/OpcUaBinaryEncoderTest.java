@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.stack.core.encoding.binary;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -141,6 +142,46 @@ public class OpcUaBinaryEncoderTest {
     Matrix decodedMatrix = decoder.decodeMatrix(null, OpcUaDataType.Int32);
 
     assertEquals(matrix, decodedMatrix.transform(v -> ApplicationType.from((Integer) v)));
+  }
+
+  // Generic codecs (JsonStructCodec, the DTD codecs) build matrix elements as Object[]. Object[] is
+  // not assignable to UaEnumeratedType[], so the encoder must not assume the concrete array type.
+  @Test
+  void encodeEnumMatrixBackedByObjectArray() {
+    Matrix matrix =
+        new Matrix(
+            new Object[] {ApplicationType.Server, ApplicationType.Client},
+            new int[] {1, 2},
+            OpcUaDataType.Int32);
+
+    encoder.encodeEnumMatrix(null, matrix);
+
+    var decoder = new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE).setBuffer(buffer);
+    Matrix decodedMatrix = decoder.decodeMatrix(null, OpcUaDataType.Int32);
+
+    assertArrayEquals(
+        new Integer[] {ApplicationType.Server.getValue(), ApplicationType.Client.getValue()},
+        (Integer[]) decodedMatrix.getElements());
+  }
+
+  // As above, for UaStructuredType[].
+  @Test
+  void encodeStructMatrixBackedByObjectArray() throws Exception {
+    XVType xv1 = new XVType(1.0, 2.0f);
+    XVType xv2 = new XVType(3.0, 4.0f);
+
+    Matrix matrix =
+        new Matrix(new Object[] {xv1, xv2}, new int[] {1, 2}, OpcUaDataType.ExtensionObject);
+
+    NodeId dataTypeId =
+        XVType.TYPE_ID.toNodeIdOrThrow(DefaultEncodingContext.INSTANCE.getNamespaceTable());
+
+    encoder.encodeStructMatrix(null, matrix, dataTypeId);
+
+    var decoder = new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE).setBuffer(buffer);
+    Matrix decodedMatrix = decoder.decodeStructMatrix(null, dataTypeId);
+
+    assertArrayEquals(new XVType[] {xv1, xv2}, (XVType[]) decodedMatrix.getElements());
   }
 
   @Test

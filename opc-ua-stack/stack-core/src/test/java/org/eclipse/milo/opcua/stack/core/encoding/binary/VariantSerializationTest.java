@@ -91,6 +91,14 @@ public class VariantSerializationTest extends BinarySerializationFixture {
 
   public static Object[][] getPrimitiveArrayVariants() {
     return new Object[][] {
+      {new Variant(new boolean[] {true, false}), new Variant(new Boolean[] {true, false})},
+      {
+        new Variant(new byte[] {(byte) -1, (byte) 2}), new Variant(new Byte[] {(byte) -1, (byte) 2})
+      },
+      {
+        new Variant(new short[] {(short) -1, (short) 2}),
+        new Variant(new Short[] {(short) -1, (short) 2})
+      },
       {new Variant(new int[] {0, 1, 2, 3}), new Variant(new Integer[] {0, 1, 2, 3})},
       {
         new Variant(Matrix.ofInt32(new int[][] {{0, 1}, {2, 3}})),
@@ -100,7 +108,9 @@ public class VariantSerializationTest extends BinarySerializationFixture {
       {
         new Variant(Matrix.ofInt64(new long[][] {{0L, 1L}, {2L, 3L}})),
         new Variant(Matrix.ofInt64(new Long[][] {{0L, 1L}, {2L, 3L}}))
-      }
+      },
+      {new Variant(new float[] {-1.5f, 2.5f}), new Variant(new Float[] {-1.5f, 2.5f})},
+      {new Variant(new double[] {-1.5d, 2.5d}), new Variant(new Double[] {-1.5d, 2.5d})}
     };
   }
 
