@@ -388,6 +388,19 @@ public class PublishingManager {
   }
 
   /**
+   * @return {@code true} if Publish traffic is suspended, i.e. no PublishResponse can arrive:
+   *     either no recovered Session is in hand, or an activation has been counted whose reconnect
+   *     recovery has not finished. The watchdog timer is fed only by PublishResponses, so it must
+   *     not be armed while this is true — see {@link OpcUaSubscription#resetWatchdogTimer()} — and
+   *     {@link #resumePublishing} re-arms it when the suspension ends.
+   */
+  boolean isPublishingSuspended() {
+    RecoveredActivation recovered = lastRecoveredActivation.get();
+
+    return recovered.session() == null || recovered.activation() < sessionActivations.get();
+  }
+
+  /**
    * Recover every registered Subscription on the newly Active {@code session} and only then let
    * PublishRequests flow again.
    *

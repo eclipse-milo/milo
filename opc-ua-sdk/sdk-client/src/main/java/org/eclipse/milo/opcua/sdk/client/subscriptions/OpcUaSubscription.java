@@ -2028,6 +2028,17 @@ public class OpcUaSubscription {
   }
 
   synchronized void resetWatchdogTimer() {
+    if (client.getPublishingManager().isPublishingSuspended()) {
+      // The watchdog is fed only by PublishResponses, and none can arrive while Publish traffic
+      // is suspended: arming it now — from a create or modify made mid-recovery, or from the
+      // finish of a recovery a newer activation has superseded — could only have it fire on a
+      // healthy Subscription. The recovery that ends the suspension re-arms it.
+      logger.debug(
+          "id={}, watchdog timer reset deferred pending reconnect recovery",
+          getServerState().map(ServerState::getSubscriptionId).orElse(null));
+      return;
+    }
+
     WatchdogTimer watchdog = this.watchdogTimer;
     if (watchdog != null) {
       watchdog.reset();
