@@ -95,6 +95,26 @@ public class OpcUaBinaryDecoderTest {
   }
 
   @Test
+  void decodeVariantNullArrayConsumesDimensions() {
+    ByteBuf buffer = Unpooled.buffer();
+
+    // Int32 | array | dimensions, ArrayLength -1 (null array), then an ArrayDimensions field
+    buffer.writeByte(6 | 0x80 | 0x40);
+    buffer.writeIntLE(-1);
+    buffer.writeIntLE(2);
+    buffer.writeIntLE(2);
+    buffer.writeIntLE(3);
+    // a subsequent field, decoded correctly only if ArrayDimensions was consumed
+    buffer.writeIntLE(42);
+
+    OpcUaBinaryDecoder decoder =
+        new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE).setBuffer(buffer);
+
+    assertEquals(new Variant(null), decoder.decodeVariant());
+    assertEquals(42, decoder.decodeInt32());
+  }
+
+  @Test
   void decodeMatrixRejectsNegativeDimensionCount() {
     ByteBuf buffer = Unpooled.buffer();
     buffer.writeIntLE(-2);
