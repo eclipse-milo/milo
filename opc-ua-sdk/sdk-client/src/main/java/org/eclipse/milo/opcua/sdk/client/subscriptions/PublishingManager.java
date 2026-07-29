@@ -1193,8 +1193,16 @@ public class PublishingManager {
         // Acknowledge only NotificationMessages that were actually received: Part 4 §5.14.5.2 lets
         // the Server delete an acknowledged message from its retransmission queue, so
         // acknowledging one that never arrived destroys the only copy of it. A message that has
-        // already been accounted for was still received, so it is still acknowledged.
-        details.availableAcknowledgements.add(notificationMessage.getSequenceNumber());
+        // already been accounted for was still received, so it is still acknowledged — but only
+        // once: a duplicate copy arriving before the first acknowledgement has been drained must
+        // not queue a second one, which the Server could only answer Bad_SequenceNumberUnknown.
+        UInteger sequenceNumber = notificationMessage.getSequenceNumber();
+
+        synchronized (details.availableAcknowledgements) {
+          if (!details.availableAcknowledgements.contains(sequenceNumber)) {
+            details.availableAcknowledgements.add(sequenceNumber);
+          }
+        }
       }
 
       long expectedSequenceNumber = SequenceNumbers.successor(details.lastSequenceNumber);
