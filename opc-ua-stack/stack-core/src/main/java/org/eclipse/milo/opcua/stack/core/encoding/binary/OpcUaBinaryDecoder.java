@@ -412,6 +412,10 @@ public class OpcUaBinaryDecoder implements UaDecoder {
           int length = buffer.readIntLE();
 
           if (length == -1) {
+            if (dimensionsEncoded) {
+              // consume ArrayDimensions so the read position stays aligned
+              decodeDimensions();
+            }
             return new Variant(null);
           } else {
             checkArrayLength(length);
