@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,13 +37,17 @@ public class LazyClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
 
   @Override
   protected DataTypeTree getDataTypeTree() {
+    return newLazyTree();
+  }
+
+  private LazyClientDataTypeTree newLazyTree() {
     return new LazyClientDataTypeTree(client);
   }
 
   @Test
   void initiallyOnlyContainsBaseDataType() {
     // Create a fresh tree to test the initial state
-    var freshTree = new LazyClientDataTypeTree(client);
+    var freshTree = newLazyTree();
 
     // BaseDataType should be resolved (it's the root)
     assertTrue(freshTree.isResolved(NodeIds.BaseDataType));
@@ -55,7 +60,7 @@ public class LazyClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
 
   @Test
   void resolvesTypeOnDemand() {
-    var freshTree = new LazyClientDataTypeTree(client);
+    var freshTree = newLazyTree();
 
     // Int32 not resolved initially
     assertFalse(freshTree.isResolved(NodeIds.Int32));
@@ -76,7 +81,7 @@ public class LazyClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
 
   @Test
   void resolvesStructuredTypes() {
-    var freshTree = new LazyClientDataTypeTree(client);
+    var freshTree = newLazyTree();
 
     // Query a structured type
     DataType xvType = freshTree.getDataType(NodeIds.XVType);
@@ -96,7 +101,7 @@ public class LazyClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
 
   @Test
   void isSubtypeOfWorksWithLazyResolution() {
-    var freshTree = new LazyClientDataTypeTree(client);
+    var freshTree = newLazyTree();
 
     // Neither Int32 nor Integer are resolved yet
     assertFalse(freshTree.isResolved(NodeIds.Int32));
@@ -113,7 +118,7 @@ public class LazyClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
 
   @Test
   void containsTypeTriggersResolution() {
-    var freshTree = new LazyClientDataTypeTree(client);
+    var freshTree = newLazyTree();
 
     // Double not resolved initially
     assertFalse(freshTree.isResolved(NodeIds.Double));
@@ -127,7 +132,7 @@ public class LazyClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
 
   @Test
   void cachesResolvedTypes() {
-    var freshTree = new LazyClientDataTypeTree(client);
+    var freshTree = newLazyTree();
 
     // First query - triggers resolution
     DataType first = freshTree.getDataType(NodeIds.Int32);
@@ -144,7 +149,7 @@ public class LazyClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
   @Test
   void lazyTreeMatchesEagerTreeForResolvedTypes() throws UaException {
     DataTypeTree eagerTree = DataTypeTreeBuilder.build(client);
-    var lazyTestTree = new LazyClientDataTypeTree(client);
+    var lazyTestTree = newLazyTree();
 
     // Test a variety of types
     NodeId[] typesToTest = {
@@ -188,9 +193,8 @@ public class LazyClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
   }
 
   @Test
-  void diagnosticTestForStructure() throws Exception {
-    // Test that Structure can be resolved
-    var freshTree = new LazyClientDataTypeTree(client);
+  void getTypeTriggersLazyResolution() {
+    var freshTree = newLazyTree();
 
     // BaseDataType should be the only resolved type initially
     assertTrue(freshTree.isResolved(NodeIds.BaseDataType), "BaseDataType should be pre-loaded");
@@ -205,26 +209,29 @@ public class LazyClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
 
   @Test
   void clearFailedResolutionsAllowsRetry() {
-    var freshTree = new LazyClientDataTypeTree(client);
+    var freshTree = newLazyTree();
 
-    // Try to resolve a non-existent type
+    // Resolving a non-existent type fails and leaves the type unresolved
     NodeId fakeTypeId = new NodeId(999, "FakeDataType");
-    DataType result = freshTree.getDataType(fakeTypeId);
+    assertNull(freshTree.getDataType(fakeTypeId));
+    assertFalse(freshTree.isResolved(fakeTypeId));
 
-    // Should return null
-    assertTrue(result == null || !freshTree.isResolved(fakeTypeId));
+    // Resolve a real type as a control for the clear below
+    assertNotNull(freshTree.getDataType(NodeIds.Int32));
 
-    // Clear failed resolutions
     freshTree.clearFailedResolutions();
 
-    // Now it can be attempted again (will still fail, but the point is it's retried)
-    result = freshTree.getDataType(fakeTypeId);
-    assertTrue(result == null || !freshTree.isResolved(fakeTypeId));
+    // Clearing failed resolutions retains resolved types
+    assertTrue(freshTree.isResolved(NodeIds.Int32));
+
+    // The failed type can be attempted again (it fails again against this server)
+    assertNull(freshTree.getDataType(fakeTypeId));
+    assertFalse(freshTree.isResolved(fakeTypeId));
   }
 
   @Test
   void getRootReturnsSnapshot() {
-    var freshTree = new LazyClientDataTypeTree(client);
+    var freshTree = newLazyTree();
 
     // Initially only BaseDataType is in the tree
     Tree<DataType> snapshot1 = freshTree.getRoot();
@@ -253,7 +260,7 @@ public class LazyClientDataTypeTreeTest extends AbstractDataTypeTreeTest {
 
   @Test
   void getRootSnapshotIsTraversable() {
-    var freshTree = new LazyClientDataTypeTree(client);
+    var freshTree = newLazyTree();
 
     // Resolve a few types to build up the tree
     freshTree.getDataType(NodeIds.Int32);
