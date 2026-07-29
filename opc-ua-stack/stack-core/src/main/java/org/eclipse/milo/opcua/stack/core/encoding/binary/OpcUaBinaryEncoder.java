@@ -1420,15 +1420,10 @@ public class OpcUaBinaryEncoder implements UaEncoder {
       int length = Array.getLength(elements);
       assert length == Arrays.stream(dimensions).reduce(1, (left, right) -> left * right);
 
-      if (elements instanceof UaEnumeratedType[] values) {
-        for (int i = 0; i < length; i++) {
-          encodeEnum(null, values[i]);
-        }
-      } else {
-        // Generic codecs build their matrices as Object[], which is not a UaEnumeratedType[].
-        for (int i = 0; i < length; i++) {
-          encodeEnum(null, (UaEnumeratedType) Array.get(elements, i));
-        }
+      // Object[] covers both UaEnumeratedType[] and the Object[] built by generic codecs.
+      Object[] values = (Object[]) elements;
+      for (int i = 0; i < length; i++) {
+        encodeEnum(null, (UaEnumeratedType) values[i]);
       }
     }
   }
@@ -1458,15 +1453,10 @@ public class OpcUaBinaryEncoder implements UaEncoder {
       int length = Array.getLength(elements);
       assert length == Arrays.stream(dimensions).reduce(1, (left, right) -> left * right);
 
-      if (elements instanceof UaStructuredType[] values) {
-        for (int i = 0; i < length; i++) {
-          encodeStruct(null, values[i], dataTypeId);
-        }
-      } else {
-        // Generic codecs build their matrices as Object[], which is not a UaStructuredType[].
-        for (int i = 0; i < length; i++) {
-          encodeStruct(null, (UaStructuredType) Array.get(elements, i), dataTypeId);
-        }
+      // Object[] covers both UaStructuredType[] and the Object[] built by generic codecs.
+      Object[] values = (Object[]) elements;
+      for (int i = 0; i < length; i++) {
+        encodeStruct(null, (UaStructuredType) values[i], dataTypeId);
       }
     }
   }
