@@ -897,6 +897,11 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
       typeId = OpcUaDataType.getBuiltinTypeId(valueClass);
     }
 
+    if (typeId == -1) {
+      throw new UaSerializationException(
+          StatusCodes.Bad_EncodingError, "not a built-in type: " + valueClass.getName());
+    }
+
     if (value.getClass().isArray()) {
       jsonWriter.beginObject();
 

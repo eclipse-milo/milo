@@ -54,7 +54,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.IdType;
 import org.eclipse.milo.opcua.stack.core.util.ArrayUtil;
 import org.jspecify.annotations.NonNull;
-import org.slf4j.LoggerFactory;
 
 public class OpcUaBinaryEncoder implements UaEncoder {
 
@@ -622,9 +621,8 @@ public class OpcUaBinaryEncoder implements UaEncoder {
       int typeId = OpcUaDataType.getBuiltinTypeId(valueClass);
 
       if (typeId == -1) {
-        LoggerFactory.getLogger(getClass())
-            .warn(
-                "Not a built-in type: value={}, valueClass={}", value, valueClass, new Exception());
+        throw new UaSerializationException(
+            StatusCodes.Bad_EncodingError, "not a built-in type: " + valueClass.getName());
       }
 
       if (value.getClass().isArray() || value instanceof Matrix) {

@@ -114,10 +114,13 @@ public enum OpcUaDataType {
 
   /**
    * @param backingClass the backing {@link Class} of the builtin type.
-   * @return the id of the builtin type backed by {@code backingClass}.
+   * @return the id of the builtin type backed by {@code backingClass}, or {@code -1} if {@code
+   *     backingClass} does not back a builtin type.
    */
   public static int getBuiltinTypeId(Class<?> backingClass) {
-    return BACKING_CLASSES_BY_ID.inverse().get(maybeTransformClass(backingClass));
+    Integer typeId = BACKING_CLASSES_BY_ID.inverse().get(maybeTransformClass(backingClass));
+
+    return typeId != null ? typeId : -1;
   }
 
   /**

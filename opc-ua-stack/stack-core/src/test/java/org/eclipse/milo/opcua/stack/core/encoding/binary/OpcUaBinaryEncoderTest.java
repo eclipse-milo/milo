@@ -13,12 +13,14 @@ package org.eclipse.milo.opcua.stack.core.encoding.binary;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.*;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
@@ -182,6 +184,17 @@ public class OpcUaBinaryEncoderTest {
     Matrix decodedMatrix = decoder.decodeStructMatrix(null, dataTypeId);
 
     assertArrayEquals(new XVType[] {xv1, xv2}, (XVType[]) decodedMatrix.getElements());
+  }
+
+  // A Variant holding something that is not a builtin type cannot be encoded. Report it rather than
+  // writing a bogus encoding mask that the peer will reject as a framing error.
+  @Test
+  void encodeVariantOfNonBuiltinTypeReportsEncodingError() {
+    UaSerializationException ex =
+        assertThrows(
+            UaSerializationException.class, () -> encoder.encodeVariant(new Variant(new Object())));
+
+    assertEquals(new StatusCode(StatusCodes.Bad_EncodingError), ex.getStatusCode());
   }
 
   @Test
