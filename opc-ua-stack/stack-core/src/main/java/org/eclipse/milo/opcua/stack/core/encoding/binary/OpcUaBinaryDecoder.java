@@ -376,7 +376,7 @@ public class OpcUaBinaryDecoder implements UaDecoder {
   }
 
   public StatusCode decodeStatusCode() throws UaSerializationException {
-    return new StatusCode(decodeUInt32());
+    return new StatusCode(buffer.readUnsignedIntLE());
   }
 
   public String decodeString() throws UaSerializationException {
