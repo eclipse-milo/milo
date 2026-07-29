@@ -34,19 +34,19 @@ class ClientDataType implements DataType {
 
   private final QualifiedName browseName;
   private final NodeId nodeId;
-  private final NodeId binaryEncodingId;
-  private final NodeId xmlEncodingId;
-  private final NodeId jsonEncodingId;
-  private final DataTypeDefinition dataTypeDefinition;
+  private final @Nullable NodeId binaryEncodingId;
+  private final @Nullable NodeId xmlEncodingId;
+  private final @Nullable NodeId jsonEncodingId;
+  private final @Nullable DataTypeDefinition dataTypeDefinition;
   private final Boolean isAbstract;
 
   public ClientDataType(
       QualifiedName browseName,
       NodeId nodeId,
-      NodeId binaryEncodingId,
-      NodeId xmlEncodingId,
-      NodeId jsonEncodingId,
-      DataTypeDefinition dataTypeDefinition,
+      @Nullable NodeId binaryEncodingId,
+      @Nullable NodeId xmlEncodingId,
+      @Nullable NodeId jsonEncodingId,
+      @Nullable DataTypeDefinition dataTypeDefinition,
       Boolean isAbstract) {
 
     this.browseName = browseName;
