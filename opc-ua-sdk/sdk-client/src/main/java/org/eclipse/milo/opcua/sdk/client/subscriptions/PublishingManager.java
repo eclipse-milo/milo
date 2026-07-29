@@ -798,6 +798,10 @@ public class PublishingManager {
     // is in flight is seen as a change by the failure handler rather than missed.
     long generation = subscriptionGeneration.get();
 
+    // Read for the same reason: a Session-level failure describes the Session the request was sent
+    // on, and once another activation has been counted it no longer describes the client.
+    long activation = sessionActivations.get();
+
     try {
       var subscriptionAcknowledgements = new ArrayList<SubscriptionAcknowledgement>();
 
@@ -914,7 +918,8 @@ public class PublishingManager {
                                   requestHandle,
                                   pendingCount,
                                   drainedAcknowledgements,
-                                  generation));
+                                  generation,
+                                  activation));
                 }
               });
     } catch (Exception e) {
@@ -1024,13 +1029,15 @@ public class PublishingManager {
    * @param pendingCount the pending-publish permits held for the Session the request was sent on.
    * @param drainedAcknowledgements the acknowledgements the failed request was carrying.
    * @param generation the {@link #subscriptionGeneration} in effect when the request was sent.
+   * @param activation the {@link #sessionActivations} in effect when the request was sent.
    */
   private void handlePublishFailure(
       Throwable ex,
       UInteger requestHandle,
       AtomicLong pendingCount,
       List<DrainedAcknowledgements> drainedAcknowledgements,
-      long generation) {
+      long generation,
+      long activation) {
 
     // The acknowledgements went down with the request. Part 4 §5.14.7.1: "The Client should
     // acknowledge all Messages in this list for which it will not request retransmission" — and
@@ -1057,8 +1064,12 @@ public class PublishingManager {
       // is re-activated, so the watchdog must be suspended rather than destroyed. The Session FSM
       // treats both codes as Session faults and reconnects, after which TransferSubscriptions may
       // well keep the Subscription alive; cancelling here would de-register the watchdog's
-      // SessionActivityListener and leave it unable to ever arm again.
-      subscriptionDetails.values().forEach(d -> d.subscription.pauseWatchdogTimer());
+      // SessionActivityListener and leave it unable to ever arm again. Only while the answer still
+      // describes this client, though: a straggling failure from a Session that a later activation
+      // has already replaced must not disarm the watchdogs that activation's recovery re-armed.
+      if (activation == sessionActivations.get()) {
+        subscriptionDetails.values().forEach(d -> d.subscription.pauseWatchdogTimer());
+      }
     } else if (code == StatusCodes.Bad_NoSubscription) {
       // Part 4 §5.14.8.1: when the last Subscription of a Session is deleted, "all Publish requests
       // still queued for that Session are de-queued and shall be returned with Bad_NoSubscription".
