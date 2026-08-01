@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.client.session;
 
+import static org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig.USER_TOKEN_POLICY_ANONYMOUS;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -27,6 +28,7 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -124,7 +126,7 @@ class CreateSessionActionFailureTest {
                 null,
                 MessageSecurityMode.None,
                 SecurityPolicy.None.getUri(),
-                null,
+                new UserTokenPolicy[] {USER_TOKEN_POLICY_ANONYMOUS},
                 TransportProfile.TCP_UASC_UABINARY.getUri(),
                 null))
         .setApplicationName(LocalizedText.english("Eclipse Milo Test Client"))

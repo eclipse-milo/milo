@@ -142,12 +142,13 @@ public class GapRepairSessionBindingTest {
               + " one being established. Republish requests received: "
               + fixture.republishRequests());
 
-      assertEquals(
-          List.of(1, 2, 3, 4, 5),
-          fixture.deliveredValues(repairing),
+      List<Integer> expectedValues = List.of(1, 2, 3, 4, 5);
+      assertTrue(
+          fixture.awaitDeliveredValues(repairing, expectedValues, STALL_WINDOW_MILLIS),
           "every recovered NotificationMessage, and then the one that revealed the gap, must reach"
               + " the application while the repair's own Session is still the only one there is;"
-              + " nothing here needs the Session that is being established");
+              + " nothing here needs the Session that is being established. Delivered: "
+              + fixture.deliveredValues(repairing));
 
       assertEquals(
           1,
