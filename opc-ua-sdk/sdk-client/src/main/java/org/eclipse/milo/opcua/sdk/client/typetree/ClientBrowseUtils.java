@@ -233,9 +233,18 @@ final class ClientBrowseUtils {
 
     while (continuationPoint != null && continuationPoint.isNotNull()) {
       if (++iterations > MAX_BROWSE_NEXT_ITERATIONS) {
-        throw new UaException(
-            StatusCodes.Bad_UnexpectedError,
-            "BrowseNext did not complete after %d calls".formatted(MAX_BROWSE_NEXT_ITERATIONS));
+        var limitException =
+            new UaException(
+                StatusCodes.Bad_UnexpectedError,
+                "BrowseNext did not complete after %d calls".formatted(MAX_BROWSE_NEXT_ITERATIONS));
+
+        try {
+          client.browseNext(true, List.of(continuationPoint));
+        } catch (UaException e) {
+          limitException.addSuppressed(e);
+        }
+
+        throw limitException;
       }
 
       BrowseNextResponse response = client.browseNext(false, List.of(continuationPoint));
