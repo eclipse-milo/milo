@@ -57,54 +57,15 @@ public final class UInteger extends UNumber implements Comparable<UInteger> {
   private final long value;
 
   /**
-   * Figure out the size of the precache.
-   *
-   * @return The parsed value of the system property {@link #PRECACHE_PROPERTY} or {@link
-   *     #DEFAULT_PRECACHE_SIZE} if the property is not set, not a number or retrieving results in a
-   *     {@link SecurityException}. If the parsed value is zero or negative no cache will be
-   *     created. If the value is larger than {@link Integer#MAX_VALUE} then Integer#MAX_VALUE will
-   *     be used.
-   */
-  private static int getPrecacheSize() {
-    String prop = null;
-    long propParsed;
-
-    try {
-      prop = System.getProperty(PRECACHE_PROPERTY);
-    } catch (SecurityException e) {
-      // security manager stopped us so use default
-      // FIXME: should we log this somewhere?
-      return DEFAULT_PRECACHE_SIZE;
-    }
-    if (prop == null) return DEFAULT_PRECACHE_SIZE;
-    if (prop.length() <= 0) {
-      // empty value
-      // FIXME: should we log this somewhere?
-      return DEFAULT_PRECACHE_SIZE;
-    }
-    try {
-      propParsed = Long.parseLong(prop);
-    } catch (NumberFormatException e) {
-      // not a valid number
-      // FIXME: should we log this somewhere?
-      return DEFAULT_PRECACHE_SIZE;
-    }
-    // treat negative value as no cache...
-    if (propParsed < 0) return 0;
-    if (propParsed > Integer.MAX_VALUE) {
-      // FIXME: should we log this somewhere?
-      return Integer.MAX_VALUE;
-    }
-    return (int) propParsed;
-  }
-
-  /**
    * Generate a cached value for initial unsigned integer values.
    *
-   * @return Array of cached values for UInteger
+   * <p>The cache size is read from the system property {@link #PRECACHE_PROPERTY}, defaulting to
+   * {@link #DEFAULT_PRECACHE_SIZE} and capped at {@link Integer#MAX_VALUE}.
+   *
+   * @return array of cached values for UInteger, or null if caching is disabled.
    */
   private static UInteger[] mkValues() {
-    int precacheSize = getPrecacheSize();
+    int precacheSize = getPrecacheSize(PRECACHE_PROPERTY, DEFAULT_PRECACHE_SIZE, Integer.MAX_VALUE);
     UInteger[] ret;
 
     if (precacheSize <= 0) return null;

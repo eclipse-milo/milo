@@ -42,6 +42,10 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI16;
+import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI32;
+import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI64;
+import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUI8;
 import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
@@ -54,7 +58,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.IdType;
 import org.eclipse.milo.opcua.stack.core.util.ArrayUtil;
 import org.jspecify.annotations.NonNull;
-import org.slf4j.LoggerFactory;
 
 public class OpcUaBinaryEncoder implements UaEncoder {
 
@@ -614,17 +617,18 @@ public class OpcUaBinaryEncoder implements UaEncoder {
         valueClass = Integer.class;
         enumeration = true;
       } else if (OptionSetUInteger.class.isAssignableFrom(valueClass)) {
-        assert value instanceof OptionSetUInteger<?>;
-        valueClass = ((OptionSetUInteger<?>) value).getValue().getClass();
+        // Derived from the element class rather than from value, which for an array or a Matrix is
+        // the container and not an OptionSetUInteger. This also resolves empty arrays, where there
+        // is no element to inspect.
+        valueClass = optionSetBackingClass(valueClass);
         optionSet = true;
       }
 
       int typeId = OpcUaDataType.getBuiltinTypeId(valueClass);
 
       if (typeId == -1) {
-        LoggerFactory.getLogger(getClass())
-            .warn(
-                "Not a built-in type: value={}, valueClass={}", value, valueClass, new Exception());
+        throw new UaSerializationException(
+            StatusCodes.Bad_EncodingError, "not a built-in type: " + valueClass.getName());
       }
 
       if (value.getClass().isArray() || value instanceof Matrix) {
@@ -634,10 +638,14 @@ public class OpcUaBinaryEncoder implements UaEncoder {
           int length = Array.getLength(value);
           buffer.writeIntLE(length);
 
-          for (int i = 0; i < length; i++) {
-            Object o = Array.get(value, i);
+          if (isPlainBuiltinArray(typeId, value)) {
+            encodeBuiltinTypeArray(typeId, value, length);
+          } else {
+            for (int i = 0; i < length; i++) {
+              Object o = Array.get(value, i);
 
-            encodeValue(o, typeId, structure, enumeration, optionSet);
+              encodeValue(o, typeId, structure, enumeration, optionSet);
+            }
           }
         } else {
           int[] dimensions = ((Matrix) value).getDimensions();
@@ -648,10 +656,14 @@ public class OpcUaBinaryEncoder implements UaEncoder {
           int length = Array.getLength(elements);
           buffer.writeIntLE(length);
 
-          for (int i = 0; i < length; i++) {
-            Object o = Array.get(elements, i);
+          if (isPlainBuiltinArray(typeId, elements)) {
+            encodeBuiltinTypeArray(typeId, elements, length);
+          } else {
+            for (int i = 0; i < length; i++) {
+              Object o = Array.get(elements, i);
 
-            encodeValue(o, typeId, structure, enumeration, optionSet);
+              encodeValue(o, typeId, structure, enumeration, optionSet);
+            }
           }
 
           encodeInt32(dimensions.length);
@@ -769,12 +781,204 @@ public class OpcUaBinaryEncoder implements UaEncoder {
     }
   }
 
+  /**
+   * Test whether {@code array} holds the builtin type identified by {@code typeId} directly, in
+   * either its boxed or its primitive representation.
+   *
+   * <p>False for arrays that need per-element conversion before encoding: arrays of {@link
+   * UaStructuredType}, {@link UaEnumeratedType}, or {@link OptionSetUInteger}, and arrays typed as
+   * a supertype or subtype of the builtin's backing class.
+   *
+   * @param typeId the id of the builtin type being encoded.
+   * @param array the array to test.
+   * @return {@code true} if {@link #encodeBuiltinTypeArray} can encode {@code array}.
+   */
+  private static boolean isPlainBuiltinArray(int typeId, Object array) {
+    Class<?> componentType = array.getClass().getComponentType();
+
+    return componentType != null
+        && (componentType == OpcUaDataType.getBackingClass(typeId)
+            || componentType == OpcUaDataType.getPrimitiveBackingClass(typeId));
+  }
+
+  /**
+   * Encode the first {@code length} elements of {@code array} as the builtin type identified by
+   * {@code typeId}.
+   *
+   * <p>Only valid when {@link #isPlainBuiltinArray} holds for {@code typeId} and {@code array}; the
+   * casts below rely on it. Both representations of a builtin type are accepted, e.g. Int32 values
+   * may arrive as {@code Integer[]} or as {@code int[]}.
+   *
+   * @param typeId the id of the builtin type to encode.
+   * @param array the array holding the elements to encode.
+   * @param length the number of elements to encode.
+   */
+  private void encodeBuiltinTypeArray(int typeId, Object array, int length)
+      throws UaSerializationException {
+
+    switch (typeId) {
+      case 1 -> {
+        if (array instanceof boolean[] values) {
+          for (int i = 0; i < length; i++) buffer.writeBoolean(values[i]);
+        } else {
+          Boolean[] values = (Boolean[]) array;
+          for (int i = 0; i < length; i++) encodeBoolean(values[i]);
+        }
+      }
+      case 2 -> {
+        if (array instanceof byte[] values) {
+          for (int i = 0; i < length; i++) buffer.writeByte(values[i]);
+        } else {
+          Byte[] values = (Byte[]) array;
+          for (int i = 0; i < length; i++) encodeSByte(values[i]);
+        }
+      }
+      case 3 -> {
+        UByte[] values = (UByte[]) array;
+        for (int i = 0; i < length; i++) encodeByte(values[i]);
+      }
+      case 4 -> {
+        if (array instanceof short[] values) {
+          for (int i = 0; i < length; i++) buffer.writeShortLE(values[i]);
+        } else {
+          Short[] values = (Short[]) array;
+          for (int i = 0; i < length; i++) encodeInt16(values[i]);
+        }
+      }
+      case 5 -> {
+        UShort[] values = (UShort[]) array;
+        for (int i = 0; i < length; i++) encodeUInt16(values[i]);
+      }
+      case 6 -> {
+        if (array instanceof int[] values) {
+          for (int i = 0; i < length; i++) buffer.writeIntLE(values[i]);
+        } else {
+          Integer[] values = (Integer[]) array;
+          for (int i = 0; i < length; i++) encodeInt32(values[i]);
+        }
+      }
+      case 7 -> {
+        UInteger[] values = (UInteger[]) array;
+        for (int i = 0; i < length; i++) encodeUInt32(values[i]);
+      }
+      case 8 -> {
+        if (array instanceof long[] values) {
+          for (int i = 0; i < length; i++) buffer.writeLongLE(values[i]);
+        } else {
+          Long[] values = (Long[]) array;
+          for (int i = 0; i < length; i++) encodeInt64(values[i]);
+        }
+      }
+      case 9 -> {
+        ULong[] values = (ULong[]) array;
+        for (int i = 0; i < length; i++) encodeUInt64(values[i]);
+      }
+      case 10 -> {
+        if (array instanceof float[] values) {
+          for (int i = 0; i < length; i++) buffer.writeFloatLE(values[i]);
+        } else {
+          Float[] values = (Float[]) array;
+          for (int i = 0; i < length; i++) encodeFloat(values[i]);
+        }
+      }
+      case 11 -> {
+        if (array instanceof double[] values) {
+          for (int i = 0; i < length; i++) buffer.writeDoubleLE(values[i]);
+        } else {
+          Double[] values = (Double[]) array;
+          for (int i = 0; i < length; i++) encodeDouble(values[i]);
+        }
+      }
+      case 12 -> {
+        String[] values = (String[]) array;
+        for (int i = 0; i < length; i++) encodeString(values[i]);
+      }
+      case 13 -> {
+        DateTime[] values = (DateTime[]) array;
+        for (int i = 0; i < length; i++) encodeDateTime(values[i]);
+      }
+      case 14 -> {
+        UUID[] values = (UUID[]) array;
+        for (int i = 0; i < length; i++) encodeGuid(values[i]);
+      }
+      case 15 -> {
+        ByteString[] values = (ByteString[]) array;
+        for (int i = 0; i < length; i++) encodeByteString(values[i]);
+      }
+      case 16 -> {
+        XmlElement[] values = (XmlElement[]) array;
+        for (int i = 0; i < length; i++) encodeXmlElement(values[i]);
+      }
+      case 17 -> {
+        NodeId[] values = (NodeId[]) array;
+        for (int i = 0; i < length; i++) encodeNodeId(values[i]);
+      }
+      case 18 -> {
+        ExpandedNodeId[] values = (ExpandedNodeId[]) array;
+        for (int i = 0; i < length; i++) encodeExpandedNodeId(values[i]);
+      }
+      case 19 -> {
+        StatusCode[] values = (StatusCode[]) array;
+        for (int i = 0; i < length; i++) encodeStatusCode(values[i]);
+      }
+      case 20 -> {
+        QualifiedName[] values = (QualifiedName[]) array;
+        for (int i = 0; i < length; i++) encodeQualifiedName(values[i]);
+      }
+      case 21 -> {
+        LocalizedText[] values = (LocalizedText[]) array;
+        for (int i = 0; i < length; i++) encodeLocalizedText(values[i]);
+      }
+      case 22 -> {
+        ExtensionObject[] values = (ExtensionObject[]) array;
+        for (int i = 0; i < length; i++) encodeExtensionObject(values[i]);
+      }
+      case 23 -> {
+        DataValue[] values = (DataValue[]) array;
+        for (int i = 0; i < length; i++) encodeDataValue(values[i]);
+      }
+      case 24 -> {
+        Variant[] values = (Variant[]) array;
+        for (int i = 0; i < length; i++) encodeVariant(values[i]);
+      }
+      case 25 -> {
+        DiagnosticInfo[] values = (DiagnosticInfo[]) array;
+        for (int i = 0; i < length; i++) encodeDiagnosticInfo(values[i]);
+      }
+      default ->
+          throw new UaSerializationException(
+              StatusCodes.Bad_EncodingError, "unknown builtin type: " + typeId);
+    }
+  }
+
   private Class<?> getClass(@NonNull Object o) {
     if (o.getClass().isArray()) {
       return ArrayUtil.getType(o);
     } else {
       return o.getClass();
     }
+  }
+
+  /**
+   * Resolve the unsigned integer class an {@link OptionSetUInteger} is encoded as.
+   *
+   * <p>Derived from the class hierarchy rather than from an instance so that arrays, Matrices, and
+   * empty arrays all resolve without an element to inspect.
+   *
+   * @param optionSetClass the {@link OptionSetUInteger} subclass.
+   * @return the backing class the option set is encoded as.
+   * @throws UaSerializationException if {@code optionSetClass} has no OptionSetUI8/16/32/64
+   *     ancestor.
+   */
+  private static Class<?> optionSetBackingClass(Class<?> optionSetClass) {
+    if (OptionSetUI8.class.isAssignableFrom(optionSetClass)) return UByte.class;
+    if (OptionSetUI16.class.isAssignableFrom(optionSetClass)) return UShort.class;
+    if (OptionSetUI32.class.isAssignableFrom(optionSetClass)) return UInteger.class;
+    if (OptionSetUI64.class.isAssignableFrom(optionSetClass)) return ULong.class;
+
+    throw new UaSerializationException(
+        StatusCodes.Bad_EncodingError,
+        "no OptionSetUI8/16/32/64 ancestor for " + optionSetClass.getName());
   }
 
   private void encodeLengthPrefixedString(String value, Charset charset)
@@ -1202,15 +1406,19 @@ public class OpcUaBinaryEncoder implements UaEncoder {
       int typeId =
           value.getDataType().orElseThrow().getTypeId(); // won't throw, we checked for null
 
-      for (int i = 0; i < length; i++) {
-        Object o = Array.get(elements, i);
+      if (isPlainBuiltinArray(typeId, elements)) {
+        encodeBuiltinTypeArray(typeId, elements, length);
+      } else {
+        for (int i = 0; i < length; i++) {
+          Object o = Array.get(elements, i);
 
-        encodeValue(
-            o,
-            typeId,
-            o instanceof UaStructuredType,
-            o instanceof UaEnumeratedType,
-            o instanceof OptionSetUInteger);
+          encodeValue(
+              o,
+              typeId,
+              o instanceof UaStructuredType,
+              o instanceof UaEnumeratedType,
+              o instanceof OptionSetUInteger);
+        }
       }
     }
   }
@@ -1238,10 +1446,10 @@ public class OpcUaBinaryEncoder implements UaEncoder {
       int length = Array.getLength(elements);
       assert length == Arrays.stream(dimensions).reduce(1, (left, right) -> left * right);
 
+      // Object[] covers both UaEnumeratedType[] and the Object[] built by generic codecs.
+      Object[] values = (Object[]) elements;
       for (int i = 0; i < length; i++) {
-        Object o = Array.get(elements, i);
-
-        encodeEnum(null, (UaEnumeratedType) o);
+        encodeEnum(null, (UaEnumeratedType) values[i]);
       }
     }
   }
@@ -1271,10 +1479,10 @@ public class OpcUaBinaryEncoder implements UaEncoder {
       int length = Array.getLength(elements);
       assert length == Arrays.stream(dimensions).reduce(1, (left, right) -> left * right);
 
+      // Object[] covers both UaStructuredType[] and the Object[] built by generic codecs.
+      Object[] values = (Object[]) elements;
       for (int i = 0; i < length; i++) {
-        Object o = Array.get(elements, i);
-
-        encodeStruct(null, (UaStructuredType) o, dataTypeId);
+        encodeStruct(null, (UaStructuredType) values[i], dataTypeId);
       }
     }
   }

@@ -11,13 +11,16 @@
 package org.eclipse.milo.opcua.stack.core.encoding.binary;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.*;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
@@ -141,6 +144,99 @@ public class OpcUaBinaryEncoderTest {
     Matrix decodedMatrix = decoder.decodeMatrix(null, OpcUaDataType.Int32);
 
     assertEquals(matrix, decodedMatrix.transform(v -> ApplicationType.from((Integer) v)));
+  }
+
+  // Generic codecs (JsonStructCodec, the DTD codecs) build matrix elements as Object[]. Object[] is
+  // not assignable to UaEnumeratedType[], so the encoder must not assume the concrete array type.
+  @Test
+  void encodeEnumMatrixBackedByObjectArray() {
+    Matrix matrix =
+        new Matrix(
+            new Object[] {ApplicationType.Server, ApplicationType.Client},
+            new int[] {1, 2},
+            OpcUaDataType.Int32);
+
+    encoder.encodeEnumMatrix(null, matrix);
+
+    var decoder = new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE).setBuffer(buffer);
+    Matrix decodedMatrix = decoder.decodeMatrix(null, OpcUaDataType.Int32);
+
+    assertArrayEquals(
+        new Integer[] {ApplicationType.Server.getValue(), ApplicationType.Client.getValue()},
+        (Integer[]) decodedMatrix.getElements());
+  }
+
+  // As above, for UaStructuredType[].
+  @Test
+  void encodeStructMatrixBackedByObjectArray() throws Exception {
+    XVType xv1 = new XVType(1.0, 2.0f);
+    XVType xv2 = new XVType(3.0, 4.0f);
+
+    Matrix matrix =
+        new Matrix(new Object[] {xv1, xv2}, new int[] {1, 2}, OpcUaDataType.ExtensionObject);
+
+    NodeId dataTypeId =
+        XVType.TYPE_ID.toNodeIdOrThrow(DefaultEncodingContext.INSTANCE.getNamespaceTable());
+
+    encoder.encodeStructMatrix(null, matrix, dataTypeId);
+
+    var decoder = new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE).setBuffer(buffer);
+    Matrix decodedMatrix = decoder.decodeStructMatrix(null, dataTypeId);
+
+    assertArrayEquals(new XVType[] {xv1, xv2}, (XVType[]) decodedMatrix.getElements());
+  }
+
+  // An OptionSet's builtin type must be derived from the element class, not by casting the value
+  // itself: for an array or a Matrix the value is the container, not an OptionSetUInteger.
+  @Test
+  void encodeVariantOfOptionSetArray() {
+    AccessLevelType[] values = {
+      AccessLevelType.of(AccessLevelType.Field.CurrentRead),
+      AccessLevelType.of(AccessLevelType.Field.CurrentWrite)
+    };
+
+    encoder.encodeVariant(new Variant(values));
+
+    var decoder = new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE).setBuffer(buffer);
+    Variant decoded = decoder.decodeVariant();
+
+    // OptionSets go on the wire as their backing UInteger, so they come back as UByte here.
+    assertArrayEquals(
+        new UByte[] {(UByte) values[0].getValue(), (UByte) values[1].getValue()},
+        (UByte[]) decoded.value());
+  }
+
+  // As above, reached through the Matrix branch of encodeVariant.
+  @Test
+  void encodeVariantOfOptionSetMatrix() {
+    AccessLevelType[][] values = {
+      {
+        AccessLevelType.of(AccessLevelType.Field.CurrentRead),
+        AccessLevelType.of(AccessLevelType.Field.CurrentWrite)
+      }
+    };
+
+    encoder.encodeVariant(new Variant(Matrix.ofOptionSetUI(values)));
+
+    var decoder = new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE).setBuffer(buffer);
+    Variant decoded = decoder.decodeVariant();
+
+    Matrix decodedMatrix = (Matrix) decoded.value();
+    assertArrayEquals(new int[] {1, 2}, decodedMatrix.getDimensions());
+    assertArrayEquals(
+        new UByte[] {(UByte) values[0][0].getValue(), (UByte) values[0][1].getValue()},
+        (UByte[]) decodedMatrix.getElements());
+  }
+
+  // A Variant holding something that is not a builtin type cannot be encoded. Report it rather than
+  // writing a bogus encoding mask that the peer will reject as a framing error.
+  @Test
+  void encodeVariantOfNonBuiltinTypeReportsEncodingError() {
+    UaSerializationException ex =
+        assertThrows(
+            UaSerializationException.class, () -> encoder.encodeVariant(new Variant(new Object())));
+
+    assertEquals(new StatusCode(StatusCodes.Bad_EncodingError), ex.getStatusCode());
   }
 
   @Test

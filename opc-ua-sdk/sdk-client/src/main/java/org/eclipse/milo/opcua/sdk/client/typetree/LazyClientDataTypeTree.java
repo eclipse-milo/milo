@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -13,11 +13,12 @@ package org.eclipse.milo.opcua.sdk.client.typetree;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Supplier;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.OperationLimits;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
@@ -27,7 +28,6 @@ import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.DataTypeEncoding;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -64,6 +64,9 @@ import org.slf4j.LoggerFactory;
  * that concurrent threads attempting to resolve different types will be serialized. Once a type is
  * resolved, later lookups only require the read lock and can proceed concurrently.
  *
+ * <p>Because the underlying {@link Tree} is mutated as types are resolved, {@link #getRoot()} and
+ * {@link #getTreeNode(NodeId)} return snapshot copies rather than live nodes.
+ *
  * <h2>Resolution Behavior</h2>
  *
  * <p>Resolution errors (e.g., network failures, non-existent types) do not cause exceptions to be
@@ -83,9 +86,17 @@ public class LazyClientDataTypeTree extends DataTypeTree {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(LazyClientDataTypeTree.class);
 
+  /**
+   * Upper bound on the number of inverse HasSubtype hops followed while resolving a type, guarding
+   * against non-compliant servers with cyclic or unbounded inverse subtype references.
+   */
+  private static final int MAX_RESOLUTION_DEPTH = 256;
+
   private final OpcUaClient client;
   private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-  private final Set<NodeId> attemptedResolution = ConcurrentHashMap.newKeySet();
+
+  // All access is guarded by `lock`: reads under the read lock, mutations under the write lock.
+  private final Set<NodeId> attemptedResolution = new HashSet<>();
 
   private volatile NamespaceTable namespaceTable;
 
@@ -230,6 +241,10 @@ public class LazyClientDataTypeTree extends DataTypeTree {
         resolvePath(dataTypeId);
       } catch (UaException e) {
         LOGGER.debug("Failed to resolve DataType {}: {}", dataTypeId, e.getMessage());
+      } catch (RuntimeException e) {
+        // Query methods are documented not to throw on resolution failure; an unexpected
+        // RuntimeException here usually indicates a non-compliant server response.
+        LOGGER.warn("Unexpected error resolving DataType {}", dataTypeId, e);
       }
     } finally {
       lock.writeLock().unlock();
@@ -237,12 +252,16 @@ public class LazyClientDataTypeTree extends DataTypeTree {
   }
 
   private void resolvePath(NodeId dataTypeId) throws UaException {
+    // Pin resolution to the session it started on so results assembled across a session change
+    // (e.g. a reconnection mid-resolution) are never cached.
+    NodeId sessionId = client.getSession().getSessionId();
+
     NamespaceTable nsTable = getNamespaceTable();
     OperationLimits limits = client.getOperationLimits();
 
     List<NodeId> pathToResolve = browseInverseUntilKnown(dataTypeId, types.keySet(), nsTable);
 
-    if (pathToResolve.isEmpty() || pathToResolve.size() < 2) {
+    if (pathToResolve.size() < 2) {
       LOGGER.debug("Could not resolve path to known ancestor for DataType {}", dataTypeId);
       return;
     }
@@ -253,23 +272,30 @@ public class LazyClientDataTypeTree extends DataTypeTree {
 
     List<ClientDataType> dataTypes = fetchDataTypeInfoBatch(nodesToAdd, nsTable, limits);
 
+    ClientBrowseUtils.checkSessionUnchanged(client, sessionId);
+
     // Add from ancestor toward target (reverse order)
     Tree<DataType> parentTree = types.get(knownAncestorId);
 
     for (int i = nodesToAdd.size() - 1; i >= 0; i--) {
       ClientDataType dataType = dataTypes.get(i);
 
-      if (dataType != null && parentTree != null) {
-        Tree<DataType> childTree = parentTree.addChild(dataType);
-        types.put(dataType.getNodeId(), childTree);
-        parentTree = childTree;
-
-        LOGGER.debug("Resolved DataType: {}", dataType.getBrowseName().toParseableString());
+      if (dataType == null) {
+        // Attribute reads failed for this node; stop here rather than caching an incomplete
+        // type or attaching its descendants to the wrong parent.
+        LOGGER.debug("Attribute reads failed for DataType {}; path not cached", nodesToAdd.get(i));
+        break;
       }
+
+      Tree<DataType> childTree = parentTree.addChild(dataType);
+      types.put(dataType.getNodeId(), childTree);
+      parentTree = childTree;
+
+      LOGGER.debug("Resolved DataType: {}", dataType.getBrowseName().toParseableString());
     }
   }
 
-  private List<ClientDataType> fetchDataTypeInfoBatch(
+  private List<@Nullable ClientDataType> fetchDataTypeInfoBatch(
       List<NodeId> nodeIds, NamespaceTable nsTable, OperationLimits limits) throws UaException {
 
     // Read attributes: BrowseName, IsAbstract, DataTypeDefinition
@@ -288,9 +314,10 @@ public class LazyClientDataTypeTree extends DataTypeTree {
         ClientBrowseUtils.readWithOperationLimits(client, readValueIds, limits);
 
     // Browse encodings
-    List<List<ReferenceDescription>> encodingRefs = browseEncodings(nodeIds, limits);
+    List<List<ReferenceDescription>> encodingRefs =
+        ClientBrowseUtils.browseEncodings(client, nodeIds, limits);
 
-    var result = new ArrayList<ClientDataType>();
+    var result = new ArrayList<@Nullable ClientDataType>();
 
     for (int i = 0; i < nodeIds.size(); i++) {
       NodeId nodeId = nodeIds.get(i);
@@ -300,31 +327,23 @@ public class LazyClientDataTypeTree extends DataTypeTree {
       Boolean isAbstract = extractIsAbstract(values.get(valueOffset + 1));
       DataTypeDefinition definition = extractDataTypeDefinition(values.get(valueOffset + 2));
 
-      NodeId binaryEncodingId = null;
-      NodeId xmlEncodingId = null;
-      NodeId jsonEncodingId = null;
-
-      for (ReferenceDescription r : encodingRefs.get(i)) {
-        // Be lenient: also match on unqualified browse name (some servers use wrong namespace)
-        if (r.getBrowseName().equals(DataTypeEncoding.BINARY_ENCODING_NAME)
-            || Objects.equals(r.getBrowseName().name(), "Default Binary")) {
-          binaryEncodingId = r.getNodeId().toNodeId(nsTable).orElse(null);
-        } else if (r.getBrowseName().equals(DataTypeEncoding.XML_ENCODING_NAME)
-            || Objects.equals(r.getBrowseName().name(), "Default XML")) {
-          xmlEncodingId = r.getNodeId().toNodeId(nsTable).orElse(null);
-        } else if (r.getBrowseName().equals(DataTypeEncoding.JSON_ENCODING_NAME)
-            || Objects.equals(r.getBrowseName().name(), "Default JSON")) {
-          jsonEncodingId = r.getNodeId().toNodeId(nsTable).orElse(null);
-        }
+      if (browseName == null) {
+        // BrowseName is a mandatory attribute; a bad read means the node is unavailable and the
+        // type would be cached with meaningless values.
+        result.add(null);
+        continue;
       }
+
+      ClientBrowseUtils.EncodingIds encodingIds =
+          ClientBrowseUtils.extractEncodingIds(encodingRefs.get(i), nsTable);
 
       result.add(
           new ClientDataType(
               browseName,
               nodeId,
-              binaryEncodingId,
-              xmlEncodingId,
-              jsonEncodingId,
+              encodingIds.binaryEncodingId(),
+              encodingIds.xmlEncodingId(),
+              encodingIds.jsonEncodingId(),
               definition,
               isAbstract));
     }
@@ -344,10 +363,18 @@ public class LazyClientDataTypeTree extends DataTypeTree {
   private List<NodeId> browseInverseUntilKnown(
       NodeId startId, Set<NodeId> knownTypeIds, NamespaceTable namespaceTable) {
 
+    var visited = new HashSet<NodeId>();
     List<NodeId> path = new ArrayList<>();
     NodeId current = startId;
 
     while (current != null && !knownTypeIds.contains(current)) {
+      if (!visited.add(current) || visited.size() > MAX_RESOLUTION_DEPTH) {
+        LOGGER.warn(
+            "Inverse HasSubtype references from {} are cyclic or exceed depth {}",
+            startId,
+            MAX_RESOLUTION_DEPTH);
+        return List.of();
+      }
       path.add(current);
       current = browseInverseParent(current, namespaceTable);
     }
@@ -393,30 +420,11 @@ public class LazyClientDataTypeTree extends DataTypeTree {
     return null;
   }
 
-  private List<List<ReferenceDescription>> browseEncodings(
-      List<NodeId> dataTypeIds, OperationLimits limits) throws UaException {
-
-    List<BrowseDescription> browseDescriptions =
-        dataTypeIds.stream()
-            .map(
-                dataTypeId ->
-                    new BrowseDescription(
-                        dataTypeId,
-                        BrowseDirection.Forward,
-                        NodeIds.HasEncoding,
-                        false,
-                        uint(NodeClass.Object.getValue()),
-                        uint(BrowseResultMask.All.getValue())))
-            .toList();
-
-    return ClientBrowseUtils.browseWithOperationLimits(client, browseDescriptions, limits);
-  }
-
-  private static QualifiedName extractBrowseName(DataValue value) {
+  private static @Nullable QualifiedName extractBrowseName(DataValue value) {
     if (value.statusCode().isGood() && value.value().value() instanceof QualifiedName qn) {
       return qn;
     }
-    return QualifiedName.NULL_VALUE;
+    return null;
   }
 
   private static Boolean extractIsAbstract(DataValue value) {
@@ -448,6 +456,23 @@ public class LazyClientDataTypeTree extends DataTypeTree {
   // ===== Overridden Methods =====
 
   /**
+   * Ensure {@code dataTypeId} is resolved, then evaluate {@code query} under the read lock.
+   *
+   * @param dataTypeId the {@link NodeId} of the DataType the query is about.
+   * @param query the query to evaluate.
+   * @return the result of {@code query}.
+   */
+  private <T> T resolvedQuery(NodeId dataTypeId, Supplier<T> query) {
+    ensureResolved(dataTypeId);
+    lock.readLock().lock();
+    try {
+      return query.get();
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
+
+  /**
    * Get a snapshot of the root of the underlying {@link Tree} structure.
    *
    * <p>Because this tree is lazily populated, returning the live tree would expose callers to
@@ -472,147 +497,109 @@ public class LazyClientDataTypeTree extends DataTypeTree {
     }
   }
 
-  @Override
-  public boolean containsType(NodeId typeId) {
-    ensureResolved(typeId);
-    lock.readLock().lock();
-    try {
-      return super.containsType(typeId);
-    } finally {
-      lock.readLock().unlock();
-    }
-  }
-
-  @Override
-  public @Nullable DataType getType(NodeId nodeId) {
-    ensureResolved(nodeId);
-    lock.readLock().lock();
-    try {
-      return super.getType(nodeId);
-    } finally {
-      lock.readLock().unlock();
-    }
-  }
-
-  @Override
-  public Class<?> getBackingClass(NodeId dataTypeId) {
-    ensureResolved(dataTypeId);
-    lock.readLock().lock();
-    try {
-      return super.getBackingClass(dataTypeId);
-    } finally {
-      lock.readLock().unlock();
-    }
-  }
-
-  @Override
-  public OpcUaDataType getBuiltinType(NodeId dataTypeId) {
-    ensureResolved(dataTypeId);
-    lock.readLock().lock();
-    try {
-      return super.getBuiltinType(dataTypeId);
-    } finally {
-      lock.readLock().unlock();
-    }
-  }
-
-  @Override
-  public @Nullable DataType getDataType(NodeId dataTypeId) {
-    ensureResolved(dataTypeId);
-    lock.readLock().lock();
-    try {
-      return super.getDataType(dataTypeId);
-    } finally {
-      lock.readLock().unlock();
-    }
-  }
-
-  @Override
-  public @Nullable NodeId getBinaryEncodingId(NodeId dataTypeId) {
-    ensureResolved(dataTypeId);
-    lock.readLock().lock();
-    try {
-      return super.getBinaryEncodingId(dataTypeId);
-    } finally {
-      lock.readLock().unlock();
-    }
-  }
-
-  @Override
-  public @Nullable NodeId getXmlEncodingId(NodeId dataTypeId) {
-    ensureResolved(dataTypeId);
-    lock.readLock().lock();
-    try {
-      return super.getXmlEncodingId(dataTypeId);
-    } finally {
-      lock.readLock().unlock();
-    }
-  }
-
-  @Override
-  public @Nullable NodeId getJsonEncodingId(NodeId dataTypeId) {
-    ensureResolved(dataTypeId);
-    lock.readLock().lock();
-    try {
-      return super.getJsonEncodingId(dataTypeId);
-    } finally {
-      lock.readLock().unlock();
-    }
-  }
-
-  @Override
-  public @Nullable DataTypeDefinition getDataTypeDefinition(NodeId dataTypeId) {
-    ensureResolved(dataTypeId);
-    lock.readLock().lock();
-    try {
-      return super.getDataTypeDefinition(dataTypeId);
-    } finally {
-      lock.readLock().unlock();
-    }
-  }
-
-  @Override
-  public boolean isAssignable(NodeId dataTypeId, Class<?> clazz) {
-    ensureResolved(dataTypeId);
-    lock.readLock().lock();
-    try {
-      return super.isAssignable(dataTypeId, clazz);
-    } finally {
-      lock.readLock().unlock();
-    }
-  }
-
-  @Override
-  public boolean isEnumType(NodeId dataTypeId) {
-    ensureResolved(dataTypeId);
-    lock.readLock().lock();
-    try {
-      return super.isEnumType(dataTypeId);
-    } finally {
-      lock.readLock().unlock();
-    }
-  }
-
-  @Override
-  public boolean isStructType(NodeId dataTypeId) {
-    ensureResolved(dataTypeId);
-    lock.readLock().lock();
-    try {
-      return super.isStructType(dataTypeId);
-    } finally {
-      lock.readLock().unlock();
-    }
-  }
-
+  /**
+   * Get a snapshot of the underlying {@link Tree} node for the DataType identified by {@code
+   * dataTypeId}.
+   *
+   * <p>Like {@link #getRoot()}, this method returns a node from a deep copy (snapshot) of the
+   * current tree state rather than the live, lazily-mutated tree. The snapshot is taken from the
+   * root, so the returned node's parent chain is intact.
+   *
+   * @param dataTypeId the {@link NodeId} of a DataType Node.
+   * @return a snapshot of the {@link Tree} node for the DataType identified by {@code dataTypeId},
+   *     or {@code null} if it is not present in the tree.
+   */
   @Override
   public @Nullable Tree<DataType> getTreeNode(NodeId dataTypeId) {
     ensureResolved(dataTypeId);
     lock.readLock().lock();
     try {
-      return super.getTreeNode(dataTypeId);
+      if (super.getTreeNode(dataTypeId) == null) {
+        return null;
+      }
+
+      Tree<DataType> snapshot = tree.map(dataType -> dataType);
+
+      var treeNode = new AtomicReference<Tree<DataType>>();
+      snapshot.traverseNodes(
+          node -> {
+            if (node.getValue().getNodeId().equals(dataTypeId)) {
+              treeNode.set(node);
+            }
+          });
+      return treeNode.get();
     } finally {
       lock.readLock().unlock();
     }
+  }
+
+  @Override
+  public boolean containsType(NodeId typeId) {
+    return resolvedQuery(typeId, () -> super.containsType(typeId));
+  }
+
+  @Override
+  public @Nullable DataType getType(NodeId nodeId) {
+    return resolvedQuery(nodeId, () -> super.getType(nodeId));
+  }
+
+  @Override
+  public Class<?> getBackingClass(NodeId dataTypeId) {
+    if (hasStaticBackingClass(dataTypeId)) {
+      // The superclass answers without consulting the tree; skip resolution and locking.
+      return super.getBackingClass(dataTypeId);
+    }
+    return resolvedQuery(dataTypeId, () -> super.getBackingClass(dataTypeId));
+  }
+
+  @Override
+  public OpcUaDataType getBuiltinType(NodeId dataTypeId) {
+    if (OpcUaDataType.isBuiltin(dataTypeId)) {
+      // The superclass answers without consulting the tree; skip resolution and locking.
+      return super.getBuiltinType(dataTypeId);
+    }
+    return resolvedQuery(dataTypeId, () -> super.getBuiltinType(dataTypeId));
+  }
+
+  @Override
+  public @Nullable DataType getDataType(NodeId dataTypeId) {
+    return resolvedQuery(dataTypeId, () -> super.getDataType(dataTypeId));
+  }
+
+  @Override
+  public @Nullable NodeId getBinaryEncodingId(NodeId dataTypeId) {
+    return resolvedQuery(dataTypeId, () -> super.getBinaryEncodingId(dataTypeId));
+  }
+
+  @Override
+  public @Nullable NodeId getXmlEncodingId(NodeId dataTypeId) {
+    return resolvedQuery(dataTypeId, () -> super.getXmlEncodingId(dataTypeId));
+  }
+
+  @Override
+  public @Nullable NodeId getJsonEncodingId(NodeId dataTypeId) {
+    return resolvedQuery(dataTypeId, () -> super.getJsonEncodingId(dataTypeId));
+  }
+
+  @Override
+  public @Nullable DataTypeDefinition getDataTypeDefinition(NodeId dataTypeId) {
+    return resolvedQuery(dataTypeId, () -> super.getDataTypeDefinition(dataTypeId));
+  }
+
+  @Override
+  public boolean isAssignable(NodeId dataTypeId, Class<?> clazz) {
+    // Resolution and locking are handled by the getBackingClass override.
+    return super.isAssignable(dataTypeId, clazz);
+  }
+
+  @Override
+  public boolean isEnumType(NodeId dataTypeId) {
+    return resolvedQuery(dataTypeId, () -> super.isEnumType(dataTypeId));
+  }
+
+  @Override
+  public boolean isStructType(NodeId dataTypeId) {
+    return resolvedQuery(dataTypeId, () -> super.isStructType(dataTypeId));
   }
 
   @Override
@@ -620,9 +607,32 @@ public class LazyClientDataTypeTree extends DataTypeTree {
     ensureResolved(typeId);
     lock.readLock().lock();
     try {
-      return super.isSubtypeOf(typeId, superTypeId);
+      // Walk the parent chain directly rather than delegating to the superclass, which would
+      // dispatch back through the overridden (snapshotting) getTreeNode.
+      Tree<DataType> node = super.getTreeNode(typeId);
+
+      while (node != null) {
+        Tree<DataType> parent = node.getParent();
+        if (parent == null) {
+          return false;
+        }
+        if (parent.getValue().getNodeId().equals(superTypeId)) {
+          return true;
+        }
+        node = parent;
+      }
+
+      return false;
     } finally {
       lock.readLock().unlock();
     }
+  }
+
+  private static boolean hasStaticBackingClass(NodeId dataTypeId) {
+    return OpcUaDataType.isBuiltin(dataTypeId)
+        || NodeIds.Enumeration.equals(dataTypeId)
+        || NodeIds.Number.equals(dataTypeId)
+        || NodeIds.Integer.equals(dataTypeId)
+        || NodeIds.UInteger.equals(dataTypeId);
   }
 }

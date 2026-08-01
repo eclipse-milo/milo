@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -17,6 +17,8 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.types.DataTypeManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
@@ -60,6 +62,21 @@ public class DataTypeTreeFactoryTest extends AbstractClientServerTest {
 
     assertNotSame(tree1, tree2);
     assertInstanceOf(LazyClientDataTypeTree.class, tree2);
+  }
+
+  @Test
+  void readDataTypeTreeResetsDerivedCaches() throws Exception {
+    DataTypeTree treeBefore = client.getDataTypeTree();
+    DataTypeManager managerBefore = client.getDynamicDataTypeManager();
+    EncodingContext contextBefore = client.getDynamicEncodingContext();
+
+    DataTypeTree treeAfter = client.readDataTypeTree();
+
+    // The dynamic DataTypeManager and EncodingContext hold references to the tree they were
+    // created against, so refreshing the tree must rebuild them too.
+    assertNotSame(treeBefore, treeAfter);
+    assertNotSame(managerBefore, client.getDynamicDataTypeManager());
+    assertNotSame(contextBefore, client.getDynamicEncodingContext());
   }
 
   @Test

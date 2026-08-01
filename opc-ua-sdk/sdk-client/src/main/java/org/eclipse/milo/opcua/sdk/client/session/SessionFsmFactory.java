@@ -17,6 +17,7 @@ import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_CLOSE_FUT
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_CREATE_SESSION_CLIENT_NONCE;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_KEEP_ALIVE_FAILURE_COUNT;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_KEEP_ALIVE_SCHEDULED_FUTURE;
+import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_PENDING_SESSION;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SESSION;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SESSION_ACTIVITY_LISTENERS;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SESSION_FUTURE;
@@ -117,6 +118,26 @@ public class SessionFsmFactory {
   private static final AtomicLong INSTANCE_ID = new AtomicLong();
 
   private static final int MAX_WAIT_SECONDS = 16;
+
+  /**
+   * Lower bound, in milliseconds, on the keep-alive interval derived from a revised session
+   * timeout, so that a Server revising the timeout down to a very small value can't turn the
+   * keep-alive into a flood of requests.
+   */
+  private static final long MIN_KEEP_ALIVE_INTERVAL = 1000L;
+
+  /**
+   * StatusCodes that mean the Server no longer has a usable Session for us, i.e. the Session it
+   * would have to be reactivated against is gone or was never activated.
+   */
+  private static final Predicate<StatusCode> SESSION_ERROR =
+      statusCode -> {
+        long status = statusCode.value();
+
+        return status == StatusCodes.Bad_SessionClosed
+            || status == StatusCodes.Bad_SessionIdInvalid
+            || status == StatusCodes.Bad_SessionNotActivated;
+      };
 
   private SessionFsmFactory() {}
 
@@ -396,6 +417,10 @@ public class SessionFsmFactory {
             ctx -> {
               Event.CreateSessionSuccess event = (Event.CreateSessionSuccess) ctx.event();
 
+              // The Session now exists on the Server; remember it so it can be closed if the
+              // remainder of the establishment sequence fails.
+              KEY_PENDING_SESSION.set(ctx, event.response);
+
               activateSession(ctx, client, event.response)
                   .whenComplete(
                       (session, ex) -> {
@@ -622,8 +647,36 @@ public class SessionFsmFactory {
               // reset the wait time
               KEY_WAIT_TIME.remove(ctx);
 
-              long keepAliveInterval = client.getConfig().getKeepAliveInterval().longValue();
-              KEY_KEEP_ALIVE_FAILURE_COUNT.set(ctx, 0L);
+              // The Server is free to revise the requested session timeout downwards, and it
+              // terminates the Session if the Client issues no request within the revised
+              // interval (Part 4 §5.7.2.2). Keep-alives scheduled from the configured interval
+              // alone would let the Session expire between them, so bound the interval at half
+              // the revised timeout, leaving room for one keep-alive to be missed. The clamp only
+              // ever lowers the interval; a configured value that is already safe is untouched.
+              long configuredInterval = client.getConfig().getKeepAliveInterval().longValue();
+              long revisedTimeout = event.session.getSessionTimeout().longValue();
+
+              long keepAliveInterval =
+                  Math.min(
+                      configuredInterval, Math.max(MIN_KEEP_ALIVE_INTERVAL, revisedTimeout / 2));
+
+              if (keepAliveInterval != configuredInterval) {
+                try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+                    MDCCloseable ignoredSessionId = putSessionId(event.session)) {
+
+                  LOGGER.warn(
+                      "Server revised the session timeout to {}ms; the configured keep-alive"
+                          + " interval of {}ms leaves too little margin before the Session"
+                          + " expires, using {}ms instead.",
+                      revisedTimeout,
+                      configuredInterval,
+                      keepAliveInterval);
+                }
+              }
+
+              // A new counter instance per epoch, so a keep-alive sent on a previous epoch can
+              // recognize that the one it captured is no longer the current one.
+              KEY_KEEP_ALIVE_FAILURE_COUNT.set(ctx, new AtomicLong(0L));
 
               ScheduledFuture<?> scheduledFuture =
                   client
@@ -638,6 +691,9 @@ public class SessionFsmFactory {
               KEY_KEEP_ALIVE_SCHEDULED_FUTURE.set(ctx, scheduledFuture);
 
               KEY_SESSION.set(ctx, event.session);
+
+              // The Session is established; it's reachable via KEY_SESSION from here on.
+              KEY_PENDING_SESSION.remove(ctx);
 
               SessionFuture sessionFuture = KEY_SESSION_FUTURE.get(ctx);
 
@@ -754,9 +810,25 @@ public class SessionFsmFactory {
             ctx -> {
               Event.KeepAlive event = (Event.KeepAlive) ctx.event();
 
+              // Capture the counter belonging to the epoch this keep-alive is sent on. Leaving
+              // Active cancels the scheduling of new keep-alives but does not cancel one that has
+              // already been sent, and the Event.ServiceFault route leaves Active without taking
+              // the channel down, so the request below can still be pending when the Session is
+              // re-activated (Part 4 §5.6.3) and complete against a later epoch.
+              AtomicLong failureCount = KEY_KEEP_ALIVE_FAILURE_COUNT.get(ctx);
+
               sendKeepAlive(client, event.session)
                   .whenComplete(
                       (response, ex) -> {
+                        if (ctx.currentState() != State.Active
+                            || KEY_SESSION.get(ctx) != event.session
+                            || KEY_KEEP_ALIVE_FAILURE_COUNT.get(ctx) != failureCount) {
+
+                          // The epoch this keep-alive was sent on is over; whatever it observed is
+                          // no longer relevant to the Session the FSM has now.
+                          return;
+                        }
+
                         if (response != null) {
                           DataValue[] results = response.getResults();
 
@@ -773,17 +845,9 @@ public class SessionFsmFactory {
                             }
                           }
 
-                          KEY_KEEP_ALIVE_FAILURE_COUNT.set(ctx, 0L);
+                          failureCount.set(0L);
                         } else {
-                          Long keepAliveFailureCount = KEY_KEEP_ALIVE_FAILURE_COUNT.get(ctx);
-
-                          if (keepAliveFailureCount == null) {
-                            keepAliveFailureCount = 1L;
-                          } else {
-                            keepAliveFailureCount += 1L;
-                          }
-
-                          KEY_KEEP_ALIVE_FAILURE_COUNT.set(ctx, keepAliveFailureCount);
+                          long keepAliveFailureCount = failureCount.incrementAndGet();
 
                           long keepAliveFailuresAllowed =
                               client.getConfig().getKeepAliveFailuresAllowed().longValue();
@@ -976,18 +1040,56 @@ public class SessionFsmFactory {
   private static void configureReactivatingState(FsmBuilder<State, Event> fb, OpcUaClient client) {
     Predicate<Event> isReactivateSessionFailure = e -> e instanceof Event.ReactivateSessionFailure;
 
-    Predicate<Event> isReactivateSessionFailureServiceFault =
+    // Part 4 §6.7: a Client shall create a new Session if ActivateSession fails. Escalate on the
+    // StatusCode rather than the exception type so that a Server reporting a definitive
+    // session-level error with a channel-level Error message instead of an application-level
+    // ServiceFault - the same defective behavior guarded against on the transfer path below -
+    // escalates as well. Failures that carry no such StatusCode, e.g. Bad_Timeout or
+    // Bad_ConnectionClosed, are connectivity problems; Part 4 §5.7.2.1 says to keep trying to
+    // reactivate over a new connection, so those stay on the ReactivatingWait retry loop.
+    Predicate<Event> isReactivateSessionFailureFatal =
         isReactivateSessionFailure.and(
             e -> {
               Event.ReactivateSessionFailure event = (Event.ReactivateSessionFailure) e;
               return UaException.extract(event.failure)
-                  .map(ex -> ex instanceof UaServiceFaultException)
+                  .map(
+                      ex ->
+                          ex instanceof UaServiceFaultException
+                              || SESSION_ERROR.test(ex.getStatusCode()))
                   .orElse(false);
             });
 
-    // If reactivating fails due to a ServiceFault, move to CreatingWait
+    // Neither retrying the reactivation nor creating a new Session can succeed while the transport
+    // is disconnected for good, and both routes retry indefinitely, so this has to be evaluated
+    // before the escalation to CreatingWait below.
+    Predicate<Event> isReactivateSessionFailureTerminal =
+        isReactivateSessionFailure.and(e -> isTransportDisconnectedForGood(client));
+
     fb.when(State.Reactivating)
-        .on(isReactivateSessionFailureServiceFault)
+        .on(isReactivateSessionFailureTerminal)
+        .transitionTo(State.Inactive)
+        .executeFirst(
+            ctx -> {
+              KEY_WAIT_TIME.remove(ctx);
+
+              Event.ReactivateSessionFailure e = (Event.ReactivateSessionFailure) ctx.event();
+
+              OpcUaSession session = KEY_SESSION.remove(ctx);
+
+              try (MDCCloseable ignoredInstanceId = putInstanceId(ctx)) {
+                LOGGER.warn(
+                    "Transport is disconnected and will not reconnect on its own; abandoning"
+                        + " Session {}.",
+                    session != null ? session.getSessionId() : null);
+              }
+
+              // The Session can't be closed on the Server without a channel to send the request
+              // over; it is left to expire when the Session timeout elapses (Part 4 §5.6.2).
+              handleFailureToOpenSession(client, ctx, e.failure);
+            });
+
+    fb.when(State.Reactivating)
+        .on(isReactivateSessionFailureFatal)
         .transitionTo(State.CreatingWait)
         .executeFirst(
             ctx -> {
@@ -996,6 +1098,17 @@ public class SessionFsmFactory {
               Event.ReactivateSessionFailure e = (Event.ReactivateSessionFailure) ctx.event();
 
               handleFailureToOpenSession(client, ctx, e.failure);
+
+              // Reactivation is being abandoned in favor of creating a new Session. The old one may
+              // still exist on the Server (the fault might have been e.g.
+              // Bad_IdentityTokenRejected rather than Bad_SessionIdInvalid), so close it
+              // best-effort without deleting its Subscriptions: the replacement Session will try
+              // to transfer them. A fault in response to this is expected and ignored.
+              OpcUaSession session = KEY_SESSION.remove(ctx);
+
+              if (session != null) {
+                abandonSession(ctx, client, session);
+              }
             });
 
     // If reactivating fails for any other reason, move back to ReactivatingWait and keep trying to
@@ -1059,6 +1172,29 @@ public class SessionFsmFactory {
         .execute(ctx -> ctx.shelveEvent(ctx.event()));
   }
 
+  /**
+   * Check whether the transport is disconnected in a way that nothing will undo on its own.
+   *
+   * <p>The ChannelFsm is configured persistent, so a channel that drops unexpectedly is reconnected
+   * without any help from the Session. {@code NotConnected} is the exception: it is reached only
+   * when the application deliberately disconnects the transport, its only outbound edge is an
+   * explicit Connect, and every request attempted from it fails immediately. A Session has nothing
+   * left to reactivate over until the application connects again.
+   *
+   * @param client the {@link OpcUaClient} the Session belongs to.
+   * @return {@code true} if the transport is disconnected and will not reconnect on its own.
+   */
+  private static boolean isTransportDisconnectedForGood(OpcUaClient client) {
+    OpcClientTransport transport = client.getTransport();
+
+    if (transport instanceof OpcTcpClientTransport tcpClientTransport) {
+      return tcpClientTransport.getChannelFsm().getState()
+          == com.digitalpetri.netty.fsm.State.NotConnected;
+    } else {
+      return false;
+    }
+  }
+
   private static void handleGetSessionEvent(ActionContext<State, Event> ctx) {
     CompletableFuture<OpcUaSession> sessionFuture = KEY_SESSION_FUTURE.get(ctx).future;
 
@@ -1097,190 +1233,221 @@ public class SessionFsmFactory {
           .getExecutor()
           .execute(() -> sessionFuture.future.completeExceptionally(failure));
     }
+
+    // If CreateSession already succeeded the Session exists on the Server, and a new one is about
+    // to be created in its place. Close it best-effort so the Server isn't left holding an orphan
+    // until the Session timeout expires, but preserve any Subscriptions already transferred to it
+    // so the replacement Session can recover them. Failure to close changes nothing about the
+    // outcome here.
+    CreateSessionResponse pendingSession = KEY_PENDING_SESSION.remove(ctx);
+
+    if (pendingSession != null) {
+      abandonSession(ctx, client, pendingSession);
+    }
   }
 
   private static CompletableFuture<Unit> closeSession(
       FsmContext<State, Event> ctx, OpcUaClient client, OpcUaSession session) {
 
-    CompletableFuture<Unit> closeFuture = new CompletableFuture<>();
+    return closeSession(
+        ctx, client, session.getSessionId(), session.getAuthenticationToken(), true);
+  }
 
-    RequestHeader requestHeader =
-        client.newRequestHeader(session.getAuthenticationToken(), uint(5000));
+  private static CompletableFuture<Unit> abandonSession(
+      FsmContext<State, Event> ctx, OpcUaClient client, OpcUaSession session) {
 
-    CloseSessionRequest request = new CloseSessionRequest(requestHeader, true);
+    return closeSession(
+        ctx, client, session.getSessionId(), session.getAuthenticationToken(), false);
+  }
 
-    try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
-        MDCCloseable ignoredSessionId = putSessionId(session)) {
+  private static CompletableFuture<Unit> abandonSession(
+      FsmContext<State, Event> ctx, OpcUaClient client, CreateSessionResponse session) {
 
-      LOGGER.debug("Sending CloseSessionRequest...");
+    return closeSession(
+        ctx, client, session.getSessionId(), session.getAuthenticationToken(), false);
+  }
+
+  private static CompletableFuture<Unit> closeSession(
+      FsmContext<State, Event> ctx,
+      OpcUaClient client,
+      NodeId sessionId,
+      NodeId authToken,
+      boolean deleteSubscriptions) {
+
+    try {
+      CompletableFuture<Unit> closeFuture = new CompletableFuture<>();
+
+      RequestHeader requestHeader = client.newRequestHeader(authToken, uint(5000));
+
+      CloseSessionRequest request = new CloseSessionRequest(requestHeader, deleteSubscriptions);
+
+      try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+          MDCCloseable ignoredSessionId = putSessionId(sessionId)) {
+
+        LOGGER.debug("Sending CloseSessionRequest...");
+      }
+
+      client
+          .getTransport()
+          .sendRequestMessage(request)
+          .whenCompleteAsync(
+              (csr, ex2) -> closeFuture.complete(Unit.VALUE),
+              client.getTransport().getConfig().getExecutor());
+
+      return closeFuture;
+    } catch (Exception ex) {
+      return failedFuture(ex);
     }
-
-    client
-        .getTransport()
-        .sendRequestMessage(request)
-        .whenCompleteAsync(
-            (csr, ex2) -> closeFuture.complete(Unit.VALUE),
-            client.getTransport().getConfig().getExecutor());
-
-    return closeFuture;
   }
 
   @SuppressWarnings("Duplicates")
   private static CompletableFuture<CreateSessionResponse> createSession(
       FsmContext<State, Event> ctx, OpcUaClient client) {
 
-    EndpointDescription endpoint = client.getConfig().getEndpoint();
-    SecurityPolicy securityPolicy;
-    Optional<CertificateIdentity> certificateIdentity;
-
     try {
-      securityPolicy = SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
-      certificateIdentity =
+      EndpointDescription endpoint = client.getConfig().getEndpoint();
+      SecurityPolicy securityPolicy = SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
+      Optional<CertificateIdentity> certificateIdentity =
           securityPolicy != SecurityPolicy.None
               ? client.getCertificateIdentity(securityPolicy.getProfile())
               : Optional.empty();
-    } catch (UaException e) {
-      return failedFuture(e);
-    }
 
-    String gatewayServerUri = endpoint.getServer().getGatewayServerUri();
+      String gatewayServerUri = endpoint.getServer().getGatewayServerUri();
 
-    String serverUri;
-    if (gatewayServerUri != null && !gatewayServerUri.isEmpty()) {
-      serverUri = endpoint.getServer().getApplicationUri();
-    } else {
-      serverUri = null;
-    }
+      String serverUri;
+      if (gatewayServerUri != null && !gatewayServerUri.isEmpty()) {
+        serverUri = endpoint.getServer().getApplicationUri();
+      } else {
+        serverUri = null;
+      }
 
-    ByteString clientNonce = NonceUtil.generateNonce(32);
-    // ActivateSession signatures keep using the CreateSession client nonce, including later
-    // reactivation on a different SecureChannel.
-    KEY_CREATE_SESSION_CLIENT_NONCE.set(ctx, clientNonce);
+      ByteString clientNonce = NonceUtil.generateNonce(32);
+      // ActivateSession signatures keep using the CreateSession client nonce, including later
+      // reactivation on a different SecureChannel.
+      KEY_CREATE_SESSION_CLIENT_NONCE.set(ctx, clientNonce);
 
-    ByteString clientCertificate =
-        certificateIdentity
-            .map(CertificateIdentity::certificate)
-            .or(() -> client.getConfig().getCertificate())
-            .map(
-                c -> {
-                  try {
-                    return ByteString.of(c.getEncoded());
-                  } catch (CertificateEncodingException e) {
-                    return ByteString.NULL_VALUE;
-                  }
-                })
-            .orElse(ByteString.NULL_VALUE);
+      ByteString clientCertificate =
+          certificateIdentity
+              .map(CertificateIdentity::certificate)
+              .or(() -> client.getConfig().getCertificate())
+              .map(
+                  c -> {
+                    try {
+                      return ByteString.of(c.getEncoded());
+                    } catch (CertificateEncodingException e) {
+                      return ByteString.NULL_VALUE;
+                    }
+                  })
+              .orElse(ByteString.NULL_VALUE);
 
-    ApplicationDescription clientDescription =
-        new ApplicationDescription(
-            client.getConfig().getApplicationUri(),
-            client.getConfig().getProductUri(),
-            client.getConfig().getApplicationName(),
-            ApplicationType.Client,
-            null,
-            null,
-            null);
+      ApplicationDescription clientDescription =
+          new ApplicationDescription(
+              client.getConfig().getApplicationUri(),
+              client.getConfig().getProductUri(),
+              client.getConfig().getApplicationName(),
+              ApplicationType.Client,
+              null,
+              null,
+              null);
 
-    RequestHeader requestHeader;
-    try {
-      requestHeader =
+      RequestHeader requestHeader =
           withAdditionalHeader(
               client.newRequestHeader(),
               buildCreateSessionAdditionalHeader(
                   client.getConfig().getIdentityProvider(),
                   client.getStaticEncodingContext(),
                   endpoint));
-    } catch (Exception e) {
-      return failedFuture(e);
-    }
 
-    CreateSessionRequest request =
-        new CreateSessionRequest(
-            requestHeader,
-            clientDescription,
-            serverUri,
-            client.getConfig().getEndpoint().getEndpointUrl(),
-            client.getConfig().getSessionName().get(),
-            clientNonce,
-            clientCertificate,
-            client.getConfig().getSessionTimeout().doubleValue(),
-            client.getConfig().getMaxResponseMessageSize());
+      CreateSessionRequest request =
+          new CreateSessionRequest(
+              requestHeader,
+              clientDescription,
+              serverUri,
+              client.getConfig().getEndpoint().getEndpointUrl(),
+              client.getConfig().getSessionName().get(),
+              clientNonce,
+              clientCertificate,
+              client.getConfig().getSessionTimeout().doubleValue(),
+              client.getConfig().getMaxResponseMessageSize());
 
-    try (MDCCloseable ignored = putInstanceId(ctx)) {
+      try (MDCCloseable ignored = putInstanceId(ctx)) {
 
-      LOGGER.debug("Sending CreateSessionRequest...");
-    }
+        LOGGER.debug("Sending CreateSessionRequest...");
+      }
 
-    return client
-        .getTransport()
-        .sendRequestMessage(request)
-        .thenApply(CreateSessionResponse.class::cast)
-        .thenCompose(
-            response -> {
-              try {
-                if (securityPolicy != SecurityPolicy.None) {
-                  if (response.getServerCertificate().isNullOrEmpty()) {
-                    throw new UaException(
-                        StatusCodes.Bad_SecurityChecksFailed,
-                        "Certificate missing from CreateSessionResponse");
+      return client
+          .getTransport()
+          .sendRequestMessage(request)
+          .thenApply(CreateSessionResponse.class::cast)
+          .thenCompose(
+              response -> {
+                try {
+                  if (securityPolicy != SecurityPolicy.None) {
+                    if (response.getServerCertificate().isNullOrEmpty()) {
+                      throw new UaException(
+                          StatusCodes.Bad_SecurityChecksFailed,
+                          "Certificate missing from CreateSessionResponse");
+                    }
+
+                    List<X509Certificate> serverCertificateChain =
+                        CertificateUtil.decodeCertificates(
+                            response.getServerCertificate().bytesOrEmpty());
+
+                    X509Certificate serverCertificate = serverCertificateChain.get(0);
+
+                    X509Certificate certificateFromEndpoint =
+                        CertificateUtil.decodeCertificate(
+                            endpoint.getServerCertificate().bytesOrEmpty());
+
+                    if (!serverCertificate.equals(certificateFromEndpoint)) {
+                      throw new UaException(
+                          StatusCodes.Bad_SecurityChecksFailed,
+                          "Certificate from CreateSessionResponse did not "
+                              + "match certificate from EndpointDescription!");
+                    }
+
+                    client
+                        .getConfig()
+                        .getCertificateValidator()
+                        .validateCertificateChain(
+                            serverCertificateChain,
+                            endpoint.getServer().getApplicationUri(),
+                            new String[] {EndpointUtil.getHost(endpoint.getEndpointUrl())},
+                            securityPolicy.getProfile());
+
+                    SignatureData serverSignature = response.getServerSignature();
+
+                    byte[] dataBytes =
+                        ChannelBoundSignatureData.serverSignatureData(
+                            securityPolicy.getProfile(),
+                            client.getTransport().getChannelThumbprint(),
+                            clientNonce,
+                            certificateBytes(certificateFromEndpoint),
+                            clientCertificate,
+                            response.getServerNonce(),
+                            clientCertificate);
+
+                    ChannelBoundSignatureData.verify(
+                        securityPolicy, serverCertificate, dataBytes, serverSignature);
                   }
 
-                  List<X509Certificate> serverCertificateChain =
-                      CertificateUtil.decodeCertificates(
-                          response.getServerCertificate().bytesOrEmpty());
-
-                  X509Certificate serverCertificate = serverCertificateChain.get(0);
-
-                  X509Certificate certificateFromEndpoint =
-                      CertificateUtil.decodeCertificate(
-                          endpoint.getServerCertificate().bytesOrEmpty());
-
-                  if (!serverCertificate.equals(certificateFromEndpoint)) {
-                    throw new UaException(
-                        StatusCodes.Bad_SecurityChecksFailed,
-                        "Certificate from CreateSessionResponse did not "
-                            + "match certificate from EndpointDescription!");
+                  if (client.getConfig().isSessionEndpointValidationEnabled()) {
+                    validateSessionEndpoints(
+                        endpoint.getTransportProfileUri(),
+                        client.getConfig().getDiscoveryEndpoints(),
+                        List.of(
+                            Objects.requireNonNullElse(
+                                response.getServerEndpoints(), new EndpointDescription[0])));
                   }
 
-                  client
-                      .getConfig()
-                      .getCertificateValidator()
-                      .validateCertificateChain(
-                          serverCertificateChain,
-                          endpoint.getServer().getApplicationUri(),
-                          new String[] {EndpointUtil.getHost(endpoint.getEndpointUrl())},
-                          securityPolicy.getProfile());
-
-                  SignatureData serverSignature = response.getServerSignature();
-
-                  byte[] dataBytes =
-                      ChannelBoundSignatureData.serverSignatureData(
-                          securityPolicy.getProfile(),
-                          client.getTransport().getChannelThumbprint(),
-                          clientNonce,
-                          certificateBytes(certificateFromEndpoint),
-                          clientCertificate,
-                          response.getServerNonce(),
-                          clientCertificate);
-
-                  ChannelBoundSignatureData.verify(
-                      securityPolicy, serverCertificate, dataBytes, serverSignature);
+                  return completedFuture(response);
+                } catch (UaException e) {
+                  return failedFuture(e);
                 }
-
-                if (client.getConfig().isSessionEndpointValidationEnabled()) {
-                  validateSessionEndpoints(
-                      endpoint.getTransportProfileUri(),
-                      client.getConfig().getDiscoveryEndpoints(),
-                      List.of(
-                          Objects.requireNonNullElse(
-                              response.getServerEndpoints(), new EndpointDescription[0])));
-                }
-
-                return completedFuture(response);
-              } catch (UaException e) {
-                return failedFuture(e);
-              }
-            });
+              });
+    } catch (Exception ex) {
+      return failedFuture(ex);
+    }
   }
 
   static ExtensionObject buildCreateSessionAdditionalHeader(
@@ -1841,12 +2008,26 @@ public class SessionFsmFactory {
       return completedFuture(Unit.VALUE);
     }
 
+    // Pair each Subscription with its SubscriptionId once, up front. A concurrent reset() removes a
+    // Subscription from the client before clearing its id, so the id is an unsynchronized read that
+    // can disappear between the snapshot above and the request below; deriving the ids separately
+    // would leave the results indexed against a list the request was not built from, shifting every
+    // position at or after a dropped Subscription.
+    record Transferable(OpcUaSubscription subscription, UInteger subscriptionId) {}
+
+    List<Transferable> transferable =
+        subscriptions.stream()
+            .flatMap(s -> s.getSubscriptionId().map(id -> new Transferable(s, id)).stream())
+            .toList();
+
+    if (transferable.isEmpty()) {
+      return completedFuture(Unit.VALUE);
+    }
+
     CompletableFuture<Unit> transferFuture = new CompletableFuture<>();
 
     UInteger[] subscriptionIdsArray =
-        subscriptions.stream()
-            .flatMap(s -> s.getSubscriptionId().stream())
-            .toArray(UInteger[]::new);
+        transferable.stream().map(Transferable::subscriptionId).toArray(UInteger[]::new);
 
     TransferSubscriptionsRequest request =
         new TransferSubscriptionsRequest(
@@ -1876,8 +2057,7 @@ public class SessionFsmFactory {
 
                   if (LOGGER.isDebugEnabled()) {
                     try {
-                      Stream<UInteger> subscriptionIds =
-                          subscriptions.stream().flatMap(s -> s.getSubscriptionId().stream());
+                      Stream<UInteger> subscriptionIds = Stream.of(subscriptionIdsArray);
                       Stream<StatusCode> statusCodes =
                           Stream.of(results).map(TransferResult::getStatusCode);
 
@@ -1904,23 +2084,41 @@ public class SessionFsmFactory {
                   }
                 }
 
-                client
-                    .getTransport()
-                    .getConfig()
-                    .getExecutor()
-                    .execute(
-                        () -> {
-                          for (int i = 0; i < results.length; i++) {
-                            TransferResult result = results[i];
+                // Part 4 §5.14.7.1: a successful TransferResult carries "the sequence numbers
+                // of the NotificationMessages that are available for retransmission", which is
+                // what tells the client which NotificationMessages the Republish loop Part 4
+                // §6.7 requires before Publish resumes can still collect. Recorded here, inline,
+                // rather than dispatched: the loop runs when this Session becomes Active, and
+                // the list has to be in place before it does. Indexed against the
+                // SubscriptionIds the request was built from, which is what the results are a
+                // "list of results for the subscriptions to transfer" of.
+                for (int i = 0; i < results.length && i < subscriptionIdsArray.length; i++) {
+                  TransferResult result = results[i];
 
-                            if (!result.getStatusCode().isGood()) {
-                              OpcUaSubscription subscription = subscriptions.get(i);
+                  if (result.getStatusCode().isGood()) {
+                    client
+                        .getPublishingManager()
+                        .notifySubscriptionTransferred(
+                            session, subscriptionIdsArray[i], result.getAvailableSequenceNumbers());
+                  }
+                }
 
-                              subscription.notifyTransferFailed(result.getStatusCode());
-                            }
-                          }
-                        });
+                // Bounded by the requested Subscriptions as well: Part 4 §5.14.7.2 defines results
+                // as one per requested SubscriptionId, but a Server returning a longer list must
+                // not reach past the end of them.
+                for (int i = 0; i < results.length && i < transferable.size(); i++) {
+                  TransferResult result = results[i];
 
+                  if (!result.getStatusCode().isGood()) {
+                    handleTransferFailure(
+                        ctx, session, transferable.get(i).subscription(), result.getStatusCode());
+                  }
+                }
+
+                // Failed Subscriptions must be reset and unregistered before this completion can
+                // move the FSM through Initializing and into Active. Otherwise reconnect recovery
+                // can still see them and issue Republish requests for SubscriptionIds that were
+                // not transferred to this Session.
                 transferFuture.complete(Unit.VALUE);
               } else {
                 StatusCode statusCode =
@@ -1932,16 +2130,9 @@ public class SessionFsmFactory {
                   LOGGER.debug("TransferSubscriptions not supported: {}", statusCode);
                 }
 
-                client
-                    .getTransport()
-                    .getConfig()
-                    .getExecutor()
-                    .execute(
-                        () -> {
-                          for (OpcUaSubscription subscription : subscriptions) {
-                            subscription.notifyTransferFailed(statusCode);
-                          }
-                        });
+                for (OpcUaSubscription subscription : subscriptions) {
+                  handleTransferFailure(ctx, session, subscription, statusCode);
+                }
 
                 // Bad_ServiceUnsupported is the correct response when transfers aren't
                 // supported but server implementations interpret the spec differently.
@@ -1965,9 +2156,46 @@ public class SessionFsmFactory {
                   transferFuture.completeExceptionally(ex);
                 }
               }
+            })
+        // The whenComplete above has its own result future discarded, so a response its handling
+        // can't make sense of - e.g. a Good response carrying no results at all - would otherwise
+        // leave transferFuture uncompleted and the FSM parked in Transferring with no event
+        // pending and no timeout. A no-op when the callback completed transferFuture itself.
+        .exceptionally(
+            ex -> {
+              transferFuture.completeExceptionally(ex);
+              return null;
             });
 
     return transferFuture;
+  }
+
+  /**
+   * Reset and unregister a Subscription that was not transferred to {@code session}.
+   *
+   * <p>{@link OpcUaSubscription#handleTransferFailure(StatusCode)} performs non-overridable local
+   * teardown synchronously and dispatches the overridable notification separately. Contain internal
+   * failures here so one Subscription cannot leave the Session FSM in {@link State#Transferring} or
+   * prevent the remaining failed Subscriptions from being reset.
+   */
+  private static void handleTransferFailure(
+      FsmContext<State, Event> ctx,
+      OpcUaSession session,
+      OpcUaSubscription subscription,
+      StatusCode statusCode) {
+
+    try {
+      subscription.handleTransferFailure(statusCode);
+    } catch (Exception e) {
+      try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+          MDCCloseable ignoredSessionId = putSessionId(session)) {
+
+        LOGGER.warn(
+            "Subscription transfer-failure cleanup failed: id={}",
+            subscription.getSubscriptionId().orElse(null),
+            e);
+      }
+    }
   }
 
   private static CompletableFuture<Unit> initialize(
@@ -2146,15 +2374,6 @@ public class SessionFsmFactory {
   }
 
   private static class SessionFaultListener implements ServiceFaultListener {
-
-    private static final Predicate<StatusCode> SESSION_ERROR =
-        statusCode -> {
-          long status = statusCode.value();
-
-          return status == StatusCodes.Bad_SessionClosed
-              || status == StatusCodes.Bad_SessionIdInvalid
-              || status == StatusCodes.Bad_SessionNotActivated;
-        };
 
     private static final Predicate<StatusCode> SECURE_CHANNEL_ERROR =
         statusCode -> {
