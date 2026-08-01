@@ -1106,11 +1106,12 @@ public class SessionFsmFactory {
               // Reactivation is being abandoned in favor of creating a new Session. The old one may
               // still exist on the Server (the fault might have been e.g.
               // Bad_IdentityTokenRejected rather than Bad_SessionIdInvalid), so close it
-              // best-effort; a fault in response to this is expected and ignored.
+              // best-effort without deleting its Subscriptions: the replacement Session will try
+              // to transfer them. A fault in response to this is expected and ignored.
               OpcUaSession session = KEY_SESSION.remove(ctx);
 
               if (session != null) {
-                closeSession(ctx, client, session);
+                abandonSession(ctx, client, session);
               }
             });
 
@@ -1239,30 +1240,50 @@ public class SessionFsmFactory {
 
     // If CreateSession already succeeded the Session exists on the Server, and a new one is about
     // to be created in its place. Close it best-effort so the Server isn't left holding an orphan
-    // until the Session timeout expires; failure to close changes nothing about the outcome here.
+    // until the Session timeout expires, but preserve any Subscriptions already transferred to it
+    // so the replacement Session can recover them. Failure to close changes nothing about the
+    // outcome here.
     CreateSessionResponse pendingSession = KEY_PENDING_SESSION.remove(ctx);
 
     if (pendingSession != null) {
-      closeSession(
-          ctx, client, pendingSession.getSessionId(), pendingSession.getAuthenticationToken());
+      abandonSession(ctx, client, pendingSession);
     }
   }
 
   private static CompletableFuture<Unit> closeSession(
       FsmContext<State, Event> ctx, OpcUaClient client, OpcUaSession session) {
 
-    return closeSession(ctx, client, session.getSessionId(), session.getAuthenticationToken());
+    return closeSession(
+        ctx, client, session.getSessionId(), session.getAuthenticationToken(), true);
+  }
+
+  private static CompletableFuture<Unit> abandonSession(
+      FsmContext<State, Event> ctx, OpcUaClient client, OpcUaSession session) {
+
+    return closeSession(
+        ctx, client, session.getSessionId(), session.getAuthenticationToken(), false);
+  }
+
+  private static CompletableFuture<Unit> abandonSession(
+      FsmContext<State, Event> ctx, OpcUaClient client, CreateSessionResponse session) {
+
+    return closeSession(
+        ctx, client, session.getSessionId(), session.getAuthenticationToken(), false);
   }
 
   private static CompletableFuture<Unit> closeSession(
-      FsmContext<State, Event> ctx, OpcUaClient client, NodeId sessionId, NodeId authToken) {
+      FsmContext<State, Event> ctx,
+      OpcUaClient client,
+      NodeId sessionId,
+      NodeId authToken,
+      boolean deleteSubscriptions) {
 
     try {
       CompletableFuture<Unit> closeFuture = new CompletableFuture<>();
 
       RequestHeader requestHeader = client.newRequestHeader(authToken, uint(5000));
 
-      CloseSessionRequest request = new CloseSessionRequest(requestHeader, true);
+      CloseSessionRequest request = new CloseSessionRequest(requestHeader, deleteSubscriptions);
 
       try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
           MDCCloseable ignoredSessionId = putSessionId(sessionId)) {

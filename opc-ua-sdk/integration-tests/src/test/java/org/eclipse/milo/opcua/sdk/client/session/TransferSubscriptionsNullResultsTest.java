@@ -29,13 +29,9 @@ import org.eclipse.milo.opcua.sdk.test.TestClient;
 import org.eclipse.milo.opcua.sdk.test.TestServer;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
-import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.ActivateSessionRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.ActivateSessionResponse;
-import org.eclipse.milo.opcua.stack.core.types.structured.ResponseHeader;
-import org.eclipse.milo.opcua.stack.core.types.structured.TransferResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.TransferSubscriptionsRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.TransferSubscriptionsResponse;
 import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
@@ -56,9 +52,10 @@ import org.junit.jupiter.api.Test;
  *
  * <p>Pins that a transfer response the client cannot handle takes the FSM out of {@code
  * Transferring} the way any other transfer failure does, rather than wedging it: the Server here
- * answers the first TransferSubscriptions with Good and a null results array and every subsequent
- * one normally, so a client that treats the first as a failure and starts over recovers, and only a
- * wedged one never becomes Active again.
+ * carries out the first TransferSubscriptions but hands the Client a copy of the response with a
+ * null results array, and answers every subsequent one normally. A client that treats the first as
+ * a failure and starts over must preserve the transferred Subscription for the retry; only a wedged
+ * or destructive cleanup path fails to recover it.
  */
 class TransferSubscriptionsNullResultsTest {
 
@@ -80,7 +77,7 @@ class TransferSubscriptionsNullResultsTest {
   private static final long REQUEST_TIMEOUT_MILLIS = 60_000;
 
   @Test
-  void unhandleableTransferResponseDoesNotWedgeTransferring() throws Exception {
+  void unhandleableTransferResponseRetriesWithoutDeletingSubscription() throws Exception {
     try (var fixture = new Fixture()) {
       fixture.awaitPublishPipelineFull();
       fixture.refuseNextReactivation();
@@ -100,18 +97,27 @@ class TransferSubscriptionsNullResultsTest {
           "the Session never became Active again: the throw out of the TransferSubscriptions"
               + " response handling left transferFuture uncompleted, and the FSM parked in"
               + " Transferring with nothing pending");
+
+      assertTrue(
+          fixture.transferCount() >= 2,
+          "the Session became Active without retrying the unhandleable transfer response");
+
+      assertTrue(
+          fixture.subscriptionExistsOnServer(),
+          "automatic Session cleanup deleted the Subscription before the replacement Session"
+              + " could transfer it");
     }
   }
 
   // region Fixture
 
   /**
-   * A {@link ScriptableSubscriptionServiceSet} that answers the first TransferSubscriptions with a
-   * Good service result and no results at all, and every subsequent one with one Good result per
-   * requested SubscriptionId.
+   * A {@link ScriptableSubscriptionServiceSet} that performs the first TransferSubscriptions but
+   * replaces its results with {@code null} before returning it, and answers every subsequent one
+   * normally.
    *
-   * <p>Publish is left to the script, i.e. parked, so the Server-side Subscription's own transfer
-   * state never participates in the test.
+   * <p>Publish is left to the script, i.e. parked, so nothing else completes or removes the
+   * Server-side Subscription while the Session FSM retries.
    */
   private static final class NullResultsSubscriptionServiceSet
       extends ScriptableSubscriptionServiceSet {
@@ -128,29 +134,14 @@ class TransferSubscriptionsNullResultsTest {
 
       boolean first = transferCount.getAndIncrement() == 0;
 
-      UInteger[] subscriptionIds = request.getSubscriptionIds();
-      int requested = subscriptionIds != null ? subscriptionIds.length : 0;
+      TransferSubscriptionsResponse response = super.onTransferSubscriptions(context, request);
 
-      TransferResult[] results;
       if (first) {
-        results = null;
+        return new TransferSubscriptionsResponse(
+            response.getResponseHeader(), null, response.getDiagnosticInfos());
       } else {
-        results = new TransferResult[requested];
-        for (int i = 0; i < requested; i++) {
-          results[i] = new TransferResult(StatusCode.GOOD, null);
-        }
+        return response;
       }
-
-      var responseHeader =
-          new ResponseHeader(
-              DateTime.now(),
-              request.getRequestHeader().getRequestHandle(),
-              StatusCode.GOOD,
-              null,
-              null,
-              null);
-
-      return new TransferSubscriptionsResponse(responseHeader, results, null);
     }
   }
 
@@ -193,8 +184,8 @@ class TransferSubscriptionsNullResultsTest {
     private final NullResultsSubscriptionServiceSet scriptable;
     private final RefusingSessionServiceSet sessionServiceSet;
 
-    @SuppressWarnings("unused")
     private final OpcUaSubscription subscription;
+    private final UInteger subscriptionId;
 
     Fixture() throws Exception {
       TestServer testServer = TestServer.create();
@@ -238,6 +229,7 @@ class TransferSubscriptionsNullResultsTest {
 
       subscription = new OpcUaSubscription(client);
       subscription.create();
+      subscriptionId = subscription.getSubscriptionId().orElseThrow();
     }
 
     /**
@@ -269,6 +261,10 @@ class TransferSubscriptionsNullResultsTest {
 
     int transferCount() {
       return scriptable.transferCount.get();
+    }
+
+    boolean subscriptionExistsOnServer() {
+      return server.getSubscriptions().containsKey(subscriptionId);
     }
 
     /** Polls {@code condition} until it holds or the timeout elapses. */
