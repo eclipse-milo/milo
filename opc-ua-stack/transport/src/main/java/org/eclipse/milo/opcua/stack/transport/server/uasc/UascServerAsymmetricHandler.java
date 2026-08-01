@@ -72,6 +72,7 @@ import org.eclipse.milo.opcua.stack.core.util.BufferUtil;
 import org.eclipse.milo.opcua.stack.core.util.DigestUtil;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
+import org.eclipse.milo.opcua.stack.transport.server.EndpointSelectionKey;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -259,6 +260,16 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
         secureChannel.setSecurityPolicy(securityPolicy);
 
         if (securityPolicy != SecurityPolicy.None) {
+          if (header.getReceiverThumbprint().isNullOrEmpty()) {
+            // Part 6 6.7.2.3: the receiver certificate thumbprint identifies the public key used
+            // to encrypt the message and is required whenever the OPN is asymmetrically secured.
+            // Reject explicitly rather than relying on certificate or endpoint lookups to fail,
+            // so the client receives an ERR message identifying the actual problem.
+            throw new UaException(
+                StatusCodes.Bad_SecurityChecksFailed,
+                "receiverCertificateThumbprint must be present when SecurityPolicy is not None");
+          }
+
           CertificateManager certificateManager = application.getCertificateManager();
 
           Optional<X509Certificate[]> localCertificateChain =
@@ -537,59 +548,39 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
 
       String endpointUrl = ctx.channel().attr(UascServerHelloHandler.ENDPOINT_URL_KEY).get();
 
-      EndpointDescription endpoint =
-          application.getEndpointDescriptions().stream()
-              .filter(
-                  e -> {
-                    boolean transportMatch =
-                        Objects.equals(e.getTransportProfileUri(), transportProfile.getUri());
+      SecurityPolicy securityPolicy = secureChannel.getSecurityPolicy();
 
-                    boolean pathMatch =
-                        Objects.equals(
-                            EndpointUtil.getPath(e.getEndpointUrl()),
-                            EndpointUtil.getPath(endpointUrl));
+      EndpointSelectionKey selectionKey =
+          EndpointSelectionKey.of(
+              transportProfile,
+              endpointUrl,
+              securityPolicy,
+              request.getSecurityMode(),
+              header.getReceiverThumbprint());
 
-                    boolean securityPolicyMatch =
-                        Objects.equals(
-                            e.getSecurityPolicyUri(), secureChannel.getSecurityPolicy().getUri());
+      Optional<EndpointDescription> endpoint =
+          application.selectEndpoint(selectionKey, endpointUrl);
 
-                    boolean securityModeMatch =
-                        Objects.equals(e.getSecurityMode(), request.getSecurityMode());
+      if (endpoint.isPresent()) {
+        ctx.channel().attr(ENDPOINT_KEY).set(endpoint.get());
+      } else if (securityPolicy != SecurityPolicy.None) {
+        String message =
+            String.format(
+                "no matching endpoint found: transportProfile=%s, endpointUrl=%s,"
+                    + " thumbprint=%s, securityPolicy=%s, securityMode=%s",
+                transportProfile,
+                endpointUrl,
+                header.getReceiverThumbprint(),
+                securityPolicy,
+                request.getSecurityMode());
 
-                    boolean thumbprintMatch = true;
-                    if (!header.getReceiverThumbprint().isNullOrEmpty()) {
-                      thumbprintMatch =
-                          Arrays.equals(
-                              DigestUtil.sha1(e.getServerCertificate().bytesOrEmpty()),
-                              header.getReceiverThumbprint().bytesOrEmpty());
-                    }
-
-                    // allow a matched endpoint OR any unsecured connection, regardless of the
-                    // endpoint security, so that the receiving ServerApplication can decide if
-                    // it wants to allow unsecured Discovery services.
-                    return transportMatch
-                        && pathMatch
-                        && thumbprintMatch
-                        && (securityPolicyMatch && securityModeMatch
-                            || secureChannel.getSecurityPolicy() == SecurityPolicy.None);
-                  })
-              .findFirst()
-              .orElseThrow(
-                  () -> {
-                    String message =
-                        String.format(
-                            "no matching endpoint found: transportProfile=%s, endpointUrl=%s,"
-                                + " thumbprint=%s, securityPolicy=%s, securityMode=%s",
-                            transportProfile,
-                            endpointUrl,
-                            header.getReceiverThumbprint(),
-                            secureChannel.getSecurityPolicy(),
-                            request.getSecurityMode());
-
-                    return new UaException(StatusCodes.Bad_SecurityChecksFailed, message);
-                  });
-
-      ctx.channel().attr(ENDPOINT_KEY).set(endpoint);
+        throw new UaException(StatusCodes.Bad_SecurityChecksFailed, message);
+      }
+      // else: an unsecured channel that matched no explicit SecurityPolicy.None endpoint stays
+      // open with no endpoint association. This is a discovery-only state: the receiving
+      // ServerApplication decides whether to allow unsecured Discovery services, and no arbitrary
+      // secured endpoint is selected to represent the channel. The pre-decryption check in
+      // onOpenSecureChannel already guaranteed some endpoint exists for this transport and path.
     } else if (requestType == SecurityTokenRequestType.Renew) {
       if (secureChannel.getMessageSecurityMode() != request.getSecurityMode()) {
         throw new UaException(

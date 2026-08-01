@@ -72,7 +72,9 @@ public class OpcUaServerConfigTest {
 
     OpcUaServerConfig copy = OpcUaServerConfig.copy(original).build();
 
-    assertSame(original.getEndpoints(), copy.getEndpoints());
+    // The builder defensively copies the endpoint set (like reverse-connect targets), so copies
+    // are equal but not the same instance.
+    assertEquals(original.getEndpoints(), copy.getEndpoints());
     assertEquals(original.getReverseConnectTargets(), copy.getReverseConnectTargets());
     assertSame(original.getApplicationName(), copy.getApplicationName());
     assertEquals(original.getApplicationUri(), copy.getApplicationUri());

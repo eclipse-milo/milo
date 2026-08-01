@@ -116,6 +116,7 @@ import org.eclipse.milo.opcua.stack.core.util.Lazy;
 import org.eclipse.milo.opcua.stack.core.util.LongSequence;
 import org.eclipse.milo.opcua.stack.core.util.ManifestUtil;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
+import org.eclipse.milo.opcua.stack.transport.server.EndpointSelectionKey;
 import org.eclipse.milo.opcua.stack.transport.server.OpcServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.OpcServerTransportFactory;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
@@ -170,6 +171,7 @@ public class OpcUaServer extends AbstractServiceHandler {
   private final ServerDiagnosticsSummary diagnosticsSummary = new ServerDiagnosticsSummary(this);
 
   private final Lazy<List<ResolvedEndpoint>> resolvedEndpoints = new Lazy<>();
+  private final Lazy<EndpointSelectionIndex> endpointSelectionIndex = new Lazy<>();
 
   private final List<EndpointConfig> boundEndpoints = new CopyOnWriteArrayList<>();
   private final CertificateIdentitySelector endpointCertificateIdentitySelector =
@@ -357,6 +359,15 @@ public class OpcUaServer extends AbstractServiceHandler {
   }
 
   public CompletableFuture<OpcUaServer> startup() {
+    try {
+      // Reject ambiguous endpoint configurations before binding anything: two Session-capable
+      // endpoints mapping to the same wire-observable selection key cannot be told apart at
+      // OpenSecureChannel time, so runtime selection would depend on collection ordering.
+      getEndpointSelectionIndex().validate();
+    } catch (UaException e) {
+      return CompletableFuture.failedFuture(e);
+    }
+
     eventFactory.startup();
     eventInstantiator.startup();
 
@@ -928,9 +939,28 @@ public class OpcUaServer extends AbstractServiceHandler {
    * advertised without a listening socket behind it. Conversely, an endpoint bound at startup
    * remains bound even if it no longer resolves. Re-binding after a reset is not currently
    * supported; a server restart is required to change the set of bound sockets.
+   *
+   * <p>When the endpoint set is next resolved, it is validated for selection-key collisions the
+   * same way {@link #startup()} validates the initial configuration. A collision cannot fail an
+   * already-running server, so it is logged as an error instead; the colliding endpoints are not
+   * selectable until the configuration is corrected and the cache reset again.
    */
   public void resetEndpointDescriptionCache() {
     resolvedEndpoints.reset();
+    endpointSelectionIndex.reset();
+  }
+
+  private EndpointSelectionIndex getEndpointSelectionIndex() {
+    return endpointSelectionIndex.get(
+        () -> {
+          var index = EndpointSelectionIndex.build(getResolvedEndpoints());
+          try {
+            index.validate();
+          } catch (UaException e) {
+            logger.error("Colliding endpoints will not be selectable: {}", e.getMessage());
+          }
+          return index;
+        });
   }
 
   private List<ResolvedEndpoint> getResolvedEndpoints() {
@@ -1168,6 +1198,15 @@ public class OpcUaServer extends AbstractServiceHandler {
     }
 
     @Override
+    public Optional<EndpointDescription> selectEndpoint(
+        EndpointSelectionKey key, @Nullable String requestedEndpointUrl) {
+
+      return getEndpointSelectionIndex()
+          .select(key, requestedEndpointUrl)
+          .map(ResolvedEndpoint::endpointDescription);
+    }
+
+    @Override
     public EncodingContext getEncodingContext() {
       return staticEncodingContext;
     }
@@ -1211,6 +1250,11 @@ public class OpcUaServer extends AbstractServiceHandler {
       String path = EndpointUtil.getPath(context.getEndpointUrl());
 
       if (context.getSecureChannel().getSecurityPolicy() == SecurityPolicy.None) {
+        // An unsecured channel is discovery-only unless an explicit SecurityPolicy.None endpoint
+        // currently exists for this transport and path. The current endpoint descriptions are
+        // re-checked on every request, rather than trusting a selection captured at
+        // OpenSecureChannel time, so that removing the None endpoint and resetting the endpoint
+        // description cache locks down already-open unsecured channels.
         if (getEndpointDescriptions().stream()
             .filter(e -> EndpointUtil.getPath(e.getEndpointUrl()).equals(path))
             .filter(

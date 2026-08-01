@@ -73,6 +73,7 @@ import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
 import org.eclipse.milo.opcua.stack.core.util.TaskQueue;
+import org.eclipse.milo.opcua.stack.transport.server.EndpointSelectionKey;
 import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -921,9 +922,11 @@ public class SessionManager {
           ByteString clientCertificateBytes =
               context.getSecureChannel().getRemoteCertificateBytes();
 
+          // The identity token is presented against the endpoint selected by the replacement
+          // channel, so decode it with that endpoint's token policies, not the previous
+          // endpoint's.
           UserIdentityToken identityToken =
-              decodeIdentityToken(
-                  request.getUserIdentityToken(), session.getEndpoint().getUserIdentityTokens());
+              decodeIdentityToken(request.getUserIdentityToken(), endpoint.getUserIdentityTokens());
 
           /*
            * The user-token signature for enhanced (ECC/RSA-DH) policies is bound to the SecureChannel
@@ -1034,32 +1037,49 @@ public class SessionManager {
     }
   }
 
+  /**
+   * Get the {@link EndpointDescription} the Session carried by {@code context} must be associated
+   * with.
+   *
+   * <p>The authoritative source is the endpoint the transport selected for the SecureChannel during
+   * OpenSecureChannel; a Session is always bound to that endpoint, never to an independent
+   * re-derivation. A context without a propagated selection (a discovery-only unsecured channel)
+   * falls back to the same selection-key lookup the transport uses, which yields exactly one
+   * endpoint or none -- never an arbitrary pick among multiple candidates.
+   *
+   * @param context the {@link ServiceRequestContext} carrying the channel's endpoint selection.
+   * @return the {@link EndpointDescription} to associate the Session with.
+   * @throws UaException with {@link StatusCodes#Bad_SecurityChecksFailed} if no unique endpoint is
+   *     identified, including CreateSession/ActivateSession on a discovery-only unsecured channel.
+   */
   private EndpointDescription findSessionEndpoint(ServiceRequestContext context)
       throws UaException {
-    return server.getApplicationContext().getEndpointDescriptions().stream()
-        .filter(
-            e -> {
-              boolean transportMatch =
-                  java.util.Objects.equals(
-                      e.getTransportProfileUri(), context.getTransportProfile().getUri());
 
-              boolean pathMatch =
-                  java.util.Objects.equals(
-                      EndpointUtil.getPath(e.getEndpointUrl()),
-                      EndpointUtil.getPath(context.getEndpointUrl()));
+    Optional<EndpointDescription> selectedEndpoint = context.getEndpoint();
 
-              boolean securityPolicyMatch =
-                  java.util.Objects.equals(
-                      e.getSecurityPolicyUri(),
-                      context.getSecureChannel().getSecurityPolicy().getUri());
+    if (selectedEndpoint.isPresent()) {
+      return selectedEndpoint.get();
+    }
 
-              boolean securityModeMatch =
-                  java.util.Objects.equals(
-                      e.getSecurityMode(), context.getSecureChannel().getMessageSecurityMode());
+    SecureChannel secureChannel = context.getSecureChannel();
+    SecurityPolicy securityPolicy = secureChannel.getSecurityPolicy();
 
-              return transportMatch && pathMatch && securityPolicyMatch && securityModeMatch;
-            })
-        .findFirst()
+    ByteString certificateThumbprint = ByteString.NULL_VALUE;
+    if (securityPolicy != SecurityPolicy.None) {
+      certificateThumbprint = ByteString.of(sha1(secureChannel.getLocalCertificateBytes().bytes()));
+    }
+
+    EndpointSelectionKey selectionKey =
+        EndpointSelectionKey.of(
+            context.getTransportProfile(),
+            context.getEndpointUrl(),
+            securityPolicy,
+            secureChannel.getMessageSecurityMode(),
+            certificateThumbprint);
+
+    return server
+        .getApplicationContext()
+        .selectEndpoint(selectionKey, context.getEndpointUrl())
         .orElseThrow(
             () -> {
               String message =
@@ -1068,8 +1088,8 @@ public class SessionManager {
                           + "endpointUrl=%s, securityPolicy=%s, securityMode=%s",
                       context.getTransportProfile(),
                       context.getEndpointUrl(),
-                      context.getSecureChannel().getSecurityPolicy(),
-                      context.getSecureChannel().getMessageSecurityMode());
+                      securityPolicy,
+                      secureChannel.getMessageSecurityMode());
 
               return new UaException(StatusCodes.Bad_SecurityChecksFailed, message);
             });
