@@ -17,9 +17,11 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
 import org.eclipse.milo.opcua.sdk.client.SessionActivityListener;
+import org.eclipse.milo.opcua.stack.core.types.structured.CreateSessionResponse;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
 
 public class SessionFsm {
@@ -130,11 +132,31 @@ public class SessionFsm {
   static final FsmContext.Key<OpcUaSession> KEY_SESSION =
       new FsmContext.Key<>("session", OpcUaSession.class);
 
+  /**
+   * The response to the CreateSession request for a Session that exists on the Server but has not
+   * been established yet, i.e. it is not reachable via {@link #KEY_SESSION} because the FSM has not
+   * reached {@link State#Active}.
+   *
+   * <p>Set on entry to {@link State#Activating} and removed on entry to {@link State#Active}. If
+   * establishment fails before then the Session is closed on the Server rather than left to expire
+   * on its own when the Session timeout elapses.
+   */
+  static final FsmContext.Key<CreateSessionResponse> KEY_PENDING_SESSION =
+      new FsmContext.Key<>("pendingSession", CreateSessionResponse.class);
+
   static final FsmContext.Key<SessionFuture> KEY_SESSION_FUTURE =
       new FsmContext.Key<>("sessionFuture", SessionFuture.class);
 
-  static final FsmContext.Key<Long> KEY_KEEP_ALIVE_FAILURE_COUNT =
-      new FsmContext.Key<>("keepAliveFailureCount", Long.class);
+  /**
+   * The number of consecutive keep-alive failures observed during the current Session epoch.
+   *
+   * <p>A new instance is created on every entry to {@link State#Active}, and the value it holds
+   * identifies the epoch it belongs to: a keep-alive that was sent on a previous epoch captures
+   * that epoch's instance and can tell, when it eventually completes, that it is no longer the
+   * current one.
+   */
+  static final FsmContext.Key<AtomicLong> KEY_KEEP_ALIVE_FAILURE_COUNT =
+      new FsmContext.Key<>("keepAliveFailureCount", AtomicLong.class);
 
   static final FsmContext.Key<ScheduledFuture> KEY_KEEP_ALIVE_SCHEDULED_FUTURE =
       new FsmContext.Key<>("keepAliveScheduledFuture", ScheduledFuture.class);

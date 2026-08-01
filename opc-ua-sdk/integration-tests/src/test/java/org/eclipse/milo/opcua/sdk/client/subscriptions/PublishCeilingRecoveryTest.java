@@ -352,11 +352,11 @@ public class PublishCeilingRecoveryTest {
 
         // The intervals between probes, the first measured from the clamp. Geometric backoff makes
         // them grow, and the assertion is that the window ends with a longer wait than it began
-        // with. Strict step-by-step monotonicity is deliberately not asserted: a refusal and the
-        // delivery it is attributed to are two independently timed events, so which round trip a
-        // refusal is recorded against can jitter by one either way, and an inversion between
-        // adjacent intervals says nothing about the cooldown. The bound on the probe count above is
-        // what pins the guarantee; this pins its direction.
+        // with. The positions are the Server's own, recorded under its lock at the moment it
+        // refused, so they do not depend on when this thread next looked; strict step-by-step
+        // monotonicity is still not asserted, because the cooldown the client applies is its own
+        // count of round trips and need not agree with the Server's to the request. The bound on
+        // the probe count above is what pins the guarantee; this pins its direction.
         List<Integer> intervals = intervals(refusedAt);
 
         if (intervals.size() >= 2) {
@@ -445,6 +445,35 @@ public class PublishCeilingRecoveryTest {
   }
 
   /**
+   * Group refused requests into the probes that provoked them.
+   *
+   * <p>One probe can cost the Server more than one refusal. A refused request returns to the client
+   * like any other, and the client replaces it; that replacement meets the same full queue and is
+   * refused in its turn. The two are one question asked once, and under load they straddle a round
+   * trip, so counting refusals rather than probes reports a probe that never happened and an
+   * interval of one round trip that no cooldown would allow.
+   *
+   * <p>Refusals within {@link #QUIET_PREFIX_DELIVERIES} round trips of the probe that opened the
+   * run are therefore folded into it. That is not a tolerance: this class already requires the
+   * cooldown to be longer than that many round trips — it is what {@link
+   * ImmediateResponseToTheFault} pins — so two refusals that close together cannot be two probes.
+   *
+   * @param refusals the round trip each refused request was refused at, in order.
+   * @return the round trip each probe was refused at, in order.
+   */
+  private static List<Integer> coalesceProbes(List<Integer> refusals) {
+    var probes = new ArrayList<Integer>();
+
+    for (int at : refusals) {
+      if (probes.isEmpty() || at - probes.get(probes.size() - 1) > QUIET_PREFIX_DELIVERIES) {
+        probes.add(at);
+      }
+    }
+
+    return probes;
+  }
+
+  /**
    * A {@link ScriptableSubscriptionServiceSet} that also models a Server which will not queue more
    * than a fixed number of PublishRequests for a Session: one that would take its queue past the
    * cap is answered Bad_TooManyPublishRequests, which is what Part 4 §5.14.5.1 has a Server do when
@@ -479,6 +508,24 @@ public class PublishCeilingRecoveryTest {
     /** Publish requests refused for exceeding the cap. Guarded by {@link #lock}. */
     private int rejections = 0;
 
+    /**
+     * Successful Publish round trips answered so far, which is the unit the client's probe cooldown
+     * is counted in. Advanced by {@link #noteDelivery()} immediately before each answer is
+     * enqueued. Guarded by {@link #lock}.
+     */
+    private int deliveries = 0;
+
+    /**
+     * The value of {@link #deliveries} at the moment each refusal was decided, in order. Recorded
+     * here, by the thread that refuses, rather than inferred by the test from when it next happens
+     * to sample {@link #rejections}: a probe and the round trip that provoked it are separately
+     * timed, so a test that samples after a fixed window attributes a probe that arrives late to
+     * the following round trip and every interval after it shifts.
+     *
+     * <p>Guarded by {@link #lock}.
+     */
+    private final List<Integer> refusedAtDelivery = new ArrayList<>();
+
     private volatile int cap;
 
     CappingSubscriptionServiceSet(OpcUaServer server, int cap) {
@@ -504,6 +551,44 @@ public class PublishCeilingRecoveryTest {
       lock.lock();
       try {
         return rejections;
+      } finally {
+        lock.unlock();
+      }
+    }
+
+    /**
+     * Count one successful Publish round trip. Called immediately before the answer that makes it
+     * one, so that a refusal provoked by that answer is recorded against it.
+     */
+    void noteDelivery() {
+      lock.lock();
+      try {
+        deliveries++;
+      } finally {
+        lock.unlock();
+      }
+    }
+
+    /**
+     * @return the successful Publish round trip each refused request was refused at, in order. One
+     *     probe can appear here more than once; see {@link #coalesceProbes(List)}.
+     */
+    List<Integer> getRefusalDeliveries() {
+      lock.lock();
+      try {
+        return List.copyOf(refusedAtDelivery);
+      } finally {
+        lock.unlock();
+      }
+    }
+
+    /**
+     * @return the number of successful Publish round trips answered so far.
+     */
+    int getDeliveryCount() {
+      lock.lock();
+      try {
+        return deliveries;
       } finally {
         lock.unlock();
       }
@@ -563,6 +648,7 @@ public class PublishCeilingRecoveryTest {
 
         if (getParkedRequestCount() >= cap) {
           rejections++;
+          refusedAtDelivery.add(deliveries);
 
           return CompletableFuture.failedFuture(
               new UaException(StatusCodes.Bad_TooManyPublishRequests));
@@ -710,6 +796,10 @@ public class PublishCeilingRecoveryTest {
 
       int arrivals = scriptable.getArrivalCount();
 
+      // Before the answer, not after: the probe it provokes can arrive while this call is still
+      // returning, and it must be charged to this round trip rather than to the one before it.
+      scriptable.noteDelivery();
+
       scriptable.enqueueKeepAlive(notifiedSubscriptionId(), KEEP_ALIVE_SEQUENCE_NUMBER);
 
       assertTrue(
@@ -740,27 +830,22 @@ public class PublishCeilingRecoveryTest {
     /**
      * Deliver {@code count} keep-alives, one at a time, watching for the Server refusing one.
      *
-     * @return the number of successful Publish round trips that had been delivered when each
-     *     refused request was observed, in order. Each entry is a probe: an extra PublishRequest
-     *     the client sent to find out whether the Server would now queue one more.
+     * @return the successful Publish round trip at which each probe was refused, in order. Each
+     *     entry is a probe: an extra PublishRequest the client sent to find out whether the Server
+     *     would now queue one more.
      */
     List<Integer> deliverAndRecordRefusals(int count) throws Exception {
-      var refusedAt = new ArrayList<Integer>();
-      int rejections = scriptable.getRejectionCount();
+      int before = scriptable.getRefusalDeliveries().size();
+      int origin = scriptable.getDeliveryCount();
 
       for (int delivered = 1; delivered <= count; delivered++) {
         deliverOneKeepAlive();
-
-        int total = scriptable.getRejectionCount();
-
-        for (int i = rejections; i < total; i++) {
-          refusedAt.add(delivered);
-        }
-
-        rejections = total;
       }
 
-      return refusedAt;
+      // Positions are the Server's own, recorded under its lock at the moment it refused, and are
+      // re-based on the round trip this window started at so that they read as offsets into it.
+      return coalesceProbes(
+          scriptable.getRefusalDeliveries().stream().skip(before).map(at -> at - origin).toList());
     }
 
     /**
