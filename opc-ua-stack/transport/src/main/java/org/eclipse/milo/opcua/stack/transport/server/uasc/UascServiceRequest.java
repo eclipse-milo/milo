@@ -14,7 +14,9 @@ import io.netty.channel.Channel;
 import org.eclipse.milo.opcua.stack.core.channel.SecureChannel;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
+import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.transport.server.ServiceRequest;
+import org.jspecify.annotations.Nullable;
 
 public class UascServiceRequest extends ServiceRequest {
 
@@ -25,9 +27,11 @@ public class UascServiceRequest extends ServiceRequest {
       TransportProfile transportProfile,
       Channel channel,
       SecureChannel secureChannel,
+      @Nullable EndpointDescription endpoint,
       UaRequestMessageType requestMessage,
       long requestId) {
-    super(endpointUrl, transportProfile, channel, secureChannel, requestMessage);
+
+    super(endpointUrl, transportProfile, channel, secureChannel, endpoint, requestMessage);
 
     this.requestId = requestId;
   }

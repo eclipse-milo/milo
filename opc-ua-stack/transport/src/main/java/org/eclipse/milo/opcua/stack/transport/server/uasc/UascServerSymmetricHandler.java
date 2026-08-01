@@ -38,6 +38,7 @@ import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.ResponseHeader;
 import org.eclipse.milo.opcua.stack.core.types.structured.ServiceFault;
 import org.eclipse.milo.opcua.stack.core.util.BufferUtil;
@@ -207,12 +208,16 @@ public class UascServerSymmetricHandler extends ByteToMessageCodec<UascServiceRe
 
           String endpointUrl = ctx.channel().attr(UascServerHelloHandler.ENDPOINT_URL_KEY).get();
 
+          EndpointDescription endpoint =
+              ctx.channel().attr(UascServerAsymmetricHandler.ENDPOINT_KEY).get();
+
           var serviceRequest =
               new UascServiceRequest(
                   endpointUrl,
                   transportProfile,
                   ctx.channel(),
                   secureChannel,
+                  endpoint,
                   requestMessage,
                   requestId);
 

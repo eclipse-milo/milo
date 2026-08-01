@@ -11,9 +11,12 @@
 package org.eclipse.milo.opcua.stack.transport.server;
 
 import io.netty.channel.Channel;
+import java.util.Optional;
 import org.eclipse.milo.opcua.stack.core.channel.SecureChannel;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
+import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.jspecify.annotations.Nullable;
 
 /** Holds a received {@link UaRequestMessageType} with some additional transport layer details. */
 public class ServiceRequest implements ServiceRequestContext {
@@ -24,6 +27,7 @@ public class ServiceRequest implements ServiceRequestContext {
   private final TransportProfile transportProfile;
   private final Channel channel;
   private final SecureChannel secureChannel;
+  private final @Nullable EndpointDescription endpoint;
   private final UaRequestMessageType requestMessage;
 
   public ServiceRequest(
@@ -31,12 +35,14 @@ public class ServiceRequest implements ServiceRequestContext {
       TransportProfile transportProfile,
       Channel channel,
       SecureChannel secureChannel,
+      @Nullable EndpointDescription endpoint,
       UaRequestMessageType requestMessage) {
 
     this.endpointUrl = endpointUrl;
     this.transportProfile = transportProfile;
     this.channel = channel;
     this.secureChannel = secureChannel;
+    this.endpoint = endpoint;
     this.requestMessage = requestMessage;
   }
 
@@ -58,6 +64,11 @@ public class ServiceRequest implements ServiceRequestContext {
   @Override
   public SecureChannel getSecureChannel() {
     return secureChannel;
+  }
+
+  @Override
+  public Optional<EndpointDescription> getEndpoint() {
+    return Optional.ofNullable(endpoint);
   }
 
   @Override

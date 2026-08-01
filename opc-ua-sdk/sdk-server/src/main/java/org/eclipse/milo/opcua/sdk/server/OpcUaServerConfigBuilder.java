@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.sdk.server;
 import static java.util.Objects.requireNonNull;
 
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -33,7 +34,7 @@ import org.jspecify.annotations.Nullable;
 
 public class OpcUaServerConfigBuilder {
 
-  private Set<EndpointConfig> endpoints = new HashSet<>();
+  private Set<EndpointConfig> endpoints = new LinkedHashSet<>();
   private Set<ReverseConnectTarget> reverseConnectTargets = new HashSet<>();
 
   private LocalizedText applicationName =
@@ -63,8 +64,18 @@ public class OpcUaServerConfigBuilder {
   private ExecutorService executor;
   private ScheduledExecutorService scheduledExecutor;
 
+  /**
+   * Set the endpoints the server offers.
+   *
+   * <p>The builder copies the supplied set, preserving its iteration order, so later changes to
+   * {@code endpointConfigs} do not affect the built configuration.
+   *
+   * @param endpointConfigs the complete set of endpoints the server offers.
+   * @return this builder.
+   */
   public OpcUaServerConfigBuilder setEndpoints(Set<EndpointConfig> endpointConfigs) {
-    this.endpoints = endpointConfigs;
+    Objects.requireNonNull(endpointConfigs, "endpointConfigs");
+    this.endpoints = new LinkedHashSet<>(endpointConfigs);
     return this;
   }
 
