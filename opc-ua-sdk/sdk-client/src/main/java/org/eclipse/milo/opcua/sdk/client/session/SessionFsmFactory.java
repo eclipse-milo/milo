@@ -39,6 +39,7 @@ import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -1448,10 +1449,24 @@ public class SessionFsmFactory {
 
     CompletableFuture<Unit> transferFuture = new CompletableFuture<>();
 
-    UInteger[] subscriptionIdsArray =
-        subscriptions.stream()
-            .flatMap(s -> s.getSubscriptionId().stream())
-            .toArray(UInteger[]::new);
+    // A Subscription can be reset() concurrently, clearing its id, so the ids sent and the
+    // Subscriptions they came from are captured together: the TransferResults are indexed
+    // against the ids the request carried, and pairing them back through a list whose shape
+    // can since have changed would apply a result to the wrong Subscription.
+    var transferable = new ArrayList<OpcUaSubscription>(subscriptions.size());
+    var subscriptionIds = new ArrayList<UInteger>(subscriptions.size());
+
+    for (OpcUaSubscription subscription : subscriptions) {
+      subscription
+          .getSubscriptionId()
+          .ifPresent(
+              id -> {
+                transferable.add(subscription);
+                subscriptionIds.add(id);
+              });
+    }
+
+    UInteger[] subscriptionIdsArray = subscriptionIds.toArray(new UInteger[0]);
 
     TransferSubscriptionsRequest request =
         new TransferSubscriptionsRequest(
@@ -1481,15 +1496,13 @@ public class SessionFsmFactory {
 
                   if (LOGGER.isDebugEnabled()) {
                     try {
-                      Stream<UInteger> subscriptionIds =
-                          subscriptions.stream().flatMap(s -> s.getSubscriptionId().stream());
                       Stream<StatusCode> statusCodes =
                           Stream.of(results).map(TransferResult::getStatusCode);
 
                       //noinspection UnstableApiUsage
                       String[] ss =
                           Streams.zip(
-                                  subscriptionIds,
+                                  subscriptionIds.stream(),
                                   statusCodes,
                                   (i, s) -> {
                                     assert s != null;
@@ -1509,23 +1522,38 @@ public class SessionFsmFactory {
                   }
                 }
 
-                client
-                    .getTransport()
-                    .getConfig()
-                    .getExecutor()
-                    .execute(
-                        () -> {
-                          for (int i = 0; i < results.length; i++) {
-                            TransferResult result = results[i];
+                // Part 4 §5.14.7.1: a successful TransferResult carries "the sequence numbers
+                // of the NotificationMessages that are available for retransmission", which is
+                // what tells the client which NotificationMessages the Republish loop Part 4
+                // §6.7 requires before Publish resumes can still collect. Recorded here, inline,
+                // rather than dispatched: the loop runs when this Session becomes Active, and
+                // the list has to be in place before it does. Indexed against the
+                // SubscriptionIds the request was built from, which is what the results are a
+                // "list of results for the subscriptions to transfer" of.
+                for (int i = 0; i < results.length && i < subscriptionIdsArray.length; i++) {
+                  TransferResult result = results[i];
 
-                            if (!result.getStatusCode().isGood()) {
-                              OpcUaSubscription subscription = subscriptions.get(i);
+                  if (result.getStatusCode().isGood()) {
+                    client
+                        .getPublishingManager()
+                        .notifySubscriptionTransferred(
+                            session, subscriptionIdsArray[i], result.getAvailableSequenceNumbers());
+                  }
+                }
 
-                              subscription.notifyTransferFailed(result.getStatusCode());
-                            }
-                          }
-                        });
+                for (int i = 0; i < results.length && i < transferable.size(); i++) {
+                  TransferResult result = results[i];
 
+                  if (!result.getStatusCode().isGood()) {
+                    handleTransferFailure(
+                        ctx, session, transferable.get(i), result.getStatusCode());
+                  }
+                }
+
+                // Failed Subscriptions must be reset and unregistered before this completion can
+                // move the FSM through Initializing and into Active. Otherwise reconnect recovery
+                // can still see them and issue Republish requests for SubscriptionIds that were
+                // not transferred to this Session.
                 transferFuture.complete(Unit.VALUE);
               } else {
                 StatusCode statusCode =
@@ -1537,16 +1565,9 @@ public class SessionFsmFactory {
                   LOGGER.debug("TransferSubscriptions not supported: {}", statusCode);
                 }
 
-                client
-                    .getTransport()
-                    .getConfig()
-                    .getExecutor()
-                    .execute(
-                        () -> {
-                          for (OpcUaSubscription subscription : subscriptions) {
-                            subscription.notifyTransferFailed(statusCode);
-                          }
-                        });
+                for (OpcUaSubscription subscription : subscriptions) {
+                  handleTransferFailure(ctx, session, subscription, statusCode);
+                }
 
                 // Bad_ServiceUnsupported is the correct response when transfers aren't
                 // supported but server implementations interpret the spec differently.
@@ -1573,6 +1594,34 @@ public class SessionFsmFactory {
             });
 
     return transferFuture;
+  }
+
+  /**
+   * Reset and unregister a Subscription that was not transferred to {@code session}.
+   *
+   * <p>{@link OpcUaSubscription#handleTransferFailure(StatusCode)} performs non-overridable local
+   * teardown synchronously and dispatches the overridable notification separately. Contain internal
+   * failures here so one Subscription cannot leave the Session FSM in {@link State#Transferring} or
+   * prevent the remaining failed Subscriptions from being reset.
+   */
+  private static void handleTransferFailure(
+      FsmContext<State, Event> ctx,
+      OpcUaSession session,
+      OpcUaSubscription subscription,
+      StatusCode statusCode) {
+
+    try {
+      subscription.handleTransferFailure(statusCode);
+    } catch (Exception e) {
+      try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+          MDCCloseable ignoredSessionId = putSessionId(session)) {
+
+        LOGGER.warn(
+            "Subscription transfer-failure cleanup failed: id={}",
+            subscription.getSubscriptionId().orElse(null),
+            e);
+      }
+    }
   }
 
   private static CompletableFuture<Unit> initialize(
