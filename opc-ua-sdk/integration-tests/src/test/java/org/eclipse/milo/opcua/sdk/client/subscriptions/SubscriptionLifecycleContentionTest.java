@@ -226,8 +226,8 @@ public class SubscriptionLifecycleContentionTest {
      * and no client object still names runs until its lifetime expires and cannot be deleted — the
      * same leak the immutable-id work was about.
      *
-     * <p>Nothing here is asserted about timing; this is about what is left on the Server once both
-     * calls have finished, in whichever order they finish.
+     * <p>Nothing here is asserted about timing; this is about what is left on the Server after the
+     * reset has demonstrably superseded the gated create and that create has subsequently finished.
      */
     @Test
     void noServerSideSubscriptionSurvivesAResetIssuedDuringACreate() throws Exception {
@@ -237,10 +237,28 @@ public class SubscriptionLifecycleContentionTest {
         Call create = fixture.startGatedCreate(subscription);
         Call reset = Call.start("reset", subscription::reset);
 
+        assertTrue(
+            reset.awaitFinished(AWAIT_TIMEOUT_MILLIS),
+            "reset() never finished while create() was gated at the Server");
+        assertEquals(Optional.empty(), reset.failure(), "reset() must complete successfully");
+        assertFalse(
+            create.isFinished(),
+            "the gated create() finished before the Server gate was released, so reset() did not"
+                + " demonstrably supersede it");
+
         fixture.scriptable.releaseCreates();
 
         assertTrue(create.awaitFinished(AWAIT_TIMEOUT_MILLIS), "create() never finished");
-        assertTrue(reset.awaitFinished(AWAIT_TIMEOUT_MILLIS), "reset() never finished");
+
+        UaException failure =
+            assertInstanceOf(
+                UaException.class,
+                create.failure().orElse(null),
+                "a create() superseded by reset() must fail");
+        assertEquals(
+            StatusCodes.Bad_InvalidState,
+            failure.getStatusCode().value(),
+            "a create() superseded by reset() must fail with Bad_InvalidState");
 
         assertFalse(
             fixture.scriptable.createdSubscriptionIds().isEmpty(),
