@@ -185,6 +185,25 @@ public class OpcUaSubscription {
 
   private volatile WatchdogTimer watchdogTimer;
 
+  /**
+   * Marks the executor callback dispatched by {@link #handleTransferFailure(StatusCode)} after its
+   * non-overridable cleanup has already run. The public callback remains overridable for
+   * compatibility, but the base implementation must not reset a second time and invalidate a new
+   * incarnation created before the asynchronous notification runs.
+   */
+  private final ThreadLocal<Boolean> transferFailureAlreadyHandled = new ThreadLocal<>();
+
+  /**
+   * Guards changes that move a MonitoredItem between {@link #monitoredItems} and {@link
+   * #itemsToDelete}, including applying a DeleteMonitoredItems result that detaches the item.
+   *
+   * <p>The collections remain concurrent because notification delivery and the synchronization
+   * queries read them without this lock. The lock makes the multi-step bookkeeping atomic: in
+   * particular, adding an item back while its deletion is in flight must be ordered against the
+   * response that clears its ClientHandle.
+   */
+  private final Object monitoredItemsLock = new Object();
+
   /** MonitoredItems added to this Subscription, by ClientHandle. */
   private final Map<UInteger, OpcUaMonitoredItem> monitoredItems = new ConcurrentHashMap<>();
 
@@ -356,12 +375,16 @@ public class OpcUaSubscription {
 
         watchdogTimer = new WatchdogTimer();
         client.addSessionActivityListener(watchdogTimer);
-        resetWatchdogTimer();
 
         // Registered while the lock is still held, so the SubscriptionId the PublishingManager
         // binds its entry to is the one installed above and not one a reset() has since cleared.
         client.addSubscription(this);
         client.getPublishingManager().addSubscription(this);
+
+        // Register before checking the suspension gate. If reconnect recovery resumes between
+        // these operations, either its registry sweep sees this Subscription or this check sees
+        // publishing allowed; there is no interval in which both can miss it.
+        resetWatchdogTimer();
 
         return CompletableFuture.completedFuture(Unit.VALUE);
       }
@@ -668,8 +691,14 @@ public class OpcUaSubscription {
       }
     }
 
-    CompletionStage<Unit> result =
+    CompletionStage<Unit> internalResult =
         slot.thenCompose(unit -> transition.get()).whenComplete((unit, ex) -> endTransition());
+
+    // Callers are allowed to cancel or time out the stage they receive, but that must not cancel
+    // the dependent stage above: it owns the transition slot until the actual service operation
+    // has completed and endTransition() has handed the slot on. This extra dependent preserves the
+    // caller-visible result while isolating the internal cleanup from external completion.
+    CompletionStage<Unit> callerResult = internalResult.thenApply(unit -> unit);
 
     // After the chain above is built, so that a slot already in hand starts the transition here
     // rather than leaving it to whoever completes the stage next.
@@ -677,7 +706,7 @@ public class OpcUaSubscription {
       slot.complete(Unit.VALUE);
     }
 
-    return result;
+    return callerResult;
   }
 
   /**
@@ -782,27 +811,29 @@ public class OpcUaSubscription {
    * @throws UaRuntimeException if the Subscription has not been created yet.
    */
   public void addMonitoredItem(OpcUaMonitoredItem item) {
-    Optional<UInteger> existingHandle = item.getClientHandle();
+    synchronized (monitoredItemsLock) {
+      Optional<UInteger> existingHandle = item.getClientHandle();
 
-    if (existingHandle.isPresent()) {
-      UInteger handle = existingHandle.get();
+      if (existingHandle.isPresent()) {
+        UInteger handle = existingHandle.get();
 
-      // O(1) check: if this item is already in the map, nothing to do
-      if (monitoredItems.get(handle) == item) {
-        return;
+        // O(1) check: if this item is already in the map, nothing to do
+        if (monitoredItems.get(handle) == item) {
+          return;
+        }
+
+        // Item has a handle but isn't in map - check if pending deletion
+        if (itemsToDelete.remove(item)) {
+          monitoredItems.put(handle, item);
+        }
+        // else: item has a handle from a different context, ignore
+      } else {
+        // Brand-new item with no handle
+        UInteger clientHandle = clientHandleSequence.nextClientHandle();
+        item.setClientHandle(clientHandle);
+
+        monitoredItems.put(clientHandle, item);
       }
-
-      // Item has a handle but isn't in map - check if pending deletion
-      if (itemsToDelete.remove(item)) {
-        monitoredItems.put(handle, item);
-      }
-      // else: item has a handle from a different context, ignore
-    } else {
-      // Brand-new item with no handle
-      UInteger clientHandle = clientHandleSequence.nextClientHandle();
-      item.setClientHandle(clientHandle);
-
-      monitoredItems.put(clientHandle, item);
     }
   }
 
@@ -828,7 +859,9 @@ public class OpcUaSubscription {
    * @param item the MonitoredItem to remove.
    */
   public void removeMonitoredItem(OpcUaMonitoredItem item) {
-    item.getClientHandle().map(monitoredItems::remove).ifPresent(itemsToDelete::add);
+    synchronized (monitoredItemsLock) {
+      item.getClientHandle().map(monitoredItems::remove).ifPresent(itemsToDelete::add);
+    }
   }
 
   /**
@@ -1072,29 +1105,28 @@ public class OpcUaSubscription {
    * @return a List of the MonitoredItems that were deleted.
    */
   public List<MonitoredItemServiceOperationResult> deleteMonitoredItems() {
-    // Items that were never created on the Server don't need to be deleted from it.
-    this.itemsToDelete.removeIf(
-        item -> item.getSyncState() == OpcUaMonitoredItem.SyncState.INITIAL);
+    List<OpcUaMonitoredItem> itemsToDelete;
 
-    List<OpcUaMonitoredItem> itemsToDelete = List.copyOf(this.itemsToDelete);
+    synchronized (monitoredItemsLock) {
+      // Items that were never created on the Server don't need to be deleted from it.
+      this.itemsToDelete.removeIf(
+          item -> {
+            if (item.getSyncState() == OpcUaMonitoredItem.SyncState.INITIAL) {
+              item.setClientHandle(null);
+              return true;
+            }
+
+            return false;
+          });
+
+      itemsToDelete = List.copyOf(this.itemsToDelete);
+    }
 
     if (itemsToDelete.isEmpty()) {
       return Collections.emptyList();
     }
 
-    List<MonitoredItemServiceOperationResult> results = deleteMonitoredItems(itemsToDelete);
-
-    for (MonitoredItemServiceOperationResult result : results) {
-      // An operation-level result means the Server acted on the deletion, either by deleting the
-      // item or by reporting Bad_MonitoredItemIdInvalid because it was already gone. Either way
-      // the item no longer exists on the Server and applyDeleteResult() has detached it. Anything
-      // else, e.g. a service fault, leaves the item on the Server, so it stays queued.
-      if (result.operationResult().isPresent()) {
-        this.itemsToDelete.remove(result.monitoredItem());
-      }
-    }
-
-    return results;
+    return deleteMonitoredItems(itemsToDelete);
   }
 
   private List<MonitoredItemServiceOperationResult> deleteMonitoredItems(
@@ -1124,12 +1156,16 @@ public class OpcUaSubscription {
       //noinspection DuplicatedCode
       var monitoredItemIds = new ArrayList<UInteger>(partition.size());
       var itemIds = new ArrayList<Optional<UInteger>>(partition.size());
+      var clientHandles = new ArrayList<Optional<UInteger>>(partition.size());
 
-      for (OpcUaMonitoredItem item : partition) {
-        Optional<UInteger> itemId = item.getMonitoredItemId();
+      synchronized (monitoredItemsLock) {
+        for (OpcUaMonitoredItem item : partition) {
+          Optional<UInteger> itemId = item.getMonitoredItemId();
 
-        itemIds.add(itemId);
-        itemId.ifPresent(monitoredItemIds::add);
+          itemIds.add(itemId);
+          clientHandles.add(item.getClientHandle());
+          itemId.ifPresent(monitoredItemIds::add);
+        }
       }
 
       if (monitoredItemIds.isEmpty()) {
@@ -1160,7 +1196,7 @@ public class OpcUaSubscription {
           if (itemIds.get(i).isPresent()) {
             StatusCode result = results[resultIndex++];
 
-            item.applyDeleteResult(result);
+            applyMonitoredItemDeleteResult(item, clientHandles.get(i), result);
 
             serviceOperationsResults.add(
                 new MonitoredItemServiceOperationResult(item, StatusCode.GOOD, result));
@@ -1187,6 +1223,38 @@ public class OpcUaSubscription {
     }
 
     return serviceOperationsResults;
+  }
+
+  /**
+   * Apply an operation-level DeleteMonitoredItems result without corrupting an item that was added
+   * back while the service call was in flight.
+   *
+   * <p>The Server has acted on the deletion, so the item's server state must be cleared either way.
+   * If the application added the item back, it remains in {@link #monitoredItems}; restore the
+   * ClientHandle captured for the request after {@link OpcUaMonitoredItem#applyDeleteResult} clears
+   * it, so a later {@link #createMonitoredItems()} can recreate the desired item. If it was not
+   * added back, it stays detached as before.
+   */
+  private void applyMonitoredItemDeleteResult(
+      OpcUaMonitoredItem item, Optional<UInteger> clientHandle, StatusCode result) {
+
+    synchronized (monitoredItemsLock) {
+      boolean readded =
+          clientHandle.map(handle -> monitoredItems.get(handle) == item).orElse(false);
+
+      item.applyDeleteResult(result);
+
+      if (readded) {
+        UInteger handle = clientHandle.orElseThrow();
+        item.setClientHandle(handle);
+      }
+
+      // An operation-level result means the Server acted on the deletion, either by deleting the
+      // item or by reporting that it was already gone. Remove the original pending deletion in the
+      // same critical section as applying the result, so a later remove is a distinct operation
+      // that this response cannot consume.
+      itemsToDelete.remove(item);
+    }
   }
 
   private UInteger getMonitoredItemPartitionSize() {
@@ -1922,6 +1990,11 @@ public class OpcUaSubscription {
    * #delete()} or {@link #setPublishingMode(boolean)} in flight is superseded the same way.
    */
   public void reset() {
+    resetInternal();
+  }
+
+  /** Perform the reset without virtual dispatch. */
+  private void resetInternal() {
     synchronized (lifecycleLock) {
       // Unconditional, and before anything else: this is the only record a transition already
       // waiting for the Server has that the Subscription it was called for is gone. A create() in
@@ -2188,15 +2261,58 @@ public class OpcUaSubscription {
   }
 
   /**
-   * Unlike the notification callbacks above, this is called from <i>off</i> the {@link
-   * #deliveryQueue} and must therefore be enqueued onto it.
+   * Reset this Subscription and enqueue its transfer-failure listener notification.
+   *
+   * <p>Session transfer uses {@link #handleTransferFailure(StatusCode)} so the reset cannot be
+   * delayed by an override of this method. A direct call retains the established public behavior:
+   * it resets first, then queues the listener callback onto the {@link #deliveryQueue}.
    */
   public void notifyTransferFailed(StatusCode status) {
-    reset();
+    if (!Boolean.TRUE.equals(transferFailureAlreadyHandled.get())) {
+      reset();
+    }
 
     SubscriptionListener listener = this.listener;
     if (listener != null) {
       deliveryQueue.execute(() -> listener.onTransferFailed(this, status));
+    }
+  }
+
+  /**
+   * Reset this Subscription before the Session FSM can become Active, then dispatch the public,
+   * overridable transfer-failure notification away from the FSM completion path.
+   *
+   * <p>This method is final because transfer cleanup is an internal ordering invariant: a subclass
+   * that blocks or throws from {@link #notifyTransferFailed(StatusCode)} must not keep the Session
+   * in its Transferring state or let reconnect recovery observe a Subscription that was not
+   * transferred.
+   *
+   * @param status the operation- or service-level transfer failure.
+   */
+  public final void handleTransferFailure(StatusCode status) {
+    resetInternal();
+
+    try {
+      client
+          .getTransport()
+          .getConfig()
+          .getExecutor()
+          .execute(
+              () -> {
+                transferFailureAlreadyHandled.set(Boolean.TRUE);
+
+                try {
+                  notifyTransferFailed(status);
+                } catch (Exception e) {
+                  logger.warn("notifyTransferFailed threw an unhandled Exception", e);
+                } finally {
+                  transferFailureAlreadyHandled.remove();
+                }
+              });
+    } catch (Exception e) {
+      // Cleanup is complete. A rejected application notification must not fail Session transfer or
+      // leave the FSM waiting forever for work its executor will never accept.
+      logger.warn("could not dispatch notifyTransferFailed", e);
     }
   }
 

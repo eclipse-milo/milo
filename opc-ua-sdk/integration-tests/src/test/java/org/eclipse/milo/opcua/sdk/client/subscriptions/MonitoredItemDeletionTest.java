@@ -20,7 +20,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
@@ -200,6 +203,62 @@ public class MonitoredItemDeletionTest {
             "an item that was added back must no longer be pending deletion");
       }
     }
+
+    /**
+     * Adding an item back while DeleteMonitoredItems is in flight makes it desired client state
+     * again, but cannot retract the request already at the Server. When that request succeeds, the
+     * item must remain mapped with a valid ClientHandle and become pending creation; otherwise the
+     * old map key points at an item whose handle was cleared, and the item can neither be recreated
+     * nor safely added again.
+     */
+    @Test
+    void itemAddedBackDuringSuccessfulDeleteRemainsMappedForRecreation() throws Exception {
+      try (var fixture = new Fixture()) {
+        var subscription = new OpcUaSubscription(fixture.client);
+        subscription.create();
+
+        OpcUaMonitoredItem item = fixture.createItem(subscription);
+        UInteger originalClientHandle = item.getClientHandle().orElseThrow();
+
+        subscription.removeMonitoredItem(item);
+        fixture.serviceSet.gateNextDeleteMonitoredItems();
+
+        CompletableFuture<List<MonitoredItemServiceOperationResult>> delete =
+            CompletableFuture.supplyAsync(subscription::deleteMonitoredItems);
+
+        fixture.serviceSet.awaitDeleteMonitoredItems();
+        subscription.addMonitoredItem(item);
+
+        assertEquals(
+            List.of(item),
+            subscription.getMonitoredItems(),
+            "control: the item was added back before the Server answered the deletion");
+
+        fixture.serviceSet.releaseDeleteMonitoredItems();
+
+        List<MonitoredItemServiceOperationResult> deleteResults = delete.get(5, TimeUnit.SECONDS);
+
+        assertEquals(1, deleteResults.size());
+        assertTrue(deleteResults.get(0).isGood());
+        assertEquals(
+            originalClientHandle,
+            item.getClientHandle().orElseThrow(),
+            "the mapped item must retain the ClientHandle used as its map key");
+        assertEquals(List.of(item), subscription.getMonitoredItems());
+        assertEquals(
+            OpcUaMonitoredItem.SyncState.INITIAL,
+            item.getSyncState(),
+            "the successful deletion means the re-added item must be recreated on the Server");
+
+        List<MonitoredItemServiceOperationResult> createResults =
+            subscription.createMonitoredItems();
+
+        assertEquals(1, createResults.size(), "the re-added item must be created exactly once");
+        assertTrue(createResults.get(0).isGood());
+        assertEquals(List.of(item), subscription.getMonitoredItems());
+        assertTrue(subscription.isMonitoredItemsSynchronized());
+      }
+    }
   }
 
   /** The queue of pending deletions across a Subscription's deletion and re-creation. */
@@ -331,6 +390,9 @@ public class MonitoredItemDeletionTest {
         Collections.synchronizedList(new ArrayList<>());
 
     private final AtomicInteger deleteFailuresRemaining = new AtomicInteger(0);
+    private final AtomicBoolean gateNextDelete = new AtomicBoolean(false);
+    private final CountDownLatch deleteArrived = new CountDownLatch(1);
+    private final CountDownLatch deleteGate = new CountDownLatch(1);
 
     RecordingMonitoredItemServiceSet(OpcUaServer server) {
       super(server);
@@ -351,6 +413,20 @@ public class MonitoredItemDeletionTest {
       deleteFailuresRemaining.set(count);
     }
 
+    void gateNextDeleteMonitoredItems() {
+      gateNextDelete.set(true);
+    }
+
+    void awaitDeleteMonitoredItems() throws InterruptedException {
+      assertTrue(
+          deleteArrived.await(5, TimeUnit.SECONDS),
+          "the gated DeleteMonitoredItems request never reached the Server");
+    }
+
+    void releaseDeleteMonitoredItems() {
+      deleteGate.countDown();
+    }
+
     @Override
     public DeleteMonitoredItemsResponse onDeleteMonitoredItems(
         ServiceRequestContext context, DeleteMonitoredItemsRequest request) throws UaException {
@@ -362,6 +438,20 @@ public class MonitoredItemDeletionTest {
       if (deleteFailuresRemaining.getAndDecrement() > 0) {
         throw new UaException(
             StatusCodes.Bad_TooManyOperations, "scripted DeleteMonitoredItems failure");
+      }
+
+      if (gateNextDelete.compareAndSet(true, false)) {
+        deleteArrived.countDown();
+
+        try {
+          if (!deleteGate.await(30, TimeUnit.SECONDS)) {
+            throw new UaException(
+                StatusCodes.Bad_Timeout, "the DeleteMonitoredItems gate was never opened");
+          }
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          throw new UaException(StatusCodes.Bad_UnexpectedError, e);
+        }
       }
 
       return super.onDeleteMonitoredItems(context, request);
@@ -404,6 +494,7 @@ public class MonitoredItemDeletionTest {
 
     @Override
     public void close() throws Exception {
+      serviceSet.releaseDeleteMonitoredItems();
       try {
         client.disconnectAsync().get(5, TimeUnit.SECONDS);
       } finally {

@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.client.subscriptions;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -234,6 +235,45 @@ public class SubscriptionTransitionHandoffTest {
         scriptable.modifySubscriptionArrivals(),
         "the modify() made after the queue drained had a pending modification and must have reached"
             + " the Server");
+  }
+
+  /**
+   * Cancelling the caller's lifecycle future must not cancel the internal completion that owns the
+   * transition slot. Releasing the slot on cancellation would let the queued delete run while the
+   * CreateSubscription call is still in flight; never releasing it after the Server answers would
+   * wedge every later lifecycle operation.
+   */
+  @Test
+  void cancellingCallerFutureDoesNotReleaseOrWedgeTheTransitionSlot() throws Exception {
+    CompletionStage<Unit> create = startGatedCreate();
+    CompletableFuture<Unit> callerFuture = create.toCompletableFuture();
+
+    assertTrue(callerFuture.cancel(false), "the caller must be able to cancel its future");
+    assertTrue(callerFuture.isCancelled(), "cancellation must remain visible to the caller");
+
+    CompletableFuture<Unit> queuedDelete = subscription.deleteAsync().toCompletableFuture();
+
+    assertFalse(
+        queuedDelete.isDone(),
+        "cancelling the caller's view must not release the slot while CreateSubscription is still"
+            + " in flight");
+
+    scriptable.releaseCreateGate();
+
+    try {
+      queuedDelete.get(AWAIT_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+    } catch (TimeoutException e) {
+      fail(
+          "the DeleteSubscription queued behind the cancelled caller future never ran after the"
+              + " internal CreateSubscription completed; cancellation prevented transition-slot"
+              + " cleanup");
+    }
+
+    assertTrue(callerFuture.isCancelled(), "internal completion must not undo caller cancellation");
+    assertEquals(
+        OpcUaSubscription.SyncState.INITIAL,
+        subscription.getSyncState(),
+        "the queued delete must run after the actual CreateSubscription operation completes");
   }
 
   // region fixture helpers
