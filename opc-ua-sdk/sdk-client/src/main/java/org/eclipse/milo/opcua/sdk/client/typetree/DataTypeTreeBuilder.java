@@ -14,7 +14,6 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
@@ -26,7 +25,6 @@ import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.DataTypeEncoding;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -168,36 +166,16 @@ public class DataTypeTreeBuilder {
         DataTypeDefinition dataTypeDefinition = dataTypeAttributes.get(j).definition;
         Boolean isAbstract = dataTypeAttributes.get(j).isAbstract;
 
-        NodeId binaryEncodingId = null;
-        NodeId xmlEncodingId = null;
-        NodeId jsonEncodingId = null;
-
-        for (ReferenceDescription r : encodings) {
-          // Observed multiple servers at IOP using the wrong namespace index...
-          // Be lenient and also allow matching on the unqualified browse name.
-
-          if (r.getBrowseName().equals(DataTypeEncoding.BINARY_ENCODING_NAME)
-              || Objects.equals(r.getBrowseName().name(), "Default Binary")) {
-
-            binaryEncodingId = r.getNodeId().toNodeId(namespaceTable).orElse(null);
-          } else if (r.getBrowseName().equals(DataTypeEncoding.XML_ENCODING_NAME)
-              || Objects.equals(r.getBrowseName().name(), "Default XML")) {
-
-            xmlEncodingId = r.getNodeId().toNodeId(namespaceTable).orElse(null);
-          } else if (r.getBrowseName().equals(DataTypeEncoding.JSON_ENCODING_NAME)
-              || Objects.equals(r.getBrowseName().name(), "Default JSON")) {
-
-            jsonEncodingId = r.getNodeId().toNodeId(namespaceTable).orElse(null);
-          }
-        }
+        ClientBrowseUtils.EncodingIds encodingIds =
+            ClientBrowseUtils.extractEncodingIds(encodings, namespaceTable);
 
         var dataType =
             new ClientDataType(
                 browseName,
                 dataTypeId,
-                binaryEncodingId,
-                xmlEncodingId,
-                jsonEncodingId,
+                encodingIds.binaryEncodingId(),
+                encodingIds.xmlEncodingId(),
+                encodingIds.jsonEncodingId(),
                 dataTypeDefinition,
                 isAbstract);
 
@@ -227,20 +205,7 @@ public class DataTypeTreeBuilder {
 
     ClientBrowseUtils.checkSessionUnchanged(client, sessionId);
 
-    List<BrowseDescription> browseDescriptions =
-        dataTypeIds.stream()
-            .map(
-                dataTypeId ->
-                    new BrowseDescription(
-                        dataTypeId,
-                        BrowseDirection.Forward,
-                        NodeIds.HasEncoding,
-                        false,
-                        uint(NodeClass.Object.getValue()),
-                        uint(BrowseResultMask.All.getValue())))
-            .collect(Collectors.toList());
-
-    return ClientBrowseUtils.browseWithOperationLimits(client, browseDescriptions, operationLimits);
+    return ClientBrowseUtils.browseEncodings(client, dataTypeIds, operationLimits);
   }
 
   private static List<@Nullable Attributes> readDataTypeAttributes(

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 the Eclipse Milo Authors
+ * Copyright (c) 2026 the Eclipse Milo Authors
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -10,22 +10,30 @@
 
 package org.eclipse.milo.opcua.sdk.client.typetree;
 
-import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.util.Lists.partition;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
 import org.eclipse.milo.opcua.sdk.client.OperationLimits;
+import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
+import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.DataTypeEncoding;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseDirection;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseResultMask;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.BrowseDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.BrowseNextResponse;
@@ -33,6 +41,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.BrowseResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.StructureDefinition;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +56,12 @@ import org.slf4j.LoggerFactory;
 final class ClientBrowseUtils {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ClientBrowseUtils.class);
+
+  /**
+   * Upper bound on BrowseNext calls for a single continuation point, guarding against non-compliant
+   * servers that never return a null/empty continuation point.
+   */
+  private static final int MAX_BROWSE_NEXT_ITERATIONS = 1000;
 
   private ClientBrowseUtils() {}
 
@@ -107,7 +122,13 @@ final class ClientBrowseUtils {
     for (List<ReadValueId> partitionList : partition(readValueIds, partitionSize).toList()) {
       ReadResponse response = client.read(0.0, TimestampsToReturn.Neither, partitionList);
       DataValue[] results = response.getResults();
-      Collections.addAll(values, requireNonNull(results));
+      if (results == null || results.length != partitionList.size()) {
+        throw new UaException(
+            StatusCodes.Bad_UnexpectedError,
+            "Read returned %s results, expected %s"
+                .formatted(results == null ? "null" : results.length, partitionList.size()));
+      }
+      Collections.addAll(values, results);
     }
 
     return values;
@@ -166,7 +187,15 @@ final class ClientBrowseUtils {
 
     final var referenceDescriptionLists = new ArrayList<List<ReferenceDescription>>();
 
-    for (BrowseResult result : client.browse(browseDescriptions)) {
+    List<BrowseResult> browseResults = client.browse(browseDescriptions);
+    if (browseResults.size() != browseDescriptions.size()) {
+      throw new UaException(
+          StatusCodes.Bad_UnexpectedError,
+          "Browse returned %d results, expected %d"
+              .formatted(browseResults.size(), browseDescriptions.size()));
+    }
+
+    for (BrowseResult result : browseResults) {
       if (result.getStatusCode().isGood()) {
         var references = new ArrayList<ReferenceDescription>();
 
@@ -200,10 +229,32 @@ final class ClientBrowseUtils {
 
     var references = new ArrayList<ReferenceDescription>();
 
+    int iterations = 0;
+
     while (continuationPoint != null && continuationPoint.isNotNull()) {
+      if (++iterations > MAX_BROWSE_NEXT_ITERATIONS) {
+        var limitException =
+            new UaException(
+                StatusCodes.Bad_UnexpectedError,
+                "BrowseNext did not complete after %d calls".formatted(MAX_BROWSE_NEXT_ITERATIONS));
+
+        try {
+          client.browseNext(true, List.of(continuationPoint));
+        } catch (UaException e) {
+          limitException.addSuppressed(e);
+        }
+
+        throw limitException;
+      }
+
       BrowseNextResponse response = client.browseNext(false, List.of(continuationPoint));
 
-      BrowseResult result = requireNonNull(response.getResults())[0];
+      BrowseResult[] results = response.getResults();
+      if (results == null || results.length == 0) {
+        throw new UaException(StatusCodes.Bad_UnexpectedError, "BrowseNext returned no results");
+      }
+
+      BrowseResult result = results[0];
 
       ReferenceDescription[] rds =
           requireNonNullElse(result.getReferences(), new ReferenceDescription[0]);
@@ -214,5 +265,100 @@ final class ClientBrowseUtils {
     }
 
     return references;
+  }
+
+  /**
+   * Browse the HasEncoding references of {@code dataTypeIds} to find their encoding Nodes.
+   *
+   * @param client the OPC UA client.
+   * @param dataTypeIds the {@link NodeId}s of the DataType Nodes to browse.
+   * @param limits the operation limits from the server.
+   * @return a list of reference description lists, one per DataType id.
+   * @throws UaException if a service-level error occurs.
+   */
+  static List<List<ReferenceDescription>> browseEncodings(
+      OpcUaClient client, List<NodeId> dataTypeIds, OperationLimits limits) throws UaException {
+
+    List<BrowseDescription> browseDescriptions =
+        dataTypeIds.stream()
+            .map(
+                dataTypeId ->
+                    new BrowseDescription(
+                        dataTypeId,
+                        BrowseDirection.Forward,
+                        NodeIds.HasEncoding,
+                        false,
+                        uint(NodeClass.Object.getValue()),
+                        uint(BrowseResultMask.All.getValue())))
+            .toList();
+
+    return browseWithOperationLimits(client, browseDescriptions, limits);
+  }
+
+  /** The encoding Node ids of a DataType, extracted from its HasEncoding references. */
+  record EncodingIds(
+      @Nullable NodeId binaryEncodingId,
+      @Nullable NodeId xmlEncodingId,
+      @Nullable NodeId jsonEncodingId) {}
+
+  /**
+   * Extract the Default Binary/XML/JSON encoding Node ids from a DataType Node's HasEncoding
+   * references.
+   *
+   * @param encodings the HasEncoding {@link ReferenceDescription}s of a DataType Node.
+   * @param namespaceTable the namespace table for converting ExpandedNodeIds.
+   * @return the extracted {@link EncodingIds}.
+   */
+  static EncodingIds extractEncodingIds(
+      List<ReferenceDescription> encodings, NamespaceTable namespaceTable) {
+
+    NodeId binaryEncodingId = null;
+    NodeId xmlEncodingId = null;
+    NodeId jsonEncodingId = null;
+
+    for (ReferenceDescription r : encodings) {
+      // Observed multiple servers at IOP using the wrong namespace index...
+      // Be lenient and also allow matching on the unqualified browse name.
+
+      if (r.getBrowseName().equals(DataTypeEncoding.BINARY_ENCODING_NAME)
+          || Objects.equals(r.getBrowseName().name(), "Default Binary")) {
+
+        binaryEncodingId = r.getNodeId().toNodeId(namespaceTable).orElse(null);
+      } else if (r.getBrowseName().equals(DataTypeEncoding.XML_ENCODING_NAME)
+          || Objects.equals(r.getBrowseName().name(), "Default XML")) {
+
+        xmlEncodingId = r.getNodeId().toNodeId(namespaceTable).orElse(null);
+      } else if (r.getBrowseName().equals(DataTypeEncoding.JSON_ENCODING_NAME)
+          || Objects.equals(r.getBrowseName().name(), "Default JSON")) {
+
+        jsonEncodingId = r.getNodeId().toNodeId(namespaceTable).orElse(null);
+      }
+    }
+
+    return new EncodingIds(binaryEncodingId, xmlEncodingId, jsonEncodingId);
+  }
+
+  /**
+   * Get the Binary Encoding Node id for {@code dataType}.
+   *
+   * <p>Falls back to the DefaultEncodingId from the type's {@link StructureDefinition} as a
+   * workaround for non-compliant Servers that don't have encoding nodes in their address space. The
+   * DefaultEncodingId in a StructureDefinition shall always be the Default Binary encoding, so use
+   * it if the Server at least set that correctly. See <a
+   * href="https://reference.opcfoundation.org/Core/Part3/v105/docs/8.48">Part 3, 8.48</a>.
+   *
+   * @param dataType the {@link DataType} to get the Binary Encoding Node id for.
+   * @return the Binary Encoding Node id, or {@code null} if none is available.
+   */
+  static @Nullable NodeId getBinaryEncodingId(DataType dataType) {
+    NodeId binaryEncodingId = dataType.getBinaryEncodingId();
+
+    if (binaryEncodingId == null
+        && dataType.getDataTypeDefinition() instanceof StructureDefinition definition) {
+
+      binaryEncodingId = definition.getDefaultEncodingId();
+    }
+
+    return binaryEncodingId;
   }
 }

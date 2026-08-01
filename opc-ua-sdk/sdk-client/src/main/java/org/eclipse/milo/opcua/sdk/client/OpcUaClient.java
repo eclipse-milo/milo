@@ -486,11 +486,10 @@ public class OpcUaClient {
     addSessionInitializer(
         (client, session) -> {
           // Reset before the Session is available so that the DataTypeTree and associated codecs
-          // are refreshed (eagerly or lazily, depending on configuration).
+          // are refreshed (eagerly or lazily, depending on configuration). Resetting the tree
+          // also resets the dynamic DataTypeManager and EncodingContext derived from it.
 
           resetDataTypeTree();
-          resetDynamicDataTypeManager();
-          resetDynamicEncodingContext();
 
           return CompletableFuture.completedFuture(Unit.VALUE);
         });
@@ -924,16 +923,29 @@ public class OpcUaClient {
     }
   }
 
-  /** Reset the cached {@link DataTypeTree}. */
+  /**
+   * Reset the cached {@link DataTypeTree}.
+   *
+   * <p>The dynamic {@link DataTypeManager} and dynamic {@link EncodingContext} are derived from the
+   * tree (dynamic codecs hold a reference to the tree they were created against), so they are reset
+   * along with it and will be rebuilt against the new tree the next time they are accessed.
+   */
   public void resetDataTypeTree() {
     dataTypeTree.reset();
+
+    resetDynamicDataTypeManager();
+    resetDynamicEncodingContext();
   }
 
   /**
    * Read the {@link DataTypeTree} from the server and update the local copy.
    *
+   * <p>The dynamic {@link DataTypeManager} and dynamic {@link EncodingContext} are reset along with
+   * the tree and will be rebuilt against the new tree the next time they are accessed.
+   *
    * @return the updated {@link DataTypeTree}.
    * @throws UaException if an error occurs while reading the DataTypes.
+   * @see #resetDataTypeTree()
    */
   public DataTypeTree readDataTypeTree() throws UaException {
     resetDataTypeTree();
@@ -1140,8 +1152,9 @@ public class OpcUaClient {
    * resolves types on demand. This can be more efficient when only a subset of types is needed or
    * when the server doesn't support recursive forward browsing of the DataType hierarchy.
    *
-   * <p>This resets the client's cached {@link DataTypeTree}. It will be built or rebuilt the next
-   * time it is accessed.
+   * <p>This resets the client's cached {@link DataTypeTree}, along with the dynamic {@link
+   * DataTypeManager} and dynamic {@link EncodingContext} derived from it. They will be built or
+   * rebuilt the next time they are accessed.
    *
    * @param dataTypeTreeFactory the {@link DataTypeTreeFactory} to set.
    * @see #getDataTypeTree()
