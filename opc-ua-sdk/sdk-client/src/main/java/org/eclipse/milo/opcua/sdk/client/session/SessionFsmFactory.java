@@ -1537,27 +1537,23 @@ public class SessionFsmFactory {
                     client
                         .getPublishingManager()
                         .notifySubscriptionTransferred(
-                            subscriptionIdsArray[i], result.getAvailableSequenceNumbers());
+                            session, subscriptionIdsArray[i], result.getAvailableSequenceNumbers());
                   }
                 }
 
-                client
-                    .getTransport()
-                    .getConfig()
-                    .getExecutor()
-                    .execute(
-                        () -> {
-                          for (int i = 0; i < results.length && i < transferable.size(); i++) {
-                            TransferResult result = results[i];
+                for (int i = 0; i < results.length && i < transferable.size(); i++) {
+                  TransferResult result = results[i];
 
-                            if (!result.getStatusCode().isGood()) {
-                              OpcUaSubscription subscription = transferable.get(i);
+                  if (!result.getStatusCode().isGood()) {
+                    handleTransferFailure(
+                        ctx, session, transferable.get(i), result.getStatusCode());
+                  }
+                }
 
-                              subscription.notifyTransferFailed(result.getStatusCode());
-                            }
-                          }
-                        });
-
+                // Failed Subscriptions must be reset and unregistered before this completion can
+                // move the FSM through Initializing and into Active. Otherwise reconnect recovery
+                // can still see them and issue Republish requests for SubscriptionIds that were
+                // not transferred to this Session.
                 transferFuture.complete(Unit.VALUE);
               } else {
                 StatusCode statusCode =
@@ -1569,16 +1565,9 @@ public class SessionFsmFactory {
                   LOGGER.debug("TransferSubscriptions not supported: {}", statusCode);
                 }
 
-                client
-                    .getTransport()
-                    .getConfig()
-                    .getExecutor()
-                    .execute(
-                        () -> {
-                          for (OpcUaSubscription subscription : subscriptions) {
-                            subscription.notifyTransferFailed(statusCode);
-                          }
-                        });
+                for (OpcUaSubscription subscription : subscriptions) {
+                  handleTransferFailure(ctx, session, subscription, statusCode);
+                }
 
                 // Bad_ServiceUnsupported is the correct response when transfers aren't
                 // supported but server implementations interpret the spec differently.
@@ -1605,6 +1594,34 @@ public class SessionFsmFactory {
             });
 
     return transferFuture;
+  }
+
+  /**
+   * Reset and unregister a Subscription that was not transferred to {@code session}.
+   *
+   * <p>{@link OpcUaSubscription#handleTransferFailure(StatusCode)} performs non-overridable local
+   * teardown synchronously and dispatches the overridable notification separately. Contain internal
+   * failures here so one Subscription cannot leave the Session FSM in {@link State#Transferring} or
+   * prevent the remaining failed Subscriptions from being reset.
+   */
+  private static void handleTransferFailure(
+      FsmContext<State, Event> ctx,
+      OpcUaSession session,
+      OpcUaSubscription subscription,
+      StatusCode statusCode) {
+
+    try {
+      subscription.handleTransferFailure(statusCode);
+    } catch (Exception e) {
+      try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+          MDCCloseable ignoredSessionId = putSessionId(session)) {
+
+        LOGGER.warn(
+            "Subscription transfer-failure cleanup failed: id={}",
+            subscription.getSubscriptionId().orElse(null),
+            e);
+      }
+    }
   }
 
   private static CompletableFuture<Unit> initialize(

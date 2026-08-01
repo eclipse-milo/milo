@@ -80,9 +80,9 @@ import org.slf4j.LoggerFactory;
 public class PublishingManager {
 
   /**
-   * Upper bound on the number of missing NotificationMessages the client will try to recover when
-   * the Server does not tell it what it is holding, i.e. when the PublishResponse carries no
-   * availableSequenceNumbers.
+   * Upper bound on the number of missing NotificationMessages the client will try to recover from a
+   * PublishResponse when the Server does not tell it what it is holding, i.e. when the response
+   * carries no availableSequenceNumbers.
    *
    * <p>Recovery is one Republish call per missing message, so the gap has to be bounded by
    * something: a sequence number that is far ahead — because it is corrupt, or because it comes
@@ -156,13 +156,26 @@ public class PublishingManager {
    * Server will queue for this Session, and what it has to see before asking for one more.
    */
   private final AtomicReference<PendingPublishCeiling> pendingPublishCeiling =
-      new AtomicReference<>(PendingPublishCeiling.NONE);
+      new AtomicReference<>(PendingPublishCeiling.none(0L));
 
   /**
    * The number of times a Session has become Active, i.e. the number of times the client has had to
    * recover the Subscriptions it holds before resuming Publish traffic.
    */
   private final AtomicLong sessionActivations = new AtomicLong(0L);
+
+  /**
+   * The deepest Publish pipeline Milo has permitted for this client.
+   *
+   * <p>Recorded when the target is chosen, before requests can fail and release their permits. A
+   * Session-inactive callback is dispatched asynchronously and may run only after those failures
+   * and concurrent Subscription removals have made both the outstanding count and current target
+   * smaller, so it is too late to reconstruct the depth the outage may have lost. Keeping the
+   * lifetime high-water mark can overestimate a later, shallower outage, but the first
+   * Bad_MessageNotAvailable still terminates recovery immediately and the safety bound remains
+   * finite.
+   */
+  private final AtomicLong maxPermittedPublishPipelineDepth = new AtomicLong(0L);
 
   /**
    * Whether a Session has ever become inactive, and therefore whether an activation is a
@@ -210,11 +223,6 @@ public class PublishingManager {
         new SessionActivityListener() {
           @Override
           public void onSessionActive(UaSession session) {
-            // A Session has its own queue of PublishRequests, so what an earlier one was willing to
-            // hold says nothing about this one — and neither does how reluctant it was to accept
-            // more.
-            pendingPublishCeiling.set(PendingPublishCeiling.NONE);
-
             recoverAndResumePublishing(session);
           }
 
@@ -268,7 +276,7 @@ public class PublishingManager {
     // §5.14.5.1 requires a Server to accept at least one more queued PublishRequest per
     // Subscription, so it is worth finding out whether this one now will — immediately, rather than
     // after the cooldown a probe would have to serve.
-    pendingPublishCeiling.set(PendingPublishCeiling.NONE);
+    pendingPublishCeiling.set(PendingPublishCeiling.none(sessionActivations.get()));
 
     maybeSendPublishRequests();
   }
@@ -325,16 +333,18 @@ public class PublishingManager {
    * <p>Called by the Session FSM while the Session that transfer was part of is still on its way to
    * Active, so the list is in place before the recovery that consumes it runs.
    *
+   * @param session the Session the Subscription was transferred to.
    * @param subscriptionId the SubscriptionId that was transferred.
    * @param availableSequenceNumbers the availableSequenceNumbers of its TransferResult.
    */
   public void notifySubscriptionTransferred(
-      UInteger subscriptionId, UInteger @Nullable [] availableSequenceNumbers) {
+      UaSession session, UInteger subscriptionId, UInteger @Nullable [] availableSequenceNumbers) {
 
     SubscriptionDetails details = subscriptionDetails.get(subscriptionId);
 
     if (details != null) {
-      details.transferredSequenceNumbers.set(availableSequenceNumbers);
+      details.transferredSequenceNumbers.set(
+          new TransferredSequenceNumbers(session, availableSequenceNumbers));
     }
   }
 
@@ -342,6 +352,8 @@ public class PublishingManager {
     long maxPendingPublishes = getMaxPendingPublishes();
 
     if (maxPendingPublishes > 0) {
+      maxPermittedPublishPipelineDepth.accumulateAndGet(maxPendingPublishes, Math::max);
+
       client
           .getSessionAsync()
           .whenComplete(
@@ -432,6 +444,13 @@ public class PublishingManager {
   private void recoverAndResumePublishing(UaSession session) {
     long activation = sessionActivations.incrementAndGet();
 
+    // A Session has its own queue of PublishRequests, so what an earlier one was willing to hold
+    // says nothing about this one — and neither does how reluctant it was to accept more. Tagging
+    // the reset with this activation makes it atomic with respect to a delayed refusal: an old
+    // failure either updates the old state before this set replaces it, or sees the new tag and is
+    // ignored.
+    pendingPublishCeiling.set(PendingPublishCeiling.none(activation));
+
     try {
       recoverSubscriptions(session, activation)
           .whenComplete((unit, ex) -> resumePublishing(activation, session));
@@ -484,7 +503,9 @@ public class PublishingManager {
     // A transfer names what the Server still holds, so a Subscription carrying that list has
     // something to collect whatever else is true; see republishUntilUnavailable().
     boolean transferred =
-        details.stream().anyMatch(d -> d.transferredSequenceNumbers.get() != null);
+        details.stream()
+            .map(d -> d.transferredSequenceNumbers.get())
+            .anyMatch(t -> t != null && t.session() == session);
 
     if (!sessionEverInactive.get() && !transferred) {
       logger.debug(
@@ -582,9 +603,10 @@ public class PublishingManager {
    * requested.
    *
    * <p>Where the Session was merely re-activated there is no such list, and the loop is the one
-   * Part 4 §6.7 describes: increment until the Server answers Bad_MessageNotAvailable, bounded by
-   * {@link #DEFAULT_MAX_RECOVERABLE_GAP} so that a Subscription whose state the client has lost
-   * track of cannot cost an unbounded number of round trips.
+   * Part 4 §6.7 describes: increment until the Server answers Bad_MessageNotAvailable. At most one
+   * NotificationMessage could have been sent for each PublishRequest Milo allowed outstanding
+   * before the disconnect, so that pipeline depth plus the terminating request is both sufficient
+   * to drain everything Milo could have left unanswered and a finite bound on the loop.
    *
    * @param session the Session that has just become Active.
    * @param details the {@link SubscriptionDetails} for the Subscription to recover.
@@ -594,11 +616,12 @@ public class PublishingManager {
   private CompletableFuture<Unit> republishUntilUnavailable(
       UaSession session, SubscriptionDetails details, long activation) {
 
-    UInteger[] advertised = details.transferredSequenceNumbers.getAndSet(null);
+    TransferredSequenceNumbers transferred = takeTransferredSequenceNumbers(details, session);
+    UInteger[] advertised = transferred != null ? transferred.sequenceNumbers() : null;
 
     long expectedSequenceNumber = SequenceNumbers.successor(details.lastSequenceNumber);
     long firstSequenceNumber = expectedSequenceNumber;
-    long maxRepublishes = DEFAULT_MAX_RECOVERABLE_GAP;
+    long maxRepublishes = getBlindReconnectRecoveryLimit();
     Set<Long> heldByServer = null;
 
     if (advertised != null && advertised.length > 0) {
@@ -639,6 +662,45 @@ public class PublishingManager {
   }
 
   /**
+   * Consume only the TransferResult produced for {@code session}.
+   *
+   * <p>A recovery task can remain queued after its Session has been superseded. In that interval a
+   * replacement Session can transfer the same Subscription and publish its available sequence
+   * numbers. Matching by Session identity before the compare-and-set keeps the stale task from
+   * taking the replacement's input; leaving a non-matching value in place lets the replacement's
+   * own recovery consume it later.
+   */
+  private static @Nullable TransferredSequenceNumbers takeTransferredSequenceNumbers(
+      SubscriptionDetails details, UaSession session) {
+
+    while (true) {
+      TransferredSequenceNumbers transferred = details.transferredSequenceNumbers.get();
+
+      if (transferred == null || transferred.session() != session) {
+        return null;
+      }
+
+      if (details.transferredSequenceNumbers.compareAndSet(transferred, null)) {
+        return transferred;
+      }
+    }
+  }
+
+  /**
+   * @return the most Republish requests a blind reconnect drain may make: one for every
+   *     PublishRequest Milo permitted or actually had outstanding immediately before the outage,
+   *     plus one to receive the Bad_MessageNotAvailable that terminates Part 4 §6.7's loop. Unlike
+   *     a fixed default this covers a configured pipeline deeper than 64, while remaining bounded
+   *     by the deepest pipeline this client has permitted.
+   */
+  private long getBlindReconnectRecoveryLimit() {
+    long pipelineDepth =
+        Math.max(maxPermittedPublishPipelineDepth.get(), getNaturalMaxPendingPublishes());
+
+    return Math.max(1L, pipelineDepth + 1L);
+  }
+
+  /**
    * Request the NotificationMessage with {@code sequenceNumber} and, if it arrives, the one after
    * it.
    *
@@ -672,6 +734,13 @@ public class PublishingManager {
     return republish(session, details.subscriptionId, uint(sequenceNumber))
         .handle(
             (response, ex) -> {
+              if (!details.registered || activation != sessionActivations.get()) {
+                // The response belongs to a recovery that a later Session activation superseded.
+                // It cannot update sequence accounting or deliver a NotificationMessage for the
+                // replacement activation.
+                return false;
+              }
+
               if (ex != null) {
                 StatusCode statusCode =
                     UaException.extract(ex).map(UaException::getStatusCode).orElse(StatusCode.BAD);
@@ -899,7 +968,9 @@ public class PublishingManager {
                     // one, and this task was queued for this one.
                     queued =
                         details.processingQueue.execute(
-                            () -> processPublishResponse(details, publishResponse, pendingCount));
+                            () ->
+                                processPublishResponse(
+                                    details, publishResponse, pendingCount, activation));
                   }
 
                   if (!queued) {
@@ -910,7 +981,7 @@ public class PublishingManager {
                         .getTransport()
                         .getConfig()
                         .getExecutor()
-                        .execute(() -> releasePendingPublish(pendingCount));
+                        .execute(() -> releasePendingPublish(pendingCount, activation));
                   }
                 } else {
                   // The failure path is dispatched asynchronously: it may run on a wheel timer
@@ -1108,30 +1179,40 @@ public class PublishingManager {
       // requires a Server to accept at least subscriptionCount + 1 queued Publish requests, which
       // is exactly what the client aims for, so a conformant Server never gets here.
       //
-      // The ceiling is not permanent — see maybeRaisePendingPublishCeiling() — and this is where a
-      // probe that was refused is charged for: the ceiling drops back and the next probe costs
-      // geometrically more successful Publish round trips than the one that was refused.
+      // The ceiling is not permanent — see maybeRaisePendingPublishCeiling(long) — and this is
+      // where a probe that was refused is charged for: the ceiling drops back and the next probe
+      // costs geometrically more successful Publish round trips than the one that was refused.
       long ceiling = Math.max(1L, outstanding);
 
-      PendingPublishCeiling before = pendingPublishCeiling.getAndUpdate(c -> c.refused(ceiling));
+      PendingPublishCeiling before =
+          pendingPublishCeiling.getAndUpdate(
+              c -> c.activation() == activation ? c.refused(ceiling) : c);
 
-      if (before.probing()) {
-        PendingPublishCeiling after = before.refused(ceiling);
-
+      if (before.activation() != activation) {
         logger.debug(
-            "Server refused the probe raising the pending Publish ceiling to {}; the ceiling is {} "
-                + "again and the next probe costs {} successful Publish round trips",
-            before.ceiling(),
-            after.ceiling(),
-            after.cooldown());
-      }
+            "Ignoring Bad_TooManyPublishRequests from superseded Session activation {} "
+                + "(current={})",
+            activation,
+            before.activation());
+      } else {
+        if (before.probing()) {
+          PendingPublishCeiling after = before.refused(ceiling);
 
-      if (outstanding == 0) {
-        // This failure was itself the last outstanding request being returned, so the clause's
-        // condition for issuing another is met — and nothing else is left in flight whose
-        // completion would refill the pipeline. Without this the pipeline stays empty until an
-        // unrelated event (a Subscription added or a Session re-activated) restarts it.
-        maybeSendPublishRequests();
+          logger.debug(
+              "Server refused the probe raising the pending Publish ceiling to {}; the ceiling is "
+                  + "{} again and the next probe costs {} successful Publish round trips",
+              before.ceiling(),
+              after.ceiling(),
+              after.cooldown());
+        }
+
+        if (outstanding == 0) {
+          // This failure was itself the last outstanding request being returned, so the clause's
+          // condition for issuing another is met — and nothing else is left in flight whose
+          // completion would refill the pipeline. Without this the pipeline stays empty until an
+          // unrelated event (a Subscription added or a Session re-activated) restarts it.
+          maybeSendPublishRequests();
+        }
       }
     } else {
       maybeSendPublishRequests();
@@ -1154,9 +1235,13 @@ public class PublishingManager {
    *     registration must never be applied to another.
    * @param response the {@link PublishResponse} to process.
    * @param pendingCount the pending-publish permits held for the Session the request was sent on.
+   * @param activation the Session activation the request was sent on.
    */
   private void processPublishResponse(
-      SubscriptionDetails details, PublishResponse response, AtomicLong pendingCount) {
+      SubscriptionDetails details,
+      PublishResponse response,
+      AtomicLong pendingCount,
+      long activation) {
 
     UInteger subscriptionId = details.subscriptionId;
 
@@ -1166,7 +1251,7 @@ public class PublishingManager {
               + "subscriptionId={}",
           subscriptionId);
 
-      releasePendingPublish(pendingCount);
+      releasePendingPublish(pendingCount, activation);
       return;
     }
 
@@ -1234,7 +1319,7 @@ public class PublishingManager {
               details.lastSequenceNumber,
               receivedSequenceNumber);
 
-          releasePendingPublish(pendingCount);
+          releasePendingPublish(pendingCount, activation);
           return;
         }
 
@@ -1273,7 +1358,7 @@ public class PublishingManager {
     }
 
     if (missingSequenceNumbers.isEmpty()) {
-      deliverAndReleasePendingPublish(details, notificationMessage, pendingCount);
+      deliverAndReleasePendingPublish(details, notificationMessage, pendingCount, activation);
     } else {
       // Recovery is a Republish round trip per missing NotificationMessage and must not be waited
       // for here. Pausing this Subscription's processing queue is what keeps it ordered: no later
@@ -1288,7 +1373,8 @@ public class PublishingManager {
           .whenComplete(
               (unit, ex) -> {
                 try {
-                  deliverAndReleasePendingPublish(details, notificationMessage, pendingCount);
+                  deliverAndReleasePendingPublish(
+                      details, notificationMessage, pendingCount, activation);
                 } finally {
                   details.processingQueue.resume();
                 }
@@ -1303,11 +1389,13 @@ public class PublishingManager {
    * @param details the {@link SubscriptionDetails} for the Subscription the message belongs to.
    * @param notificationMessage the {@link NotificationMessage} to deliver.
    * @param pendingCount the pending-publish permits held for the Session the request was sent on.
+   * @param activation the Session activation the request was sent on.
    */
   private void deliverAndReleasePendingPublish(
       SubscriptionDetails details,
       NotificationMessage notificationMessage,
-      AtomicLong pendingCount) {
+      AtomicLong pendingCount,
+      long activation) {
 
     CompletionStage<Unit> callback =
         details
@@ -1327,13 +1415,13 @@ public class PublishingManager {
                   "Notification delivery threw an unexpected Exception: {}", ex.getMessage(), ex);
             }
 
-            releasePendingPublish(pendingCount);
+            releasePendingPublish(pendingCount, activation);
           },
           client.getTransport().getConfig().getExecutor());
     } else {
       // The delivery queue is shut down, so the message will never be delivered — but the permit
       // still has to be released, or the pipeline permanently shrinks by one.
-      releasePendingPublish(pendingCount);
+      releasePendingPublish(pendingCount, activation);
     }
   }
 
@@ -1342,14 +1430,15 @@ public class PublishingManager {
    * with, and send a replacement PublishRequest if one is wanted.
    *
    * @param pendingCount the pending-publish permits held for the Session the request was sent on.
+   * @param activation the Session activation the request was sent on.
    */
-  private void releasePendingPublish(AtomicLong pendingCount) {
+  private void releasePendingPublish(AtomicLong pendingCount, long activation) {
     pendingCount.getAndUpdate(p -> (p > 0) ? p - 1 : 0);
 
     // This is the one place that knows a PublishRequest went out and came back without being
     // refused, so it is where a ceiling learned from Bad_TooManyPublishRequests is paid off. Done
     // before the refill below, so a raise takes effect in the very refill this return pays for.
-    maybeRaisePendingPublishCeiling();
+    maybeRaisePendingPublishCeiling(activation);
 
     maybeSendPublishRequests();
   }
@@ -1390,15 +1479,21 @@ public class PublishingManager {
    * <p>Runs on the transport's executor, as part of releasing a pending-publish permit, and
    * performs no I/O.
    */
-  private void maybeRaisePendingPublishCeiling() {
-    if (pendingPublishCeiling.get().ceiling() == NO_PENDING_PUBLISH_CEILING) {
-      // Nothing has been learned, so there is nothing to recover from and no reason to count.
-      return;
-    }
-
+  private void maybeRaisePendingPublishCeiling(long activation) {
     long natural = getNaturalMaxPendingPublishes();
 
-    PendingPublishCeiling before = pendingPublishCeiling.getAndUpdate(c -> c.roundTrip(natural));
+    PendingPublishCeiling before =
+        pendingPublishCeiling.getAndUpdate(
+            c ->
+                c.activation() == activation && c.ceiling() != NO_PENDING_PUBLISH_CEILING
+                    ? c.roundTrip(natural)
+                    : c);
+
+    if (before.activation() != activation || before.ceiling() == NO_PENDING_PUBLISH_CEILING) {
+      // Either this response belongs to a superseded Session or no ceiling has been learned, so
+      // there is nothing for this round trip to pay down.
+      return;
+    }
 
     // roundTrip() is a function of the state it is applied to, so the transition this call made is
     // the one from the state it replaced, whatever any concurrent update has done since.
@@ -1879,6 +1974,14 @@ public class PublishingManager {
   private record RecoveredActivation(long activation, @Nullable UaSession session) {}
 
   /**
+   * The available sequence numbers returned while transferring a Subscription to one exact Session.
+   * Session identity is part of the value so recovery queued for the Session being replaced cannot
+   * consume or apply the replacement Session's TransferResult.
+   */
+  private record TransferredSequenceNumbers(
+      UaSession session, UInteger @Nullable [] sequenceNumbers) {}
+
+  /**
    * How many PublishRequests the Server has been observed to queue for a Session, and what the
    * client has to see before it asks whether it would now queue one more.
    *
@@ -1886,6 +1989,7 @@ public class PublishingManager {
    * it — the ceiling, the cooldown, and whether a probe is outstanding — is read and replaced as
    * one value rather than as four fields that a concurrent refusal could interleave with a raise.
    *
+   * @param activation the Session activation this ceiling was learned for.
    * @param ceiling the number of PublishRequests the Server was holding when it refused one, or
    *     {@link #NO_PENDING_PUBLISH_CEILING} if it has never refused one. Never below one: a ceiling
    *     of zero is a pipeline that can never refill.
@@ -1901,12 +2005,13 @@ public class PublishingManager {
    *     constant rate.
    */
   private record PendingPublishCeiling(
-      long ceiling, long successes, long cooldown, boolean probing) {
+      long activation, long ceiling, long successes, long cooldown, boolean probing) {
 
     /** No Server has refused a PublishRequest, so only the client's own target applies. */
-    static final PendingPublishCeiling NONE =
-        new PendingPublishCeiling(
-            NO_PENDING_PUBLISH_CEILING, 0L, PROBE_COOLDOWN_BASE_SUCCESSES, false);
+    static PendingPublishCeiling none(long activation) {
+      return new PendingPublishCeiling(
+          activation, NO_PENDING_PUBLISH_CEILING, 0L, PROBE_COOLDOWN_BASE_SUCCESSES, false);
+    }
 
     /**
      * @param observed the number of PublishRequests the Server was in fact holding.
@@ -1919,6 +2024,7 @@ public class PublishingManager {
      */
     PendingPublishCeiling refused(long observed) {
       return new PendingPublishCeiling(
+          activation,
           Math.min(ceiling, observed),
           0L,
           probing
@@ -1942,19 +2048,19 @@ public class PublishingManager {
         // rather than as the answer to this probe. Charging it as one would let a client that lives
         // through many unrelated transient conditions ratchet its cooldown up to the cap.
         return new PendingPublishCeiling(
-            ceiling, successes + 1, cooldown, probing && successes + 1 < cooldown);
+            activation, ceiling, successes + 1, cooldown, probing && successes + 1 < cooldown);
       }
 
       if (successes + 1 < cooldown) {
         // Still paying for the next probe.
-        return new PendingPublishCeiling(ceiling, successes + 1, cooldown, probing);
+        return new PendingPublishCeiling(activation, ceiling, successes + 1, cooldown, probing);
       }
 
       // One more request than the Server last refused, and no more than that: the question is
       // whether it will now take one more, and one extra PublishRequest asks it. No second raise
       // follows until a whole further cooldown of round trips has been answered, which is what
       // keeps a single probe in flight.
-      return new PendingPublishCeiling(ceiling + 1, 0L, cooldown, true);
+      return new PendingPublishCeiling(activation, ceiling + 1, 0L, cooldown, true);
     }
   }
 
@@ -2004,14 +2110,15 @@ public class PublishingManager {
 
     /**
      * The availableSequenceNumbers of the TransferResult that last transferred this Subscription to
-     * a new Session, or {@code null} if the client has not been told what the Server holds since
+     * an exact Session, or {@code null} if the client has not been told what the Server holds since
      * the last time it asked for it.
      *
      * <p>Set while the Session the transfer was part of is on its way to Active and consumed by the
-     * recovery that runs when it gets there, so it is never applied to a later Session, which will
-     * have a TransferResult of its own or, if it merely re-activated this one, none at all.
+     * recovery that runs when it gets there. Session identity is stored so a task queued for the
+     * Session being replaced cannot consume the replacement Session's result. No future activation
+     * number is predicted here: Session activity callbacks are asynchronous and may be reordered.
      */
-    private final AtomicReference<UInteger @Nullable []> transferredSequenceNumbers =
+    private final AtomicReference<@Nullable TransferredSequenceNumbers> transferredSequenceNumbers =
         new AtomicReference<>();
 
     /**
