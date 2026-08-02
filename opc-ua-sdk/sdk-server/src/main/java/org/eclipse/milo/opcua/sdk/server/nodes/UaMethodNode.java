@@ -27,6 +27,7 @@ import org.eclipse.milo.opcua.sdk.core.nodes.MethodNodeProperties;
 import org.eclipse.milo.opcua.sdk.core.nodes.Node;
 import org.eclipse.milo.opcua.sdk.core.nodes.ObjectNode;
 import org.eclipse.milo.opcua.sdk.server.NodeManager;
+import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilter;
 import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilterChain;
@@ -189,6 +190,29 @@ public class UaMethodNode extends UaNode implements MethodNode {
 
   public void setInvocationHandler(MethodInvocationHandler handler) {
     this.handler = handler;
+  }
+
+  /**
+   * Set {@code handler} as this Method's invocation handler and publish the argument definitions it
+   * declares as the {@code InputArguments} and {@code OutputArguments} Properties.
+   *
+   * <p>An absent or empty argument declaration leaves the corresponding Property untouched, so a
+   * Method without inputs or outputs does not grow an empty argument Property.
+   *
+   * @param handler the handler to bind.
+   */
+  public void bindInvocationHandler(AbstractMethodInvocationHandler handler) {
+    Argument[] inputArguments = handler.getInputArguments();
+    Argument[] outputArguments = handler.getOutputArguments();
+
+    setInvocationHandler(handler);
+
+    if (inputArguments != null && inputArguments.length > 0) {
+      setInputArguments(inputArguments);
+    }
+    if (outputArguments != null && outputArguments.length > 0) {
+      setOutputArguments(outputArguments);
+    }
   }
 
   /**

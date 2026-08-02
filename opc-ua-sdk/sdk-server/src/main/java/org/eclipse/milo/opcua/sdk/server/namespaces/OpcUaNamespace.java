@@ -48,11 +48,11 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.RedundancySupport;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ServerState;
-import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.BuildInfo;
 import org.eclipse.milo.opcua.stack.core.types.structured.ServerStatusDataType;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
@@ -252,6 +252,29 @@ public class OpcUaNamespace extends ManagedNamespaceWithLifecycle {
 
     configureGetMonitoredItems();
     configureResendData();
+    configureAliasMethods();
+  }
+
+  private void configureAliasMethods() {
+    // The standard FindAlias Methods have no behavior unless an application installs an
+    // AliasManager. Marking them non-executable surfaces alias support as an absent feature
+    // instead of a callable Method that always fails with Bad_NotImplemented; an installed
+    // AliasManager restores both flags when it binds its handlers. UserExecutable is the flag
+    // access control enforces on Call.
+    NodeId[] findAliasNodeIds = {
+      NodeIds.Aliases_FindAlias, NodeIds.TagVariables_FindAlias, NodeIds.Topics_FindAlias
+    };
+
+    for (NodeId findAliasNodeId : findAliasNodeIds) {
+      UaNode node = getNodeManager().get(findAliasNodeId);
+
+      if (node instanceof UaMethodNode methodNode) {
+        methodNode.setExecutable(false);
+        methodNode.setUserExecutable(false);
+      } else {
+        logger.warn("FindAlias UaMethodNode not found: {}", findAliasNodeId);
+      }
+    }
   }
 
   private void configureGetMonitoredItems() {
@@ -295,18 +318,7 @@ public class OpcUaNamespace extends ManagedNamespaceWithLifecycle {
   private static <T extends AbstractMethodInvocationHandler> void configureMethodNode(
       UaMethodNode methodNode, Function<UaMethodNode, T> f) {
 
-    T invocationHandler = f.apply(methodNode);
-    Argument[] inputArguments = invocationHandler.getInputArguments();
-    Argument[] outputArguments = invocationHandler.getOutputArguments();
-
-    methodNode.setInvocationHandler(invocationHandler);
-
-    if (inputArguments != null && inputArguments.length > 0) {
-      methodNode.setInputArguments(inputArguments);
-    }
-    if (outputArguments != null && outputArguments.length > 0) {
-      methodNode.setOutputArguments(outputArguments);
-    }
+    methodNode.bindInvocationHandler(f.apply(methodNode));
   }
 
   private static class ConditionRefreshMethodImpl extends ConditionType.ConditionRefreshMethod {
