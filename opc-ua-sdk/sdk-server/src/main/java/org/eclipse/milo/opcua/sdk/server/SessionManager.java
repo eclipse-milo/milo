@@ -741,8 +741,13 @@ public class SessionManager {
         });
   }
 
-  /** Run listener dispatch with re-entrant shutdown detection enabled for the current thread. */
-  private void withSessionListenerCallback(Runnable notification) {
+  /**
+   * Run listener dispatch with re-entrant shutdown detection enabled for the current thread.
+   *
+   * <p>Package-private so tests can run code with {@link #isSessionListenerCallback()} reporting
+   * {@code true} without racing a real client connection.
+   */
+  void withSessionListenerCallback(Runnable notification) {
     Boolean previous = sessionListenerCallback.get();
     sessionListenerCallback.set(true);
     try {
