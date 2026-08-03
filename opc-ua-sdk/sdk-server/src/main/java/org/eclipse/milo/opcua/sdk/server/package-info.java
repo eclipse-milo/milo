@@ -28,6 +28,17 @@
  * or certificate request cannot be served by the current runtime are omitted from discovery
  * advertisements.
  *
+ * <h2>Lifecycle extensions</h2>
+ *
+ * <p>{@link org.eclipse.milo.opcua.sdk.server.OpcUaServer#addLifecycleParticipant(
+ * org.eclipse.milo.opcua.sdk.server.Lifecycle)} transfers lifecycle ownership of an application
+ * component to the server before startup. The server starts these participants in registration
+ * order after its standard namespaces and event facilities are available, then exposes passive and
+ * reverse-connect endpoints. Startup rollback and terminal shutdown stop only successfully started
+ * participants, in reverse order. On normal shutdown, transports and sessions are quiesced first;
+ * participant shutdown therefore runs without external server visibility but before the standard
+ * address space and event facilities are torn down.
+ *
  * <h2>Runtime boundaries</h2>
  *
  * <p>The SDK server package coordinates high-level server configuration and lifecycle. Certificate

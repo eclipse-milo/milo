@@ -18,6 +18,7 @@ import java.net.InetSocketAddress;
 import java.security.KeyPair;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
@@ -30,7 +31,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.ObjectTypeTree;
@@ -125,6 +125,14 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Hosts the address space, services, and transports for an OPC UA server application.
+ *
+ * <p>The standard address space is initialized during construction. Application components that
+ * must start after that initialization but before the server becomes externally visible can be
+ * registered with {@link #addLifecycleParticipant(Lifecycle)} before calling {@link #startup()}.
+ * The server then owns their lifecycle through startup rollback or terminal shutdown.
+ */
 public class OpcUaServer extends AbstractServiceHandler {
 
   public static final String SDK_VERSION = ManifestUtil.read("X-SDK-Version").orElse("dev");
@@ -190,14 +198,18 @@ public class OpcUaServer extends AbstractServiceHandler {
 
   private final Map<TransportProfile, OpcServerTransport> transports = new ConcurrentHashMap<>();
 
-  /**
-   * Shared shutdown result for the terminal server shutdown.
-   *
-   * <p>Shutdown tears down diagnostics and namespace state that cannot be safely torn down twice,
-   * so concurrent callers must observe the same operation instead of each running teardown logic.
-   */
-  private final AtomicReference<CompletableFuture<OpcUaServer>> shutdownFuture =
-      new AtomicReference<>();
+  // lifecycleState, startupFuture, and shutdownFuture are guarded by lifecycleLock.
+  // lifecycleParticipants is mutated under the lock and only while state is NEW, so the startup
+  // thread may iterate it unlocked once the state leaves NEW and registration is closed.
+  // startedParticipants is confined to the thread executing startup; teardown reads it only after
+  // startupFuture completes, which orders the accesses.
+  private final Object lifecycleLock = new Object();
+  private final List<Lifecycle> lifecycleParticipants = new ArrayList<>();
+  private final List<Lifecycle> startedParticipants = new ArrayList<>();
+
+  private ServerLifecycleState lifecycleState = ServerLifecycleState.NEW;
+  private @Nullable CompletableFuture<OpcUaServer> startupFuture;
+  private @Nullable CompletableFuture<OpcUaServer> shutdownFuture;
 
   private final EventBus eventBus = new EventBus("server");
   private final EventFactory eventFactory = new EventFactory(this);
@@ -358,83 +370,204 @@ public class OpcUaServer extends AbstractServiceHandler {
     accessController = new DefaultAccessController(this);
   }
 
+  /**
+   * Start this server and make its configured endpoints externally visible.
+   *
+   * <p>Registered lifecycle participants are started synchronously in registration order after the
+   * standard address space and event facilities are available, but before the first passive
+   * transport bind or reverse-connect attempt. If startup fails, each participant whose {@link
+   * Lifecycle#startup()} call completed normally is shut down in reverse order before this future
+   * fails.
+   *
+   * <p>Startup is single-flight. Concurrent or subsequent calls return the same future. Once
+   * startup begins, the server is terminal: a failed or shut-down server cannot be started again.
+   *
+   * <p>A {@link #shutdown()} requested before endpoints are bound abandons startup and fails this
+   * future; a later request lets startup complete and then tears the server down.
+   *
+   * @return a future completed with this server when startup succeeds.
+   */
   public CompletableFuture<OpcUaServer> startup() {
-    try {
-      // Reject ambiguous endpoint configurations before binding anything: two Session-capable
-      // endpoints mapping to the same wire-observable selection key cannot be told apart at
-      // OpenSecureChannel time, so runtime selection would depend on collection ordering.
-      getEndpointSelectionIndex().validate();
-    } catch (UaException e) {
-      return CompletableFuture.failedFuture(e);
+    CompletableFuture<OpcUaServer> future;
+
+    synchronized (lifecycleLock) {
+      if (startupFuture != null) {
+        return startupFuture;
+      }
+      if (lifecycleState != ServerLifecycleState.NEW) {
+        startupFuture =
+            CompletableFuture.failedFuture(
+                new IllegalStateException("cannot start server when state=" + lifecycleState));
+        return startupFuture;
+      }
+
+      lifecycleState = ServerLifecycleState.STARTING;
+      startupFuture = future = new CompletableFuture<>();
     }
+
+    try {
+      startupInternal();
+
+      synchronized (lifecycleLock) {
+        // A shutdown requested late in startup leaves state at SHUTTING_DOWN; startup still
+        // succeeded, and the shutdown chained on this future performs the teardown.
+        if (lifecycleState == ServerLifecycleState.STARTING) {
+          lifecycleState = ServerLifecycleState.RUNNING;
+        }
+      }
+
+      future.complete(this);
+    } catch (Throwable t) {
+      rollbackStartup(t);
+
+      synchronized (lifecycleLock) {
+        if (lifecycleState == ServerLifecycleState.STARTING) {
+          lifecycleState = ServerLifecycleState.STARTUP_FAILED;
+        }
+      }
+
+      future.completeExceptionally(t);
+    }
+
+    return future;
+  }
+
+  private void startupInternal() throws UaException {
+    // Reject ambiguous endpoint configurations before binding anything: two Session-capable
+    // endpoints mapping to the same wire-observable selection key cannot be told apart at
+    // OpenSecureChannel time, so runtime selection would depend on collection ordering.
+    getEndpointSelectionIndex().validate();
 
     eventFactory.startup();
     eventInstantiator.startup();
 
-    getResolvedEndpoints().stream()
-        .sorted(Comparator.comparing(e -> e.endpointConfig().getTransportProfile()))
-        .forEach(
-            resolvedEndpoint -> {
-              EndpointConfig endpoint = resolvedEndpoint.endpointConfig();
-
-              logger.info(
-                  "Binding endpoint {} to {}:{} [{}/{}]",
-                  endpoint.getEndpointUrl(),
-                  endpoint.getBindAddress(),
-                  endpoint.getBindPort(),
-                  endpoint.getSecurityPolicy(),
-                  endpoint.getSecurityMode());
-
-              TransportProfile transportProfile = endpoint.getTransportProfile();
-
-              OpcServerTransport transport = getOrCreateTransport(transportProfile);
-
-              if (transport != null) {
-                try {
-                  var bindAddress =
-                      new InetSocketAddress(endpoint.getBindAddress(), endpoint.getBindPort());
-                  transport.bind(applicationContext, bindAddress);
-
-                  transports.put(transportProfile, transport);
-
-                  boundEndpoints.add(endpoint);
-                } catch (Exception e) {
-                  logger.warn(
-                      "Failed to bind endpoint {} to {}:{} [{}/{}]",
-                      endpoint.getEndpointUrl(),
-                      endpoint.getBindAddress(),
-                      endpoint.getBindPort(),
-                      endpoint.getSecurityPolicy(),
-                      endpoint.getSecurityMode(),
-                      e);
-                }
-              } else {
-                logger.warn("No OpcServerTransport for TransportProfile: {}", transportProfile);
-              }
-            });
-
-    try {
-      // Validate after binding so the reverse-connect transport lookup finds the bound transport
-      // without having to create one as a side effect.
-      reverseConnectTargetManager.validateTargets();
-    } catch (Throwable t) {
-      rollbackStartup();
-      return CompletableFuture.failedFuture(t);
+    // Participants run application code that may request shutdown re-entrantly. Honor such a
+    // request between participants, and once more before the server becomes externally visible.
+    for (Lifecycle participant : lifecycleParticipants) {
+      abortStartupIfShutdownRequested();
+      participant.startup();
+      startedParticipants.add(participant);
     }
+    abortStartupIfShutdownRequested();
 
-    try {
-      reverseConnectTargetManager.startup();
-    } catch (Throwable t) {
-      rollbackStartup();
-      return CompletableFuture.failedFuture(t);
-    }
+    bindEndpoints();
+
+    // Startup validates targets internally; it runs after binding so the reverse-connect transport
+    // lookup finds the bound transport without having to create one as a side effect.
+    reverseConnectTargetManager.startup();
 
     if (boundEndpoints.isEmpty() && !reverseConnectTargetManager.hasSchedulableTargets()) {
-      rollbackStartup();
-      return CompletableFuture.failedFuture(
-          new UaException(StatusCodes.Bad_ConfigurationError, "No endpoints bound"));
-    } else {
-      return CompletableFuture.completedFuture(this);
+      throw new UaException(StatusCodes.Bad_ConfigurationError, "No endpoints bound");
+    }
+  }
+
+  private void bindEndpoints() {
+    List<ResolvedEndpoint> endpoints =
+        getResolvedEndpoints().stream()
+            .sorted(Comparator.comparing(e -> e.endpointConfig().getTransportProfile()))
+            .toList();
+
+    for (ResolvedEndpoint resolvedEndpoint : endpoints) {
+      EndpointConfig endpoint = resolvedEndpoint.endpointConfig();
+
+      logger.info(
+          "Binding endpoint {} to {}:{} [{}/{}]",
+          endpoint.getEndpointUrl(),
+          endpoint.getBindAddress(),
+          endpoint.getBindPort(),
+          endpoint.getSecurityPolicy(),
+          endpoint.getSecurityMode());
+
+      TransportProfile transportProfile = endpoint.getTransportProfile();
+      OpcServerTransport transport = getOrCreateTransport(transportProfile);
+
+      if (transport != null) {
+        try {
+          var bindAddress =
+              new InetSocketAddress(endpoint.getBindAddress(), endpoint.getBindPort());
+          transport.bind(applicationContext, bindAddress);
+
+          boundEndpoints.add(endpoint);
+        } catch (Exception e) {
+          logger.warn(
+              "Failed to bind endpoint {} to {}:{} [{}/{}]",
+              endpoint.getEndpointUrl(),
+              endpoint.getBindAddress(),
+              endpoint.getBindPort(),
+              endpoint.getSecurityPolicy(),
+              endpoint.getSecurityMode(),
+              e);
+        }
+      } else {
+        logger.warn("No OpcServerTransport for TransportProfile: {}", transportProfile);
+      }
+    }
+  }
+
+  private void abortStartupIfShutdownRequested() {
+    synchronized (lifecycleLock) {
+      if (lifecycleState != ServerLifecycleState.STARTING) {
+        throw new IllegalStateException("server shutdown requested during startup");
+      }
+    }
+  }
+
+  /**
+   * Register a server-owned lifecycle participant.
+   *
+   * <p>The participant is started during {@link #startup()} after core server facilities and the
+   * standard address space are ready, but before an endpoint can accept connections. If its startup
+   * completes normally, it is shut down exactly once during startup rollback or terminal server
+   * shutdown, in reverse registration order and while the standard address space still exists.
+   *
+   * <p>Registration transfers exclusive lifecycle ownership to this server: the caller must not
+   * invoke the participant's lifecycle methods unless it first removes the participant. The same
+   * instance cannot be registered more than once. Concurrent registrations are ordered by the order
+   * in which they acquire the server's lifecycle lock.
+   *
+   * <p>Participant callbacks run synchronously as part of a server startup or shutdown. A
+   * participant may initiate a server shutdown from its startup callback, but it must not block
+   * waiting for the enclosing server lifecycle operation to complete.
+   *
+   * @param participant the lifecycle participant whose startup and shutdown this server will own.
+   * @throws IllegalArgumentException if the same participant instance is already registered.
+   * @throws IllegalStateException if startup or shutdown has begun.
+   */
+  public void addLifecycleParticipant(Lifecycle participant) {
+    Objects.requireNonNull(participant, "participant");
+
+    synchronized (lifecycleLock) {
+      requireLifecycleRegistrationOpen();
+      if (lifecycleParticipants.stream().anyMatch(p -> p == participant)) {
+        throw new IllegalArgumentException("lifecycle participant is already registered");
+      }
+      lifecycleParticipants.add(participant);
+    }
+  }
+
+  /**
+   * Remove a lifecycle participant before the server startup begins.
+   *
+   * <p>A successful removal returns lifecycle ownership to the caller; this server will not invoke
+   * the participant. Removal is matched by object identity, not {@link Object#equals(Object)}.
+   *
+   * @param participant the lifecycle participant instance to remove.
+   * @return {@code true} if the participant was registered and removed.
+   * @throws IllegalStateException if startup or shutdown has begun.
+   */
+  public boolean removeLifecycleParticipant(Lifecycle participant) {
+    Objects.requireNonNull(participant, "participant");
+
+    synchronized (lifecycleLock) {
+      requireLifecycleRegistrationOpen();
+      return lifecycleParticipants.removeIf(p -> p == participant);
+    }
+  }
+
+  private void requireLifecycleRegistrationOpen() {
+    if (lifecycleState != ServerLifecycleState.NEW) {
+      throw new IllegalStateException(
+          "lifecycle participants cannot be changed when server state=" + lifecycleState);
     }
   }
 
@@ -442,81 +575,196 @@ public class OpcUaServer extends AbstractServiceHandler {
    * Stop accepting new sessions and tear down the server runtime.
    *
    * <p>This method is the synchronization point for server shutdown. The first caller performs the
-   * shutdown sequence: reject new sessions, unbind transports, drain session listener work, close
-   * sessions, then shut down namespaces, diagnostics, events, and subscriptions. Concurrent callers
-   * receive the same {@link CompletableFuture} so namespace and diagnostics lifecycle code is only
-   * run once.
+   * shutdown sequence: reject new sessions, stop reverse-connect activity, unbind passive
+   * transports, drain session listener work, close sessions, stop successfully started lifecycle
+   * participants in reverse registration order, then tear down the remaining namespaces,
+   * diagnostics, events, and subscriptions. Concurrent callers receive the same {@link
+   * CompletableFuture} so terminal lifecycle code is only run once.
    *
-   * <p>If shutdown is requested from a session listener callback, the shutdown path avoids waiting
-   * on the callback that is currently executing. When another caller is already waiting for
-   * listener quiescence, this method returns a completed future for that callback and the outer
-   * shutdown caller continues the real teardown after the callback returns.
+   * <p>Every started participant is given one shutdown attempt even if another participant fails.
+   * The first shutdown failure completes the returned future exceptionally; later cleanup failures
+   * are attached to it as suppressed exceptions. Calling shutdown before startup does not start or
+   * stop registered participants.
+   *
+   * <p>If shutdown is requested from a session listener callback, this method never returns a
+   * future whose completion requires that callback to return first. When the teardown runs on
+   * another thread — chained behind an in-flight startup, or already driven by an earlier caller —
+   * the callback receives an already-completed future; when the callback itself is the first caller
+   * after startup has completed, the teardown runs inline without waiting for listener quiescence.
    *
    * @return a future completed when the server shutdown sequence has finished.
    */
   public CompletableFuture<OpcUaServer> shutdown() {
     sessionManager.beginShutdown();
 
-    CompletableFuture<OpcUaServer> newShutdownFuture = new CompletableFuture<>();
-    if (!shutdownFuture.compareAndSet(null, newShutdownFuture)) {
-      CompletableFuture<OpcUaServer> existingShutdownFuture = shutdownFuture.get();
-      if (sessionManager.isSessionListenerCallback() && !existingShutdownFuture.isDone()) {
-        // The active shutdown is waiting for this callback to return; joining it here would
-        // deadlock the listener queue.
-        return CompletableFuture.completedFuture(this);
-      } else {
-        return existingShutdownFuture;
+    CompletableFuture<OpcUaServer> newShutdownFuture;
+    CompletableFuture<OpcUaServer> startupToAwait;
+
+    synchronized (lifecycleLock) {
+      if (shutdownFuture != null) {
+        if (sessionManager.isSessionListenerCallback() && !shutdownFuture.isDone()) {
+          // The active shutdown is waiting for this callback to return; joining it here would
+          // deadlock the listener queue.
+          return CompletableFuture.completedFuture(this);
+        }
+        return shutdownFuture;
       }
+
+      shutdownFuture = newShutdownFuture = new CompletableFuture<>();
+      startupToAwait = startupFuture;
+      lifecycleState = ServerLifecycleState.SHUTTING_DOWN;
     }
 
-    try {
-      shutdownInternal();
-      newShutdownFuture.complete(this);
-    } catch (Exception e) {
-      newShutdownFuture.completeExceptionally(e);
+    if (startupToAwait != null && !startupToAwait.isDone()) {
+      startupToAwait.whenComplete((server, failure) -> performShutdown(newShutdownFuture));
+
+      if (sessionManager.isSessionListenerCallback()) {
+        // The deferred teardown runs on the startup thread and waits for listener quiescence;
+        // handing this callback the real future would let it block the very drain it must return
+        // from.
+        return CompletableFuture.completedFuture(this);
+      }
+    } else {
+      performShutdown(newShutdownFuture);
     }
 
     return newShutdownFuture;
   }
 
-  private void shutdownInternal() {
-    reverseConnectTargetManager.shutdown();
+  private void performShutdown(CompletableFuture<OpcUaServer> future) {
+    Throwable failure = shutdownInternal();
 
-    unbindTransports();
+    synchronized (lifecycleLock) {
+      lifecycleState = ServerLifecycleState.SHUTDOWN;
+    }
 
-    conditionManager.shutdown();
-
-    sessionManager.shutdown();
-
-    serverNamespace.shutdown();
-    opcUaNamespace.shutdown();
-
-    eventInstantiator.shutdown();
-    eventFactory.shutdown();
-
-    subscriptions.values().forEach(Subscription::deleteSubscription);
+    if (failure == null) {
+      future.complete(this);
+    } else {
+      future.completeExceptionally(failure);
+    }
   }
 
-  private void rollbackStartup() {
-    reverseConnectTargetManager.shutdown();
-    unbindTransports();
-    eventInstantiator.shutdown();
-    eventFactory.shutdown();
+  private @Nullable Throwable shutdownInternal() {
+    var failures = new FailureAccumulator();
+
+    failures.run(reverseConnectTargetManager::shutdown);
+    unbindTransports(failures);
+    failures.run(sessionManager::shutdown);
+
+    // Participants may depend on the standard namespaces and event facilities, so stop them after
+    // external visibility and sessions are quiesced but before any core address-space teardown.
+    stopStartedParticipants(failures);
+
+    failures.run(conditionManager::shutdown);
+    failures.run(serverNamespace::shutdown);
+    failures.run(opcUaNamespace::shutdown);
+    stopEventServices(failures);
+
+    for (Subscription subscription : subscriptions.values()) {
+      failures.run(subscription::deleteSubscription);
+    }
+
+    return failures.failure();
   }
 
-  private void unbindTransports() {
-    transports
-        .values()
-        .forEach(
-            transport -> {
-              try {
-                transport.unbind();
-              } catch (Exception e) {
-                logger.warn("Error unbinding transport", e);
-              }
-            });
+  /**
+   * Undo the externally visible effects of a failed startup.
+   *
+   * <p>Cleanup failures are attached to {@code startupFailure} as suppressed exceptions.
+   */
+  private void rollbackStartup(Throwable startupFailure) {
+    sessionManager.beginShutdown();
+
+    var failures = new FailureAccumulator(startupFailure);
+    failures.run(reverseConnectTargetManager::shutdown);
+    unbindTransports(failures);
+    failures.run(sessionManager::shutdown);
+    stopStartedParticipants(failures);
+    stopEventServices(failures);
+  }
+
+  private void stopStartedParticipants(FailureAccumulator failures) {
+    List<Lifecycle> participants = new ArrayList<>(startedParticipants);
+    startedParticipants.clear();
+
+    Collections.reverse(participants);
+    participants.forEach(participant -> failures.run(participant::shutdown));
+  }
+
+  private void stopEventServices(FailureAccumulator failures) {
+    // AbstractLifecycle rejects shutdown when never started, so guard the path where shutdown is
+    // requested before startup ever ran. Repeat shutdown of a started lifecycle is a no-op.
+    if (eventInstantiator.isRunning()) {
+      failures.run(eventInstantiator::shutdown);
+    }
+    if (eventFactory.isRunning()) {
+      failures.run(eventFactory::shutdown);
+    }
+  }
+
+  private void unbindTransports(FailureAccumulator failures) {
+    for (OpcServerTransport transport : transports.values()) {
+      try {
+        transport.unbind();
+      } catch (Throwable t) {
+        // Unbind failures never fail a normal shutdown; log them, and when an earlier failure is
+        // primary keep them attached as suppressed diagnostic context.
+        logger.warn("Error unbinding transport", t);
+        failures.suppress(t);
+      }
+    }
+
     transports.clear();
     boundEndpoints.clear();
+  }
+
+  /**
+   * Accumulates failures from a best-effort teardown sequence: the first failure becomes the
+   * primary, and later failures are attached to it as suppressed exceptions.
+   */
+  private static final class FailureAccumulator {
+
+    private @Nullable Throwable failure;
+
+    FailureAccumulator() {}
+
+    FailureAccumulator(@Nullable Throwable failure) {
+      this.failure = failure;
+    }
+
+    /** Run {@code step}, capturing anything it throws. */
+    void run(Runnable step) {
+      try {
+        step.run();
+      } catch (Throwable t) {
+        if (failure == null) {
+          failure = t;
+        } else {
+          suppress(t);
+        }
+      }
+    }
+
+    /** Attach {@code t} to the primary failure, if one exists, without promoting it. */
+    void suppress(Throwable t) {
+      if (failure != null && failure != t) {
+        failure.addSuppressed(t);
+      }
+    }
+
+    @Nullable Throwable failure() {
+      return failure;
+    }
+  }
+
+  private enum ServerLifecycleState {
+    NEW,
+    STARTING,
+    RUNNING,
+    STARTUP_FAILED,
+    SHUTTING_DOWN,
+    SHUTDOWN
   }
 
   public OpcUaServerConfig getConfig() {
@@ -912,7 +1160,7 @@ public class OpcUaServer extends AbstractServiceHandler {
    *
    * <p>The returned list is populated during {@link #startup()} and cleared by {@link #shutdown()}
    * (and on a failed startup that rolls back). Callers querying after shutdown observe an empty
-   * list. A subsequent successful {@link #startup()} repopulates the list.
+   * list; server instances are terminal and cannot be restarted.
    *
    * @return the {@link EndpointConfig}s that are currently bound, or an empty list when the server
    *     is not running.
