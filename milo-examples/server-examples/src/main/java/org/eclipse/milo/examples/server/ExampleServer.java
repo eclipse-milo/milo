@@ -25,6 +25,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -34,12 +35,18 @@ import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfigBuilder;
+import org.eclipse.milo.opcua.sdk.server.aliases.AliasCategoryConfig;
+import org.eclipse.milo.opcua.sdk.server.aliases.AliasManager;
+import org.eclipse.milo.opcua.sdk.server.aliases.AliasManagerConfig;
+import org.eclipse.milo.opcua.sdk.server.aliases.AliasTarget;
 import org.eclipse.milo.opcua.sdk.server.identity.AnonymousIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.CompositeValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.UsernameIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.X509IdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.util.HostnameUtil;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.security.AbstractCertificateFactory;
 import org.eclipse.milo.opcua.stack.core.security.DefaultApplicationGroup;
@@ -52,6 +59,8 @@ import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.BuildInfo;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
@@ -93,6 +102,7 @@ public class ExampleServer {
   private final OpcUaServer server;
   private final ExampleNamespace exampleNamespace;
   private final AlarmConditionsNamespace alarmConditionsNamespace;
+  private final AliasManager aliasManager;
 
   public ExampleServer() throws Exception {
     this(DEFAULT_TCP_BIND_PORT, builder -> {});
@@ -242,6 +252,53 @@ public class ExampleServer {
 
     alarmConditionsNamespace = new AlarmConditionsNamespace(server);
     alarmConditionsNamespace.startup();
+
+    // Opt-in OPC UA Part 17 Alias Names support: binds FindAlias on the standard Aliases,
+    // TagVariables, and Topics Objects and, with FindAliasVerbose enabled, materializes
+    // FindAliasVerbose Method instances alongside them, with NodeIds allocated in the example
+    // namespace. The manager is started in startup(), after the server itself has started.
+    aliasManager =
+        new AliasManager(
+            server,
+            AliasManagerConfig.builder()
+                .nodeNamespaceIndex(exampleNamespace.getNamespaceIndex())
+                .findAliasVerboseEnabled(true)
+                .build());
+  }
+
+  /**
+   * Creates a demo alias category, "MiloDemo", organized under the standard {@code TagVariables}
+   * Object, with aliases targeting HelloWorld scalar Variables. The AliasNamesExample client
+   * example resolves these aliases via FindAlias/FindAliasVerbose and reads the targets.
+   */
+  private void addDemoAliases() throws UaException {
+    var categoryConfig =
+        new AliasCategoryConfig(
+            new NodeId(exampleNamespace.getNamespaceIndex(), "Aliases/MiloDemo"),
+            NodeIds.TagVariables,
+            new QualifiedName(exampleNamespace.getNamespaceIndex().intValue(), "MiloDemo"),
+            exampleNamespace.getNodeManager(),
+            name -> new NodeId(exampleNamespace.getNamespaceIndex(), "Aliases/" + name),
+            false,
+            false,
+            false);
+
+    NodeId categoryId = aliasManager.addCategory(categoryConfig).nodeId();
+
+    addDemoAlias(categoryId, "Demo.ScalarDouble", "HelloWorld/ScalarTypes/Double");
+    addDemoAlias(categoryId, "Demo.ScalarInt32", "HelloWorld/ScalarTypes/Int32");
+  }
+
+  private void addDemoAlias(NodeId categoryId, String aliasName, String targetIdentifier)
+      throws UaException {
+
+    var target =
+        new AliasTarget(
+            new NodeId(exampleNamespace.getNamespaceIndex(), targetIdentifier).expanded(),
+            null,
+            NodeIds.AliasFor);
+
+    aliasManager.addAlias(categoryId, aliasName, List.of(target));
   }
 
   private Set<EndpointConfig> createEndpointConfigs(X509Certificate certificate) {
@@ -319,10 +376,30 @@ public class ExampleServer {
   }
 
   public CompletableFuture<OpcUaServer> startup() {
-    return server.startup();
+    return server
+        .startup()
+        .thenApply(
+            s -> {
+              // The standard alias Objects and their FindAlias Method Nodes exist once the
+              // OpcUaServer is constructed, but the AliasManager is documented to start after
+              // the server itself has started.
+              aliasManager.startup();
+
+              try {
+                addDemoAliases();
+              } catch (UaException e) {
+                throw new CompletionException(e);
+              }
+
+              return s;
+            });
   }
 
   public CompletableFuture<OpcUaServer> shutdown() {
+    if (aliasManager.isRunning()) {
+      aliasManager.shutdown();
+    }
+
     alarmConditionsNamespace.shutdown();
     exampleNamespace.shutdown();
 
