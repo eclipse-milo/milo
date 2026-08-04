@@ -16,7 +16,26 @@ import java.util.List;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 
-public interface TrustListManager {
+/**
+ * Manages the issuer and trusted certificates and CRLs used for certificate validation.
+ *
+ * <p>Each OPC UA application should create one shared {@link TrustListManager}. Components that
+ * receive the manager, such as a certificate validator, borrow it and do not close it.
+ *
+ * <p>The application must call {@link #close()} when it shuts down. Implementations that do not
+ * hold resources may use the default no-op implementation.
+ */
+public interface TrustListManager extends AutoCloseable {
+
+  /**
+   * Release any resources owned by this {@link TrustListManager}.
+   *
+   * <p>The default implementation does nothing.
+   *
+   * @throws Exception if an error occurs while releasing resources.
+   */
+  @Override
+  default void close() throws Exception {}
 
   /**
    * Get the list of Issuer CRLs.

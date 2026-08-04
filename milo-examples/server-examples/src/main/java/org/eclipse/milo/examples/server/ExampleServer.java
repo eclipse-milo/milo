@@ -15,6 +15,7 @@ import static org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig.USER_TOKEN_POL
 import static org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig.USER_TOKEN_POLICY_X509;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -25,6 +26,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -92,6 +94,7 @@ public class ExampleServer {
 
   private final OpcUaServer server;
   private final ExampleNamespace exampleNamespace;
+  private final FileBasedTrustListManager trustListManager;
 
   public ExampleServer() throws Exception {
     this(DEFAULT_TCP_BIND_PORT, builder -> {});
@@ -131,7 +134,7 @@ public class ExampleServer {
                 "password"::toCharArray,
                 alias -> "password".toCharArray()));
 
-    var trustListManager = FileBasedTrustListManager.createAndInitialize(pkiDir.toPath());
+    trustListManager = FileBasedTrustListManager.createAndInitialize(pkiDir.toPath());
 
     var certificateQuarantine =
         FileBasedCertificateQuarantine.create(pkiDir.toPath().resolve("rejected").resolve("certs"));
@@ -305,6 +308,15 @@ public class ExampleServer {
   public CompletableFuture<OpcUaServer> shutdown() {
     exampleNamespace.shutdown();
 
-    return server.shutdown();
+    return server
+        .shutdown()
+        .whenComplete(
+            (server, ex) -> {
+              try {
+                trustListManager.close();
+              } catch (IOException e) {
+                throw new CompletionException(e);
+              }
+            });
   }
 }

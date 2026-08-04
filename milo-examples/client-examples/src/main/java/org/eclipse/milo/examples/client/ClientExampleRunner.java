@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.examples.client;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -25,7 +26,6 @@ import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.DefaultClientCertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.FileBasedTrustListManager;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
-import org.eclipse.milo.opcua.stack.core.security.TrustListManager;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.slf4j.Logger;
@@ -44,10 +44,10 @@ public class ClientExampleRunner {
 
   private ExampleServer exampleServer;
 
-  private TrustListManager clientTrustListManager;
-
   private final ClientExample clientExample;
   private final boolean serverRequired;
+  private final Path securityTempDir;
+  private final FileBasedTrustListManager clientTrustListManager;
 
   public ClientExampleRunner(ClientExample clientExample) throws Exception {
     this(clientExample, true);
@@ -62,10 +62,8 @@ public class ClientExampleRunner {
       exampleServer = new ExampleServer(port, clientExample::configureServer);
       exampleServer.startup().get();
     }
-  }
 
-  private OpcUaClient createClient() throws Exception {
-    Path securityTempDir = Paths.get(System.getProperty("java.io.tmpdir"), "client", "security");
+    securityTempDir = Paths.get(System.getProperty("java.io.tmpdir"), "client", "security");
     Files.createDirectories(securityTempDir);
     if (!Files.exists(securityTempDir)) {
       throw new Exception("unable to create security dir: " + securityTempDir);
@@ -76,9 +74,11 @@ public class ClientExampleRunner {
     LoggerFactory.getLogger(getClass()).info("security dir: {}", securityTempDir.toAbsolutePath());
     LoggerFactory.getLogger(getClass()).info("security pki dir: {}", pkiDir.toAbsolutePath());
 
-    KeyStoreLoader loader = new KeyStoreLoader().load(securityTempDir);
-
     clientTrustListManager = FileBasedTrustListManager.createAndInitialize(pkiDir);
+  }
+
+  private OpcUaClient createClient() throws Exception {
+    KeyStoreLoader loader = new KeyStoreLoader().load(securityTempDir);
 
     var certificateValidator =
         new DefaultClientCertificateValidator(
@@ -154,9 +154,11 @@ public class ClientExampleRunner {
               if (serverRequired && exampleServer != null) {
                 exampleServer.shutdown().get();
               }
-              Stack.releaseSharedResources();
             } catch (ExecutionException | InterruptedException e) {
               logger.error("Error disconnecting: {}", e.getMessage(), e);
+            } finally {
+              closeClientTrustListManager();
+              Stack.releaseSharedResources();
             }
 
             try {
@@ -178,6 +180,7 @@ public class ClientExampleRunner {
       logger.error("Error getting client: {}", t.getMessage(), t);
 
       future.completeExceptionally(t);
+      closeClientTrustListManager();
 
       try {
         Thread.sleep(1000);
@@ -191,6 +194,14 @@ public class ClientExampleRunner {
       Thread.sleep(999_999_999);
     } catch (InterruptedException e) {
       e.printStackTrace();
+    }
+  }
+
+  private void closeClientTrustListManager() {
+    try {
+      clientTrustListManager.close();
+    } catch (IOException e) {
+      logger.error("Error closing TrustListManager: {}", e.getMessage(), e);
     }
   }
 }
