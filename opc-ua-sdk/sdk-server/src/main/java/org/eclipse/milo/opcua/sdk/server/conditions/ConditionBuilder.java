@@ -101,6 +101,14 @@ public class ConditionBuilder {
   private final @Nullable ConditionTypeNode adoptedNode;
   private final @Nullable NodeId adoptedTypeDefinitionId;
 
+  /**
+   * The committed instantiation of a created (non-adopted) instance, retained so {@link
+   * #deleteCreatedInstance} can roll it back if post-commit initialization fails.
+   */
+  private @Nullable InstantiationResult<? extends ConditionTypeNode> createdResult;
+
+  private ConditionWiring.@Nullable WiringJournal createdWiring;
+
   private boolean displayNameConfigured;
   private boolean conditionNameConfigured;
   private boolean conditionClassConfigured;
@@ -830,11 +838,24 @@ public class ConditionBuilder {
 
   /** Instantiate or complete the Condition node, initialize it, and wire its condition source. */
   ConditionTypeNode buildNode(NodeId typeDefinitionId) throws UaException {
+    NodeId effectiveTypeDefinitionId =
+        adoptedNode != null ? requireNonNull(adoptedTypeDefinitionId) : typeDefinitionId;
+
+    return buildNode(ConditionTypeNode.class, effectiveTypeDefinitionId);
+  }
+
+  /**
+   * Instantiate or complete the Condition node as {@code expectedNodeClass}, initialize it, and
+   * wire its condition source.
+   *
+   * <p>{@code typeDefinitionId} is used as-is: when adopting, the caller must pass the adopted
+   * instance's existing TypeDefinition (see {@link #buildAdoptedNode}).
+   */
+  <N extends ConditionTypeNode> N buildNode(Class<N> expectedNodeClass, NodeId typeDefinitionId)
+      throws UaException {
     NodeId nodeId = requireNonNull(this.nodeId, "nodeId must be set");
     QualifiedName browseName = requireNonNull(this.browseName, "browseName must be set");
     boolean adopting = adoptedNode != null;
-    NodeId effectiveTypeDefinitionId =
-        adopting ? requireNonNull(adoptedTypeDefinitionId) : typeDefinitionId;
     Map<BrowsePath, NodeId> assignedNodeIds =
         adopting
             ? ConditionNodeTraversal.discoverAssignedNodeIds(requireNonNull(adoptedNode))
@@ -893,8 +914,8 @@ public class ConditionBuilder {
     boolean includeLimitMembers =
         adoptedNode instanceof LimitAlarmTypeNode || hasConfiguredLimits();
 
-    InstantiationRequest.Builder<ConditionTypeNode> requestBuilder =
-        InstantiationRequest.of(rootClassForRequest(), effectiveTypeDefinitionId)
+    InstantiationRequest.Builder<N> requestBuilder =
+        InstantiationRequest.of(rootClassForRequest(expectedNodeClass), typeDefinitionId)
             .nodeId(nodeId)
             .browseName(browseName)
             .displayName(
@@ -929,27 +950,94 @@ public class ConditionBuilder {
           });
     }
 
-    InstantiationRequest<ConditionTypeNode> request = requestBuilder.build();
+    InstantiationRequest<N> request = requestBuilder.build();
 
-    InstantiationResult<ConditionTypeNode> result =
-        context.getServer().getNodeInstantiator().instantiate(request);
-    ConditionTypeNode node = result.root();
+    InstantiationResult<N> result = context.getServer().getNodeInstantiator().instantiate(request);
+    N node = result.root();
+    if (!adopting) {
+      createdResult = result;
+    }
 
     if (adopting) {
-      initializeAdoptedNode(node, effectiveTypeDefinitionId);
+      initializeAdoptedNode(node, typeDefinitionId);
     } else {
-      initializeCreatedNode(node, effectiveTypeDefinitionId);
+      initializeCreatedNode(node, typeDefinitionId);
     }
-    ConditionWiring.wire(node, conditionSource);
+    ConditionWiring.WiringJournal wiring = ConditionWiring.wire(node, conditionSource);
+    if (!adopting) {
+      createdWiring = wiring;
+    }
 
     return node;
   }
 
+  /** Complete an adopted Condition node using its existing TypeDefinition. */
+  <N extends ConditionTypeNode> N buildAdoptedNode(Class<N> expectedNodeClass) throws UaException {
+    if (adoptedNode == null) {
+      throw new IllegalStateException("builder is not adopting an existing Condition instance");
+    }
+
+    return buildNode(expectedNodeClass, requireNonNull(adoptedTypeDefinitionId));
+  }
+
+  /**
+   * Delete everything {@link #buildNode} committed for a created instance — the instantiated node
+   * tree and its condition source wiring — so a failure after commit leaves no residue in the
+   * address space. No-op when the builder is adopting an existing instance or nothing was
+   * committed.
+   */
+  void deleteCreatedInstance() {
+    InstantiationResult<? extends ConditionTypeNode> result = createdResult;
+    ConditionWiring.WiringJournal wiring = createdWiring;
+    if (result == null && wiring == null) {
+      return;
+    }
+    createdResult = null;
+    createdWiring = null;
+
+    RuntimeException failure = null;
+    if (wiring != null) {
+      try {
+        wiring.rollBack();
+      } catch (RuntimeException e) {
+        failure = e;
+      }
+    }
+
+    if (result != null) {
+      try {
+        result.deleteCreated();
+      } catch (RuntimeException e) {
+        if (failure == null) {
+          failure = e;
+        } else {
+          failure.addSuppressed(e);
+        }
+      }
+    }
+
+    if (failure != null) {
+      throw failure;
+    }
+  }
+
   @SuppressWarnings("unchecked")
-  private Class<ConditionTypeNode> rootClassForRequest() {
-    return adoptedNode != null
-        ? (Class<ConditionTypeNode>) adoptedNode.getClass()
-        : ConditionTypeNode.class;
+  private <N extends ConditionTypeNode> Class<N> rootClassForRequest(Class<N> expectedNodeClass) {
+    ConditionTypeNode adoptedNode = this.adoptedNode;
+    if (adoptedNode == null) {
+      return expectedNodeClass;
+    }
+
+    Class<? extends ConditionTypeNode> adoptedClass = adoptedNode.getClass();
+    if (!expectedNodeClass.isAssignableFrom(adoptedClass)) {
+      throw new IllegalArgumentException(
+          "adopted node is "
+              + adoptedClass.getName()
+              + ", expected "
+              + expectedNodeClass.getName());
+    }
+
+    return (Class<N>) adoptedClass;
   }
 
   private void initializeCreatedNode(ConditionTypeNode node, NodeId typeDefinitionId) {

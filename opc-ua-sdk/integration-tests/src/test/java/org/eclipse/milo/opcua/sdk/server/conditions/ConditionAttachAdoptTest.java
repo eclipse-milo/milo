@@ -1017,48 +1017,22 @@ public class ConditionAttachAdoptTest extends AbstractClientServerTest {
     var nodeManager = testNamespace.getNodeManager();
     NodeId typeId = newNodeId("ConditionAttachAdoptTest/" + name + "Type");
     UaObjectTypeNode typeNode =
-        new UaObjectTypeNode(
+        VendorTypeFixtures.defineVendorSubtype(
             context,
+            nodeManager,
             typeId,
             newQualifiedName(name + "Type"),
-            LocalizedText.english(name + "Type"),
-            LocalizedText.NULL_VALUE,
-            uint(0),
-            uint(0),
-            false);
-    typeNode.addReference(
-        new Reference(
-            typeId, NodeIds.HasSubtype, NodeIds.NonExclusiveLimitAlarmType.expanded(), false));
-    nodeManager.addNode(typeNode);
+            NodeIds.NonExclusiveLimitAlarmType);
 
     QualifiedName vendorMemberName = newQualifiedName("ReductionMask");
-    UaVariableNode vendorDeclaration =
-        new UaVariableNode(
-            context,
-            newNodeId("ConditionAttachAdoptTest/" + name + "Type/ReductionMask"),
-            vendorMemberName,
-            LocalizedText.english("ReductionMask"),
-            LocalizedText.NULL_VALUE,
-            uint(0),
-            uint(0));
-    vendorDeclaration.setDataType(NodeIds.UInt32);
-    vendorDeclaration.setValue(new DataValue(new Variant(uint(0))));
-    vendorDeclaration.addReference(
-        new Reference(
-            vendorDeclaration.getNodeId(),
-            NodeIds.HasTypeDefinition,
-            NodeIds.BaseDataVariableType.expanded(),
-            true));
-    vendorDeclaration.addReference(
-        new Reference(
-            vendorDeclaration.getNodeId(),
-            NodeIds.HasModellingRule,
-            NodeIds.ModellingRule_Mandatory.expanded(),
-            true));
-    nodeManager.addNode(vendorDeclaration);
-    typeNode.addReference(
-        new Reference(
-            typeId, NodeIds.HasComponent, vendorDeclaration.getNodeId().expanded(), true));
+    VendorTypeFixtures.declareMandatoryUInt32Member(
+        nodeManager,
+        typeNode,
+        newNodeId("ConditionAttachAdoptTest/" + name + "Type/ReductionMask"),
+        vendorMemberName,
+        NodeIds.BaseDataVariableType,
+        NodeIds.HasComponent,
+        uint(0));
 
     BrowsePath vendorMemberPath = BrowsePath.of(vendorMemberName);
     BrowsePath activeEffectiveDisplayName =

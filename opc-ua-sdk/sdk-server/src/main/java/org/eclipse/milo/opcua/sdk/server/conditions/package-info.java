@@ -30,6 +30,15 @@
  * recovery path when a loaded NodeSet can provide generic alarm state but lacks a usable numeric
  * limit configuration.
  *
+ * <p>Applications that define a custom Condition ObjectType or a custom Java behavior use {@link
+ * org.eclipse.milo.opcua.sdk.server.conditions.Condition#createInstance} to create the typed node
+ * tree and behavior together. {@link
+ * org.eclipse.milo.opcua.sdk.server.conditions.Condition#attachInstance} and {@link
+ * org.eclipse.milo.opcua.sdk.server.conditions.Condition#adoptInstance} provide the corresponding
+ * lifecycles for existing custom instances. These extension entry points own instance construction,
+ * method discovery, and handler installation; they do not add custom state-transition semantics or
+ * concrete behavior-specific builder validation.
+ *
  * <p>All three return behavior without registering it. Applications must pass the result to their
  * {@link org.eclipse.milo.opcua.sdk.server.conditions.ConditionManager} before clients invoke
  * Condition methods or request ConditionRefresh. Unregistering or replacing a behavior releases its
