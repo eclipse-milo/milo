@@ -60,6 +60,10 @@ public class ConditionBuilder {
       BrowsePath.of(
           new QualifiedName(0, "ActiveState"), new QualifiedName(0, "EffectiveDisplayName"));
 
+  private static final BrowsePath ACTIVE_STATE_EFFECTIVE_TRANSITION_TIME =
+      BrowsePath.of(
+          new QualifiedName(0, "ActiveState"), new QualifiedName(0, "EffectiveTransitionTime"));
+
   private static final BrowsePath SHELVING_STATE_LAST_TRANSITION =
       BrowsePath.of(new QualifiedName(0, "ShelvingState"), new QualifiedName(0, "LastTransition"));
 
@@ -902,6 +906,9 @@ public class ConditionBuilder {
                         || optionalIncludes.contains(declaration.browseName().name())
                         || (includeLimitMembers
                             && ACTIVE_STATE_EFFECTIVE_DISPLAY_NAME.equals(declaration.browsePath()))
+                        || (includeLimitMembers
+                            && ACTIVE_STATE_EFFECTIVE_TRANSITION_TIME.equals(
+                                declaration.browsePath()))
                         || (withShelving
                             && SHELVING_STATE_LAST_TRANSITION.equals(declaration.browsePath()))
                         || (includeLimitMembers

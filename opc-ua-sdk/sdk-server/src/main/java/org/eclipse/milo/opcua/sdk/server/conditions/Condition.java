@@ -613,6 +613,7 @@ public class Condition {
         branch.isConfirmed(),
         captureActive(),
         captureActiveLimits(),
+        captureEffectiveLimitState(),
         branch.isRetained(),
         branch.getLastEventId(),
         branch.getLastEventTime(),
@@ -632,6 +633,11 @@ public class Condition {
   /** Capture the violated limits for a branch snapshot; non-limit Conditions have none. */
   Set<ExclusiveLimitState> captureActiveLimits() {
     return Set.of();
+  }
+
+  /** Capture the selected effective limit for a branch snapshot; non-limit Conditions have none. */
+  @Nullable ExclusiveLimitState captureEffectiveLimitState() {
+    return null;
   }
 
   /**
@@ -990,7 +996,7 @@ public class Condition {
     if (variable != null && variable.getSourceTimestamp() == null) {
       DataValue current = variable.getValue();
       DateTime now = DateTime.now();
-      if (current == null || current.getValue() == null || current.getValue().getValue() == null) {
+      if (current == null || current.getValue().isNull()) {
         setConditionVariable(variable, initialValue, now);
       } else {
         variable.setSourceTimestamp(now);

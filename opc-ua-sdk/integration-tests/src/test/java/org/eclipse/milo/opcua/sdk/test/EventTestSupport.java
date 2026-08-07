@@ -25,6 +25,7 @@ import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
@@ -34,6 +35,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilterElement;
 import org.eclipse.milo.opcua.stack.core.types.structured.EventFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.LiteralOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Shared helpers for tests that monitor and assert on client-received events: monitored event items
@@ -84,6 +86,36 @@ public final class EventTestSupport {
             });
 
     return new EventFilter(selectClauses, whereClause);
+  }
+
+  /**
+   * Create an {@link EventFilter} with the given select clauses, matching only events whose
+   * ConditionName equals {@code conditionName} — scoping a test's items to one Condition instance.
+   */
+  public static EventFilter conditionNameFilter(
+      String conditionName, SimpleAttributeOperand... selectClauses) {
+
+    var whereClause =
+        new ContentFilter(
+            new ContentFilterElement[] {
+              new ContentFilterElement(
+                  FilterOperator.Equals,
+                  new ExtensionObject[] {
+                    ExtensionObject.encode(
+                        DefaultEncodingContext.INSTANCE,
+                        eventField(NodeIds.ConditionType, "ConditionName")),
+                    ExtensionObject.encode(
+                        DefaultEncodingContext.INSTANCE,
+                        new LiteralOperand(new Variant(conditionName)))
+                  })
+            });
+
+    return new EventFilter(selectClauses, whereClause);
+  }
+
+  /** The text of a {@link LocalizedText} event field, or {@code null} if the field is not one. */
+  public static @Nullable String localizedTextOf(Variant eventField) {
+    return eventField.value() instanceof LocalizedText text ? text.text() : null;
   }
 
   /**

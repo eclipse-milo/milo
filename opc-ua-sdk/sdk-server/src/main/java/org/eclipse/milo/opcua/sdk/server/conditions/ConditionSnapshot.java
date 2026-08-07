@@ -31,8 +31,9 @@ import org.jspecify.annotations.Nullable;
  * EventId and Time are deliberately not carried: §5.5.7 permits regenerating a refresh replay from
  * current state, which is what restored branches do.
  *
- * <p>Any component may be {@code null} (or empty): restore substitutes the §4.12 recovery defaults
- * — Enabled, Acked and Confirmed {@code false}, Unshelved — so older or partial snapshots restore
+ * <p>Components annotated {@link Nullable} may be {@code null}; collection components and their
+ * members must be non-null but may be empty. Restore substitutes the §4.12 recovery defaults —
+ * Enabled, Acked and Confirmed {@code false}, Unshelved — so older or partial snapshots restore
  * safely.
  *
  * <p>Snapshots may contain operator identity (ClientUserId) and operator comments. Storage and
@@ -96,6 +97,17 @@ public record ConditionSnapshot(
   /**
    * The state of one {@link ConditionBranch}.
    *
+   * <p>The effective limit state participates in this record's equality, hash code, string
+   * representation, and external serialized shape. A value that does not belong to {@code
+   * activeLimits} is normalized to absent at construction and restores through the scalar fallback.
+   *
+   * <p>Limit-alarm restore intersects {@code activeLimits} with the destination instance's
+   * supported, configured states. A persisted effective state is retained only when it remains in
+   * that set; otherwise restore uses the scalar fallback, and Active normalizes to false when no
+   * captured state is representable. A captured top-level Severity takes precedence over current
+   * destination configuration; when absent, restore derives Severity from the normalized effective
+   * state without manufacturing a LastSeverity transition.
+   *
    * @param branchId the BranchId, or {@code null} for the trunk.
    * @param acked the acknowledged state, or {@code null} to default to {@code false} (§4.12).
    * @param confirmed the confirmed state, or {@code null} to default to {@code false} (§4.12).
@@ -103,6 +115,10 @@ public record ConditionSnapshot(
    *     inactive on restore).
    * @param activeLimits the violated limits of a limit alarm: at most one for an exclusive alarm,
    *     any combination for a non-exclusive alarm, empty when inactive or not a limit alarm.
+   * @param effectiveLimitState the active limit selected for Message, EffectiveDisplayName, and
+   *     Severity, or {@code null} when inactive, not a limit alarm, or captured by an older or
+   *     partial snapshot. A {@code null} value with non-empty {@code activeLimits} requests the
+   *     scalar fallback during restore.
    * @param retained the branch's Retain state; recomputed from the restored state for the trunk.
    * @param lastEventId the EventId of the branch's last event, or {@code null} if none.
    * @param lastEventTime the Time of the branch's last event, or {@code null} if none.
@@ -114,13 +130,26 @@ public record ConditionSnapshot(
       @Nullable Boolean confirmed,
       @Nullable Boolean active,
       Set<ExclusiveLimitState> activeLimits,
+      @Nullable ExclusiveLimitState effectiveLimitState,
       boolean retained,
       @Nullable ByteString lastEventId,
       @Nullable DateTime lastEventTime,
       List<AcceptedEventId> eventIdWindow) {
 
+    /**
+     * Defensively copy the branch collections and normalize the effective limit selection.
+     *
+     * <p>An effective limit state that does not belong to {@code activeLimits} — possible when
+     * behavior state and directly-written limit-state nodes disagree at capture — is recorded as
+     * absent, so the snapshot restores through the scalar fallback instead of construction failing.
+     *
+     * @throws NullPointerException if either collection or any collection member is {@code null}.
+     */
     public BranchSnapshot {
       activeLimits = Set.copyOf(activeLimits);
+      if (effectiveLimitState != null && !activeLimits.contains(effectiveLimitState)) {
+        effectiveLimitState = null;
+      }
       eventIdWindow = List.copyOf(eventIdWindow);
     }
   }

@@ -34,7 +34,8 @@ import org.jspecify.annotations.Nullable;
  * build time only.
  *
  * <p>The SDK never samples the alarm's input: the application observes its process value and calls
- * {@link #evaluate}, or drives the state directly via the {@code setActive} variants.
+ * {@link #evaluate}, or applies an already-computed state through {@link
+ * ExclusiveLimitAlarm#setLimitState} or {@link NonExclusiveLimitAlarm#setLimitStates}.
  */
 public abstract class LimitAlarm extends AlarmCondition {
 
@@ -48,6 +49,7 @@ public abstract class LimitAlarm extends AlarmCondition {
       new EnumMap<>(ExclusiveLimitState.class);
 
   private final @Nullable PropertyTypeNode activeStateEffectiveDisplayName;
+  private final @Nullable PropertyTypeNode activeStateEffectiveTransitionTime;
 
   /**
    * The Condition's current base Severity: reported while active without a per-limit override and
@@ -88,6 +90,16 @@ public abstract class LimitAlarm extends AlarmCondition {
     TwoStateVariableTypeNode activeState = node.getActiveStateNode();
     activeStateEffectiveDisplayName =
         activeState != null ? activeState.getEffectiveDisplayNameNode() : null;
+    activeStateEffectiveTransitionTime =
+        activeState != null ? activeState.getEffectiveTransitionTimeNode() : null;
+
+    if (activeStateEffectiveTransitionTime != null
+        && currentValue(activeStateEffectiveTransitionTime) == null) {
+      DateTime transitionTime = activeState.getTransitionTime();
+      activeStateEffectiveTransitionTime.setValue(
+          new DataValue(
+              new Variant(transitionTime != null ? transitionTime : DateTime.NULL_VALUE)));
+    }
   }
 
   @Override
@@ -171,6 +183,17 @@ public abstract class LimitAlarm extends AlarmCondition {
   }
 
   /**
+   * Restore the effective Severity without creating a LastSeverity transition. A captured Severity
+   * takes precedence; callers use this only when a snapshot did not contain one.
+   */
+  void restoreEffectiveSeverity(@Nullable ExclusiveLimitState effectiveState) {
+    UShort severity = effectiveSeverity(effectiveState);
+    if (severity != null) {
+      getNode().setSeverity(severity);
+    }
+  }
+
+  /**
    * Check whether {@code limit} is — or, applying its deadband, remains — violated at {@code
    * value}: entry requires crossing the limit itself; leaving additionally requires retreating
    * within the limit by the deadband (§5.8.18: hysteresis against chattering).
@@ -226,32 +249,82 @@ public abstract class LimitAlarm extends AlarmCondition {
         new DataValue(new Variant(LocalizedText.english(text))));
   }
 
+  /** Advance ActiveState's optional EffectiveTransitionTime, where present. */
+  void setActiveEffectiveTransitionTime(DateTime time) {
+    if (activeStateEffectiveTransitionTime != null) {
+      activeStateEffectiveTransitionTime.setValue(new DataValue(new Variant(time)));
+    }
+  }
+
   /**
    * Apply the activation tail shared by both concrete limit-alarm types, after the subclass has
    * written its own limit-state shape: ActiveState (with the acknowledgement-needed rule),
-   * ActiveState's EffectiveDisplayName sub-state text, and the per-limit Severity of the most
-   * severe violated limit.
+   * ActiveState's effective presentation and transition time, and the per-limit Severity of the
+   * selected violated limit.
    *
    * <p>Must be called while holding the Condition's lock, inside a {@link StateMutation}.
    *
-   * @param mostSevere the most severe violated limit, or {@code null} if the alarm is now inactive.
-   * @param limitStateChanged whether one or more limit states changed and therefore start a new
-   *     acknowledgement cycle while the alarm remains active.
+   * @param effectiveState the violated limit selected for presentation and Severity, or {@code
+   *     null} if the alarm is now inactive.
+   * @param reducedStateChanged whether the limit membership or selected effective state changed and
+   *     therefore starts a new acknowledgement cycle while the alarm remains active.
+   * @param modeledSubStateChanged whether a modeled limit state entered or left; selector-only
+   *     changes are not modeled substate transitions.
    * @param time the transition time.
    */
   void applyActiveTransition(
-      @Nullable ExclusiveLimitState mostSevere, boolean limitStateChanged, DateTime time) {
-    boolean targetActive = mostSevere != null;
+      @Nullable ExclusiveLimitState effectiveState,
+      boolean reducedStateChanged,
+      boolean modeledSubStateChanged,
+      DateTime time) {
+    boolean targetActive = effectiveState != null;
+    boolean activeStateChanged = isActive() != targetActive;
 
-    if (isActive() != targetActive) {
+    if (activeStateChanged) {
       applyActive(targetActive, time);
-    } else if (targetActive && limitStateChanged) {
-      // A change in the violated limit(s) while already active is a state needing acknowledgement.
+    } else if (targetActive && reducedStateChanged) {
+      // A changed limit membership or effective selection is a fresh acknowledgement obligation.
       applyAcked(currentBranch(), false, time);
     }
 
-    setActiveEffectiveDisplayName(mostSevere);
-    applyEffectiveSeverity(mostSevere, time);
+    setActiveEffectiveDisplayName(effectiveState);
+    if (activeStateChanged || modeledSubStateChanged) {
+      setActiveEffectiveTransitionTime(time);
+    }
+    applyEffectiveSeverity(effectiveState, time);
+  }
+
+  /**
+   * Apply the restore presentation tail shared by both limit-alarm types, after the subclass has
+   * restored its modeled limit state: ActiveState's EffectiveDisplayName always tracks the restored
+   * effective state, EffectiveTransitionTime advances only when {@code transitionChanged}, Message
+   * is regenerated from the restored state, and Severity is derived when the snapshot did not carry
+   * one. This also replaces presentation left by an earlier pre-live restore when the new snapshot
+   * has no trunk branch.
+   *
+   * <p>Called while holding the Condition's lock.
+   *
+   * @param effectiveState the restored effective limit state, or {@code null} when inactive.
+   * @param transitionChanged whether the restored active or limit state differs from the previous
+   *     state.
+   * @param snapshot the snapshot being restored.
+   * @param time the shared restore transition time.
+   */
+  void applyRestoredPresentation(
+      @Nullable ExclusiveLimitState effectiveState,
+      boolean transitionChanged,
+      ConditionSnapshot snapshot,
+      DateTime time) {
+
+    setActiveEffectiveDisplayName(effectiveState);
+    if (transitionChanged) {
+      setActiveEffectiveTransitionTime(time);
+    }
+
+    getNode().setMessage(LocalizedText.english(transitionMessage(effectiveState)));
+    if (snapshot.severity() == null) {
+      restoreEffectiveSeverity(effectiveState);
+    }
   }
 
   /** The event Message for a transition into {@code state} ({@code null} = inactive). */

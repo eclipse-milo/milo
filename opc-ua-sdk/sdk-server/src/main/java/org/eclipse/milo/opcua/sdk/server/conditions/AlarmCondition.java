@@ -257,9 +257,26 @@ public class AlarmCondition extends AcknowledgeableCondition {
       ConditionSnapshot.@Nullable BranchSnapshot trunkSnapshot,
       DateTime time) {
 
+    boolean restoredActive = trunkSnapshot != null && Boolean.TRUE.equals(trunkSnapshot.active());
+    applySnapshot(snapshot, trunkSnapshot, restoredActive, time);
+  }
+
+  /**
+   * Apply {@code snapshot} with a caller-selected restored ActiveState.
+   *
+   * <p>Base alarms preserve the captured Active flag. Limit alarms normalize Active against the
+   * limit states representable by the destination instance and pass the result here rather than
+   * re-deriving it. Restore selects state only; it must not perform a live alarm transition or emit
+   * an event.
+   */
+  void applySnapshot(
+      ConditionSnapshot snapshot,
+      ConditionSnapshot.@Nullable BranchSnapshot trunkSnapshot,
+      boolean restoredActive,
+      DateTime time) {
+
     super.applySnapshot(snapshot, trunkSnapshot, time);
 
-    boolean restoredActive = trunkSnapshot != null && Boolean.TRUE.equals(trunkSnapshot.active());
     if (isActive() != restoredActive) {
       setTwoState(activeState, restoredActive, ACTIVE_TEXTS, time);
       active = restoredActive;

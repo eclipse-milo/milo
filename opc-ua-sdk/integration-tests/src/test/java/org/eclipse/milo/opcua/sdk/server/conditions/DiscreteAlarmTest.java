@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.sdk.server.conditions;
 
 import static java.util.Objects.requireNonNull;
+import static org.eclipse.milo.opcua.sdk.test.EventTestSupport.conditionNameFilter;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,23 +31,16 @@ import org.eclipse.milo.opcua.sdk.test.EventTestSupport;
 import org.eclipse.milo.opcua.sdk.test.TestNamespace;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.enumerated.FilterOperator;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallResponse;
-import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilter;
-import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilterElement;
 import org.eclipse.milo.opcua.stack.core.types.structured.EventFilter;
-import org.eclipse.milo.opcua.stack.core.types.structured.LiteralOperand;
-import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -294,33 +288,8 @@ public class DiscreteAlarmTest extends AbstractClientServerTest {
     return requireNonNull(response.getResults())[0];
   }
 
-  /**
-   * Create an {@link EventFilter} with the given select clauses, matching only events whose
-   * ConditionName equals {@code conditionName} — scoping each test to its own alarm's events.
-   */
-  private static EventFilter conditionNameFilter(
-      String conditionName, SimpleAttributeOperand... selectClauses) {
-
-    var whereClause =
-        new ContentFilter(
-            new ContentFilterElement[] {
-              new ContentFilterElement(
-                  FilterOperator.Equals,
-                  new ExtensionObject[] {
-                    ExtensionObject.encode(
-                        DefaultEncodingContext.INSTANCE,
-                        EventTestSupport.eventField(NodeIds.ConditionType, "ConditionName")),
-                    ExtensionObject.encode(
-                        DefaultEncodingContext.INSTANCE,
-                        new LiteralOperand(new Variant(conditionName)))
-                  })
-            });
-
-    return new EventFilter(selectClauses, whereClause);
-  }
-
   private static @Nullable String messageOf(Variant[] eventFields) {
-    return eventFields[0].value() instanceof LocalizedText text ? text.text() : null;
+    return EventTestSupport.localizedTextOf(eventFields[0]);
   }
 
   private static boolean ackedIdOf(Variant[] eventFields) {
