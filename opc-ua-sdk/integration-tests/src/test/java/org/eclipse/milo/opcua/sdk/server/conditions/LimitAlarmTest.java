@@ -11,6 +11,8 @@
 package org.eclipse.milo.opcua.sdk.server.conditions;
 
 import static java.util.Objects.requireNonNull;
+import static org.eclipse.milo.opcua.sdk.test.EventTestSupport.conditionNameFilter;
+import static org.eclipse.milo.opcua.sdk.test.EventTestSupport.localizedTextOf;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
@@ -40,27 +42,20 @@ import org.eclipse.milo.opcua.sdk.test.EventTestSupport;
 import org.eclipse.milo.opcua.sdk.test.TestNamespace;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseDirection;
-import org.eclipse.milo.opcua.stack.core.types.enumerated.FilterOperator;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallResponse;
-import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilter;
-import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilterElement;
 import org.eclipse.milo.opcua.stack.core.types.structured.EUInformation;
 import org.eclipse.milo.opcua.stack.core.types.structured.EventFilter;
-import org.eclipse.milo.opcua.stack.core.types.structured.LiteralOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
-import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
@@ -817,6 +812,202 @@ public class LimitAlarmTest extends AbstractClientServerTest {
     assertTrue(currentState.getId().isNull());
   }
 
+  @Test
+  void setLimitStateActivatesAndNullClearsWithOneCoherentEventEach() throws Exception {
+    appDrivenAlarm.setLimitState(null);
+
+    var subscription = new OpcUaSubscription(client);
+    subscription.create();
+
+    try {
+      EventFilter eventFilter =
+          conditionNameFilter(
+              "AppDriven",
+              EventTestSupport.eventField(NodeIds.BaseEventType, "Message"),
+              EventTestSupport.eventField(NodeIds.AlarmConditionType, "ActiveState", "Id"),
+              EventTestSupport.eventField(
+                  NodeIds.ExclusiveLimitAlarmType, "LimitState", "CurrentState"));
+
+      List<Variant[]> events =
+          EventTestSupport.monitorEvents(subscription, NodeIds.Server, eventFilter);
+
+      // Part 9 §5.2 requires the ActiveState and its limit substate to be reported together.
+      appDrivenAlarm.setLimitState(ExclusiveLimitState.HIGH);
+
+      Variant[] active =
+          EventTestSupport.awaitEvent(
+              events, "app-driven High activation", e -> "Active/High".equals(messageOf(e)));
+      assertEquals(Boolean.TRUE, active[1].value());
+      assertEquals("High", localizedTextOf(active[2]));
+      assertTrue(appDrivenAlarm.isActive());
+      assertEquals(ExclusiveLimitState.HIGH, appDrivenAlarm.getLimitState());
+
+      appDrivenAlarm.setLimitState(null);
+
+      Variant[] inactive =
+          EventTestSupport.awaitEvent(
+              events, "app-driven clear", e -> "Inactive".equals(messageOf(e)));
+      assertEquals(Boolean.FALSE, inactive[1].value());
+      assertNull(localizedTextOf(inactive[2]));
+      assertFalse(appDrivenAlarm.isActive());
+      assertNull(appDrivenAlarm.getLimitState());
+      assertTrue(
+          appDrivenAlarm.getNode().getLimitStateNode().getCurrentStateNode().getId().isNull());
+
+      assertTrue(events.remove(active), "activation event was not collected");
+      assertTrue(events.remove(inactive), "deactivation event was not collected");
+      EventTestSupport.assertNoEvent(
+          events, "additional reduced-state transition event", e -> true);
+    } finally {
+      subscription.delete();
+      appDrivenAlarm.setLimitState(null);
+    }
+  }
+
+  @Test
+  void unconfiguredLimitStateIsRejectedBeforeAnyAlarmOrShelvingMutation() throws Exception {
+    resetShelvedExclusiveAlarm();
+    try {
+      shelvedExclusiveAlarm.setLimitState(ExclusiveLimitState.HIGH);
+      makeShelvingExpiryDue(shelvedExclusiveAlarm);
+
+      ExclusiveLimitStateMachineTypeNode limitStateNode =
+          shelvedExclusiveAlarm.getNode().getLimitStateNode();
+      TwoStateVariableTypeNode activeStateNode =
+          shelvedExclusiveAlarm.getNode().getActiveStateNode();
+      ShelvedStateMachineTypeNode shelvingState =
+          requireNonNull(shelvedExclusiveAlarm.getShelvingState());
+
+      ByteString eventId = shelvedExclusiveAlarm.currentBranch().getLastEventId();
+      DateTime eventTime = shelvedExclusiveAlarm.currentBranch().getLastEventTime();
+      DateTime conditionTime = shelvedExclusiveAlarm.getNode().getTime();
+      DateTime activeTransitionTime = activeStateNode.getTransitionTime();
+      DateTime limitTransitionTime =
+          requireNonNull(limitStateNode.getLastTransitionNode()).getTransitionTime();
+      DateTime shelvingTransitionTime =
+          requireNonNull(shelvingState.getLastTransitionNode()).getTransitionTime();
+
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> shelvedExclusiveAlarm.setLimitState(ExclusiveLimitState.LOW));
+
+      assertEquals(eventId, shelvedExclusiveAlarm.currentBranch().getLastEventId());
+      assertEquals(eventTime, shelvedExclusiveAlarm.currentBranch().getLastEventTime());
+      assertEquals(conditionTime, shelvedExclusiveAlarm.getNode().getTime());
+      assertEquals(activeTransitionTime, activeStateNode.getTransitionTime());
+      assertEquals(
+          limitTransitionTime,
+          requireNonNull(limitStateNode.getLastTransitionNode()).getTransitionTime());
+      assertEquals(
+          shelvingTransitionTime,
+          requireNonNull(shelvingState.getLastTransitionNode()).getTransitionTime());
+      assertEquals("TimedShelved", requireNonNull(shelvingState.getCurrentState()).text());
+      assertEquals(Boolean.TRUE, shelvedExclusiveAlarm.getNode().getSuppressedOrShelved());
+      assertTrue(shelvedExclusiveAlarm.isActive());
+      assertEquals(ExclusiveLimitState.HIGH, shelvedExclusiveAlarm.getLimitState());
+      assertEquals(
+          NodeIds.ExclusiveLimitStateMachineType_High,
+          limitStateNode.getCurrentStateNode().getId());
+    } finally {
+      resetShelvedExclusiveAlarm();
+    }
+  }
+
+  @Test
+  void duplicateLimitStateCallIsSilentWithoutDueShelvingOrSeverityCorrection() throws Exception {
+    appDrivenAlarm.setLimitState(null);
+
+    var subscription = new OpcUaSubscription(client);
+    subscription.create();
+
+    try {
+      EventFilter eventFilter =
+          conditionNameFilter(
+              "AppDriven", EventTestSupport.eventField(NodeIds.BaseEventType, "Message"));
+      List<Variant[]> events =
+          EventTestSupport.monitorEvents(subscription, NodeIds.Server, eventFilter);
+
+      appDrivenAlarm.setLimitState(ExclusiveLimitState.HIGH);
+      EventTestSupport.awaitEvent(
+          events, "initial app-driven activation", e -> "Active/High".equals(messageOf(e)));
+
+      ByteString eventId = appDrivenAlarm.currentBranch().getLastEventId();
+      DateTime eventTime = appDrivenAlarm.currentBranch().getLastEventTime();
+      DateTime activeTransitionTime =
+          appDrivenAlarm.getNode().getActiveStateNode().getTransitionTime();
+      DateTime limitTransitionTime =
+          requireNonNull(appDrivenAlarm.getNode().getLimitStateNode().getLastTransitionNode())
+              .getTransitionTime();
+      events.clear();
+
+      appDrivenAlarm.setLimitState(ExclusiveLimitState.HIGH);
+
+      assertEquals(eventId, appDrivenAlarm.currentBranch().getLastEventId());
+      assertEquals(eventTime, appDrivenAlarm.currentBranch().getLastEventTime());
+      assertEquals(
+          activeTransitionTime, appDrivenAlarm.getNode().getActiveStateNode().getTransitionTime());
+      assertEquals(
+          limitTransitionTime,
+          requireNonNull(appDrivenAlarm.getNode().getLimitStateNode().getLastTransitionNode())
+              .getTransitionTime());
+      EventTestSupport.assertNoEvent(events, "duplicate app-driven limit state", e -> true);
+    } finally {
+      subscription.delete();
+      appDrivenAlarm.setLimitState(null);
+    }
+  }
+
+  @Test
+  void duplicateLimitStateCallAppliesDueLazyShelvingExpiryBeforeNoOpCheck() throws Exception {
+    resetShelvedExclusiveAlarm();
+    try {
+      shelvedExclusiveAlarm.setLimitState(ExclusiveLimitState.HIGH);
+      makeShelvingExpiryDue(shelvedExclusiveAlarm);
+      ByteString shelvedEventId = shelvedExclusiveAlarm.currentBranch().getLastEventId();
+
+      var subscription = new OpcUaSubscription(client);
+      subscription.create();
+
+      try {
+        EventFilter eventFilter =
+            conditionNameFilter(
+                "ShelvedExclusive",
+                EventTestSupport.eventField(NodeIds.BaseEventType, "Message"),
+                EventTestSupport.eventField(NodeIds.AlarmConditionType, "SuppressedOrShelved"),
+                EventTestSupport.eventField(NodeIds.AlarmConditionType, "ActiveState", "Id"),
+                EventTestSupport.eventField(
+                    NodeIds.ExclusiveLimitAlarmType, "LimitState", "CurrentState"));
+        List<Variant[]> events =
+            EventTestSupport.monitorEvents(subscription, NodeIds.Server, eventFilter);
+
+        // A due shelving deadline is a separate Part 9 state change even when the requested alarm
+        // tuple itself is unchanged.
+        shelvedExclusiveAlarm.setLimitState(ExclusiveLimitState.HIGH);
+
+        Variant[] unshelved =
+            EventTestSupport.awaitEvent(
+                events, "lazy Unshelved transition", e -> "Unshelved".equals(messageOf(e)));
+        assertEquals(Boolean.FALSE, unshelved[1].value());
+        assertEquals(Boolean.TRUE, unshelved[2].value());
+        assertEquals("High", localizedTextOf(unshelved[3]));
+        assertUnshelved(shelvedExclusiveAlarm);
+        assertTrue(shelvedExclusiveAlarm.isActive());
+        assertEquals(ExclusiveLimitState.HIGH, shelvedExclusiveAlarm.getLimitState());
+        assertNotEquals(shelvedEventId, shelvedExclusiveAlarm.currentBranch().getLastEventId());
+
+        EventTestSupport.assertNoEvent(
+            events,
+            "alarm-state event for the unchanged tuple",
+            e -> "Active/High".equals(messageOf(e)));
+        assertEquals(1, events.size(), "only the due shelving expiry should emit");
+      } finally {
+        subscription.delete();
+      }
+    } finally {
+      resetShelvedExclusiveAlarm();
+    }
+  }
+
   private void assertInvalidExclusiveLimits(Consumer<ConditionBuilder> configure) {
     assertThrows(
         IllegalArgumentException.class, () -> ExclusiveLevelAlarm.create(nodeContext, configure));
@@ -912,6 +1103,17 @@ public class LimitAlarmTest extends AbstractClientServerTest {
     shelvingRuntime.makeExpiryDueForTesting();
   }
 
+  private void resetShelvedExclusiveAlarm() throws Exception {
+    ShelvedStateMachineTypeNode shelvingState =
+        requireNonNull(shelvedExclusiveAlarm.getShelvingState());
+    NodeId unshelveMethodId = requireNonNull(shelvingState.getUnshelveMethodNode()).getNodeId();
+
+    call(shelvingState.getNodeId(), unshelveMethodId);
+    requireNonNull(shelvedExclusiveAlarm.getShelvingRuntime())
+        .setExpiryTimerSuppressedForTesting(false);
+    shelvedExclusiveAlarm.setLimitState(null);
+  }
+
   private static void assertUnshelved(LimitAlarm alarm) {
     ShelvedStateMachineTypeNode shelvingState = requireNonNull(alarm.getShelvingState());
     LocalizedText currentState = requireNonNull(shelvingState.getCurrentState());
@@ -928,33 +1130,8 @@ public class LimitAlarmTest extends AbstractClientServerTest {
     return requireNonNull(response.getResults())[0];
   }
 
-  /**
-   * Create an {@link EventFilter} with the given select clauses, matching only events whose
-   * ConditionName equals {@code conditionName} — scoping each test to its own alarm's events.
-   */
-  private static EventFilter conditionNameFilter(
-      String conditionName, SimpleAttributeOperand... selectClauses) {
-
-    var whereClause =
-        new ContentFilter(
-            new ContentFilterElement[] {
-              new ContentFilterElement(
-                  FilterOperator.Equals,
-                  new ExtensionObject[] {
-                    ExtensionObject.encode(
-                        DefaultEncodingContext.INSTANCE,
-                        EventTestSupport.eventField(NodeIds.ConditionType, "ConditionName")),
-                    ExtensionObject.encode(
-                        DefaultEncodingContext.INSTANCE,
-                        new LiteralOperand(new Variant(conditionName)))
-                  })
-            });
-
-    return new EventFilter(selectClauses, whereClause);
-  }
-
   private static @Nullable String messageOf(Variant[] eventFields) {
-    return eventFields[0].value() instanceof LocalizedText text ? text.text() : null;
+    return localizedTextOf(eventFields[0]);
   }
 
   private static boolean activeIdOf(Variant[] eventFields) {

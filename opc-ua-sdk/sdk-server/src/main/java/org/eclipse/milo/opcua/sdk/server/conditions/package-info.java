@@ -30,6 +30,15 @@
  * recovery path when a loaded NodeSet can provide generic alarm state but lacks a usable numeric
  * limit configuration.
  *
+ * <p>Applications that define a custom Condition ObjectType or a custom Java behavior use {@link
+ * org.eclipse.milo.opcua.sdk.server.conditions.Condition#createInstance} to create the typed node
+ * tree and behavior together. {@link
+ * org.eclipse.milo.opcua.sdk.server.conditions.Condition#attachInstance} and {@link
+ * org.eclipse.milo.opcua.sdk.server.conditions.Condition#adoptInstance} provide the corresponding
+ * lifecycles for existing custom instances. These extension entry points own instance construction,
+ * method discovery, and handler installation; they do not add custom state-transition semantics or
+ * concrete behavior-specific builder validation.
+ *
  * <p>All three return behavior without registering it. Applications must pass the result to their
  * {@link org.eclipse.milo.opcua.sdk.server.conditions.ConditionManager} before clients invoke
  * Condition methods or request ConditionRefresh. Unregistering or replacing a behavior releases its
@@ -39,6 +48,28 @@
  * Methods proven to be exclusive instance copies; shared Methods are dispatched per registered
  * Condition through the ConditionManager, leaving the shared node and any application-installed
  * handler unchanged.
+ *
+ * <h2>Limit-alarm data flow</h2>
+ *
+ * <p>Limit-alarm behavior separates domain evaluation from Condition state application. The {@code
+ * evaluate(double)} methods implement Milo's standard scalar limit and deadband policy. The
+ * reduced-state APIs on {@link org.eclipse.milo.opcua.sdk.server.conditions.ExclusiveLimitAlarm}
+ * and {@link org.eclipse.milo.opcua.sdk.server.conditions.NonExclusiveLimitAlarm} instead accept a
+ * trusted outcome already computed by the application. Milo applies either outcome through the
+ * Condition mutation boundary, which owns acknowledgement cycles, transition timing, shelving,
+ * Retain, snapshots, and event generation.
+ *
+ * <p>Custom limit-alarm subtypes remain responsible for array or compound reduction and, for
+ * non-exclusive alarms, selection of the primary state used for event presentation. Attaching or
+ * adopting stock behavior preserves the generated subtype's NodeIds, HasTypeDefinition, EventType,
+ * and subtype-specific members. Creation and adoption add the standard optional {@code
+ * ActiveState/EffectiveTransitionTime} member for limit alarms; attaching a complete instance
+ * preserves its existing optional-member shape.
+ *
+ * <p>Subtype-specific state cannot currently be written atomically with the private standard limit
+ * transition. Custom fields that must share the same transition and event boundary therefore need a
+ * separately designed behavior-extension seam rather than direct node writes around a reduced-state
+ * API call.
  *
  * <p>The {@link org.eclipse.milo.opcua.sdk.server.conditions.DefaultConditionManager} releases the
  * runtime resources of each registered {@link

@@ -35,6 +35,7 @@ import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilter;
 import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilterChain;
@@ -192,6 +193,151 @@ public class Condition {
   }
 
   /**
+   * Create an instance of a custom Condition ObjectType and wrap it in application-selected
+   * behavior.
+   *
+   * <p>This is the typed lifecycle entry point for vendor subtypes and custom behavior subclasses.
+   * The ObjectType identified by {@code typeDefinitionId} must resolve through the server's {@link
+   * org.eclipse.milo.opcua.sdk.server.ObjectTypeManager} to {@code nodeClass} or one of its
+   * subclasses. The behavior factory is invoked only after the complete instance has been committed
+   * to the target NodeManager and its standard Condition fields have been initialized.
+   *
+   * <p>Pass a generated custom node class only after registering its constructor with the server's
+   * ObjectTypeManager. A caller that needs a custom OPC UA TypeDefinition but no custom Java node
+   * class can pass the nearest stock Condition node class instead; the instance still retains the
+   * custom HasTypeDefinition and EventType.
+   *
+   * <p>This method applies the common {@link ConditionBuilder} configuration but does not impose
+   * the additional configuration validation performed by concrete factories such as {@link
+   * org.eclipse.milo.opcua.sdk.server.conditions.ExclusiveLimitAlarm#create}. A custom behavior
+   * factory owns any subtype-specific validation. The returned behavior is not registered with the
+   * server's {@link ConditionManager}.
+   *
+   * <p>Creation is residue-free: if a failure occurs after the instance tree has been committed —
+   * an invalid method surface, a {@code behaviorFactory} that returns {@code null} or a behavior
+   * wrapping a different node, or an exception thrown by the factory itself — the committed nodes
+   * and their condition source wiring are deleted before the exception propagates.
+   *
+   * @param <N> the Java node type expected for the custom instance root.
+   * @param <T> the Condition behavior type returned by {@code behaviorFactory}.
+   * @param context the context the instance is created under.
+   * @param nodeClass the generated or application-defined Java node class expected for the root.
+   * @param typeDefinitionId the NodeId of the custom Condition ObjectType to instantiate.
+   * @param configure the common Condition instance configuration.
+   * @param behaviorFactory the factory that wraps the typed root node in its behavior.
+   * @return the created custom Condition behavior.
+   * @throws UaException if the type cannot be instantiated as {@code nodeClass}, instance creation
+   *     fails, or {@code behaviorFactory} returns {@code null} or a behavior that does not wrap the
+   *     supplied node.
+   */
+  public static <N extends ConditionTypeNode, T extends Condition> T createInstance(
+      UaNodeContext context,
+      Class<N> nodeClass,
+      NodeId typeDefinitionId,
+      Consumer<ConditionBuilder> configure,
+      Function<? super N, ? extends T> behaviorFactory)
+      throws UaException {
+
+    ConditionBuilder builder = new ConditionBuilder(context);
+    configure.accept(builder);
+
+    try {
+      N node = builder.buildNode(nodeClass, typeDefinitionId);
+
+      return initializeBehavior(node, behaviorFactory);
+    } catch (Exception e) {
+      try {
+        builder.deleteCreatedInstance();
+      } catch (RuntimeException rollbackFailure) {
+        e.addSuppressed(rollbackFailure);
+      }
+      throw e;
+    }
+  }
+
+  /**
+   * Attach application-selected behavior to a complete custom Condition instance already present in
+   * the address space.
+   *
+   * <p>The existing node and all of its subtype-specific members and identities are preserved. The
+   * returned behavior is not registered with the server's {@link ConditionManager}.
+   *
+   * @param <N> the Java node type of the existing instance root.
+   * @param <T> the Condition behavior type returned by {@code behaviorFactory}.
+   * @param node the complete typed Condition instance.
+   * @param behaviorFactory the factory that wraps the node in its behavior.
+   * @return the attached custom Condition behavior.
+   * @throws UaRuntimeException if the instance has an invalid method surface, or {@code
+   *     behaviorFactory} returns {@code null} or a behavior that does not wrap the supplied node.
+   */
+  public static <N extends ConditionTypeNode, T extends Condition> T attachInstance(
+      N node, Function<? super N, ? extends T> behaviorFactory) {
+    return attachInstance(node, options -> {}, behaviorFactory);
+  }
+
+  /**
+   * Attach application-selected behavior to a complete custom Condition instance already present in
+   * the address space and wire its Condition source.
+   *
+   * <p>The existing node and all of its subtype-specific members and identities are preserved. The
+   * returned behavior is not registered with the server's {@link ConditionManager}.
+   *
+   * @param <N> the Java node type of the existing instance root.
+   * @param <T> the Condition behavior type returned by {@code behaviorFactory}.
+   * @param node the complete typed Condition instance.
+   * @param configure the source-wiring options to apply.
+   * @param behaviorFactory the factory that wraps the node in its behavior.
+   * @return the attached custom Condition behavior.
+   * @throws UaRuntimeException if the instance has an invalid method surface, or {@code
+   *     behaviorFactory} returns {@code null} or a behavior that does not wrap the supplied node.
+   */
+  public static <N extends ConditionTypeNode, T extends Condition> T attachInstance(
+      N node, Consumer<AttachOptions> configure, Function<? super N, ? extends T> behaviorFactory) {
+    return attach(node, configure, behaviorFactory);
+  }
+
+  /**
+   * Complete a partial custom Condition instance in place and wrap it in application-selected
+   * behavior.
+   *
+   * <p>The existing HasTypeDefinition, EventType, NodeIds, stored configuration, and
+   * subtype-specific members are preserved. Common values supplied through {@code configure}
+   * override stored values according to the normal adopt lifecycle. The returned behavior is not
+   * registered with the server's {@link ConditionManager}.
+   *
+   * <p>A failure after the instance has been completed in place — an invalid method surface, or a
+   * {@code behaviorFactory} that violates its contract — leaves the completed instance in the
+   * address space; adoption may be retried with the same NodeId once the cause is corrected.
+   *
+   * @param <N> the Java node type expected for the existing instance root.
+   * @param <T> the Condition behavior type returned by {@code behaviorFactory}.
+   * @param context the context whose NodeManager owns the existing instance.
+   * @param nodeId the NodeId of the existing Condition instance.
+   * @param nodeClass the generated or application-defined Java node class expected for the root.
+   * @param configure the common Condition configuration to apply while completing the instance.
+   * @param behaviorFactory the factory that wraps the typed root node in its behavior.
+   * @return the adopted custom Condition behavior.
+   * @throws UaException if the existing node is incompatible, cannot be completed, has an invalid
+   *     method surface, or {@code behaviorFactory} returns {@code null} or a behavior that does not
+   *     wrap the supplied node.
+   */
+  public static <N extends ConditionTypeNode, T extends Condition> T adoptInstance(
+      UaNodeContext context,
+      NodeId nodeId,
+      Class<N> nodeClass,
+      Consumer<ConditionBuilder> configure,
+      Function<? super N, ? extends T> behaviorFactory)
+      throws UaException {
+
+    ConditionBuilder builder = ConditionBuilder.forAdoption(context, nodeId, nodeClass);
+    configure.accept(builder);
+
+    N node = builder.buildAdoptedNode(nodeClass);
+
+    return initializeBehavior(node, behaviorFactory);
+  }
+
+  /**
    * Shared tail of the condition/alarm {@code create} entry points: instantiate the typed instance
    * node from {@code typeDefinitionId}, wrap it in its behavior via {@code behavior}, and install
    * the instance's method handlers. The {@code behavior} function re-casts the node to the concrete
@@ -207,11 +353,26 @@ public class Condition {
       ConditionBuilder builder, NodeId typeDefinitionId, Function<ConditionTypeNode, T> behavior)
       throws UaException {
 
-    ConditionTypeNode node = builder.buildNode(typeDefinitionId);
+    try {
+      ConditionTypeNode node = builder.buildNode(typeDefinitionId);
+
+      return initializeBehavior(node, behavior);
+    } catch (Exception e) {
+      try {
+        builder.deleteCreatedInstance();
+      } catch (RuntimeException rollbackFailure) {
+        e.addSuppressed(rollbackFailure);
+      }
+      throw e;
+    }
+  }
+
+  private static <N extends ConditionTypeNode, T extends Condition> T initializeBehavior(
+      N node, Function<? super N, ? extends T> behavior) throws UaException {
     MethodSurface methodSurface = ConditionNodeTraversal.discoverMethodSurface(node);
     ConditionNodeTraversal.validateMethodSurface(node, methodSurface);
 
-    T condition = behavior.apply(node);
+    T condition = applyBehaviorFactory(node, behavior);
     condition.rehydrateCurrentBranch();
     condition.installMethodHandlers(methodSurface);
 
@@ -224,26 +385,41 @@ public class Condition {
    * <p>Discovery is completed before constructors populate missing runtime defaults, so malformed
    * method surfaces fail before attachment mutates the instance.
    */
-  static <T extends Condition> T attach(
-      ConditionTypeNode node,
-      Consumer<AttachOptions> configure,
-      Function<ConditionTypeNode, T> behavior) {
+  static <N extends ConditionTypeNode, T extends Condition> T attach(
+      N node, Consumer<AttachOptions> configure, Function<? super N, ? extends T> behavior) {
 
     AttachOptions options = new AttachOptions();
     configure.accept(options);
 
-    MethodSurface methodSurface;
+    T condition;
     try {
-      methodSurface = ConditionNodeTraversal.discoverMethodSurface(node);
-      ConditionNodeTraversal.validateMethodSurface(node, methodSurface);
+      condition = initializeBehavior(node, behavior);
     } catch (UaException e) {
       throw new UaRuntimeException(e.getStatusCode().getValue(), e);
     }
 
-    T condition = behavior.apply(node);
-    condition.rehydrateCurrentBranch();
-    condition.installMethodHandlers(methodSurface);
     ConditionWiring.wire(node, options.conditionSource());
+
+    return condition;
+  }
+
+  private static <N extends ConditionTypeNode, T extends Condition> T applyBehaviorFactory(
+      N node, Function<? super N, ? extends @Nullable T> behaviorFactory) throws UaException {
+
+    // The factory is application code that may not be nullness-checked, so its result is the
+    // boundary where a null can actually arrive.
+    T condition = behaviorFactory.apply(node);
+
+    if (condition == null) {
+      throw new UaException(StatusCodes.Bad_InternalError, "behaviorFactory returned null");
+    }
+
+    // Compare the constructor-captured node, not getNode(): subclasses may override getNode(), and
+    // an override must not be able to defeat (or accidentally fail) the wrap-contract check.
+    if (((Condition) condition).node != node) {
+      throw new UaException(
+          StatusCodes.Bad_InternalError, "behaviorFactory must wrap the supplied Condition node");
+    }
 
     return condition;
   }
@@ -613,6 +789,7 @@ public class Condition {
         branch.isConfirmed(),
         captureActive(),
         captureActiveLimits(),
+        captureEffectiveLimitState(),
         branch.isRetained(),
         branch.getLastEventId(),
         branch.getLastEventTime(),
@@ -632,6 +809,11 @@ public class Condition {
   /** Capture the violated limits for a branch snapshot; non-limit Conditions have none. */
   Set<ExclusiveLimitState> captureActiveLimits() {
     return Set.of();
+  }
+
+  /** Capture the selected effective limit for a branch snapshot; non-limit Conditions have none. */
+  @Nullable ExclusiveLimitState captureEffectiveLimitState() {
+    return null;
   }
 
   /**
@@ -990,7 +1172,7 @@ public class Condition {
     if (variable != null && variable.getSourceTimestamp() == null) {
       DataValue current = variable.getValue();
       DateTime now = DateTime.now();
-      if (current == null || current.getValue() == null || current.getValue().getValue() == null) {
+      if (current == null || current.getValue().isNull()) {
         setConditionVariable(variable, initialValue, now);
       } else {
         variable.setSourceTimestamp(now);

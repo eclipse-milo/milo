@@ -30,15 +30,19 @@ import org.jspecify.annotations.Nullable;
  * ActiveState, so multiple limits can be violated simultaneously (a value above HighHigh violates
  * High too).
  *
- * <p>{@link #evaluate} applies each limit's threshold and deadband hysteresis independently;
- * ActiveState is the disjunction of the limit states. Each evaluation that changes any state
- * generates one event carrying the per-limit severity of the most severe violated limit, and is a
- * new state needing acknowledgement.
+ * <p>{@link #evaluate} applies each limit's threshold and deadband hysteresis independently and
+ * uses Milo's scalar precedence to select the effective state. Applications that compute a compound
+ * result themselves use {@link #setLimitStates} to replace the complete active set and select its
+ * effective state without imposing scalar ordering. Each reduced-state change is applied
+ * atomically; activation and changes while the alarm remains active start a new acknowledgement
+ * cycle.
  */
 public class NonExclusiveLimitAlarm extends LimitAlarm {
 
   private final Map<ExclusiveLimitState, TwoStateVariableTypeNode> limitStates =
       new EnumMap<>(ExclusiveLimitState.class);
+
+  private volatile @Nullable ExclusiveLimitState effectiveLimitState;
 
   /**
    * Create NonExclusiveLimitAlarm behavior wrapping {@code node}.
@@ -52,6 +56,8 @@ public class NonExclusiveLimitAlarm extends LimitAlarm {
     putLimitState(ExclusiveLimitState.HIGH, node.getHighStateNode());
     putLimitState(ExclusiveLimitState.LOW, node.getLowStateNode());
     putLimitState(ExclusiveLimitState.LOW_LOW, node.getLowLowStateNode());
+
+    effectiveLimitState = mostSevereViolated(currentActiveLimitStates());
   }
 
   private void putLimitState(ExclusiveLimitState limit, @Nullable TwoStateVariableTypeNode state) {
@@ -147,6 +153,59 @@ public class NonExclusiveLimitAlarm extends LimitAlarm {
     return booleanId(limitStates.get(limit), false);
   }
 
+  /**
+   * Atomically replace the complete set of active limit states with an application-computed result.
+   * An empty set requires a null effective state; a non-empty set requires an effective state that
+   * belongs to it. The effective state controls Message, ActiveState's EffectiveDisplayName, and
+   * Severity without restricting which configured states may coexist.
+   *
+   * <pre>{@code
+   * alarm.setLimitStates(
+   *     Set.of(ExclusiveLimitState.HIGH, ExclusiveLimitState.LOW),
+   *     ExclusiveLimitState.LOW);
+   * }</pre>
+   *
+   * <p>The input set is copied before the Condition is touched. Activation and changing either
+   * membership or the effective state while the alarm remains active start a new acknowledgement
+   * cycle. Reapplying an identical tuple is a no-op after any due lazy shelving expiry when
+   * ActiveState is coherent and the effective Severity is unchanged; an incoherent loaded
+   * ActiveState is repaired, and a Severity correction is applied as a configuration event without
+   * starting a new acknowledgement cycle.
+   *
+   * <p>All modeled state writes in one call share one transition time. Changed per-limit states
+   * receive that time, ActiveState.TransitionTime changes only when Active changes, and membership
+   * changes advance ActiveState.EffectiveTransitionTime. Changing only {@code effectiveState}
+   * renews acknowledgement and updates presentation without changing any of those modeled-state
+   * transition times.
+   *
+   * @param activeStates the complete set of limit states that should be active.
+   * @param effectiveState the active state selected for Message, EffectiveDisplayName, and
+   *     Severity, or {@code null} when {@code activeStates} is empty.
+   * @throws IllegalArgumentException if the set and effective state do not form a valid tuple, or
+   *     if a requested state lacks either its modeled state variable or configured limit Property.
+   */
+  public void setLimitStates(
+      Set<ExclusiveLimitState> activeStates, @Nullable ExclusiveLimitState effectiveState) {
+
+    Set<ExclusiveLimitState> normalizedStates = Set.copyOf(activeStates);
+    validateLimitStates(normalizedStates, effectiveState);
+
+    runLocked(
+        () -> {
+          applyShelvingExpiryIfDue();
+          applyLimitStates(normalizedStates, effectiveState);
+        });
+  }
+
+  /**
+   * Get the active limit state currently selected for Message, EffectiveDisplayName, and Severity.
+   *
+   * @return the selected effective state, or {@code null} while no limit state is active.
+   */
+  public @Nullable ExclusiveLimitState getEffectiveLimitState() {
+    return effectiveLimitState;
+  }
+
   @Override
   public void evaluate(double value) {
     runLocked(
@@ -159,23 +218,18 @@ public class NonExclusiveLimitAlarm extends LimitAlarm {
             return;
           }
 
-          var targets = new EnumMap<ExclusiveLimitState, Boolean>(ExclusiveLimitState.class);
-          var changed = new EnumMap<ExclusiveLimitState, Boolean>(ExclusiveLimitState.class);
+          EnumSet<ExclusiveLimitState> targets = EnumSet.noneOf(ExclusiveLimitState.class);
 
           for (ExclusiveLimitState limit : limitStates.keySet()) {
             boolean wasViolated = isLimitActive(limit);
             boolean violated = limitViolated(limit, wasViolated, value);
 
-            targets.put(limit, violated);
-            if (violated != wasViolated) {
-              changed.put(limit, violated);
+            if (violated) {
+              targets.add(limit);
             }
           }
 
-          ExclusiveLimitState mostSevere = mostSevereViolated(targets);
-          if (!changed.isEmpty() || effectiveSeverityChanged(mostSevere)) {
-            applyLimitStates(targets, changed);
-          }
+          applyLimitStates(targets, mostSevereViolated(targets));
         });
   }
 
@@ -184,8 +238,9 @@ public class NonExclusiveLimitAlarm extends LimitAlarm {
    *
    * <p>A non-exclusive limit alarm activates into one or more independent limit states, so it
    * cannot be activated without naming them: {@link #setActive(boolean) setActive(true)} throws,
-   * and applications drive activation through {@link #evaluate}. {@code setActive(false)} clears
-   * every violated limit state and deactivates the alarm as one transition.
+   * and applications drive activation through {@link #setLimitStates} or {@link #evaluate}. {@code
+   * setActive(false)} clears every violated limit state and deactivates the alarm as one
+   * transition.
    *
    * @throws IllegalArgumentException if {@code active} is {@code true}.
    */
@@ -194,39 +249,24 @@ public class NonExclusiveLimitAlarm extends LimitAlarm {
     if (active) {
       throw new IllegalArgumentException(
           "a non-exclusive limit alarm activates into one or more limit states;"
-              + " use evaluate(value)");
+              + " use setLimitStates(activeStates, effectiveState) or evaluate(value)");
     }
 
     runLocked(
         () -> {
           applyShelvingExpiryIfDue();
-
-          var targets = new EnumMap<ExclusiveLimitState, Boolean>(ExclusiveLimitState.class);
-          var changed = new EnumMap<ExclusiveLimitState, Boolean>(ExclusiveLimitState.class);
-
-          for (ExclusiveLimitState limit : limitStates.keySet()) {
-            targets.put(limit, false);
-            if (isLimitActive(limit)) {
-              changed.put(limit, false);
-            }
-          }
-
-          if (!changed.isEmpty()) {
-            applyLimitStates(targets, changed);
-          }
+          applyLimitStates(Set.of(), null);
         });
   }
 
   @Override
   Set<ExclusiveLimitState> captureActiveLimits() {
-    var activeLimits = EnumSet.noneOf(ExclusiveLimitState.class);
-    for (ExclusiveLimitState limit : limitStates.keySet()) {
-      if (isLimitActive(limit)) {
-        activeLimits.add(limit);
-      }
-    }
+    return currentActiveLimitStates();
+  }
 
-    return activeLimits;
+  @Override
+  @Nullable ExclusiveLimitState captureEffectiveLimitState() {
+    return effectiveLimitState;
   }
 
   @Override
@@ -235,13 +275,16 @@ public class NonExclusiveLimitAlarm extends LimitAlarm {
       ConditionSnapshot.@Nullable BranchSnapshot trunkSnapshot,
       DateTime time) {
 
-    super.applySnapshot(snapshot, trunkSnapshot, time);
+    boolean wasActive = isActive();
+    Set<ExclusiveLimitState> previousStates = currentActiveLimitStates();
+    Set<ExclusiveLimitState> activeLimits = restoredActiveLimits(trunkSnapshot);
+    ExclusiveLimitState restoredEffectiveState =
+        restoredEffectiveLimitState(trunkSnapshot, activeLimits);
+
+    super.applySnapshot(snapshot, trunkSnapshot, !activeLimits.isEmpty(), time);
 
     // Restore replaces every configured limit state: limits the snapshot omits go inactive, so an
     // earlier restore's violations cannot linger.
-    Set<ExclusiveLimitState> activeLimits =
-        isActive() && trunkSnapshot != null ? trunkSnapshot.activeLimits() : Set.of();
-
     for (Map.Entry<ExclusiveLimitState, TwoStateVariableTypeNode> entry : limitStates.entrySet()) {
       ExclusiveLimitState limit = entry.getKey();
       boolean violated = activeLimits.contains(limit);
@@ -250,39 +293,129 @@ public class NonExclusiveLimitAlarm extends LimitAlarm {
       }
     }
 
-    setActiveEffectiveDisplayName(ExclusiveLimitState.mostSevere(activeLimits));
+    effectiveLimitState = restoredEffectiveState;
+
+    applyRestoredPresentation(
+        restoredEffectiveState,
+        wasActive == activeLimits.isEmpty() || !previousStates.equals(activeLimits),
+        snapshot,
+        time);
   }
 
   /**
-   * Apply the per-limit target states as one state change: write the {@code changed} limit state
-   * variables, then the activation tail shared by all limit alarms (ActiveState with the
-   * acknowledgement-needed rule, EffectiveDisplayName, and the per-limit severity of the most
-   * severe violated limit) — one event per evaluation that changes anything.
+   * Apply a complete reduced state as one Condition mutation. The caller holds the Condition lock
+   * and has already applied any due shelving expiry.
    *
-   * @param targets every configured limit's target violation state, for the most-severe decision.
-   * @param changed only the limits whose state changed, to be written; empty for a
-   *     runtime-configuration-only Severity change.
+   * @param activeStates the complete target membership.
+   * @param selectedState the target effective state, or {@code null} for an empty membership.
    */
   private void applyLimitStates(
-      Map<ExclusiveLimitState, Boolean> targets, Map<ExclusiveLimitState, Boolean> changed) {
+      Set<ExclusiveLimitState> activeStates, @Nullable ExclusiveLimitState selectedState) {
 
-    ExclusiveLimitState mostSevere = mostSevereViolated(targets);
-    boolean limitStateChanged = !changed.isEmpty();
+    Set<ExclusiveLimitState> currentStates = currentActiveLimitStates();
+    boolean membershipChanged = !currentStates.equals(activeStates);
+    boolean selectionChanged = effectiveLimitState != selectedState;
+    boolean activeStateChanged = isActive() == activeStates.isEmpty();
+    boolean severityChanged = effectiveSeverityChanged(selectedState);
+
+    if (!membershipChanged && !selectionChanged && !activeStateChanged && !severityChanged) {
+      return;
+    }
+
+    boolean reducedStateChanged = membershipChanged || selectionChanged;
 
     withStateChange(
-        transitionMessage(mostSevere),
+        transitionMessage(selectedState),
         now -> {
-          for (Map.Entry<ExclusiveLimitState, Boolean> entry : changed.entrySet()) {
+          for (Map.Entry<ExclusiveLimitState, TwoStateVariableTypeNode> entry :
+              limitStates.entrySet()) {
             ExclusiveLimitState limit = entry.getKey();
-            setTwoState(limitStates.get(limit), entry.getValue(), stateTexts(limit), now);
+            boolean targetActive = activeStates.contains(limit);
+            if (isLimitActive(limit) != targetActive) {
+              setTwoState(entry.getValue(), targetActive, stateTexts(limit), now);
+            }
           }
 
-          if (limitStateChanged) {
-            applyActiveTransition(mostSevere, true, now);
+          effectiveLimitState = selectedState;
+
+          if (reducedStateChanged || activeStateChanged) {
+            applyActiveTransition(selectedState, reducedStateChanged, membershipChanged, now);
           } else {
-            applyEffectiveSeverity(mostSevere, now);
+            applyEffectiveSeverity(selectedState, now);
           }
         });
+  }
+
+  /** Validate an application-computed tuple before shelving or Condition state is touched. */
+  private void validateLimitStates(
+      Set<ExclusiveLimitState> activeStates, @Nullable ExclusiveLimitState selectedState) {
+
+    if (activeStates.isEmpty() && selectedState != null) {
+      throw new IllegalArgumentException(
+          "an inactive non-exclusive limit alarm cannot have an effective limit state");
+    }
+    if (!activeStates.isEmpty() && selectedState == null) {
+      throw new IllegalArgumentException(
+          "an active non-exclusive limit alarm requires an effective limit state");
+    }
+    if (selectedState != null && !activeStates.contains(selectedState)) {
+      throw new IllegalArgumentException("the effective limit state must belong to active states");
+    }
+
+    for (ExclusiveLimitState state : activeStates) {
+      if (!limitStates.containsKey(state) || !hasConfiguredLimit(state)) {
+        throw new IllegalArgumentException(
+            "cannot activate an unsupported " + state.stateName() + " limit state");
+      }
+    }
+  }
+
+  /** Read the currently active modeled limit states into an unshared set. */
+  private Set<ExclusiveLimitState> currentActiveLimitStates() {
+    EnumSet<ExclusiveLimitState> activeStates = EnumSet.noneOf(ExclusiveLimitState.class);
+
+    for (ExclusiveLimitState limit : limitStates.keySet()) {
+      if (isLimitActive(limit)) {
+        activeStates.add(limit);
+      }
+    }
+
+    return activeStates;
+  }
+
+  /** Select the captured active states representable by this destination instance. */
+  private Set<ExclusiveLimitState> restoredActiveLimits(
+      ConditionSnapshot.@Nullable BranchSnapshot trunkSnapshot) {
+
+    EnumSet<ExclusiveLimitState> activeStates = EnumSet.noneOf(ExclusiveLimitState.class);
+
+    if (trunkSnapshot == null || !Boolean.TRUE.equals(trunkSnapshot.active())) {
+      return activeStates;
+    }
+
+    for (ExclusiveLimitState state : trunkSnapshot.activeLimits()) {
+      if (limitStates.containsKey(state) && hasConfiguredLimit(state)) {
+        activeStates.add(state);
+      }
+    }
+
+    return activeStates;
+  }
+
+  /** Use a valid persisted selection, or the scalar selector for a legacy or partial snapshot. */
+  private static @Nullable ExclusiveLimitState restoredEffectiveLimitState(
+      ConditionSnapshot.@Nullable BranchSnapshot trunkSnapshot,
+      Set<ExclusiveLimitState> activeStates) {
+
+    if (activeStates.isEmpty()) {
+      return null;
+    }
+
+    ExclusiveLimitState persistedState =
+        trunkSnapshot != null ? trunkSnapshot.effectiveLimitState() : null;
+    return persistedState != null && activeStates.contains(persistedState)
+        ? persistedState
+        : mostSevereViolated(activeStates);
   }
 
   /**
@@ -291,10 +424,10 @@ public class NonExclusiveLimitAlarm extends LimitAlarm {
    * HighHigh (which also violates High) reports HighHigh and below LowLow reports LowLow.
    */
   private static @Nullable ExclusiveLimitState mostSevereViolated(
-      Map<ExclusiveLimitState, Boolean> targets) {
+      Set<ExclusiveLimitState> targets) {
 
     for (ExclusiveLimitState limit : ExclusiveLimitState.BY_EXCURSION) {
-      if (Boolean.TRUE.equals(targets.get(limit))) {
+      if (targets.contains(limit)) {
         return limit;
       }
     }

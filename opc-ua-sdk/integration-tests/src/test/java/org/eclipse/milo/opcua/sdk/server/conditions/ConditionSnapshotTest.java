@@ -16,6 +16,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -30,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaSubscription;
 import org.eclipse.milo.opcua.sdk.core.Reference;
+import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectNode;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
@@ -39,38 +41,34 @@ import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
-import org.eclipse.milo.opcua.stack.core.types.enumerated.FilterOperator;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallResponse;
-import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilter;
-import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilterElement;
 import org.eclipse.milo.opcua.stack.core.types.structured.EventFilter;
-import org.eclipse.milo.opcua.stack.core.types.structured.LiteralOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 /**
- * Client-visible tests for the WP7 snapshot/restore contract (Part 9 §4.12): a captured
- * active/shelved limit alarm round-trips onto a fresh instance whose restored branch replays via
- * ConditionRefresh with the original EventId/Time and accepts that EventId for Acknowledge; restore
- * is silent and rejected once the Condition is live; absent snapshot fields take the §4.12 recovery
- * defaults; and a shelve deadline that passed during downtime unshelves on first touch.
+ * Client-visible tests for the snapshot/restore contract (Part 9 §4.12): a captured active/shelved
+ * limit alarm round-trips onto a fresh instance whose restored branch replays via ConditionRefresh
+ * with the original EventId/Time and accepts that EventId for Acknowledge; restore is silent and
+ * rejected once the Condition is live; absent snapshot fields take the §4.12 recovery defaults; and
+ * a shelve deadline that passed during downtime unshelves on first touch.
  *
  * <p>Also covered: a Retained recovery branch with no captured event identity mints an
  * acknowledgeable EventId at first refresh replay (which seals the pre-live restore window),
- * repeated restore replaces rather than accumulates subtype state, and capture under concurrent
- * load always observes one lock-consistent whole-state combination.
+ * repeated restore replaces rather than accumulates subtype state, caller-selected non-exclusive
+ * effective states survive restart without changing acknowledgement or timing metadata, and capture
+ * under concurrent load always observes one lock-consistent whole-state combination.
  */
 public class ConditionSnapshotTest extends AbstractClientServerTest {
 
@@ -175,6 +173,7 @@ public class ConditionSnapshotTest extends AbstractClientServerTest {
       assertEquals(Boolean.FALSE, trunk.acked());
       assertEquals(Boolean.TRUE, trunk.active());
       assertEquals(Set.of(ExclusiveLimitState.HIGH), trunk.activeLimits());
+      assertEquals(ExclusiveLimitState.HIGH, trunk.effectiveLimitState());
       assertTrue(trunk.retained());
       assertEquals(originalEventId, trunk.lastEventId());
       assertEquals(originalEventTime, trunk.lastEventTime());
@@ -238,6 +237,373 @@ public class ConditionSnapshotTest extends AbstractClientServerTest {
     }
   }
 
+  // A caller-selected effective state is part of the reduced alarm state; losing it on restart
+  // would silently change the alarm's classification, severity, and operator-facing text.
+  @Test
+  void callerSelectedNonExclusiveEffectiveStateRoundTripsWithoutChangingBranchIdentity()
+      throws Exception {
+
+    NonExclusiveLimitAlarm original = createCrossSideAlarm("EffectiveOriginal");
+    original.setLimitStates(
+        Set.of(ExclusiveLimitState.HIGH, ExclusiveLimitState.LOW), ExclusiveLimitState.LOW);
+
+    ConditionSnapshot snapshot = original.captureSnapshot();
+    ConditionSnapshot.BranchSnapshot captured = snapshot.trunk().orElseThrow();
+    ByteString capturedEventId = requireNonNull(captured.lastEventId());
+    DateTime capturedEventTime = requireNonNull(captured.lastEventTime());
+
+    assertEquals(
+        Set.of(ExclusiveLimitState.HIGH, ExclusiveLimitState.LOW), captured.activeLimits());
+    assertEquals(ExclusiveLimitState.LOW, captured.effectiveLimitState());
+    assertTrue(capturedEventId.isNotNull());
+
+    NonExclusiveLimitAlarm restored = createCrossSideAlarm("EffectiveRestored");
+    var subscription = new OpcUaSubscription(client);
+    subscription.create();
+    try {
+      List<Variant[]> events =
+          EventTestSupport.monitorEvents(
+              subscription, NodeIds.Server, conditionNameFilter("EffectiveRestored"));
+
+      restored.restoreSnapshot(snapshot);
+
+      EventTestSupport.assertNoEvent(events, "event generated by non-exclusive restore", e -> true);
+    } finally {
+      subscription.delete();
+    }
+
+    assertTrue(restored.isActive());
+    assertTrue(restored.isLimitActive(ExclusiveLimitState.HIGH));
+    assertTrue(restored.isLimitActive(ExclusiveLimitState.LOW));
+    assertEquals(ExclusiveLimitState.LOW, restored.getEffectiveLimitState());
+    assertEquals(LocalizedText.english("Active/Low"), restored.getNode().getMessage());
+    assertEquals(
+        LocalizedText.english("Active/Low"),
+        requireNonNull(restored.getNode().getActiveStateNode()).getEffectiveDisplayName());
+    assertEquals(ushort(300), restored.getNode().getSeverity());
+    assertEquals(ushort(100), restored.getNode().getLastSeverity());
+    assertTrue(restored.isRetained());
+    assertEquals(capturedEventId, restored.currentBranch().getLastEventId());
+    assertEquals(capturedEventTime, restored.currentBranch().getLastEventTime());
+    assertTrue(restored.currentBranch().isAcknowledgeable(capturedEventId));
+
+    ConditionSnapshot.BranchSnapshot recaptured = restored.captureSnapshot().trunk().orElseThrow();
+    assertEquals(captured.activeLimits(), recaptured.activeLimits());
+    assertEquals(captured.effectiveLimitState(), recaptured.effectiveLimitState());
+    assertEquals(captured.retained(), recaptured.retained());
+    assertEquals(captured.eventIdWindow(), recaptured.eventIdWindow());
+    assertEquals(capturedEventId, recaptured.lastEventId());
+    assertEquals(capturedEventTime, recaptured.lastEventTime());
+  }
+
+  // Snapshots persisted before selector metadata existed carry no effective state; scalar
+  // precedence is the compatibility rule that keeps their restored presentation deterministic.
+  @Test
+  void absentEffectiveStateRestoresThroughScalarFallback() throws Exception {
+    ConditionSnapshot.BranchSnapshot legacyBranch =
+        new ConditionSnapshot.BranchSnapshot(
+            null,
+            false,
+            true,
+            true,
+            Set.of(ExclusiveLimitState.HIGH, ExclusiveLimitState.LOW),
+            null,
+            true,
+            null,
+            null,
+            List.of());
+    assertNull(legacyBranch.effectiveLimitState());
+
+    ConditionSnapshot snapshot =
+        new ConditionSnapshot(true, null, null, null, null, null, null, List.of(legacyBranch));
+    NonExclusiveLimitAlarm restored = createCrossSideAlarm("LegacyEffectiveFallback");
+
+    restored.restoreSnapshot(snapshot);
+
+    assertTrue(restored.isActive());
+    assertTrue(restored.isLimitActive(ExclusiveLimitState.HIGH));
+    assertTrue(restored.isLimitActive(ExclusiveLimitState.LOW));
+    assertEquals(ExclusiveLimitState.HIGH, restored.getEffectiveLimitState());
+    assertEquals(LocalizedText.english("Active/High"), restored.getNode().getMessage());
+    assertEquals(
+        LocalizedText.english("Active/High"),
+        requireNonNull(restored.getNode().getActiveStateNode()).getEffectiveDisplayName());
+    assertEquals(ushort(700), restored.getNode().getSeverity());
+  }
+
+  // Construction must stay total: a selector that drifted outside the captured membership (e.g.
+  // limit-state nodes written directly while behavior state lagged) normalizes to absent so the
+  // snapshot restores through the scalar fallback instead of capture failing.
+  @Test
+  void branchSnapshotNormalizesEffectiveStateOutsideActiveLimits() {
+    ConditionSnapshot.BranchSnapshot branch =
+        new ConditionSnapshot.BranchSnapshot(
+            null,
+            false,
+            true,
+            true,
+            Set.of(ExclusiveLimitState.HIGH),
+            ExclusiveLimitState.LOW,
+            true,
+            null,
+            null,
+            List.of());
+
+    assertNull(branch.effectiveLimitState());
+  }
+
+  // A destination can legitimately implement fewer optional limit members than the source; it
+  // must restore the representable subset and choose an effective state from that subset.
+  @Test
+  void restoreDiscardsUnsupportedLimitsAndFallsBackWithinSupportedSet() throws Exception {
+    ConditionSnapshot snapshot =
+        activeLimitSnapshot(
+            Set.of(ExclusiveLimitState.HIGH, ExclusiveLimitState.LOW),
+            ExclusiveLimitState.LOW,
+            null,
+            null);
+    NonExclusiveLimitAlarm restored =
+        NonExclusiveLimitAlarm.create(
+            nodeContext,
+            b ->
+                b.nodeId(newNodeId("ConditionSnapshotTest/SupportedSubset"))
+                    .browseName(newQualifiedName("SupportedSubset"))
+                    .conditionSource(source)
+                    .severity(ushort(100))
+                    .highLimit(90.0, ushort(700)));
+
+    restored.restoreSnapshot(snapshot);
+
+    assertTrue(restored.isActive());
+    assertTrue(restored.isLimitActive(ExclusiveLimitState.HIGH));
+    assertFalse(restored.isLimitActive(ExclusiveLimitState.LOW));
+    assertEquals(ExclusiveLimitState.HIGH, restored.getEffectiveLimitState());
+    assertEquals(LocalizedText.english("Active/High"), restored.getNode().getMessage());
+    assertEquals(ushort(700), restored.getNode().getSeverity());
+  }
+
+  // The restored Active flag must describe a real modeled substate; an unsupported captured state
+  // cannot leave Active true with no representable limit state beneath it.
+  @Test
+  void restoreNormalizesActiveFalseWhenNoCapturedLimitIsRepresentable() throws Exception {
+    ConditionSnapshot snapshot =
+        activeLimitSnapshot(Set.of(ExclusiveLimitState.LOW), ExclusiveLimitState.LOW, null, null);
+    NonExclusiveLimitAlarm restored =
+        NonExclusiveLimitAlarm.create(
+            nodeContext,
+            b ->
+                b.nodeId(newNodeId("ConditionSnapshotTest/NoSupportedState"))
+                    .browseName(newQualifiedName("NoSupportedState"))
+                    .conditionSource(source)
+                    .severity(ushort(100))
+                    .highLimit(90.0, ushort(700)));
+    TwoStateVariableTypeNode activeState = requireNonNull(restored.getNode().getActiveStateNode());
+    assertNotNull(activeState.getEffectiveTransitionTimeNode());
+    activeState.setEffectiveTransitionTime(DateTime.MIN_VALUE);
+    assertEquals(DateTime.MIN_VALUE, activeState.getEffectiveTransitionTime());
+
+    restored.restoreSnapshot(snapshot);
+
+    assertFalse(restored.isActive());
+    assertFalse(restored.isLimitActive(ExclusiveLimitState.HIGH));
+    assertFalse(restored.isLimitActive(ExclusiveLimitState.LOW));
+    assertNull(restored.getEffectiveLimitState());
+    assertEquals(LocalizedText.english("Inactive"), restored.getNode().getMessage());
+    assertEquals(
+        LocalizedText.english("Inactive"),
+        requireNonNull(restored.getNode().getActiveStateNode()).getEffectiveDisplayName());
+    assertEquals(ushort(100), restored.getNode().getSeverity());
+    assertEquals(DateTime.MIN_VALUE, activeState.getEffectiveTransitionTime());
+  }
+
+  // Severity and LastSeverity describe captured event history, so destination limit configuration
+  // must not rewrite them while reconstructing the current reduced state.
+  @Test
+  void capturedSeverityAndLastSeverityTakePrecedenceDuringRestore() throws Exception {
+    ConditionSnapshot snapshot =
+        activeLimitSnapshot(
+            Set.of(ExclusiveLimitState.HIGH, ExclusiveLimitState.LOW),
+            ExclusiveLimitState.LOW,
+            ushort(777),
+            ushort(444));
+    NonExclusiveLimitAlarm restored = createCrossSideAlarm("CapturedSeverity");
+
+    restored.restoreSnapshot(snapshot);
+
+    assertEquals(ExclusiveLimitState.LOW, restored.getEffectiveLimitState());
+    assertEquals(ushort(777), restored.getNode().getSeverity());
+    assertEquals(ushort(444), restored.getNode().getLastSeverity());
+  }
+
+  // When old or partial snapshots omit Severity, restore must derive the current presentation
+  // without manufacturing a LastSeverity transition that never occurred.
+  @Test
+  void absentSeverityDerivesFromEffectiveStateWithoutInventingLastSeverity() throws Exception {
+    ConditionSnapshot snapshot =
+        activeLimitSnapshot(
+            Set.of(ExclusiveLimitState.HIGH, ExclusiveLimitState.LOW),
+            ExclusiveLimitState.LOW,
+            null,
+            null);
+    NonExclusiveLimitAlarm restored = createCrossSideAlarm("DerivedSeverity");
+    UShort initialLastSeverity = restored.getNode().getLastSeverity();
+
+    restored.restoreSnapshot(snapshot);
+
+    assertEquals(ushort(300), restored.getNode().getSeverity());
+    assertEquals(initialLastSeverity, restored.getNode().getLastSeverity());
+  }
+
+  // Silent restore may reconstruct modeled membership but must leave the captured operator
+  // obligation, accepted EventIds, and shelving state exactly as persisted.
+  @Test
+  void restoredMembershipAdvancesEffectiveTimeWithoutChangingRecoveryMetadata() throws Exception {
+    NonExclusiveLimitAlarm restored =
+        NonExclusiveLimitAlarm.create(
+            nodeContext,
+            b ->
+                b.nodeId(newNodeId("ConditionSnapshotTest/RestoreMetadata"))
+                    .browseName(newQualifiedName("RestoreMetadata"))
+                    .conditionSource(source)
+                    .severity(ushort(100))
+                    .withShelving()
+                    .highLimit(90.0, ushort(700))
+                    .lowLimit(10.0, ushort(300)));
+
+    TwoStateVariableTypeNode activeState = requireNonNull(restored.getNode().getActiveStateNode());
+    assertNotNull(activeState.getEffectiveTransitionTimeNode());
+    activeState.setEffectiveTransitionTime(DateTime.MIN_VALUE);
+    assertEquals(DateTime.MIN_VALUE, activeState.getEffectiveTransitionTime());
+
+    ByteString eventId =
+        ByteString.of(new byte[] {16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1});
+    DateTime eventTime = DateTime.now();
+    ConditionSnapshot.AcceptedEventId acceptedEventId =
+        new ConditionSnapshot.AcceptedEventId(eventId, false, true, true, true);
+    ConditionSnapshot snapshot =
+        new ConditionSnapshot(
+            true,
+            null,
+            null,
+            null,
+            null,
+            null,
+            new ConditionSnapshot.ShelvingSnapshot(ShelvedState.ONE_SHOT_SHELVED, null),
+            List.of(
+                new ConditionSnapshot.BranchSnapshot(
+                    null,
+                    false,
+                    true,
+                    true,
+                    Set.of(ExclusiveLimitState.HIGH, ExclusiveLimitState.LOW),
+                    ExclusiveLimitState.HIGH,
+                    true,
+                    eventId,
+                    eventTime,
+                    List.of(acceptedEventId))));
+
+    restored.restoreSnapshot(snapshot);
+
+    DateTime restoredEffectiveTime = requireNonNull(activeState.getEffectiveTransitionTime());
+    assertNotEquals(DateTime.MIN_VALUE, restoredEffectiveTime);
+    assertEquals(restoredEffectiveTime, activeState.getTransitionTime());
+    assertEquals(
+        restoredEffectiveTime,
+        requireNonNull(restored.getNode().getHighStateNode()).getTransitionTime());
+    assertEquals(
+        restoredEffectiveTime,
+        requireNonNull(restored.getNode().getLowStateNode()).getTransitionTime());
+    assertTrue(restored.isActive());
+    assertTrue(restored.isLimitActive(ExclusiveLimitState.HIGH));
+    assertTrue(restored.isLimitActive(ExclusiveLimitState.LOW));
+    assertEquals(ExclusiveLimitState.HIGH, restored.getEffectiveLimitState());
+    assertFalse(restored.isAcked());
+    assertTrue(restored.currentBranch().isAcknowledgeable(eventId));
+    assertEquals(eventId, restored.currentBranch().getLastEventId());
+    assertEquals(eventTime, restored.currentBranch().getLastEventTime());
+    assertEquals("OneShotShelved", currentStateText(restored));
+    assertEquals(Boolean.TRUE, restored.getNode().getSuppressedOrShelved());
+
+    ConditionSnapshot recaptured = restored.captureSnapshot();
+    assertEquals(snapshot.shelving(), recaptured.shelving());
+    assertEquals(List.of(acceptedEventId), recaptured.trunk().orElseThrow().eventIdWindow());
+  }
+
+  // ActiveState.TransitionTime tracks only the Active boolean, while its EffectiveTransitionTime
+  // must still reveal an active-to-active change in modeled limit membership.
+  @Test
+  void activeToActiveMembershipRestoreAdvancesOnlyEffectiveTransitionTime() throws Exception {
+    NonExclusiveLimitAlarm restored = createCrossSideAlarm("RepeatedMembership");
+    restored.restoreSnapshot(
+        activeLimitSnapshot(
+            Set.of(ExclusiveLimitState.HIGH, ExclusiveLimitState.LOW),
+            ExclusiveLimitState.HIGH,
+            null,
+            null));
+
+    TwoStateVariableTypeNode activeState = requireNonNull(restored.getNode().getActiveStateNode());
+    TwoStateVariableTypeNode highState = requireNonNull(restored.getNode().getHighStateNode());
+    TwoStateVariableTypeNode lowState = requireNonNull(restored.getNode().getLowStateNode());
+    DateTime activeTransitionTime = requireNonNull(activeState.getTransitionTime());
+    DateTime highTransitionTime = requireNonNull(highState.getTransitionTime());
+    activeState.setEffectiveTransitionTime(DateTime.MIN_VALUE);
+    assertEquals(DateTime.MIN_VALUE, activeState.getEffectiveTransitionTime());
+
+    restored.restoreSnapshot(
+        activeLimitSnapshot(
+            Set.of(ExclusiveLimitState.HIGH), ExclusiveLimitState.HIGH, null, null));
+
+    DateTime membershipTime = requireNonNull(activeState.getEffectiveTransitionTime());
+    assertNotEquals(DateTime.MIN_VALUE, membershipTime);
+    assertEquals(activeTransitionTime, activeState.getTransitionTime());
+    assertEquals(highTransitionTime, highState.getTransitionTime());
+    assertEquals(membershipTime, lowState.getTransitionTime());
+    assertTrue(restored.isActive());
+    assertTrue(restored.isLimitActive(ExclusiveLimitState.HIGH));
+    assertFalse(restored.isLimitActive(ExclusiveLimitState.LOW));
+  }
+
+  // Reselecting an effective state changes classification but enters no modeled substate, so a
+  // repeated pre-live restore must replace the selector without advancing EffectiveTransitionTime.
+  @Test
+  void repeatedSelectorRestoreReplacesSelectionWithoutAdvancingEffectiveTime() throws Exception {
+    NonExclusiveLimitAlarm restored = createCrossSideAlarm("RepeatedEffectiveSelection");
+    ConditionSnapshot highEffective =
+        activeLimitSnapshot(
+            Set.of(ExclusiveLimitState.HIGH, ExclusiveLimitState.LOW),
+            ExclusiveLimitState.HIGH,
+            null,
+            null);
+    ConditionSnapshot lowEffective =
+        activeLimitSnapshot(
+            Set.of(ExclusiveLimitState.HIGH, ExclusiveLimitState.LOW),
+            ExclusiveLimitState.LOW,
+            null,
+            null);
+
+    restored.restoreSnapshot(highEffective);
+    DateTime membershipTime =
+        requireNonNull(
+            requireNonNull(restored.getNode().getActiveStateNode()).getEffectiveTransitionTime());
+
+    restored.restoreSnapshot(lowEffective);
+
+    assertEquals(ExclusiveLimitState.LOW, restored.getEffectiveLimitState());
+    assertEquals(LocalizedText.english("Active/Low"), restored.getNode().getMessage());
+    assertEquals(
+        LocalizedText.english("Active/Low"),
+        requireNonNull(restored.getNode().getActiveStateNode()).getEffectiveDisplayName());
+    assertEquals(ushort(300), restored.getNode().getSeverity());
+    assertEquals(
+        membershipTime,
+        requireNonNull(restored.getNode().getActiveStateNode()).getEffectiveTransitionTime());
+
+    // Repeated restore remains a pre-live facility; using the public state API seals the window.
+    restored.setLimitStates(
+        Set.of(ExclusiveLimitState.HIGH, ExclusiveLimitState.LOW), ExclusiveLimitState.HIGH);
+    assertThrows(IllegalStateException.class, () -> restored.restoreSnapshot(lowEffective));
+  }
+
   @Test
   void restoreIsSilentAndRejectedOnceTheConditionIsLive() throws Exception {
     AlarmCondition alarm =
@@ -280,6 +646,7 @@ public class ConditionSnapshotTest extends AbstractClientServerTest {
                       false,
                       false,
                       Set.of(),
+                      null,
                       true,
                       preCaptureEventId,
                       preCaptureEventTime,
@@ -461,6 +828,7 @@ public class ConditionSnapshotTest extends AbstractClientServerTest {
                     .withShelving(Duration.ofMillis((long) MAX_TIME_SHELVED_MILLIS))
                     .highLimit(90.0)
                     .highHighLimit(95.0));
+    UShort configuredSeverity = alarm.getNode().getSeverity();
 
     ByteString eventId =
         ByteString.of(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
@@ -483,6 +851,7 @@ public class ConditionSnapshotTest extends AbstractClientServerTest {
                     false,
                     true,
                     Set.of(ExclusiveLimitState.HIGH),
+                    null,
                     true,
                     eventId,
                     DateTime.now(),
@@ -493,14 +862,19 @@ public class ConditionSnapshotTest extends AbstractClientServerTest {
     alarm.restoreSnapshot(rich);
     assertTrue(alarm.isActive());
     assertEquals(ExclusiveLimitState.HIGH, alarm.getLimitState());
+    assertEquals(LocalizedText.english("Active/High"), alarm.getNode().getMessage());
+    assertEquals(ushort(500), alarm.getNode().getSeverity());
     assertEquals("TimedShelved", currentStateText(alarm));
     assertTrue(requireNonNull(alarm.getShelvingRuntime()).hasExpiryTimerForTesting());
 
     // A later restore replaces every level of state: the empty snapshot's recovery defaults win
-    // over the previous restore's shelving, limit machine, active state, and event identity.
+    // over the previous restore's presentation, shelving, limit machine, active state, and event
+    // identity.
     alarm.restoreSnapshot(ConditionSnapshot.empty());
     assertFalse(alarm.isActive());
     assertNull(alarm.getLimitState());
+    assertEquals(LocalizedText.english("Inactive"), alarm.getNode().getMessage());
+    assertEquals(configuredSeverity, alarm.getNode().getSeverity());
     assertEquals("Unshelved", currentStateText(alarm));
     assertEquals(Boolean.FALSE, alarm.getNode().getSuppressedOrShelved());
     assertFalse(requireNonNull(alarm.getShelvingRuntime()).hasExpiryTimerForTesting());
@@ -533,6 +907,7 @@ public class ConditionSnapshotTest extends AbstractClientServerTest {
                     false,
                     true,
                     Set.of(ExclusiveLimitState.HIGH, ExclusiveLimitState.HIGH_HIGH),
+                    null,
                     true,
                     null,
                     null,
@@ -542,12 +917,16 @@ public class ConditionSnapshotTest extends AbstractClientServerTest {
     assertTrue(nonExclusive.isActive());
     assertTrue(nonExclusive.isLimitActive(ExclusiveLimitState.HIGH));
     assertTrue(nonExclusive.isLimitActive(ExclusiveLimitState.HIGH_HIGH));
+    assertEquals(ExclusiveLimitState.HIGH_HIGH, nonExclusive.getEffectiveLimitState());
+    assertEquals(LocalizedText.english("Active/HighHigh"), nonExclusive.getNode().getMessage());
 
     // Limits the next snapshot omits go inactive rather than lingering violated.
     nonExclusive.restoreSnapshot(ConditionSnapshot.empty());
     assertFalse(nonExclusive.isActive());
     assertFalse(nonExclusive.isLimitActive(ExclusiveLimitState.HIGH));
     assertFalse(nonExclusive.isLimitActive(ExclusiveLimitState.HIGH_HIGH));
+    assertNull(nonExclusive.getEffectiveLimitState());
+    assertEquals(LocalizedText.english("Inactive"), nonExclusive.getNode().getMessage());
   }
 
   @Test
@@ -691,10 +1070,52 @@ public class ConditionSnapshotTest extends AbstractClientServerTest {
         restored.currentBranch().getLastEventId());
   }
 
+  private NonExclusiveLimitAlarm createCrossSideAlarm(String name) throws UaException {
+    return NonExclusiveLimitAlarm.create(
+        nodeContext,
+        b ->
+            b.nodeId(newNodeId("ConditionSnapshotTest/" + name))
+                .browseName(newQualifiedName(name))
+                .conditionName(name)
+                .conditionSource(source)
+                .severity(ushort(100))
+                .highLimit(90.0, ushort(700))
+                .lowLimit(10.0, ushort(300)));
+  }
+
+  private static ConditionSnapshot activeLimitSnapshot(
+      Set<ExclusiveLimitState> activeLimits,
+      ExclusiveLimitState effectiveLimitState,
+      @Nullable UShort severity,
+      @Nullable UShort lastSeverity) {
+
+    return new ConditionSnapshot(
+        true,
+        severity,
+        lastSeverity,
+        null,
+        null,
+        null,
+        null,
+        List.of(
+            new ConditionSnapshot.BranchSnapshot(
+                null,
+                false,
+                true,
+                true,
+                activeLimits,
+                effectiveLimitState,
+                true,
+                null,
+                null,
+                List.of())));
+  }
+
   /**
    * Assert {@code snapshot} is one legal whole-state combination of an enabled exclusive limit
-   * alarm without ConfirmedState: active iff exactly one violated limit, Retain follows the {@code
-   * ¬acked ∨ active} formula, and an issued last EventId is within the accepted window.
+   * alarm without ConfirmedState: active iff exactly one violated limit and that limit is
+   * effective, Retain follows the {@code ¬acked ∨ active} formula, and an issued last EventId is
+   * within the accepted window.
    */
   private static void assertSnapshotCoherent(ConditionSnapshot snapshot) {
     ConditionSnapshot.BranchSnapshot trunk = snapshot.trunk().orElseThrow();
@@ -704,6 +1125,14 @@ public class ConditionSnapshotTest extends AbstractClientServerTest {
         active,
         trunk.activeLimits().size() == 1,
         () -> "active=" + active + " but activeLimits=" + trunk.activeLimits());
+    assertEquals(
+        active ? trunk.activeLimits().iterator().next() : null,
+        trunk.effectiveLimitState(),
+        () ->
+            "effectiveLimitState="
+                + trunk.effectiveLimitState()
+                + " but activeLimits="
+                + trunk.activeLimits());
 
     boolean acked = Boolean.TRUE.equals(trunk.acked());
     assertEquals(
@@ -755,22 +1184,7 @@ public class ConditionSnapshotTest extends AbstractClientServerTest {
 
   /** Like {@link #severityFilter()}, but matching on ConditionName equality instead. */
   private static EventFilter conditionNameFilter(String conditionName) {
-    var whereClause =
-        new ContentFilter(
-            new ContentFilterElement[] {
-              new ContentFilterElement(
-                  FilterOperator.Equals,
-                  new ExtensionObject[] {
-                    ExtensionObject.encode(
-                        DefaultEncodingContext.INSTANCE,
-                        EventTestSupport.eventField(NodeIds.ConditionType, "ConditionName")),
-                    ExtensionObject.encode(
-                        DefaultEncodingContext.INSTANCE,
-                        new LiteralOperand(new Variant(conditionName)))
-                  })
-            });
-
-    return new EventFilter(selectClauses(), whereClause);
+    return EventTestSupport.conditionNameFilter(conditionName, selectClauses());
   }
 
   private static SimpleAttributeOperand[] selectClauses() {

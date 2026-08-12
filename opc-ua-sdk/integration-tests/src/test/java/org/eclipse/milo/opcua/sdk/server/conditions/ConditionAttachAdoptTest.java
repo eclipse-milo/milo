@@ -16,6 +16,8 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -36,13 +38,17 @@ import org.eclipse.milo.opcua.sdk.server.methods.MethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AcknowledgeableConditionTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AlarmConditionTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ExclusiveLimitAlarmTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.NonExclusiveLimitAlarmTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.FiniteStateVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.FiniteTransitionVariableTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectNode;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.BrowsePath;
 import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationRequest;
 import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.MethodInstantiation;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
@@ -407,6 +413,131 @@ public class ConditionAttachAdoptTest extends AbstractClientServerTest {
     assertNull(((ExclusiveLimitAlarmTypeNode) genericBehavior.getNode()).getHighLimit());
   }
 
+  // Part 9 leaves compound-input reduction to the application. Attaching stock behavior to a
+  // vendor subtype must keep that subtype's model intact while applying the standard alarm state.
+  @Test
+  void attachedVendorSubtypePreservesIdentityAndCustomMembersDuringAppDrivenTransition()
+      throws Exception {
+    VendorLimitFixture fixture = vendorLimitFixture("VendorArrayLimitAlarm");
+    NonExclusiveLimitAlarmTypeNode loadedNode = fixture.node();
+    assertEquals(NonExclusiveLimitAlarmTypeNode.class, loadedNode.getClass());
+    TwoStateVariableTypeNode highState = requireNonNull(loadedNode.getHighStateNode());
+    TwoStateVariableTypeNode lowState = requireNonNull(loadedNode.getLowStateNode());
+    TwoStateVariableTypeNode activeState = requireNonNull(loadedNode.getActiveStateNode());
+    PropertyTypeNode effectiveDisplayName =
+        requireNonNull(activeState.getEffectiveDisplayNameNode());
+    PropertyTypeNode effectiveTransitionTime =
+        requireNonNull(activeState.getEffectiveTransitionTimeNode());
+
+    NonExclusiveLimitAlarm attached = NonExclusiveLimitAlarm.attach(loadedNode);
+    attached.setLimitStates(
+        Set.of(ExclusiveLimitState.HIGH, ExclusiveLimitState.LOW), ExclusiveLimitState.LOW);
+
+    assertSame(loadedNode, attached.getNode());
+    assertEquals(loadedNode.getNodeId(), attached.getConditionId());
+    assertTrue(
+        loadedNode.getReferences().stream()
+            .anyMatch(
+                reference ->
+                    reference.isForward()
+                        && NodeIds.HasTypeDefinition.equals(reference.getReferenceTypeId())
+                        && fixture.typeId().expanded().equals(reference.getTargetNodeId())));
+    assertEquals(fixture.typeId(), loadedNode.getEventType());
+    assertSame(
+        fixture.vendorMember(),
+        testNamespace.getNodeManager().getNode(fixture.vendorMember().getNodeId()).orElseThrow());
+    assertTrue(
+        loadedNode.getReferences().stream()
+            .anyMatch(
+                reference ->
+                    reference.isForward()
+                        && NodeIds.HasComponent.equals(reference.getReferenceTypeId())
+                        && fixture
+                            .vendorMember()
+                            .getNodeId()
+                            .expanded()
+                            .equals(reference.getTargetNodeId())));
+    assertEquals(uint(0x5A), requireNonNull(fixture.vendorMember().getValue().value().value()));
+
+    assertSame(highState, loadedNode.getHighStateNode());
+    assertSame(lowState, loadedNode.getLowStateNode());
+    assertSame(effectiveDisplayName, activeState.getEffectiveDisplayNameNode());
+    assertSame(effectiveTransitionTime, activeState.getEffectiveTransitionTimeNode());
+    assertTrue(attached.isLimitActive(ExclusiveLimitState.HIGH));
+    assertTrue(attached.isLimitActive(ExclusiveLimitState.LOW));
+    assertTrue(attached.isActive());
+    assertEquals(ExclusiveLimitState.LOW, attached.getEffectiveLimitState());
+    assertEquals(LocalizedText.english("Active/Low"), activeState.getEffectiveDisplayName());
+    assertNotNull(activeState.getEffectiveTransitionTime());
+  }
+
+  // EffectiveTransitionTime is Optional in the information model. Attach is observational and
+  // must not turn a complete loaded instance into a different address-space shape.
+  @Test
+  void attachLeavesMissingEffectiveTransitionTimeAbsentDuringTransition() throws Exception {
+    NonExclusiveLimitAlarm loaded = createNonExclusiveAlarm("AttachWithoutEffectiveTime");
+    TwoStateVariableTypeNode activeState = requireNonNull(loaded.getNode().getActiveStateNode());
+    requireNonNull(activeState.getEffectiveTransitionTimeNode()).delete();
+
+    NonExclusiveLimitAlarm attached = NonExclusiveLimitAlarm.attach(loaded.getNode());
+    assertNull(activeState.getEffectiveTransitionTimeNode());
+
+    attached.setLimitStates(Set.of(ExclusiveLimitState.HIGH), ExclusiveLimitState.HIGH);
+
+    assertTrue(attached.isActive());
+    assertTrue(attached.isLimitActive(ExclusiveLimitState.HIGH));
+    assertNull(activeState.getEffectiveTransitionTimeNode());
+  }
+
+  // Adoption completes the standard limit-alarm shape so later substate changes expose the
+  // effective timestamp for the most recent modeled-state transition.
+  @Test
+  void adoptionAddsAndInitializesMissingEffectiveTransitionTime() throws Exception {
+    NonExclusiveLimitAlarm loaded = createNonExclusiveAlarm("AdoptWithoutEffectiveTime");
+    TwoStateVariableTypeNode activeState = requireNonNull(loaded.getNode().getActiveStateNode());
+    UaNode deletedEffectiveTime = requireNonNull(activeState.getEffectiveTransitionTimeNode());
+    deletedEffectiveTime.delete();
+
+    NonExclusiveLimitAlarm completed =
+        NonExclusiveLimitAlarm.adopt(
+            testNamespace.getNodeContext(), loaded.getConditionId(), builder -> {});
+
+    TwoStateVariableTypeNode completedActiveState =
+        requireNonNull(completed.getNode().getActiveStateNode());
+    PropertyTypeNode effectiveTime =
+        requireNonNull(completedActiveState.getEffectiveTransitionTimeNode());
+    assertNotSame(deletedEffectiveTime, effectiveTime);
+    assertEquals(
+        completedActiveState.getTransitionTime(),
+        completedActiveState.getEffectiveTransitionTime());
+  }
+
+  // A persisted EffectiveTransitionTime is historical state, not a builder default. Adoption must
+  // reuse it and subsequent modeled-state transitions must update that same Property node.
+  @Test
+  void adoptionPreservesAndUpdatesExistingEffectiveTransitionTimeNode() throws Exception {
+    NonExclusiveLimitAlarm loaded = createNonExclusiveAlarm("AdoptWithEffectiveTime");
+    TwoStateVariableTypeNode activeState = requireNonNull(loaded.getNode().getActiveStateNode());
+    PropertyTypeNode loadedEffectiveTime =
+        requireNonNull(activeState.getEffectiveTransitionTimeNode());
+    DateTime persistedTime = new DateTime(1234L);
+    activeState.setEffectiveTransitionTime(persistedTime);
+
+    NonExclusiveLimitAlarm adopted =
+        NonExclusiveLimitAlarm.adopt(
+            testNamespace.getNodeContext(), loaded.getConditionId(), builder -> {});
+
+    TwoStateVariableTypeNode adoptedActiveState =
+        requireNonNull(adopted.getNode().getActiveStateNode());
+    assertSame(loadedEffectiveTime, adoptedActiveState.getEffectiveTransitionTimeNode());
+    assertEquals(persistedTime, adoptedActiveState.getEffectiveTransitionTime());
+
+    adopted.setLimitStates(Set.of(ExclusiveLimitState.HIGH), ExclusiveLimitState.HIGH);
+
+    assertSame(loadedEffectiveTime, adoptedActiveState.getEffectiveTransitionTimeNode());
+    assertNotEquals(persistedTime, adoptedActiveState.getEffectiveTransitionTime());
+  }
+
   @Test
   void severityOnlyAdoptionUsesStoredLimitWithoutReplacingIt() throws Exception {
     ExclusiveLimitAlarm loaded =
@@ -727,7 +858,7 @@ public class ConditionAttachAdoptTest extends AbstractClientServerTest {
         requireNonNull(node.getQualityNode())
             .getFilterChain()
             .readAttribute(null, requireNonNull(node.getQualityNode()), AttributeId.Value);
-    assertTrue(quality instanceof DataValue);
+    assertInstanceOf(DataValue.class, quality);
 
     NodeId shelvingStateId = requireNonNull(replacement.getShelvingState()).getNodeId();
     CallMethodResult unshelve = call(shelvingStateId, NodeIds.ShelvedStateMachineType_Unshelve);
@@ -880,6 +1011,98 @@ public class ConditionAttachAdoptTest extends AbstractClientServerTest {
     assertEquals(Boolean.FALSE, normalized.getNode().getSuppressedOrShelved());
     assertEquals(eventId, normalized.getNode().getEventId());
   }
+
+  private VendorLimitFixture vendorLimitFixture(String name) throws UaException {
+    var context = testNamespace.getNodeContext();
+    var nodeManager = testNamespace.getNodeManager();
+    NodeId typeId = newNodeId("ConditionAttachAdoptTest/" + name + "Type");
+    UaObjectTypeNode typeNode =
+        VendorTypeFixtures.defineVendorSubtype(
+            context,
+            nodeManager,
+            typeId,
+            newQualifiedName(name + "Type"),
+            NodeIds.NonExclusiveLimitAlarmType);
+
+    QualifiedName vendorMemberName = newQualifiedName("ReductionMask");
+    VendorTypeFixtures.declareMandatoryUInt32Member(
+        nodeManager,
+        typeNode,
+        newNodeId("ConditionAttachAdoptTest/" + name + "Type/ReductionMask"),
+        vendorMemberName,
+        NodeIds.BaseDataVariableType,
+        NodeIds.HasComponent,
+        uint(0));
+
+    BrowsePath vendorMemberPath = BrowsePath.of(vendorMemberName);
+    BrowsePath activeEffectiveDisplayName =
+        BrowsePath.of(
+            new QualifiedName(0, "ActiveState"), new QualifiedName(0, "EffectiveDisplayName"));
+    BrowsePath activeEffectiveTransitionTime =
+        BrowsePath.of(
+            new QualifiedName(0, "ActiveState"), new QualifiedName(0, "EffectiveTransitionTime"));
+    Set<String> includedOptionalNames =
+        Set.of(
+            "TransitionTime",
+            "SupportsFilteredRetain",
+            "HighLimit",
+            "HighState",
+            "LowLimit",
+            "LowState");
+    NodeId rootId = newNodeId("ConditionAttachAdoptTest/" + name);
+    NodeId vendorMemberId = newNodeId("ConditionAttachAdoptTest/" + name + "/ReductionMask");
+
+    NonExclusiveLimitAlarmTypeNode node =
+        server
+            .getNodeInstantiator()
+            .instantiate(
+                InstantiationRequest.of(NonExclusiveLimitAlarmTypeNode.class, typeId)
+                    .nodeId(rootId)
+                    .browseName(newQualifiedName(name))
+                    .displayName(LocalizedText.english(name))
+                    .target(nodeManager)
+                    .assignNodeId(vendorMemberPath, vendorMemberId)
+                    .includeOptionals(
+                        declaration -> {
+                          String browseName = declaration.browseName().name();
+                          return includedOptionalNames.contains(browseName)
+                              || activeEffectiveDisplayName.equals(declaration.browsePath())
+                              || activeEffectiveTransitionTime.equals(declaration.browsePath());
+                        })
+                    .build())
+            .root();
+
+    DateTime time = DateTime.now();
+    initializeRawCondition(node, typeId, ByteString.NULL_VALUE, time);
+    node.setInputNode(NodeId.NULL_VALUE);
+    node.setSuppressedOrShelved(false);
+    node.setHighLimit(10.0);
+    node.setLowLimit(0.0);
+    setTwoState(requireNonNull(node.getActiveStateNode()), false, "Inactive", time);
+    setTwoState(requireNonNull(node.getHighStateNode()), false, "High inactive", time);
+    setTwoState(requireNonNull(node.getLowStateNode()), false, "Low inactive", time);
+
+    UaVariableNode vendorMember =
+        (UaVariableNode) nodeManager.getNode(vendorMemberId).orElseThrow();
+    vendorMember.setValue(new DataValue(new Variant(uint(0x5A))));
+
+    return new VendorLimitFixture(typeId, node, vendorMember);
+  }
+
+  private NonExclusiveLimitAlarm createNonExclusiveAlarm(String name) throws UaException {
+    return NonExclusiveLimitAlarm.create(
+        testNamespace.getNodeContext(),
+        builder ->
+            builder
+                .nodeId(newNodeId("ConditionAttachAdoptTest/" + name))
+                .browseName(newQualifiedName(name))
+                .severity(ushort(500))
+                .highLimit(10.0)
+                .lowLimit(0.0));
+  }
+
+  private record VendorLimitFixture(
+      NodeId typeId, NonExclusiveLimitAlarmTypeNode node, UaVariableNode vendorMember) {}
 
   private AcknowledgeableConditionTypeNode rawAcknowledgeable(
       String name,

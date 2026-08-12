@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.server.conditions;
 
+import java.util.EnumSet;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ExclusiveLimitAlarmTypeNode;
@@ -28,9 +29,11 @@ import org.jspecify.annotations.Nullable;
  * <p>{@link #evaluate} derives the state from the configured limits with deadband hysteresis:
  * escalation (or a violation on the other side) applies immediately, while de-escalation and
  * return-to-normal are held until the value retreats within the current limit by its deadband.
- * {@link #setActive(boolean, ExclusiveLimitState)} is the app-driven alternative. Each transition
- * generates one event carrying the new limit state and its per-limit severity, and is a new state
- * needing acknowledgement.
+ * {@link #setLimitState} is the concise app-driven alternative; {@link #setActive(boolean,
+ * ExclusiveLimitState)} remains available when the caller also represents Active explicitly.
+ * Limit-state changes are applied atomically with ActiveState, presentation, and Severity.
+ * Activation and active-to-active limit changes start a new acknowledgement cycle; deactivation
+ * preserves any outstanding obligation, and a Severity-only correction does not renew it.
  */
 public class ExclusiveLimitAlarm extends LimitAlarm {
 
@@ -156,13 +159,28 @@ public class ExclusiveLimitAlarm extends LimitAlarm {
   }
 
   /**
+   * Apply an already-computed exclusive limit state. A non-null state activates the alarm in that
+   * state; {@code null} deactivates it. Reapplying the current state with unchanged effective
+   * Severity is a no-op after any due lazy shelving expiry has been applied.
+   *
+   * @param state the limit state to apply, or {@code null} to deactivate the alarm.
+   * @throws IllegalArgumentException if {@code state} names an unconfigured limit.
+   */
+  public void setLimitState(@Nullable ExclusiveLimitState state) {
+    setActive(state != null, state);
+  }
+
+  /**
    * Set the active and limit state of the alarm directly — the fully app-driven alternative to
-   * {@link #evaluate}. A call that does not change the state is a no-op.
+   * {@link #evaluate}. {@link #setLimitState} is the equivalent concise form when the limit state
+   * already expresses whether the alarm is active. A call that changes neither state nor effective
+   * Severity is a no-op after any due lazy shelving expiry has been applied.
    *
    * @param active the new active state.
    * @param limitState the violated limit; required when activating, must be {@code null} when
    *     deactivating.
-   * @throws IllegalArgumentException if {@code active} and {@code limitState} disagree.
+   * @throws IllegalArgumentException if {@code active} and {@code limitState} disagree, or if an
+   *     active state names an unconfigured limit.
    */
   public void setActive(boolean active, @Nullable ExclusiveLimitState limitState) {
     if (active && limitState == null) {
@@ -188,8 +206,8 @@ public class ExclusiveLimitAlarm extends LimitAlarm {
    * {@inheritDoc}
    *
    * <p>An exclusive limit alarm activates into a limit state: deactivation clears the LimitState
-   * machine, activation must go through {@link #setActive(boolean, ExclusiveLimitState)} or {@link
-   * #evaluate}.
+   * machine, activation must go through {@link #setLimitState}, {@link #setActive(boolean,
+   * ExclusiveLimitState)}, or {@link #evaluate}.
    *
    * @throws IllegalArgumentException if {@code active} is {@code true}.
    */
@@ -198,7 +216,7 @@ public class ExclusiveLimitAlarm extends LimitAlarm {
     if (active) {
       throw new IllegalArgumentException(
           "an exclusive limit alarm activates into a limit state;"
-              + " use setActive(true, ExclusiveLimitState) or evaluate(value)");
+              + " use setLimitState(state), setActive(true, state), or evaluate(value)");
     }
 
     setActive(false, null);
@@ -211,21 +229,27 @@ public class ExclusiveLimitAlarm extends LimitAlarm {
   }
 
   @Override
+  @Nullable ExclusiveLimitState captureEffectiveLimitState() {
+    return getLimitState();
+  }
+
+  @Override
   void applySnapshot(
       ConditionSnapshot snapshot,
       ConditionSnapshot.@Nullable BranchSnapshot trunkSnapshot,
       DateTime time) {
 
-    super.applySnapshot(snapshot, trunkSnapshot, time);
+    boolean wasActive = isActive();
+    ExclusiveLimitState previousState = getLimitState();
+    ExclusiveLimitState target = restoredLimitState(trunkSnapshot);
 
-    ExclusiveLimitState target =
-        isActive() && trunkSnapshot != null
-            ? ExclusiveLimitState.mostSevere(trunkSnapshot.activeLimits())
-            : null;
+    super.applySnapshot(snapshot, trunkSnapshot, target != null, time);
 
     // Restore replaces the machine state: an inactive snapshot clears a previous restore's limit.
     limitStateMachine.setState(target, time);
-    setActiveEffectiveDisplayName(target);
+
+    applyRestoredPresentation(
+        target, wasActive == (target == null) || previousState != target, snapshot, time);
   }
 
   /**
@@ -255,6 +279,27 @@ public class ExclusiveLimitAlarm extends LimitAlarm {
     return entered;
   }
 
+  /** Select the one configured state represented by a captured branch. */
+  private @Nullable ExclusiveLimitState restoredLimitState(
+      ConditionSnapshot.@Nullable BranchSnapshot trunkSnapshot) {
+
+    if (trunkSnapshot == null || !Boolean.TRUE.equals(trunkSnapshot.active())) {
+      return null;
+    }
+
+    EnumSet<ExclusiveLimitState> supportedStates = EnumSet.noneOf(ExclusiveLimitState.class);
+    for (ExclusiveLimitState state : trunkSnapshot.activeLimits()) {
+      if (hasConfiguredLimit(state)) {
+        supportedStates.add(state);
+      }
+    }
+
+    ExclusiveLimitState persistedState = trunkSnapshot.effectiveLimitState();
+    return persistedState != null && supportedStates.contains(persistedState)
+        ? persistedState
+        : ExclusiveLimitState.mostSevere(supportedStates);
+  }
+
   /**
    * Apply a transition to {@code target} ({@code null} = inactive) as one state change: the
    * LimitState machine, then the shared activation tail (ActiveState with the
@@ -263,16 +308,19 @@ public class ExclusiveLimitAlarm extends LimitAlarm {
    */
   private void applyExclusiveState(@Nullable ExclusiveLimitState target) {
     boolean targetActive = target != null;
-    boolean limitStateChanged = getLimitState() != target || isActive() != targetActive;
+    boolean modeledStateChanged = getLimitState() != target;
+    boolean alarmStateChanged = modeledStateChanged || isActive() != targetActive;
     boolean severityChanged = effectiveSeverityChanged(target);
 
     withStateChange(
         transitionMessage(target),
-        () -> limitStateChanged || severityChanged,
+        () -> alarmStateChanged || severityChanged,
         now -> {
-          if (limitStateChanged) {
-            limitStateMachine.setState(target, now);
-            applyActiveTransition(target, true, now);
+          if (alarmStateChanged) {
+            if (modeledStateChanged) {
+              limitStateMachine.setState(target, now);
+            }
+            applyActiveTransition(target, modeledStateChanged, modeledStateChanged, now);
           } else {
             applyEffectiveSeverity(target, now);
           }
