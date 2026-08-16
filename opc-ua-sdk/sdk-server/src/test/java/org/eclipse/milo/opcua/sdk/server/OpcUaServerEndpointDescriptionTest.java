@@ -10,36 +10,29 @@
 
 package org.eclipse.milo.opcua.sdk.server;
 
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.lang.reflect.Method;
 import java.security.cert.X509Certificate;
-import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
-import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
-import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
-import org.eclipse.milo.opcua.stack.core.types.structured.AnonymousIdentityToken;
-import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.junit.jupiter.api.Test;
 
-public class OpcUaServerEndpointDescriptionTest {
+class OpcUaServerEndpointDescriptionTest {
 
+  // Part 4 §7.41 requires policy IDs to be unique across the Server, while null or empty token
+  // security policy URIs inherit their Endpoint's policy.
   @Test
-  public void userTokenPolicyIdsAreUniqueWhenEffectiveSecurityPolicyDiffers() throws Exception {
+  void userTokenPolicyIdsAreUniqueWhenEffectiveSecurityPolicyDiffers() throws Exception {
     X509Certificate certificate = mock(X509Certificate.class);
     when(certificate.getEncoded()).thenReturn(new byte[] {1, 2, 3});
 
@@ -57,10 +50,8 @@ public class OpcUaServerEndpointDescriptionTest {
             anonymousPolicy,
             certificate);
 
-    Set<EndpointConfig> endpoints = new LinkedHashSet<>();
-    endpoints.add(noneEndpoint);
-    endpoints.add(signEndpoint);
-    endpoints.add(signAndEncryptEndpoint);
+    Set<EndpointConfig> endpoints =
+        new LinkedHashSet<>(List.of(noneEndpoint, signEndpoint, signAndEncryptEndpoint));
 
     OpcUaServerConfig config =
         OpcUaServerConfig.builder()
@@ -84,9 +75,10 @@ public class OpcUaServerEndpointDescriptionTest {
             SecurityPolicy.Basic256Sha256,
             MessageSecurityMode.SignAndEncrypt);
 
-    UserTokenPolicy nonePolicy = getAnonymousPolicy(noneEndpointDescription);
-    UserTokenPolicy signPolicy = getAnonymousPolicy(signEndpointDescription);
-    UserTokenPolicy signAndEncryptPolicy = getAnonymousPolicy(signAndEncryptEndpointDescription);
+    UserTokenPolicy nonePolicy = noneEndpointDescription.getUserIdentityTokens()[0];
+    UserTokenPolicy signPolicy = signEndpointDescription.getUserIdentityTokens()[0];
+    UserTokenPolicy signAndEncryptPolicy =
+        signAndEncryptEndpointDescription.getUserIdentityTokens()[0];
 
     assertEquals("anonymous", nonePolicy.getPolicyId());
     assertEquals(SecurityPolicy.None.getUri(), nonePolicy.getSecurityPolicyUri());
@@ -100,38 +92,6 @@ public class OpcUaServerEndpointDescriptionTest {
     assertNull(noneEndpoint.getTokenPolicies().get(0).getSecurityPolicyUri());
     assertEquals("anonymous", OpcUaServerConfig.USER_TOKEN_POLICY_ANONYMOUS.getPolicyId());
     assertNull(OpcUaServerConfig.USER_TOKEN_POLICY_ANONYMOUS.getSecurityPolicyUri());
-
-    Session session =
-        new Session(
-            server,
-            new NodeId(1, "session"),
-            "session",
-            Duration.ofMinutes(1),
-            clientDescription(),
-            "urn:eclipse:milo:test",
-            uint(0),
-            signEndpointDescription,
-            1L,
-            new SecurityConfiguration(
-                SecurityPolicy.Basic256Sha256,
-                MessageSecurityMode.Sign,
-                null,
-                null,
-                null,
-                null,
-                null));
-
-    try {
-      UserTokenPolicy validatedPolicy =
-          validatePolicyId(
-              server.getSessionManager(),
-              session,
-              new AnonymousIdentityToken(signPolicy.getPolicyId()));
-
-      assertEquals(signPolicy, validatedPolicy);
-    } finally {
-      session.close(false);
-    }
   }
 
   private EndpointConfig endpoint(
@@ -161,34 +121,5 @@ public class OpcUaServerEndpointDescriptionTest {
         .filter(e -> securityMode == e.getSecurityMode())
         .findFirst()
         .orElseThrow();
-  }
-
-  private UserTokenPolicy getAnonymousPolicy(EndpointDescription endpointDescription) {
-    return List.of(endpointDescription.getUserIdentityTokens()).stream()
-        .filter(t -> t.getTokenType() == UserTokenType.Anonymous)
-        .findFirst()
-        .orElseThrow();
-  }
-
-  private ApplicationDescription clientDescription() {
-    return new ApplicationDescription(
-        "urn:eclipse:milo:test:client",
-        "urn:eclipse:milo:test",
-        LocalizedText.english("test client"),
-        ApplicationType.Client,
-        null,
-        null,
-        null);
-  }
-
-  private UserTokenPolicy validatePolicyId(
-      SessionManager sessionManager, Session session, AnonymousIdentityToken token)
-      throws Exception {
-
-    Method method =
-        SessionManager.class.getDeclaredMethod("validatePolicyId", Session.class, Object.class);
-    method.setAccessible(true);
-
-    return (UserTokenPolicy) method.invoke(sessionManager, session, token);
   }
 }

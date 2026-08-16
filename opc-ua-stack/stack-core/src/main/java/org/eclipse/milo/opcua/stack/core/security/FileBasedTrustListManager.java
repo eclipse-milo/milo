@@ -51,6 +51,13 @@ import org.eclipse.milo.opcua.stack.core.util.WatchKeyRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * A {@link TrustListManager} backed by directories containing certificates and CRLs.
+ *
+ * <p>{@link #initialize()} starts a background thread that watches the configured directories for
+ * changes. Each OPC UA application should create one shared instance and call {@link #close()} when
+ * the application shuts down.
+ */
 public class FileBasedTrustListManager implements TrustListManager, Closeable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedTrustListManager.class);
@@ -90,6 +97,11 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
     Preconditions.checkArgument(trustedCrlDir.toFile().exists(), "trustedCrlDir does not exist");
   }
 
+  /**
+   * Load the configured directories and start watching them for changes.
+   *
+   * @throws IOException if the directories cannot be watched.
+   */
   public void initialize() throws IOException {
     watchService = FileSystems.getDefault().newWatchService();
 
@@ -524,6 +536,9 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
   /**
    * Create and initialize a {@link FileBasedTrustListManager} at the specified {@code baseDir},
    * creating directories as necessary.
+   *
+   * <p>The returned manager owns a background watcher thread. Each OPC UA application should create
+   * one shared instance and {@link #close() close it} when the application shuts down.
    *
    * @param baseDir the base directory to manage the Trust List in.
    * @return a new, initialized {@link FileBasedTrustListManager} instance.
