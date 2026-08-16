@@ -385,9 +385,9 @@ class OpcTcpClientChannelInitializerTest {
     public void handleReceiveFailure(long requestId, UaException e) {}
 
     @Override
-    public void handleChannelError(UaException exception) {}
+    public void handleChannelError(Channel channel, UaException exception) {}
 
     @Override
-    public void handleChannelInactive() {}
+    public void handleChannelInactive(Channel channel) {}
   }
 }

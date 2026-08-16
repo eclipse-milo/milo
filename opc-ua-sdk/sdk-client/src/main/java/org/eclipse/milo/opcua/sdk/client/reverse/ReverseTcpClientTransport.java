@@ -287,7 +287,12 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
                 StatusCodes.Bad_ConnectionClosed,
                 "reverse-connect direct connection has been disconnected"));
       } else {
-        channelFuture = new CompletableFuture<>();
+        // Leave getChannel() terminally failed so a request sent after disconnect fails fast
+        // instead of parking on a future nothing will ever complete; connect() replaces any
+        // done future with a fresh one.
+        channelFuture =
+            CompletableFuture.failedFuture(
+                new UaException(StatusCodes.Bad_ConnectionClosed, "transport disconnected"));
       }
     }
 
