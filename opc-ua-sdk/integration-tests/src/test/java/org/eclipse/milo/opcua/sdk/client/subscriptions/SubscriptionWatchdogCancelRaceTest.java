@@ -38,7 +38,6 @@ import org.eclipse.milo.opcua.sdk.test.ScriptableSubscriptionServiceSet;
 import org.eclipse.milo.opcua.sdk.test.TestClient;
 import org.eclipse.milo.opcua.sdk.test.TestServer;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
-import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.junit.jupiter.api.Test;
 
@@ -280,7 +279,8 @@ public class SubscriptionWatchdogCancelRaceTest {
    *   <li>one nominated thread is suspended on its next {@code schedule()} call until the test
    *       releases it, which is what turns the race into a fixed interleaving;
    *   <li>futures scheduled at the watchdog delay are handed back wrapped so the test can observe
-   *       cancellation of a specific future.
+   *       cancellation of a specific future, and the first of them is announced so the fixture can
+   *       wait for the timer to be armed.
    * </ul>
    *
    * Every other scheduling the client does — Session keep-alives, reconnect back-off — passes
@@ -293,6 +293,7 @@ public class SubscriptionWatchdogCancelRaceTest {
     private final CountDownLatch released = new CountDownLatch(1);
 
     private final List<RecordingScheduledFuture> watchdogFutures = new CopyOnWriteArrayList<>();
+    private final CountDownLatch watchdogArmed = new CountDownLatch(1);
 
     GateScheduledExecutor() {
       super(4);
@@ -304,6 +305,11 @@ public class SubscriptionWatchdogCancelRaceTest {
 
     boolean awaitGated(long timeoutMillis) throws InterruptedException {
       return gated.await(timeoutMillis, TimeUnit.MILLISECONDS);
+    }
+
+    /** Wait until a watchdog expiry has been scheduled, i.e. until the timer is armed. */
+    boolean awaitWatchdogArmed(long timeoutMillis) throws InterruptedException {
+      return watchdogArmed.await(timeoutMillis, TimeUnit.MILLISECONDS);
     }
 
     void release() {
@@ -335,6 +341,7 @@ public class SubscriptionWatchdogCancelRaceTest {
       if (unit.toMillis(delay) == WATCHDOG_DELAY_MILLIS) {
         var recording = new RecordingScheduledFuture(future);
         watchdogFutures.add(recording);
+        watchdogArmed.countDown();
         return recording;
       }
 
@@ -437,12 +444,30 @@ public class SubscriptionWatchdogCancelRaceTest {
       client.connect();
     }
 
-    OpcUaSubscription createSubscription() throws UaException {
+    /**
+     * Create the Subscription and return only once its watchdog timer is armed.
+     *
+     * <p>The barrier is not incidental. {@code resetWatchdogTimer()} is a no-op while {@code
+     * PublishingManager.isPublishingSuspended()} holds, and it holds until the reconnect recovery
+     * for the initial Session activation has resumed publishing. That recovery is an {@code
+     * onSessionActive()} callback the Session FSM dispatches to the transport executor, on a
+     * different thread from the one that completes the future {@code connect()} waits on, so {@code
+     * connect()} can — and on a loaded machine occasionally does — return before it has run. {@code
+     * create()} then defers its arm and the recovery arms the timer instead, a few milliseconds
+     * later and from a thread the gate is not watching. Every test below needs the timer armed
+     * before it nominates a thread, so wait for the arm itself rather than for the state that
+     * permits it.
+     */
+    OpcUaSubscription createSubscription() throws Exception {
       var subscription = new OpcUaSubscription(client);
       subscription.setWatchdogMultiplier(WATCHDOG_MULTIPLIER);
       subscription.setPublishingInterval(PUBLISHING_INTERVAL);
       subscription.setTargetKeepAliveInterval(TARGET_KEEP_ALIVE_INTERVAL);
       subscription.create();
+
+      assertTrue(
+          gate.awaitWatchdogArmed(THREAD_TIMEOUT_MILLIS),
+          "the watchdog timer was never armed after create()");
 
       return subscription;
     }
