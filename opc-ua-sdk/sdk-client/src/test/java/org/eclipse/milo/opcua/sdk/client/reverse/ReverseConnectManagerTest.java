@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -53,6 +54,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
@@ -120,15 +122,27 @@ class ReverseConnectManagerTest {
 
   @Test
   void shutdownClosesListenerBeforeReturning() throws Exception {
-    manager = newManagerBuilder().build();
+    AtomicReference<Channel> listenerChannel = new AtomicReference<>();
+
+    manager =
+        newManagerBuilder()
+            .setBootstrapCustomizer(
+                bootstrap ->
+                    bootstrap.handler(
+                        new ChannelInitializer<Channel>() {
+                          @Override
+                          protected void initChannel(Channel channel) {
+                            listenerChannel.set(channel);
+                          }
+                        }))
+            .build();
     manager.startup();
-    InetSocketAddress address = boundAddress(manager);
+    Channel channel = requireNonNull(listenerChannel.get());
 
     manager.shutdown();
 
-    try (ServerSocket socket = new ServerSocket()) {
-      socket.bind(address);
-    }
+    assertFalse(channel.isOpen());
+    assertTrue(channel.closeFuture().isDone());
   }
 
   @Test
