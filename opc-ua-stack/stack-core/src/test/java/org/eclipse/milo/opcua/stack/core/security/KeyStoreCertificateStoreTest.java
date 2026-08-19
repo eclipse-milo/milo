@@ -19,8 +19,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardWatchEventKinds;
+import java.nio.file.WatchEvent;
 import java.security.KeyPair;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -105,10 +108,121 @@ class KeyStoreCertificateStoreTest extends CertificateStoreTest {
     assertFalse(reopened.contains(certificateTypeId));
   }
 
+  /**
+   * Reloading has to re-read the file: {@code loadEntries()} alone only re-queries the KeyStore
+   * already held in memory, which cannot see anything another writer has done.
+   */
+  @Test
+  void reloadPicksUpExternalChanges() throws Exception {
+    var certificateTypeId = new NodeId(2, "external");
+
+    KeyStoreCertificateStore store = newKeyStoreCertificateStore("password"::toCharArray);
+    store.initialize();
+
+    // A second store over the same file stands in for anything that rewrites the KeyStore
+    // out from under this one.
+    newCertificateStore().set(certificateTypeId, newEntry());
+    assertFalse(store.contains(certificateTypeId));
+
+    store.reload(keyStorePath);
+
+    assertTrue(store.contains(certificateTypeId));
+    assertNotNull(store.get(certificateTypeId));
+  }
+
+  @Test
+  void watchEventsResolveAgainstTheWatchedDirectory() {
+    Path watchedDirectory = keyStorePath.getParent();
+
+    // A directory watch reports the file name relative to the directory it was registered on,
+    // not a path that can be resolved against the working directory.
+    assertTrue(
+        KeyStoreCertificateStore.isKeyStoreEvent(
+            watchEvent(StandardWatchEventKinds.ENTRY_CREATE, keyStorePath.getFileName()),
+            watchedDirectory,
+            keyStorePath));
+
+    assertFalse(
+        KeyStoreCertificateStore.isKeyStoreEvent(
+            watchEvent(StandardWatchEventKinds.ENTRY_MODIFY, Path.of(".keystore123.tmp")),
+            watchedDirectory,
+            keyStorePath));
+
+    // Nothing is known about what was dropped, so an overflow has to be treated as a change.
+    assertTrue(
+        KeyStoreCertificateStore.isKeyStoreEvent(
+            watchEvent(StandardWatchEventKinds.OVERFLOW, null), watchedDirectory, keyStorePath));
+  }
+
+  @Test
+  void watchForChangesReloadsTheKeyStore() throws Exception {
+    var certificateTypeId = new NodeId(2, "watched");
+
+    KeyStoreCertificateStore store = newKeyStoreCertificateStore("password"::toCharArray, true);
+    store.initialize();
+
+    try {
+      newCertificateStore().set(certificateTypeId, newEntry());
+
+      // The KeyStore is replaced by a rename, which arrives as a creation rather than a
+      // modification, and on platforms without a native watcher it arrives only when the polling
+      // interval next elapses.
+      assertTrue(
+          awaitContains(store, certificateTypeId),
+          "watchForChanges did not reload the KeyStore within the timeout");
+    } finally {
+      store.close();
+    }
+  }
+
+  private static boolean awaitContains(CertificateStore store, NodeId certificateTypeId)
+      throws Exception {
+
+    long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+
+    while (System.nanoTime() < deadline) {
+      if (store.contains(certificateTypeId)) {
+        return true;
+      }
+
+      Thread.sleep(50);
+    }
+
+    return store.contains(certificateTypeId);
+  }
+
+  private static WatchEvent<?> watchEvent(WatchEvent.Kind<?> kind, @Nullable Object context) {
+    @SuppressWarnings("unchecked")
+    var typedKind = (WatchEvent.Kind<Object>) kind;
+
+    return new WatchEvent<>() {
+      @Override
+      public WatchEvent.Kind<Object> kind() {
+        return typedKind;
+      }
+
+      @Override
+      public int count() {
+        return 1;
+      }
+
+      @Override
+      public @Nullable Object context() {
+        return context;
+      }
+    };
+  }
+
   private KeyStoreCertificateStore newKeyStoreCertificateStore(Supplier<char[]> keyStorePassword) {
+    return newKeyStoreCertificateStore(keyStorePassword, false);
+  }
+
+  private KeyStoreCertificateStore newKeyStoreCertificateStore(
+      Supplier<char[]> keyStorePassword, boolean watchForChanges) {
+
     return new KeyStoreCertificateStore(
         new KeyStoreCertificateStore.Settings(
-            keyStorePath, keyStorePassword, alias -> "password".toCharArray())) {
+            keyStorePath, keyStorePassword, alias -> "password".toCharArray(), watchForChanges)) {
 
       @Override
       protected @Nullable String getAlias(NodeId certificateTypeId) {

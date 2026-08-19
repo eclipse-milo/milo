@@ -15,6 +15,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.ClosedWatchServiceException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -104,6 +105,8 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
       try {
         watchThread.join(5000);
       } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+
         throw new IOException(e);
       }
     }
@@ -373,54 +376,111 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
   }
 
   private void configureWatchService(File keyStoreFile) throws IOException {
+    Path keyStorePath = keyStoreFile.toPath();
+    Path watchedDirectory = keyStorePath.getParent();
+
     watchService = FileSystems.getDefault().newWatchService();
 
+    // ENTRY_CREATE matters as much as ENTRY_MODIFY here: writing a file by renaming a temporary
+    // one over it is the usual way to replace a KeyStore safely, and a rename arrives as a
+    // creation. This store writes its own file that way.
     WatchKey watchKey =
-        keyStoreFile
-            .toPath()
-            .getParent()
-            .register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
+        watchedDirectory.register(
+            watchService,
+            StandardWatchEventKinds.ENTRY_CREATE,
+            StandardWatchEventKinds.ENTRY_MODIFY);
 
-    watchThread =
-        new Thread(
-            new Runnable() {
-              @Override
-              public void run() {
-                while (true) {
-                  try {
-                    WatchKey key = watchService.take();
-                    if (key == watchKey) {
-                      key.pollEvents().forEach(this::processWatchEvent);
-                    }
-                  } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                  }
-                }
-              }
-
-              private void processWatchEvent(WatchEvent<?> event) {
-                if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY
-                    && event.context() instanceof Path p) {
-
-                  if (p.toAbsolutePath().equals(keyStoreFile.toPath().toAbsolutePath())) {
-                    try {
-                      keyStoreLock.lock();
-
-                      entries.clear();
-                      loadEntries();
-                    } catch (Exception ignored) {
-                      // ignored
-                    } finally {
-                      keyStoreLock.unlock();
-                    }
-                  }
-                }
-              }
-            });
-
+    watchThread = new Thread(() -> watchForChanges(watchKey, watchedDirectory, keyStorePath));
     watchThread.setName("milo-key-store-watcher");
     watchThread.setDaemon(true);
     watchThread.start();
+  }
+
+  private void watchForChanges(WatchKey watchKey, Path watchedDirectory, Path keyStorePath) {
+    while (true) {
+      WatchKey key;
+
+      try {
+        key = watchService.take();
+      } catch (ClosedWatchServiceException e) {
+        return;
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+
+        return;
+      }
+
+      if (key == watchKey
+          && key.pollEvents().stream()
+              .anyMatch(e -> isKeyStoreEvent(e, watchedDirectory, keyStorePath))) {
+
+        reload(keyStorePath);
+      }
+
+      // A WatchKey stays signalled, and is never queued again, until it has been reset.
+      if (!key.reset()) {
+        logger.warn(
+            "No longer watching {} for changes: the watch key is no longer valid", keyStorePath);
+
+        return;
+      }
+    }
+  }
+
+  /**
+   * Determine whether {@code event} refers to the KeyStore file.
+   *
+   * <p>A {@link WatchEvent} delivered by a directory watch carries a context relative to the
+   * watched directory, so it has to be resolved against that directory rather than against the
+   * working directory.
+   *
+   * @param event the {@link WatchEvent} to examine.
+   * @param watchedDirectory the directory the event was delivered for.
+   * @param keyStorePath the path of the KeyStore file.
+   * @return {@code true} if the KeyStore file may have changed.
+   */
+  static boolean isKeyStoreEvent(WatchEvent<?> event, Path watchedDirectory, Path keyStorePath) {
+
+    if (event.kind() == StandardWatchEventKinds.OVERFLOW) {
+      // Events were dropped, and there is no way to tell whether the KeyStore was among them.
+      return true;
+    }
+
+    return event.context() instanceof Path context
+        && watchedDirectory.resolve(context).equals(keyStorePath);
+  }
+
+  /**
+   * Re-read the KeyStore file and repopulate the entries loaded from it.
+   *
+   * <p>The file is read into a new {@link KeyStore} that replaces the current one only once it has
+   * loaded, so a KeyStore that is unreadable, or is still being written, leaves the one in use
+   * untouched.
+   *
+   * @param keyStorePath the path of the KeyStore file.
+   */
+  void reload(Path keyStorePath) {
+    try {
+      KeyStore reloaded = KeyStore.getInstance("pkcs12");
+
+      try (var inputStream = new FileInputStream(keyStorePath.toFile())) {
+        reloaded.load(inputStream, settings.getKeyStorePassword.get());
+      }
+
+      keyStoreLock.lock();
+      try {
+        keyStore = reloaded;
+
+        entries.clear();
+        loadEntries();
+      } finally {
+        keyStoreLock.unlock();
+      }
+
+      logger.debug("Reloaded KeyStore at {}", keyStorePath);
+    } catch (Exception e) {
+      logger.warn("Error reloading KeyStore at {}", keyStorePath, e);
+    }
   }
 
   /**
