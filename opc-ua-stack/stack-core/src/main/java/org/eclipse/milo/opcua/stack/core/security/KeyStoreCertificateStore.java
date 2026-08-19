@@ -16,13 +16,16 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.security.Key;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
@@ -35,6 +38,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,10 +68,12 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
 
       keyStore = KeyStore.getInstance("pkcs12");
 
-      File keyStoreFile = settings.keyStorePath.toFile();
+      File keyStoreFile = settings.keyStorePath.toAbsolutePath().toFile();
 
       if (keyStoreFile.exists()) {
-        keyStore.load(new FileInputStream(keyStoreFile), settings.getKeyStorePassword.get());
+        try (var inputStream = new FileInputStream(keyStoreFile)) {
+          keyStore.load(inputStream, settings.getKeyStorePassword.get());
+        }
 
         try {
           keyStoreLock.lock();
@@ -79,7 +85,7 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
       } else {
         keyStore.load(null, settings.getKeyStorePassword.get());
 
-        keyStore.store(new FileOutputStream(keyStoreFile), settings.getKeyStorePassword.get());
+        storeKeyStore();
       }
 
       if (settings.watchForChanges) {
@@ -172,17 +178,20 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
       String alias = getAlias(certificateTypeId);
 
       if (alias != null) {
-        KeyStore.Entry entry =
-            keyStore.getEntry(
-                alias, new KeyStore.PasswordProtection(settings.getAliasPassword.apply(alias)));
+        char[] password = settings.getAliasPassword.apply(alias);
+
+        KeyStore.Entry entry = keyStore.getEntry(alias, new KeyStore.PasswordProtection(password));
 
         if (entry instanceof KeyStore.PrivateKeyEntry privateKeyEntry) {
           keyStore.deleteEntry(alias);
           entries.remove(alias);
 
-          keyStore.store(
-              new FileOutputStream(settings.keyStorePath.toFile()),
-              settings.getKeyStorePassword.get());
+          try {
+            storeKeyStore();
+          } catch (Exception e) {
+            restoreEntry(alias, entry, password, e);
+            throw e;
+          }
 
           return new Entry(
               privateKeyEntry.getPrivateKey(),
@@ -209,11 +218,25 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
 
       String alias = getAlias(certificateTypeId);
 
-      keyStore.setKeyEntry(
-          alias, entry.privateKey, settings.getAliasPassword.apply(alias), entry.certificateChain);
+      if (alias == null) {
+        return;
+      }
 
-      keyStore.store(
-          new FileOutputStream(settings.keyStorePath.toFile()), settings.getKeyStorePassword.get());
+      char[] password = settings.getAliasPassword.apply(alias);
+
+      KeyStore.Entry previousEntry =
+          keyStore.isKeyEntry(alias)
+              ? keyStore.getEntry(alias, new KeyStore.PasswordProtection(password))
+              : null;
+
+      keyStore.setKeyEntry(alias, entry.privateKey, password, entry.certificateChain);
+
+      try {
+        storeKeyStore();
+      } catch (Exception e) {
+        restoreEntry(alias, previousEntry, password, e);
+        throw e;
+      }
 
       entries.put(alias, entry);
     } finally {
@@ -225,9 +248,10 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
    * Get the alias to use when accessing certificates of type {@code certificateTypeId}.
    *
    * @param certificateTypeId the {@link NodeId} of the certificate type.
-   * @return the alias to use when accessing certificates of type {@code certificateTypeId}.
+   * @return the alias to use when accessing certificates of type {@code certificateTypeId}, or
+   *     {@code null} if the certificate type is not supported.
    */
-  protected String getAlias(NodeId certificateTypeId) {
+  protected @Nullable String getAlias(NodeId certificateTypeId) {
     if (certificateTypeId.equals(NodeIds.RsaSha256ApplicationCertificateType)) {
       return "server-rsa-sha256";
     } else {
@@ -246,6 +270,106 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
     // `cache` for faster subsequent access.
 
     get(NodeIds.RsaSha256ApplicationCertificateType);
+  }
+
+  /**
+   * Write the KeyStore to a temporary file in the same directory and then move it into place,
+   * replacing any existing file.
+   *
+   * <p>Opening the KeyStore file directly would truncate it before the new contents have been
+   * written, so a failure part way through the write would leave behind a KeyStore with no keys in
+   * it.
+   *
+   * @throws Exception if an error occurs while writing the KeyStore.
+   */
+  private void storeKeyStore() throws Exception {
+    Path keyStorePath = resolveKeyStorePath();
+    Path tempPath = Files.createTempFile(keyStorePath.getParent(), ".keystore", ".tmp");
+
+    try {
+      copyPosixFilePermissions(keyStorePath, tempPath);
+
+      try (var outputStream = new FileOutputStream(tempPath.toFile())) {
+        keyStore.store(outputStream, settings.getKeyStorePassword.get());
+
+        // Force the contents to disk before the move, so a crash can't leave the moved-into-place
+        // file holding nothing.
+        outputStream.getFD().sync();
+      }
+
+      Files.move(
+          tempPath,
+          keyStorePath,
+          StandardCopyOption.REPLACE_EXISTING,
+          StandardCopyOption.ATOMIC_MOVE);
+    } catch (Exception e) {
+      try {
+        Files.deleteIfExists(tempPath);
+      } catch (IOException ex) {
+        e.addSuppressed(ex);
+      }
+
+      throw e;
+    }
+  }
+
+  /**
+   * Resolve the path to write the KeyStore to, following symbolic links so that an existing link is
+   * updated in place rather than replaced by a regular file.
+   *
+   * @return the absolute, link-resolved path of the KeyStore file.
+   * @throws IOException if an error occurs while resolving the path.
+   */
+  private Path resolveKeyStorePath() throws IOException {
+    Path keyStorePath = settings.keyStorePath.toAbsolutePath();
+
+    return Files.exists(keyStorePath) ? keyStorePath.toRealPath() : keyStorePath;
+  }
+
+  /**
+   * Copy the POSIX permissions of {@code from} onto {@code to}, if {@code from} exists and the file
+   * system supports them.
+   *
+   * <p>Temporary files are created readable only by their owner, so without this the KeyStore would
+   * lose any permissions the user had configured every time it was replaced.
+   *
+   * @param from the file to read permissions from.
+   * @param to the file to apply them to.
+   * @throws IOException if an error occurs while reading or applying the permissions.
+   */
+  private static void copyPosixFilePermissions(Path from, Path to) throws IOException {
+    if (Files.exists(from)
+        && from.getFileSystem().supportedFileAttributeViews().contains("posix")) {
+
+      Files.setPosixFilePermissions(to, Files.getPosixFilePermissions(from));
+    }
+  }
+
+  /**
+   * Restore {@code previousEntry} under {@code alias} after a failed write, so the in-memory
+   * KeyStore does not diverge from the file on disk.
+   *
+   * <p>The {@code entries} cache needs no equivalent treatment: {@link #get(NodeId)} falls back to
+   * the KeyStore and repopulates it.
+   *
+   * @param alias the alias to restore.
+   * @param previousEntry the entry that was present before the write, or {@code null} if there was
+   *     none.
+   * @param password the password protecting {@code alias}.
+   * @param cause the failure being recovered from, which any failure to restore is attached to.
+   */
+  private void restoreEntry(
+      String alias, KeyStore.@Nullable Entry previousEntry, char[] password, Exception cause) {
+
+    try {
+      if (previousEntry != null) {
+        keyStore.setEntry(alias, previousEntry, new KeyStore.PasswordProtection(password));
+      } else {
+        keyStore.deleteEntry(alias);
+      }
+    } catch (KeyStoreException e) {
+      cause.addSuppressed(e);
+    }
   }
 
   private void configureWatchService(File keyStoreFile) throws IOException {
