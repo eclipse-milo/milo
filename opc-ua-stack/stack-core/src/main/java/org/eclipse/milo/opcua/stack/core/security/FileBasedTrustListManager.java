@@ -26,13 +26,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
-import java.security.cert.CRL;
-import java.security.cert.CRLException;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
 import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +37,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.stream.Collectors;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -435,18 +429,9 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
   }
 
   private static Optional<List<X509CRL>> decodeCrlFile(Path path) {
-    try {
-      CertificateFactory factory = CertificateFactory.getInstance("X.509");
-      try (FileInputStream inputStream = new FileInputStream(path.toFile())) {
-        Collection<? extends CRL> crls = factory.generateCRLs(inputStream);
-
-        return Optional.of(
-            crls.stream()
-                .filter(crl -> crl instanceof X509CRL)
-                .map(X509CRL.class::cast)
-                .collect(Collectors.toList()));
-      }
-    } catch (CertificateException | CRLException | IOException e) {
+    try (FileInputStream inputStream = new FileInputStream(path.toFile())) {
+      return Optional.of(CertificateUtil.decodeCrls(inputStream));
+    } catch (UaException | IOException e) {
       LOGGER.warn("Error decoding CRL file: {}", path, e);
 
       return Optional.empty();
