@@ -42,12 +42,12 @@ public class TrustListReaderDecodeTest {
           null,
           new ByteString[] {ByteString.of(new byte[] {5, 6})});
 
-  /** Encode {@code trustList} the way a TrustList file body is encoded (Part 12 §7.8.2). */
-  static byte[] bareBody(TrustListDataType trustList) {
+  /** Encode {@link #TRUST_LIST} the way a TrustList file body is encoded (Part 12 §7.8.2). */
+  static byte[] bareBody() {
     ByteBuf buffer = Unpooled.buffer();
     try {
       var encoder = new OpcUaBinaryEncoder(CONTEXT).setBuffer(buffer);
-      new TrustListDataType.Codec().encodeType(CONTEXT, encoder, trustList);
+      new TrustListDataType.Codec().encodeType(CONTEXT, encoder, TRUST_LIST);
       return ByteBufUtil.getBytes(buffer);
     } finally {
       buffer.release();
@@ -58,7 +58,7 @@ public class TrustListReaderDecodeTest {
   // reference server and Milo-based Push servers both write it that way.
   @Test
   void decodeReadsBareTrustListDataTypeBody() throws Exception {
-    TrustListDataType decoded = TrustListReader.decode(CONTEXT, bareBody(TRUST_LIST));
+    TrustListDataType decoded = TrustListReader.decode(CONTEXT, bareBody());
 
     assertEquals(TRUST_LIST, decoded);
   }
@@ -85,7 +85,7 @@ public class TrustListReaderDecodeTest {
   // Leftover bytes mean the chunked read reassembled something other than one structure.
   @Test
   void decodeRejectsTrailingBytes() {
-    byte[] full = bareBody(TRUST_LIST);
+    byte[] full = bareBody();
     byte[] body = Arrays.copyOf(full, full.length + 1);
 
     UaException e = assertThrows(UaException.class, () -> TrustListReader.decode(CONTEXT, body));
@@ -95,7 +95,7 @@ public class TrustListReaderDecodeTest {
 
   @Test
   void decodeRejectsTruncatedBody() {
-    byte[] full = bareBody(TRUST_LIST);
+    byte[] full = bareBody();
     byte[] body = Arrays.copyOf(full, full.length - 3);
 
     UaException e = assertThrows(UaException.class, () -> TrustListReader.decode(CONTEXT, body));

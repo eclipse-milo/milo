@@ -38,6 +38,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.ServerOnNetwork;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
+import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -223,13 +224,13 @@ public final class GdsClient {
    * @param application the record to store.
    * @return a future completing when the update is done.
    */
-  public CompletableFuture<Void> updateApplicationAsync(ApplicationRecordDataType application) {
+  public CompletableFuture<Unit> updateApplicationAsync(ApplicationRecordDataType application) {
     return call(
         GdsNodeIds.Directory_UpdateApplication,
         "UpdateApplication",
         new Variant[] {Variant.ofStruct(application)},
         0,
-        outputs -> null);
+        outputs -> Unit.VALUE);
   }
 
   /**
@@ -248,13 +249,13 @@ public final class GdsClient {
    * @param applicationId the ApplicationId returned by registration.
    * @return a future completing when the registration is removed.
    */
-  public CompletableFuture<Void> unregisterApplicationAsync(NodeId applicationId) {
+  public CompletableFuture<Unit> unregisterApplicationAsync(NodeId applicationId) {
     return call(
         GdsNodeIds.Directory_UnregisterApplication,
         "UnregisterApplication",
         new Variant[] {Variant.ofNodeId(applicationId)},
         0,
-        outputs -> null);
+        outputs -> Unit.VALUE);
   }
 
   /**
@@ -750,7 +751,7 @@ public final class GdsClient {
    *
    * @return a future completing when the certificate is revoked.
    */
-  public CompletableFuture<Void> revokeCertificateAsync(
+  public CompletableFuture<Unit> revokeCertificateAsync(
       NodeId applicationId, ByteString certificate) {
 
     return call(
@@ -758,7 +759,7 @@ public final class GdsClient {
         "RevokeCertificate",
         new Variant[] {Variant.ofNodeId(applicationId), Variant.ofByteString(certificate)},
         0,
-        outputs -> null);
+        outputs -> Unit.VALUE);
   }
 
   /**
@@ -896,7 +897,9 @@ public final class GdsClient {
 
     Object v = value.value().value();
 
-    if (v == null || type.isInstance(v)) {
+    if (v == null) {
+      return null;
+    } else if (type.isInstance(v)) {
       return type.cast(v);
     } else {
       throw new UaException(

@@ -105,7 +105,7 @@ public class GdsClientTest extends AbstractGdsClientTest {
     void registerApplicationWithoutAdminRoleFailsWithBadUserAccessDenied() {
       gds.setRegistrationAllowed(false);
 
-      UaException e = assertThrows(UaException.class, () -> registerTestApplication());
+      UaException e = assertThrows(UaException.class, GdsClientTest.this::registerTestApplication);
 
       assertEquals(StatusCodes.Bad_UserAccessDenied, e.getStatusCode().value());
       assertInstanceOf(UaMethodException.class, e, "carries the method result");
@@ -424,7 +424,7 @@ public class GdsClientTest extends AbstractGdsClientTest {
       ApplicationRecordDataType[] found = gdsClient.findApplications(APPLICATION_URI);
       NodeId applicationId =
           found.length == 0
-              ? gdsClient.registerApplication(clientRecord(APPLICATION_URI))
+              ? gdsClient.registerApplication(clientRecord())
               : found[0].getApplicationId();
 
       NodeId groupId = gdsClient.getCertificateGroups(applicationId)[0];

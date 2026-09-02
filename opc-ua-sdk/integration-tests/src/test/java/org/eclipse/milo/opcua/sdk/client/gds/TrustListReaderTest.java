@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.client.gds;
 
+import static java.util.Objects.requireNonNull;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -137,7 +138,8 @@ public class TrustListReaderTest extends AbstractGdsClientTest {
     assertTrue(open.getStatusCode().isGood(), "FileType_Open: " + open);
     assertEquals(StatusCodes.Bad_MethodInvalid, unrelatedMethod.getStatusCode().value());
 
-    UInteger handle = (UInteger) open.getOutputArguments()[0].value();
+    Variant[] outputs = requireNonNull(open.getOutputArguments());
+    UInteger handle = requireNonNull((UInteger) outputs[0].value());
     CallMethodResult close = call(NodeIds.FileType_Close, new Variant[] {Variant.ofUInt32(handle)});
 
     assertTrue(close.getStatusCode().isGood(), "FileType_Close: " + close);
@@ -145,7 +147,9 @@ public class TrustListReaderTest extends AbstractGdsClientTest {
   }
 
   private CallMethodResult call(NodeId methodId, Variant[] inputs) throws UaException {
-    return client.call(List.of(new CallMethodRequest(trustListId, methodId, inputs)))
-        .getResults()[0];
+    CallMethodResult[] results =
+        client.call(List.of(new CallMethodRequest(trustListId, methodId, inputs))).getResults();
+
+    return requireNonNull(results)[0];
   }
 }

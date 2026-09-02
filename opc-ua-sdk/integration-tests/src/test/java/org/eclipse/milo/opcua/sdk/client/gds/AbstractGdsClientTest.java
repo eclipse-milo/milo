@@ -58,10 +58,10 @@ public abstract class AbstractGdsClientTest extends AbstractClientServerTest {
     gds.shutdown();
   }
 
-  protected static ApplicationRecordDataType clientRecord(String applicationUri) {
+  protected static ApplicationRecordDataType clientRecord() {
     return new ApplicationRecordDataType(
         NodeId.NULL_VALUE,
-        applicationUri,
+        APPLICATION_URI,
         ApplicationType.Client,
         new LocalizedText[] {LocalizedText.english("Milo GDS Test Client")},
         "urn:eclipse:milo:test:product",
@@ -70,7 +70,7 @@ public abstract class AbstractGdsClientTest extends AbstractClientServerTest {
   }
 
   protected NodeId registerTestApplication() throws UaException {
-    return gdsClient.registerApplication(clientRecord(APPLICATION_URI));
+    return gdsClient.registerApplication(clientRecord());
   }
 
   protected static ByteString csr(KeyPair keyPair, String applicationUri) throws Exception {

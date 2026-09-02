@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.client.gds;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -26,7 +27,6 @@ import org.eclipse.milo.opcua.stack.core.security.TrustListManager;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TrustListMasks;
 import org.eclipse.milo.opcua.stack.core.types.structured.TrustListDataType;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -35,48 +35,35 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 public class TrustListApplierTest {
 
-  private static X509Certificate oldTrusted;
-  private static X509Certificate oldIssuer;
-  private static X509CRL oldTrustedCrl;
-  private static X509CRL oldIssuerCrl;
+  private static final X509Certificate OLD_TRUSTED = TestPki.certificate("old-trusted");
+  private static final X509Certificate OLD_ISSUER = TestPki.certificate("old-issuer");
+  private static final X509CRL OLD_TRUSTED_CRL = TestPki.crl();
+  private static final X509CRL OLD_ISSUER_CRL = TestPki.crl();
 
-  private static X509Certificate newTrusted;
-  private static X509Certificate newIssuer;
-  private static X509CRL newTrustedCrl;
-  private static X509CRL newIssuerCrl;
+  private static final X509Certificate NEW_TRUSTED = TestPki.certificate("new-trusted");
+  private static final X509Certificate NEW_ISSUER = TestPki.certificate("new-issuer");
+  private static final X509CRL NEW_TRUSTED_CRL = TestPki.crl();
+  private static final X509CRL NEW_ISSUER_CRL = TestPki.crl();
 
   private MemoryTrustListManager manager;
-
-  @BeforeAll
-  static void generateMaterial() throws Exception {
-    oldTrusted = TestPki.certificate("old-trusted");
-    oldIssuer = TestPki.certificate("old-issuer");
-    oldTrustedCrl = TestPki.crl();
-    oldIssuerCrl = TestPki.crl();
-
-    newTrusted = TestPki.certificate("new-trusted");
-    newIssuer = TestPki.certificate("new-issuer");
-    newTrustedCrl = TestPki.crl();
-    newIssuerCrl = TestPki.crl();
-  }
 
   @BeforeEach
   void populateManagerWithOldLists() {
     manager = new MemoryTrustListManager();
-    manager.setTrustedCertificates(List.of(oldTrusted));
-    manager.setIssuerCertificates(List.of(oldIssuer));
-    manager.setTrustedCrls(List.of(oldTrustedCrl));
-    manager.setIssuerCrls(List.of(oldIssuerCrl));
+    manager.setTrustedCertificates(List.of(OLD_TRUSTED));
+    manager.setIssuerCertificates(List.of(OLD_ISSUER));
+    manager.setTrustedCrls(List.of(OLD_TRUSTED_CRL));
+    manager.setIssuerCrls(List.of(OLD_ISSUER_CRL));
   }
 
   /** A trust list carrying the "new" material in every field, specified by {@code masks}. */
-  private static TrustListDataType newTrustList(int masks) throws Exception {
+  private static TrustListDataType newTrustList(int masks) {
     return new TrustListDataType(
         uint(masks),
-        new ByteString[] {TestPki.der(newTrusted)},
-        new ByteString[] {TestPki.der(newTrustedCrl)},
-        new ByteString[] {TestPki.der(newIssuer)},
-        new ByteString[] {TestPki.der(newIssuerCrl)});
+        new ByteString[] {TestPki.der(NEW_TRUSTED)},
+        new ByteString[] {TestPki.der(NEW_TRUSTED_CRL)},
+        new ByteString[] {TestPki.der(NEW_ISSUER)},
+        new ByteString[] {TestPki.der(NEW_ISSUER_CRL)});
   }
 
   @Nested
@@ -97,20 +84,21 @@ public class TrustListApplierTest {
       boolean issuerCrls = mask == TrustListMasks.IssuerCrls;
 
       assertEquals(
-          List.of(trustedCerts ? newTrusted : oldTrusted), manager.getTrustedCertificates());
-      assertEquals(List.of(trustedCrls ? newTrustedCrl : oldTrustedCrl), manager.getTrustedCrls());
-      assertEquals(List.of(issuerCerts ? newIssuer : oldIssuer), manager.getIssuerCertificates());
-      assertEquals(List.of(issuerCrls ? newIssuerCrl : oldIssuerCrl), manager.getIssuerCrls());
+          List.of(trustedCerts ? NEW_TRUSTED : OLD_TRUSTED), manager.getTrustedCertificates());
+      assertEquals(
+          List.of(trustedCrls ? NEW_TRUSTED_CRL : OLD_TRUSTED_CRL), manager.getTrustedCrls());
+      assertEquals(List.of(issuerCerts ? NEW_ISSUER : OLD_ISSUER), manager.getIssuerCertificates());
+      assertEquals(List.of(issuerCrls ? NEW_ISSUER_CRL : OLD_ISSUER_CRL), manager.getIssuerCrls());
     }
 
     @Test
     void applyWithAllMasksReplacesEveryList() throws Exception {
       TrustListApplier.apply(newTrustList(TrustListMasks.All.getValue()), manager);
 
-      assertEquals(List.of(newTrusted), manager.getTrustedCertificates());
-      assertEquals(List.of(newTrustedCrl), manager.getTrustedCrls());
-      assertEquals(List.of(newIssuer), manager.getIssuerCertificates());
-      assertEquals(List.of(newIssuerCrl), manager.getIssuerCrls());
+      assertEquals(List.of(NEW_TRUSTED), manager.getTrustedCertificates());
+      assertEquals(List.of(NEW_TRUSTED_CRL), manager.getTrustedCrls());
+      assertEquals(List.of(NEW_ISSUER), manager.getIssuerCertificates());
+      assertEquals(List.of(NEW_ISSUER_CRL), manager.getIssuerCrls());
     }
 
     // The GDS delivers the complete authoritative list; a certificate it dropped must disappear
@@ -128,45 +116,45 @@ public class TrustListApplierTest {
       TrustListApplier.apply(trustList, manager);
 
       assertEquals(List.of(), manager.getTrustedCertificates());
-      assertEquals(List.of(oldIssuer), manager.getIssuerCertificates(), "unspecified, untouched");
+      assertEquals(List.of(OLD_ISSUER), manager.getIssuerCertificates(), "unspecified, untouched");
     }
 
     // A half-applied update would leave the manager trusting a new certificate set without the
     // CRLs that revoke members of it; decoding must complete before anything is replaced.
     @Test
-    void malformedCrlRejectsTheWholeUpdateAndLeavesManagerUnchanged() throws Exception {
+    void malformedCrlRejectsTheWholeUpdateAndLeavesManagerUnchanged() {
       var trustList =
           new TrustListDataType(
               uint(TrustListMasks.All.getValue()),
-              new ByteString[] {TestPki.der(newTrusted)},
+              new ByteString[] {TestPki.der(NEW_TRUSTED)},
               new ByteString[] {ByteString.of(new byte[] {0x30, 0x03, 0x02, 0x01})},
-              new ByteString[] {TestPki.der(newIssuer)},
-              new ByteString[] {TestPki.der(newIssuerCrl)});
+              new ByteString[] {TestPki.der(NEW_ISSUER)},
+              new ByteString[] {TestPki.der(NEW_ISSUER_CRL)});
 
       UaException e =
           assertThrows(UaException.class, () -> TrustListApplier.apply(trustList, manager));
 
       assertEquals(StatusCodes.Bad_DecodingError, e.getStatusCode().value());
-      assertEquals(List.of(oldTrusted), manager.getTrustedCertificates());
-      assertEquals(List.of(oldIssuer), manager.getIssuerCertificates());
-      assertEquals(List.of(oldIssuerCrl), manager.getIssuerCrls());
+      assertEquals(List.of(OLD_TRUSTED), manager.getTrustedCertificates());
+      assertEquals(List.of(OLD_ISSUER), manager.getIssuerCertificates());
+      assertEquals(List.of(OLD_ISSUER_CRL), manager.getIssuerCrls());
     }
 
     @Test
-    void malformedCertificateRejectsTheWholeUpdateWithBadCertificateInvalid() throws Exception {
+    void malformedCertificateRejectsTheWholeUpdateWithBadCertificateInvalid() {
       var trustList =
           new TrustListDataType(
               uint(TrustListMasks.All.getValue()),
               new ByteString[] {ByteString.of(new byte[] {1, 2, 3})},
-              new ByteString[] {TestPki.der(newTrustedCrl)},
-              new ByteString[] {TestPki.der(newIssuer)},
-              new ByteString[] {TestPki.der(newIssuerCrl)});
+              new ByteString[] {TestPki.der(NEW_TRUSTED_CRL)},
+              new ByteString[] {TestPki.der(NEW_ISSUER)},
+              new ByteString[] {TestPki.der(NEW_ISSUER_CRL)});
 
       UaException e =
           assertThrows(UaException.class, () -> TrustListApplier.apply(trustList, manager));
 
       assertEquals(StatusCodes.Bad_CertificateInvalid, e.getStatusCode().value());
-      assertEquals(List.of(oldTrustedCrl), manager.getTrustedCrls());
+      assertEquals(List.of(OLD_TRUSTED_CRL), manager.getTrustedCrls());
     }
   }
 
@@ -199,6 +187,8 @@ public class TrustListApplierTest {
       TrustListDataType trustList = TrustListApplier.toTrustListDataType(manager, masks);
 
       assertEquals(uint(masks), trustList.getSpecifiedLists());
+      assertNotNull(trustList.getTrustedCertificates());
+      assertNotNull(trustList.getIssuerCrls());
       assertEquals(1, trustList.getTrustedCertificates().length);
       assertEquals(1, trustList.getIssuerCrls().length);
       assertNull(trustList.getTrustedCrls());

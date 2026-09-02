@@ -292,7 +292,7 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
     }
   }
 
-  private void addApplicationRecordDataType() throws UaException {
+  private void addApplicationRecordDataType() {
     NodeId dataTypeId = nodeId(GdsNodeIds.ApplicationRecordDataType);
     NodeId binaryEncodingId = nodeId(GdsNodeIds.ApplicationRecordDataType_Encoding_DefaultBinary);
 
@@ -386,12 +386,14 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
       NodeId parentReferenceTypeId) {
 
     UaObjectNode node =
-        UaObjectNode.builder(getNodeContext())
-            .setNodeId(nodeId)
-            .setBrowseName(browseName)
-            .setDisplayName(LocalizedText.english(browseName.name()))
-            .setTypeDefinition(typeDefinitionId)
-            .build();
+        UaObjectNode.build(
+            getNodeContext(),
+            b ->
+                b.setNodeId(nodeId)
+                    .setBrowseName(browseName)
+                    .setDisplayName(LocalizedText.english(browseName.name()))
+                    .setTypeDefinition(typeDefinitionId)
+                    .build());
 
     node.addReference(
         new Reference(
@@ -538,7 +540,7 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
         new Argument[] {argument("Data", NodeIds.ByteString, ValueRanks.Scalar)},
         inputs -> {
           UInteger handle = (UInteger) inputs[0].value();
-          int length = (Integer) inputs[1].value();
+          int length = Objects.requireNonNull((Integer) inputs[1].value());
 
           file.calls.add("Read(" + length + ")");
 
@@ -609,7 +611,7 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
             throw new UaException(StatusCodes.Bad_UserAccessDenied);
           }
 
-          var record = (ApplicationRecordDataType) inputs[0].value();
+          ApplicationRecordDataType record = applicationArgument(inputs[0]);
           NodeId applicationId = newNodeId("Applications/" + nextId.getAndIncrement());
 
           applications.put(applicationId, withId(record, applicationId));
@@ -624,7 +626,7 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
         new Argument[] {argument("Application", applicationRecordId, ValueRanks.Scalar)},
         new Argument[0],
         inputs -> {
-          var record = (ApplicationRecordDataType) inputs[0].value();
+          ApplicationRecordDataType record = applicationArgument(inputs[0]);
 
           requireApplication(record.getApplicationId());
           applications.put(record.getApplicationId(), record);
@@ -1053,6 +1055,14 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
     }
 
     return record;
+  }
+
+  private static ApplicationRecordDataType applicationArgument(Variant input) throws UaException {
+    if (input.value() instanceof ApplicationRecordDataType record) {
+      return record;
+    } else {
+      throw new UaException(StatusCodes.Bad_InvalidArgument);
+    }
   }
 
   private static ApplicationRecordDataType withId(

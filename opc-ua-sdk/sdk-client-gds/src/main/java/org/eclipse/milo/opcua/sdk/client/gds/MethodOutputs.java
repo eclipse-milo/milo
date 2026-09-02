@@ -131,16 +131,17 @@ final class MethodOutputs {
       throw mismatch(index, type.getSimpleName() + "[]");
     }
 
-    Object[] elements = value != null ? (Object[]) value : new Object[0];
+    @Nullable Object[] elements = value != null ? (@Nullable Object[]) value : new Object[0];
 
     @SuppressWarnings("unchecked")
     T[] decoded = (T[]) Array.newInstance(type, elements.length);
 
     for (int i = 0; i < elements.length; i++) {
-      if (elements[i] == null) {
+      Object element = elements[i];
+      if (element == null) {
         throw mismatch(index, type.getSimpleName() + "[]");
       }
-      decoded[i] = decodeStruct(index, elements[i], type, context);
+      decoded[i] = decodeStruct(index, element, type, context);
     }
 
     return decoded;

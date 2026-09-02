@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.client.gds;
 
+import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
@@ -33,6 +34,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.OpenFileMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.TrustListDataType;
+import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -243,10 +245,12 @@ public final class TrustListReader {
             "Read",
             new Variant[] {Variant.ofUInt32(fileHandle), Variant.ofInt32(chunkSize)},
             1,
-            outputs -> outputs.nullableScalar(0, ByteString.class))
+            outputs ->
+                requireNonNullElse(
+                    outputs.nullableScalar(0, ByteString.class), ByteString.NULL_VALUE))
         .thenCompose(
             data -> {
-              byte[] chunk = data != null ? data.bytesOrEmpty() : new byte[0];
+              byte[] chunk = data.bytesOrEmpty();
 
               body.writeBytes(chunk);
 
@@ -258,7 +262,7 @@ public final class TrustListReader {
             });
   }
 
-  private static CompletableFuture<Void> close(
+  private static CompletableFuture<Unit> close(
       OpcUaClient client, NodeId trustListId, UInteger fileHandle) {
 
     return ClientCalls.call(
@@ -268,6 +272,6 @@ public final class TrustListReader {
         "Close",
         new Variant[] {Variant.ofUInt32(fileHandle)},
         0,
-        outputs -> null);
+        outputs -> Unit.VALUE);
   }
 }
