@@ -57,6 +57,19 @@ Releases are published to Maven Central and snapshots to Sonatype.
 </dependency>
 ```
 
+#### GDS Client (1.2.0 and later)
+
+Registers an application with a Global Discovery Server, requests certificates through the Pull
+Model, and reads GDS trust lists. See [docs/features/gds-client.md](docs/features/gds-client.md).
+
+```xml
+<dependency>
+    <groupId>org.eclipse.milo</groupId>
+    <artifactId>milo-sdk-client-gds</artifactId>
+    <version>1.2.0-SNAPSHOT</version>
+</dependency>
+```
+
 Referencing a `SNAPSHOT` release requires the Sonatype snapshot repository be added to your pom file:
 
 ```xml
