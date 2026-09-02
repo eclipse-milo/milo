@@ -31,6 +31,7 @@
     <module>dtd-manager</module>
     <module>dtd-reader</module>
     <module>sdk-client</module>
+    <module>sdk-client-gds</module>
     <module>sdk-core</module>
     <module>sdk-server</module>
     <module>integration-tests</module>
