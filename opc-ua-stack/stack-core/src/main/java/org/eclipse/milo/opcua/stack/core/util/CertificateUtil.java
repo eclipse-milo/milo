@@ -20,11 +20,14 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.security.KeyPair;
 import java.security.Provider;
+import java.security.cert.CRL;
+import java.security.cert.CRLException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.CertificateParsingException;
+import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -125,6 +128,79 @@ public class CertificateUtil {
       return certificates.stream().map(X509Certificate.class::cast).collect(Collectors.toList());
     } catch (CertificateException e) {
       throw new UaException(StatusCodes.Bad_CertificateInvalid, e);
+    }
+  }
+
+  /**
+   * Decode a DER-encoded X.509 CRL.
+   *
+   * @param crlBytes the DER-encoded CRL bytes.
+   * @return an {@link X509CRL}.
+   * @throws UaException if decoding the CRL fails or the bytes contain no CRL.
+   */
+  public static X509CRL decodeCrl(byte[] crlBytes) throws UaException {
+    Preconditions.checkNotNull(crlBytes, "crlBytes cannot be null");
+
+    return decodeCrl(new ByteArrayInputStream(crlBytes));
+  }
+
+  /**
+   * Decode a DER-encoded X.509 CRL.
+   *
+   * @param inputStream the {@link InputStream} containing DER-encoded CRL bytes.
+   * @return an {@link X509CRL}.
+   * @throws UaException if decoding the CRL fails or the stream contains no CRL.
+   */
+  public static X509CRL decodeCrl(InputStream inputStream) throws UaException {
+    List<X509CRL> crls = decodeCrls(inputStream);
+
+    if (crls.isEmpty()) {
+      throw new UaException(StatusCodes.Bad_DecodingError, "no CRL found");
+    }
+
+    return crls.get(0);
+  }
+
+  /**
+   * Decode either a sequence of DER-encoded X.509 CRLs or a PKCS#7 CRL set.
+   *
+   * @param crlBytes the byte[] to decode from.
+   * @return a {@link List} of CRLs decoded from {@code crlBytes}.
+   * @throws UaException if decoding fails.
+   */
+  public static List<X509CRL> decodeCrls(byte[] crlBytes) throws UaException {
+    Preconditions.checkNotNull(crlBytes, "crlBytes cannot be null");
+
+    return decodeCrls(new ByteArrayInputStream(crlBytes));
+  }
+
+  /**
+   * Decode either a sequence of DER-encoded X.509 CRLs or a PKCS#7 CRL set.
+   *
+   * @param inputStream the {@link InputStream} to decode from.
+   * @return a {@link List} of CRLs decoded from {@code inputStream}.
+   * @throws UaException if decoding fails.
+   */
+  public static List<X509CRL> decodeCrls(InputStream inputStream) throws UaException {
+    Preconditions.checkNotNull(inputStream, "inputStream cannot be null");
+
+    CertificateFactory factory;
+
+    try {
+      factory = CertificateFactory.getInstance("X.509");
+    } catch (CertificateException e) {
+      throw new UaException(StatusCodes.Bad_InternalError, e);
+    }
+
+    try {
+      Collection<? extends CRL> crls = factory.generateCRLs(inputStream);
+
+      return crls.stream()
+          .filter(X509CRL.class::isInstance)
+          .map(X509CRL.class::cast)
+          .collect(Collectors.toList());
+    } catch (CRLException e) {
+      throw new UaException(StatusCodes.Bad_DecodingError, e);
     }
   }
 

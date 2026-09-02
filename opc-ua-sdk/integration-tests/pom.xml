@@ -37,6 +37,12 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.milo</groupId>
+      <artifactId>milo-sdk-client-gds</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.milo</groupId>
       <artifactId>milo-dtd-reader</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>

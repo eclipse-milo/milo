@@ -42,15 +42,11 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.asn1.x509.CRLReason;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.cert.CertIOException;
-import org.bouncycastle.cert.X509CRLHolder;
-import org.bouncycastle.cert.X509v2CRLBuilder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
-import org.bouncycastle.cert.jcajce.JcaX509CRLConverter;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
@@ -59,6 +55,7 @@ import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.util.CrlTestUtil;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
 import org.eclipse.milo.opcua.stack.core.util.validation.TestCertificateGenerator.TestCertificates;
@@ -285,8 +282,9 @@ public class CertificateValidationUtilTest {
               () -> {
                 Set<X509CRL> x509CRLS =
                     Set.of(
-                        generateCrl(caRoot, testCertificates.getPrivateKey(ALIAS_CA_ROOT)),
-                        generateCrl(
+                        CrlTestUtil.generateCrl(
+                            caRoot, testCertificates.getPrivateKey(ALIAS_CA_ROOT)),
+                        CrlTestUtil.generateCrl(
                             caIntermediate,
                             testCertificates.getPrivateKey(ALIAS_CA_INTERMEDIATE),
                             leafIntermediateSigned));
@@ -325,9 +323,9 @@ public class CertificateValidationUtilTest {
               () -> {
                 Set<X509CRL> x509CRLS =
                     Set.of(
-                        generateCrl(
+                        CrlTestUtil.generateCrl(
                             caRoot, testCertificates.getPrivateKey(ALIAS_CA_ROOT), caIntermediate),
-                        generateCrl(
+                        CrlTestUtil.generateCrl(
                             caIntermediate, testCertificates.getPrivateKey(ALIAS_CA_INTERMEDIATE)));
 
                 PKIXCertPathBuilderResult pathBuilderResult =
@@ -421,7 +419,7 @@ public class CertificateValidationUtilTest {
               () -> {
                 Set<X509CRL> x509CRLS =
                     Set.of(
-                        generateCrl(
+                        CrlTestUtil.generateCrl(
                             caRoot, testCertificates.getPrivateKey(ALIAS_CA_ROOT), caIntermediate));
 
                 PKIXCertPathBuilderResult pathBuilderResult =
@@ -494,35 +492,6 @@ public class CertificateValidationUtilTest {
     checkHostnameOrIpAddress(createSelfSignedCertificate("DIGITALPETRI.COM"), hostname);
     checkHostnameOrIpAddress(createSelfSignedCertificate("DIGITALPETRI.com"), hostname);
     checkHostnameOrIpAddress(createSelfSignedCertificate("DigitalPetri.com"), hostname);
-  }
-
-  private X509CRL generateCrl(
-      X509Certificate ca, PrivateKey caPrivateKey, X509Certificate... revoked) throws Exception {
-    X509v2CRLBuilder builder =
-        new X509v2CRLBuilder(
-            X500Name.getInstance(ca.getSubjectX500Principal().getEncoded()), new Date());
-
-    builder.setNextUpdate(new Date(System.currentTimeMillis() + 60_000));
-
-    for (X509Certificate certificate : revoked) {
-      builder.addCRLEntry(
-          certificate.getSerialNumber(),
-          new Date(System.currentTimeMillis() - 60_000),
-          CRLReason.privilegeWithdrawn);
-    }
-
-    JcaContentSignerBuilder contentSignerBuilder =
-        new JcaContentSignerBuilder("SHA256WithRSAEncryption");
-
-    contentSignerBuilder.setProvider("BC");
-
-    X509CRLHolder crlHolder = builder.build(contentSignerBuilder.build(caPrivateKey));
-
-    JcaX509CRLConverter converter = new JcaX509CRLConverter();
-
-    converter.setProvider("BC");
-
-    return converter.getCRL(crlHolder);
   }
 
   private static X509Certificate createSelfSignedCertificate(String dnsName) throws Exception {

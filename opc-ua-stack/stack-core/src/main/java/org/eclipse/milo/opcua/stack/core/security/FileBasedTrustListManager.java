@@ -26,13 +26,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
-import java.security.cert.CRL;
-import java.security.cert.CRLException;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
 import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +37,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.stream.Collectors;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -145,8 +139,6 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
     synchronizeIssuerCrl();
     synchronizeTrustedCerts();
     synchronizeTrustedCrl();
-
-    lastUpdateTime.set(DateTime.now());
   }
 
   @Override
@@ -228,6 +220,8 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
 
       toWrite.forEach(crl -> writeCrlToDir(crl, issuerCrlDir));
       toDelete.forEach(crl -> deleteCrlFromDir(crl, issuerCrlDir));
+
+      touchLastUpdateTime();
     } finally {
       readWriteLock.writeLock().unlock();
     }
@@ -247,6 +241,8 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
 
       toWrite.forEach(crl -> writeCrlToDir(crl, trustedCrlDir));
       toDelete.forEach(crl -> deleteCrlFromDir(crl, trustedCrlDir));
+
+      touchLastUpdateTime();
     } finally {
       readWriteLock.writeLock().unlock();
     }
@@ -266,6 +262,8 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
 
       toWrite.forEach(cert -> writeCertificateToDir(cert, issuerCertsDir));
       toDelete.forEach(cert -> deleteCertificateFromDir(cert, issuerCertsDir));
+
+      touchLastUpdateTime();
     } finally {
       readWriteLock.writeLock().unlock();
     }
@@ -285,6 +283,8 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
 
       toWrite.forEach(cert -> writeCertificateToDir(cert, trustedCertsDir));
       toDelete.forEach(cert -> deleteCertificateFromDir(cert, trustedCertsDir));
+
+      touchLastUpdateTime();
     } finally {
       readWriteLock.writeLock().unlock();
     }
@@ -297,6 +297,8 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
       issuerCertificates.add(certificate);
 
       writeCertificateToDir(certificate, issuerCertsDir);
+
+      touchLastUpdateTime();
     } finally {
       readWriteLock.writeLock().unlock();
     }
@@ -309,6 +311,8 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
       trustedCertificates.add(certificate);
 
       writeCertificateToDir(certificate, trustedCertsDir);
+
+      touchLastUpdateTime();
     } finally {
       readWriteLock.writeLock().unlock();
     }
@@ -320,7 +324,13 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
     try {
       deleteCertificateFromDir(thumbprint, issuerCertsDir);
 
-      return remove(thumbprint, issuerCertificates);
+      boolean removed = remove(thumbprint, issuerCertificates);
+
+      if (removed) {
+        touchLastUpdateTime();
+      }
+
+      return removed;
     } finally {
       readWriteLock.writeLock().unlock();
     }
@@ -332,7 +342,13 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
     try {
       deleteCertificateFromDir(thumbprint, trustedCertsDir);
 
-      return remove(thumbprint, trustedCertificates);
+      boolean removed = remove(thumbprint, trustedCertificates);
+
+      if (removed) {
+        touchLastUpdateTime();
+      }
+
+      return removed;
     } finally {
       readWriteLock.writeLock().unlock();
     }
@@ -354,6 +370,10 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
     return lastUpdateTime.get();
   }
 
+  private void touchLastUpdateTime() {
+    lastUpdateTime.set(DateTime.now());
+  }
+
   private void synchronizeIssuerCerts() {
     LOGGER.debug("Synchronizing issuer certs...");
 
@@ -364,6 +384,8 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
       try (var files = Files.list(issuerCertsDir)) {
         files.flatMap(c -> decodeCertificateFile(c).stream()).forEach(issuerCertificates::add);
       }
+
+      touchLastUpdateTime();
     } catch (IOException e) {
       LOGGER.warn("Error synchronizing issuer certs", e);
     } finally {
@@ -381,6 +403,8 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
       try (var files = Files.list(issuerCrlDir)) {
         files.flatMap(c -> decodeCrlFile(c).stream()).forEach(issuerCrls::addAll);
       }
+
+      touchLastUpdateTime();
     } catch (IOException e) {
       LOGGER.warn("Error synchronizing issuer CRLs", e);
     } finally {
@@ -398,6 +422,8 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
       try (var files = Files.list(trustedCertsDir)) {
         files.flatMap(c -> decodeCertificateFile(c).stream()).forEach(trustedCertificates::add);
       }
+
+      touchLastUpdateTime();
     } catch (IOException e) {
       LOGGER.warn("Error synchronizing trusted certs", e);
     } finally {
@@ -415,6 +441,8 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
       try (var files = Files.list(trustedCrlDir)) {
         files.flatMap(c -> decodeCrlFile(c).stream()).forEach(trustedCrls::addAll);
       }
+
+      touchLastUpdateTime();
     } catch (IOException e) {
       LOGGER.warn("Error synchronizing trusted CRLs", e);
     } finally {
@@ -435,18 +463,9 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
   }
 
   private static Optional<List<X509CRL>> decodeCrlFile(Path path) {
-    try {
-      CertificateFactory factory = CertificateFactory.getInstance("X.509");
-      try (FileInputStream inputStream = new FileInputStream(path.toFile())) {
-        Collection<? extends CRL> crls = factory.generateCRLs(inputStream);
-
-        return Optional.of(
-            crls.stream()
-                .filter(crl -> crl instanceof X509CRL)
-                .map(X509CRL.class::cast)
-                .collect(Collectors.toList()));
-      }
-    } catch (CertificateException | CRLException | IOException e) {
+    try (FileInputStream inputStream = new FileInputStream(path.toFile())) {
+      return Optional.of(CertificateUtil.decodeCrls(inputStream));
+    } catch (UaException | IOException e) {
       LOGGER.warn("Error decoding CRL file: {}", path, e);
 
       return Optional.empty();
