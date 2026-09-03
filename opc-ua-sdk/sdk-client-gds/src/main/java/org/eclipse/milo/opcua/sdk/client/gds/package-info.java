@@ -34,7 +34,8 @@
  * org.eclipse.milo.opcua.stack.core.types.structured.TrustListDataType}. {@link
  * org.eclipse.milo.opcua.sdk.client.gds.TrustListApplier} installs that structure into a {@link
  * org.eclipse.milo.opcua.stack.core.security.TrustListManager}, replacing each list the structure
- * marks as specified, and can build the structure back from a manager.
+ * marks as specified in one snapshot replacement, and can build the structure back from one manager
+ * snapshot.
  *
  * <h2>Data flow</h2>
  *

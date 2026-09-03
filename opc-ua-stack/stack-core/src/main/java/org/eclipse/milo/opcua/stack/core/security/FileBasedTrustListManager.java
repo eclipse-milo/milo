@@ -35,8 +35,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.UnaryOperator;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -50,22 +51,18 @@ import org.slf4j.LoggerFactory;
  *
  * <p>{@link #initialize()} starts a background thread that watches the configured directories for
  * changes. Each OPC UA application should create one shared instance and call {@link #close()} when
- * the application shuts down.
+ * the application shuts down. Directory reloads and API updates publish all four lists as one
+ * immutable snapshot.
  */
 public class FileBasedTrustListManager implements TrustListManager, Closeable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedTrustListManager.class);
 
-  private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+  private final Lock mutationLock = new ReentrantLock();
 
-  private final AtomicReference<DateTime> lastUpdateTime =
-      new AtomicReference<>(DateTime.MIN_VALUE);
-
-  private final Set<X509Certificate> issuerCertificates = new HashSet<>();
-  private final Set<X509CRL> issuerCrls = new HashSet<>();
-
-  private final Set<X509Certificate> trustedCertificates = new HashSet<>();
-  private final Set<X509CRL> trustedCrls = new HashSet<>();
+  private final AtomicReference<TrustListSnapshot> snapshot =
+      new AtomicReference<>(
+          new TrustListSnapshot(List.of(), List.of(), List.of(), List.of(), DateTime.MIN_VALUE));
 
   private Thread watchThread;
   private WatchService watchService;
@@ -107,38 +104,35 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
             StandardWatchEventKinds.ENTRY_CREATE,
             StandardWatchEventKinds.ENTRY_DELETE,
             StandardWatchEventKinds.ENTRY_MODIFY),
-        this::synchronizeIssuerCerts);
+        this::synchronizeAll);
     watchKeys.put(
         issuerCrlDir.register(
             watchService,
             StandardWatchEventKinds.ENTRY_CREATE,
             StandardWatchEventKinds.ENTRY_DELETE,
             StandardWatchEventKinds.ENTRY_MODIFY),
-        this::synchronizeIssuerCrl);
+        this::synchronizeAll);
     watchKeys.put(
         trustedCertsDir.register(
             watchService,
             StandardWatchEventKinds.ENTRY_CREATE,
             StandardWatchEventKinds.ENTRY_DELETE,
             StandardWatchEventKinds.ENTRY_MODIFY),
-        this::synchronizeTrustedCerts);
+        this::synchronizeAll);
     watchKeys.put(
         trustedCrlDir.register(
             watchService,
             StandardWatchEventKinds.ENTRY_CREATE,
             StandardWatchEventKinds.ENTRY_DELETE,
             StandardWatchEventKinds.ENTRY_MODIFY),
-        this::synchronizeTrustedCrl);
+        this::synchronizeAll);
+
+    synchronizeAll();
 
     watchThread = new Thread(new WatchKeyRunner(watchService, watchKeys));
     watchThread.setName("milo-trust-list-watcher");
     watchThread.setDaemon(true);
     watchThread.start();
-
-    synchronizeIssuerCerts();
-    synchronizeIssuerCrl();
-    synchronizeTrustedCerts();
-    synchronizeTrustedCrl();
   }
 
   @Override
@@ -155,202 +149,181 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
       }
     }
 
-    readWriteLock.writeLock().lock();
+    mutationLock.lock();
     try {
-      issuerCertificates.clear();
-      issuerCrls.clear();
-      trustedCertificates.clear();
-      trustedCrls.clear();
+      TrustListSnapshot current = snapshot.get();
+      snapshot.set(
+          new TrustListSnapshot(
+              List.of(), List.of(), List.of(), List.of(), current.lastUpdateTime()));
     } finally {
-      readWriteLock.writeLock().unlock();
+      mutationLock.unlock();
+    }
+  }
+
+  @Override
+  public TrustListSnapshot getSnapshot() {
+    return snapshot.get();
+  }
+
+  @Override
+  public void replaceAll(TrustListSnapshot snapshot) {
+    mutationLock.lock();
+    try {
+      replaceAllLocked(snapshot);
+    } finally {
+      mutationLock.unlock();
     }
   }
 
   @Override
   public List<X509CRL> getIssuerCrls() {
-    readWriteLock.readLock().lock();
-    try {
-      return List.copyOf(issuerCrls);
-    } finally {
-      readWriteLock.readLock().unlock();
-    }
+    return snapshot.get().issuerCrls();
   }
 
   @Override
   public List<X509CRL> getTrustedCrls() {
-    readWriteLock.readLock().lock();
-    try {
-      return List.copyOf(trustedCrls);
-    } finally {
-      readWriteLock.readLock().unlock();
-    }
+    return snapshot.get().trustedCrls();
   }
 
   @Override
   public List<X509Certificate> getIssuerCertificates() {
-    readWriteLock.readLock().lock();
-    try {
-      return List.copyOf(issuerCertificates);
-    } finally {
-      readWriteLock.readLock().unlock();
-    }
+    return snapshot.get().issuerCertificates();
   }
 
   @Override
   public List<X509Certificate> getTrustedCertificates() {
-    readWriteLock.readLock().lock();
-    try {
-      return List.copyOf(trustedCertificates);
-    } finally {
-      readWriteLock.readLock().unlock();
-    }
+    return snapshot.get().trustedCertificates();
   }
 
   @Override
   public void setIssuerCrls(List<X509CRL> issuerCrls) {
-    readWriteLock.writeLock().lock();
-    try {
-      Set<X509CRL> oldSet = Set.copyOf(this.issuerCrls);
-
-      this.issuerCrls.clear();
-      this.issuerCrls.addAll(issuerCrls);
-
-      Set<X509CRL> toWrite = Sets.difference(this.issuerCrls, oldSet);
-      Set<X509CRL> toDelete = Sets.difference(oldSet, this.issuerCrls);
-
-      toWrite.forEach(crl -> writeCrlToDir(crl, issuerCrlDir));
-      toDelete.forEach(crl -> deleteCrlFromDir(crl, issuerCrlDir));
-
-      touchLastUpdateTime();
-    } finally {
-      readWriteLock.writeLock().unlock();
-    }
+    updateSnapshot(
+        current ->
+            new TrustListSnapshot(
+                current.issuerCertificates(),
+                issuerCrls,
+                current.trustedCertificates(),
+                current.trustedCrls(),
+                DateTime.now()));
   }
 
   @Override
   public void setTrustedCrls(List<X509CRL> trustedCrls) {
-    readWriteLock.writeLock().lock();
-    try {
-      Set<X509CRL> oldSet = Set.copyOf(this.trustedCrls);
-
-      this.trustedCrls.clear();
-      this.trustedCrls.addAll(trustedCrls);
-
-      Set<X509CRL> toWrite = Sets.difference(this.trustedCrls, oldSet);
-      Set<X509CRL> toDelete = Sets.difference(oldSet, this.trustedCrls);
-
-      toWrite.forEach(crl -> writeCrlToDir(crl, trustedCrlDir));
-      toDelete.forEach(crl -> deleteCrlFromDir(crl, trustedCrlDir));
-
-      touchLastUpdateTime();
-    } finally {
-      readWriteLock.writeLock().unlock();
-    }
+    updateSnapshot(
+        current ->
+            new TrustListSnapshot(
+                current.issuerCertificates(),
+                current.issuerCrls(),
+                current.trustedCertificates(),
+                trustedCrls,
+                DateTime.now()));
   }
 
   @Override
   public void setIssuerCertificates(List<X509Certificate> issuerCertificates) {
-    readWriteLock.writeLock().lock();
-    try {
-      Set<X509Certificate> oldSet = Set.copyOf(this.issuerCertificates);
-
-      this.issuerCertificates.clear();
-      this.issuerCertificates.addAll(issuerCertificates);
-
-      Set<X509Certificate> toWrite = Sets.difference(this.issuerCertificates, oldSet);
-      Set<X509Certificate> toDelete = Sets.difference(oldSet, this.issuerCertificates);
-
-      toWrite.forEach(cert -> writeCertificateToDir(cert, issuerCertsDir));
-      toDelete.forEach(cert -> deleteCertificateFromDir(cert, issuerCertsDir));
-
-      touchLastUpdateTime();
-    } finally {
-      readWriteLock.writeLock().unlock();
-    }
+    updateSnapshot(
+        current ->
+            new TrustListSnapshot(
+                issuerCertificates,
+                current.issuerCrls(),
+                current.trustedCertificates(),
+                current.trustedCrls(),
+                DateTime.now()));
   }
 
   @Override
   public void setTrustedCertificates(List<X509Certificate> trustedCertificates) {
-    readWriteLock.writeLock().lock();
-    try {
-      Set<X509Certificate> oldSet = Set.copyOf(this.trustedCertificates);
-
-      this.trustedCertificates.clear();
-      this.trustedCertificates.addAll(trustedCertificates);
-
-      Set<X509Certificate> toWrite = Sets.difference(this.trustedCertificates, oldSet);
-      Set<X509Certificate> toDelete = Sets.difference(oldSet, this.trustedCertificates);
-
-      toWrite.forEach(cert -> writeCertificateToDir(cert, trustedCertsDir));
-      toDelete.forEach(cert -> deleteCertificateFromDir(cert, trustedCertsDir));
-
-      touchLastUpdateTime();
-    } finally {
-      readWriteLock.writeLock().unlock();
-    }
+    updateSnapshot(
+        current ->
+            new TrustListSnapshot(
+                current.issuerCertificates(),
+                current.issuerCrls(),
+                trustedCertificates,
+                current.trustedCrls(),
+                DateTime.now()));
   }
 
   @Override
   public void addIssuerCertificate(X509Certificate certificate) {
-    readWriteLock.writeLock().lock();
-    try {
-      issuerCertificates.add(certificate);
+    updateSnapshot(
+        current -> {
+          var issuerCertificates = new HashSet<>(current.issuerCertificates());
+          issuerCertificates.add(certificate);
 
-      writeCertificateToDir(certificate, issuerCertsDir);
-
-      touchLastUpdateTime();
-    } finally {
-      readWriteLock.writeLock().unlock();
-    }
+          return new TrustListSnapshot(
+              List.copyOf(issuerCertificates),
+              current.issuerCrls(),
+              current.trustedCertificates(),
+              current.trustedCrls(),
+              DateTime.now());
+        });
   }
 
   @Override
   public void addTrustedCertificate(X509Certificate certificate) {
-    readWriteLock.writeLock().lock();
-    try {
-      trustedCertificates.add(certificate);
+    updateSnapshot(
+        current -> {
+          var trustedCertificates = new HashSet<>(current.trustedCertificates());
+          trustedCertificates.add(certificate);
 
-      writeCertificateToDir(certificate, trustedCertsDir);
-
-      touchLastUpdateTime();
-    } finally {
-      readWriteLock.writeLock().unlock();
-    }
+          return new TrustListSnapshot(
+              current.issuerCertificates(),
+              current.issuerCrls(),
+              List.copyOf(trustedCertificates),
+              current.trustedCrls(),
+              DateTime.now());
+        });
   }
 
   @Override
   public boolean removeIssuerCertificate(ByteString thumbprint) {
-    readWriteLock.writeLock().lock();
+    mutationLock.lock();
     try {
       deleteCertificateFromDir(thumbprint, issuerCertsDir);
 
+      TrustListSnapshot current = snapshot.get();
+      var issuerCertificates = new HashSet<>(current.issuerCertificates());
       boolean removed = remove(thumbprint, issuerCertificates);
 
       if (removed) {
-        touchLastUpdateTime();
+        snapshot.set(
+            new TrustListSnapshot(
+                List.copyOf(issuerCertificates),
+                current.issuerCrls(),
+                current.trustedCertificates(),
+                current.trustedCrls(),
+                DateTime.now()));
       }
 
       return removed;
     } finally {
-      readWriteLock.writeLock().unlock();
+      mutationLock.unlock();
     }
   }
 
   @Override
   public boolean removeTrustedCertificate(ByteString thumbprint) {
-    readWriteLock.writeLock().lock();
+    mutationLock.lock();
     try {
       deleteCertificateFromDir(thumbprint, trustedCertsDir);
 
+      TrustListSnapshot current = snapshot.get();
+      var trustedCertificates = new HashSet<>(current.trustedCertificates());
       boolean removed = remove(thumbprint, trustedCertificates);
 
       if (removed) {
-        touchLastUpdateTime();
+        snapshot.set(
+            new TrustListSnapshot(
+                current.issuerCertificates(),
+                current.issuerCrls(),
+                List.copyOf(trustedCertificates),
+                current.trustedCrls(),
+                DateTime.now()));
       }
 
       return removed;
     } finally {
-      readWriteLock.writeLock().unlock();
+      mutationLock.unlock();
     }
   }
 
@@ -367,87 +340,101 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
 
   @Override
   public DateTime getLastUpdateTime() {
-    return lastUpdateTime.get();
+    return snapshot.get().lastUpdateTime();
   }
 
-  private void touchLastUpdateTime() {
-    lastUpdateTime.set(DateTime.now());
-  }
-
-  private void synchronizeIssuerCerts() {
-    LOGGER.debug("Synchronizing issuer certs...");
-
-    readWriteLock.writeLock().lock();
+  private void updateSnapshot(UnaryOperator<TrustListSnapshot> update) {
+    mutationLock.lock();
     try {
-      issuerCertificates.clear();
-
-      try (var files = Files.list(issuerCertsDir)) {
-        files.flatMap(c -> decodeCertificateFile(c).stream()).forEach(issuerCertificates::add);
-      }
-
-      touchLastUpdateTime();
-    } catch (IOException e) {
-      LOGGER.warn("Error synchronizing issuer certs", e);
+      replaceAllLocked(update.apply(snapshot.get()));
     } finally {
-      readWriteLock.writeLock().unlock();
+      mutationLock.unlock();
     }
   }
 
-  private void synchronizeIssuerCrl() {
-    LOGGER.debug("Synchronizing issuer CRLs...");
+  private void replaceAllLocked(TrustListSnapshot replacement) {
+    TrustListSnapshot current = snapshot.get();
+    TrustListSnapshot normalized = normalize(replacement);
 
-    readWriteLock.writeLock().lock();
+    updateCertificateFiles(
+        current.issuerCertificates(), normalized.issuerCertificates(), issuerCertsDir);
+    updateCrlFiles(current.issuerCrls(), normalized.issuerCrls(), issuerCrlDir);
+    updateCertificateFiles(
+        current.trustedCertificates(), normalized.trustedCertificates(), trustedCertsDir);
+    updateCrlFiles(current.trustedCrls(), normalized.trustedCrls(), trustedCrlDir);
+
+    snapshot.set(normalized);
+  }
+
+  private static TrustListSnapshot normalize(TrustListSnapshot snapshot) {
+    return new TrustListSnapshot(
+        List.copyOf(new HashSet<>(snapshot.issuerCertificates())),
+        List.copyOf(new HashSet<>(snapshot.issuerCrls())),
+        List.copyOf(new HashSet<>(snapshot.trustedCertificates())),
+        List.copyOf(new HashSet<>(snapshot.trustedCrls())),
+        snapshot.lastUpdateTime());
+  }
+
+  private static void updateCertificateFiles(
+      List<X509Certificate> current, List<X509Certificate> replacement, Path directory) {
+
+    Set<X509Certificate> currentSet = Set.copyOf(current);
+    Set<X509Certificate> replacementSet = Set.copyOf(replacement);
+
+    Sets.difference(replacementSet, currentSet)
+        .forEach(certificate -> writeCertificateToDir(certificate, directory));
+    Sets.difference(currentSet, replacementSet)
+        .forEach(certificate -> deleteCertificateFromDir(certificate, directory));
+  }
+
+  private static void updateCrlFiles(
+      List<X509CRL> current, List<X509CRL> replacement, Path directory) {
+
+    Set<X509CRL> currentSet = Set.copyOf(current);
+    Set<X509CRL> replacementSet = Set.copyOf(replacement);
+
+    Sets.difference(replacementSet, currentSet).forEach(crl -> writeCrlToDir(crl, directory));
+    Sets.difference(currentSet, replacementSet).forEach(crl -> deleteCrlFromDir(crl, directory));
+  }
+
+  private void synchronizeAll() {
+    LOGGER.debug("Synchronizing trust lists...");
+
+    mutationLock.lock();
     try {
-      issuerCrls.clear();
+      List<X509Certificate> issuerCertificates = readCertificates(issuerCertsDir);
+      List<X509CRL> issuerCrls = readCrls(issuerCrlDir);
+      List<X509Certificate> trustedCertificates = readCertificates(trustedCertsDir);
+      List<X509CRL> trustedCrls = readCrls(trustedCrlDir);
 
-      try (var files = Files.list(issuerCrlDir)) {
-        files.flatMap(c -> decodeCrlFile(c).stream()).forEach(issuerCrls::addAll);
-      }
-
-      touchLastUpdateTime();
+      snapshot.set(
+          new TrustListSnapshot(
+              issuerCertificates, issuerCrls, trustedCertificates, trustedCrls, DateTime.now()));
     } catch (IOException e) {
-      LOGGER.warn("Error synchronizing issuer CRLs", e);
+      LOGGER.warn("Error synchronizing trust lists", e);
     } finally {
-      readWriteLock.writeLock().unlock();
+      mutationLock.unlock();
     }
   }
 
-  private void synchronizeTrustedCerts() {
-    LOGGER.debug("Synchronizing trusted certs...");
+  private static List<X509Certificate> readCertificates(Path directory) throws IOException {
+    var certificates = new HashSet<X509Certificate>();
 
-    readWriteLock.writeLock().lock();
-    try {
-      trustedCertificates.clear();
-
-      try (var files = Files.list(trustedCertsDir)) {
-        files.flatMap(c -> decodeCertificateFile(c).stream()).forEach(trustedCertificates::add);
-      }
-
-      touchLastUpdateTime();
-    } catch (IOException e) {
-      LOGGER.warn("Error synchronizing trusted certs", e);
-    } finally {
-      readWriteLock.writeLock().unlock();
+    try (var files = Files.list(directory)) {
+      files.flatMap(path -> decodeCertificateFile(path).stream()).forEach(certificates::add);
     }
+
+    return List.copyOf(certificates);
   }
 
-  private void synchronizeTrustedCrl() {
-    LOGGER.debug("Synchronizing trusted CRLs...");
+  private static List<X509CRL> readCrls(Path directory) throws IOException {
+    var crls = new HashSet<X509CRL>();
 
-    readWriteLock.writeLock().lock();
-    try {
-      trustedCrls.clear();
-
-      try (var files = Files.list(trustedCrlDir)) {
-        files.flatMap(c -> decodeCrlFile(c).stream()).forEach(trustedCrls::addAll);
-      }
-
-      touchLastUpdateTime();
-    } catch (IOException e) {
-      LOGGER.warn("Error synchronizing trusted CRLs", e);
-    } finally {
-      readWriteLock.writeLock().unlock();
+    try (var files = Files.list(directory)) {
+      files.flatMap(path -> decodeCrlFile(path).stream()).forEach(crls::addAll);
     }
+
+    return List.copyOf(crls);
   }
 
   private static Optional<X509Certificate> decodeCertificateFile(Path path) {

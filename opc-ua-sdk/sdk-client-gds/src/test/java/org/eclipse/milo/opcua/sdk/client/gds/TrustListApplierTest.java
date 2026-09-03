@@ -20,10 +20,12 @@ import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.MemoryTrustListManager;
 import org.eclipse.milo.opcua.stack.core.security.TrustListManager;
+import org.eclipse.milo.opcua.stack.core.security.TrustListSnapshot;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TrustListMasks;
 import org.eclipse.milo.opcua.stack.core.types.structured.TrustListDataType;
@@ -45,11 +47,11 @@ public class TrustListApplierTest {
   private static final X509CRL NEW_TRUSTED_CRL = TestPki.crl();
   private static final X509CRL NEW_ISSUER_CRL = TestPki.crl();
 
-  private MemoryTrustListManager manager;
+  private RecordingMemoryTrustListManager manager;
 
   @BeforeEach
   void populateManagerWithOldLists() {
-    manager = new MemoryTrustListManager();
+    manager = new RecordingMemoryTrustListManager();
     manager.setTrustedCertificates(List.of(OLD_TRUSTED));
     manager.setIssuerCertificates(List.of(OLD_ISSUER));
     manager.setTrustedCrls(List.of(OLD_TRUSTED_CRL));
@@ -89,6 +91,8 @@ public class TrustListApplierTest {
           List.of(trustedCrls ? NEW_TRUSTED_CRL : OLD_TRUSTED_CRL), manager.getTrustedCrls());
       assertEquals(List.of(issuerCerts ? NEW_ISSUER : OLD_ISSUER), manager.getIssuerCertificates());
       assertEquals(List.of(issuerCrls ? NEW_ISSUER_CRL : OLD_ISSUER_CRL), manager.getIssuerCrls());
+      assertEquals(1, manager.snapshotReads.get());
+      assertEquals(1, manager.replacements.get());
     }
 
     @Test
@@ -99,6 +103,25 @@ public class TrustListApplierTest {
       assertEquals(List.of(NEW_TRUSTED_CRL), manager.getTrustedCrls());
       assertEquals(List.of(NEW_ISSUER), manager.getIssuerCertificates());
       assertEquals(List.of(NEW_ISSUER_CRL), manager.getIssuerCrls());
+      assertEquals(1, manager.snapshotReads.get());
+      assertEquals(1, manager.replacements.get());
+    }
+
+    // A partial update spanning multiple fields must retain both unspecified fields from the same
+    // old snapshot and publish all changes through one replacement.
+    @Test
+    void applyWithMultiplePartialMasksCommitsOneMergedSnapshot() throws Exception {
+      int masks =
+          TrustListMasks.TrustedCertificates.getValue() | TrustListMasks.IssuerCrls.getValue();
+
+      TrustListApplier.apply(newTrustList(masks), manager);
+
+      assertEquals(List.of(NEW_TRUSTED), manager.getTrustedCertificates());
+      assertEquals(List.of(OLD_TRUSTED_CRL), manager.getTrustedCrls());
+      assertEquals(List.of(OLD_ISSUER), manager.getIssuerCertificates());
+      assertEquals(List.of(NEW_ISSUER_CRL), manager.getIssuerCrls());
+      assertEquals(1, manager.snapshotReads.get());
+      assertEquals(1, manager.replacements.get());
     }
 
     // The GDS delivers the complete authoritative list; a certificate it dropped must disappear
@@ -117,6 +140,15 @@ public class TrustListApplierTest {
 
       assertEquals(List.of(), manager.getTrustedCertificates());
       assertEquals(List.of(OLD_ISSUER), manager.getIssuerCertificates(), "unspecified, untouched");
+      assertEquals(1, manager.replacements.get());
+    }
+
+    @Test
+    void applyWithNoSpecifiedListsDoesNotPublishAnUpdate() throws Exception {
+      TrustListApplier.apply(newTrustList(TrustListMasks.None.getValue()), manager);
+
+      assertEquals(0, manager.snapshotReads.get());
+      assertEquals(0, manager.replacements.get());
     }
 
     // A half-applied update would leave the manager trusting a new certificate set without the
@@ -138,6 +170,8 @@ public class TrustListApplierTest {
       assertEquals(List.of(OLD_TRUSTED), manager.getTrustedCertificates());
       assertEquals(List.of(OLD_ISSUER), manager.getIssuerCertificates());
       assertEquals(List.of(OLD_ISSUER_CRL), manager.getIssuerCrls());
+      assertEquals(0, manager.snapshotReads.get());
+      assertEquals(0, manager.replacements.get());
     }
 
     @Test
@@ -155,6 +189,8 @@ public class TrustListApplierTest {
 
       assertEquals(StatusCodes.Bad_CertificateInvalid, e.getStatusCode().value());
       assertEquals(List.of(OLD_TRUSTED_CRL), manager.getTrustedCrls());
+      assertEquals(0, manager.snapshotReads.get());
+      assertEquals(0, manager.replacements.get());
     }
   }
 
@@ -177,6 +213,7 @@ public class TrustListApplierTest {
           Set.copyOf(manager.getIssuerCertificates()), Set.copyOf(copy.getIssuerCertificates()));
       assertEquals(Set.copyOf(manager.getTrustedCrls()), Set.copyOf(copy.getTrustedCrls()));
       assertEquals(Set.copyOf(manager.getIssuerCrls()), Set.copyOf(copy.getIssuerCrls()));
+      assertEquals(1, manager.snapshotReads.get());
     }
 
     @Test
@@ -193,6 +230,25 @@ public class TrustListApplierTest {
       assertEquals(1, trustList.getIssuerCrls().length);
       assertNull(trustList.getTrustedCrls());
       assertNull(trustList.getIssuerCertificates());
+      assertEquals(1, manager.snapshotReads.get());
+    }
+  }
+
+  private static final class RecordingMemoryTrustListManager extends MemoryTrustListManager {
+
+    private final AtomicInteger snapshotReads = new AtomicInteger();
+    private final AtomicInteger replacements = new AtomicInteger();
+
+    @Override
+    public TrustListSnapshot getSnapshot() {
+      snapshotReads.incrementAndGet();
+      return super.getSnapshot();
+    }
+
+    @Override
+    public void replaceAll(TrustListSnapshot snapshot) {
+      replacements.incrementAndGet();
+      super.replaceAll(snapshot);
     }
   }
 }

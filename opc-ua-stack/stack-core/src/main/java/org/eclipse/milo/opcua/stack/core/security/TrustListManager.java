@@ -22,6 +22,9 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
  * <p>Each OPC UA application should create one shared {@link TrustListManager}. Components that
  * receive the manager, such as a certificate validator, borrow it and do not close it.
  *
+ * <p>Use {@link #getSnapshot()} when one operation needs multiple lists from the same manager
+ * state.
+ *
  * <p>The application must call {@link #close()} when it shuts down. Implementations that do not
  * hold resources may use the default no-op implementation.
  */
@@ -36,6 +39,59 @@ public interface TrustListManager extends AutoCloseable {
    */
   @Override
   default void close() throws Exception {}
+
+  /**
+   * Get an immutable snapshot of all trust lists and their last update time.
+   *
+   * <p>Built-in implementations return a snapshot captured atomically. The default reads the
+   * individual properties in sequence and therefore cannot guarantee a coherent view during a
+   * concurrent update.
+   *
+   * @return the current trust-list snapshot.
+   */
+  default TrustListSnapshot getSnapshot() {
+    return new TrustListSnapshot(
+        getIssuerCertificates(),
+        getIssuerCrls(),
+        getTrustedCertificates(),
+        getTrustedCrls(),
+        getLastUpdateTime());
+  }
+
+  /**
+   * Replace all trust-list state with {@code snapshot}.
+   *
+   * <p>Built-in implementations publish the replacement atomically. The default invokes the four
+   * individual setters in sequence, so other implementations must override this method to provide
+   * the same atomicity. Implementations using the default retain control of their last update time.
+   *
+   * @param snapshot the replacement trust-list state.
+   */
+  default void replaceAll(TrustListSnapshot snapshot) {
+    setIssuerCertificates(snapshot.issuerCertificates());
+    setIssuerCrls(snapshot.issuerCrls());
+    setTrustedCertificates(snapshot.trustedCertificates());
+    setTrustedCrls(snapshot.trustedCrls());
+  }
+
+  /**
+   * Replace all four trust lists and set their last update time to the current time.
+   *
+   * @param issuerCertificates the new issuer certificates.
+   * @param issuerCrls the new issuer certificate revocation lists.
+   * @param trustedCertificates the new trusted certificates.
+   * @param trustedCrls the new trusted certificate revocation lists.
+   */
+  default void replaceAll(
+      List<X509Certificate> issuerCertificates,
+      List<X509CRL> issuerCrls,
+      List<X509Certificate> trustedCertificates,
+      List<X509CRL> trustedCrls) {
+
+    replaceAll(
+        new TrustListSnapshot(
+            issuerCertificates, issuerCrls, trustedCertificates, trustedCrls, DateTime.now()));
+  }
 
   /**
    * Get the list of Issuer CRLs.

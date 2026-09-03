@@ -67,6 +67,11 @@ public class TrustListManagerLastUpdateTimeTest {
         mutation("setIssuerCertificates", m -> m.setIssuerCertificates(List.of(CERTIFICATE))),
         mutation("setTrustedCrls", m -> m.setTrustedCrls(List.of(CRL))),
         mutation("setIssuerCrls", m -> m.setIssuerCrls(List.of(CRL))),
+        mutation(
+            "replaceAll",
+            m ->
+                m.replaceAll(
+                    List.of(CERTIFICATE), List.of(CRL), List.of(CERTIFICATE), List.of(CRL))),
         mutation("addTrustedCertificate", m -> m.addTrustedCertificate(CERTIFICATE)),
         mutation("addIssuerCertificate", m -> m.addIssuerCertificate(CERTIFICATE)),
         mutation(
