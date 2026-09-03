@@ -22,20 +22,23 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A usable local application certificate identity selected from a {@link CertificateManager}.
+ * A usable local application certificate identity belonging to a {@link CertificateGroup}.
  *
  * <p>The identity keeps the certificate group and certificate type together with the key pair and
  * certificate chain so endpoint advertisement and SecureChannel setup can use the same selected
  * material.
  *
- * @param certificateGroupId the certificate group containing this identity.
+ * <p>Equality includes the group reference. Built-in groups compare by identity, so two identities
+ * are equal only when they were produced by the same group instance with the same material.
+ *
+ * @param certificateGroup the certificate group containing this identity.
  * @param certificateTypeId the certificate type represented by this identity.
  * @param keyPair the key pair belonging to the leaf certificate.
  * @param certificateChain the leaf certificate and any issuer certificates.
  */
 @NullMarked
 public record CertificateIdentity(
-    NodeId certificateGroupId,
+    CertificateGroup certificateGroup,
     NodeId certificateTypeId,
     KeyPair keyPair,
     X509Certificate[] certificateChain) {
@@ -80,7 +83,7 @@ public record CertificateIdentity(
     if (!(o instanceof CertificateIdentity that)) {
       return false;
     }
-    return Objects.equals(certificateGroupId, that.certificateGroupId)
+    return Objects.equals(certificateGroup, that.certificateGroup)
         && Objects.equals(certificateTypeId, that.certificateTypeId)
         && Objects.equals(keyPair, that.keyPair)
         && Arrays.equals(certificateChain, that.certificateChain);
@@ -88,7 +91,7 @@ public record CertificateIdentity(
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(certificateGroupId, certificateTypeId, keyPair);
+    int result = Objects.hash(certificateGroup, certificateTypeId, keyPair);
     result = 31 * result + Arrays.hashCode(certificateChain);
     return result;
   }

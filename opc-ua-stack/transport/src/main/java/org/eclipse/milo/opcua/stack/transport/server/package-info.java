@@ -19,7 +19,10 @@
  * org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext#handleServiceRequest}. The
  * application supplies everything security-relevant the transport needs: the advertised {@link
  * org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription}s, the {@link
- * org.eclipse.milo.opcua.stack.core.security.CertificateManager}, and the encoding context.
+ * org.eclipse.milo.opcua.stack.core.security.CertificateManager} in which the application's
+ * certificate groups are registered under their {@code CertificateGroupType} NodeIds and through
+ * which the transport resolves local key material by certificate thumbprint, and the encoding
+ * context.
  *
  * <h2>Endpoint selection and propagation</h2>
  *

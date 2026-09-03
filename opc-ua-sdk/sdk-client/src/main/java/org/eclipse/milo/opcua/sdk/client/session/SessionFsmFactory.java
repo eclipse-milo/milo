@@ -1308,9 +1308,7 @@ public class SessionFsmFactory {
       EndpointDescription endpoint = client.getConfig().getEndpoint();
       SecurityPolicy securityPolicy = SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
       Optional<CertificateIdentity> certificateIdentity =
-          securityPolicy != SecurityPolicy.None
-              ? client.getCertificateIdentity(securityPolicy.getProfile())
-              : Optional.empty();
+          getRequiredCertificateIdentity(client, securityPolicy);
 
       String gatewayServerUri = endpoint.getServer().getGatewayServerUri();
 
@@ -1329,7 +1327,6 @@ public class SessionFsmFactory {
       ByteString clientCertificate =
           certificateIdentity
               .map(CertificateIdentity::certificate)
-              .or(() -> client.getConfig().getCertificate())
               .map(
                   c -> {
                     try {
@@ -1737,23 +1734,10 @@ public class SessionFsmFactory {
             ? client.getCertificateIdentity(certificateSecurityPolicy.getProfile())
             : Optional.empty();
 
-    KeyPair keyPair =
-        certificateIdentity
-            .map(CertificateIdentity::keyPair)
-            .or(() -> client.getConfig().getKeyPair())
-            .orElse(null);
+    KeyPair keyPair = certificateIdentity.map(CertificateIdentity::keyPair).orElse(null);
 
     X509Certificate[] certificateChain =
-        certificateIdentity
-            .map(CertificateIdentity::certificateChain)
-            .or(() -> client.getConfig().getCertificateChain())
-            .or(
-                () ->
-                    client
-                        .getConfig()
-                        .getCertificate()
-                        .map(certificate -> new X509Certificate[] {certificate}))
-            .orElse(null);
+        certificateIdentity.map(CertificateIdentity::certificateChain).orElse(null);
 
     // Resolve the SecureChannel-bound signature inputs the same way buildClientSignature does, so a
     // channel-bound user-token signature (enhanced policies) reconstructs identically on the
@@ -2274,15 +2258,44 @@ public class SessionFsmFactory {
       throws UaException {
 
     Optional<X509Certificate> certificate =
-        client
-            .getCertificateIdentity(securityPolicy.getProfile())
-            .map(CertificateIdentity::certificate)
-            .or(() -> client.getConfig().getCertificate());
+        getRequiredCertificateIdentity(client, securityPolicy)
+            .map(CertificateIdentity::certificate);
 
     // A genuinely absent certificate yields NULL_VALUE; an encoding failure on a present
     // certificate is surfaced (like certificateBytes) rather than being swallowed into a silently
     // wrong signature.
     return certificate.isPresent() ? certificateBytes(certificate.get()) : ByteString.NULL_VALUE;
+  }
+
+  /**
+   * Get the client identity for {@code securityPolicy}: empty on {@link SecurityPolicy#None},
+   * otherwise the selected identity.
+   *
+   * @throws UaException with {@code Bad_ConfigurationError} if the policy is secured and the client
+   *     has no compatible identity.
+   */
+  private static Optional<CertificateIdentity> getRequiredCertificateIdentity(
+      OpcUaClient client, SecurityPolicy securityPolicy) throws UaException {
+
+    if (securityPolicy == SecurityPolicy.None) {
+      return Optional.empty();
+    }
+
+    Optional<CertificateIdentity> certificateIdentity =
+        client.getCertificateIdentity(securityPolicy.getProfile());
+
+    if (certificateIdentity.isEmpty()) {
+      String reason =
+          client.getConfig().getCertificateGroup().isEmpty()
+              ? "no certificate group configured"
+              : "no configured certificate identity is compatible";
+
+      throw new UaException(
+          StatusCodes.Bad_ConfigurationError,
+          reason + " for security policy: " + securityPolicy.getUri());
+    }
+
+    return certificateIdentity;
   }
 
   private static ByteString certificateBytes(X509Certificate certificate) throws UaException {
@@ -2324,13 +2337,10 @@ public class SessionFsmFactory {
     if (securityPolicy == SecurityPolicy.None) {
       return new SignatureData(null, null);
     } else {
-      Optional<CertificateIdentity> certificateIdentity =
-          client.getCertificateIdentity(securityPolicy.getProfile());
       PrivateKey privateKey =
-          certificateIdentity
+          getRequiredCertificateIdentity(client, securityPolicy)
               .map(CertificateIdentity::keyPair)
               .map(KeyPair::getPrivate)
-              .or(() -> config.getKeyPair().map(KeyPair::getPrivate))
               .orElseThrow(
                   () ->
                       new UaException(

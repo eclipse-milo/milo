@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
-import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
@@ -466,7 +465,7 @@ class OpcUaServerLifecycleParticipantTest {
             .setApplicationUri("urn:eclipse:milo:test:server")
             .setApplicationName(LocalizedText.english("test server"))
             .setProductUri("urn:eclipse:milo:test")
-            .setCertificateManager(new DefaultCertificateManager(new MemoryCertificateQuarantine()))
+            .setCertificateManager(new DefaultCertificateManager())
             .setEndpoints(Set.of(endpoint))
             .build();
 

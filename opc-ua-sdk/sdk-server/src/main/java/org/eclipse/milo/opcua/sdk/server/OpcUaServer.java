@@ -87,6 +87,7 @@ import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingManager;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingManager;
 import org.eclipse.milo.opcua.stack.core.security.CertificateCompatibility;
+import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
 import org.eclipse.milo.opcua.stack.core.security.CertificateIdentitySelectionContext;
 import org.eclipse.milo.opcua.stack.core.security.CertificateIdentitySelector;
@@ -1343,6 +1344,15 @@ public class OpcUaServer extends AbstractServiceHandler {
     }
 
     NodeId certificateGroupId = effectiveCertificateGroupId(endpoint);
+    CertificateGroup certificateGroup =
+        certificateManager
+            .getCertificateGroup(certificateGroupId)
+            .orElseThrow(
+                () ->
+                    new EndpointResolutionException(
+                        "certificate group not registered: "
+                            + certificateGroupId.toParseableString()));
+
     NodeId certificateTypeId =
         endpoint
             .getEndpointCertificateConfig()
@@ -1351,7 +1361,7 @@ public class OpcUaServer extends AbstractServiceHandler {
 
     CertificateIdentitySelectionContext context =
         CertificateIdentitySelectionContext.forEndpointAdvertisement(
-            certificateManager, profile, certificateGroupId, certificateTypeId, certificate);
+            List.of(certificateGroup), profile, certificateTypeId, certificate);
 
     CertificateIdentity selectedIdentity =
         endpointCertificateIdentitySelector

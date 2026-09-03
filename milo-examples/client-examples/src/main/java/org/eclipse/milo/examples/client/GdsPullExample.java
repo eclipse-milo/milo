@@ -10,12 +10,16 @@
 
 package org.eclipse.milo.examples.client;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfigBuilder;
 import org.eclipse.milo.opcua.sdk.client.gds.GdsClient;
 import org.eclipse.milo.opcua.sdk.client.gds.GdsClient.FinishRequestResult;
 import org.eclipse.milo.opcua.sdk.client.gds.GdsClient.TrustListInfo;
@@ -27,7 +31,12 @@ import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.gds.types.ApplicationRecordDataType;
-import org.eclipse.milo.opcua.stack.core.security.MemoryTrustListManager;
+import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
+import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateGroup;
+import org.eclipse.milo.opcua.stack.core.security.DefaultClientCertificateValidator;
+import org.eclipse.milo.opcua.stack.core.security.FileBasedCertificateQuarantine;
+import org.eclipse.milo.opcua.stack.core.security.FileBasedTrustListManager;
+import org.eclipse.milo.opcua.stack.core.security.TrustListManager;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -59,6 +68,9 @@ public class GdsPullExample implements ClientExample {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
+  private final Path securityDir =
+      Paths.get(System.getProperty("java.io.tmpdir"), "client", "security", "gds");
+
   @Override
   public String getEndpointUrl() {
     return System.getProperty("gds.endpoint", "opc.tcp://localhost:58810/GlobalDiscoveryServer");
@@ -70,9 +82,50 @@ public class GdsPullExample implements ClientExample {
         System.getProperty("gds.username", "appadmin"), System.getProperty("gds.password", "demo"));
   }
 
+  /**
+   * A GDS pull installs an issued certificate and a pulled trust list into the client's own trust
+   * material, so this example configures a full {@link CertificateGroup} instead of the runner's
+   * fixed identity: the trust list has to be reachable through the group, not held only inside the
+   * validator. The group's trust list is where {@link #run} installs the pulled trust list and what
+   * this group's validator checks the GDS's certificate against, so a rejected GDS certificate
+   * lands in this example's quarantine directory and must be moved into its trust directory before
+   * the client can connect.
+   */
+  @Override
+  public void configureClient(OpcUaClientConfigBuilder builder) {
+    try {
+      Files.createDirectories(securityDir);
+      KeyStoreLoader loader = new KeyStoreLoader().load(securityDir);
+
+      var trustListManager =
+          FileBasedTrustListManager.createAndInitialize(securityDir.resolve("pki"));
+      var certificateQuarantine =
+          FileBasedCertificateQuarantine.create(securityDir.resolve("pki/rejected/certs"));
+
+      var certificateValidator =
+          new DefaultClientCertificateValidator(trustListManager, certificateQuarantine);
+
+      CertificateGroup certificateGroup =
+          DefaultCertificateGroup.forIdentity(
+              loader.getClientKeyPair(),
+              loader.getClientCertificateChain(),
+              trustListManager,
+              certificateQuarantine,
+              certificateValidator);
+
+      // The runner sets a validator over its own trust list before calling this method, and an
+      // explicitly set validator wins over the group's, so set this group's validator here.
+      builder.setCertificateGroup(certificateGroup).setCertificateValidator(certificateValidator);
+    } catch (Exception e) {
+      throw new RuntimeException("failed to configure the GDS client certificate group", e);
+    }
+  }
+
   @Override
   public void run(OpcUaClient client, CompletableFuture<OpcUaClient> future) throws Exception {
     client.connect();
+
+    CertificateGroup certificateGroup = client.getConfig().getCertificateGroup().orElseThrow();
 
     GdsClient gds = GdsClient.create(client);
     String applicationUri = client.getConfig().getApplicationUri().orElseThrow();
@@ -100,7 +153,7 @@ public class GdsPullExample implements ClientExample {
         gds.getCertificateStatus(applicationId, groupId, certificateTypeId));
 
     // A throwaway key pair; a real application would use the key pair of the certificate it is
-    // renewing and install the result through its CertificateManager.
+    // renewing and install the result into its CertificateGroup with updateCertificate.
     KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
     ByteString csr =
         ByteString.of(
@@ -130,7 +183,9 @@ public class GdsPullExample implements ClientExample {
     TrustListInfo info = gds.readTrustListInfo(trustListId);
     TrustListDataType trustList = TrustListReader.read(client, trustListId);
 
-    var trustListManager = new MemoryTrustListManager();
+    // Install the pulled trust list into the client's group; the group's validator uses it for
+    // the next connection.
+    TrustListManager trustListManager = certificateGroup.getTrustListManager();
     TrustListApplier.apply(trustList, trustListManager);
     logger.info(
         "TrustList {} (lastUpdateTime={}, updateFrequency={}): {} trusted certificates, {} trusted"

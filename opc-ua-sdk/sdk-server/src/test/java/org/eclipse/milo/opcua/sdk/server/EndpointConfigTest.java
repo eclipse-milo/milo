@@ -23,7 +23,6 @@ import static org.mockito.Mockito.mock;
 
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -40,12 +39,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultDiscoveryServiceSet;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
-import org.eclipse.milo.opcua.stack.core.security.CertificateFactory;
 import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
+import org.eclipse.milo.opcua.stack.core.security.CertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
-import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.TrustListManager;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
@@ -935,10 +933,13 @@ public class EndpointConfigTest {
   }
 
   private static CertificateManager manager(TestCertificateGroup... groups) {
-    List<CertificateGroup> certificateGroups =
-        Arrays.stream(groups).map(CertificateGroup.class::cast).toList();
+    var certificateManager = new DefaultCertificateManager();
 
-    return new DefaultCertificateManager(new MemoryCertificateQuarantine(), certificateGroups);
+    for (TestCertificateGroup group : groups) {
+      certificateManager.addCertificateGroup(group.certificateGroupId(), group);
+    }
+
+    return certificateManager;
   }
 
   private static TestCertificateGroup group(NodeId groupId, CertificateMaterial... certificates) {
@@ -1055,11 +1056,6 @@ public class EndpointConfigTest {
     }
 
     @Override
-    public NodeId getCertificateGroupId() {
-      return certificateGroupId;
-    }
-
-    @Override
     public List<NodeId> getSupportedCertificateTypeIds() {
       return List.copyOf(certificates.keySet());
     }
@@ -1070,14 +1066,17 @@ public class EndpointConfigTest {
     }
 
     @Override
+    public boolean hasCertificate(NodeId certificateTypeId) {
+      return certificates.containsKey(certificateTypeId);
+    }
+
+    @Override
     public List<Entry> getCertificateEntries() {
       return certificates.values().stream()
           .map(
               certificate ->
                   new CertificateGroup.Entry(
-                      certificateGroupId,
-                      certificate.certificateTypeId(),
-                      certificate.certificateChain()))
+                      certificate.certificateTypeId(), certificate.certificateChain()))
           .toList();
     }
 
@@ -1101,7 +1100,7 @@ public class EndpointConfigTest {
     }
 
     @Override
-    public CertificateFactory getCertificateFactory() {
+    public CertificateQuarantine getCertificateQuarantine() {
       throw new UnsupportedOperationException();
     }
 

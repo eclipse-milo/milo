@@ -24,7 +24,6 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -852,34 +851,20 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
     if (securityPolicy == SecurityPolicy.None) {
       return new ClientSecureChannel(securityPolicy, endpoint.getSecurityMode());
     } else {
-      Optional<CertificateIdentity> certificateIdentity =
-          application.getCertificateIdentity(securityPolicy.getProfile());
-
-      KeyPair keyPair =
-          certificateIdentity
-              .map(CertificateIdentity::keyPair)
-              .or(application::getKeyPair)
-              .orElseThrow(
-                  () ->
-                      new UaException(StatusCodes.Bad_ConfigurationError, "no KeyPair configured"));
-
-      X509Certificate certificate =
-          certificateIdentity
-              .map(CertificateIdentity::certificate)
-              .or(application::getCertificate)
+      CertificateIdentity certificateIdentity =
+          application
+              .getCertificateIdentity(securityPolicy.getProfile())
               .orElseThrow(
                   () ->
                       new UaException(
-                          StatusCodes.Bad_ConfigurationError, "no certificate configured"));
+                          StatusCodes.Bad_ConfigurationError,
+                          "no certificate identity for security policy: "
+                              + securityPolicy.getUri()));
 
+      KeyPair keyPair = certificateIdentity.keyPair();
+      X509Certificate certificate = certificateIdentity.certificate();
       List<X509Certificate> certificateChain =
-          certificateIdentity
-              .map(identity -> Arrays.asList(identity.certificateChain()))
-              .or(() -> application.getCertificateChain().map(Arrays::asList))
-              .orElseThrow(
-                  () ->
-                      new UaException(
-                          StatusCodes.Bad_ConfigurationError, "no certificate chain configured"));
+          Arrays.asList(certificateIdentity.certificateChain());
 
       if (securityPolicy.getProfile().secureChannelEnhancements()) {
         CertificateCompatibility.checkCompatible(securityPolicy.getProfile(), certificate);

@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.stack.core.security;
 
 import java.security.cert.X509Certificate;
+import java.util.List;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -23,25 +24,29 @@ import org.jspecify.annotations.Nullable;
  * client connection setup selects the local client certificate to use after an endpoint has been
  * chosen.
  *
+ * <p>{@code candidateGroups} lists the groups an identity may be selected from, in precedence
+ * order: when several groups hold an equally suitable identity, the earlier group wins.
+ *
  * @param purpose the operation that needs an identity.
- * @param certificateManager the certificate manager to select from.
+ * @param candidateGroups the certificate groups to select from, in precedence order.
  * @param securityPolicyProfile the security-policy profile that will use the identity.
- * @param certificateGroupId the certificate group to select from, or {@code null} if any group may
- *     be used.
  * @param certificateTypeId the preferred certificate type, or {@code null} if the policy should
  *     decide.
- * @param explicitCertificate an explicitly configured certificate that pins selection to its
- *     compatible manager identity, or {@code null}. Selectors return empty when the pinned
- *     certificate is not available so callers can use fixed-certificate compatibility paths.
+ * @param explicitCertificate an explicitly configured certificate that pins selection to the
+ *     candidate identity holding it, or {@code null}. Selectors return empty when the pinned
+ *     certificate is held by no candidate group so callers can report the misconfiguration.
  */
 @NullMarked
 public record CertificateIdentitySelectionContext(
     Purpose purpose,
-    CertificateManager certificateManager,
+    List<CertificateGroup> candidateGroups,
     SecurityPolicyProfile securityPolicyProfile,
-    @Nullable NodeId certificateGroupId,
     @Nullable NodeId certificateTypeId,
     @Nullable X509Certificate explicitCertificate) {
+
+  public CertificateIdentitySelectionContext {
+    candidateGroups = List.copyOf(candidateGroups);
+  }
 
   /**
    * Create a context for server endpoint advertisement.
@@ -50,25 +55,22 @@ public record CertificateIdentitySelectionContext(
    * endpoint description and the matching key material used later if a client opens a SecureChannel
    * to that endpoint.
    *
-   * @param certificateManager the certificate manager to select from.
+   * @param candidateGroups the certificate groups to select from, in precedence order.
    * @param securityPolicyProfile the endpoint security-policy profile.
-   * @param certificateGroupId the certificate group to select from, or {@code null}.
    * @param certificateTypeId the preferred certificate type, or {@code null}.
    * @param explicitCertificate the explicitly configured endpoint certificate, or {@code null}.
    * @return a selection context for endpoint advertisement.
    */
   public static CertificateIdentitySelectionContext forEndpointAdvertisement(
-      CertificateManager certificateManager,
+      List<CertificateGroup> candidateGroups,
       SecurityPolicyProfile securityPolicyProfile,
-      @Nullable NodeId certificateGroupId,
       @Nullable NodeId certificateTypeId,
       @Nullable X509Certificate explicitCertificate) {
 
     return new CertificateIdentitySelectionContext(
         Purpose.ENDPOINT_ADVERTISEMENT,
-        certificateManager,
+        candidateGroups,
         securityPolicyProfile,
-        certificateGroupId,
         certificateTypeId,
         explicitCertificate);
   }
@@ -79,35 +81,29 @@ public record CertificateIdentitySelectionContext(
    * <p>The selected identity is expected to provide the local client application certificate and
    * key material used when opening a SecureChannel and creating a session for the chosen endpoint.
    *
-   * @param certificateManager the certificate manager to select from.
+   * @param candidateGroups the certificate groups to select from, in precedence order.
    * @param securityPolicyProfile the selected endpoint security-policy profile.
-   * @param certificateGroupId the certificate group to select from, or {@code null}.
    * @param certificateTypeId the preferred certificate type, or {@code null}.
-   * @param explicitCertificate the explicitly configured client certificate to prefer, or {@code
-   *     null}.
    * @return a selection context for client connection setup.
    */
   public static CertificateIdentitySelectionContext forClientConnectionSetup(
-      CertificateManager certificateManager,
+      List<CertificateGroup> candidateGroups,
       SecurityPolicyProfile securityPolicyProfile,
-      @Nullable NodeId certificateGroupId,
-      @Nullable NodeId certificateTypeId,
-      @Nullable X509Certificate explicitCertificate) {
+      @Nullable NodeId certificateTypeId) {
 
     return new CertificateIdentitySelectionContext(
         Purpose.CLIENT_CONNECTION_SETUP,
-        certificateManager,
+        candidateGroups,
         securityPolicyProfile,
-        certificateGroupId,
         certificateTypeId,
-        explicitCertificate);
+        null);
   }
 
   /**
    * The runtime boundary that needs a selected certificate identity.
    *
    * <p>The purpose is caller context for selectors and diagnostics. It does not replace policy,
-   * certificate group, or certificate type inputs; those fields still describe the identity
+   * candidate group, or certificate type inputs; those fields still describe the identity
    * constraints and preferences.
    */
   public enum Purpose {

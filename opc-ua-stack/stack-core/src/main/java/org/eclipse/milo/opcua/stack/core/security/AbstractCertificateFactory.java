@@ -30,8 +30,8 @@ import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
 /**
  * Base {@link CertificateFactory} for Milo-managed application certificate types.
  *
- * <p>Use this class when a {@link CertificateGroup}, such as {@link DefaultApplicationGroup},
- * should be able to create missing local application identities for more than one OPC UA
+ * <p>Use this class when a {@link CertificateGroup}, such as {@link DefaultCertificateGroup},
+ * should be provisioned with missing local application identities for more than one OPC UA
  * CertificateType. The public {@link CertificateFactory} methods route each known certificate type
  * {@link NodeId} to a protected helper for key-pair generation, certificate-chain creation, or CSR
  * creation.
@@ -45,10 +45,10 @@ import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
  * {@link StatusCodes#Bad_NotSupported} so a factory does not silently claim support for identities
  * it cannot issue.
  *
- * <p>When {@link DefaultApplicationGroup#createMissingCertificates()} finds that its {@link
- * CertificateStore} is missing an entry for a configured certificate type, it calls {@link
- * #createKeyPair(NodeId)} followed by {@link #createCertificateChain(NodeId, KeyPair)} for that
- * same type. If a store is pre-populated for a type, the factory is not used for that entry.
+ * <p>When {@link #createMissingCertificates(CertificateGroup)} finds that a group is missing an
+ * entry for a supported certificate type, it calls {@link #createKeyPair(NodeId)} followed by
+ * {@link #createCertificateChain(NodeId, KeyPair)} for that same type. If the group already holds
+ * an entry for a type, the factory is not used for that entry.
  *
  * <p>Example:
  *
@@ -81,16 +81,16 @@ import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
  *     };
  *
  * var group =
- *     new DefaultApplicationGroup(
+ *     new DefaultCertificateGroup(
  *         trustListManager,
  *         certificateStore,
- *         certificateFactory,
+ *         certificateQuarantine,
  *         certificateValidator,
  *         List.of(
  *             NodeIds.RsaSha256ApplicationCertificateType,
  *             NodeIds.EccNistP256ApplicationCertificateType));
  *
- * group.createMissingCertificates();
+ * certificateFactory.createMissingCertificates(group);
  * }</pre>
  */
 public abstract class AbstractCertificateFactory implements CertificateFactory {
@@ -310,7 +310,7 @@ public abstract class AbstractCertificateFactory implements CertificateFactory {
    * is self-signed.
    *
    * <p>Subclasses must implement this method because RSA SHA-256 is the default application
-   * certificate type used by {@link DefaultApplicationGroup}. The leaf certificate's public key
+   * certificate type used by {@link DefaultCertificateGroup}. The leaf certificate's public key
    * must match {@code keyPair}.
    *
    * @param keyPair the {@link KeyPair} to use when creating the certificate chain.

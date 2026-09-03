@@ -84,6 +84,10 @@ public class ClientExampleRunner {
         new DefaultClientCertificateValidator(
             clientTrustListManager, new MemoryCertificateQuarantine());
 
+    // The example client has one key pair and certificate chain on hand, so it presents them
+    // directly. Its trust list lives inside the validator above, which is the only place that
+    // reads it. See GdsPullExample for a client that puts the trust list on a CertificateGroup
+    // instead, because the pull cycle has to reach it through the group to install into it.
     return OpcUaClient.create(
         clientExample.getEndpointUrl(),
         endpoints -> endpoints.stream().filter(clientExample.endpointFilter()).findFirst(),
@@ -92,9 +96,7 @@ public class ClientExampleRunner {
           clientConfigBuilder
               .setApplicationName(LocalizedText.english("eclipse milo opc-ua client"))
               .setApplicationUri("urn:eclipse:milo:examples:client")
-              .setKeyPair(loader.getClientKeyPair())
-              .setCertificate(loader.getClientCertificate())
-              .setCertificateChain(loader.getClientCertificateChain())
+              .setCertificateIdentity(loader.getClientKeyPair(), loader.getClientCertificateChain())
               .setCertificateValidator(certificateValidator)
               .setIdentityProvider(clientExample.getIdentityProvider());
           clientExample.configureClient(clientConfigBuilder);
@@ -118,14 +120,20 @@ public class ClientExampleRunner {
         // Make the example server trust the example client certificate by default.
         client
             .getConfig()
-            .getCertificate()
+            .getCertificateGroup()
             .ifPresent(
-                certificate ->
-                    certificateManager
-                        .getCertificateGroups()
+                clientGroup ->
+                    clientGroup
+                        .getCertificateIdentities()
                         .forEach(
-                            group ->
-                                group.getTrustListManager().addTrustedCertificate(certificate)));
+                            identity ->
+                                certificateManager
+                                    .getCertificateGroups()
+                                    .forEach(
+                                        group ->
+                                            group
+                                                .getTrustListManager()
+                                                .addTrustedCertificate(identity.certificate()))));
 
         // Make the example client trust the example server certificate by default.
         exampleServer
@@ -140,7 +148,7 @@ public class ClientExampleRunner {
                         .forEach(
                             entry ->
                                 clientTrustListManager.addTrustedCertificate(
-                                    entry.certificateChain[0])));
+                                    entry.certificateChain()[0])));
       }
 
       future.whenCompleteAsync(

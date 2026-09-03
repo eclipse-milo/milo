@@ -10,8 +10,6 @@
 
 package org.eclipse.milo.opcua.sdk.client;
 
-import java.security.KeyPair;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -21,10 +19,10 @@ import org.eclipse.milo.opcua.sdk.client.identity.IdentityProvider;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
 import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
+import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
 import org.eclipse.milo.opcua.stack.core.security.CertificateIdentitySelectionContext;
 import org.eclipse.milo.opcua.stack.core.security.CertificateIdentitySelector;
-import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateIdentitySelector;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
@@ -56,56 +54,28 @@ public interface OpcUaClientConfig {
   List<EndpointDescription> getDiscoveryEndpoints();
 
   /**
-   * Get the {@link KeyPair} to use.
+   * Get the {@link CertificateGroup} holding this client's identity and trust material.
    *
-   * <p>May be absent if connecting without security, must be present if connecting with security.
+   * <p>A client configures at most one group, either directly with {@link
+   * OpcUaClientConfigBuilder#setCertificateGroup} or as the group of one the builder creates for
+   * {@link OpcUaClientConfigBuilder#setCertificateIdentity}. A secured endpoint requires a group
+   * holding an identity compatible with the endpoint's security policy; without one, connecting
+   * fails with {@code Bad_ConfigurationError}. A {@link
+   * org.eclipse.milo.opcua.stack.core.security.SecurityPolicy#None} endpoint needs no group.
    *
-   * @return an {@link Optional} containing the {@link KeyPair} to use.
+   * @return the configured {@link CertificateGroup}, or empty when none is configured.
    */
-  Optional<KeyPair> getKeyPair();
-
-  /**
-   * Get the {@link X509Certificate} to use.
-   *
-   * <p>May be absent if connecting without security, must be present if connecting with security.
-   *
-   * @return an {@link Optional} containing the {@link X509Certificate} to use.
-   */
-  Optional<X509Certificate> getCertificate();
-
-  /**
-   * Get the {@link X509Certificate} to use as well as any certificates in the certificate chain.
-   *
-   * @return the {@link X509Certificate} to use as well as any certificates in the certificate
-   *     chain.
-   */
-  Optional<X509Certificate[]> getCertificateChain();
-
-  /**
-   * Get the {@link CertificateManager} used for policy-aware client certificate selection.
-   *
-   * @return an {@link Optional} containing the configured {@link CertificateManager}, if any.
-   */
-  default Optional<CertificateManager> getCertificateManager() {
+  default Optional<CertificateGroup> getCertificateGroup() {
     return Optional.empty();
   }
 
   /**
-   * Get the selector used with {@link #getCertificateManager()} to choose a local client identity.
+   * Get the selector used with {@link #getCertificateGroup()} to choose a local client identity.
    *
    * @return the certificate identity selector.
    */
   default CertificateIdentitySelector getCertificateIdentitySelector() {
     return DefaultCertificateIdentitySelector.create();
-  }
-
-  /**
-   * Get the requested certificate group for client identity selection.
-   *
-   * @return the requested certificate group ID, or empty when any group may be selected.
-   */
-  default Optional<NodeId> getCertificateGroupId() {
-    return Optional.empty();
   }
 
   /**
@@ -121,26 +91,24 @@ public interface OpcUaClientConfig {
    * Get a local certificate identity for the chosen endpoint security policy.
    *
    * @param securityPolicyProfile the selected endpoint security-policy profile.
-   * @return the selected identity, or empty when no {@link CertificateManager} is configured or no
-   *     identity matches.
+   * @return the selected identity, or empty when no {@link CertificateGroup} is configured or no
+   *     identity in the group matches.
    * @throws UaException if the selector fails while evaluating identities.
    */
   default Optional<CertificateIdentity> getCertificateIdentity(
       SecurityPolicyProfile securityPolicyProfile) throws UaException {
 
-    Optional<CertificateManager> certificateManager = getCertificateManager();
+    Optional<CertificateGroup> certificateGroup = getCertificateGroup();
 
-    if (certificateManager.isEmpty()) {
+    if (certificateGroup.isEmpty()) {
       return Optional.empty();
     }
 
     CertificateIdentitySelectionContext context =
         CertificateIdentitySelectionContext.forClientConnectionSetup(
-            certificateManager.get(),
+            List.of(certificateGroup.get()),
             securityPolicyProfile,
-            getCertificateGroupId().orElse(null),
-            getCertificateTypeId().orElse(null),
-            getCertificate().orElse(null));
+            getCertificateTypeId().orElse(null));
 
     return getCertificateIdentitySelector().select(context);
   }
@@ -148,6 +116,9 @@ public interface OpcUaClientConfig {
   /**
    * Get the {@link CertificateValidator} this client will use to validate server certificates when
    * connecting.
+   *
+   * <p>Unless set explicitly, this is the validator of the configured {@link CertificateGroup}, or
+   * an insecure validator when no group is configured.
    *
    * @return the validator this client will use to validate server certificates when connecting.
    */
@@ -270,14 +241,11 @@ public interface OpcUaClientConfig {
     OpcUaClientConfigBuilder builder = new OpcUaClientConfigBuilder();
 
     builder.setEndpoint(config.getEndpoint());
-    config.getKeyPair().ifPresent(builder::setKeyPair);
     builder.setDiscoveryEndpoints(new ArrayList<>(config.getDiscoveryEndpoints()));
-    config.getCertificate().ifPresent(builder::setCertificate);
-    config.getCertificateChain().ifPresent(builder::setCertificateChain);
-    config.getCertificateManager().ifPresent(builder::setCertificateManager);
+    config.getCertificateGroup().ifPresent(builder::setCertificateGroup);
     builder.setCertificateIdentitySelector(config.getCertificateIdentitySelector());
-    builder.setCertificateGroupId(config.getCertificateGroupId().orElse(null));
     builder.setCertificateTypeId(config.getCertificateTypeId().orElse(null));
+    builder.setCertificateValidator(config.getCertificateValidator());
     builder.setApplicationName(config.getApplicationName());
     config.getApplicationUri().ifPresent(builder::setApplicationUri);
     builder.setProductUri(config.getProductUri());

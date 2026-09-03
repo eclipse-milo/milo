@@ -11,27 +11,21 @@
 package org.eclipse.milo.opcua.stack.core.security;
 
 import java.util.Comparator;
-import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.jspecify.annotations.NullMarked;
 
+/**
+ * Ordering applied to the identities within one {@link CertificateGroup}.
+ *
+ * <p>Precedence across groups is not an ordering concern: a {@link CertificateManager} lists
+ * identities in group registration order and a selection context lists candidate groups in
+ * precedence order.
+ */
 @NullMarked
 final class CertificateIdentityOrdering {
 
+  /** Orders identities by the parseable string of their certificate type id. */
   static final Comparator<CertificateIdentity> STABLE =
-      Comparator.comparing(CertificateIdentityOrdering::certificateGroupSortKey)
-          .thenComparing(CertificateIdentityOrdering::certificateTypeSortKey);
+      Comparator.comparing(identity -> identity.certificateTypeId().toParseableString());
 
   private CertificateIdentityOrdering() {}
-
-  private static String certificateGroupSortKey(CertificateIdentity identity) {
-    return nodeIdSortKey(identity.certificateGroupId());
-  }
-
-  private static String certificateTypeSortKey(CertificateIdentity identity) {
-    return nodeIdSortKey(identity.certificateTypeId());
-  }
-
-  private static String nodeIdSortKey(NodeId nodeId) {
-    return nodeId.toParseableString();
-  }
 }

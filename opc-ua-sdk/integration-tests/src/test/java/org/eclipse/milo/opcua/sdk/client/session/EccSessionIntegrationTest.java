@@ -58,14 +58,13 @@ import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
-import org.eclipse.milo.opcua.stack.core.security.CertificateFactory;
 import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
+import org.eclipse.milo.opcua.stack.core.security.CertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.EccEncryptedSecret;
 import org.eclipse.milo.opcua.stack.core.security.EnhancedUserTokenAdditionalHeader;
-import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.TrustListManager;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
@@ -146,15 +145,15 @@ class EccSessionIntegrationTest {
 
     try (RunningServer running =
         startSecureServer(securityPolicy, certificateTypeId, securityMode, b -> {})) {
-      CertificateManager clientCertificateManager =
-          certificateManager(certificate(certificateTypeId, "client", CLIENT_URI));
+      CertificateGroup clientCertificateGroup =
+          certificateGroup(certificate(certificateTypeId, "client", CLIENT_URI));
       OpcUaClient client =
           connectClient(
               running,
               securityPolicy,
               securityMode,
               AnonymousProvider.INSTANCE,
-              clientCertificateManager,
+              clientCertificateGroup,
               b -> {});
 
       try {
@@ -192,15 +191,15 @@ class EccSessionIntegrationTest {
 
     try (RunningServer running =
         startSecureServer(securityPolicy, certificateTypeId, securityMode, b -> {})) {
-      CertificateManager clientCertificateManager =
-          certificateManager(certificate(certificateTypeId, "client", CLIENT_URI));
+      CertificateGroup clientCertificateGroup =
+          certificateGroup(certificate(certificateTypeId, "client", CLIENT_URI));
       OpcUaClient client =
           connectClient(
               running,
               securityPolicy,
               securityMode,
               new UsernameProvider(USERNAME, PASSWORD),
-              clientCertificateManager,
+              clientCertificateGroup,
               b -> {});
 
       try {
@@ -249,8 +248,8 @@ class EccSessionIntegrationTest {
 
     try (RunningServer running =
         startSecureServer(securityPolicy, certificateTypeId, securityMode, b -> {})) {
-      CertificateManager clientCertificateManager =
-          certificateManager(certificate(certificateTypeId, "client", CLIENT_URI));
+      CertificateGroup clientCertificateGroup =
+          certificateGroup(certificate(certificateTypeId, "client", CLIENT_URI));
 
       // The user identity certificate is independent of the application certificate, but uses the
       // same key type as the user-token policy so ECC policies sign with a matching EC key.
@@ -264,7 +263,7 @@ class EccSessionIntegrationTest {
               securityPolicy,
               securityMode,
               identityProvider,
-              clientCertificateManager,
+              clientCertificateGroup,
               b -> {});
 
       try {
@@ -314,14 +313,14 @@ class EccSessionIntegrationTest {
                 b.setMinimumSecureChannelLifetime(uint(RENEWAL_TEST_LIFETIME_MILLIS))
                     .setMaximumSecureChannelLifetime(uint(RENEWAL_TEST_LIFETIME_MILLIS)))) {
 
-      CertificateManager clientCertificateManager =
-          certificateManager(certificate(certificateTypeId, "client", CLIENT_URI));
+      CertificateGroup clientCertificateGroup =
+          certificateGroup(certificate(certificateTypeId, "client", CLIENT_URI));
       OpcUaClient client =
           connectClient(
               running,
               securityPolicy,
               securityMode,
-              clientCertificateManager,
+              clientCertificateGroup,
               b -> b.setChannelLifetime(uint(RENEWAL_TEST_LIFETIME_MILLIS)),
               b -> b.setSecurityKeysListener(keyset -> clientKeysCreated.countDown()));
 
@@ -368,15 +367,15 @@ class EccSessionIntegrationTest {
 
     try (RunningServer running =
         startSecureServer(securityPolicy, certificateTypeId, securityMode, b -> {})) {
-      CertificateManager clientCertificateManager =
-          certificateManager(certificate(certificateTypeId, "client", CLIENT_URI));
+      CertificateGroup clientCertificateGroup =
+          certificateGroup(certificate(certificateTypeId, "client", CLIENT_URI));
       OpcUaClient client =
           createClient(
               running,
               securityPolicy,
               securityMode,
               new UsernameProvider(USERNAME, PASSWORD),
-              clientCertificateManager,
+              clientCertificateGroup,
               b -> {},
               b -> {});
       client.addSessionActivityListener(
@@ -434,8 +433,8 @@ class EccSessionIntegrationTest {
 
     try (RunningServer running =
         startSecureServer(securityPolicy, certificateTypeId, securityMode, b -> {})) {
-      CertificateManager clientCertificateManager =
-          certificateManager(certificate(certificateTypeId, "client", CLIENT_URI));
+      CertificateGroup clientCertificateGroup =
+          certificateGroup(certificate(certificateTypeId, "client", CLIENT_URI));
 
       CertificateMaterial identity = certificate(certificateTypeId, "x509-user", CLIENT_URI);
       OpcUaClient client =
@@ -445,7 +444,7 @@ class EccSessionIntegrationTest {
               securityMode,
               new X509IdentityProvider(
                   identity.certificateChain()[0], identity.keyPair().getPrivate()),
-              clientCertificateManager,
+              clientCertificateGroup,
               b -> {},
               b -> {});
       client.addSessionActivityListener(
@@ -503,15 +502,15 @@ class EccSessionIntegrationTest {
             b -> {},
             server -> registerEphemeralKeyCapture(server, securityPolicy, rotatedReceiverKeys))) {
 
-      CertificateManager clientCertificateManager =
-          certificateManager(certificate(certificateTypeId, "client", CLIENT_URI));
+      CertificateGroup clientCertificateGroup =
+          certificateGroup(certificate(certificateTypeId, "client", CLIENT_URI));
       OpcUaClient client =
           createClient(
               running,
               securityPolicy,
               MessageSecurityMode.SignAndEncrypt,
               new UsernameProvider(USERNAME, PASSWORD),
-              clientCertificateManager,
+              clientCertificateGroup,
               b -> {},
               b -> {});
       client.addSessionActivityListener(
@@ -578,14 +577,14 @@ class EccSessionIntegrationTest {
     NodeId certificateTypeId = NodeIds.EccNistP256ApplicationCertificateType;
 
     try (RunningServer running = startSecureServer(securityPolicy, certificateTypeId, b -> {})) {
-      CertificateManager clientCertificateManager =
-          certificateManager(certificate(certificateTypeId, "client", CLIENT_URI));
+      CertificateGroup clientCertificateGroup =
+          certificateGroup(certificate(certificateTypeId, "client", CLIENT_URI));
       OpcUaClient client =
           createClient(
               running,
               securityPolicy,
               new MalformedHeaderUsernameProvider(),
-              clientCertificateManager,
+              clientCertificateGroup,
               b -> {},
               b -> {});
 
@@ -606,15 +605,15 @@ class EccSessionIntegrationTest {
     SecurityPolicy tokenPolicy = SecurityPolicy.ECC_nistP256_AesGcm;
 
     try (RunningServer running = startNoneEndpointWithoutCertificate(tokenPolicy)) {
-      CertificateManager clientCertificateManager =
-          certificateManager(
+      CertificateGroup clientCertificateGroup =
+          certificateGroup(
               certificate(NodeIds.EccNistP256ApplicationCertificateType, "client", CLIENT_URI));
       OpcUaClient client =
           createClient(
               running,
               SecurityPolicy.None,
               new UsernameProvider(USERNAME, PASSWORD),
-              clientCertificateManager,
+              clientCertificateGroup,
               b -> {},
               b -> {});
 
@@ -659,15 +658,15 @@ class EccSessionIntegrationTest {
             b -> {},
             EccSessionIntegrationTest::registerTamperedClientSignature)) {
 
-      CertificateManager clientCertificateManager =
-          certificateManager(certificate(certificateTypeId, "client", CLIENT_URI));
+      CertificateGroup clientCertificateGroup =
+          certificateGroup(certificate(certificateTypeId, "client", CLIENT_URI));
       OpcUaClient client =
           createClient(
               running,
               securityPolicy,
               MessageSecurityMode.SignAndEncrypt,
               AnonymousProvider.INSTANCE,
-              clientCertificateManager,
+              clientCertificateGroup,
               b -> {},
               b -> {});
 
@@ -710,8 +709,8 @@ class EccSessionIntegrationTest {
             b -> {},
             EccSessionIntegrationTest::registerTamperedUserTokenSignature)) {
 
-      CertificateManager clientCertificateManager =
-          certificateManager(certificate(certificateTypeId, "client", CLIENT_URI));
+      CertificateGroup clientCertificateGroup =
+          certificateGroup(certificate(certificateTypeId, "client", CLIENT_URI));
 
       CertificateMaterial identity = certificate(certificateTypeId, "x509-user", CLIENT_URI);
       OpcUaClient client =
@@ -721,7 +720,7 @@ class EccSessionIntegrationTest {
               MessageSecurityMode.SignAndEncrypt,
               new X509IdentityProvider(
                   identity.certificateChain()[0], identity.keyPair().getPrivate()),
-              clientCertificateManager,
+              clientCertificateGroup,
               b -> {},
               b -> {});
 
@@ -753,8 +752,8 @@ class EccSessionIntegrationTest {
             b -> {},
             server -> {})) {
 
-      CertificateManager clientCertificateManager =
-          certificateManager(certificate(channelCertificateType, "client", CLIENT_URI));
+      CertificateGroup clientCertificateGroup =
+          certificateGroup(certificate(channelCertificateType, "client", CLIENT_URI));
 
       // The user identity certificate matches the enhanced token policy's key type.
       CertificateMaterial identity =
@@ -766,7 +765,7 @@ class EccSessionIntegrationTest {
               MessageSecurityMode.SignAndEncrypt,
               new X509IdentityProvider(
                   identity.certificateChain()[0], identity.keyPair().getPrivate()),
-              clientCertificateManager,
+              clientCertificateGroup,
               b -> {},
               b -> {});
 
@@ -796,15 +795,15 @@ class EccSessionIntegrationTest {
             b -> {},
             EccSessionIntegrationTest::registerTamperedServerSignature)) {
 
-      CertificateManager clientCertificateManager =
-          certificateManager(certificate(certificateTypeId, "client", CLIENT_URI));
+      CertificateGroup clientCertificateGroup =
+          certificateGroup(certificate(certificateTypeId, "client", CLIENT_URI));
       OpcUaClient client =
           createClient(
               running,
               securityPolicy,
               MessageSecurityMode.SignAndEncrypt,
               AnonymousProvider.INSTANCE,
-              clientCertificateManager,
+              clientCertificateGroup,
               b -> {},
               b -> {});
 
@@ -912,7 +911,7 @@ class EccSessionIntegrationTest {
       RunningServer running,
       SecurityPolicy securityPolicy,
       IdentityProvider identityProvider,
-      CertificateManager clientCertificateManager,
+      CertificateGroup clientCertificateGroup,
       java.util.function.Consumer<OpcTcpClientTransportConfigBuilder> configureTransport)
       throws UaException {
 
@@ -921,7 +920,7 @@ class EccSessionIntegrationTest {
         securityPolicy,
         defaultSecurityMode(securityPolicy),
         identityProvider,
-        clientCertificateManager,
+        clientCertificateGroup,
         configureTransport);
   }
 
@@ -930,7 +929,7 @@ class EccSessionIntegrationTest {
       SecurityPolicy securityPolicy,
       MessageSecurityMode securityMode,
       IdentityProvider identityProvider,
-      CertificateManager clientCertificateManager,
+      CertificateGroup clientCertificateGroup,
       java.util.function.Consumer<OpcTcpClientTransportConfigBuilder> configureTransport)
       throws UaException {
 
@@ -940,7 +939,7 @@ class EccSessionIntegrationTest {
             securityPolicy,
             securityMode,
             identityProvider,
-            clientCertificateManager,
+            clientCertificateGroup,
             configureTransport,
             b -> {});
     client.connect();
@@ -951,7 +950,7 @@ class EccSessionIntegrationTest {
   private static OpcUaClient connectClient(
       RunningServer running,
       SecurityPolicy securityPolicy,
-      CertificateManager clientCertificateManager,
+      CertificateGroup clientCertificateGroup,
       java.util.function.Consumer<OpcTcpClientTransportConfigBuilder> configureTransport,
       java.util.function.Consumer<OpcUaClientConfigBuilder> configureClient)
       throws UaException {
@@ -960,7 +959,7 @@ class EccSessionIntegrationTest {
         running,
         securityPolicy,
         defaultSecurityMode(securityPolicy),
-        clientCertificateManager,
+        clientCertificateGroup,
         configureTransport,
         configureClient);
   }
@@ -969,7 +968,7 @@ class EccSessionIntegrationTest {
       RunningServer running,
       SecurityPolicy securityPolicy,
       MessageSecurityMode securityMode,
-      CertificateManager clientCertificateManager,
+      CertificateGroup clientCertificateGroup,
       java.util.function.Consumer<OpcTcpClientTransportConfigBuilder> configureTransport,
       java.util.function.Consumer<OpcUaClientConfigBuilder> configureClient)
       throws UaException {
@@ -980,7 +979,7 @@ class EccSessionIntegrationTest {
             securityPolicy,
             securityMode,
             AnonymousProvider.INSTANCE,
-            clientCertificateManager,
+            clientCertificateGroup,
             configureTransport,
             configureClient);
     client.connect();
@@ -992,7 +991,7 @@ class EccSessionIntegrationTest {
       RunningServer running,
       SecurityPolicy securityPolicy,
       IdentityProvider identityProvider,
-      CertificateManager clientCertificateManager,
+      CertificateGroup clientCertificateGroup,
       java.util.function.Consumer<OpcTcpClientTransportConfigBuilder> configureTransport,
       java.util.function.Consumer<OpcUaClientConfigBuilder> configureClient)
       throws UaException {
@@ -1002,7 +1001,7 @@ class EccSessionIntegrationTest {
         securityPolicy,
         defaultSecurityMode(securityPolicy),
         identityProvider,
-        clientCertificateManager,
+        clientCertificateGroup,
         configureTransport,
         configureClient);
   }
@@ -1012,7 +1011,7 @@ class EccSessionIntegrationTest {
       SecurityPolicy securityPolicy,
       MessageSecurityMode securityMode,
       IdentityProvider identityProvider,
-      CertificateManager clientCertificateManager,
+      CertificateGroup clientCertificateGroup,
       java.util.function.Consumer<OpcTcpClientTransportConfigBuilder> configureTransport,
       java.util.function.Consumer<OpcUaClientConfigBuilder> configureClient)
       throws UaException {
@@ -1034,7 +1033,7 @@ class EccSessionIntegrationTest {
           b.setApplicationName(LocalizedText.english("Eclipse Milo enhanced-policy test client"))
               .setApplicationUri(CLIENT_URI)
               .setRequestTimeout(uint(5_000))
-              .setCertificateManager(clientCertificateManager)
+              .setCertificateGroup(clientCertificateGroup)
               .setIdentityProvider(identityProvider);
 
           configureClient.accept(b);
@@ -1237,12 +1236,11 @@ class EccSessionIntegrationTest {
   }
 
   private static CertificateManager certificateManager(CertificateMaterial... certificates) {
-    return new DefaultCertificateManager(
-        new MemoryCertificateQuarantine(),
-        List.of(
-            new TestCertificateGroup(
-                NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup,
-                List.of(certificates))));
+    return new DefaultCertificateManager(certificateGroup(certificates));
+  }
+
+  private static CertificateGroup certificateGroup(CertificateMaterial... certificates) {
+    return new TestCertificateGroup(List.of(certificates));
   }
 
   private static synchronized CertificateMaterial certificate(
@@ -1394,13 +1392,11 @@ class EccSessionIntegrationTest {
   private record CertificateKey(
       NodeId certificateTypeId, String commonName, String applicationUri) {}
 
-  private record TestCertificateGroup(
-      NodeId certificateGroupId, Map<NodeId, CertificateMaterial> certificates)
+  private record TestCertificateGroup(Map<NodeId, CertificateMaterial> certificates)
       implements CertificateGroup {
 
-    private TestCertificateGroup(
-        NodeId certificateGroupId, List<CertificateMaterial> certificates) {
-      this(certificateGroupId, toCertificateMap(certificates));
+    private TestCertificateGroup(List<CertificateMaterial> certificates) {
+      this(toCertificateMap(certificates));
     }
 
     private static Map<NodeId, CertificateMaterial> toCertificateMap(
@@ -1419,11 +1415,6 @@ class EccSessionIntegrationTest {
     }
 
     @Override
-    public NodeId getCertificateGroupId() {
-      return certificateGroupId;
-    }
-
-    @Override
     public List<NodeId> getSupportedCertificateTypeIds() {
       return List.copyOf(certificates.keySet());
     }
@@ -1434,15 +1425,23 @@ class EccSessionIntegrationTest {
     }
 
     @Override
+    public CertificateQuarantine getCertificateQuarantine() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public List<Entry> getCertificateEntries() {
       return certificates.values().stream()
           .map(
               certificate ->
                   new CertificateGroup.Entry(
-                      certificateGroupId,
-                      certificate.certificateTypeId(),
-                      certificate.certificateChain()))
+                      certificate.certificateTypeId(), certificate.certificateChain()))
           .toList();
+    }
+
+    @Override
+    public boolean hasCertificate(NodeId certificateTypeId) {
+      return certificates.containsKey(certificateTypeId);
     }
 
     @Override
@@ -1461,11 +1460,6 @@ class EccSessionIntegrationTest {
     @Override
     public void updateCertificate(
         NodeId certificateTypeId, KeyPair keyPair, X509Certificate[] certificateChain) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public CertificateFactory getCertificateFactory() {
       throw new UnsupportedOperationException();
     }
 

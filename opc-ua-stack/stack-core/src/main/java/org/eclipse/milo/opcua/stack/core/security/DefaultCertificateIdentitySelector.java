@@ -29,16 +29,16 @@ import org.slf4j.LoggerFactory;
 /**
  * Default deterministic selector for local certificate identities.
  *
- * <p>The selector limits candidates to the requested certificate group when one is provided and to
- * identities that are locally compatible with the security policy profile (see {@link
+ * <p>Candidates are the identities of the context's candidate groups, in candidate-group order,
+ * limited to those that are locally compatible with the security policy profile (see {@link
  * CertificateCompatibility#checkLocalCompatible(SecurityPolicyProfile, CertificateIdentity)}, which
  * enforces functional requirements but does not reject legacy RSA identities for omitting the
- * strict KeyUsage bit set). An explicitly configured certificate pins selection to the matching
- * manager identity. If the manager does not contain that certificate, or the identity is not
- * compatible with the requested profile, the selector returns empty so the caller can use its
- * fixed-certificate fallback. Without an explicit certificate, the selector prefers an exact
- * certificate type request, the type preferred by the security policy profile, and finally stable
- * certificate group/type ordering.
+ * strict KeyUsage bit set). An explicitly configured certificate pins selection to the candidate
+ * holding it; if no candidate holds that certificate, or the candidate is not compatible with the
+ * requested profile, the selector returns empty so the caller can report a misconfigured
+ * certificate. Without an explicit certificate, the selector prefers an exact certificate type
+ * request, then the type preferred by the security policy profile, and finally the earliest
+ * candidate.
  *
  * <p>An explicitly configured certificate that is excluded for incompatibility is logged at {@code
  * WARN} with the reason, so it is never silently lost. A routine non-match among the other
@@ -71,31 +71,29 @@ public final class DefaultCertificateIdentitySelector implements CertificateIden
 
     List<CertificateIdentity> candidates = new ArrayList<>();
 
-    for (CertificateIdentity identity : context.certificateManager().getCertificateIdentities()) {
-
-      if (!matchesCertificateGroup(context.certificateGroupId(), identity)) {
-        continue;
-      }
-
-      try {
-        // Local selection only enforces functional requirements (certificate type, public-key
-        // family/curve, ECC keyCertSign for self-signed). It does not gate legacy RSA identities on
-        // the strict KeyUsage bit set, which externally provisioned certificates commonly omit.
-        CertificateCompatibility.checkLocalCompatible(context.securityPolicyProfile(), identity);
-        candidates.add(identity);
-      } catch (UaException | RuntimeException e) {
-        // Never let an incompatible identity vanish without an actionable reason; an explicitly
-        // configured certificate being rejected is especially worth surfacing.
-        if (explicitThumbprint != null && explicitThumbprint.equals(identity.thumbprint())) {
-          LOGGER.warn(
-              "Explicitly configured certificate is not compatible with security policy {}: {}",
-              context.securityPolicyProfile().securityPolicy().getUri(),
-              e.getMessage());
-        } else {
-          LOGGER.debug(
-              "Certificate identity is not compatible with security policy {}: {}",
-              context.securityPolicyProfile().securityPolicy().getUri(),
-              e.getMessage());
+    for (CertificateGroup certificateGroup : context.candidateGroups()) {
+      for (CertificateIdentity identity : certificateGroup.getCertificateIdentities()) {
+        try {
+          // Local selection only enforces functional requirements (certificate type, public-key
+          // family/curve, ECC keyCertSign for self-signed). It does not gate legacy RSA identities
+          // on the strict KeyUsage bit set, which externally provisioned certificates commonly
+          // omit.
+          CertificateCompatibility.checkLocalCompatible(context.securityPolicyProfile(), identity);
+          candidates.add(identity);
+        } catch (UaException | RuntimeException e) {
+          // Never let an incompatible identity vanish without an actionable reason; an explicitly
+          // configured certificate being rejected is especially worth surfacing.
+          if (explicitThumbprint != null && explicitThumbprint.equals(identity.thumbprint())) {
+            LOGGER.warn(
+                "Explicitly configured certificate is not compatible with security policy {}: {}",
+                context.securityPolicyProfile().securityPolicy().getUri(),
+                e.getMessage());
+          } else {
+            LOGGER.debug(
+                "Certificate identity is not compatible with security policy {}: {}",
+                context.securityPolicyProfile().securityPolicy().getUri(),
+                e.getMessage());
+          }
         }
       }
     }
@@ -104,6 +102,8 @@ public final class DefaultCertificateIdentitySelector implements CertificateIden
       return selectExplicitIdentity(context, explicitThumbprint, candidates);
     }
 
+    // Stream.min keeps the earliest of equally ranked candidates, so candidate-group order is the
+    // final tie-breaker.
     return candidates.stream().min(selectionOrder(context));
   }
 
@@ -143,14 +143,7 @@ public final class DefaultCertificateIdentitySelector implements CertificateIden
             (CertificateIdentity identity) ->
                 matchesCertificateType(requestedCertificateTypeId, identity) ? 0 : 1)
         .thenComparingInt(
-            identity -> matchesCertificateType(policyPreferredCertificateTypeId, identity) ? 0 : 1)
-        .thenComparing(CertificateIdentityOrdering.STABLE);
-  }
-
-  private static boolean matchesCertificateGroup(
-      @Nullable NodeId certificateGroupId, CertificateIdentity identity) {
-
-    return certificateGroupId == null || certificateGroupId.equals(identity.certificateGroupId());
+            identity -> matchesCertificateType(policyPreferredCertificateTypeId, identity) ? 0 : 1);
   }
 
   private static boolean matchesCertificateType(

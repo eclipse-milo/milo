@@ -14,8 +14,6 @@ import static java.util.Objects.requireNonNullElse;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.SessionInitializer;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
-import java.security.KeyPair;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -61,8 +59,8 @@ import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingManager;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingManager;
+import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
-import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
@@ -523,7 +521,6 @@ public class OpcUaClient {
   private final Object certificateIdentityLock = new Object();
   private final Map<SecurityPolicyProfile, Optional<CertificateIdentity>>
       selectedCertificateIdentities = new HashMap<>();
-  private @Nullable List<String> managerApplicationUris;
 
   public OpcUaClient(OpcUaClientConfig config, OpcClientTransport transport) {
     this.config = config;
@@ -562,21 +559,6 @@ public class OpcUaClient {
           @Override
           public EndpointDescription getEndpoint() {
             return config.getEndpoint();
-          }
-
-          @Override
-          public Optional<KeyPair> getKeyPair() {
-            return config.getKeyPair();
-          }
-
-          @Override
-          public Optional<X509Certificate> getCertificate() {
-            return config.getCertificate();
-          }
-
-          @Override
-          public Optional<X509Certificate[]> getCertificateChain() {
-            return config.getCertificateChain();
           }
 
           @Override
@@ -835,7 +817,8 @@ public class OpcUaClient {
    * rotated {@link CertificateIdentity} is picked up on the next connection attempt.
    *
    * @param securityPolicyProfile the selected endpoint security-policy profile.
-   * @return the selected identity, or empty when no policy-aware identity source is configured.
+   * @return the selected identity, or empty when no {@link CertificateGroup} is configured or no
+   *     identity in it is compatible with the profile.
    * @throws UaException if identity selection fails while evaluating candidates.
    */
   public Optional<CertificateIdentity> getCertificateIdentity(
@@ -849,10 +832,6 @@ public class OpcUaClient {
       }
 
       Optional<CertificateIdentity> selected = config.getCertificateIdentity(securityPolicyProfile);
-      if (selectedCertificateIdentities.isEmpty()) {
-        // First selection for this connection: surface inconsistent manager identities once.
-        getManagerApplicationUris();
-      }
       selectedCertificateIdentities.put(securityPolicyProfile, selected);
 
       return selected;
@@ -863,14 +842,14 @@ public class OpcUaClient {
    * Resolve the client application URI from the effective certificate identity.
    *
    * <p>An explicitly configured URI takes precedence. Otherwise the URI is read from {@code
-   * certificateIdentity}, then the fixed compatibility certificate. When no certificate is
-   * presented, the URI shared by every {@link CertificateManager} identity is used so a {@link
-   * SecurityPolicy#None} connection still advertises the same URI as secure connections. The {@link
+   * certificateIdentity}. When no identity is presented, as on a {@link SecurityPolicy#None}
+   * connection, the URI shared by every identity of the configured {@link CertificateGroup} is used
+   * so the client advertises the same URI as on its secure connections. The {@link
    * #APPLICATION_URI_NOT_CONFIGURED} placeholder is returned only when none of these yields a SAN
    * URI.
    *
    * @param certificateIdentity the identity selected for the connection, or {@code null} when no
-   *     managed identity is presented.
+   *     identity is presented.
    * @return the effective client application URI.
    */
   public String resolveApplicationUri(@Nullable CertificateIdentity certificateIdentity) {
@@ -879,77 +858,48 @@ public class OpcUaClient {
       return configuredUri.get();
     }
 
-    Optional<X509Certificate> fixedCertificate = config.getCertificate();
-
     if (certificateIdentity != null) {
-      Optional<String> uri = CertificateUtil.getSanUri(certificateIdentity.certificate());
-      if (uri.isPresent()) {
-        return uri.get();
-      }
+      return CertificateUtil.getSanUri(certificateIdentity.certificate())
+          .orElse(APPLICATION_URI_NOT_CONFIGURED);
     }
 
-    if (fixedCertificate.isPresent()) {
-      Optional<String> uri = CertificateUtil.getSanUri(fixedCertificate.get());
-      if (uri.isPresent()) {
-        return uri.get();
-      }
-    }
-
-    if (certificateIdentity == null && fixedCertificate.isEmpty()) {
-      return getManagerApplicationUri().orElse(APPLICATION_URI_NOT_CONFIGURED);
-    }
-
-    return APPLICATION_URI_NOT_CONFIGURED;
-  }
-
-  private Optional<String> getManagerApplicationUri() {
-    List<String> applicationUris = getManagerApplicationUris();
-
-    return applicationUris.size() == 1 ? Optional.of(applicationUris.get(0)) : Optional.empty();
+    return getGroupApplicationUri().orElse(APPLICATION_URI_NOT_CONFIGURED);
   }
 
   /**
-   * Get the distinct SAN URIs of the {@link CertificateManager} identities, computed once per
-   * connection and logged at WARN when they differ.
+   * Get the SAN URI shared by every identity of the configured {@link CertificateGroup}, or empty
+   * when there is no group, no identity carries a URI, or the identities disagree.
    */
-  private List<String> getManagerApplicationUris() {
-    synchronized (certificateIdentityLock) {
-      if (managerApplicationUris == null) {
-        try {
-          managerApplicationUris =
-              config.getCertificateManager().stream()
-                  .flatMap(manager -> manager.getCertificateIdentities().stream())
-                  .map(CertificateIdentity::certificate)
-                  .map(CertificateUtil::getSanUri)
-                  .flatMap(Optional::stream)
-                  .distinct()
-                  .sorted()
-                  .toList();
+  private Optional<String> getGroupApplicationUri() {
+    Optional<CertificateGroup> certificateGroup = config.getCertificateGroup();
+    if (certificateGroup.isEmpty()) {
+      return Optional.empty();
+    }
 
-          if (managerApplicationUris.size() > 1) {
-            logger.warn(
-                "CertificateManager identities have differing ApplicationUris: {}",
-                managerApplicationUris);
-          }
-        } catch (RuntimeException e) {
-          logger.warn("Could not inspect CertificateManager identity ApplicationUris", e);
-          managerApplicationUris = List.of();
-        }
-      }
+    try {
+      List<String> applicationUris =
+          certificateGroup.get().getCertificateIdentities().stream()
+              .map(CertificateIdentity::certificate)
+              .map(CertificateUtil::getSanUri)
+              .flatMap(Optional::stream)
+              .distinct()
+              .toList();
 
-      return managerApplicationUris;
+      return applicationUris.size() == 1 ? Optional.of(applicationUris.get(0)) : Optional.empty();
+    } catch (RuntimeException e) {
+      logger.warn("Could not inspect CertificateGroup identity ApplicationUris", e);
+      return Optional.empty();
     }
   }
 
   /**
    * Clear the cached certificate identities so that the next {@link
    * #getCertificateIdentity(SecurityPolicyProfile)} re-evaluates the configured selector, picking
-   * up any rotation in the underlying {@code CertificateManager}.
+   * up any rotation in the underlying {@link CertificateGroup}.
    */
   private void clearCertificateIdentities() {
     synchronized (certificateIdentityLock) {
       selectedCertificateIdentities.clear();
-      managerApplicationUris = null;
     }
   }
 

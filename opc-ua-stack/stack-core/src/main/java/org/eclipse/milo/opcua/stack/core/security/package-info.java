@@ -67,19 +67,59 @@
  *
  * <h2>Certificate and trust material</h2>
  *
- * <p>Certificate managers and certificate groups remain the source of local certificate identity
- * and trust material. Certificate validators enforce trust-list and certificate-chain decisions at
- * connection boundaries; callers should keep certificate lookup, trust configuration, and policy
- * selection coordinated through these APIs. Operations that consume multiple trust lists should
- * capture one {@link org.eclipse.milo.opcua.stack.core.security.TrustListSnapshot}, and operations
- * that read and then change trust lists should do so through {@code TrustListManager.update}.
- * Built-in trust list managers capture snapshots and apply updates atomically; custom managers
- * should override those two methods when they need the same guarantee. {@link
- * org.eclipse.milo.opcua.stack.core.security.CertificateIdentity} represents a concrete local
- * identity selected from those sources for endpoint advertisement or SecureChannel setup. {@link
+ * <p>A {@link org.eclipse.milo.opcua.stack.core.security.CertificateGroup} is the unit of local
+ * identity and trust. It holds the application certificates and key pairs of the certificate types
+ * it supports, the {@link org.eclipse.milo.opcua.stack.core.security.TrustListManager} used to
+ * validate peers, the {@link org.eclipse.milo.opcua.stack.core.security.CertificateValidator} that
+ * applies that trust list, and the {@link
+ * org.eclipse.milo.opcua.stack.core.security.CertificateQuarantine} holding what the validator
+ * rejected. A group has no identity of its own and no factory; {@link
+ * org.eclipse.milo.opcua.stack.core.security.DefaultCertificateGroup} is the store-backed
+ * implementation, and {@code DefaultCertificateGroup.forIdentity} wraps a single key pair and
+ * certificate chain as a group of one.
+ *
+ * <p>Servers and clients use groups differently. A server owns one or more groups and registers
+ * each under the {@link org.eclipse.milo.opcua.stack.core.types.builtin.NodeId} of its {@code
+ * CertificateGroupType} node in a {@link
+ * org.eclipse.milo.opcua.stack.core.security.CertificateManager}; endpoint configuration, Push
+ * management, and the address space name groups by that id, and the manager resolves ids to groups
+ * and groups to ids. The manager also answers the thumbprint lookups a SecureChannel or session
+ * handshake needs. Registration order is the precedence between groups. A client configures exactly
+ * one group and never names it; there is no manager on the client. A client with only a key pair
+ * and certificate on hand does not construct a group itself: the client config builder wraps them
+ * in a group of one whose trust list and quarantine are empty, and server validation is the
+ * client's configured validator.
+ *
+ * <p>Provisioning is a factory concern: {@link
+ * org.eclipse.milo.opcua.stack.core.security.CertificateFactory#createMissingCertificates} creates
+ * and installs material for every supported type a group reports absent, and never replaces an
+ * entry the group cannot read. Applications whose certificates are issued externally, for example
+ * by a GDS, install them through {@code CertificateGroup.updateCertificate} and never call the
+ * factory.
+ *
+ * <p>Rejections are per group. A certificate rejected while validating against one group's trust
+ * list lands only in that group's quarantine, so trusting it from another group's management
+ * surface is not possible by accident. {@code CertificateManager.getRejectedCertificates()} is the
+ * server-wide rejected list that {@code GetRejectedList} returns: the de-duplicated union over
+ * {@code getCertificateGroups()}.
+ *
+ * <p>{@link org.eclipse.milo.opcua.stack.core.security.CertificateIdentity} represents one usable
+ * identity of a group: its group, certificate type, key pair, and chain. {@link
+ * org.eclipse.milo.opcua.stack.core.security.CertificateIdentitySelectionContext} names the
+ * candidate groups, in precedence order, from which a {@link
+ * org.eclipse.milo.opcua.stack.core.security.CertificateIdentitySelector} picks an identity for
+ * endpoint advertisement or client connection setup; a server passes the endpoint's registered
+ * group and a client passes its one group. {@link
  * org.eclipse.milo.opcua.stack.core.security.CertificateCompatibility} contains the
  * profile-specific certificate type, public key, and key-usage checks used before an identity is
- * advertised or selected for a secured connection.
+ * advertised or selected for a secured connection, and the certificate type inference used by the
+ * group-of-one helper.
+ *
+ * <p>Operations that consume multiple trust lists should capture one {@link
+ * org.eclipse.milo.opcua.stack.core.security.TrustListSnapshot}, and operations that read and then
+ * change trust lists should do so through {@code TrustListManager.update}. Built-in trust list
+ * managers capture snapshots and apply updates atomically; custom managers should override those
+ * two methods when they need the same guarantee.
  *
  * <p>{@link org.eclipse.milo.opcua.stack.core.security.KeyStoreCertificateStore} persists local
  * identities with a read-modify-replace boundary. Each mutation incorporates KeyStore entries
@@ -88,10 +128,10 @@
  * coordinate writes that overlap.
  *
  * <p>{@link org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager} provides a
- * thread-safe mutable group registry. Applications own the groups and their backing stores and
- * trust-list managers. Removing or replacing a group returns it to the application without closing
- * its resources, so the application must coordinate final closure with any lookups already in
- * progress.
+ * thread-safe mutable group registry. Applications own the groups and their backing stores,
+ * trust-list managers, and quarantines. Removing or replacing a group returns it to the application
+ * without closing its resources, so the application must coordinate final closure with any lookups
+ * already in progress.
  *
  * <h2>Runtime boundaries</h2>
  *

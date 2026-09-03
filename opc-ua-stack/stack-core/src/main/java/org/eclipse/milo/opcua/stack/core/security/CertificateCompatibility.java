@@ -23,9 +23,12 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.ECGenParameterSpec;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.NamedParameterSpec;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis;
@@ -55,6 +58,58 @@ public final class CertificateCompatibility {
       ecParameterSpec("brainpoolP384r1", new BouncyCastleProvider());
 
   private CertificateCompatibility() {}
+
+  /**
+   * Infer the OPC UA application certificate type of {@code certificate} from its public key and
+   * signature algorithm.
+   *
+   * <p>RSA keys map to {@link NodeIds#RsaSha256ApplicationCertificateType}, or {@link
+   * NodeIds#RsaMinApplicationCertificateType} when the certificate is signed with a SHA-1 based
+   * algorithm. EC keys map to the {@code Ecc*ApplicationCertificateType} of their curve, and
+   * Ed25519 and Ed448 keys map to the Curve25519 and Curve448 types.
+   *
+   * @param certificate the certificate to classify.
+   * @return the inferred certificate type id, or empty if the key is not one Milo can use as an
+   *     application certificate.
+   */
+  public static Optional<NodeId> inferCertificateTypeId(X509Certificate certificate) {
+    PublicKey publicKey = certificate.getPublicKey();
+
+    if (publicKey instanceof RSAPublicKey) {
+      String sigAlgName =
+          Objects.toString(certificate.getSigAlgName(), "").toUpperCase(Locale.ROOT);
+      boolean sha1 = sigAlgName.contains("SHA1") || sigAlgName.contains("SHA-1");
+
+      return Optional.of(
+          sha1
+              ? NodeIds.RsaMinApplicationCertificateType
+              : NodeIds.RsaSha256ApplicationCertificateType);
+    }
+
+    if (publicKey instanceof ECPublicKey ecPublicKey) {
+      ECParameterSpec params = ecPublicKey.getParams();
+
+      if (!isDifferentParameterSpec(NIST_P256, params)) {
+        return Optional.of(NodeIds.EccNistP256ApplicationCertificateType);
+      } else if (!isDifferentParameterSpec(NIST_P384, params)) {
+        return Optional.of(NodeIds.EccNistP384ApplicationCertificateType);
+      } else if (!isDifferentParameterSpec(BRAINPOOL_P256R1, params)) {
+        return Optional.of(NodeIds.EccBrainpoolP256r1ApplicationCertificateType);
+      } else if (!isDifferentParameterSpec(BRAINPOOL_P384R1, params)) {
+        return Optional.of(NodeIds.EccBrainpoolP384r1ApplicationCertificateType);
+      } else {
+        return Optional.empty();
+      }
+    }
+
+    if (isEd25519(publicKey)) {
+      return Optional.of(NodeIds.EccCurve25519ApplicationCertificateType);
+    } else if (isEd448(publicKey)) {
+      return Optional.of(NodeIds.EccCurve448ApplicationCertificateType);
+    }
+
+    return Optional.empty();
+  }
 
   /**
    * Check whether a local identity can be used with {@code securityPolicyProfile}.

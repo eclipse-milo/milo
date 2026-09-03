@@ -61,6 +61,9 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.messages.ReverseHelloMessage;
 import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageEncoder;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
+import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateGroup;
+import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
+import org.eclipse.milo.opcua.stack.core.security.MemoryTrustListManager;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
@@ -756,9 +759,13 @@ class OpcUaClientReverseConnectTest {
 
     if (secure) {
       builder
-          .setKeyPair(testServer.getClientKeyPair())
-          .setCertificate(testServer.getClientCertificate())
-          .setCertificateChain(testServer.getClientCertificateChain())
+          .setCertificateGroup(
+              DefaultCertificateGroup.forIdentity(
+                  testServer.getClientKeyPair(),
+                  testServer.getClientCertificateChain(),
+                  new MemoryTrustListManager(),
+                  new MemoryCertificateQuarantine(),
+                  new CertificateValidator.InsecureCertificateValidator()))
           .setCertificateValidator(new CertificateValidator.InsecureCertificateValidator());
     }
 

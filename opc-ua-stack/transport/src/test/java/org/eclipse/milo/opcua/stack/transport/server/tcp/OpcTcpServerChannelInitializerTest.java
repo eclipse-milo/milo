@@ -34,8 +34,6 @@ import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
-import org.eclipse.milo.opcua.stack.core.security.CertificateQuarantine;
-import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
@@ -191,8 +189,6 @@ class OpcTcpServerChannelInitializerTest {
   private enum EmptyCertificateManager implements CertificateManager {
     INSTANCE;
 
-    private final CertificateQuarantine certificateQuarantine = new MemoryCertificateQuarantine();
-
     @Override
     public Optional<KeyPair> getKeyPair(ByteString thumbprint) {
       return Optional.empty();
@@ -224,8 +220,8 @@ class OpcTcpServerChannelInitializerTest {
     }
 
     @Override
-    public CertificateQuarantine getCertificateQuarantine() {
-      return certificateQuarantine;
+    public Optional<NodeId> getCertificateGroupId(CertificateGroup certificateGroup) {
+      return Optional.empty();
     }
   }
 }
