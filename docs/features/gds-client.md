@@ -215,8 +215,8 @@ otherwise visible until a connection fails.
 
 The install target on the application side is a `CertificateGroup`: the issued certificate goes in
 through `updateCertificate` and the pulled trust list through the group's `TrustListManager`. A
-client that pulls therefore configures the group through
-`OpcUaClientConfigBuilder.setCertificateGroup`. A
+client that pulls therefore configures a real group (`OpcUaClientConfigBuilder.setCertificateGroup`)
+rather than the `setCertificateIdentity` shortcut, whose group has no trust list of its own. A
 client configures exactly one group and never names it; the `certificateGroupId` arguments above
 are the GDS's NodeIds, not the application's.
 A server that pulls for several of its own groups registers each under its `CertificateGroupType`

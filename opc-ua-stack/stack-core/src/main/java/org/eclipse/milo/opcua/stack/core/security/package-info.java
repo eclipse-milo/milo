@@ -85,7 +85,10 @@
  * management, and the address space name groups by that id, and the manager resolves ids to groups
  * and groups to ids. The manager also answers the thumbprint lookups a SecureChannel or session
  * handshake needs. Registration order is the precedence between groups. A client configures exactly
- * one group and never names it; there is no manager on the client.
+ * one group and never names it; there is no manager on the client. A client with only a key pair
+ * and certificate on hand does not construct a group itself: the client config builder wraps them
+ * in a group of one whose trust list and quarantine are empty, and server validation is the
+ * client's configured validator.
  *
  * <p>Provisioning is a factory concern: {@link
  * org.eclipse.milo.opcua.stack.core.security.CertificateFactory#createMissingCertificates} creates

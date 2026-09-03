@@ -264,6 +264,103 @@ public class OpcUaClientConfigTest {
   }
 
   @Nested
+  class FixedIdentity {
+
+    // A client with one key pair and certificate on hand must not have to build trust material it
+    // never uses: setCertificateIdentity alone yields the identity for a compatible policy.
+    @Test
+    public void fixedIdentityIsSelectedForCompatiblePolicy() throws Exception {
+      KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+      X509Certificate certificate = rsaCertificate(keyPair, MANAGED_URI);
+
+      OpcUaClientConfig config = builder().setCertificateIdentity(keyPair, certificate).build();
+
+      CertificateIdentity identity =
+          config.getCertificateIdentity(SecurityPolicy.Basic256Sha256.getProfile()).orElseThrow();
+      assertEquals(certificate, identity.certificate());
+      assertSame(keyPair.getPrivate(), identity.keyPair().getPrivate());
+      assertEquals(NodeIds.RsaSha256ApplicationCertificateType, identity.certificateTypeId());
+    }
+
+    // The fixed identity carries no trust list, so server validation is exactly what the caller
+    // configured: the historical insecure default, or the explicit validator.
+    @Test
+    public void fixedIdentityUsesExplicitValidatorOrInsecureDefault() throws Exception {
+      KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+      X509Certificate certificate = rsaCertificate(keyPair, MANAGED_URI);
+      CertificateValidator explicitValidator =
+          new CertificateValidator.InsecureCertificateValidator();
+
+      OpcUaClientConfig defaulted = builder().setCertificateIdentity(keyPair, certificate).build();
+      OpcUaClientConfig explicit =
+          builder()
+              .setCertificateIdentity(keyPair, certificate)
+              .setCertificateValidator(explicitValidator)
+              .build();
+
+      assertInstanceOf(
+          CertificateValidator.InsecureCertificateValidator.class,
+          defaulted.getCertificateValidator());
+      assertSame(explicitValidator, explicit.getCertificateValidator());
+    }
+
+    // A client holds one group. The two ways of supplying it are alternatives, and the last one
+    // set wins so copy-and-modify can switch between them.
+    @Test
+    public void lastOfCertificateGroupAndCertificateIdentityWins() throws Exception {
+      KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+      X509Certificate certificate = rsaCertificate(keyPair, MANAGED_URI);
+      CertificateGroup group = new TestCertificateGroup();
+
+      OpcUaClientConfig identityWins =
+          builder().setCertificateGroup(group).setCertificateIdentity(keyPair, certificate).build();
+      OpcUaClientConfig groupWins =
+          builder().setCertificateIdentity(keyPair, certificate).setCertificateGroup(group).build();
+
+      assertEquals(
+          certificate,
+          identityWins
+              .getCertificateIdentity(SecurityPolicy.Basic256Sha256.getProfile())
+              .orElseThrow()
+              .certificate());
+      assertSame(group, groupWins.getCertificateGroup().orElseThrow());
+    }
+
+    // A key pair that does not match the certificate can never complete a handshake; the builder
+    // must reject it at build time rather than at the first secured connection.
+    @Test
+    public void mismatchedFixedIdentityFailsAtBuild() throws Exception {
+      KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+      KeyPair otherKeyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+      X509Certificate certificate = rsaCertificate(keyPair, MANAGED_URI);
+
+      OpcUaClientConfigBuilder builder =
+          builder().setCertificateIdentity(otherKeyPair, certificate);
+
+      assertThrows(IllegalArgumentException.class, builder::build);
+    }
+
+    @Test
+    public void copyPreservesFixedIdentity() throws Exception {
+      KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+      X509Certificate certificate = rsaCertificate(keyPair, MANAGED_URI);
+      OpcUaClientConfig original =
+          builder()
+              .setDiscoveryEndpoints(List.of(endpoint))
+              .setCertificateIdentity(keyPair, certificate)
+              .build();
+
+      OpcUaClientConfig copy = OpcUaClientConfig.copy(original).build();
+
+      assertEquals(
+          certificate,
+          copy.getCertificateIdentity(SecurityPolicy.Basic256Sha256.getProfile())
+              .orElseThrow()
+              .certificate());
+    }
+  }
+
+  @Nested
   class IdentitySelection {
 
     // One group can hold an identity per key family. The endpoint policy must choose the matching

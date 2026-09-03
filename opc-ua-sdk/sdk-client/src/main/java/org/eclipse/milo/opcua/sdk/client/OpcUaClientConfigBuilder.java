@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.sdk.client;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
+import java.security.KeyPair;
+import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -22,7 +24,10 @@ import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
 import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.CertificateIdentitySelector;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
+import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateIdentitySelector;
+import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
+import org.eclipse.milo.opcua.stack.core.security.MemoryTrustListManager;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -34,6 +39,8 @@ public class OpcUaClientConfigBuilder {
   private EndpointDescription endpoint;
   private List<EndpointDescription> discoveryEndpoints;
   private @Nullable CertificateGroup certificateGroup;
+  private @Nullable KeyPair identityKeyPair;
+  private X509Certificate @Nullable [] identityCertificateChain;
   private CertificateIdentitySelector certificateIdentitySelector =
       DefaultCertificateIdentitySelector.create();
   private @Nullable NodeId certificateTypeId;
@@ -177,11 +184,47 @@ public class OpcUaClientConfigBuilder {
    *         keyPair, certificateChain, trustListManager, certificateQuarantine, validator));
    * }</pre>
    *
+   * <p>Replaces any identity set with {@link #setCertificateIdentity}.
+   *
    * @param certificateGroup the client's certificate group.
    * @return this builder.
    */
   public OpcUaClientConfigBuilder setCertificateGroup(CertificateGroup certificateGroup) {
     this.certificateGroup = certificateGroup;
+    this.identityKeyPair = null;
+    this.identityCertificateChain = null;
+    return this;
+  }
+
+  /**
+   * Set the key pair and certificate chain this client presents on secured endpoints.
+   *
+   * <p>This is the simple path for a client that has one certificate on hand and no trust material
+   * of its own. Server certificates are validated by the validator passed to {@link
+   * #setCertificateValidator}, or not at all when none is set. Clients that need a trust list, for
+   * example to install one pulled from a GDS, configure a {@link CertificateGroup} through {@link
+   * #setCertificateGroup} instead.
+   *
+   * <pre>{@code
+   * builder
+   *     .setCertificateIdentity(keyPair, certificateChain)
+   *     .setCertificateValidator(new DefaultClientCertificateValidator(trustListManager, quarantine));
+   * }</pre>
+   *
+   * <p>Replaces any group set with {@link #setCertificateGroup}. The certificate type is inferred
+   * from the leaf certificate; {@link #build()} throws {@link IllegalArgumentException} if it
+   * cannot be, or if the key pair does not match the leaf certificate.
+   *
+   * @param keyPair the key pair belonging to the leaf certificate.
+   * @param certificateChain the leaf certificate followed by any issuer certificates.
+   * @return this builder.
+   */
+  public OpcUaClientConfigBuilder setCertificateIdentity(
+      KeyPair keyPair, X509Certificate... certificateChain) {
+
+    this.identityKeyPair = keyPair;
+    this.identityCertificateChain = certificateChain.clone();
+    this.certificateGroup = null;
     return this;
   }
 
@@ -246,10 +289,23 @@ public class OpcUaClientConfigBuilder {
               : new CertificateValidator.InsecureCertificateValidator();
     }
 
+    CertificateGroup effectiveCertificateGroup = certificateGroup;
+    if (identityKeyPair != null && identityCertificateChain != null) {
+      // A fixed identity has no trust material of its own; the client validates servers with the
+      // effective validator and never reads this group's trust list or quarantine.
+      effectiveCertificateGroup =
+          DefaultCertificateGroup.forIdentity(
+              identityKeyPair,
+              identityCertificateChain,
+              new MemoryTrustListManager(),
+              new MemoryCertificateQuarantine(),
+              effectiveCertificateValidator);
+    }
+
     return new OpcUaClientConfigImpl(
         endpoint,
         discoveryEndpoints,
-        certificateGroup,
+        effectiveCertificateGroup,
         certificateIdentitySelector,
         certificateTypeId,
         effectiveCertificateValidator,

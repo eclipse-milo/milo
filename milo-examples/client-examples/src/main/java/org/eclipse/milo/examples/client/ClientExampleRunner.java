@@ -23,7 +23,6 @@ import org.eclipse.milo.examples.server.ExampleServer;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
-import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.DefaultClientCertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.FileBasedTrustListManager;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
@@ -81,20 +80,14 @@ public class ClientExampleRunner {
   private OpcUaClient createClient() throws Exception {
     KeyStoreLoader loader = new KeyStoreLoader().load(securityTempDir);
 
-    var certificateQuarantine = new MemoryCertificateQuarantine();
     var certificateValidator =
-        new DefaultClientCertificateValidator(clientTrustListManager, certificateQuarantine);
+        new DefaultClientCertificateValidator(
+            clientTrustListManager, new MemoryCertificateQuarantine());
 
-    // The example client has one key pair and certificate chain on hand. forIdentity wraps them in
-    // a group of one that shares the file-based trust list with the validator.
-    var certificateGroup =
-        DefaultCertificateGroup.forIdentity(
-            loader.getClientKeyPair(),
-            loader.getClientCertificateChain(),
-            clientTrustListManager,
-            certificateQuarantine,
-            certificateValidator);
-
+    // The example client has one key pair and certificate chain on hand, so it presents them
+    // directly. Its trust list lives inside the validator above, which is the only place that
+    // reads it. See GdsPullExample for a client that puts the trust list on a CertificateGroup
+    // instead, because the pull cycle has to reach it through the group to install into it.
     return OpcUaClient.create(
         clientExample.getEndpointUrl(),
         endpoints -> endpoints.stream().filter(clientExample.endpointFilter()).findFirst(),
@@ -103,7 +96,7 @@ public class ClientExampleRunner {
           clientConfigBuilder
               .setApplicationName(LocalizedText.english("eclipse milo opc-ua client"))
               .setApplicationUri("urn:eclipse:milo:examples:client")
-              .setCertificateGroup(certificateGroup)
+              .setCertificateIdentity(loader.getClientKeyPair(), loader.getClientCertificateChain())
               .setCertificateValidator(certificateValidator)
               .setIdentityProvider(clientExample.getIdentityProvider());
           clientExample.configureClient(clientConfigBuilder);

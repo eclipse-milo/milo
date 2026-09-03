@@ -105,6 +105,46 @@ class OpcUaClientCertificateGroupTest {
     }
   }
 
+  // setCertificateIdentity is the path for a client with only a key pair and certificate on hand.
+  // It must reach an active session on a SignAndEncrypt endpoint without the caller building any
+  // trust material, with the same certificate-derived ApplicationUri as the group path.
+  @Test
+  void fixedIdentityConnectsOverBasic256Sha256SignAndEncrypt() throws Exception {
+    OpcUaClient client =
+        OpcUaClient.create(
+            endpointUrl(),
+            endpoints ->
+                endpoints.stream()
+                    .filter(
+                        e ->
+                            SecurityPolicy.Basic256Sha256.getUri().equals(e.getSecurityPolicyUri()))
+                    .filter(e -> e.getSecurityMode() == MessageSecurityMode.SignAndEncrypt)
+                    .findFirst(),
+            transport -> {},
+            config ->
+                config
+                    .setApplicationName(
+                        LocalizedText.english("eclipse milo fixed identity test client"))
+                    .setRequestTimeout(uint(5_000))
+                    .setCertificateIdentity(
+                        testServer.getClientKeyPair(), testServer.getClientCertificateChain()));
+
+    client.connect();
+    try {
+      CertificateIdentity identity =
+          client.getCertificateIdentity(SecurityPolicy.Basic256Sha256.getProfile()).orElseThrow();
+      assertEquals(testServer.getClientCertificate(), identity.certificate());
+
+      DataValue value =
+          client.readValue(0.0, TimestampsToReturn.Neither, NodeIds.Server_ServerStatus_State);
+
+      assertTrue(value.statusCode().isGood(), () -> "read failed: " + value.statusCode());
+      assertNotNull(value.value().value());
+    } finally {
+      client.disconnect();
+    }
+  }
+
   private String endpointUrl() {
     return server.getConfig().getEndpoints().iterator().next().getEndpointUrl();
   }
