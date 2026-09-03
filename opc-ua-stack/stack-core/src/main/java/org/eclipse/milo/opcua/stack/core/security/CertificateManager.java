@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.stack.core.security;
 
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
@@ -83,6 +84,9 @@ public interface CertificateManager {
   /**
    * Get the {@link NodeId} under which {@code certificateGroup} is registered.
    *
+   * <p>Groups are matched by instance, not by equality: a wrapper around a registered group is not
+   * found, and a group is found only through the same instance that was registered.
+   *
    * @param certificateGroup the {@link CertificateGroup} to look up.
    * @return the {@link NodeId} under which {@code certificateGroup} is registered, or empty if it
    *     is not registered with this manager.
@@ -112,6 +116,24 @@ public interface CertificateManager {
     return getCertificateGroups().stream()
         .flatMap(group -> group.getCertificateIdentities().stream())
         .toList();
+  }
+
+  /**
+   * Get the server-wide rejected list: the union of every group's {@link
+   * CertificateQuarantine#getRejectedCertificates()}.
+   *
+   * <p>This is the list Part 12 {@code ServerConfiguration.GetRejectedList} returns. Certificates
+   * are listed group by group in {@link #getCertificateGroups()} order, and a certificate rejected
+   * by more than one group appears once, in the position of its first occurrence.
+   *
+   * @return the rejected certificates of every group, without duplicates.
+   */
+  default List<X509Certificate> getRejectedCertificates() {
+    var rejected = new LinkedHashSet<X509Certificate>();
+    for (CertificateGroup group : getCertificateGroups()) {
+      rejected.addAll(group.getCertificateQuarantine().getRejectedCertificates());
+    }
+    return List.copyOf(rejected);
   }
 
   /**

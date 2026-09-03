@@ -99,8 +99,9 @@
  *
  * <p>Rejections are per group. A certificate rejected while validating against one group's trust
  * list lands only in that group's quarantine, so trusting it from another group's management
- * surface is not possible by accident. A server-wide rejected list, such as the one {@code
- * GetRejectedList} returns, is the union over {@code CertificateManager.getCertificateGroups()}.
+ * surface is not possible by accident. {@code CertificateManager.getRejectedCertificates()} is the
+ * server-wide rejected list that {@code GetRejectedList} returns: the de-duplicated union over
+ * {@code getCertificateGroups()}.
  *
  * <p>{@link org.eclipse.milo.opcua.stack.core.security.CertificateIdentity} represents one usable
  * identity of a group: its group, certificate type, key pair, and chain. {@link

@@ -29,7 +29,7 @@ import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
  * <p>Groups are kept in registration order, which is the precedence reported by {@link
  * #getCertificateGroups()}. Registering a group under an id that is already registered replaces the
  * previous group in place without changing its position. A group instance may be registered under
- * one id only.
+ * one id only, and {@link #getCertificateGroupId} finds a group only through that same instance.
  *
  * <p>Removing or replacing a group does not initialize or close it; the application remains
  * responsible for the lifecycle of every group and its resources. Registry changes do not wait for

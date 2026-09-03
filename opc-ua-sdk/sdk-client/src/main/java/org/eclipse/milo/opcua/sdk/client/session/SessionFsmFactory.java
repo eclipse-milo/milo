@@ -2285,9 +2285,14 @@ public class SessionFsmFactory {
         client.getCertificateIdentity(securityPolicy.getProfile());
 
     if (certificateIdentity.isEmpty()) {
+      String reason =
+          client.getConfig().getCertificateGroup().isEmpty()
+              ? "no certificate group configured"
+              : "no configured certificate identity is compatible";
+
       throw new UaException(
           StatusCodes.Bad_ConfigurationError,
-          "no certificate identity for security policy: " + securityPolicy.getUri());
+          reason + " for security policy: " + securityPolicy.getUri());
     }
 
     return certificateIdentity;

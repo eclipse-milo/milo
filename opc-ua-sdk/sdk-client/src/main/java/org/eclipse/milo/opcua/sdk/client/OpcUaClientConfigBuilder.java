@@ -215,6 +215,11 @@ public class OpcUaClientConfigBuilder {
    * from the leaf certificate; {@link #build()} throws {@link IllegalArgumentException} if it
    * cannot be, or if the key pair does not match the leaf certificate.
    *
+   * <p>The inferred type gates which security policies the identity is offered for. An RSA
+   * certificate with a SHA-1 signature is RsaMin, so connecting to a Basic256Sha256 endpoint fails
+   * client-side with {@code Bad_ConfigurationError} instead of being sent and rejected by the
+   * server. {@link DefaultCertificateGroup#forIdentity} applies the same inference.
+   *
    * @param keyPair the key pair belonging to the leaf certificate.
    * @param certificateChain the leaf certificate followed by any issuer certificates.
    * @return this builder.

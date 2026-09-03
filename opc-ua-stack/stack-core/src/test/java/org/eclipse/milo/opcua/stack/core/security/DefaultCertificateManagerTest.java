@@ -166,6 +166,30 @@ class DefaultCertificateManagerTest {
         "registering in the other order lists the other group first");
   }
 
+  // GetRejectedList is one server-wide list, but rejections are recorded per group. The union must
+  // keep registration order and list a certificate rejected by two groups once, or a Push client
+  // would see duplicates and an order unrelated to group precedence.
+  @Test
+  void getRejectedCertificatesUnionsGroupQuarantinesInOrderWithoutDuplicates() throws Exception {
+    var certificateFactory = new TestCertificateFactory();
+    X509Certificate first = newCertificate(certificateFactory);
+    X509Certificate shared = newCertificate(certificateFactory);
+    X509Certificate second = newCertificate(certificateFactory);
+    TrackingApplicationGroup a = newGroup();
+    TrackingApplicationGroup b = newGroup();
+    a.getCertificateQuarantine().addRejectedCertificate(first);
+    a.getCertificateQuarantine().addRejectedCertificate(shared);
+    b.getCertificateQuarantine().addRejectedCertificate(shared);
+    b.getCertificateQuarantine().addRejectedCertificate(second);
+
+    var manager = new DefaultCertificateManager();
+    manager.addCertificateGroup(GROUP_ID_A, a);
+    manager.addCertificateGroup(GROUP_ID_B, b);
+
+    assertEquals(List.of(first, shared, second), manager.getRejectedCertificates());
+    assertTrue(new DefaultCertificateManager().getRejectedCertificates().isEmpty());
+  }
+
   // OPN receiver thumbprints can identify a certificate held by any registered group; a lookup
   // that only scanned the first group would break SecureChannels opened against later groups.
   @Test
@@ -210,6 +234,13 @@ class DefaultCertificateManagerTest {
         new TrackingTrustListManager(),
         new MemoryCertificateStore(),
         List.of(NodeIds.RsaSha256ApplicationCertificateType));
+  }
+
+  private static X509Certificate newCertificate(TestCertificateFactory certificateFactory)
+      throws Exception {
+
+    return certificateFactory
+        .createRsaSha256CertificateChain(certificateFactory.createRsaSha256KeyPair())[0];
   }
 
   private static GroupFixture newPopulatedGroup(NodeId certificateTypeId) throws Exception {
