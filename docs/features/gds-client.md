@@ -52,6 +52,14 @@ pending `RequestId`s, retry policy, and what to do with an issued certificate de
 application's configuration and lifecycle, so there is no Pull engine; the application drives the
 sequence.
 
+The publishable `milo-sdk-client-gds-testing` module provides `FakeGdsNamespace` in
+`org.eclipse.milo.opcua.sdk.client.gds.testing`. It hosts an in-memory GDS on a Milo server for
+application-side Pull workflow tests. Tests can control registration and CertificateDirectory
+access, pre-register applications, change the advertised application certificate types, delay or
+reject requests, and inspect method counters and TrustList file calls. The artifact is listed in
+`milo-bom` and is separate from `milo-sdk-client-gds` to avoid adding server dependencies to the
+runtime client module.
+
 * * *
 
 ## How it works

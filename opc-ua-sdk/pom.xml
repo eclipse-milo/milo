@@ -34,6 +34,7 @@
     <module>sdk-client-gds</module>
     <module>sdk-core</module>
     <module>sdk-server</module>
+    <module>sdk-client-gds-testing</module>
     <module>integration-tests</module>
   </modules>
 

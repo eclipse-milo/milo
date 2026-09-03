@@ -23,6 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.gds.GdsClient.CertificatesResult;
 import org.eclipse.milo.opcua.sdk.client.gds.GdsClient.FinishRequestResult;
 import org.eclipse.milo.opcua.sdk.client.gds.GdsClient.QueryApplicationsResult;
@@ -30,8 +32,11 @@ import org.eclipse.milo.opcua.sdk.client.gds.GdsClient.QueryServersResult;
 import org.eclipse.milo.opcua.sdk.client.gds.GdsClient.RevocationStatus;
 import org.eclipse.milo.opcua.sdk.client.gds.GdsClient.TrustListInfo;
 import org.eclipse.milo.opcua.sdk.client.gds.model.objects.CertificateDirectoryTypeNode;
+import org.eclipse.milo.opcua.sdk.client.gds.testing.FakeGdsNamespace.MethodAccess;
+import org.eclipse.milo.opcua.sdk.client.identity.UsernameProvider;
 import org.eclipse.milo.opcua.sdk.client.methods.UaMethodException;
 import org.eclipse.milo.opcua.sdk.client.nodes.UaObjectNode;
+import org.eclipse.milo.opcua.sdk.test.TestClient;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -103,12 +108,98 @@ public class GdsClientTest extends AbstractGdsClientTest {
 
     @Test
     void registerApplicationWithoutAdminRoleFailsWithBadUserAccessDenied() {
-      gds.setRegistrationAllowed(false);
+      gds.setRegisterApplicationAccess(MethodAccess.NOBODY);
 
       UaException e = assertThrows(UaException.class, GdsClientTest.this::registerTestApplication);
 
       assertEquals(StatusCodes.Bad_UserAccessDenied, e.getStatusCode().value());
       assertInstanceOf(UaMethodException.class, e, "carries the method result");
+      assertEquals(1, gds.getRegisterApplicationCallCount());
+    }
+
+    // Part 12 §6.4 allows an administrator to register an application before its first GDS
+    // connection, so a Pull engine must be able to exercise its find-without-register path.
+    @Test
+    void preRegisteredApplicationIsFoundWithoutCallingRegisterApplication() throws Exception {
+      NodeId applicationId = gds.preRegister(APPLICATION_URI);
+
+      ApplicationRecordDataType[] found = gdsClient.findApplications(APPLICATION_URI);
+
+      assertEquals(1, found.length);
+      assertEquals(applicationId, found[0].getApplicationId());
+      assertEquals(0, gds.getRegisterApplicationCallCount());
+    }
+
+    // Part 12 §6.4 supports credentialed onboarding separately from certificate management. The
+    // fixture defines credentialed narrowly as a session activated with a UserName token.
+    @Test
+    void credentialedRegisterAccessRejectsAnonymousAndAllowsUsernameSessions() throws Exception {
+      gds.setRegisterApplicationAccess(MethodAccess.CREDENTIALED);
+
+      UaException anonymousRegister =
+          assertThrows(UaException.class, GdsClientTest.this::registerTestApplication);
+      assertEquals(StatusCodes.Bad_UserAccessDenied, anonymousRegister.getStatusCode().value());
+
+      OpcUaClient credentialedClient = connectCredentialedClient();
+      try {
+        GdsClient credentialedGds = GdsClient.create(credentialedClient);
+        NodeId applicationId = credentialedGds.registerApplication(clientRecord());
+
+        assertEquals(
+            applicationId, gdsClient.findApplications(APPLICATION_URI)[0].getApplicationId());
+        assertEquals(
+            2, gds.getRegisterApplicationCallCount(), "denied and allowed calls are both recorded");
+      } finally {
+        credentialedClient.disconnectAsync().get(2, TimeUnit.SECONDS);
+      }
+    }
+
+    // Registration access and CertificateDirectory access are separate knobs so a test can model a
+    // GDS that lets anyone register but requires credentials (or nobody) for certificate methods.
+    @Test
+    void certificateDirectoryAccessIsIndependentOfRegisterApplicationAccess() throws Exception {
+      gds.setRegisterApplicationAccess(MethodAccess.CREDENTIALED);
+
+      OpcUaClient credentialedClient = connectCredentialedClient();
+      try {
+        GdsClient credentialedGds = GdsClient.create(credentialedClient);
+        NodeId applicationId = credentialedGds.registerApplication(clientRecord());
+
+        assertArrayEquals(
+            defaultCertificateGroups(),
+            gdsClient.getCertificateGroups(applicationId),
+            "registration access does not restrict CertificateDirectory methods");
+
+        gds.setCertificateDirectoryAccess(MethodAccess.CREDENTIALED);
+
+        UaException anonymousDirectory =
+            assertThrows(UaException.class, () -> gdsClient.getCertificateGroups(applicationId));
+        assertEquals(StatusCodes.Bad_UserAccessDenied, anonymousDirectory.getStatusCode().value());
+        assertArrayEquals(
+            defaultCertificateGroups(), credentialedGds.getCertificateGroups(applicationId));
+
+        gds.setCertificateDirectoryAccess(MethodAccess.NOBODY);
+
+        UaException deniedDirectory =
+            assertThrows(
+                UaException.class, () -> credentialedGds.getCertificateGroups(applicationId));
+        assertEquals(StatusCodes.Bad_UserAccessDenied, deniedDirectory.getStatusCode().value());
+      } finally {
+        credentialedClient.disconnectAsync().get(2, TimeUnit.SECONDS);
+      }
+    }
+
+    private OpcUaClient connectCredentialedClient() throws Exception {
+      OpcUaClient credentialedClient =
+          TestClient.create(
+              server,
+              config -> config.setIdentityProvider(new UsernameProvider("user1", "password")));
+      credentialedClient.connect();
+      return credentialedClient;
+    }
+
+    private NodeId[] defaultCertificateGroups() {
+      return new NodeId[] {gds.defaultApplicationGroupId(), gds.defaultUserTokenGroupId()};
     }
 
     @Test
@@ -189,9 +280,7 @@ public class GdsClientTest extends AbstractGdsClientTest {
             NodeIds.EccNistP256ApplicationCertificateType
           },
           gdsClient.readCertificateTypes(groups[0]));
-      assertArrayEquals(
-          new NodeId[] {NodeIds.RsaSha256ApplicationCertificateType},
-          gdsClient.readCertificateTypes(groups[1]));
+      assertArrayEquals(new NodeId[0], gdsClient.readCertificateTypes(groups[1]));
     }
 
     @Test
@@ -201,6 +290,15 @@ public class GdsClientTest extends AbstractGdsClientTest {
               UaException.class, () -> gdsClient.readCertificateTypes(gdsClient.getDirectoryId()));
 
       assertEquals(StatusCodes.Bad_NotFound, e.getStatusCode().value());
+    }
+
+    @Test
+    void configuredCertificateTypesAreAdvertisedAfterNamespaceStartup() throws Exception {
+      gds.setApplicationCertificateTypes(NodeIds.ApplicationCertificateType);
+
+      assertArrayEquals(
+          new NodeId[] {NodeIds.ApplicationCertificateType},
+          gdsClient.readCertificateTypes(gds.defaultApplicationGroupId()));
     }
 
     @Test
@@ -298,6 +396,10 @@ public class GdsClientTest extends AbstractGdsClientTest {
 
       assertEquals(StatusCodes.Bad_NothingToDo, first.getStatusCode().value());
       assertEquals(StatusCodes.Bad_NothingToDo, second.getStatusCode().value());
+      assertEquals(1, gds.getRegisterApplicationCallCount());
+      assertEquals(1, gds.getStartSigningRequestCallCount());
+      assertEquals(3, gds.getFinishRequestCallCount());
+      assertEquals(NodeIds.RsaSha256ApplicationCertificateType, gds.getLastCertificateTypeId());
 
       X509Certificate certificate =
           CertificateUtil.decodeCertificate(issued.certificate().bytesOrEmpty());
@@ -317,6 +419,8 @@ public class GdsClientTest extends AbstractGdsClientTest {
       KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
       NodeId requestId =
           gdsClient.startSigningRequest(applicationId, null, null, csr(keyPair, APPLICATION_URI));
+
+      assertNull(gds.getLastCertificateTypeId(), "the null group default is recorded as null");
 
       UaException e =
           assertThrows(UaException.class, () -> gdsClient.finishRequest(applicationId, requestId));
