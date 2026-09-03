@@ -118,14 +118,14 @@ capped so a chunk fits inside the client's `EncodingLimits.getMaxMessageSize()`.
 overload exists for unusual servers.
 
 `TrustListApplier.apply` reads `SpecifiedLists` as `TrustListMasks` bits and replaces each
-specified list in the `TrustListManager` in full. Unspecified lists are copied from one current
-snapshot. Replacement rather than merging list entries is what the Pull Model calls for: each
-specified list is the complete authoritative list, and merging its entries could never remove a
-certificate the GDS dropped. All entries are decoded before the current snapshot is read, then the
-specified and retained lists are committed as one replacement. A malformed certificate or CRL
-therefore rejects the update without changing the manager, and a concurrent validator sees either
-the old snapshot or the new one when the manager provides atomic snapshot operations, as Milo's
-built-in managers do.
+specified list in the `TrustListManager` in full. Replacement rather than merging list entries is
+what the Pull Model calls for: each specified list is the complete authoritative list, and merging
+its entries could never remove a certificate the GDS dropped. All entries are decoded first, so a
+malformed certificate or CRL rejects the update without touching the manager. The decoded lists are
+then merged into the manager's current snapshot inside `TrustListManager.update`, which Milo's
+built-in managers run under their own synchronization. Unspecified lists therefore keep whatever
+value they hold at commit time, a concurrent change to one of them is not lost, and a validator
+reading `getSnapshot()` sees either the old lists or the new ones, never a mix.
 
 * * *
 

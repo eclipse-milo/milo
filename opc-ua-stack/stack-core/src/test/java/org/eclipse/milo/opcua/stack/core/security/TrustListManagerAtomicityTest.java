@@ -21,12 +21,14 @@ import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.util.CrlTestUtil;
@@ -37,8 +39,8 @@ import org.junit.jupiter.api.io.TempDir;
 
 class TrustListManagerAtomicityTest {
 
-  private static final Generation GENERATION_A = createGeneration("generation-a", new DateTime(1));
-  private static final Generation GENERATION_B = createGeneration("generation-b", new DateTime(2));
+  private static final Generation GENERATION_A = createGeneration("generation-a");
+  private static final Generation GENERATION_B = createGeneration("generation-b");
 
   @TempDir Path tempDir;
 
@@ -67,16 +69,46 @@ class TrustListManagerAtomicityTest {
     }
   }
 
-  // Writer-generated events must reload all four directories before the watcher publishes state.
+  // A certificate dropped into a directory by an operator must appear in that list without
+  // disturbing the other three, and the reload must arrive as one coherent snapshot.
   @Test
-  void fileWatcherPublishesACompleteReload() throws Exception {
+  void fileWatcherReloadsOnlyTheChangedDirectory() throws Exception {
+    Path baseDir = Files.createTempDirectory(tempDir, "pki");
+
+    try (var manager = FileBasedTrustListManager.createAndInitialize(baseDir)) {
+      manager.replaceAll(GENERATION_A.snapshot());
+
+      Files.write(
+          baseDir.resolve("trusted/certs/generation-b.der"),
+          GENERATION_B.certificate().getEncoded());
+
+      TrustListSnapshot reloaded =
+          awaitSnapshot(manager, s -> s.trustedCertificates().contains(GENERATION_B.certificate()));
+
+      assertEquals(
+          Set.of(GENERATION_A.certificate(), GENERATION_B.certificate()),
+          Set.copyOf(reloaded.trustedCertificates()));
+      assertEquals(GENERATION_A.certificates(), reloaded.issuerCertificates());
+      assertEquals(GENERATION_A.crls(), reloaded.issuerCrls());
+      assertEquals(GENERATION_A.crls(), reloaded.trustedCrls());
+    }
+  }
+
+  // Two writers changing different lists through update() must both see their change land; a
+  // read-modify-write outside the manager would let one overwrite the other.
+  @Test
+  void memoryManagerUpdatePreservesConcurrentChangesToOtherLists() throws Exception {
+    try (var manager = new MemoryTrustListManager()) {
+      assertConcurrentUpdatesAreNotLost(manager);
+    }
+  }
+
+  @Test
+  void fileManagerUpdatePreservesConcurrentChangesToOtherLists() throws Exception {
     try (var manager =
         FileBasedTrustListManager.createAndInitialize(Files.createTempDirectory(tempDir, "pki"))) {
 
-      manager.replaceAll(GENERATION_A.snapshot());
-
-      TrustListSnapshot reloaded = awaitWatcherReload(manager, GENERATION_A.lastUpdateTime());
-      assertTrue(GENERATION_A.matchesLists(reloaded));
+      assertConcurrentUpdatesAreNotLost(manager);
     }
   }
 
@@ -100,14 +132,43 @@ class TrustListManagerAtomicityTest {
         () -> snapshot.trustedCertificates().add(GENERATION_B.certificate()));
   }
 
+  // Trust lists have set semantics, so every manager must publish the same normalized contents
+  // when callers supply duplicate entries.
+  @Test
+  void snapshotRemovesDuplicateEntries() {
+    var snapshot =
+        new TrustListSnapshot(
+            List.of(GENERATION_A.certificate(), GENERATION_A.certificate()),
+            List.of(GENERATION_A.crl(), GENERATION_A.crl()),
+            List.of(GENERATION_A.certificate(), GENERATION_A.certificate()),
+            List.of(GENERATION_A.crl(), GENERATION_A.crl()),
+            DateTime.MIN_VALUE);
+
+    GENERATION_A.assertLists(snapshot);
+  }
+
   @Test
   void memoryManagerRejectsNullReplacementWithoutChangingState() {
     var manager = new MemoryTrustListManager();
     manager.replaceAll(GENERATION_A.snapshot());
+    TrustListSnapshot before = manager.getSnapshot();
 
-    assertThrows(NullPointerException.class, () -> manager.replaceAll((TrustListSnapshot) null));
+    assertThrows(NullPointerException.class, () -> manager.replaceAll(null));
+    assertThrows(NullPointerException.class, () -> manager.update(current -> null));
 
-    assertEquals(GENERATION_A.snapshot(), manager.getSnapshot());
+    assertEquals(before, manager.getSnapshot());
+  }
+
+  // The committed snapshot carries the commit time, not whatever time the caller supplied.
+  @Test
+  void managersStampLastUpdateTimeOnCommit() throws Exception {
+    try (var manager = new MemoryTrustListManager()) {
+      DateTime before = DateTime.now();
+
+      manager.replaceAll(GENERATION_A.snapshot());
+
+      assertTrue(manager.getLastUpdateTime().getUtcTime() >= before.getUtcTime());
+    }
   }
 
   // Existing third-party implementations inherit functional defaults without implementing new
@@ -120,7 +181,7 @@ class TrustListManagerAtomicityTest {
     manager.replaceAll(replacement);
     TrustListSnapshot captured = manager.getSnapshot();
 
-    assertTrue(GENERATION_A.matchesLists(captured));
+    GENERATION_A.assertLists(captured);
     assertEquals(DateTime.MIN_VALUE, captured.lastUpdateTime());
   }
 
@@ -179,6 +240,62 @@ class TrustListManagerAtomicityTest {
     }
   }
 
+  private static void assertConcurrentUpdatesAreNotLost(TrustListManager manager) throws Exception {
+
+    manager.replaceAll(GENERATION_A.snapshot());
+
+    var bothInside = new CountDownLatch(2);
+    ExecutorService executor = Executors.newFixedThreadPool(2);
+
+    try {
+      // Each operator parks until both threads have read a snapshot, so at least one of them
+      // must observe the other's commit (or be retried) for its own change to survive.
+      Future<?> issuerWriter =
+          executor.submit(
+              () ->
+                  manager.update(
+                      current -> {
+                        bothInside.countDown();
+                        awaitOrTimeout(bothInside);
+                        return current.withIssuerCertificates(GENERATION_B.certificates());
+                      }));
+      Future<?> trustedWriter =
+          executor.submit(
+              () ->
+                  manager.update(
+                      current -> {
+                        bothInside.countDown();
+                        awaitOrTimeout(bothInside);
+                        return current.withTrustedCrls(GENERATION_B.crls());
+                      }));
+
+      issuerWriter.get(30, TimeUnit.SECONDS);
+      trustedWriter.get(30, TimeUnit.SECONDS);
+    } finally {
+      executor.shutdownNow();
+      assertTrue(executor.awaitTermination(30, TimeUnit.SECONDS));
+    }
+
+    TrustListSnapshot result = manager.getSnapshot();
+    assertEquals(GENERATION_B.certificates(), result.issuerCertificates());
+    assertEquals(GENERATION_B.crls(), result.trustedCrls());
+    assertEquals(GENERATION_A.crls(), result.issuerCrls());
+    assertEquals(GENERATION_A.certificates(), result.trustedCertificates());
+  }
+
+  /**
+   * Like {@link #await(CountDownLatch)} but bounded to a short wait, because a lock-based manager
+   * runs the two operators one after the other and the second never sees the first inside.
+   */
+  private static void awaitOrTimeout(CountDownLatch latch) {
+    try {
+      latch.await(1, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(e);
+    }
+  }
+
   private static void observe(
       TrustListSnapshot snapshot, AtomicBoolean sawGenerationA, AtomicBoolean sawGenerationB) {
 
@@ -196,20 +313,24 @@ class TrustListManagerAtomicityTest {
         generationA || generationB, "observed a snapshot containing mixed trust-list generations");
   }
 
-  private static TrustListSnapshot awaitWatcherReload(
-      TrustListManager manager, DateTime replacementTime) {
+  /**
+   * Poll until the manager publishes a snapshot matching {@code condition}. The bound is generous
+   * because the JDK's polling {@link java.nio.file.WatchService} on macOS scans every 10 seconds.
+   */
+  private static TrustListSnapshot awaitSnapshot(
+      TrustListManager manager, Predicate<TrustListSnapshot> condition) {
 
-    long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+    long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
 
     while (System.nanoTime() < deadline) {
       TrustListSnapshot snapshot = manager.getSnapshot();
-      if (!replacementTime.equals(snapshot.lastUpdateTime())) {
+      if (condition.test(snapshot)) {
         return snapshot;
       }
       Thread.onSpinWait();
     }
 
-    throw new AssertionError("watcher did not reload the trust lists within 10 seconds");
+    throw new AssertionError("watcher did not reload the trust lists within 30 seconds");
   }
 
   private static void await(CountDownLatch latch) {
@@ -221,7 +342,7 @@ class TrustListManagerAtomicityTest {
     }
   }
 
-  private static Generation createGeneration(String commonName, DateTime lastUpdateTime) {
+  private static Generation createGeneration(String commonName) {
     try {
       KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
       X509Certificate certificate =
@@ -231,13 +352,13 @@ class TrustListManagerAtomicityTest {
               .build();
       X509CRL crl = CrlTestUtil.generateCrl(certificate, keyPair.getPrivate());
 
-      return new Generation(certificate, crl, lastUpdateTime);
+      return new Generation(certificate, crl);
     } catch (Exception e) {
       throw new ExceptionInInitializerError(e);
     }
   }
 
-  private record Generation(X509Certificate certificate, X509CRL crl, DateTime lastUpdateTime) {
+  private record Generation(X509Certificate certificate, X509CRL crl) {
 
     List<X509Certificate> certificates() {
       return List.of(certificate);
@@ -248,18 +369,22 @@ class TrustListManagerAtomicityTest {
     }
 
     TrustListSnapshot snapshot() {
-      return new TrustListSnapshot(certificates(), crls(), certificates(), crls(), lastUpdateTime);
+      return new TrustListSnapshot(
+          certificates(), crls(), certificates(), crls(), DateTime.MIN_VALUE);
     }
 
     boolean matches(TrustListSnapshot snapshot) {
-      return matchesLists(snapshot) && lastUpdateTime.equals(snapshot.lastUpdateTime());
-    }
-
-    boolean matchesLists(TrustListSnapshot snapshot) {
       return certificates().equals(snapshot.issuerCertificates())
           && crls().equals(snapshot.issuerCrls())
           && certificates().equals(snapshot.trustedCertificates())
           && crls().equals(snapshot.trustedCrls());
+    }
+
+    void assertLists(TrustListSnapshot snapshot) {
+      assertEquals(certificates(), snapshot.issuerCertificates());
+      assertEquals(crls(), snapshot.issuerCrls());
+      assertEquals(certificates(), snapshot.trustedCertificates());
+      assertEquals(crls(), snapshot.trustedCrls());
     }
   }
 

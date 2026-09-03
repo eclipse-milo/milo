@@ -22,7 +22,6 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.TrustListManager;
 import org.eclipse.milo.opcua.stack.core.security.TrustListSnapshot;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TrustListMasks;
 import org.eclipse.milo.opcua.stack.core.types.structured.TrustListDataType;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
@@ -46,8 +45,10 @@ public final class TrustListApplier {
    * the certificates and CRLs it carries.
    *
    * <p>All entries are decoded before anything is replaced, so a malformed entry rejects the whole
-   * update and the manager is unchanged. Specified lists are merged with one current snapshot and
-   * the resulting snapshot is committed in one replacement.
+   * update and the manager is unchanged. The specified lists are then merged into the manager's
+   * current snapshot through {@link TrustListManager#update}, so unspecified lists keep whatever
+   * value they hold at commit time and the replacement is published as one snapshot. If no list is
+   * specified nothing is committed.
    *
    * @param trustList the list to apply.
    * @param manager the {@link TrustListManager} to update.
@@ -83,15 +84,25 @@ public final class TrustListApplier {
       return;
     }
 
-    TrustListSnapshot current = manager.getSnapshot();
+    manager.update(
+        current -> {
+          TrustListSnapshot updated = current;
 
-    manager.replaceAll(
-        new TrustListSnapshot(
-            issuerCertificates != null ? issuerCertificates : current.issuerCertificates(),
-            issuerCrls != null ? issuerCrls : current.issuerCrls(),
-            trustedCertificates != null ? trustedCertificates : current.trustedCertificates(),
-            trustedCrls != null ? trustedCrls : current.trustedCrls(),
-            DateTime.now()));
+          if (issuerCertificates != null) {
+            updated = updated.withIssuerCertificates(issuerCertificates);
+          }
+          if (trustedCertificates != null) {
+            updated = updated.withTrustedCertificates(trustedCertificates);
+          }
+          if (issuerCrls != null) {
+            updated = updated.withIssuerCrls(issuerCrls);
+          }
+          if (trustedCrls != null) {
+            updated = updated.withTrustedCrls(trustedCrls);
+          }
+
+          return updated;
+        });
   }
 
   /**
