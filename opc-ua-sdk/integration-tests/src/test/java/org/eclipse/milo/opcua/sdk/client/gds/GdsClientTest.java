@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.gds.GdsClient.CertificatesResult;
@@ -301,6 +302,142 @@ public class GdsClientTest extends AbstractGdsClientTest {
           gdsClient.readCertificateTypes(gds.defaultApplicationGroupId()));
     }
 
+    // An exact match must win even if an abstract ancestor appears earlier in the advertised list;
+    // passing null would discard the caller's explicit choice on GDSes that accept the concrete id.
+    @Test
+    void resolveCertificateTypeIdReturnsExactMatchBeforeConsideringAncestors() throws Exception {
+      gds.setApplicationCertificateTypes(
+          NodeIds.ApplicationCertificateType, NodeIds.RsaSha256ApplicationCertificateType);
+
+      NodeId resolved =
+          gdsClient.resolveCertificateTypeId(
+              gds.defaultApplicationGroupId(), NodeIds.RsaSha256ApplicationCertificateType);
+
+      assertEquals(NodeIds.RsaSha256ApplicationCertificateType, resolved);
+    }
+
+    // The reference GDS advertises only the abstract ApplicationCertificateType and expects null
+    // in request methods so it can select the compatible concrete group default.
+    @Test
+    void resolveCertificateTypeIdAsyncReturnsNullForAdvertisedAncestor() throws Exception {
+      gds.setApplicationCertificateTypes(NodeIds.ApplicationCertificateType);
+
+      NodeId resolved =
+          gdsClient
+              .resolveCertificateTypeIdAsync(
+                  gds.defaultApplicationGroupId(), NodeIds.RsaSha256ApplicationCertificateType)
+              .get(2, TimeUnit.SECONDS);
+
+      assertNull(resolved);
+    }
+
+    // Null is only a safe request when the group advertises no concrete type. With a concrete
+    // sibling in the list, the group default may be that sibling's profile, so the caller must be
+    // told the desired type is unavailable instead of getting the wrong certificate later.
+    @Test
+    void resolveCertificateTypeIdRejectsAncestorMixedWithConcreteSibling() {
+      gds.setApplicationCertificateTypes(
+          NodeIds.ApplicationCertificateType, NodeIds.EccNistP256ApplicationCertificateType);
+
+      UaException e =
+          assertThrows(
+              UaException.class,
+              () ->
+                  gdsClient.resolveCertificateTypeId(
+                      gds.defaultApplicationGroupId(),
+                      NodeIds.RsaSha256ApplicationCertificateType));
+
+      assertEquals(StatusCodes.Bad_NotSupported, e.getStatusCode().value());
+    }
+
+    // An abstract type from a different branch makes the group default ambiguous even when another
+    // advertised abstract type is an ancestor of the desired type.
+    @Test
+    void resolveCertificateTypeIdRejectsAncestorMixedWithIncompatibleAbstractType() {
+      gds.setApplicationCertificateTypes(
+          NodeIds.ApplicationCertificateType, NodeIds.EccApplicationCertificateType);
+
+      UaException e =
+          assertThrows(
+              UaException.class,
+              () ->
+                  gdsClient.resolveCertificateTypeId(
+                      gds.defaultApplicationGroupId(),
+                      NodeIds.RsaSha256ApplicationCertificateType));
+
+      assertEquals(StatusCodes.Bad_NotSupported, e.getStatusCode().value());
+    }
+
+    // Part 12 §7.8.3.3 requires DefaultUserTokenGroup to leave CertificateTypes empty because it
+    // carries a TrustList for user credentials rather than certificates assigned to applications.
+    @Test
+    void resolveCertificateTypeIdRejectsGroupWithNoCertificateTypes() {
+      UaException e =
+          assertThrows(
+              UaException.class,
+              () ->
+                  gdsClient.resolveCertificateTypeId(
+                      gds.defaultUserTokenGroupId(), NodeIds.RsaSha256ApplicationCertificateType));
+
+      assertEquals(StatusCodes.Bad_NotSupported, e.getStatusCode().value());
+    }
+
+    @Test
+    void resolveCertificateTypeIdReturnsNullForIntermediateEccAncestor() throws Exception {
+      gds.setApplicationCertificateTypes(NodeIds.EccApplicationCertificateType);
+
+      NodeId resolved =
+          gdsClient.resolveCertificateTypeId(
+              gds.defaultApplicationGroupId(), NodeIds.EccNistP256ApplicationCertificateType);
+
+      assertNull(resolved);
+    }
+
+    // Part 12 §7.8.4 defines the RSA minimum and RSA SHA-256 types as siblings. Treating one as an
+    // ancestor of the other can silently request a certificate with the wrong security profile.
+    @Test
+    void resolveCertificateTypeIdRejectsSiblingRsaTypesInBothDirections() throws Exception {
+      gds.setApplicationCertificateTypes(NodeIds.RsaMinApplicationCertificateType);
+
+      UaException blocking =
+          assertThrows(
+              UaException.class,
+              () ->
+                  gdsClient.resolveCertificateTypeId(
+                      gds.defaultApplicationGroupId(),
+                      NodeIds.RsaSha256ApplicationCertificateType));
+
+      gds.setApplicationCertificateTypes(NodeIds.RsaSha256ApplicationCertificateType);
+
+      ExecutionException async =
+          assertThrows(
+              ExecutionException.class,
+              () ->
+                  gdsClient
+                      .resolveCertificateTypeIdAsync(
+                          gds.defaultApplicationGroupId(), NodeIds.RsaMinApplicationCertificateType)
+                      .get(2, TimeUnit.SECONDS));
+
+      assertEquals(StatusCodes.Bad_NotSupported, blocking.getStatusCode().value());
+      UaException asyncCause = assertInstanceOf(UaException.class, async.getCause());
+      assertEquals(StatusCodes.Bad_NotSupported, asyncCause.getStatusCode().value());
+    }
+
+    @Test
+    void resolveCertificateTypeIdRejectsIncompatibleCertificateFamily() {
+      gds.setApplicationCertificateTypes(NodeIds.EccApplicationCertificateType);
+
+      UaException e =
+          assertThrows(
+              UaException.class,
+              () ->
+                  gdsClient.resolveCertificateTypeId(
+                      gds.defaultApplicationGroupId(),
+                      NodeIds.RsaSha256ApplicationCertificateType));
+
+      assertEquals(StatusCodes.Bad_NotSupported, e.getStatusCode().value());
+    }
+
     @Test
     void getCertificateStatusReportsWhetherAnUpdateIsRequired() throws Exception {
       NodeId applicationId = registerTestApplication();
@@ -514,6 +651,7 @@ public class GdsClientTest extends AbstractGdsClientTest {
     // the issued certificate installed in the client's trust list manager.
     @Test
     void fullPullSequenceEndsWithTheGdsCaInTheTrustListManager() throws Exception {
+      gds.setApplicationCertificateTypes(NodeIds.ApplicationCertificateType);
       gds.getApplicationGroupTrustList()
           .setTrustList(
               new TrustListDataType(
@@ -532,12 +670,14 @@ public class GdsClientTest extends AbstractGdsClientTest {
               : found[0].getApplicationId();
 
       NodeId groupId = gdsClient.getCertificateGroups(applicationId)[0];
-      NodeId typeId = gdsClient.readCertificateTypes(groupId)[0];
-      assertTrue(gdsClient.getCertificateStatus(applicationId, groupId, typeId));
+      NodeId requestTypeId =
+          gdsClient.resolveCertificateTypeId(groupId, NodeIds.RsaSha256ApplicationCertificateType);
+      assertNull(requestTypeId, "an abstract advertisement selects the group default");
+      assertTrue(gdsClient.getCertificateStatus(applicationId, groupId, requestTypeId));
 
       NodeId requestId =
           gdsClient.startSigningRequest(
-              applicationId, groupId, typeId, csr(keyPair, APPLICATION_URI));
+              applicationId, groupId, requestTypeId, csr(keyPair, APPLICATION_URI));
       FinishRequestResult issued = gdsClient.finishRequest(applicationId, requestId);
       X509Certificate certificate =
           CertificateUtil.decodeCertificate(issued.certificate().bytesOrEmpty());
@@ -548,6 +688,7 @@ public class GdsClientTest extends AbstractGdsClientTest {
       TrustListApplier.apply(trustList, trustListManager);
 
       assertEquals(List.of(gds.getCaCertificate()), trustListManager.getTrustedCertificates());
+      assertNull(gds.getLastCertificateTypeId(), "the request used the portable group default");
       assertEquals(
           certificate.getIssuerX500Principal(), gds.getCaCertificate().getSubjectX500Principal());
     }

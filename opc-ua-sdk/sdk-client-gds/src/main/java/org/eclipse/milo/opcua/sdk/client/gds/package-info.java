@@ -39,11 +39,13 @@
  * <h2>Data flow</h2>
  *
  * <p>The Pull Model (Part 12 §7.6) runs against the {@code Directory} object: find or register the
- * application record, list the certificate groups the GDS manages for it, and for each group and
- * certificate type ask whether an update is required, submit a signing request, and poll {@code
- * FinishRequest} until it stops failing with {@code Bad_NothingToDo}. The group's TrustList is read
- * whenever its {@code LastUpdateTime} moves past the time the application last applied it, and is
- * applied to the {@code TrustListManager} of the matching local certificate group.
+ * application record, list the certificate groups the GDS manages for it, resolve the
+ * CertificateTypeId to request for each desired certificate type with {@link
+ * org.eclipse.milo.opcua.sdk.client.gds.GdsClient#resolveCertificateTypeId}, ask whether an update
+ * is required, submit a signing request, and poll {@code FinishRequest} until it stops failing with
+ * {@code Bad_NothingToDo}. The group's TrustList is read whenever its {@code LastUpdateTime} moves
+ * past the time the application last applied it, and is applied to the {@code TrustListManager} of
+ * the matching local certificate group.
  *
  * <h2>Boundaries</h2>
  *
@@ -54,8 +56,9 @@
  * ApplicationId} and pending {@code RequestId}s across restarts, verifies issued certificates
  * against its own key pairs, and decides which {@code TrustListManager} receives a pulled list.
  * Method results are returned as the GDS reports them; a Bad status is thrown as a {@link
- * org.eclipse.milo.opcua.stack.core.UaException} carrying the original code and is never
- * interpreted or retried here.
+ * org.eclipse.milo.opcua.stack.core.UaException} carrying the original code and is never retried
+ * here. Certificate type resolution is local and reports {@code Bad_NotSupported} when the
+ * advertised types are incompatible with the desired type.
  *
  * <p>Nothing in this package runs during namespace 0 startup. The GDS namespace index is only known
  * once a client has read a server's namespace array, so the model registrations happen in {@code

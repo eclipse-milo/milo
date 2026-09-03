@@ -12,7 +12,6 @@ package org.eclipse.milo.examples.client;
 
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -90,18 +89,14 @@ public class GdsPullExample implements ClientExample {
     }
 
     NodeId groupId = gds.getCertificateGroups(applicationId)[0];
-    NodeId[] certificateTypes = gds.readCertificateTypes(groupId);
-    // Ask for RsaSha256 when the group advertises it, otherwise let the GDS pick the group's
-    // default: the list may hold only the abstract ApplicationCertificateType, which the
-    // reference GDS advertises but rejects as a CertificateTypeId.
+    // Null means "the group's default", which resolve selects when the GDS advertises only the
+    // abstract ApplicationCertificateType.
     NodeId certificateTypeId =
-        Arrays.asList(certificateTypes).contains(NodeIds.RsaSha256ApplicationCertificateType)
-            ? NodeIds.RsaSha256ApplicationCertificateType
-            : null;
+        gds.resolveCertificateTypeId(groupId, NodeIds.RsaSha256ApplicationCertificateType);
     logger.info(
-        "Group {} issues {}; update required: {}",
+        "Group {} resolved request type {}; update required: {}",
         groupId,
-        Arrays.toString(certificateTypes),
+        certificateTypeId,
         gds.getCertificateStatus(applicationId, groupId, certificateTypeId));
 
     // A throwaway key pair; a real application would use the key pair of the certificate it is
