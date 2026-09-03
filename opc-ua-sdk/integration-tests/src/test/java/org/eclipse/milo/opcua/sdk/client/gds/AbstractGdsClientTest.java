@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.client.gds;
 
 import java.security.KeyPair;
 import java.util.List;
+import org.eclipse.milo.opcua.sdk.client.gds.testing.FakeGdsNamespace;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
 import org.eclipse.milo.opcua.sdk.test.TestServer;
 import org.eclipse.milo.opcua.stack.core.UaException;

@@ -58,6 +58,11 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.milo</groupId>
+        <artifactId>milo-sdk-client-gds-testing</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.milo</groupId>
         <artifactId>milo-sdk-core</artifactId>
         <version>${project.version}</version>
       </dependency>

@@ -41,7 +41,8 @@ listed in `milo-bom`). It depends only on `milo-sdk-client` and shares the packa
 
 - `GdsClient` wraps a connected `OpcUaClient` and exposes every `DirectoryType` and
   `CertificateDirectoryType` method with a typed signature, plus reads of a CertificateGroup's
-  `CertificateTypes` and a TrustList's `LastUpdateTime` and `UpdateFrequency`.
+  `CertificateTypes` and a TrustList's `LastUpdateTime` and `UpdateFrequency`. It also resolves a
+  desired certificate type to the value accepted by a group's certificate request methods.
 - `TrustListReader` reads a `TrustListType` object with the FileType `Open`, `Read`, and `Close`
   methods and decodes the body into a `TrustListDataType`.
 - `TrustListApplier` installs a `TrustListDataType` into a `TrustListManager` and builds one back
@@ -51,6 +52,14 @@ The module stops at these typed primitives. Scheduling, persistence of the `Appl
 pending `RequestId`s, retry policy, and what to do with an issued certificate depend on the
 application's configuration and lifecycle, so there is no Pull engine; the application drives the
 sequence.
+
+The publishable `milo-sdk-client-gds-testing` module provides `FakeGdsNamespace` in
+`org.eclipse.milo.opcua.sdk.client.gds.testing`. It hosts an in-memory GDS on a Milo server for
+application-side Pull workflow tests. Tests can control registration and CertificateDirectory
+access, pre-register applications, change the advertised application certificate types, delay or
+reject requests, and inspect method counters and TrustList file calls. The artifact is listed in
+`milo-bom` and is separate from `milo-sdk-client-gds` to avoid adding server dependencies to the
+runtime client module.
 
 * * *
 
@@ -87,9 +96,9 @@ each wrapper issues exactly one `Call` request with the known ids: `FindApplicat
 No browse or argument read precedes a call. The generated node classes remain available for
 callers who want to navigate the `Applications` and `CertificateGroups` folders.
 
-Results are not interpreted. A Bad operation-level status becomes a `UaMethodException` (a
-`UaException`) carrying the server's `StatusCode`, so a caller branches on the codes Part 12
-defines: `Bad_NothingToDo` from `FinishRequest` means the request is still pending,
+Method wrapper results are not interpreted. A Bad operation-level status becomes a
+`UaMethodException` (a `UaException`) carrying the server's `StatusCode`, so a caller branches on
+the codes Part 12 defines: `Bad_NothingToDo` from `FinishRequest` means the request is still pending,
 `Bad_RequestNotAllowed` means it was rejected, `Bad_UserAccessDenied` means the session lacks the
 role, and `Bad_CertificateUriInvalid` means the CSR's ApplicationUri does not match the record.
 Output arguments are validated by type and count; a server that returns something other than the
@@ -102,6 +111,17 @@ or an empty ByteString for the `PrivateKey` output, and `FinishRequestResult.pri
 both cases; `issuerCertificates()` is an empty array when the chain is not returned.
 `TrustListInfo.updateFrequency()` is null when the GDS does not expose the optional
 `UpdateFrequency` property.
+
+`resolveCertificateTypeId(groupId, desiredTypeId)` interprets `CertificateTypes` locally. It
+returns the desired id for an exact advertised match. It returns null, selecting the group's
+default, only when every advertised non-null type is an abstract ancestor of the desired type in
+the standard CertificateType hierarchy. It fails with `Bad_NotSupported` when the advertised
+types are incompatible, including a list that mixes an abstract ancestor with an incompatible
+abstract type or a concrete type other than the desired one, because the group default could then
+be a different profile. In particular, `RsaMinApplicationCertificateType` and
+`RsaSha256ApplicationCertificateType` are sibling types, so neither can stand in for the other.
+Types outside namespace 0 are matched exactly only; their subtype relationships are not
+evaluated.
 
 ### TrustList files
 
@@ -152,16 +172,25 @@ NodeId applicationId =
                 null))
         : found[0].getApplicationId();
 
+NodeId desiredTypeId = NodeIds.RsaSha256ApplicationCertificateType;
 for (NodeId groupId : gds.getCertificateGroups(applicationId)) {
-  for (NodeId typeId : gds.readCertificateTypes(groupId)) {
-    if (gds.getCertificateStatus(applicationId, groupId, typeId)) {
-      ByteString csr = ByteString.of(CertificateUtil.generateCsr(keyPair, ...).getEncoded());
-      NodeId requestId = gds.startSigningRequest(applicationId, groupId, typeId, csr);
-      // Later, and again on Bad_NothingToDo:
-      FinishRequestResult issued = gds.finishRequest(applicationId, requestId);
-      X509Certificate certificate = CertificateUtil.decodeCertificate(issued.certificate().bytesOrEmpty());
-      GdsClient.verifyIssuedCertificate(certificate, keyPair.getPublic(), applicationUri);
-    }
+  // Groups such as DefaultUserTokenGroup do not issue application certificates and fail with
+  // Bad_NotSupported; skip signing for them but still pull their TrustList.
+  NodeId requestTypeId = null;
+  boolean issuesDesiredType = true;
+  try {
+    requestTypeId = gds.resolveCertificateTypeId(groupId, desiredTypeId);
+  } catch (UaException e) {
+    if (e.getStatusCode().value() != StatusCodes.Bad_NotSupported) throw e;
+    issuesDesiredType = false;
+  }
+  if (issuesDesiredType && gds.getCertificateStatus(applicationId, groupId, requestTypeId)) {
+    ByteString csr = ByteString.of(CertificateUtil.generateCsr(keyPair, ...).getEncoded());
+    NodeId requestId = gds.startSigningRequest(applicationId, groupId, requestTypeId, csr);
+    // Later, and again on Bad_NothingToDo:
+    FinishRequestResult issued = gds.finishRequest(applicationId, requestId);
+    X509Certificate certificate = CertificateUtil.decodeCertificate(issued.certificate().bytesOrEmpty());
+    GdsClient.verifyIssuedCertificate(certificate, keyPair.getPublic(), applicationUri);
   }
 
   NodeId trustListId = gds.getTrustList(applicationId, groupId);
@@ -182,9 +211,19 @@ key and ApplicationUri before it is installed. A certificate for the wrong key c
 the channel and one with the wrong ApplicationUri is rejected by every peer, and neither problem is
 otherwise visible until a connection fails.
 
-A null CertificateTypeId means "the group's default". Some GDS implementations advertise abstract
-types in a CertificateGroup's `CertificateTypes` and reject them when passed back, so null is the
-portable choice when the list holds no concrete type the caller recognizes.
+Use the group ids returned by `getCertificateGroups`. The OPC Foundation reference GDS identifies
+its default application group in the GDS namespace as
+`GdsNodeIds.Directory_CertificateGroups_DefaultApplicationGroup` (`ns=<gds>;i=615`). It is not the
+namespace-zero ServerConfiguration group at `ns=0;i=14156`. If a known default id is needed before
+registration, resolve the `GdsNodeIds` `ExpandedNodeId` through the connected server's
+`NamespaceTable` instead of hard-coding a namespace index.
+
+A null CertificateTypeId means "the group's default". The OPC Foundation reference GDS advertises
+the abstract `ApplicationCertificateType` as its only default-group type but rejects that abstract
+id when it is passed back to certificate methods. For a desired concrete type such as
+`RsaSha256ApplicationCertificateType`, `resolveCertificateTypeId` recognizes the advertised
+ancestor and returns null. Pass that nullable result to `GetCertificateStatus`,
+`StartSigningRequest`, or `StartNewKeyPairRequest`; null is the portable group-default request.
 
 `GdsPullExample` in `milo-examples/client-examples` runs the sequence once against a GDS named by
 the `gds.endpoint`, `gds.username`, and `gds.password` system properties, printing the issued

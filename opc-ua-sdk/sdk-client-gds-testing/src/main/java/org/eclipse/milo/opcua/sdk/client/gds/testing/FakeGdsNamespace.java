@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.eclipse.milo.opcua.sdk.client.gds;
+package org.eclipse.milo.opcua.sdk.client.gds.testing;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
@@ -39,6 +39,7 @@ import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.pkcs.PKCS10CertificationRequest;
+import org.eclipse.milo.opcua.sdk.client.gds.GdsClient;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.ValueRanks;
@@ -47,6 +48,7 @@ import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
+import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext;
 import org.eclipse.milo.opcua.sdk.server.model.objects.DataTypeEncodingTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaDataTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
@@ -74,7 +76,9 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.OpenFileMode;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.ServerOnNetwork;
@@ -85,17 +89,33 @@ import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
 import org.jspecify.annotations.Nullable;
 
 /**
- * An in-memory GDS hosted on the test server: the GDS namespace, the {@code
- * ApplicationRecordDataType}, the {@code Directory} object with every DirectoryType and
- * CertificateDirectoryType method, two certificate groups, and their TrustList files.
+ * An in-memory GDS test fixture: the GDS namespace, the {@code ApplicationRecordDataType}, the
+ * {@code Directory} object with every DirectoryType and CertificateDirectoryType method, two
+ * certificate groups, and their TrustList files.
  *
  * <p>Behaviour is deliberately simple and controllable from tests: registrations are kept in a map,
  * signing requests are issued by a throwaway CA after a configurable number of {@code
  * Bad_NothingToDo} polls, and each TrustList records the FileType calls made against it.
+ *
+ * <p>Construct the fixture with the server under test, call {@link #startup()} before starting the
+ * server, and call {@link #shutdown()} during teardown. Call {@link #reset()} between tests that
+ * share an instance.
  */
 public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
 
   public static final String NAMESPACE_URI = GdsClient.NAMESPACE_URI;
+
+  /** Access requirements for controlled GDS methods. */
+  public enum MethodAccess {
+    /** Allow calls from any activated session. */
+    ANYONE,
+
+    /** Allow calls only from a session activated with a UserName identity token. */
+    CREDENTIALED,
+
+    /** Deny every call with {@code Bad_UserAccessDenied}. */
+    NOBODY
+  }
 
   /** Recorded FileType calls and served body of one TrustList object. */
   public static final class TrustListFile {
@@ -153,11 +173,17 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
   private final Map<NodeId, List<X509Certificate>> issued = new ConcurrentHashMap<>();
   private final Set<ByteString> revoked = ConcurrentHashMap.newKeySet();
   private final AtomicInteger nextId = new AtomicInteger(1);
+  private final AtomicInteger registerApplicationCallCount = new AtomicInteger();
+  private final AtomicInteger startSigningRequestCallCount = new AtomicInteger();
+  private final AtomicInteger finishRequestCallCount = new AtomicInteger();
 
   private final TrustListFile applicationGroupTrustList = new TrustListFile();
   private final TrustListFile userTokenGroupTrustList = new TrustListFile();
 
-  private volatile boolean registrationAllowed = true;
+  private volatile MethodAccess registerApplicationAccess = MethodAccess.ANYONE;
+  private volatile MethodAccess certificateDirectoryAccess = MethodAccess.ANYONE;
+  private volatile NodeId[] applicationGroupCertificateTypes = defaultCertificateTypes();
+  private volatile @Nullable NodeId lastCertificateTypeId;
   private volatile int pollsBeforeIssued = 0;
   private volatile boolean rejectRequests = false;
   private volatile boolean updateRequired = true;
@@ -173,6 +199,12 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
             .build();
 
     getLifecycleManager().addStartupTask(this::addNodes);
+  }
+
+  private static NodeId[] defaultCertificateTypes() {
+    return new NodeId[] {
+      NodeIds.RsaSha256ApplicationCertificateType, NodeIds.EccNistP256ApplicationCertificateType
+    };
   }
 
   // The GDS tests never subscribe to anything in this namespace.
@@ -203,8 +235,72 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
     return userTokenGroupTrustList;
   }
 
-  public void setRegistrationAllowed(boolean registrationAllowed) {
-    this.registrationAllowed = registrationAllowed;
+  /** Set the access required to call {@code RegisterApplication}. */
+  public void setRegisterApplicationAccess(MethodAccess access) {
+    this.registerApplicationAccess = Objects.requireNonNull(access);
+  }
+
+  /** Set the access required to call the CertificateDirectoryType methods. */
+  public void setCertificateDirectoryAccess(MethodAccess access) {
+    this.certificateDirectoryAccess = Objects.requireNonNull(access);
+  }
+
+  /** Configure the CertificateTypes advertised by the DefaultApplicationGroup. */
+  public void setApplicationCertificateTypes(NodeId... certificateTypes) {
+    this.applicationGroupCertificateTypes = Objects.requireNonNull(certificateTypes).clone();
+  }
+
+  /**
+   * Number of calls made to {@code RegisterApplication} since the last {@link #reset()}, including
+   * calls that were denied or rejected.
+   */
+  public int getRegisterApplicationCallCount() {
+    return registerApplicationCallCount.get();
+  }
+
+  /**
+   * Number of calls made to {@code StartSigningRequest} since the last {@link #reset()}, including
+   * calls that were denied or rejected.
+   */
+  public int getStartSigningRequestCallCount() {
+    return startSigningRequestCallCount.get();
+  }
+
+  /**
+   * Number of calls made to {@code FinishRequest} since the last {@link #reset()}, including calls
+   * that were denied or rejected.
+   */
+  public int getFinishRequestCallCount() {
+    return finishRequestCallCount.get();
+  }
+
+  /**
+   * Get the CertificateTypeId the client sent in the most recent {@code StartSigningRequest},
+   * including calls that were denied or rejected.
+   *
+   * @return the CertificateTypeId from the last {@code StartSigningRequest}, or {@code null} if it
+   *     was null or no request has been made since the last {@link #reset()}.
+   */
+  public @Nullable NodeId getLastCertificateTypeId() {
+    return lastCertificateTypeId;
+  }
+
+  /** Pre-register an application as if it had been added by a GDS administrator. */
+  public NodeId preRegister(String applicationUri) {
+    NodeId applicationId = newNodeId("Applications/" + nextId.getAndIncrement());
+
+    applications.put(
+        applicationId,
+        new ApplicationRecordDataType(
+            applicationId,
+            applicationUri,
+            ApplicationType.Client,
+            new LocalizedText[0],
+            null,
+            null,
+            null));
+
+    return applicationId;
   }
 
   /**
@@ -228,7 +324,13 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
     requests.clear();
     issued.clear();
     revoked.clear();
-    registrationAllowed = true;
+    registerApplicationAccess = MethodAccess.ANYONE;
+    certificateDirectoryAccess = MethodAccess.ANYONE;
+    applicationGroupCertificateTypes = defaultCertificateTypes();
+    registerApplicationCallCount.set(0);
+    startSigningRequestCallCount.set(0);
+    finishRequestCallCount.set(0);
+    lastCertificateTypeId = null;
     pollsBeforeIssued = 0;
     rejectRequests = false;
     updateRequired = true;
@@ -268,10 +370,7 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
           GdsNodeIds.Directory_CertificateGroups_DefaultApplicationGroup,
           "DefaultApplicationGroup",
           GdsNodeIds.Directory_CertificateGroups_DefaultApplicationGroup_CertificateTypes,
-          new NodeId[] {
-            NodeIds.RsaSha256ApplicationCertificateType,
-            NodeIds.EccNistP256ApplicationCertificateType
-          },
+          () -> applicationGroupCertificateTypes.clone(),
           GdsNodeIds.Directory_CertificateGroups_DefaultApplicationGroup_TrustList,
           applicationGroupTrustList,
           true);
@@ -281,7 +380,7 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
           GdsNodeIds.Directory_CertificateGroups_DefaultUserTokenGroup,
           "DefaultUserTokenGroup",
           GdsNodeIds.Directory_CertificateGroups_DefaultUserTokenGroup_CertificateTypes,
-          new NodeId[] {NodeIds.RsaSha256ApplicationCertificateType},
+          () -> new NodeId[0],
           GdsNodeIds.Directory_CertificateGroups_DefaultUserTokenGroup_TrustList,
           userTokenGroupTrustList,
           false);
@@ -409,7 +508,7 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
       ExpandedNodeId groupId,
       String name,
       ExpandedNodeId certificateTypesId,
-      NodeId[] certificateTypes,
+      Supplier<NodeId[]> certificateTypes,
       ExpandedNodeId trustListId,
       TrustListFile file,
       boolean optionalProperties) {
@@ -428,8 +527,8 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
         "CertificateTypes",
         NodeIds.NodeId,
         ValueRanks.OneDimension,
-        new Variant(certificateTypes),
-        null);
+        Variant.NULL_VALUE,
+        () -> new Variant(certificateTypes.get()));
 
     UaObjectNode trustList =
         addObject(
@@ -515,7 +614,7 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
         new QualifiedName(0, "Open"),
         new Argument[] {argument("Mode", NodeIds.Byte, ValueRanks.Scalar)},
         new Argument[] {argument("FileHandle", NodeIds.UInt32, ValueRanks.Scalar)},
-        inputs -> {
+        (context, inputs) -> {
           file.calls.add("Open");
 
           UByte mode = (UByte) inputs[0].value();
@@ -538,7 +637,7 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
           argument("Length", NodeIds.Int32, ValueRanks.Scalar)
         },
         new Argument[] {argument("Data", NodeIds.ByteString, ValueRanks.Scalar)},
-        inputs -> {
+        (context, inputs) -> {
           UInteger handle = (UInteger) inputs[0].value();
           int length = Objects.requireNonNull((Integer) inputs[1].value());
 
@@ -568,7 +667,7 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
         new QualifiedName(0, "Close"),
         new Argument[] {argument("FileHandle", NodeIds.UInt32, ValueRanks.Scalar)},
         new Argument[0],
-        inputs -> {
+        (context, inputs) -> {
           file.calls.add("Close");
 
           UInteger handle = (UInteger) inputs[0].value();
@@ -589,7 +688,7 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
         newQualifiedName("FindApplications"),
         new Argument[] {argument("ApplicationUri", NodeIds.String, ValueRanks.Scalar)},
         new Argument[] {argument("Applications", applicationRecordId, ValueRanks.OneDimension)},
-        inputs -> {
+        (context, inputs) -> {
           String applicationUri = (String) inputs[0].value();
 
           ApplicationRecordDataType[] matches =
@@ -606,10 +705,9 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
         newQualifiedName("RegisterApplication"),
         new Argument[] {argument("Application", applicationRecordId, ValueRanks.Scalar)},
         new Argument[] {argument("ApplicationId", NodeIds.NodeId, ValueRanks.Scalar)},
-        inputs -> {
-          if (!registrationAllowed) {
-            throw new UaException(StatusCodes.Bad_UserAccessDenied);
-          }
+        (context, inputs) -> {
+          registerApplicationCallCount.incrementAndGet();
+          requireAccess(context, registerApplicationAccess);
 
           ApplicationRecordDataType record = applicationArgument(inputs[0]);
           NodeId applicationId = newNodeId("Applications/" + nextId.getAndIncrement());
@@ -625,7 +723,7 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
         newQualifiedName("UpdateApplication"),
         new Argument[] {argument("Application", applicationRecordId, ValueRanks.Scalar)},
         new Argument[0],
-        inputs -> {
+        (context, inputs) -> {
           ApplicationRecordDataType record = applicationArgument(inputs[0]);
 
           requireApplication(record.getApplicationId());
@@ -640,7 +738,7 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
         newQualifiedName("UnregisterApplication"),
         new Argument[] {argument("ApplicationId", NodeIds.NodeId, ValueRanks.Scalar)},
         new Argument[0],
-        inputs -> {
+        (context, inputs) -> {
           NodeId applicationId = (NodeId) inputs[0].value();
 
           requireApplication(applicationId);
@@ -655,7 +753,7 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
         newQualifiedName("GetApplication"),
         new Argument[] {argument("ApplicationId", NodeIds.NodeId, ValueRanks.Scalar)},
         new Argument[] {argument("Application", applicationRecordId, ValueRanks.Scalar)},
-        inputs -> {
+        (context, inputs) -> {
           NodeId applicationId = (NodeId) inputs[0].value();
 
           return new Variant[] {new Variant(requireApplication(applicationId))};
@@ -679,7 +777,7 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
           argument("NextRecordId", NodeIds.UInt32, ValueRanks.Scalar),
           argument("Applications", NodeIds.ApplicationDescription, ValueRanks.OneDimension)
         },
-        inputs -> {
+        (context, inputs) -> {
           ApplicationDescription[] descriptions =
               applications.values().stream()
                   .map(FakeGdsNamespace::toDescription)
@@ -708,7 +806,7 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
           argument("LastCounterResetTime", NodeIds.UtcTime, ValueRanks.Scalar),
           argument("Servers", NodeIds.ServerOnNetwork, ValueRanks.OneDimension)
         },
-        inputs -> {
+        (context, inputs) -> {
           ServerOnNetwork[] servers =
               applications.values().stream()
                   .map(
@@ -738,7 +836,11 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
           argument("CertificateRequest", NodeIds.ByteString, ValueRanks.Scalar)
         },
         new Argument[] {argument("RequestId", NodeIds.NodeId, ValueRanks.Scalar)},
-        inputs -> {
+        (context, inputs) -> {
+          startSigningRequestCallCount.incrementAndGet();
+          lastCertificateTypeId = nonNullNodeId((NodeId) inputs[2].value());
+          requireAccess(context, certificateDirectoryAccess);
+
           NodeId applicationId = (NodeId) inputs[0].value();
           ByteString certificateRequest = (ByteString) inputs[3].value();
 
@@ -770,7 +872,9 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
           argument("PrivateKeyPassword", NodeIds.String, ValueRanks.Scalar)
         },
         new Argument[] {argument("RequestId", NodeIds.NodeId, ValueRanks.Scalar)},
-        inputs -> {
+        (context, inputs) -> {
+          requireAccess(context, certificateDirectoryAccess);
+
           NodeId applicationId = (NodeId) inputs[0].value();
 
           requireApplication(applicationId);
@@ -794,7 +898,10 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
           argument("PrivateKey", NodeIds.ByteString, ValueRanks.Scalar),
           argument("IssuerCertificates", NodeIds.ByteString, ValueRanks.OneDimension)
         },
-        inputs -> {
+        (context, inputs) -> {
+          finishRequestCallCount.incrementAndGet();
+          requireAccess(context, certificateDirectoryAccess);
+
           NodeId applicationId = (NodeId) inputs[0].value();
           NodeId requestId = (NodeId) inputs[1].value();
 
@@ -855,7 +962,9 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
         newQualifiedName("GetCertificateGroups"),
         new Argument[] {argument("ApplicationId", NodeIds.NodeId, ValueRanks.Scalar)},
         new Argument[] {argument("CertificateGroupIds", NodeIds.NodeId, ValueRanks.OneDimension)},
-        inputs -> {
+        (context, inputs) -> {
+          requireAccess(context, certificateDirectoryAccess);
+
           requireApplication((NodeId) inputs[0].value());
 
           return new Variant[] {
@@ -879,7 +988,9 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
           argument("CertificateTypeIds", NodeIds.NodeId, ValueRanks.OneDimension),
           argument("Certificates", NodeIds.ByteString, ValueRanks.OneDimension)
         },
-        inputs -> {
+        (context, inputs) -> {
+          requireAccess(context, certificateDirectoryAccess);
+
           NodeId applicationId = (NodeId) inputs[0].value();
           requireApplication(applicationId);
 
@@ -908,7 +1019,9 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
           argument("CertificateGroupId", NodeIds.NodeId, ValueRanks.Scalar)
         },
         new Argument[] {argument("TrustListId", NodeIds.NodeId, ValueRanks.Scalar)},
-        inputs -> {
+        (context, inputs) -> {
+          requireAccess(context, certificateDirectoryAccess);
+
           requireApplication((NodeId) inputs[0].value());
 
           NodeId groupId = (NodeId) inputs[1].value();
@@ -942,7 +1055,9 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
           argument("CertificateTypeId", NodeIds.NodeId, ValueRanks.Scalar)
         },
         new Argument[] {argument("UpdateRequired", NodeIds.Boolean, ValueRanks.Scalar)},
-        inputs -> {
+        (context, inputs) -> {
+          requireAccess(context, certificateDirectoryAccess);
+
           requireApplication((NodeId) inputs[0].value());
 
           return new Variant[] {Variant.ofBoolean(updateRequired)};
@@ -957,7 +1072,9 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
           argument("Certificate", NodeIds.ByteString, ValueRanks.Scalar)
         },
         new Argument[0],
-        inputs -> {
+        (context, inputs) -> {
+          requireAccess(context, certificateDirectoryAccess);
+
           requireApplication((NodeId) inputs[0].value());
 
           revoked.add((ByteString) inputs[1].value());
@@ -974,7 +1091,9 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
           argument("CertificateStatus", NodeIds.StatusCode, ValueRanks.Scalar),
           argument("ValidityTime", NodeIds.UtcTime, ValueRanks.Scalar)
         },
-        inputs -> {
+        (context, inputs) -> {
+          requireAccess(context, certificateDirectoryAccess);
+
           ByteString certificate = (ByteString) inputs[0].value();
 
           StatusCode status =
@@ -991,7 +1110,7 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
 
   @FunctionalInterface
   private interface MethodBody {
-    Variant[] invoke(Variant[] inputs) throws UaException;
+    Variant[] invoke(InvocationContext context, Variant[] inputs) throws UaException;
   }
 
   private void addMethod(
@@ -1033,7 +1152,7 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
           @Override
           protected Variant[] invoke(InvocationContext invocationContext, Variant[] inputValues)
               throws UaException {
-            return body.invoke(inputValues);
+            return body.invoke(invocationContext, inputValues);
           }
         });
 
@@ -1042,6 +1161,29 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
 
   private static Argument argument(String name, NodeId dataTypeId, int valueRank) {
     return new Argument(name, dataTypeId, valueRank, null, LocalizedText.NULL_VALUE);
+  }
+
+  private static void requireAccess(InvocationContext context, MethodAccess access)
+      throws UaException {
+
+    boolean allowed =
+        switch (access) {
+          case ANYONE -> true;
+          case CREDENTIALED ->
+              context
+                  .getSession()
+                  .map(session -> session.getTokenType() == UserTokenType.UserName)
+                  .orElse(false);
+          case NOBODY -> false;
+        };
+
+    if (!allowed) {
+      throw new UaException(StatusCodes.Bad_UserAccessDenied);
+    }
+  }
+
+  private static @Nullable NodeId nonNullNodeId(@Nullable NodeId nodeId) {
+    return nodeId == null || nodeId.isNull() ? null : nodeId;
   }
 
   private ApplicationRecordDataType requireApplication(@Nullable NodeId applicationId)

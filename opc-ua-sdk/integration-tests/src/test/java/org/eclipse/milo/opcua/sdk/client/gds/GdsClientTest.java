@@ -23,6 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.gds.GdsClient.CertificatesResult;
 import org.eclipse.milo.opcua.sdk.client.gds.GdsClient.FinishRequestResult;
 import org.eclipse.milo.opcua.sdk.client.gds.GdsClient.QueryApplicationsResult;
@@ -30,8 +33,11 @@ import org.eclipse.milo.opcua.sdk.client.gds.GdsClient.QueryServersResult;
 import org.eclipse.milo.opcua.sdk.client.gds.GdsClient.RevocationStatus;
 import org.eclipse.milo.opcua.sdk.client.gds.GdsClient.TrustListInfo;
 import org.eclipse.milo.opcua.sdk.client.gds.model.objects.CertificateDirectoryTypeNode;
+import org.eclipse.milo.opcua.sdk.client.gds.testing.FakeGdsNamespace.MethodAccess;
+import org.eclipse.milo.opcua.sdk.client.identity.UsernameProvider;
 import org.eclipse.milo.opcua.sdk.client.methods.UaMethodException;
 import org.eclipse.milo.opcua.sdk.client.nodes.UaObjectNode;
+import org.eclipse.milo.opcua.sdk.test.TestClient;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -103,12 +109,98 @@ public class GdsClientTest extends AbstractGdsClientTest {
 
     @Test
     void registerApplicationWithoutAdminRoleFailsWithBadUserAccessDenied() {
-      gds.setRegistrationAllowed(false);
+      gds.setRegisterApplicationAccess(MethodAccess.NOBODY);
 
       UaException e = assertThrows(UaException.class, GdsClientTest.this::registerTestApplication);
 
       assertEquals(StatusCodes.Bad_UserAccessDenied, e.getStatusCode().value());
       assertInstanceOf(UaMethodException.class, e, "carries the method result");
+      assertEquals(1, gds.getRegisterApplicationCallCount());
+    }
+
+    // Part 12 §6.4 allows an administrator to register an application before its first GDS
+    // connection, so a Pull engine must be able to exercise its find-without-register path.
+    @Test
+    void preRegisteredApplicationIsFoundWithoutCallingRegisterApplication() throws Exception {
+      NodeId applicationId = gds.preRegister(APPLICATION_URI);
+
+      ApplicationRecordDataType[] found = gdsClient.findApplications(APPLICATION_URI);
+
+      assertEquals(1, found.length);
+      assertEquals(applicationId, found[0].getApplicationId());
+      assertEquals(0, gds.getRegisterApplicationCallCount());
+    }
+
+    // Part 12 §6.4 supports credentialed onboarding separately from certificate management. The
+    // fixture defines credentialed narrowly as a session activated with a UserName token.
+    @Test
+    void credentialedRegisterAccessRejectsAnonymousAndAllowsUsernameSessions() throws Exception {
+      gds.setRegisterApplicationAccess(MethodAccess.CREDENTIALED);
+
+      UaException anonymousRegister =
+          assertThrows(UaException.class, GdsClientTest.this::registerTestApplication);
+      assertEquals(StatusCodes.Bad_UserAccessDenied, anonymousRegister.getStatusCode().value());
+
+      OpcUaClient credentialedClient = connectCredentialedClient();
+      try {
+        GdsClient credentialedGds = GdsClient.create(credentialedClient);
+        NodeId applicationId = credentialedGds.registerApplication(clientRecord());
+
+        assertEquals(
+            applicationId, gdsClient.findApplications(APPLICATION_URI)[0].getApplicationId());
+        assertEquals(
+            2, gds.getRegisterApplicationCallCount(), "denied and allowed calls are both recorded");
+      } finally {
+        credentialedClient.disconnectAsync().get(2, TimeUnit.SECONDS);
+      }
+    }
+
+    // Registration access and CertificateDirectory access are separate knobs so a test can model a
+    // GDS that lets anyone register but requires credentials (or nobody) for certificate methods.
+    @Test
+    void certificateDirectoryAccessIsIndependentOfRegisterApplicationAccess() throws Exception {
+      gds.setRegisterApplicationAccess(MethodAccess.CREDENTIALED);
+
+      OpcUaClient credentialedClient = connectCredentialedClient();
+      try {
+        GdsClient credentialedGds = GdsClient.create(credentialedClient);
+        NodeId applicationId = credentialedGds.registerApplication(clientRecord());
+
+        assertArrayEquals(
+            defaultCertificateGroups(),
+            gdsClient.getCertificateGroups(applicationId),
+            "registration access does not restrict CertificateDirectory methods");
+
+        gds.setCertificateDirectoryAccess(MethodAccess.CREDENTIALED);
+
+        UaException anonymousDirectory =
+            assertThrows(UaException.class, () -> gdsClient.getCertificateGroups(applicationId));
+        assertEquals(StatusCodes.Bad_UserAccessDenied, anonymousDirectory.getStatusCode().value());
+        assertArrayEquals(
+            defaultCertificateGroups(), credentialedGds.getCertificateGroups(applicationId));
+
+        gds.setCertificateDirectoryAccess(MethodAccess.NOBODY);
+
+        UaException deniedDirectory =
+            assertThrows(
+                UaException.class, () -> credentialedGds.getCertificateGroups(applicationId));
+        assertEquals(StatusCodes.Bad_UserAccessDenied, deniedDirectory.getStatusCode().value());
+      } finally {
+        credentialedClient.disconnectAsync().get(2, TimeUnit.SECONDS);
+      }
+    }
+
+    private OpcUaClient connectCredentialedClient() throws Exception {
+      OpcUaClient credentialedClient =
+          TestClient.create(
+              server,
+              config -> config.setIdentityProvider(new UsernameProvider("user1", "password")));
+      credentialedClient.connect();
+      return credentialedClient;
+    }
+
+    private NodeId[] defaultCertificateGroups() {
+      return new NodeId[] {gds.defaultApplicationGroupId(), gds.defaultUserTokenGroupId()};
     }
 
     @Test
@@ -189,9 +281,7 @@ public class GdsClientTest extends AbstractGdsClientTest {
             NodeIds.EccNistP256ApplicationCertificateType
           },
           gdsClient.readCertificateTypes(groups[0]));
-      assertArrayEquals(
-          new NodeId[] {NodeIds.RsaSha256ApplicationCertificateType},
-          gdsClient.readCertificateTypes(groups[1]));
+      assertArrayEquals(new NodeId[0], gdsClient.readCertificateTypes(groups[1]));
     }
 
     @Test
@@ -201,6 +291,151 @@ public class GdsClientTest extends AbstractGdsClientTest {
               UaException.class, () -> gdsClient.readCertificateTypes(gdsClient.getDirectoryId()));
 
       assertEquals(StatusCodes.Bad_NotFound, e.getStatusCode().value());
+    }
+
+    @Test
+    void configuredCertificateTypesAreAdvertisedAfterNamespaceStartup() throws Exception {
+      gds.setApplicationCertificateTypes(NodeIds.ApplicationCertificateType);
+
+      assertArrayEquals(
+          new NodeId[] {NodeIds.ApplicationCertificateType},
+          gdsClient.readCertificateTypes(gds.defaultApplicationGroupId()));
+    }
+
+    // An exact match must win even if an abstract ancestor appears earlier in the advertised list;
+    // passing null would discard the caller's explicit choice on GDSes that accept the concrete id.
+    @Test
+    void resolveCertificateTypeIdReturnsExactMatchBeforeConsideringAncestors() throws Exception {
+      gds.setApplicationCertificateTypes(
+          NodeIds.ApplicationCertificateType, NodeIds.RsaSha256ApplicationCertificateType);
+
+      NodeId resolved =
+          gdsClient.resolveCertificateTypeId(
+              gds.defaultApplicationGroupId(), NodeIds.RsaSha256ApplicationCertificateType);
+
+      assertEquals(NodeIds.RsaSha256ApplicationCertificateType, resolved);
+    }
+
+    // The reference GDS advertises only the abstract ApplicationCertificateType and expects null
+    // in request methods so it can select the compatible concrete group default.
+    @Test
+    void resolveCertificateTypeIdAsyncReturnsNullForAdvertisedAncestor() throws Exception {
+      gds.setApplicationCertificateTypes(NodeIds.ApplicationCertificateType);
+
+      NodeId resolved =
+          gdsClient
+              .resolveCertificateTypeIdAsync(
+                  gds.defaultApplicationGroupId(), NodeIds.RsaSha256ApplicationCertificateType)
+              .get(2, TimeUnit.SECONDS);
+
+      assertNull(resolved);
+    }
+
+    // Null is only a safe request when the group advertises no concrete type. With a concrete
+    // sibling in the list, the group default may be that sibling's profile, so the caller must be
+    // told the desired type is unavailable instead of getting the wrong certificate later.
+    @Test
+    void resolveCertificateTypeIdRejectsAncestorMixedWithConcreteSibling() {
+      gds.setApplicationCertificateTypes(
+          NodeIds.ApplicationCertificateType, NodeIds.EccNistP256ApplicationCertificateType);
+
+      UaException e =
+          assertThrows(
+              UaException.class,
+              () ->
+                  gdsClient.resolveCertificateTypeId(
+                      gds.defaultApplicationGroupId(),
+                      NodeIds.RsaSha256ApplicationCertificateType));
+
+      assertEquals(StatusCodes.Bad_NotSupported, e.getStatusCode().value());
+    }
+
+    // An abstract type from a different branch makes the group default ambiguous even when another
+    // advertised abstract type is an ancestor of the desired type.
+    @Test
+    void resolveCertificateTypeIdRejectsAncestorMixedWithIncompatibleAbstractType() {
+      gds.setApplicationCertificateTypes(
+          NodeIds.ApplicationCertificateType, NodeIds.EccApplicationCertificateType);
+
+      UaException e =
+          assertThrows(
+              UaException.class,
+              () ->
+                  gdsClient.resolveCertificateTypeId(
+                      gds.defaultApplicationGroupId(),
+                      NodeIds.RsaSha256ApplicationCertificateType));
+
+      assertEquals(StatusCodes.Bad_NotSupported, e.getStatusCode().value());
+    }
+
+    // Part 12 §7.8.3.3 requires DefaultUserTokenGroup to leave CertificateTypes empty because it
+    // carries a TrustList for user credentials rather than certificates assigned to applications.
+    @Test
+    void resolveCertificateTypeIdRejectsGroupWithNoCertificateTypes() {
+      UaException e =
+          assertThrows(
+              UaException.class,
+              () ->
+                  gdsClient.resolveCertificateTypeId(
+                      gds.defaultUserTokenGroupId(), NodeIds.RsaSha256ApplicationCertificateType));
+
+      assertEquals(StatusCodes.Bad_NotSupported, e.getStatusCode().value());
+    }
+
+    @Test
+    void resolveCertificateTypeIdReturnsNullForIntermediateEccAncestor() throws Exception {
+      gds.setApplicationCertificateTypes(NodeIds.EccApplicationCertificateType);
+
+      NodeId resolved =
+          gdsClient.resolveCertificateTypeId(
+              gds.defaultApplicationGroupId(), NodeIds.EccNistP256ApplicationCertificateType);
+
+      assertNull(resolved);
+    }
+
+    // Part 12 §7.8.4 defines the RSA minimum and RSA SHA-256 types as siblings. Treating one as an
+    // ancestor of the other can silently request a certificate with the wrong security profile.
+    @Test
+    void resolveCertificateTypeIdRejectsSiblingRsaTypesInBothDirections() throws Exception {
+      gds.setApplicationCertificateTypes(NodeIds.RsaMinApplicationCertificateType);
+
+      UaException blocking =
+          assertThrows(
+              UaException.class,
+              () ->
+                  gdsClient.resolveCertificateTypeId(
+                      gds.defaultApplicationGroupId(),
+                      NodeIds.RsaSha256ApplicationCertificateType));
+
+      gds.setApplicationCertificateTypes(NodeIds.RsaSha256ApplicationCertificateType);
+
+      ExecutionException async =
+          assertThrows(
+              ExecutionException.class,
+              () ->
+                  gdsClient
+                      .resolveCertificateTypeIdAsync(
+                          gds.defaultApplicationGroupId(), NodeIds.RsaMinApplicationCertificateType)
+                      .get(2, TimeUnit.SECONDS));
+
+      assertEquals(StatusCodes.Bad_NotSupported, blocking.getStatusCode().value());
+      UaException asyncCause = assertInstanceOf(UaException.class, async.getCause());
+      assertEquals(StatusCodes.Bad_NotSupported, asyncCause.getStatusCode().value());
+    }
+
+    @Test
+    void resolveCertificateTypeIdRejectsIncompatibleCertificateFamily() {
+      gds.setApplicationCertificateTypes(NodeIds.EccApplicationCertificateType);
+
+      UaException e =
+          assertThrows(
+              UaException.class,
+              () ->
+                  gdsClient.resolveCertificateTypeId(
+                      gds.defaultApplicationGroupId(),
+                      NodeIds.RsaSha256ApplicationCertificateType));
+
+      assertEquals(StatusCodes.Bad_NotSupported, e.getStatusCode().value());
     }
 
     @Test
@@ -298,6 +533,10 @@ public class GdsClientTest extends AbstractGdsClientTest {
 
       assertEquals(StatusCodes.Bad_NothingToDo, first.getStatusCode().value());
       assertEquals(StatusCodes.Bad_NothingToDo, second.getStatusCode().value());
+      assertEquals(1, gds.getRegisterApplicationCallCount());
+      assertEquals(1, gds.getStartSigningRequestCallCount());
+      assertEquals(3, gds.getFinishRequestCallCount());
+      assertEquals(NodeIds.RsaSha256ApplicationCertificateType, gds.getLastCertificateTypeId());
 
       X509Certificate certificate =
           CertificateUtil.decodeCertificate(issued.certificate().bytesOrEmpty());
@@ -317,6 +556,8 @@ public class GdsClientTest extends AbstractGdsClientTest {
       KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
       NodeId requestId =
           gdsClient.startSigningRequest(applicationId, null, null, csr(keyPair, APPLICATION_URI));
+
+      assertNull(gds.getLastCertificateTypeId(), "the null group default is recorded as null");
 
       UaException e =
           assertThrows(UaException.class, () -> gdsClient.finishRequest(applicationId, requestId));
@@ -410,6 +651,7 @@ public class GdsClientTest extends AbstractGdsClientTest {
     // the issued certificate installed in the client's trust list manager.
     @Test
     void fullPullSequenceEndsWithTheGdsCaInTheTrustListManager() throws Exception {
+      gds.setApplicationCertificateTypes(NodeIds.ApplicationCertificateType);
       gds.getApplicationGroupTrustList()
           .setTrustList(
               new TrustListDataType(
@@ -428,12 +670,14 @@ public class GdsClientTest extends AbstractGdsClientTest {
               : found[0].getApplicationId();
 
       NodeId groupId = gdsClient.getCertificateGroups(applicationId)[0];
-      NodeId typeId = gdsClient.readCertificateTypes(groupId)[0];
-      assertTrue(gdsClient.getCertificateStatus(applicationId, groupId, typeId));
+      NodeId requestTypeId =
+          gdsClient.resolveCertificateTypeId(groupId, NodeIds.RsaSha256ApplicationCertificateType);
+      assertNull(requestTypeId, "an abstract advertisement selects the group default");
+      assertTrue(gdsClient.getCertificateStatus(applicationId, groupId, requestTypeId));
 
       NodeId requestId =
           gdsClient.startSigningRequest(
-              applicationId, groupId, typeId, csr(keyPair, APPLICATION_URI));
+              applicationId, groupId, requestTypeId, csr(keyPair, APPLICATION_URI));
       FinishRequestResult issued = gdsClient.finishRequest(applicationId, requestId);
       X509Certificate certificate =
           CertificateUtil.decodeCertificate(issued.certificate().bytesOrEmpty());
@@ -444,6 +688,7 @@ public class GdsClientTest extends AbstractGdsClientTest {
       TrustListApplier.apply(trustList, trustListManager);
 
       assertEquals(List.of(gds.getCaCertificate()), trustListManager.getTrustedCertificates());
+      assertNull(gds.getLastCertificateTypeId(), "the request used the portable group default");
       assertEquals(
           certificate.getIssuerX500Principal(), gds.getCaCertificate().getSubjectX500Principal());
     }

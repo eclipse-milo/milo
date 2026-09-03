@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
-import org.eclipse.milo.opcua.sdk.client.gds.FakeGdsNamespace.TrustListFile;
+import org.eclipse.milo.opcua.sdk.client.gds.testing.FakeGdsNamespace.TrustListFile;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;

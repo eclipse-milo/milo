@@ -16,11 +16,14 @@ import static java.util.concurrent.CompletableFuture.failedFuture;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.methods.UaMethodException;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.gds.DataTypeInitializer;
@@ -56,6 +59,10 @@ import org.jspecify.annotations.Nullable;
  * #finishRequest} means "poll again later" and {@link StatusCodes#Bad_RequestNotAllowed} means the
  * request was rejected.
  *
+ * <p>{@link #resolveCertificateTypeId(NodeId, NodeId)} is the exception to this pass-through rule:
+ * it interprets a group's advertised CertificateTypes locally and reports {@link
+ * StatusCodes#Bad_NotSupported} when none is compatible with the desired type.
+ *
  * <p>The Pull Model sequence (Part 12 §7.6) is:
  *
  * <pre>{@code
@@ -65,13 +72,22 @@ import org.jspecify.annotations.Nullable;
  * NodeId applicationId =
  *     found.length == 0 ? gds.registerApplication(record) : found[0].getApplicationId();
  *
+ * NodeId desiredTypeId = NodeIds.RsaSha256ApplicationCertificateType;
  * for (NodeId groupId : gds.getCertificateGroups(applicationId)) {
- *   for (NodeId typeId : gds.readCertificateTypes(groupId)) {
- *     if (gds.getCertificateStatus(applicationId, groupId, typeId)) {
- *       NodeId requestId = gds.startSigningRequest(applicationId, groupId, typeId, csr);
- *       // later, repeat until it no longer fails with Bad_NothingToDo:
- *       FinishRequestResult issued = gds.finishRequest(applicationId, requestId);
- *     }
+ *   // Groups such as DefaultUserTokenGroup do not issue application certificates and fail
+ *   // with Bad_NotSupported; skip signing for them but still pull their TrustList.
+ *   NodeId requestTypeId = null;
+ *   boolean issuesDesiredType = true;
+ *   try {
+ *     requestTypeId = gds.resolveCertificateTypeId(groupId, desiredTypeId);
+ *   } catch (UaException e) {
+ *     if (e.getStatusCode().value() != StatusCodes.Bad_NotSupported) throw e;
+ *     issuesDesiredType = false;
+ *   }
+ *   if (issuesDesiredType && gds.getCertificateStatus(applicationId, groupId, requestTypeId)) {
+ *     NodeId requestId = gds.startSigningRequest(applicationId, groupId, requestTypeId, csr);
+ *     // later, repeat until it no longer fails with Bad_NothingToDo:
+ *     FinishRequestResult issued = gds.finishRequest(applicationId, requestId);
  *   }
  *   NodeId trustListId = gds.getTrustList(applicationId, groupId);
  *   TrustListDataType trustList = TrustListReader.read(client, trustListId);
@@ -87,6 +103,44 @@ public final class GdsClient {
 
   /** The URI of the GDS namespace, {@code http://opcfoundation.org/UA/GDS/}. */
   public static final String NAMESPACE_URI = "http://opcfoundation.org/UA/GDS/";
+
+  private static final Map<NodeId, NodeId> CERTIFICATE_TYPE_SUPERTYPES =
+      Map.ofEntries(
+          Map.entry(NodeIds.ApplicationCertificateType, NodeIds.CertificateType),
+          Map.entry(NodeIds.HttpsCertificateType, NodeIds.CertificateType),
+          Map.entry(NodeIds.UserCertificateType, NodeIds.CertificateType),
+          Map.entry(NodeIds.TlsCertificateType, NodeIds.CertificateType),
+          Map.entry(NodeIds.TlsServerCertificateType, NodeIds.TlsCertificateType),
+          Map.entry(NodeIds.TlsClientCertificateType, NodeIds.TlsCertificateType),
+          Map.entry(NodeIds.RsaMinApplicationCertificateType, NodeIds.ApplicationCertificateType),
+          Map.entry(
+              NodeIds.RsaSha256ApplicationCertificateType, NodeIds.ApplicationCertificateType),
+          Map.entry(NodeIds.EccApplicationCertificateType, NodeIds.ApplicationCertificateType),
+          Map.entry(
+              NodeIds.EccNistP256ApplicationCertificateType, NodeIds.EccApplicationCertificateType),
+          Map.entry(
+              NodeIds.EccNistP384ApplicationCertificateType, NodeIds.EccApplicationCertificateType),
+          Map.entry(
+              NodeIds.EccBrainpoolP256r1ApplicationCertificateType,
+              NodeIds.EccApplicationCertificateType),
+          Map.entry(
+              NodeIds.EccBrainpoolP384r1ApplicationCertificateType,
+              NodeIds.EccApplicationCertificateType),
+          Map.entry(
+              NodeIds.EccCurve25519ApplicationCertificateType,
+              NodeIds.EccApplicationCertificateType),
+          Map.entry(
+              NodeIds.EccCurve448ApplicationCertificateType,
+              NodeIds.EccApplicationCertificateType));
+
+  /** Abstract CertificateTypes in the standard hierarchy. */
+  private static final Set<NodeId> ABSTRACT_CERTIFICATE_TYPES =
+      Set.of(
+          NodeIds.CertificateType,
+          NodeIds.ApplicationCertificateType,
+          NodeIds.UserCertificateType,
+          NodeIds.TlsCertificateType,
+          NodeIds.EccApplicationCertificateType);
 
   private final OpcUaClient client;
   private final NodeId directoryId;
@@ -437,7 +491,9 @@ public final class GdsClient {
    * @param applicationId the ApplicationId returned by registration.
    * @param certificateGroupId the CertificateGroup the certificate belongs to, or null for the
    *     default group.
-   * @param certificateTypeId the CertificateType to issue, or null for the group's default.
+   * @param certificateTypeId the CertificateType to issue, or null for the group's default; use
+   *     {@link #resolveCertificateTypeId(NodeId, NodeId)} to select this value from an advertised
+   *     group.
    * @param certificateRequest the DER-encoded PKCS#10 request.
    * @return the RequestId to pass to {@link #finishRequest(NodeId, NodeId)}.
    * @throws UaException if the call fails.
@@ -489,7 +545,9 @@ public final class GdsClient {
    * @param applicationId the ApplicationId returned by registration.
    * @param certificateGroupId the CertificateGroup the certificate belongs to, or null for the
    *     default group.
-   * @param certificateTypeId the CertificateType to issue, or null for the group's default.
+   * @param certificateTypeId the CertificateType to issue, or null for the group's default; use
+   *     {@link #resolveCertificateTypeId(NodeId, NodeId)} to select this value from an advertised
+   *     group.
    * @param subjectName the subject name to put in the certificate, or null to let the GDS choose.
    * @param domainNames the domain names to put in the certificate, or null to let the GDS choose.
    * @param privateKeyFormat {@code "PFX"} or {@code "PEM"}, or null for the GDS default.
@@ -698,7 +756,8 @@ public final class GdsClient {
    *
    * @param applicationId the ApplicationId returned by registration.
    * @param certificateGroupId the CertificateGroup, or null for the default group.
-   * @param certificateTypeId the CertificateType, or null for the group's default.
+   * @param certificateTypeId the CertificateType, or null for the group's default; use {@link
+   *     #resolveCertificateTypeId(NodeId, NodeId)} to select this value from an advertised group.
    * @return {@code true} if a new certificate should be requested.
    * @throws UaException if the call fails.
    */
@@ -799,6 +858,10 @@ public final class GdsClient {
   /**
    * Read the {@code CertificateTypes} property of a CertificateGroup on the GDS.
    *
+   * <p>The returned ids may identify abstract types such as {@link
+   * NodeIds#ApplicationCertificateType}. Use {@link #resolveCertificateTypeId(NodeId, NodeId)} when
+   * selecting the value to pass to a certificate request method.
+   *
    * @param certificateGroupId a group id returned by {@link #getCertificateGroups(NodeId)}.
    * @return the CertificateType ids the group issues, e.g. {@code
    *     RsaSha256ApplicationCertificateType}.
@@ -823,6 +886,59 @@ public final class GdsClient {
                         "CertificateTypes", certificateGroupId, values.get(0), NodeId[].class);
 
                 return completedFuture(certificateTypes != null ? certificateTypes : new NodeId[0]);
+              } catch (UaException e) {
+                return failedFuture(e);
+              }
+            });
+  }
+
+  /**
+   * Resolve the CertificateTypeId to request for a desired certificate type.
+   *
+   * <p>An exact advertised match returns {@code desiredTypeId}. If the group advertises only
+   * abstract types and every advertised non-null type is an ancestor of the desired type, this
+   * returns {@code null} so the request selects the group's default. Any other advertised list,
+   * including one that holds an incompatible abstract type or a concrete sibling of the desired
+   * type, fails with {@link StatusCodes#Bad_NotSupported}.
+   *
+   * <p>The standard CertificateType hierarchy is evaluated locally without browsing the server.
+   * CertificateTypes outside namespace 0 are matched exactly only; their subtype relationships are
+   * not evaluated. Passing an abstract type as {@code desiredTypeId} returns it unchanged on an
+   * exact match, which a GDS may reject.
+   *
+   * @param certificateGroupId a group id returned by {@link #getCertificateGroups(NodeId)}.
+   * @param desiredTypeId the concrete CertificateType the application needs.
+   * @return the desired type for an exact match, or {@code null} to request a compatible group
+   *     default.
+   * @throws UaException if the property cannot be read or the group cannot issue the desired type.
+   */
+  public @Nullable NodeId resolveCertificateTypeId(NodeId certificateGroupId, NodeId desiredTypeId)
+      throws UaException {
+
+    return ClientCalls.await(resolveCertificateTypeIdAsync(certificateGroupId, desiredTypeId));
+  }
+
+  /**
+   * Asynchronous form of {@link #resolveCertificateTypeId(NodeId, NodeId)}.
+   *
+   * @param certificateGroupId a group id returned by {@link #getCertificateGroups(NodeId)}.
+   * @param desiredTypeId the concrete CertificateType the application needs.
+   * @return a future completing with the desired type for an exact match, or {@code null} to
+   *     request a compatible group default. The future completes exceptionally with {@link
+   *     UaException} carrying {@link StatusCodes#Bad_NotSupported} when the advertised types are
+   *     incompatible.
+   */
+  public CompletableFuture<@Nullable NodeId> resolveCertificateTypeIdAsync(
+      NodeId certificateGroupId, NodeId desiredTypeId) {
+
+    return readCertificateTypesAsync(certificateGroupId)
+        .thenCompose(
+            advertisedTypeIds -> {
+              try {
+                @Nullable NodeId requestTypeId =
+                    selectCertificateTypeId(certificateGroupId, desiredTypeId, advertisedTypeIds);
+
+                return completedFuture(requestTypeId);
               } catch (UaException e) {
                 return failedFuture(e);
               }
@@ -966,6 +1082,57 @@ public final class GdsClient {
 
   private static NodeId orNull(@Nullable NodeId nodeId) {
     return nodeId != null ? nodeId : NodeId.NULL_VALUE;
+  }
+
+  private static @Nullable NodeId selectCertificateTypeId(
+      NodeId certificateGroupId, NodeId desiredTypeId, NodeId[] advertisedTypeIds)
+      throws UaException {
+
+    for (NodeId advertisedTypeId : advertisedTypeIds) {
+      if (desiredTypeId.equals(advertisedTypeId)) {
+        return desiredTypeId;
+      }
+    }
+
+    // Null selects the group's default, which is only predictable when every advertised non-null
+    // type is an abstract ancestor; any other type could identify a different profile.
+    boolean ancestorAdvertised = false;
+
+    for (NodeId advertisedTypeId : advertisedTypeIds) {
+      if (advertisedTypeId == null || advertisedTypeId.isNull()) {
+        continue;
+      }
+      if (!ABSTRACT_CERTIFICATE_TYPES.contains(advertisedTypeId)
+          || !isStrictCertificateSubtypeOf(desiredTypeId, advertisedTypeId)) {
+        ancestorAdvertised = false;
+        break;
+      }
+      ancestorAdvertised = true;
+    }
+
+    if (ancestorAdvertised) {
+      return null;
+    }
+
+    throw new UaException(
+        StatusCodes.Bad_NotSupported,
+        String.format(
+            "CertificateGroup %s cannot issue desired CertificateType %s",
+            certificateGroupId, desiredTypeId));
+  }
+
+  private static boolean isStrictCertificateSubtypeOf(NodeId typeId, NodeId potentialSupertypeId) {
+    NodeId supertypeId = CERTIFICATE_TYPE_SUPERTYPES.get(typeId);
+
+    while (supertypeId != null) {
+      if (supertypeId.equals(potentialSupertypeId)) {
+        return true;
+      }
+
+      supertypeId = CERTIFICATE_TYPE_SUPERTYPES.get(supertypeId);
+    }
+
+    return false;
   }
 
   /**
