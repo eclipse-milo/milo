@@ -45,10 +45,10 @@ import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
  * {@link StatusCodes#Bad_NotSupported} so a factory does not silently claim support for identities
  * it cannot issue.
  *
- * <p>When {@link DefaultApplicationGroup#initialize()} finds that its {@link CertificateStore} is
- * missing an entry for a configured certificate type, it calls {@link #createKeyPair(NodeId)}
- * followed by {@link #createCertificateChain(NodeId, KeyPair)} for that same type. If a store is
- * pre-populated for a type, the factory is not used for that entry.
+ * <p>When {@link DefaultApplicationGroup#createMissingCertificates()} finds that its {@link
+ * CertificateStore} is missing an entry for a configured certificate type, it calls {@link
+ * #createKeyPair(NodeId)} followed by {@link #createCertificateChain(NodeId, KeyPair)} for that
+ * same type. If a store is pre-populated for a type, the factory is not used for that entry.
  *
  * <p>Example:
  *
@@ -80,8 +80,8 @@ import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
  *       }
  *     };
  *
- * DefaultApplicationGroup group =
- *     DefaultApplicationGroup.createAndInitialize(
+ * var group =
+ *     new DefaultApplicationGroup(
  *         trustListManager,
  *         certificateStore,
  *         certificateFactory,
@@ -89,6 +89,8 @@ import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
  *         List.of(
  *             NodeIds.RsaSha256ApplicationCertificateType,
  *             NodeIds.EccNistP256ApplicationCertificateType));
+ *
+ * group.createMissingCertificates();
  * }</pre>
  */
 public abstract class AbstractCertificateFactory implements CertificateFactory {
