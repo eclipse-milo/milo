@@ -14,6 +14,7 @@ import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
@@ -28,7 +29,11 @@ import org.slf4j.LoggerFactory;
  *
  * <p>By default, this group supports the {@link NodeIds#RsaSha256ApplicationCertificateType}
  * CertificateType, which can be used with 2048- and 4096-bit RSA keys. Callers can configure
- * additional certificate type IDs when a server manages multiple application identities.
+ * additional certificate type IDs and an application-defined group ID.
+ *
+ * <p>Construction does not initialize the group. Call {@link #initialize()} to create material for
+ * missing certificate types, or leave the group uninitialized when an external authority supplies
+ * its certificates.
  */
 public class DefaultApplicationGroup implements CertificateGroup {
 
@@ -36,6 +41,7 @@ public class DefaultApplicationGroup implements CertificateGroup {
 
   private final AtomicBoolean initialized = new AtomicBoolean(false);
 
+  private final NodeId certificateGroupId;
   private final CertificateValidator certificateValidator;
 
   private final TrustListManager trustListManager;
@@ -58,11 +64,11 @@ public class DefaultApplicationGroup implements CertificateGroup {
       CertificateValidator certificateValidator) {
 
     this(
+        NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup,
         trustListManager,
         certificateStore,
         certificateFactory,
-        certificateValidator,
-        List.of(NodeIds.RsaSha256ApplicationCertificateType));
+        certificateValidator);
   }
 
   /**
@@ -82,6 +88,60 @@ public class DefaultApplicationGroup implements CertificateGroup {
       CertificateValidator certificateValidator,
       List<NodeId> supportedCertificateTypeIds) {
 
+    this(
+        NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup,
+        trustListManager,
+        certificateStore,
+        certificateFactory,
+        certificateValidator,
+        supportedCertificateTypeIds);
+  }
+
+  /**
+   * Create an application-defined group for RSA SHA-256 application certificates.
+   *
+   * @param certificateGroupId the {@link NodeId} identifying this group.
+   * @param trustListManager the {@link TrustListManager} for this group.
+   * @param certificateStore the {@link CertificateStore} for local certificate material.
+   * @param certificateFactory the {@link CertificateFactory} for missing certificates.
+   * @param certificateValidator the {@link CertificateValidator} for remote certificates.
+   */
+  public DefaultApplicationGroup(
+      NodeId certificateGroupId,
+      TrustListManager trustListManager,
+      CertificateStore certificateStore,
+      CertificateFactory certificateFactory,
+      CertificateValidator certificateValidator) {
+
+    this(
+        certificateGroupId,
+        trustListManager,
+        certificateStore,
+        certificateFactory,
+        certificateValidator,
+        List.of(NodeIds.RsaSha256ApplicationCertificateType));
+  }
+
+  /**
+   * Create an application-defined group for the configured certificate type IDs.
+   *
+   * @param certificateGroupId the {@link NodeId} identifying this group.
+   * @param trustListManager the {@link TrustListManager} for this group.
+   * @param certificateStore the {@link CertificateStore} for local certificate material.
+   * @param certificateFactory the {@link CertificateFactory} for missing certificates.
+   * @param certificateValidator the {@link CertificateValidator} for remote certificates.
+   * @param supportedCertificateTypeIds the certificate type IDs this group supports.
+   * @throws IllegalArgumentException if {@code supportedCertificateTypeIds} is empty.
+   */
+  public DefaultApplicationGroup(
+      NodeId certificateGroupId,
+      TrustListManager trustListManager,
+      CertificateStore certificateStore,
+      CertificateFactory certificateFactory,
+      CertificateValidator certificateValidator,
+      List<NodeId> supportedCertificateTypeIds) {
+
+    this.certificateGroupId = Objects.requireNonNull(certificateGroupId, "certificateGroupId");
     this.trustListManager = trustListManager;
     this.certificateStore = certificateStore;
     this.certificateFactory = certificateFactory;
@@ -118,7 +178,7 @@ public class DefaultApplicationGroup implements CertificateGroup {
 
   @Override
   public NodeId getCertificateGroupId() {
-    return NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup;
+    return certificateGroupId;
   }
 
   @Override

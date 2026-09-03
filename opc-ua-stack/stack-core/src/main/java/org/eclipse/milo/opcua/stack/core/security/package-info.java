@@ -83,6 +83,12 @@
  * file. Separate store instances and processes do not share a write lock, so applications must
  * coordinate writes that overlap.
  *
+ * <p>{@link org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager} provides a
+ * thread-safe mutable group registry. Applications own the groups and their backing stores and
+ * trust-list managers. Removing or replacing a group returns it to the application without closing
+ * its resources, so the application must coordinate final closure with any lookups already in
+ * progress.
+ *
  * <h2>Runtime boundaries</h2>
  *
  * <p>Endpoint advertisement and SecureChannel creation should combine certificate availability,

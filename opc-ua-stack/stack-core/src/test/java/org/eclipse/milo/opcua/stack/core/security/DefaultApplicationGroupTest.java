@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.stack.core.security;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -29,6 +30,20 @@ import org.junit.jupiter.api.Test;
 
 @NullMarked
 class DefaultApplicationGroupTest {
+
+  @Test
+  void legacyConstructorUsesDefaultApplicationGroupId() {
+    DefaultApplicationGroup group =
+        new DefaultApplicationGroup(
+            new MemoryTrustListManager(),
+            new MemoryCertificateStore(),
+            new TestCertificateFactory(),
+            new CertificateValidator.InsecureCertificateValidator());
+
+    assertEquals(
+        NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup,
+        group.getCertificateGroupId());
+  }
 
   @Test
   void defaultConstructorSupportsRsaSha256Only() {
@@ -80,6 +95,35 @@ class DefaultApplicationGroupTest {
         group.getCertificateChain(NodeIds.EccCurve25519ApplicationCertificateType).isPresent());
     assertTrue(
         group.getCertificateChain(NodeIds.EccCurve448ApplicationCertificateType).isPresent());
+  }
+
+  // Externally issued material must be usable under an application-defined group ID without
+  // initialize() generating a replacement certificate first.
+  @Test
+  void customGroupAcceptsExternallyIssuedCertificateWithoutInitialization() throws Exception {
+    var certificateGroupId = new NodeId(2, "gds-managed");
+    var certificateStore = new MemoryCertificateStore();
+    var certificateFactory = new TestCertificateFactory();
+    KeyPair keyPair = certificateFactory.createRsaSha256KeyPair();
+    X509Certificate[] certificateChain =
+        certificateFactory.createRsaSha256CertificateChain(keyPair);
+    certificateStore.set(
+        NodeIds.RsaSha256ApplicationCertificateType,
+        new CertificateStore.Entry(keyPair.getPrivate(), certificateChain));
+
+    DefaultApplicationGroup group =
+        new DefaultApplicationGroup(
+            certificateGroupId,
+            new MemoryTrustListManager(),
+            certificateStore,
+            certificateFactory,
+            new CertificateValidator.InsecureCertificateValidator(),
+            List.of(NodeIds.RsaSha256ApplicationCertificateType));
+
+    List<Entry> entries = group.getCertificateEntries();
+    assertEquals(1, entries.size());
+    assertEquals(certificateGroupId, entries.get(0).certificateGroupId);
+    assertSame(certificateChain, entries.get(0).certificateChain);
   }
 
   @Test
