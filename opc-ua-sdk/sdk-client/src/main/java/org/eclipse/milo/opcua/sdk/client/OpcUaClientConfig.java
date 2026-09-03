@@ -159,25 +159,15 @@ public interface OpcUaClientConfig {
   LocalizedText getApplicationName();
 
   /**
-   * @return a URI for the client's application instance. This should be the same as the URI in the
-   *     client certificate, if present.
-   */
-  String getApplicationUri();
-
-  /**
-   * Whether {@link #getApplicationUri()} was explicitly configured.
+   * The explicitly configured client application URI.
    *
-   * <p>The default preserves the behavior of custom config implementations, whose returned URI is
-   * treated as explicit. Configs built by {@link OpcUaClientConfigBuilder} return {@code false}
-   * when {@link OpcUaClientConfigBuilder#setApplicationUri(String)} was not called, allowing the
-   * client to derive the URI from its effective certificate identity.
+   * <p>When empty, the client derives the URI from its effective certificate identity; see {@link
+   * OpcUaClient#resolveApplicationUri(CertificateIdentity)}.
    *
-   * @return {@code true} when the configured application URI takes precedence over certificate
-   *     identity resolution.
+   * @return the explicitly configured client application URI, or empty when it should be derived
+   *     from the effective certificate identity.
    */
-  default boolean isApplicationUriConfigured() {
-    return true;
-  }
+  Optional<String> getApplicationUri();
 
   /**
    * @return the URI for the client's application product.
@@ -289,9 +279,7 @@ public interface OpcUaClientConfig {
     builder.setCertificateGroupId(config.getCertificateGroupId().orElse(null));
     builder.setCertificateTypeId(config.getCertificateTypeId().orElse(null));
     builder.setApplicationName(config.getApplicationName());
-    if (config.isApplicationUriConfigured()) {
-      builder.setApplicationUri(config.getApplicationUri());
-    }
+    config.getApplicationUri().ifPresent(builder::setApplicationUri);
     builder.setProductUri(config.getProductUri());
     builder.setSessionName(config.getSessionName());
     builder.setSessionTimeout(config.getSessionTimeout());

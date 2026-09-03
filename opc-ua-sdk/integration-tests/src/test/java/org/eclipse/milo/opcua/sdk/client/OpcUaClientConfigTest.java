@@ -13,7 +13,6 @@ package org.eclipse.milo.opcua.sdk.client;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -121,7 +120,7 @@ public class OpcUaClientConfigTest {
     assertSame(original.getCertificateIdentitySelector(), copy.getCertificateIdentitySelector());
     assertEquals(original.getCertificateGroupId(), copy.getCertificateGroupId());
     assertEquals(original.getCertificateTypeId(), copy.getCertificateTypeId());
-    assertEquals(original.isApplicationUriConfigured(), copy.isApplicationUriConfigured());
+    assertEquals(original.getApplicationUri(), copy.getApplicationUri());
     assertTrue(copy.getCertificateIdentity(SecurityPolicy.None.getProfile()).isEmpty());
   }
 
@@ -144,9 +143,8 @@ public class OpcUaClientConfigTest {
     OpcUaClientConfig derivedCopy = OpcUaClientConfig.copy(derived).build();
     OpcUaClientConfig explicitCopy = OpcUaClientConfig.copy(explicit).build();
 
-    assertFalse(derivedCopy.isApplicationUriConfigured());
-    assertTrue(explicitCopy.isApplicationUriConfigured());
-    assertEquals("urn:eclipse:milo:test:explicit", explicitCopy.getApplicationUri());
+    assertTrue(derivedCopy.getApplicationUri().isEmpty());
+    assertEquals(Optional.of("urn:eclipse:milo:test:explicit"), explicitCopy.getApplicationUri());
   }
 
   @Test
@@ -345,7 +343,7 @@ public class OpcUaClientConfigTest {
 
     OpcUaClient client = client(config);
 
-    assertEquals("urn:eclipse:milo:test:explicit", client.resolveApplicationUri(Optional.empty()));
+    assertEquals("urn:eclipse:milo:test:explicit", client.resolveApplicationUri(null));
   }
 
   // The certificate presented for the endpoint defines the application instance, so its URI must
@@ -366,7 +364,7 @@ public class OpcUaClientConfigTest {
 
     assertEquals(
         "urn:eclipse:milo:test:managed",
-        client.resolveApplicationUri(client.getCertificateIdentity(profile())));
+        client.resolveApplicationUri(client.getCertificateIdentity(profile()).orElse(null)));
   }
 
   // An explicit certificate outside the manager makes selection empty. Its SAN URI must still be
@@ -385,7 +383,7 @@ public class OpcUaClientConfigTest {
 
     assertEquals(
         "urn:eclipse:milo:test:fixed",
-        client.resolveApplicationUri(client.getCertificateIdentity(profile())));
+        client.resolveApplicationUri(client.getCertificateIdentity(profile()).orElse(null)));
   }
 
   // The placeholder remains a last resort for certificate-less clients and certificates without a
@@ -397,8 +395,7 @@ public class OpcUaClientConfigTest {
     OpcUaClient client = client(config);
 
     assertEquals(
-        "urn:eclipse:milo:client:applicationUriNotConfigured",
-        client.resolveApplicationUri(Optional.empty()));
+        "urn:eclipse:milo:client:applicationUriNotConfigured", client.resolveApplicationUri(null));
   }
 
   // A None endpoint presents no identity, but the client is still the same application. When every
@@ -416,7 +413,7 @@ public class OpcUaClientConfigTest {
 
     OpcUaClient client = client(config);
 
-    assertEquals("urn:eclipse:milo:test:managed", client.resolveApplicationUri(Optional.empty()));
+    assertEquals("urn:eclipse:milo:test:managed", client.resolveApplicationUri(null));
   }
 
   // Manager identities with differing URIs cannot define the application, so the placeholder
@@ -434,8 +431,7 @@ public class OpcUaClientConfigTest {
     OpcUaClient client = client(config);
 
     assertEquals(
-        "urn:eclipse:milo:client:applicationUriNotConfigured",
-        client.resolveApplicationUri(Optional.empty()));
+        "urn:eclipse:milo:client:applicationUriNotConfigured", client.resolveApplicationUri(null));
   }
 
   // URI inference is best-effort. A None connection must retain the placeholder when a custom
@@ -454,8 +450,7 @@ public class OpcUaClientConfigTest {
     OpcUaClient client = client(config);
 
     assertEquals(
-        "urn:eclipse:milo:client:applicationUriNotConfigured",
-        client.resolveApplicationUri(Optional.empty()));
+        "urn:eclipse:milo:client:applicationUriNotConfigured", client.resolveApplicationUri(null));
   }
 
   // A configured certificate is still presented on a None connection. If it has no SAN URI, a URI
@@ -480,8 +475,7 @@ public class OpcUaClientConfigTest {
     OpcUaClient client = client(config);
 
     assertEquals(
-        "urn:eclipse:milo:client:applicationUriNotConfigured",
-        client.resolveApplicationUri(Optional.empty()));
+        "urn:eclipse:milo:client:applicationUriNotConfigured", client.resolveApplicationUri(null));
   }
 
   // A selected identity without a SAN URI cannot define the ApplicationUri. The fixed certificate
@@ -506,8 +500,7 @@ public class OpcUaClientConfigTest {
 
     OpcUaClient client = client(config);
 
-    assertEquals(
-        "urn:eclipse:milo:test:fixed", client.resolveApplicationUri(Optional.of(identity)));
+    assertEquals("urn:eclipse:milo:test:fixed", client.resolveApplicationUri(identity));
   }
 
   // SecureChannel setup selects first. Session creation must derive the URI from that cached
@@ -532,7 +525,7 @@ public class OpcUaClientConfigTest {
     assertSame(identityA, client.getCertificateIdentity(profile).orElseThrow());
     assertEquals(
         "urn:eclipse:milo:test:a",
-        client.resolveApplicationUri(client.getCertificateIdentity(profile)));
+        client.resolveApplicationUri(client.getCertificateIdentity(profile).orElse(null)));
     assertEquals(1, selections.get());
   }
 

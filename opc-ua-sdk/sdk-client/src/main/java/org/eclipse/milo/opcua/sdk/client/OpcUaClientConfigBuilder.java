@@ -48,8 +48,7 @@ public class OpcUaClientConfigBuilder {
 
   private LocalizedText applicationName =
       LocalizedText.english("Eclipse Milo application name not configured");
-  private String applicationUri = "urn:eclipse:milo:client:applicationUriNotConfigured";
-  private boolean applicationUriConfigured;
+  private @Nullable String applicationUri;
   private String productUri = "https://github.com/eclipse-milo/milo";
 
   private Supplier<String> sessionName;
@@ -87,7 +86,6 @@ public class OpcUaClientConfigBuilder {
    */
   public OpcUaClientConfigBuilder setApplicationUri(String applicationUri) {
     this.applicationUri = applicationUri;
-    applicationUriConfigured = true;
     return this;
   }
 
@@ -264,7 +262,6 @@ public class OpcUaClientConfigBuilder {
         certificateValidator,
         applicationName,
         applicationUri,
-        applicationUriConfigured,
         productUri,
         sessionName,
         sessionLocaleIds,
@@ -294,8 +291,7 @@ public class OpcUaClientConfigBuilder {
     private final @Nullable NodeId certificateTypeId;
     private final CertificateValidator certificateValidator;
     private final LocalizedText applicationName;
-    private final String applicationUri;
-    private final boolean applicationUriConfigured;
+    private final @Nullable String applicationUri;
     private final String productUri;
     private final Supplier<String> sessionName;
     private final String[] sessionLocaleIds;
@@ -324,8 +320,7 @@ public class OpcUaClientConfigBuilder {
         @Nullable NodeId certificateTypeId,
         CertificateValidator certificateValidator,
         LocalizedText applicationName,
-        String applicationUri,
-        boolean applicationUriConfigured,
+        @Nullable String applicationUri,
         String productUri,
         Supplier<String> sessionName,
         String[] sessionLocaleIds,
@@ -353,7 +348,6 @@ public class OpcUaClientConfigBuilder {
       this.certificateValidator = certificateValidator;
       this.applicationName = applicationName;
       this.applicationUri = applicationUri;
-      this.applicationUriConfigured = applicationUriConfigured;
       this.productUri = productUri;
       this.sessionName = sessionName;
       this.sessionLocaleIds = sessionLocaleIds;
@@ -426,13 +420,8 @@ public class OpcUaClientConfigBuilder {
     }
 
     @Override
-    public String getApplicationUri() {
-      return applicationUri;
-    }
-
-    @Override
-    public boolean isApplicationUriConfigured() {
-      return applicationUriConfigured;
+    public Optional<String> getApplicationUri() {
+      return Optional.ofNullable(applicationUri);
     }
 
     @Override

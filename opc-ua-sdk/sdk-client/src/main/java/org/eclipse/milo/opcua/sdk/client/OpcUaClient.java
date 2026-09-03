@@ -62,6 +62,7 @@ import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingManager;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingManager;
 import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
+import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
@@ -182,6 +183,13 @@ import org.slf4j.LoggerFactory;
 public class OpcUaClient {
 
   public static final String SDK_VERSION = ManifestUtil.read("X-SDK-Version").orElse("dev");
+
+  /**
+   * Placeholder application URI advertised when no URI was configured and none could be derived
+   * from a certificate; see {@link #resolveApplicationUri(CertificateIdentity)}.
+   */
+  public static final String APPLICATION_URI_NOT_CONFIGURED =
+      "urn:eclipse:milo:client:applicationUriNotConfigured";
 
   // Package-private and non-final so tests can shorten the bound. See disconnectAsync().
   static long disconnectCloseSessionTimeoutMillis = 5_000L;
@@ -857,32 +865,41 @@ public class OpcUaClient {
    * <p>An explicitly configured URI takes precedence. Otherwise the URI is read from {@code
    * certificateIdentity}, then the fixed compatibility certificate. When no certificate is
    * presented, the URI shared by every {@link CertificateManager} identity is used so a {@link
-   * SecurityPolicy#None} connection still advertises the same URI as secure connections. The
-   * configured placeholder is returned only when none of these yields a SAN URI.
+   * SecurityPolicy#None} connection still advertises the same URI as secure connections. The {@link
+   * #APPLICATION_URI_NOT_CONFIGURED} placeholder is returned only when none of these yields a SAN
+   * URI.
    *
-   * @param certificateIdentity the identity selected for the connection, or empty when no managed
-   *     identity is presented.
+   * @param certificateIdentity the identity selected for the connection, or {@code null} when no
+   *     managed identity is presented.
    * @return the effective client application URI.
    */
-  public String resolveApplicationUri(Optional<CertificateIdentity> certificateIdentity) {
-    if (config.isApplicationUriConfigured()) {
-      return config.getApplicationUri();
+  public String resolveApplicationUri(@Nullable CertificateIdentity certificateIdentity) {
+    Optional<String> configuredUri = config.getApplicationUri();
+    if (configuredUri.isPresent()) {
+      return configuredUri.get();
     }
 
     Optional<X509Certificate> fixedCertificate = config.getCertificate();
-    Optional<String> certificateApplicationUri =
-        certificateIdentity
-            .map(CertificateIdentity::certificate)
-            .flatMap(CertificateUtil::getSanUri)
-            .or(() -> fixedCertificate.flatMap(CertificateUtil::getSanUri));
 
-    if (certificateApplicationUri.isPresent()) {
-      return certificateApplicationUri.get();
+    if (certificateIdentity != null) {
+      Optional<String> uri = CertificateUtil.getSanUri(certificateIdentity.certificate());
+      if (uri.isPresent()) {
+        return uri.get();
+      }
     }
 
-    return certificateIdentity.isEmpty() && fixedCertificate.isEmpty()
-        ? getManagerApplicationUri().orElse(config.getApplicationUri())
-        : config.getApplicationUri();
+    if (fixedCertificate.isPresent()) {
+      Optional<String> uri = CertificateUtil.getSanUri(fixedCertificate.get());
+      if (uri.isPresent()) {
+        return uri.get();
+      }
+    }
+
+    if (certificateIdentity == null && fixedCertificate.isEmpty()) {
+      return getManagerApplicationUri().orElse(APPLICATION_URI_NOT_CONFIGURED);
+    }
+
+    return APPLICATION_URI_NOT_CONFIGURED;
   }
 
   private Optional<String> getManagerApplicationUri() {
