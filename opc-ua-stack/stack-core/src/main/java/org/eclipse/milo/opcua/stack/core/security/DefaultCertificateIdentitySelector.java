@@ -33,9 +33,12 @@ import org.slf4j.LoggerFactory;
  * identities that are locally compatible with the security policy profile (see {@link
  * CertificateCompatibility#checkLocalCompatible(SecurityPolicyProfile, CertificateIdentity)}, which
  * enforces functional requirements but does not reject legacy RSA identities for omitting the
- * strict KeyUsage bit set). Among the remaining candidates it prefers an explicitly configured
- * certificate when it is present in the manager, an exact certificate type request, the type
- * preferred by the security policy profile, and finally stable certificate group/type ordering.
+ * strict KeyUsage bit set). An explicitly configured certificate pins selection to the matching
+ * manager identity. If the manager does not contain that certificate, or the identity is not
+ * compatible with the requested profile, the selector returns empty so the caller can use its
+ * fixed-certificate fallback. Without an explicit certificate, the selector prefers an exact
+ * certificate type request, the type preferred by the security policy profile, and finally stable
+ * certificate group/type ordering.
  *
  * <p>An explicitly configured certificate that is excluded for incompatibility is logged at {@code
  * WARN} with the reason, so it is never silently lost. A routine non-match among the other
@@ -97,15 +100,8 @@ public final class DefaultCertificateIdentitySelector implements CertificateIden
       }
     }
 
-    if (candidates.isEmpty()) {
-      return Optional.empty();
-    }
-
-    Optional<CertificateIdentity> explicitIdentity =
-        selectExplicitIdentity(context, explicitThumbprint, candidates);
-
-    if (explicitIdentity.isPresent()) {
-      return explicitIdentity;
+    if (explicitThumbprint != null) {
+      return selectExplicitIdentity(context, explicitThumbprint, candidates);
     }
 
     return candidates.stream().min(selectionOrder(context));
