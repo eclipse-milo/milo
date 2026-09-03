@@ -1342,7 +1342,7 @@ public class SessionFsmFactory {
 
       ApplicationDescription clientDescription =
           new ApplicationDescription(
-              client.getConfig().getApplicationUri(),
+              client.resolveApplicationUri(certificateIdentity),
               client.getConfig().getProductUri(),
               client.getConfig().getApplicationName(),
               ApplicationType.Client,

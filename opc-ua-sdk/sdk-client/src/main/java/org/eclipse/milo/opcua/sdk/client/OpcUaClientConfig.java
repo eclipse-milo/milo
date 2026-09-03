@@ -165,6 +165,21 @@ public interface OpcUaClientConfig {
   String getApplicationUri();
 
   /**
+   * Whether {@link #getApplicationUri()} was explicitly configured.
+   *
+   * <p>The default preserves the behavior of custom config implementations, whose returned URI is
+   * treated as explicit. Configs built by {@link OpcUaClientConfigBuilder} return {@code false}
+   * when {@link OpcUaClientConfigBuilder#setApplicationUri(String)} was not called, allowing the
+   * client to derive the URI from its effective certificate identity.
+   *
+   * @return {@code true} when the configured application URI takes precedence over certificate
+   *     identity resolution.
+   */
+  default boolean isApplicationUriConfigured() {
+    return true;
+  }
+
+  /**
    * @return the URI for the client's application product.
    */
   String getProductUri();
@@ -274,7 +289,9 @@ public interface OpcUaClientConfig {
     builder.setCertificateGroupId(config.getCertificateGroupId().orElse(null));
     builder.setCertificateTypeId(config.getCertificateTypeId().orElse(null));
     builder.setApplicationName(config.getApplicationName());
-    builder.setApplicationUri(config.getApplicationUri());
+    if (config.isApplicationUriConfigured()) {
+      builder.setApplicationUri(config.getApplicationUri());
+    }
     builder.setProductUri(config.getProductUri());
     builder.setSessionName(config.getSessionName());
     builder.setSessionTimeout(config.getSessionTimeout());

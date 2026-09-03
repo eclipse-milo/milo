@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.sdk.client;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -24,6 +25,8 @@ import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.milo.opcua.sdk.client.identity.AnonymousProvider;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
@@ -37,16 +40,26 @@ import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
+import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
+import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
+import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.CreateSessionRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
+import org.eclipse.milo.opcua.stack.core.util.Unit;
+import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransportConfig;
+import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportConfig;
 import org.junit.jupiter.api.Test;
 
 public class OpcUaClientConfigTest {
@@ -108,7 +121,32 @@ public class OpcUaClientConfigTest {
     assertSame(original.getCertificateIdentitySelector(), copy.getCertificateIdentitySelector());
     assertEquals(original.getCertificateGroupId(), copy.getCertificateGroupId());
     assertEquals(original.getCertificateTypeId(), copy.getCertificateTypeId());
+    assertEquals(original.isApplicationUriConfigured(), copy.isApplicationUriConfigured());
     assertTrue(copy.getCertificateIdentity(SecurityPolicy.None.getProfile()).isEmpty());
+  }
+
+  // Copying an unset URI must preserve certificate-based derivation, while an explicitly set URI
+  // must remain authoritative in the copied config.
+  @Test
+  public void copyPreservesApplicationUriExplicitness() {
+    OpcUaClientConfig derived =
+        OpcUaClientConfig.builder()
+            .setEndpoint(endpoint)
+            .setDiscoveryEndpoints(List.of(endpoint))
+            .build();
+    OpcUaClientConfig explicit =
+        OpcUaClientConfig.builder()
+            .setEndpoint(endpoint)
+            .setDiscoveryEndpoints(List.of(endpoint))
+            .setApplicationUri("urn:eclipse:milo:test:explicit")
+            .build();
+
+    OpcUaClientConfig derivedCopy = OpcUaClientConfig.copy(derived).build();
+    OpcUaClientConfig explicitCopy = OpcUaClientConfig.copy(explicit).build();
+
+    assertFalse(derivedCopy.isApplicationUriConfigured());
+    assertTrue(explicitCopy.isApplicationUriConfigured());
+    assertEquals("urn:eclipse:milo:test:explicit", explicitCopy.getApplicationUri());
   }
 
   @Test
@@ -293,6 +331,156 @@ public class OpcUaClientConfigTest {
     assertEquals(certificateB, client.getCertificateIdentity(profile).orElseThrow().certificate());
   }
 
+  // setApplicationUri() is an explicit application identity choice and must override certificate
+  // SAN URIs, including the URI on the manager-selected identity.
+  @Test
+  public void explicitApplicationUriTakesPrecedence() throws Exception {
+    CertificateIdentity identity = identity("urn:eclipse:milo:test:managed", "group");
+    OpcUaClientConfig config =
+        OpcUaClientConfig.builder()
+            .setEndpoint(endpoint)
+            .setCertificateManager(multiIdentityManager(List.of(identity)))
+            .setApplicationUri("urn:eclipse:milo:test:explicit")
+            .build();
+
+    OpcUaClient client = client(config);
+
+    assertEquals("urn:eclipse:milo:test:explicit", client.resolveApplicationUri(Optional.empty()));
+  }
+
+  // The certificate presented for the endpoint defines the application instance, so its URI must
+  // win over a legacy fixed certificate that is only retained as a compatibility fallback.
+  @Test
+  public void selectedIdentityApplicationUriTakesPrecedenceOverFixedCertificate() throws Exception {
+    CertificateIdentity identity = identity("urn:eclipse:milo:test:managed", "group");
+    X509Certificate fixedCertificate = certificate("urn:eclipse:milo:test:fixed");
+    OpcUaClientConfig config =
+        OpcUaClientConfig.builder()
+            .setEndpoint(endpoint)
+            .setCertificateManager(multiIdentityManager(List.of(identity)))
+            .setCertificateIdentitySelector(context -> Optional.of(identity))
+            .setCertificate(fixedCertificate)
+            .build();
+
+    OpcUaClient client = client(config);
+
+    assertEquals(
+        "urn:eclipse:milo:test:managed",
+        client.resolveApplicationUri(client.getCertificateIdentity(profile())));
+  }
+
+  // An explicit certificate outside the manager makes selection empty. Its SAN URI must still be
+  // used with the fixed key material selected by the compatibility fallback.
+  @Test
+  public void fixedCertificateApplicationUriIsCompatibilityFallback() throws Exception {
+    X509Certificate fixedCertificate = certificate("urn:eclipse:milo:test:fixed");
+    OpcUaClientConfig config =
+        OpcUaClientConfig.builder()
+            .setEndpoint(endpoint)
+            .setCertificateManager(multiIdentityManager(List.of()))
+            .setCertificate(fixedCertificate)
+            .build();
+
+    OpcUaClient client = client(config);
+
+    assertEquals(
+        "urn:eclipse:milo:test:fixed",
+        client.resolveApplicationUri(client.getCertificateIdentity(profile())));
+  }
+
+  // The placeholder remains a last resort for certificate-less clients and certificates without a
+  // SAN URI.
+  @Test
+  public void applicationUriPlaceholderIsUsedLast() throws Exception {
+    OpcUaClientConfig config = OpcUaClientConfig.builder().setEndpoint(endpoint).build();
+
+    OpcUaClient client = client(config);
+
+    assertEquals(
+        "urn:eclipse:milo:client:applicationUriNotConfigured",
+        client.resolveApplicationUri(Optional.empty()));
+  }
+
+  // A selected identity without a SAN URI cannot define the ApplicationUri. The fixed certificate
+  // remains the next compatibility source before the placeholder.
+  @Test
+  public void fixedCertificateApplicationUriFollowsSelectedIdentityWithoutSanUri()
+      throws Exception {
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    X509Certificate certificateWithoutSanUri =
+        new SelfSignedCertificateBuilder(keyPair)
+            .setApplicationUri(null)
+            .addDnsName("localhost")
+            .build();
+    CertificateIdentity identity = identity(keyPair, certificateWithoutSanUri, "group");
+    X509Certificate fixedCertificate = certificate("urn:eclipse:milo:test:fixed");
+    OpcUaClientConfig config =
+        OpcUaClientConfig.builder()
+            .setEndpoint(endpoint)
+            .setCertificateManager(multiIdentityManager(List.of(identity)))
+            .setCertificate(fixedCertificate)
+            .build();
+
+    OpcUaClient client = client(config);
+
+    assertEquals(
+        "urn:eclipse:milo:test:fixed", client.resolveApplicationUri(Optional.of(identity)));
+  }
+
+  // SecureChannel setup selects first. Session creation must derive the URI from that cached
+  // identity even when other manager identities carry a different ApplicationUri.
+  @Test
+  public void applicationUriUsesCachedSelectedIdentityWhenManagerUrisDiffer() throws Exception {
+    CertificateIdentity identityA = identity("urn:eclipse:milo:test:a", "groupA");
+    CertificateIdentity identityB = identity("urn:eclipse:milo:test:b", "groupB");
+    AtomicInteger selections = new AtomicInteger();
+    CertificateIdentitySelector selector =
+        context -> Optional.of(selections.getAndIncrement() == 0 ? identityA : identityB);
+    OpcUaClientConfig config =
+        OpcUaClientConfig.builder()
+            .setEndpoint(endpoint)
+            .setCertificateManager(multiIdentityManager(List.of(identityA, identityB)))
+            .setCertificateIdentitySelector(selector)
+            .build();
+
+    OpcUaClient client = client(config);
+    SecurityPolicyProfile profile = SecurityPolicy.Basic256Sha256.getProfile();
+
+    assertSame(identityA, client.getCertificateIdentity(profile).orElseThrow());
+    assertEquals(
+        "urn:eclipse:milo:test:a",
+        client.resolveApplicationUri(client.getCertificateIdentity(profile)));
+    assertEquals(1, selections.get());
+  }
+
+  // CreateSession must send the URI from the same effective identity whose certificate it places in
+  // the request, otherwise servers reject ActivateSession with Bad_CertificateUriInvalid.
+  @Test
+  public void createSessionUsesSelectedIdentityApplicationUri() throws Exception {
+    CertificateIdentity identity = identity("urn:eclipse:milo:test:managed", "group");
+    OpcUaClientConfig config =
+        OpcUaClientConfig.builder()
+            .setEndpoint(secureEndpoint(identity.certificate()))
+            .setCertificateManager(multiIdentityManager(List.of(identity)))
+            .build();
+    CapturingClientTransport transport = new CapturingClientTransport();
+    OpcUaClient client = new OpcUaClient(config, transport);
+    CompletableFuture<OpcUaClient> connectFuture = client.connectAsync();
+
+    try {
+      CreateSessionRequest request = transport.createSessionRequest.get(5, TimeUnit.SECONDS);
+
+      assertEquals(
+          "urn:eclipse:milo:test:managed", request.getClientDescription().getApplicationUri());
+      assertArrayEquals(
+          identity.certificate().getEncoded(), request.getClientCertificate().bytes());
+    } finally {
+      transport.releasePending();
+      client.disconnectAsync().get(5, TimeUnit.SECONDS);
+      connectFuture.cancel(true);
+    }
+  }
+
   private static CertificateManager multiIdentityManager(List<CertificateIdentity> identities) {
     return new CertificateManager() {
       @Override
@@ -347,11 +535,103 @@ public class OpcUaClientConfigTest {
         new X509Certificate[] {certificate});
   }
 
+  private static CertificateIdentity identity(String applicationUri, String group)
+      throws Exception {
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    return identity(keyPair, certificate(keyPair, applicationUri), group);
+  }
+
   private static X509Certificate rsaCertificate(KeyPair keyPair) throws Exception {
+    return certificate(keyPair, "urn:eclipse:milo:test:certificate-identity-cache");
+  }
+
+  private static X509Certificate certificate(String applicationUri) throws Exception {
+    return certificate(SelfSignedCertificateGenerator.generateRsaKeyPair(2048), applicationUri);
+  }
+
+  private static X509Certificate certificate(KeyPair keyPair, String applicationUri)
+      throws Exception {
     return new SelfSignedCertificateBuilder(keyPair)
         .setCommonName("certificate-identity-cache-test")
-        .setApplicationUri("urn:eclipse:milo:test:certificate-identity-cache")
+        .setApplicationUri(applicationUri)
         .addDnsName("localhost")
         .build();
+  }
+
+  private static OpcUaClient client(OpcUaClientConfig config) {
+    OpcClientTransportConfig transportConfig = mock(OpcClientTransportConfig.class);
+    when(transportConfig.getExecutor()).thenReturn(Stack.sharedExecutor());
+    OpcClientTransport transport = mock(OpcClientTransport.class);
+    when(transport.getConfig()).thenReturn(transportConfig);
+
+    return new OpcUaClient(config, transport);
+  }
+
+  private static SecurityPolicyProfile profile() {
+    return SecurityPolicy.Basic256Sha256.getProfile();
+  }
+
+  private static EndpointDescription secureEndpoint(X509Certificate serverCertificate)
+      throws Exception {
+    ApplicationDescription server =
+        new ApplicationDescription(
+            "urn:eclipse:milo:test:server",
+            "urn:eclipse:milo:test:product",
+            LocalizedText.english("test server"),
+            ApplicationType.Server,
+            null,
+            null,
+            null);
+
+    return new EndpointDescription(
+        "opc.tcp://localhost:62541",
+        server,
+        ByteString.of(serverCertificate.getEncoded()),
+        MessageSecurityMode.SignAndEncrypt,
+        SecurityPolicy.Basic256Sha256.getUri(),
+        new UserTokenPolicy[] {
+          new UserTokenPolicy("anonymous", UserTokenType.Anonymous, null, null, null)
+        },
+        Stack.TCP_UASC_UABINARY_TRANSPORT_URI,
+        null);
+  }
+
+  private static final class CapturingClientTransport implements OpcClientTransport {
+    private final OpcClientTransportConfig config =
+        OpcTcpClientTransportConfig.newBuilder().build();
+    private final CompletableFuture<CreateSessionRequest> createSessionRequest =
+        new CompletableFuture<>();
+    private final CompletableFuture<UaResponseMessageType> pendingResponse =
+        new CompletableFuture<>();
+
+    @Override
+    public OpcClientTransportConfig getConfig() {
+      return config;
+    }
+
+    @Override
+    public CompletableFuture<Unit> connect(ClientApplicationContext applicationContext) {
+      return CompletableFuture.completedFuture(Unit.VALUE);
+    }
+
+    @Override
+    public CompletableFuture<Unit> disconnect() {
+      return CompletableFuture.completedFuture(Unit.VALUE);
+    }
+
+    @Override
+    public CompletableFuture<UaResponseMessageType> sendRequestMessage(
+        UaRequestMessageType requestMessage) {
+
+      if (requestMessage instanceof CreateSessionRequest request) {
+        createSessionRequest.complete(request);
+      }
+
+      return pendingResponse;
+    }
+
+    void releasePending() {
+      pendingResponse.completeExceptionally(new RuntimeException("test cleanup"));
+    }
   }
 }

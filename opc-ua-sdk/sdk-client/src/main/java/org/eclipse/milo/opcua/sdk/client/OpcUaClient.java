@@ -162,6 +162,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ViewDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriteRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriteResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriteValue;
+import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.ExecutionQueue;
 import org.eclipse.milo.opcua.stack.core.util.Lists;
 import org.eclipse.milo.opcua.stack.core.util.LongSequence;
@@ -514,6 +515,7 @@ public class OpcUaClient {
   private final Object certificateIdentityLock = new Object();
   private final Map<SecurityPolicyProfile, Optional<CertificateIdentity>>
       selectedCertificateIdentities = new HashMap<>();
+  private boolean managerIdentityApplicationUrisChecked;
 
   public OpcUaClient(OpcUaClientConfig config, OpcClientTransport transport) {
     this.config = config;
@@ -846,6 +848,66 @@ public class OpcUaClient {
   }
 
   /**
+   * Resolve the client application URI from the effective certificate identity.
+   *
+   * <p>An explicitly configured URI takes precedence. Otherwise the URI is read from {@code
+   * certificateIdentity}, then the fixed compatibility certificate. The configured placeholder is
+   * returned only when neither certificate contains a SAN URI.
+   *
+   * @param certificateIdentity the identity selected for the connection, or empty when no managed
+   *     identity is presented.
+   * @return the effective client application URI.
+   */
+  public String resolveApplicationUri(Optional<CertificateIdentity> certificateIdentity) {
+    if (config.isApplicationUriConfigured()) {
+      return config.getApplicationUri();
+    }
+
+    if (certificateIdentity.isPresent()) {
+      warnIfManagerIdentityApplicationUrisDiffer();
+
+      Optional<String> applicationUri =
+          CertificateUtil.getSanUri(certificateIdentity.get().certificate());
+      if (applicationUri.isPresent()) {
+        return applicationUri.get();
+      }
+    }
+
+    return config
+        .getCertificate()
+        .flatMap(CertificateUtil::getSanUri)
+        .orElse(config.getApplicationUri());
+  }
+
+  private void warnIfManagerIdentityApplicationUrisDiffer() {
+    synchronized (certificateIdentityLock) {
+      if (managerIdentityApplicationUrisChecked) {
+        return;
+      }
+      managerIdentityApplicationUrisChecked = true;
+    }
+
+    try {
+      List<String> applicationUris =
+          config.getCertificateManager().stream()
+              .flatMap(manager -> manager.getCertificateIdentities().stream())
+              .map(CertificateIdentity::certificate)
+              .map(CertificateUtil::getSanUri)
+              .flatMap(Optional::stream)
+              .distinct()
+              .sorted()
+              .toList();
+
+      if (applicationUris.size() > 1) {
+        logger.warn(
+            "CertificateManager identities have differing ApplicationUris: {}", applicationUris);
+      }
+    } catch (RuntimeException e) {
+      logger.warn("Could not compare CertificateManager identity ApplicationUris", e);
+    }
+  }
+
+  /**
    * Clear the cached certificate identities so that the next {@link
    * #getCertificateIdentity(SecurityPolicyProfile)} re-evaluates the configured selector, picking
    * up any rotation in the underlying {@code CertificateManager}.
@@ -853,6 +915,7 @@ public class OpcUaClient {
   private void clearCertificateIdentities() {
     synchronized (certificateIdentityLock) {
       selectedCertificateIdentities.clear();
+      managerIdentityApplicationUrisChecked = false;
     }
   }
 
