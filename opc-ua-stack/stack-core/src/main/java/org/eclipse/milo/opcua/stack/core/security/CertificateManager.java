@@ -18,6 +18,18 @@ import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 
+/**
+ * A server's registry of {@link CertificateGroup}s keyed by the {@link NodeId} of their {@code
+ * CertificateGroupType} node.
+ *
+ * <p>Endpoint configuration, Push management, and address-space code all name groups by NodeId; the
+ * manager resolves those ids to groups and groups back to ids. Thumbprint lookups resolve the local
+ * key material that a SecureChannel or session handshake identifies by certificate thumbprint.
+ *
+ * <p>{@link #getCertificateGroups()} returns groups in registration order. That order is the
+ * precedence used when several groups could satisfy the same request, so it is a configuration
+ * decision made by the application when it registers its groups.
+ */
 public interface CertificateManager {
 
   /**
@@ -69,7 +81,20 @@ public interface CertificateManager {
   Optional<CertificateGroup> getCertificateGroup(NodeId certificateGroupId);
 
   /**
-   * Get the {@link CertificateGroup}s managed by this {@link CertificateManager}.
+   * Get the {@link NodeId} under which {@code certificateGroup} is registered.
+   *
+   * @param certificateGroup the {@link CertificateGroup} to look up.
+   * @return the {@link NodeId} under which {@code certificateGroup} is registered, or empty if it
+   *     is not registered with this manager.
+   */
+  Optional<NodeId> getCertificateGroupId(CertificateGroup certificateGroup);
+
+  /**
+   * Get the {@link CertificateGroup}s managed by this {@link CertificateManager}, in registration
+   * order.
+   *
+   * <p>Registration order is the precedence between groups when more than one could satisfy a
+   * request.
    *
    * @return the {@link CertificateGroup}s managed by this {@link CertificateManager}.
    */
@@ -78,24 +103,16 @@ public interface CertificateManager {
   /**
    * Get the usable certificate identities managed by this {@link CertificateManager}.
    *
-   * <p>An identity is usable when its certificate group has both a non-empty certificate chain and
-   * a key pair for the certificate type.
+   * <p>Identities are listed group by group in {@link #getCertificateGroups()} order, and within a
+   * group in that group's {@link CertificateGroup#getCertificateIdentities()} order.
    *
    * @return the usable certificate identities managed by this {@link CertificateManager}.
    */
   default List<CertificateIdentity> getCertificateIdentities() {
     return getCertificateGroups().stream()
         .flatMap(group -> group.getCertificateIdentities().stream())
-        .sorted(CertificateIdentityOrdering.STABLE)
         .toList();
   }
-
-  /**
-   * Get the Server's {@link CertificateQuarantine}.
-   *
-   * @return the Server's {@link CertificateQuarantine}.
-   */
-  CertificateQuarantine getCertificateQuarantine();
 
   /**
    * Get the DefaultApplicationGroup {@link CertificateGroup}, if it's configured.

@@ -30,8 +30,6 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.HashedWheelTimer;
-import java.security.KeyPair;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -46,8 +44,10 @@ import org.eclipse.milo.opcua.stack.core.channel.messages.MessageType;
 import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
@@ -295,17 +295,8 @@ class OpcTcpClientChannelInitializerTest {
       }
 
       @Override
-      public Optional<KeyPair> getKeyPair() {
-        return Optional.empty();
-      }
-
-      @Override
-      public Optional<X509Certificate> getCertificate() {
-        return Optional.empty();
-      }
-
-      @Override
-      public Optional<X509Certificate[]> getCertificateChain() {
+      public Optional<CertificateIdentity> getCertificateIdentity(
+          SecurityPolicyProfile securityPolicyProfile) {
         return Optional.empty();
       }
 

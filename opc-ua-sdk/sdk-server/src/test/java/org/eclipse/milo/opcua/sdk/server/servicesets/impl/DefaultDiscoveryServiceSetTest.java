@@ -22,7 +22,6 @@ import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
-import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
@@ -144,7 +143,7 @@ class DefaultDiscoveryServiceSetTest {
             .setApplicationUri(LOCAL_APPLICATION_URI)
             .setApplicationName(LocalizedText.english("test server"))
             .setProductUri("urn:eclipse:milo:test")
-            .setCertificateManager(new DefaultCertificateManager(new MemoryCertificateQuarantine()))
+            .setCertificateManager(new DefaultCertificateManager())
             .setEndpoints(endpoints)
             .build();
 

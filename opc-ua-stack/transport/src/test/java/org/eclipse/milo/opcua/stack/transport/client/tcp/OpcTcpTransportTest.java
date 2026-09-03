@@ -61,10 +61,15 @@ import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryEncoder;
+import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
+import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.FiniteFieldDhKeyAgreementUtil;
+import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
+import org.eclipse.milo.opcua.stack.core.security.MemoryTrustListManager;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
 import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
@@ -324,18 +329,9 @@ class OpcTcpTransportTest extends SecurityFixture {
           }
 
           @Override
-          public Optional<KeyPair> getKeyPair() {
-            return Optional.of(clientKeyPair);
-          }
-
-          @Override
-          public Optional<X509Certificate> getCertificate() {
-            return Optional.of(clientCertificate);
-          }
-
-          @Override
-          public Optional<X509Certificate[]> getCertificateChain() {
-            return Optional.of(new X509Certificate[] {clientCertificate});
+          public Optional<CertificateIdentity> getCertificateIdentity(
+              SecurityPolicyProfile securityPolicyProfile) {
+            return identity(clientKeyPair, clientCertificate);
           }
 
           @Override
@@ -389,18 +385,9 @@ class OpcTcpTransportTest extends SecurityFixture {
           }
 
           @Override
-          public Optional<KeyPair> getKeyPair() {
-            return Optional.of(clientKeyPair);
-          }
-
-          @Override
-          public Optional<X509Certificate> getCertificate() {
-            return Optional.of(clientCertificate);
-          }
-
-          @Override
-          public Optional<X509Certificate[]> getCertificateChain() {
-            return Optional.of(new X509Certificate[] {clientCertificate});
+          public Optional<CertificateIdentity> getCertificateIdentity(
+              SecurityPolicyProfile securityPolicyProfile) {
+            return identity(clientKeyPair, clientCertificate);
           }
 
           @Override
@@ -452,18 +439,9 @@ class OpcTcpTransportTest extends SecurityFixture {
           }
 
           @Override
-          public Optional<KeyPair> getKeyPair() {
-            return Optional.of(clientKeyPair);
-          }
-
-          @Override
-          public Optional<X509Certificate> getCertificate() {
-            return Optional.of(clientCertificate);
-          }
-
-          @Override
-          public Optional<X509Certificate[]> getCertificateChain() {
-            return Optional.of(new X509Certificate[] {clientCertificate});
+          public Optional<CertificateIdentity> getCertificateIdentity(
+              SecurityPolicyProfile securityPolicyProfile) {
+            return identity(clientKeyPair, clientCertificate);
           }
 
           @Override
@@ -922,18 +900,9 @@ class OpcTcpTransportTest extends SecurityFixture {
       }
 
       @Override
-      public Optional<KeyPair> getKeyPair() {
-        return Optional.of(client.keyPair());
-      }
-
-      @Override
-      public Optional<X509Certificate> getCertificate() {
-        return Optional.of(client.certificate());
-      }
-
-      @Override
-      public Optional<X509Certificate[]> getCertificateChain() {
-        return Optional.of(new X509Certificate[] {client.certificate()});
+      public Optional<CertificateIdentity> getCertificateIdentity(
+          SecurityPolicyProfile securityPolicyProfile) {
+        return identity(client.keyPair(), client.certificate());
       }
 
       @Override
@@ -1448,6 +1417,22 @@ class OpcTcpTransportTest extends SecurityFixture {
       CertificateMaterial wrongServer,
       CertificateMaterial mismatchedClient,
       ByteString malformedEphemeralPublicKey) {}
+
+  // Transport-level contexts are fixed-identity stubs: the same identity is presented regardless of
+  // the requested profile, leaving policy compatibility to the client message handler.
+  private static Optional<CertificateIdentity> identity(
+      KeyPair keyPair, X509Certificate certificate) {
+
+    DefaultCertificateGroup group =
+        DefaultCertificateGroup.forIdentity(
+            keyPair,
+            new X509Certificate[] {certificate},
+            new MemoryTrustListManager(),
+            new MemoryCertificateQuarantine(),
+            new CertificateValidator.InsecureCertificateValidator());
+
+    return group.getCertificateIdentities().stream().findFirst();
+  }
 
   private record CertificateMaterial(
       KeyPair keyPair, X509Certificate certificate, byte[] certificateBytes) {}

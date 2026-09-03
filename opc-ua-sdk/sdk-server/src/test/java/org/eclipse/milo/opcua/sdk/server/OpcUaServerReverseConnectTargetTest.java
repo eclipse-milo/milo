@@ -66,7 +66,6 @@ import org.eclipse.milo.opcua.stack.core.channel.messages.ReverseHelloMessage;
 import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageDecoder;
 import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageEncoder;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
-import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -670,7 +669,7 @@ class OpcUaServerReverseConnectTargetTest {
             .setApplicationUri("urn:eclipse:milo:test:server:reverse-targets")
             .setProductUri("urn:eclipse:milo:test:server")
             .setApplicationName(LocalizedText.english("Reverse Target Test Server"))
-            .setCertificateManager(new DefaultCertificateManager(new MemoryCertificateQuarantine()))
+            .setCertificateManager(new DefaultCertificateManager())
             .setIdentityValidator(AnonymousIdentityValidator.INSTANCE)
             .setEndpoints(Set.of(endpoint))
             .setReverseConnectTargets(targets)

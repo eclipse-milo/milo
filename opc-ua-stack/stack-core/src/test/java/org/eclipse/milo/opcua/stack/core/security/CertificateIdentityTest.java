@@ -16,7 +16,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,45 +37,53 @@ class CertificateIdentityTest {
 
   private final TestCertificateFactory certificateFactory = new TestCertificateFactory();
 
-  // Endpoint resolution needs a deterministic inventory and must ignore incomplete store entries.
+  // Endpoint resolution needs a deterministic inventory: groups in registration order, types in
+  // type-id order within a group, and incomplete store entries left out.
   @Test
-  void certificateManagerEnumeratesUsableIdentitiesAcrossGroupsAndTypes() {
-    CertificateManager manager =
+  void certificateManagerEnumeratesUsableIdentitiesInRegistrationOrderAcrossGroupsAndTypes() {
+    DefaultCertificateManager manager =
         manager(
-            group(
+            registered(
                 GROUP_B,
-                certificate(NodeIds.EccCurve25519ApplicationCertificateType),
-                certificateWithoutKeyPair()),
-            group(
+                group(
+                    certificate(NodeIds.EccCurve25519ApplicationCertificateType),
+                    certificateWithoutKeyPair())),
+            registered(
                 GROUP_A,
-                certificate(NodeIds.EccNistP256ApplicationCertificateType),
-                certificate(NodeIds.RsaSha256ApplicationCertificateType)));
+                group(
+                    certificate(NodeIds.EccNistP256ApplicationCertificateType),
+                    certificate(NodeIds.RsaSha256ApplicationCertificateType))));
 
-    List<IdentityKey> identities = identityKeys(manager.getCertificateIdentities());
+    List<IdentityKey> identities = identityKeys(manager, manager.getCertificateIdentities());
 
     assertEquals(
         List.of(
+            key(GROUP_B, NodeIds.EccCurve25519ApplicationCertificateType),
             key(GROUP_A, NodeIds.RsaSha256ApplicationCertificateType),
-            key(GROUP_A, NodeIds.EccNistP256ApplicationCertificateType),
-            key(GROUP_B, NodeIds.EccCurve25519ApplicationCertificateType)),
-        identities);
+            key(GROUP_A, NodeIds.EccNistP256ApplicationCertificateType)),
+        identities,
+        "GROUP_B was registered first, so it lists first despite its higher type id");
   }
 
   // Legacy endpoint certificate configuration must win over generic policy/type ordering.
   @Test
-  void selectorPrefersExplicitCertificateMatchBeforeStableOrdering() throws Exception {
+  void selectorPrefersExplicitCertificateMatchBeforeRegistrationOrdering() throws Exception {
     CertificateMaterial stable = certificate(NodeIds.RsaSha256ApplicationCertificateType);
     CertificateMaterial explicit = certificate(NodeIds.EccNistP256ApplicationCertificateType);
-    CertificateManager manager = manager(group(GROUP_A, stable), group(GROUP_B, explicit));
+    DefaultCertificateManager manager =
+        manager(registered(GROUP_A, group(stable)), registered(GROUP_B, group(explicit)));
 
     CertificateIdentitySelectionContext context =
         CertificateIdentitySelectionContext.forEndpointAdvertisement(
-            manager, SecurityPolicy.None.getProfile(), null, null, explicit.certificate());
+            manager.getCertificateGroups(),
+            SecurityPolicy.None.getProfile(),
+            null,
+            explicit.certificate());
 
     CertificateIdentity selected =
         DefaultCertificateIdentitySelector.create().select(context).orElseThrow();
 
-    assertEquals(key(GROUP_B, explicit.certificateTypeId()), key(selected));
+    assertEquals(key(GROUP_B, explicit.certificateTypeId()), key(manager, selected));
   }
 
   // Endpoint certificate type configuration should outrank the policy default when both are usable.
@@ -84,16 +91,20 @@ class CertificateIdentityTest {
   void selectorPrefersExactCertificateTypeBeforePolicyPreferredType() throws Exception {
     CertificateMaterial policyPreferred = certificate(NodeIds.RsaSha256ApplicationCertificateType);
     CertificateMaterial exact = certificate(NodeIds.RsaMinApplicationCertificateType);
-    CertificateManager manager = manager(group(GROUP_A, policyPreferred), group(GROUP_B, exact));
+    DefaultCertificateManager manager =
+        manager(registered(GROUP_A, group(policyPreferred)), registered(GROUP_B, group(exact)));
 
     CertificateIdentitySelectionContext context =
         CertificateIdentitySelectionContext.forEndpointAdvertisement(
-            manager, SecurityPolicy.Basic256.getProfile(), null, exact.certificateTypeId(), null);
+            manager.getCertificateGroups(),
+            SecurityPolicy.Basic256.getProfile(),
+            exact.certificateTypeId(),
+            null);
 
     CertificateIdentity selected =
         DefaultCertificateIdentitySelector.create().select(context).orElseThrow();
 
-    assertEquals(key(GROUP_B, exact.certificateTypeId()), key(selected));
+    assertEquals(key(GROUP_B, exact.certificateTypeId()), key(manager, selected));
   }
 
   // Certificate type selection is a preference here; compatible candidates can still fall back to
@@ -101,59 +112,63 @@ class CertificateIdentityTest {
   @Test
   void selectorFallsBackToPolicyPreferredTypeWhenExactTypeIsUnavailable() throws Exception {
     CertificateMaterial policyPreferred = certificate(NodeIds.RsaSha256ApplicationCertificateType);
-    CertificateManager manager = manager(group(GROUP_A, policyPreferred));
+    DefaultCertificateManager manager = manager(registered(GROUP_A, group(policyPreferred)));
 
     CertificateIdentitySelectionContext context =
         CertificateIdentitySelectionContext.forEndpointAdvertisement(
-            manager,
+            manager.getCertificateGroups(),
             SecurityPolicy.Basic256.getProfile(),
-            null,
             NodeIds.RsaMinApplicationCertificateType,
             null);
 
     CertificateIdentity selected =
         DefaultCertificateIdentitySelector.create().select(context).orElseThrow();
 
-    assertEquals(key(GROUP_A, policyPreferred.certificateTypeId()), key(selected));
+    assertEquals(key(GROUP_A, policyPreferred.certificateTypeId()), key(manager, selected));
   }
 
   // Policy profiles should keep secured endpoints from accidentally choosing a weaker fallback
   // type.
   @Test
-  void selectorPrefersPolicyCertificateTypeBeforeStableOrdering() throws Exception {
+  void selectorPrefersPolicyCertificateTypeBeforeRegistrationOrdering() throws Exception {
     CertificateMaterial stable = certificate(NodeIds.RsaMinApplicationCertificateType);
     CertificateMaterial policyPreferred = certificate(NodeIds.RsaSha256ApplicationCertificateType);
-    CertificateManager manager = manager(group(GROUP_A, stable), group(GROUP_B, policyPreferred));
+    DefaultCertificateManager manager =
+        manager(registered(GROUP_A, group(stable)), registered(GROUP_B, group(policyPreferred)));
 
     CertificateIdentitySelectionContext context =
         CertificateIdentitySelectionContext.forEndpointAdvertisement(
-            manager, SecurityPolicy.Basic256.getProfile(), null, null, null);
+            manager.getCertificateGroups(), SecurityPolicy.Basic256.getProfile(), null, null);
 
     CertificateIdentity selected =
         DefaultCertificateIdentitySelector.create().select(context).orElseThrow();
 
-    assertEquals(key(GROUP_B, policyPreferred.certificateTypeId()), key(selected));
+    assertEquals(key(GROUP_B, policyPreferred.certificateTypeId()), key(manager, selected));
   }
 
-  // Stable fallback ordering keeps endpoint advertisement independent from collection iteration.
+  // Registration order is the final tie-breaker, so the first registered group wins even though
+  // the second group's RsaMin type (i=12559) would sort ahead of every ECC type (i=2353x) in a
+  // global sort. Within the winning group the type-id order still applies.
   @Test
-  void selectorUsesStableGroupAndTypeOrderingAsFinalTieBreaker() throws Exception {
-    CertificateManager manager =
+  void selectorUsesRegistrationOrderThenTypeOrderAsFinalTieBreaker() throws Exception {
+    DefaultCertificateManager manager =
         manager(
-            group(GROUP_B, certificate(NodeIds.EccNistP256ApplicationCertificateType)),
-            group(
-                GROUP_A,
-                certificate(NodeIds.EccCurve25519ApplicationCertificateType),
-                certificate(NodeIds.RsaMinApplicationCertificateType)));
+            registered(
+                GROUP_B,
+                group(
+                    certificate(NodeIds.EccCurve25519ApplicationCertificateType),
+                    certificate(NodeIds.EccNistP256ApplicationCertificateType))),
+            registered(GROUP_A, group(certificate(NodeIds.RsaMinApplicationCertificateType))));
 
     CertificateIdentitySelectionContext context =
         CertificateIdentitySelectionContext.forEndpointAdvertisement(
-            manager, SecurityPolicy.None.getProfile(), null, null, null);
+            manager.getCertificateGroups(), SecurityPolicy.None.getProfile(), null, null);
 
     CertificateIdentity selected =
         DefaultCertificateIdentitySelector.create().select(context).orElseThrow();
 
-    assertEquals(key(GROUP_A, NodeIds.RsaMinApplicationCertificateType), key(selected));
+    assertEquals(
+        key(GROUP_B, NodeIds.EccNistP256ApplicationCertificateType), key(manager, selected));
   }
 
   // getCertificateEntries() and getKeyPair() read the store independently, so a rotation can
@@ -166,7 +181,7 @@ class CertificateIdentityTest {
     CertificateMaterial staleChain = certificate(NodeIds.RsaSha256ApplicationCertificateType);
     KeyPair rotatedKeyPair = certificateFactory.createRsaSha256KeyPair();
 
-    CertificateGroup group = new RotationRaceCertificateGroup(GROUP_A, staleChain, rotatedKeyPair);
+    CertificateGroup group = new RotationRaceCertificateGroup(staleChain, rotatedKeyPair);
 
     assertEquals(List.of(), group.getCertificateIdentities());
   }
@@ -174,9 +189,8 @@ class CertificateIdentityTest {
   // SecureChannel OPN still identifies the local receiver certificate by SHA-1 thumbprint.
   @Test
   void managerPreservesThumbprintLookupRoundTripForSelectedIdentity() throws Exception {
-    TestCertificateGroup group =
-        group(GROUP_A, certificate(NodeIds.RsaSha256ApplicationCertificateType));
-    CertificateManager manager = manager(group);
+    TestCertificateGroup group = group(certificate(NodeIds.RsaSha256ApplicationCertificateType));
+    DefaultCertificateManager manager = manager(registered(GROUP_A, group));
     CertificateIdentity identity = manager.getCertificateIdentities().get(0);
 
     ByteString thumbprint = identity.thumbprint();
@@ -188,15 +202,20 @@ class CertificateIdentityTest {
     assertSame(group, manager.getCertificateGroup(thumbprint).orElseThrow());
   }
 
-  private CertificateManager manager(TestCertificateGroup... groups) {
-    List<CertificateGroup> certificateGroups =
-        Arrays.stream(groups).map(CertificateGroup.class::cast).toList();
-
-    return new DefaultCertificateManager(new MemoryCertificateQuarantine(), certificateGroups);
+  private static DefaultCertificateManager manager(Registered... registrations) {
+    var manager = new DefaultCertificateManager();
+    for (Registered registration : registrations) {
+      manager.addCertificateGroup(registration.groupId(), registration.group());
+    }
+    return manager;
   }
 
-  private TestCertificateGroup group(NodeId groupId, CertificateMaterial... certificates) {
-    return new TestCertificateGroup(groupId, List.of(certificates));
+  private static Registered registered(NodeId groupId, CertificateGroup group) {
+    return new Registered(groupId, group);
+  }
+
+  private static TestCertificateGroup group(CertificateMaterial... certificates) {
+    return new TestCertificateGroup(List.of(certificates));
   }
 
   private CertificateMaterial certificate(NodeId certificateTypeId) {
@@ -216,17 +235,23 @@ class CertificateIdentityTest {
         NodeIds.EccNistP384ApplicationCertificateType, keyPair, certificateChain, false);
   }
 
-  private static IdentityKey key(CertificateIdentity identity) {
-    return key(identity.certificateGroupId(), identity.certificateTypeId());
+  private static IdentityKey key(CertificateManager manager, CertificateIdentity identity) {
+    NodeId groupId = manager.getCertificateGroupId(identity.certificateGroup()).orElseThrow();
+
+    return key(groupId, identity.certificateTypeId());
   }
 
   private static IdentityKey key(NodeId certificateGroupId, NodeId certificateTypeId) {
     return new IdentityKey(certificateGroupId, certificateTypeId);
   }
 
-  private static List<IdentityKey> identityKeys(List<CertificateIdentity> identities) {
-    return identities.stream().map(CertificateIdentityTest::key).toList();
+  private static List<IdentityKey> identityKeys(
+      CertificateManager manager, List<CertificateIdentity> identities) {
+
+    return identities.stream().map(identity -> key(manager, identity)).toList();
   }
+
+  private record Registered(NodeId groupId, CertificateGroup group) {}
 
   private record IdentityKey(NodeId certificateGroupId, NodeId certificateTypeId) {}
 
@@ -241,12 +266,11 @@ class CertificateIdentityTest {
     }
   }
 
-  private record TestCertificateGroup(
-      NodeId certificateGroupId, Map<NodeId, CertificateMaterial> certificates)
+  private record TestCertificateGroup(Map<NodeId, CertificateMaterial> certificates)
       implements CertificateGroup {
-    private TestCertificateGroup(
-        NodeId certificateGroupId, List<CertificateMaterial> certificates) {
-      this(certificateGroupId, toCertificateMap(certificates));
+
+    private TestCertificateGroup(List<CertificateMaterial> certificates) {
+      this(toCertificateMap(certificates));
     }
 
     private static Map<NodeId, CertificateMaterial> toCertificateMap(
@@ -265,11 +289,6 @@ class CertificateIdentityTest {
     }
 
     @Override
-    public NodeId getCertificateGroupId() {
-      return certificateGroupId;
-    }
-
-    @Override
     public List<NodeId> getSupportedCertificateTypeIds() {
       return List.copyOf(certificates.keySet());
     }
@@ -280,15 +299,23 @@ class CertificateIdentityTest {
     }
 
     @Override
+    public CertificateQuarantine getCertificateQuarantine() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public List<Entry> getCertificateEntries() {
       return certificates.values().stream()
           .map(
               certificate ->
                   new CertificateGroup.Entry(
-                      certificateGroupId,
-                      certificate.certificateTypeId(),
-                      certificate.certificateChain()))
+                      certificate.certificateTypeId(), certificate.certificateChain()))
           .toList();
+    }
+
+    @Override
+    public boolean hasCertificate(NodeId certificateTypeId) {
+      return certificates.containsKey(certificateTypeId);
     }
 
     @Override
@@ -312,11 +339,6 @@ class CertificateIdentityTest {
     }
 
     @Override
-    public CertificateFactory getCertificateFactory() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
     public CertificateValidator getCertificateValidator() {
       throw new UnsupportedOperationException();
     }
@@ -325,13 +347,7 @@ class CertificateIdentityTest {
   // Simulates the read interleaving: getCertificateEntries() returns the pre-rotation chain while
   // getKeyPair() returns the post-rotation key pair, so their public keys do not match.
   private record RotationRaceCertificateGroup(
-      NodeId certificateGroupId, CertificateMaterial staleChain, KeyPair rotatedKeyPair)
-      implements CertificateGroup {
-
-    @Override
-    public NodeId getCertificateGroupId() {
-      return certificateGroupId;
-    }
+      CertificateMaterial staleChain, KeyPair rotatedKeyPair) implements CertificateGroup {
 
     @Override
     public List<NodeId> getSupportedCertificateTypeIds() {
@@ -344,10 +360,20 @@ class CertificateIdentityTest {
     }
 
     @Override
+    public CertificateQuarantine getCertificateQuarantine() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public List<Entry> getCertificateEntries() {
       return List.of(
           new CertificateGroup.Entry(
-              certificateGroupId, staleChain.certificateTypeId(), staleChain.certificateChain()));
+              staleChain.certificateTypeId(), staleChain.certificateChain()));
+    }
+
+    @Override
+    public boolean hasCertificate(NodeId certificateTypeId) {
+      return certificateTypeId.equals(staleChain.certificateTypeId());
     }
 
     @Override
@@ -363,11 +389,6 @@ class CertificateIdentityTest {
     @Override
     public void updateCertificate(
         NodeId certificateTypeId, KeyPair keyPair, X509Certificate[] certificateChain) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public CertificateFactory getCertificateFactory() {
       throw new UnsupportedOperationException();
     }
 

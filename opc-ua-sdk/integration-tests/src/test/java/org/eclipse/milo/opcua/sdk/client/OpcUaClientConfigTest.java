@@ -13,8 +13,11 @@ package org.eclipse.milo.opcua.sdk.client;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -25,20 +28,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.milo.opcua.sdk.client.identity.AnonymousProvider;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.Stack;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
 import org.eclipse.milo.opcua.stack.core.security.CertificateIdentitySelector;
-import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.CertificateQuarantine;
-import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
+import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
+import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
+import org.eclipse.milo.opcua.stack.core.security.MemoryTrustListManager;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
+import org.eclipse.milo.opcua.stack.core.security.TrustListManager;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
 import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
@@ -59,9 +67,14 @@ import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransportConfig;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportConfig;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 public class OpcUaClientConfigTest {
+
+  private static final String PLACEHOLDER_URI =
+      "urn:eclipse:milo:client:applicationUriNotConfigured";
+  private static final String MANAGED_URI = "urn:eclipse:milo:test:managed";
 
   private final EndpointDescription endpoint =
       new EndpointDescription(
@@ -77,22 +90,21 @@ public class OpcUaClientConfigTest {
           null);
 
   @Test
-  public void copyPreservesConfiguredValues() throws Exception {
-    CertificateManager certificateManager =
-        new DefaultCertificateManager(new MemoryCertificateQuarantine());
+  public void copyPreservesConfiguredValues() {
+    CertificateGroup certificateGroup = new TestCertificateGroup();
     CertificateIdentitySelector certificateIdentitySelector = context -> Optional.empty();
-    NodeId certificateGroupId =
-        NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup;
     NodeId certificateTypeId = NodeIds.EccNistP256ApplicationCertificateType;
+    CertificateValidator certificateValidator =
+        new CertificateValidator.InsecureCertificateValidator();
 
     OpcUaClientConfig original =
         OpcUaClientConfig.builder()
             .setEndpoint(endpoint)
             .setDiscoveryEndpoints(List.of(endpoint))
-            .setCertificateManager(certificateManager)
+            .setCertificateGroup(certificateGroup)
             .setCertificateIdentitySelector(certificateIdentitySelector)
-            .setCertificateGroupId(certificateGroupId)
             .setCertificateTypeId(certificateTypeId)
+            .setCertificateValidator(certificateValidator)
             .setSessionEndpointValidationEnabled(true)
             .setSessionName(() -> "testSessionName")
             .setSessionTimeout(uint(60000 * 60))
@@ -116,12 +128,11 @@ public class OpcUaClientConfigTest {
     assertEquals(original.getDiscoveryEndpoints(), copy.getDiscoveryEndpoints());
     assertEquals(
         original.isSessionEndpointValidationEnabled(), copy.isSessionEndpointValidationEnabled());
-    assertEquals(original.getCertificateManager(), copy.getCertificateManager());
-    assertSame(original.getCertificateIdentitySelector(), copy.getCertificateIdentitySelector());
-    assertEquals(original.getCertificateGroupId(), copy.getCertificateGroupId());
-    assertEquals(original.getCertificateTypeId(), copy.getCertificateTypeId());
+    assertSame(certificateGroup, copy.getCertificateGroup().orElseThrow());
+    assertSame(certificateIdentitySelector, copy.getCertificateIdentitySelector());
+    assertEquals(Optional.of(certificateTypeId), copy.getCertificateTypeId());
+    assertSame(certificateValidator, copy.getCertificateValidator());
     assertEquals(original.getApplicationUri(), copy.getApplicationUri());
-    assertTrue(copy.getCertificateIdentity(SecurityPolicy.None.getProfile()).isEmpty());
   }
 
   // Copying an unset URI must preserve certificate-based derivation, while an explicitly set URI
@@ -210,428 +221,484 @@ public class OpcUaClientConfigTest {
     assertTrue(copy.isSessionEndpointValidationEnabled());
   }
 
-  // SecureChannel and Session setup must reuse one selected client identity for a connection.
-  @Test
-  public void clientCachesSelectedCertificateIdentity() throws Exception {
-    CertificateManager certificateManager =
-        new DefaultCertificateManager(new MemoryCertificateQuarantine());
-    AtomicInteger selections = new AtomicInteger();
-    CertificateIdentitySelector certificateIdentitySelector =
-        context -> {
-          selections.incrementAndGet();
-          return Optional.empty();
-        };
-    OpcClientTransportConfig transportConfig = mock(OpcClientTransportConfig.class);
-    when(transportConfig.getExecutor()).thenReturn(Stack.sharedExecutor());
-    OpcClientTransport transport = mock(OpcClientTransport.class);
-    when(transport.getConfig()).thenReturn(transportConfig);
+  @Nested
+  class ValidatorDefaults {
 
-    OpcUaClientConfig config =
-        OpcUaClientConfig.builder()
-            .setEndpoint(endpoint)
-            .setCertificateManager(certificateManager)
-            .setCertificateIdentitySelector(certificateIdentitySelector)
-            .build();
-    OpcUaClient client = new OpcUaClient(config, transport);
+    // A client that configures a group expects that group's trust decision to validate servers;
+    // silently substituting the insecure validator would bypass the trust list it was given.
+    @Test
+    public void groupValidatorIsUsedWhenNoValidatorIsSet() {
+      CertificateValidator groupValidator = new CertificateValidator.InsecureCertificateValidator();
 
-    assertTrue(client.getCertificateIdentity(SecurityPolicy.Basic256Sha256.getProfile()).isEmpty());
-    assertTrue(client.getCertificateIdentity(SecurityPolicy.Basic256Sha256.getProfile()).isEmpty());
-    assertEquals(1, selections.get());
-  }
+      OpcUaClientConfig config =
+          builder().setCertificateGroup(new TestCertificateGroup(groupValidator)).build();
 
-  // The ActivateSession flow looks up the user-token profile identity between the channel/session
-  // certificate lookups. A per-profile cache must keep that interleaving from re-invoking a
-  // stateful selector for the endpoint profile, otherwise the session signature key could diverge
-  // from the channel certificate (Bad_ApplicationSignatureInvalid).
-  @Test
-  public void certificateIdentityCacheSurvivesInterleavedProfileLookups() throws Exception {
-    SecurityPolicyProfile endpointProfile = SecurityPolicy.Basic256Sha256.getProfile();
-    SecurityPolicyProfile tokenProfile = SecurityPolicy.Aes128_Sha256_RsaOaep.getProfile();
+      assertSame(groupValidator, config.getCertificateValidator());
+    }
 
-    KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
-    X509Certificate certificate = rsaCertificate(keyPair);
+    @Test
+    public void explicitValidatorOverridesGroupValidator() {
+      CertificateValidator groupValidator = new CertificateValidator.InsecureCertificateValidator();
+      CertificateValidator explicitValidator =
+          new CertificateValidator.InsecureCertificateValidator();
 
-    CertificateIdentity identityA = identity(keyPair, certificate, "groupA");
-    CertificateIdentity identityB = identity(keyPair, certificate, "groupB");
-    CertificateIdentity identityU = identity(keyPair, certificate, "groupU");
+      OpcUaClientConfig config =
+          builder()
+              .setCertificateGroup(new TestCertificateGroup(groupValidator))
+              .setCertificateValidator(explicitValidator)
+              .build();
 
-    // A stateful selector: the endpoint profile yields A on its first selection and B on every
-    // selection after, so a re-invocation would observably swap the endpoint identity.
-    AtomicInteger endpointSelections = new AtomicInteger();
-    Map<SecurityPolicyProfile, CertificateIdentity> tokenIdentities =
-        Map.of(tokenProfile, identityU);
-    CertificateIdentitySelector certificateIdentitySelector =
-        context -> {
-          CertificateIdentity tokenIdentity = tokenIdentities.get(context.securityPolicyProfile());
-          if (tokenIdentity != null) {
-            return Optional.of(tokenIdentity);
-          }
-          return Optional.of(endpointSelections.getAndIncrement() == 0 ? identityA : identityB);
-        };
+      assertSame(explicitValidator, config.getCertificateValidator());
+    }
 
-    OpcClientTransportConfig transportConfig = mock(OpcClientTransportConfig.class);
-    when(transportConfig.getExecutor()).thenReturn(Stack.sharedExecutor());
-    OpcClientTransport transport = mock(OpcClientTransport.class);
-    when(transport.getConfig()).thenReturn(transportConfig);
+    // Without a group there is no trust list to validate against, so a None-only client keeps the
+    // historical default of not validating server certificates.
+    @Test
+    public void insecureValidatorIsUsedWithoutGroup() {
+      OpcUaClientConfig config = builder().build();
 
-    OpcUaClientConfig config =
-        OpcUaClientConfig.builder()
-            .setEndpoint(endpoint)
-            .setCertificateManager(new DefaultCertificateManager(new MemoryCertificateQuarantine()))
-            .setCertificateIdentitySelector(certificateIdentitySelector)
-            .build();
-    OpcUaClient client = new OpcUaClient(config, transport);
-
-    assertSame(identityA, client.getCertificateIdentity(endpointProfile).orElseThrow());
-    assertSame(identityU, client.getCertificateIdentity(tokenProfile).orElseThrow());
-    assertSame(identityA, client.getCertificateIdentity(endpointProfile).orElseThrow());
-    assertEquals(1, endpointSelections.get());
-  }
-
-  // setCertificate() configures an explicit client certificate. When a CertificateManager holds
-  // multiple compatible identities, the client must present the explicitly configured one rather
-  // than whatever the default selector would otherwise prefer, matching the server-side contract
-  // where an explicit certificate is a selection preference. Both the SecureChannel and the
-  // CreateSession identity lookups must resolve that configured certificate.
-  @Test
-  public void clientPrefersExplicitlyConfiguredCertificate() throws Exception {
-    KeyPair keyPairA = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
-    KeyPair keyPairB = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
-    X509Certificate certificateA = rsaCertificate(keyPairA);
-    X509Certificate certificateB = rsaCertificate(keyPairB);
-
-    // Both identities share the same group/type, so the default selection order treats them as
-    // equal and would otherwise pick the first (identity A).
-    CertificateIdentity identityA = identity(keyPairA, certificateA, "group");
-    CertificateIdentity identityB = identity(keyPairB, certificateB, "group");
-
-    CertificateManager certificateManager = multiIdentityManager(List.of(identityA, identityB));
-
-    OpcClientTransportConfig transportConfig = mock(OpcClientTransportConfig.class);
-    when(transportConfig.getExecutor()).thenReturn(Stack.sharedExecutor());
-    OpcClientTransport transport = mock(OpcClientTransport.class);
-    when(transport.getConfig()).thenReturn(transportConfig);
-
-    OpcUaClientConfig config =
-        OpcUaClientConfig.builder()
-            .setEndpoint(endpoint)
-            .setCertificateManager(certificateManager)
-            .setKeyPair(keyPairB)
-            .setCertificate(certificateB)
-            .build();
-    OpcUaClient client = new OpcUaClient(config, transport);
-
-    SecurityPolicyProfile profile = SecurityPolicy.Basic256Sha256.getProfile();
-    CertificateIdentity selected = client.getCertificateIdentity(profile).orElseThrow();
-
-    assertEquals(certificateB, selected.certificate());
-    // Repeated lookups (SecureChannel open and CreateSession) must resolve the same identity.
-    assertEquals(certificateB, client.getCertificateIdentity(profile).orElseThrow().certificate());
-  }
-
-  // setApplicationUri() is an explicit application identity choice and must override certificate
-  // SAN URIs, including the URI on the manager-selected identity.
-  @Test
-  public void explicitApplicationUriTakesPrecedence() throws Exception {
-    CertificateIdentity identity = identity("urn:eclipse:milo:test:managed", "group");
-    OpcUaClientConfig config =
-        OpcUaClientConfig.builder()
-            .setEndpoint(endpoint)
-            .setCertificateManager(multiIdentityManager(List.of(identity)))
-            .setApplicationUri("urn:eclipse:milo:test:explicit")
-            .build();
-
-    OpcUaClient client = client(config);
-
-    assertEquals("urn:eclipse:milo:test:explicit", client.resolveApplicationUri(null));
-  }
-
-  // The certificate presented for the endpoint defines the application instance, so its URI must
-  // win over a legacy fixed certificate that is only retained as a compatibility fallback.
-  @Test
-  public void selectedIdentityApplicationUriTakesPrecedenceOverFixedCertificate() throws Exception {
-    CertificateIdentity identity = identity("urn:eclipse:milo:test:managed", "group");
-    X509Certificate fixedCertificate = certificate("urn:eclipse:milo:test:fixed");
-    OpcUaClientConfig config =
-        OpcUaClientConfig.builder()
-            .setEndpoint(endpoint)
-            .setCertificateManager(multiIdentityManager(List.of(identity)))
-            .setCertificateIdentitySelector(context -> Optional.of(identity))
-            .setCertificate(fixedCertificate)
-            .build();
-
-    OpcUaClient client = client(config);
-
-    assertEquals(
-        "urn:eclipse:milo:test:managed",
-        client.resolveApplicationUri(client.getCertificateIdentity(profile()).orElse(null)));
-  }
-
-  // An explicit certificate outside the manager makes selection empty. Its SAN URI must still be
-  // used with the fixed key material selected by the compatibility fallback.
-  @Test
-  public void fixedCertificateApplicationUriIsCompatibilityFallback() throws Exception {
-    X509Certificate fixedCertificate = certificate("urn:eclipse:milo:test:fixed");
-    OpcUaClientConfig config =
-        OpcUaClientConfig.builder()
-            .setEndpoint(endpoint)
-            .setCertificateManager(multiIdentityManager(List.of()))
-            .setCertificate(fixedCertificate)
-            .build();
-
-    OpcUaClient client = client(config);
-
-    assertEquals(
-        "urn:eclipse:milo:test:fixed",
-        client.resolveApplicationUri(client.getCertificateIdentity(profile()).orElse(null)));
-  }
-
-  // The placeholder remains a last resort for certificate-less clients and certificates without a
-  // SAN URI.
-  @Test
-  public void applicationUriPlaceholderIsUsedLast() throws Exception {
-    OpcUaClientConfig config = OpcUaClientConfig.builder().setEndpoint(endpoint).build();
-
-    OpcUaClient client = client(config);
-
-    assertEquals(
-        "urn:eclipse:milo:client:applicationUriNotConfigured", client.resolveApplicationUri(null));
-  }
-
-  // A None endpoint presents no identity, but the client is still the same application. When every
-  // manager identity carries the same URI, that URI must be advertised instead of the placeholder,
-  // so servers see one ApplicationUri across secure and None connections.
-  @Test
-  public void managerApplicationUriIsUsedWhenNoIdentityIsPresented() throws Exception {
-    CertificateIdentity identityA = identity("urn:eclipse:milo:test:managed", "groupA");
-    CertificateIdentity identityB = identity("urn:eclipse:milo:test:managed", "groupB");
-    OpcUaClientConfig config =
-        OpcUaClientConfig.builder()
-            .setEndpoint(endpoint)
-            .setCertificateManager(multiIdentityManager(List.of(identityA, identityB)))
-            .build();
-
-    OpcUaClient client = client(config);
-
-    assertEquals("urn:eclipse:milo:test:managed", client.resolveApplicationUri(null));
-  }
-
-  // Manager identities with differing URIs cannot define the application, so the placeholder
-  // remains when no identity is presented.
-  @Test
-  public void differingManagerApplicationUrisFallBackToPlaceholder() throws Exception {
-    CertificateIdentity identityA = identity("urn:eclipse:milo:test:a", "groupA");
-    CertificateIdentity identityB = identity("urn:eclipse:milo:test:b", "groupB");
-    OpcUaClientConfig config =
-        OpcUaClientConfig.builder()
-            .setEndpoint(endpoint)
-            .setCertificateManager(multiIdentityManager(List.of(identityA, identityB)))
-            .build();
-
-    OpcUaClient client = client(config);
-
-    assertEquals(
-        "urn:eclipse:milo:client:applicationUriNotConfigured", client.resolveApplicationUri(null));
-  }
-
-  // URI inference is best-effort. A None connection must retain the placeholder when a custom
-  // manager cannot enumerate identities, instead of failing session creation.
-  @Test
-  public void managerFailureFallsBackToPlaceholder() {
-    CertificateManager certificateManager = mock(CertificateManager.class);
-    when(certificateManager.getCertificateIdentities())
-        .thenThrow(new IllegalStateException("identity store unavailable"));
-    OpcUaClientConfig config =
-        OpcUaClientConfig.builder()
-            .setEndpoint(endpoint)
-            .setCertificateManager(certificateManager)
-            .build();
-
-    OpcUaClient client = client(config);
-
-    assertEquals(
-        "urn:eclipse:milo:client:applicationUriNotConfigured", client.resolveApplicationUri(null));
-  }
-
-  // A configured certificate is still presented on a None connection. If it has no SAN URI, a URI
-  // from an unrelated managed identity must not be advertised as though it described that
-  // certificate.
-  @Test
-  public void managerApplicationUriDoesNotReplaceMissingFixedCertificateUri() throws Exception {
-    KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
-    X509Certificate certificateWithoutSanUri =
-        new SelfSignedCertificateBuilder(keyPair)
-            .setApplicationUri(null)
-            .addDnsName("localhost")
-            .build();
-    CertificateIdentity managed = identity("urn:eclipse:milo:test:managed", "group");
-    OpcUaClientConfig config =
-        OpcUaClientConfig.builder()
-            .setEndpoint(endpoint)
-            .setCertificateManager(multiIdentityManager(List.of(managed)))
-            .setCertificate(certificateWithoutSanUri)
-            .build();
-
-    OpcUaClient client = client(config);
-
-    assertEquals(
-        "urn:eclipse:milo:client:applicationUriNotConfigured", client.resolveApplicationUri(null));
-  }
-
-  // A selected identity without a SAN URI cannot define the ApplicationUri. The fixed certificate
-  // remains the next compatibility source before the placeholder.
-  @Test
-  public void fixedCertificateApplicationUriFollowsSelectedIdentityWithoutSanUri()
-      throws Exception {
-    KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
-    X509Certificate certificateWithoutSanUri =
-        new SelfSignedCertificateBuilder(keyPair)
-            .setApplicationUri(null)
-            .addDnsName("localhost")
-            .build();
-    CertificateIdentity identity = identity(keyPair, certificateWithoutSanUri, "group");
-    X509Certificate fixedCertificate = certificate("urn:eclipse:milo:test:fixed");
-    OpcUaClientConfig config =
-        OpcUaClientConfig.builder()
-            .setEndpoint(endpoint)
-            .setCertificateManager(multiIdentityManager(List.of(identity)))
-            .setCertificate(fixedCertificate)
-            .build();
-
-    OpcUaClient client = client(config);
-
-    assertEquals("urn:eclipse:milo:test:fixed", client.resolveApplicationUri(identity));
-  }
-
-  // SecureChannel setup selects first. Session creation must derive the URI from that cached
-  // identity even when other manager identities carry a different ApplicationUri.
-  @Test
-  public void applicationUriUsesCachedSelectedIdentityWhenManagerUrisDiffer() throws Exception {
-    CertificateIdentity identityA = identity("urn:eclipse:milo:test:a", "groupA");
-    CertificateIdentity identityB = identity("urn:eclipse:milo:test:b", "groupB");
-    AtomicInteger selections = new AtomicInteger();
-    CertificateIdentitySelector selector =
-        context -> Optional.of(selections.getAndIncrement() == 0 ? identityA : identityB);
-    OpcUaClientConfig config =
-        OpcUaClientConfig.builder()
-            .setEndpoint(endpoint)
-            .setCertificateManager(multiIdentityManager(List.of(identityA, identityB)))
-            .setCertificateIdentitySelector(selector)
-            .build();
-
-    OpcUaClient client = client(config);
-    SecurityPolicyProfile profile = SecurityPolicy.Basic256Sha256.getProfile();
-
-    assertSame(identityA, client.getCertificateIdentity(profile).orElseThrow());
-    assertEquals(
-        "urn:eclipse:milo:test:a",
-        client.resolveApplicationUri(client.getCertificateIdentity(profile).orElse(null)));
-    assertEquals(1, selections.get());
-  }
-
-  // CreateSession must send the URI from the same effective identity whose certificate it places in
-  // the request, otherwise servers reject ActivateSession with Bad_CertificateUriInvalid.
-  @Test
-  public void createSessionUsesSelectedIdentityApplicationUri() throws Exception {
-    CertificateIdentity identity = identity("urn:eclipse:milo:test:managed", "group");
-    OpcUaClientConfig config =
-        OpcUaClientConfig.builder()
-            .setEndpoint(secureEndpoint(identity.certificate()))
-            .setCertificateManager(multiIdentityManager(List.of(identity)))
-            .build();
-    CapturingClientTransport transport = new CapturingClientTransport();
-    OpcUaClient client = new OpcUaClient(config, transport);
-    CompletableFuture<OpcUaClient> connectFuture = client.connectAsync();
-
-    try {
-      CreateSessionRequest request = transport.createSessionRequest.get(5, TimeUnit.SECONDS);
-
-      assertEquals(
-          "urn:eclipse:milo:test:managed", request.getClientDescription().getApplicationUri());
-      assertArrayEquals(
-          identity.certificate().getEncoded(), request.getClientCertificate().bytes());
-    } finally {
-      transport.releasePending();
-      client.disconnectAsync().get(5, TimeUnit.SECONDS);
-      connectFuture.cancel(true);
+      assertInstanceOf(
+          CertificateValidator.InsecureCertificateValidator.class,
+          config.getCertificateValidator());
     }
   }
 
-  private static CertificateManager multiIdentityManager(List<CertificateIdentity> identities) {
-    return new CertificateManager() {
-      @Override
-      public List<CertificateIdentity> getCertificateIdentities() {
-        return identities;
-      }
+  @Nested
+  class IdentitySelection {
 
-      @Override
-      public Optional<KeyPair> getKeyPair(ByteString thumbprint) {
-        return Optional.empty();
-      }
+    // One group can hold an identity per key family. The endpoint policy must choose the matching
+    // family, never an RSA certificate for an ECC channel or the reverse.
+    @Test
+    public void endpointProfileSelectsMatchingIdentityFromMixedGroup() throws Exception {
+      CertificateMaterial rsa = rsaMaterial(MANAGED_URI);
+      CertificateMaterial ecc = eccNistP256Material(MANAGED_URI);
+      OpcUaClientConfig config =
+          builder().setCertificateGroup(new TestCertificateGroup(rsa, ecc)).build();
 
-      @Override
-      public Optional<X509Certificate> getCertificate(ByteString thumbprint) {
-        return Optional.empty();
-      }
+      CertificateIdentity rsaIdentity =
+          config.getCertificateIdentity(SecurityPolicy.Basic256Sha256.getProfile()).orElseThrow();
+      CertificateIdentity eccIdentity =
+          config
+              .getCertificateIdentity(SecurityPolicy.ECC_nistP256_AesGcm.getProfile())
+              .orElseThrow();
 
-      @Override
-      public Optional<X509Certificate[]> getCertificateChain(ByteString thumbprint) {
-        return Optional.empty();
-      }
+      assertEquals(rsa.certificate(), rsaIdentity.certificate());
+      assertEquals(ecc.certificate(), eccIdentity.certificate());
+    }
 
-      @Override
-      public Optional<CertificateGroup> getCertificateGroup(ByteString thumbprint) {
-        return Optional.empty();
-      }
+    // Basic256 accepts both RsaSha256 and RsaMin identities and prefers RsaSha256. A configured
+    // certificate type must redirect that preference so an operator can pin a specific certificate.
+    @Test
+    public void configuredCertificateTypeIsPreferredWithinProfile() throws Exception {
+      CertificateMaterial rsaSha256 =
+          rsaMaterial(NodeIds.RsaSha256ApplicationCertificateType, MANAGED_URI);
+      CertificateMaterial rsaMin =
+          rsaMaterial(NodeIds.RsaMinApplicationCertificateType, MANAGED_URI);
+      CertificateGroup certificateGroup = new TestCertificateGroup(rsaSha256, rsaMin);
+      SecurityPolicyProfile profile = SecurityPolicy.Basic256.getProfile();
 
-      @Override
-      public Optional<CertificateGroup> getCertificateGroup(NodeId certificateGroupId) {
-        return Optional.empty();
-      }
+      OpcUaClientConfig pinned =
+          builder()
+              .setCertificateGroup(certificateGroup)
+              .setCertificateTypeId(NodeIds.RsaMinApplicationCertificateType)
+              .build();
+      OpcUaClientConfig unpinned = builder().setCertificateGroup(certificateGroup).build();
 
-      @Override
-      public List<CertificateGroup> getCertificateGroups() {
-        return List.of();
-      }
+      assertEquals(
+          rsaMin.certificate(), pinned.getCertificateIdentity(profile).orElseThrow().certificate());
+      assertEquals(
+          rsaSha256.certificate(),
+          unpinned.getCertificateIdentity(profile).orElseThrow().certificate(),
+          "without a configured type the policy-preferred type must win");
+    }
 
-      @Override
-      public CertificateQuarantine getCertificateQuarantine() {
-        throw new UnsupportedOperationException();
+    // The configured type is a preference among the policy's compatible identities, not a way to
+    // force an incompatible one: a group with nothing for the endpoint policy yields no identity.
+    @Test
+    public void groupWithoutCompatibleIdentityYieldsEmpty() throws Exception {
+      OpcUaClientConfig config =
+          builder()
+              .setCertificateGroup(new TestCertificateGroup(rsaMaterial(MANAGED_URI)))
+              .setCertificateTypeId(NodeIds.EccNistP256ApplicationCertificateType)
+              .build();
+
+      assertTrue(
+          config.getCertificateIdentity(SecurityPolicy.ECC_nistP256_AesGcm.getProfile()).isEmpty());
+    }
+
+    // A secured endpoint cannot be used without an identity. The client must fail fast with
+    // Bad_ConfigurationError instead of sending a null certificate for the server to reject with a
+    // less actionable error.
+    @Test
+    public void connectFailsWithConfigurationErrorWhenGroupCannotSatisfyEndpoint()
+        throws Exception {
+
+      CertificateMaterial serverMaterial = rsaMaterial("urn:eclipse:milo:test:server");
+      CertificateGroup eccOnlyGroup = new TestCertificateGroup(eccNistP256Material(MANAGED_URI));
+      OpcUaClientConfig config =
+          OpcUaClientConfig.builder()
+              .setEndpoint(secureEndpoint(serverMaterial.certificate()))
+              .setCertificateGroup(eccOnlyGroup)
+              .build();
+      CapturingClientTransport transport = new CapturingClientTransport();
+      OpcUaClient client = new OpcUaClient(config, transport);
+
+      try {
+        ExecutionException e =
+            assertThrows(
+                ExecutionException.class, () -> client.connectAsync().get(5, TimeUnit.SECONDS));
+
+        UaException uaException = UaException.extract(e).orElseThrow();
+        assertEquals(StatusCodes.Bad_ConfigurationError, uaException.getStatusCode().value());
+        assertFalse(
+            transport.createSessionRequest.isDone(),
+            "no CreateSession request may be sent without a certificate identity");
+      } finally {
+        transport.releasePending();
+        client.disconnectAsync().get(5, TimeUnit.SECONDS);
       }
-    };
+    }
+
+    // forIdentity replaces the removed setKeyPair/setCertificate pin: a bare key pair and chain
+    // must become a selectable identity whose type is inferred from the certificate.
+    @Test
+    public void forIdentityBuildsGroupOfOneWithInferredType() throws Exception {
+      KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+      X509Certificate certificate = rsaCertificate(keyPair, MANAGED_URI);
+      DefaultCertificateGroup certificateGroup =
+          DefaultCertificateGroup.forIdentity(
+              keyPair,
+              chain(certificate),
+              new MemoryTrustListManager(),
+              new MemoryCertificateQuarantine(),
+              new CertificateValidator.InsecureCertificateValidator());
+      OpcUaClientConfig config = builder().setCertificateGroup(certificateGroup).build();
+
+      CertificateIdentity identity = config.getCertificateIdentity(profile()).orElseThrow();
+
+      assertEquals(certificate, identity.certificate());
+      assertEquals(NodeIds.RsaSha256ApplicationCertificateType, identity.certificateTypeId());
+      assertSame(certificateGroup, identity.certificateGroup());
+    }
+
+    // A private key that cannot sign for the certificate would only fail later at
+    // OpenSecureChannel; forIdentity must reject the mismatch up front.
+    @Test
+    public void forIdentityRejectsMismatchedKeyPair() throws Exception {
+      KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+      KeyPair otherKeyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+      X509Certificate certificate = rsaCertificate(keyPair, MANAGED_URI);
+
+      assertThrows(
+          IllegalArgumentException.class,
+          () ->
+              DefaultCertificateGroup.forIdentity(
+                  otherKeyPair,
+                  chain(certificate),
+                  new MemoryTrustListManager(),
+                  new MemoryCertificateQuarantine(),
+                  new CertificateValidator.InsecureCertificateValidator()));
+    }
+  }
+
+  @Nested
+  class IdentityCache {
+
+    // SecureChannel and Session setup must reuse one selected client identity for a connection.
+    @Test
+    public void clientCachesSelectedCertificateIdentity() throws Exception {
+      AtomicInteger selections = new AtomicInteger();
+      CertificateIdentitySelector certificateIdentitySelector =
+          context -> {
+            selections.incrementAndGet();
+            return Optional.empty();
+          };
+      OpcUaClientConfig config =
+          builder()
+              .setCertificateGroup(new TestCertificateGroup())
+              .setCertificateIdentitySelector(certificateIdentitySelector)
+              .build();
+      OpcUaClient client = client(config);
+
+      assertTrue(client.getCertificateIdentity(profile()).isEmpty());
+      assertTrue(client.getCertificateIdentity(profile()).isEmpty());
+      assertEquals(1, selections.get());
+    }
+
+    // The ActivateSession flow looks up the user-token profile identity between the channel/session
+    // certificate lookups. A per-profile cache must keep that interleaving from re-invoking a
+    // stateful selector for the endpoint profile, otherwise the session signature key could diverge
+    // from the channel certificate (Bad_ApplicationSignatureInvalid).
+    @Test
+    public void certificateIdentityCacheSurvivesInterleavedProfileLookups() throws Exception {
+      SecurityPolicyProfile endpointProfile = SecurityPolicy.Basic256Sha256.getProfile();
+      SecurityPolicyProfile tokenProfile = SecurityPolicy.Aes128_Sha256_RsaOaep.getProfile();
+
+      // Identity equality includes the owning group, so the same key material read back from three
+      // groups gives three distinguishable identities.
+      CertificateMaterial material = rsaMaterial(MANAGED_URI);
+      CertificateIdentity identityA = soleIdentity(new TestCertificateGroup(material));
+      CertificateIdentity identityB = soleIdentity(new TestCertificateGroup(material));
+      CertificateIdentity identityU = soleIdentity(new TestCertificateGroup(material));
+
+      // A stateful selector: the endpoint profile yields A on its first selection and B on every
+      // selection after, so a re-invocation would observably swap the endpoint identity.
+      AtomicInteger endpointSelections = new AtomicInteger();
+      Map<SecurityPolicyProfile, CertificateIdentity> tokenIdentities =
+          Map.of(tokenProfile, identityU);
+      CertificateIdentitySelector certificateIdentitySelector =
+          context -> {
+            CertificateIdentity tokenIdentity =
+                tokenIdentities.get(context.securityPolicyProfile());
+            if (tokenIdentity != null) {
+              return Optional.of(tokenIdentity);
+            }
+            return Optional.of(endpointSelections.getAndIncrement() == 0 ? identityA : identityB);
+          };
+
+      OpcUaClientConfig config =
+          builder()
+              .setCertificateGroup(identityA.certificateGroup())
+              .setCertificateIdentitySelector(certificateIdentitySelector)
+              .build();
+      OpcUaClient client = client(config);
+
+      assertSame(identityA, client.getCertificateIdentity(endpointProfile).orElseThrow());
+      assertSame(identityU, client.getCertificateIdentity(tokenProfile).orElseThrow());
+      assertSame(identityA, client.getCertificateIdentity(endpointProfile).orElseThrow());
+      assertEquals(1, endpointSelections.get());
+    }
+  }
+
+  @Nested
+  class ApplicationUri {
+
+    // setApplicationUri() is an explicit application identity choice and must override certificate
+    // SAN URIs, including the URI on the selected identity.
+    @Test
+    public void explicitApplicationUriTakesPrecedence() throws Exception {
+      CertificateGroup certificateGroup = new TestCertificateGroup(rsaMaterial(MANAGED_URI));
+      OpcUaClientConfig config =
+          builder()
+              .setCertificateGroup(certificateGroup)
+              .setApplicationUri("urn:eclipse:milo:test:explicit")
+              .build();
+
+      OpcUaClient client = client(config);
+
+      assertEquals("urn:eclipse:milo:test:explicit", client.resolveApplicationUri(null));
+      assertEquals(
+          "urn:eclipse:milo:test:explicit",
+          client.resolveApplicationUri(soleIdentity(certificateGroup)));
+    }
+
+    // The certificate presented on the connection defines the application instance; servers
+    // compare its SAN URI with the ApplicationDescription (Bad_CertificateUriInvalid).
+    @Test
+    public void selectedIdentityApplicationUriIsUsed() throws Exception {
+      CertificateGroup certificateGroup = new TestCertificateGroup(rsaMaterial(MANAGED_URI));
+      OpcUaClientConfig config = builder().setCertificateGroup(certificateGroup).build();
+
+      OpcUaClient client = client(config);
+
+      assertEquals(MANAGED_URI, client.resolveApplicationUri(soleIdentity(certificateGroup)));
+    }
+
+    // A selected identity without a SAN URI cannot define the ApplicationUri, and no other source
+    // may be substituted for the certificate actually presented.
+    @Test
+    public void selectedIdentityWithoutSanUriYieldsPlaceholder() throws Exception {
+      CertificateGroup certificateGroup = new TestCertificateGroup(rsaMaterialWithoutSanUri());
+      OpcUaClientConfig config = builder().setCertificateGroup(certificateGroup).build();
+
+      OpcUaClient client = client(config);
+
+      assertEquals(PLACEHOLDER_URI, client.resolveApplicationUri(soleIdentity(certificateGroup)));
+    }
+
+    // The placeholder remains a last resort for a client with no certificate group at all.
+    @Test
+    public void applicationUriPlaceholderIsUsedLast() {
+      OpcUaClientConfig config = builder().build();
+
+      OpcUaClient client = client(config);
+
+      assertEquals(PLACEHOLDER_URI, client.resolveApplicationUri(null));
+    }
+
+    // A None endpoint presents no identity, but the client is still the same application. When
+    // every identity in the group carries the same URI, that URI must be advertised instead of the
+    // placeholder, so servers see one ApplicationUri across secure and None connections.
+    @Test
+    public void groupApplicationUriIsUsedWhenNoIdentityIsPresented() throws Exception {
+      CertificateGroup certificateGroup =
+          new TestCertificateGroup(
+              rsaMaterial(NodeIds.RsaSha256ApplicationCertificateType, MANAGED_URI),
+              rsaMaterial(NodeIds.RsaMinApplicationCertificateType, MANAGED_URI));
+      OpcUaClientConfig config = builder().setCertificateGroup(certificateGroup).build();
+
+      OpcUaClient client = client(config);
+
+      assertEquals(MANAGED_URI, client.resolveApplicationUri(null));
+    }
+
+    // Group identities with differing URIs cannot define the application, so the placeholder
+    // remains when no identity is presented.
+    @Test
+    public void differingGroupApplicationUrisFallBackToPlaceholder() throws Exception {
+      CertificateGroup certificateGroup =
+          new TestCertificateGroup(
+              rsaMaterial(NodeIds.RsaSha256ApplicationCertificateType, "urn:eclipse:milo:test:a"),
+              rsaMaterial(NodeIds.RsaMinApplicationCertificateType, "urn:eclipse:milo:test:b"));
+      OpcUaClientConfig config = builder().setCertificateGroup(certificateGroup).build();
+
+      OpcUaClient client = client(config);
+
+      assertEquals(PLACEHOLDER_URI, client.resolveApplicationUri(null));
+    }
+
+    // URI inference is best-effort. A None connection must retain the placeholder when a custom
+    // group cannot enumerate its identities, instead of failing session creation.
+    @Test
+    public void groupFailureFallsBackToPlaceholder() {
+      CertificateGroup certificateGroup = mock(CertificateGroup.class);
+      when(certificateGroup.getCertificateIdentities())
+          .thenThrow(new IllegalStateException("identity store unavailable"));
+      when(certificateGroup.getCertificateValidator())
+          .thenReturn(new CertificateValidator.InsecureCertificateValidator());
+      OpcUaClientConfig config = builder().setCertificateGroup(certificateGroup).build();
+
+      OpcUaClient client = client(config);
+
+      assertEquals(PLACEHOLDER_URI, client.resolveApplicationUri(null));
+    }
+
+    // SecureChannel setup selects first. Session creation must derive the URI from that cached
+    // identity even when other identities in the group carry a different ApplicationUri.
+    @Test
+    public void applicationUriUsesCachedSelectedIdentityWhenGroupUrisDiffer() throws Exception {
+      CertificateGroup certificateGroup =
+          new TestCertificateGroup(
+              rsaMaterial(NodeIds.RsaSha256ApplicationCertificateType, "urn:eclipse:milo:test:a"),
+              rsaMaterial(NodeIds.RsaMinApplicationCertificateType, "urn:eclipse:milo:test:b"));
+      CertificateIdentity identityA =
+          identity(certificateGroup, NodeIds.RsaSha256ApplicationCertificateType);
+      CertificateIdentity identityB =
+          identity(certificateGroup, NodeIds.RsaMinApplicationCertificateType);
+      AtomicInteger selections = new AtomicInteger();
+      CertificateIdentitySelector selector =
+          context -> Optional.of(selections.getAndIncrement() == 0 ? identityA : identityB);
+      OpcUaClientConfig config =
+          builder()
+              .setCertificateGroup(certificateGroup)
+              .setCertificateIdentitySelector(selector)
+              .build();
+
+      OpcUaClient client = client(config);
+
+      assertSame(identityA, client.getCertificateIdentity(profile()).orElseThrow());
+      assertEquals(
+          "urn:eclipse:milo:test:a",
+          client.resolveApplicationUri(client.getCertificateIdentity(profile()).orElse(null)));
+      assertEquals(1, selections.get());
+    }
+
+    // CreateSession must send the URI from the same effective identity whose certificate it places
+    // in the request, otherwise servers reject ActivateSession with Bad_CertificateUriInvalid.
+    @Test
+    public void createSessionUsesSelectedIdentityApplicationUri() throws Exception {
+      CertificateGroup certificateGroup = new TestCertificateGroup(rsaMaterial(MANAGED_URI));
+      CertificateIdentity identity = soleIdentity(certificateGroup);
+      OpcUaClientConfig config =
+          OpcUaClientConfig.builder()
+              .setEndpoint(secureEndpoint(identity.certificate()))
+              .setCertificateGroup(certificateGroup)
+              .build();
+      CapturingClientTransport transport = new CapturingClientTransport();
+      OpcUaClient client = new OpcUaClient(config, transport);
+      CompletableFuture<OpcUaClient> connectFuture = client.connectAsync();
+
+      try {
+        CreateSessionRequest request = transport.createSessionRequest.get(5, TimeUnit.SECONDS);
+
+        assertEquals(MANAGED_URI, request.getClientDescription().getApplicationUri());
+        assertArrayEquals(
+            identity.certificate().getEncoded(), request.getClientCertificate().bytes());
+      } finally {
+        transport.releasePending();
+        client.disconnectAsync().get(5, TimeUnit.SECONDS);
+        connectFuture.cancel(true);
+      }
+    }
+  }
+
+  private OpcUaClientConfigBuilder builder() {
+    return OpcUaClientConfig.builder().setEndpoint(endpoint);
+  }
+
+  private static CertificateIdentity soleIdentity(CertificateGroup certificateGroup) {
+    List<CertificateIdentity> identities = certificateGroup.getCertificateIdentities();
+    assertEquals(1, identities.size(), "expected a group of one");
+    return identities.get(0);
   }
 
   private static CertificateIdentity identity(
-      KeyPair keyPair, X509Certificate certificate, String group) {
+      CertificateGroup certificateGroup, NodeId certificateTypeId) {
 
-    return new CertificateIdentity(
-        new NodeId(0, group),
-        NodeIds.RsaSha256ApplicationCertificateType,
-        keyPair,
-        new X509Certificate[] {certificate});
+    return certificateGroup.getCertificateIdentities().stream()
+        .filter(identity -> certificateTypeId.equals(identity.certificateTypeId()))
+        .findFirst()
+        .orElseThrow();
   }
 
-  private static CertificateIdentity identity(String applicationUri, String group)
+  private static CertificateMaterial rsaMaterial(String applicationUri) throws Exception {
+    return rsaMaterial(NodeIds.RsaSha256ApplicationCertificateType, applicationUri);
+  }
+
+  private static CertificateMaterial rsaMaterial(NodeId certificateTypeId, String applicationUri)
       throws Exception {
+
     KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
-    return identity(keyPair, certificate(keyPair, applicationUri), group);
+    return new CertificateMaterial(
+        certificateTypeId, keyPair, chain(rsaCertificate(keyPair, applicationUri)));
   }
 
-  private static X509Certificate rsaCertificate(KeyPair keyPair) throws Exception {
-    return certificate(keyPair, "urn:eclipse:milo:test:certificate-identity-cache");
+  private static CertificateMaterial rsaMaterialWithoutSanUri() throws Exception {
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    X509Certificate certificate =
+        new SelfSignedCertificateBuilder(keyPair)
+            .setCommonName("certificate-group-test")
+            .setApplicationUri(null)
+            .addDnsName("localhost")
+            .build();
+    return new CertificateMaterial(
+        NodeIds.RsaSha256ApplicationCertificateType, keyPair, chain(certificate));
   }
 
-  private static X509Certificate certificate(String applicationUri) throws Exception {
-    return certificate(SelfSignedCertificateGenerator.generateRsaKeyPair(2048), applicationUri);
+  private static CertificateMaterial eccNistP256Material(String applicationUri) throws Exception {
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateNistP256KeyPair();
+    X509Certificate certificate =
+        SelfSignedCertificateBuilder.forEccApplicationCertificate(keyPair)
+            .setCommonName("certificate-group-test")
+            .setApplicationUri(applicationUri)
+            .addDnsName("localhost")
+            .build();
+    return new CertificateMaterial(
+        NodeIds.EccNistP256ApplicationCertificateType, keyPair, chain(certificate));
   }
 
-  private static X509Certificate certificate(KeyPair keyPair, String applicationUri)
+  private static X509Certificate rsaCertificate(KeyPair keyPair, String applicationUri)
       throws Exception {
+
     return new SelfSignedCertificateBuilder(keyPair)
-        .setCommonName("certificate-identity-cache-test")
+        .setCommonName("certificate-group-test")
         .setApplicationUri(applicationUri)
         .addDnsName("localhost")
         .build();
+  }
+
+  private static X509Certificate[] chain(X509Certificate certificate) {
+    return new X509Certificate[] {certificate};
   }
 
   private static OpcUaClient client(OpcUaClientConfig config) {
@@ -670,6 +737,93 @@ public class OpcUaClientConfigTest {
         },
         Stack.TCP_UASC_UABINARY_TRANSPORT_URI,
         null);
+  }
+
+  private record CertificateMaterial(
+      NodeId certificateTypeId, KeyPair keyPair, X509Certificate[] certificateChain) {
+
+    X509Certificate certificate() {
+      return certificateChain[0];
+    }
+  }
+
+  /**
+   * A {@link CertificateGroup} over fixed in-memory identities, so a test can compose the client's
+   * single group from any mix of certificate types without a store or trust list. Identities are
+   * read back through {@link #getCertificateIdentities()} because identity equality includes the
+   * owning group.
+   */
+  private static final class TestCertificateGroup implements CertificateGroup {
+
+    private final CertificateValidator certificateValidator;
+    private final List<CertificateMaterial> certificates;
+
+    TestCertificateGroup(CertificateMaterial... certificates) {
+      this(new CertificateValidator.InsecureCertificateValidator(), certificates);
+    }
+
+    TestCertificateGroup(
+        CertificateValidator certificateValidator, CertificateMaterial... certificates) {
+
+      this.certificateValidator = certificateValidator;
+      this.certificates = List.of(certificates);
+    }
+
+    @Override
+    public List<NodeId> getSupportedCertificateTypeIds() {
+      return certificates.stream().map(CertificateMaterial::certificateTypeId).distinct().toList();
+    }
+
+    @Override
+    public TrustListManager getTrustListManager() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CertificateQuarantine getCertificateQuarantine() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<Entry> getCertificateEntries() {
+      return certificates.stream()
+          .map(c -> new Entry(c.certificateTypeId(), c.certificateChain()))
+          .toList();
+    }
+
+    @Override
+    public boolean hasCertificate(NodeId certificateTypeId) {
+      return find(certificateTypeId).isPresent();
+    }
+
+    @Override
+    public Optional<KeyPair> getKeyPair(NodeId certificateTypeId) {
+      return find(certificateTypeId).map(CertificateMaterial::keyPair);
+    }
+
+    @Override
+    public Optional<X509Certificate[]> getCertificateChain(NodeId certificateTypeId) {
+      return find(certificateTypeId)
+          .map(CertificateMaterial::certificateChain)
+          .map(X509Certificate[]::clone);
+    }
+
+    @Override
+    public void updateCertificate(
+        NodeId certificateTypeId, KeyPair keyPair, X509Certificate[] certificateChain) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CertificateValidator getCertificateValidator() {
+      return certificateValidator;
+    }
+
+    private Optional<CertificateMaterial> find(NodeId certificateTypeId) {
+      return certificates.stream()
+          .filter(c -> certificateTypeId.equals(c.certificateTypeId()))
+          .findFirst();
+    }
   }
 
   private static final class CapturingClientTransport implements OpcClientTransport {

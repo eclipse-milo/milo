@@ -24,8 +24,6 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.HashedWheelTimer;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.security.KeyPair;
-import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -35,8 +33,10 @@ import org.eclipse.milo.opcua.stack.core.channel.ChannelParameters;
 import org.eclipse.milo.opcua.stack.core.channel.ChannelSecurity;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
@@ -286,17 +286,8 @@ class UascClientMessageHandlerRenewalTest {
       }
 
       @Override
-      public Optional<KeyPair> getKeyPair() {
-        return Optional.empty();
-      }
-
-      @Override
-      public Optional<X509Certificate> getCertificate() {
-        return Optional.empty();
-      }
-
-      @Override
-      public Optional<X509Certificate[]> getCertificateChain() {
+      public Optional<CertificateIdentity> getCertificateIdentity(
+          SecurityPolicyProfile securityPolicyProfile) {
         return Optional.empty();
       }
 

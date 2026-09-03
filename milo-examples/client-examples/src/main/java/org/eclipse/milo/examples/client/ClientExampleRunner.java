@@ -23,6 +23,7 @@ import org.eclipse.milo.examples.server.ExampleServer;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
+import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.DefaultClientCertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.FileBasedTrustListManager;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
@@ -80,9 +81,19 @@ public class ClientExampleRunner {
   private OpcUaClient createClient() throws Exception {
     KeyStoreLoader loader = new KeyStoreLoader().load(securityTempDir);
 
+    var certificateQuarantine = new MemoryCertificateQuarantine();
     var certificateValidator =
-        new DefaultClientCertificateValidator(
-            clientTrustListManager, new MemoryCertificateQuarantine());
+        new DefaultClientCertificateValidator(clientTrustListManager, certificateQuarantine);
+
+    // The example client has one key pair and certificate chain on hand. forIdentity wraps them in
+    // a group of one that shares the file-based trust list with the validator.
+    var certificateGroup =
+        DefaultCertificateGroup.forIdentity(
+            loader.getClientKeyPair(),
+            loader.getClientCertificateChain(),
+            clientTrustListManager,
+            certificateQuarantine,
+            certificateValidator);
 
     return OpcUaClient.create(
         clientExample.getEndpointUrl(),
@@ -92,9 +103,7 @@ public class ClientExampleRunner {
           clientConfigBuilder
               .setApplicationName(LocalizedText.english("eclipse milo opc-ua client"))
               .setApplicationUri("urn:eclipse:milo:examples:client")
-              .setKeyPair(loader.getClientKeyPair())
-              .setCertificate(loader.getClientCertificate())
-              .setCertificateChain(loader.getClientCertificateChain())
+              .setCertificateGroup(certificateGroup)
               .setCertificateValidator(certificateValidator)
               .setIdentityProvider(clientExample.getIdentityProvider());
           clientExample.configureClient(clientConfigBuilder);
@@ -118,14 +127,20 @@ public class ClientExampleRunner {
         // Make the example server trust the example client certificate by default.
         client
             .getConfig()
-            .getCertificate()
+            .getCertificateGroup()
             .ifPresent(
-                certificate ->
-                    certificateManager
-                        .getCertificateGroups()
+                clientGroup ->
+                    clientGroup
+                        .getCertificateIdentities()
                         .forEach(
-                            group ->
-                                group.getTrustListManager().addTrustedCertificate(certificate)));
+                            identity ->
+                                certificateManager
+                                    .getCertificateGroups()
+                                    .forEach(
+                                        group ->
+                                            group
+                                                .getTrustListManager()
+                                                .addTrustedCertificate(identity.certificate()))));
 
         // Make the example client trust the example server certificate by default.
         exampleServer
@@ -140,7 +155,7 @@ public class ClientExampleRunner {
                         .forEach(
                             entry ->
                                 clientTrustListManager.addTrustedCertificate(
-                                    entry.certificateChain[0])));
+                                    entry.certificateChain()[0])));
       }
 
       future.whenCompleteAsync(

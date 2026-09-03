@@ -191,6 +191,8 @@ for (NodeId groupId : gds.getCertificateGroups(applicationId)) {
     FinishRequestResult issued = gds.finishRequest(applicationId, requestId);
     X509Certificate certificate = CertificateUtil.decodeCertificate(issued.certificate().bytesOrEmpty());
     GdsClient.verifyIssuedCertificate(certificate, keyPair.getPublic(), applicationUri);
+    certificateGroup.updateCertificate(
+        NodeIds.RsaSha256ApplicationCertificateType, keyPair, new X509Certificate[] {certificate});
   }
 
   NodeId trustListId = gds.getTrustList(applicationId, groupId);
@@ -210,6 +212,15 @@ should run on a channel using the same certificate as the matching start request
 key and ApplicationUri before it is installed. A certificate for the wrong key cannot be used for
 the channel and one with the wrong ApplicationUri is rejected by every peer, and neither problem is
 otherwise visible until a connection fails.
+
+The install target on the application side is a `CertificateGroup`: the issued certificate goes in
+through `updateCertificate` and the pulled trust list through the group's `TrustListManager`. A
+client that pulls therefore configures the group through
+`OpcUaClientConfigBuilder.setCertificateGroup`. A
+client configures exactly one group and never names it; the `certificateGroupId` arguments above
+are the GDS's NodeIds, not the application's.
+A server that pulls for several of its own groups registers each under its `CertificateGroupType`
+NodeId in its `CertificateManager` and keeps its own mapping from GDS group ids to local groups.
 
 Use the group ids returned by `getCertificateGroups`. The OPC Foundation reference GDS identifies
 its default application group in the GDS namespace as

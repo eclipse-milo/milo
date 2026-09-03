@@ -23,7 +23,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -39,12 +38,11 @@ import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.SecureChannel;
 import org.eclipse.milo.opcua.stack.core.channel.ServerSecureChannel;
-import org.eclipse.milo.opcua.stack.core.security.CertificateFactory;
 import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
+import org.eclipse.milo.opcua.stack.core.security.CertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
-import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.TrustListManager;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
@@ -585,10 +583,13 @@ public class SessionEndpointBindingTest {
   }
 
   private static CertificateManager manager(TestCertificateGroup... groups) {
-    List<CertificateGroup> certificateGroups =
-        Arrays.stream(groups).map(CertificateGroup.class::cast).toList();
+    var certificateManager = new DefaultCertificateManager();
 
-    return new DefaultCertificateManager(new MemoryCertificateQuarantine(), certificateGroups);
+    for (TestCertificateGroup group : groups) {
+      certificateManager.addCertificateGroup(group.certificateGroupId(), group);
+    }
+
+    return certificateManager;
   }
 
   private static TestCertificateGroup group(NodeId groupId, CertificateMaterial... certificates) {
@@ -683,11 +684,6 @@ public class SessionEndpointBindingTest {
     }
 
     @Override
-    public NodeId getCertificateGroupId() {
-      return certificateGroupId;
-    }
-
-    @Override
     public List<NodeId> getSupportedCertificateTypeIds() {
       return List.copyOf(certificates.keySet());
     }
@@ -698,14 +694,17 @@ public class SessionEndpointBindingTest {
     }
 
     @Override
+    public boolean hasCertificate(NodeId certificateTypeId) {
+      return certificates.containsKey(certificateTypeId);
+    }
+
+    @Override
     public List<Entry> getCertificateEntries() {
       return certificates.values().stream()
           .map(
               certificate ->
                   new CertificateGroup.Entry(
-                      certificateGroupId,
-                      certificate.certificateTypeId(),
-                      certificate.certificateChain()))
+                      certificate.certificateTypeId(), certificate.certificateChain()))
           .toList();
     }
 
@@ -729,7 +728,7 @@ public class SessionEndpointBindingTest {
     }
 
     @Override
-    public CertificateFactory getCertificateFactory() {
+    public CertificateQuarantine getCertificateQuarantine() {
       throw new UnsupportedOperationException();
     }
 

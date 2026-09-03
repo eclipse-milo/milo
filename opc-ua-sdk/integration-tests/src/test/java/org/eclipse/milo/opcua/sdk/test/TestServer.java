@@ -39,7 +39,7 @@ import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.security.AbstractCertificateFactory;
-import org.eclipse.milo.opcua.stack.core.security.DefaultApplicationGroup;
+import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.DefaultServerCertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
@@ -188,12 +188,12 @@ public final class TestServer {
         new DefaultServerCertificateValidator(trustListManager, certificateQuarantine);
 
     var defaultGroup =
-        new DefaultApplicationGroup(
-            trustListManager, certificateStore, certificateFactory, certificateValidator);
+        new DefaultCertificateGroup(
+            trustListManager, certificateStore, certificateQuarantine, certificateValidator);
 
-    defaultGroup.createMissingCertificates();
+    certificateFactory.createMissingCertificates(defaultGroup);
 
-    var certificateManager = new DefaultCertificateManager(certificateQuarantine, defaultGroup);
+    var certificateManager = new DefaultCertificateManager(defaultGroup);
 
     TestIdentityCertificate identityCert1 = certificates.identityCert1();
     TestIdentityCertificate identityCert2 = certificates.identityCert2();

@@ -12,8 +12,6 @@ package org.eclipse.milo.opcua.sdk.client;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
-import java.security.KeyPair;
-import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -21,8 +19,8 @@ import org.eclipse.milo.opcua.sdk.client.identity.AnonymousProvider;
 import org.eclipse.milo.opcua.sdk.client.identity.IdentityProvider;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
 import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
+import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.CertificateIdentitySelector;
-import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateIdentitySelector;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
@@ -35,16 +33,11 @@ public class OpcUaClientConfigBuilder {
 
   private EndpointDescription endpoint;
   private List<EndpointDescription> discoveryEndpoints;
-  private KeyPair keyPair;
-  private X509Certificate certificate;
-  private X509Certificate[] certificateChain;
-  private CertificateManager certificateManager;
+  private @Nullable CertificateGroup certificateGroup;
   private CertificateIdentitySelector certificateIdentitySelector =
       DefaultCertificateIdentitySelector.create();
-  private @Nullable NodeId certificateGroupId;
   private @Nullable NodeId certificateTypeId;
-  private CertificateValidator certificateValidator =
-      new CertificateValidator.InsecureCertificateValidator();
+  private @Nullable CertificateValidator certificateValidator;
 
   private LocalizedText applicationName =
       LocalizedText.english("Eclipse Milo application name not configured");
@@ -168,29 +161,27 @@ public class OpcUaClientConfigBuilder {
     return this;
   }
 
-  public OpcUaClientConfigBuilder setKeyPair(KeyPair keyPair) {
-    this.keyPair = keyPair;
-    return this;
-  }
-
-  public OpcUaClientConfigBuilder setCertificate(X509Certificate certificate) {
-    this.certificate = certificate;
-    return this;
-  }
-
-  public OpcUaClientConfigBuilder setCertificateChain(X509Certificate[] certificateChain) {
-    this.certificateChain = certificateChain;
-    return this;
-  }
-
   /**
-   * Set the certificate manager used for policy-aware client certificate selection.
+   * Set the {@link CertificateGroup} holding this client's identity and trust material.
    *
-   * @param certificateManager the certificate manager to search.
+   * <p>The client selects the identity it presents on a secured endpoint from this group. Unless
+   * {@link #setCertificateValidator} is also called, the group's validator validates server
+   * certificates.
+   *
+   * <p>A single key pair and certificate chain become a group through {@code
+   * DefaultCertificateGroup.forIdentity}:
+   *
+   * <pre>{@code
+   * builder.setCertificateGroup(
+   *     DefaultCertificateGroup.forIdentity(
+   *         keyPair, certificateChain, trustListManager, certificateQuarantine, validator));
+   * }</pre>
+   *
+   * @param certificateGroup the client's certificate group.
    * @return this builder.
    */
-  public OpcUaClientConfigBuilder setCertificateManager(CertificateManager certificateManager) {
-    this.certificateManager = certificateManager;
+  public OpcUaClientConfigBuilder setCertificateGroup(CertificateGroup certificateGroup) {
+    this.certificateGroup = certificateGroup;
     return this;
   }
 
@@ -208,17 +199,6 @@ public class OpcUaClientConfigBuilder {
   }
 
   /**
-   * Set the requested certificate group for client identity selection.
-   *
-   * @param certificateGroupId the certificate group ID, or {@code null} to allow any group.
-   * @return this builder.
-   */
-  public OpcUaClientConfigBuilder setCertificateGroupId(@Nullable NodeId certificateGroupId) {
-    this.certificateGroupId = certificateGroupId;
-    return this;
-  }
-
-  /**
    * Set the requested certificate type for client identity selection.
    *
    * @param certificateTypeId the certificate type ID, or {@code null} to let the endpoint security
@@ -230,6 +210,15 @@ public class OpcUaClientConfigBuilder {
     return this;
   }
 
+  /**
+   * Set the {@link CertificateValidator} used to validate server certificates.
+   *
+   * <p>Overrides the validator of the configured {@link CertificateGroup}. When neither this nor a
+   * group is set, server certificates are not validated.
+   *
+   * @param certificateValidator the validator for server certificates.
+   * @return this builder.
+   */
   public OpcUaClientConfigBuilder setCertificateValidator(
       CertificateValidator certificateValidator) {
     this.certificateValidator = certificateValidator;
@@ -249,17 +238,21 @@ public class OpcUaClientConfigBuilder {
               String.format("UaSession:%s:%s", applicationName.text(), System.currentTimeMillis());
     }
 
+    CertificateValidator effectiveCertificateValidator = certificateValidator;
+    if (effectiveCertificateValidator == null) {
+      effectiveCertificateValidator =
+          certificateGroup != null
+              ? certificateGroup.getCertificateValidator()
+              : new CertificateValidator.InsecureCertificateValidator();
+    }
+
     return new OpcUaClientConfigImpl(
         endpoint,
         discoveryEndpoints,
-        keyPair,
-        certificate,
-        certificateChain,
-        certificateManager,
+        certificateGroup,
         certificateIdentitySelector,
-        certificateGroupId,
         certificateTypeId,
-        certificateValidator,
+        effectiveCertificateValidator,
         applicationName,
         applicationUri,
         productUri,
@@ -282,12 +275,8 @@ public class OpcUaClientConfigBuilder {
 
     private final EndpointDescription endpoint;
     private final List<EndpointDescription> discoveryEndpoints;
-    private final KeyPair keyPair;
-    private final X509Certificate certificate;
-    private final X509Certificate[] certificateChain;
-    private final CertificateManager certificateManager;
+    private final @Nullable CertificateGroup certificateGroup;
     private final CertificateIdentitySelector certificateIdentitySelector;
-    private final @Nullable NodeId certificateGroupId;
     private final @Nullable NodeId certificateTypeId;
     private final CertificateValidator certificateValidator;
     private final LocalizedText applicationName;
@@ -311,12 +300,8 @@ public class OpcUaClientConfigBuilder {
     OpcUaClientConfigImpl(
         EndpointDescription endpoint,
         List<EndpointDescription> discoveryEndpoints,
-        KeyPair keyPair,
-        X509Certificate certificate,
-        X509Certificate[] certificateChain,
-        CertificateManager certificateManager,
+        @Nullable CertificateGroup certificateGroup,
         CertificateIdentitySelector certificateIdentitySelector,
-        @Nullable NodeId certificateGroupId,
         @Nullable NodeId certificateTypeId,
         CertificateValidator certificateValidator,
         LocalizedText applicationName,
@@ -338,12 +323,8 @@ public class OpcUaClientConfigBuilder {
 
       this.endpoint = endpoint;
       this.discoveryEndpoints = discoveryEndpoints;
-      this.keyPair = keyPair;
-      this.certificate = certificate;
-      this.certificateChain = certificateChain;
-      this.certificateManager = certificateManager;
+      this.certificateGroup = certificateGroup;
       this.certificateIdentitySelector = certificateIdentitySelector;
-      this.certificateGroupId = certificateGroupId;
       this.certificateTypeId = certificateTypeId;
       this.certificateValidator = certificateValidator;
       this.applicationName = applicationName;
@@ -375,33 +356,13 @@ public class OpcUaClientConfigBuilder {
     }
 
     @Override
-    public Optional<KeyPair> getKeyPair() {
-      return Optional.ofNullable(keyPair);
-    }
-
-    @Override
-    public Optional<X509Certificate> getCertificate() {
-      return Optional.ofNullable(certificate);
-    }
-
-    @Override
-    public Optional<X509Certificate[]> getCertificateChain() {
-      return Optional.ofNullable(certificateChain);
-    }
-
-    @Override
-    public Optional<CertificateManager> getCertificateManager() {
-      return Optional.ofNullable(certificateManager);
+    public Optional<CertificateGroup> getCertificateGroup() {
+      return Optional.ofNullable(certificateGroup);
     }
 
     @Override
     public CertificateIdentitySelector getCertificateIdentitySelector() {
       return certificateIdentitySelector;
-    }
-
-    @Override
-    public Optional<NodeId> getCertificateGroupId() {
-      return Optional.ofNullable(certificateGroupId);
     }
 
     @Override

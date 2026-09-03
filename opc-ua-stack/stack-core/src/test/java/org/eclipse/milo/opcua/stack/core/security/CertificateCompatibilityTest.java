@@ -17,6 +17,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.cert.X509Certificate;
+import java.util.Optional;
+import java.util.stream.Stream;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.cert.CertIOException;
@@ -24,11 +26,15 @@ import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
 import org.eclipse.milo.opcua.stack.core.util.validation.CaSignedCertificateBuilder;
 import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @NullMarked
 class CertificateCompatibilityTest {
@@ -343,6 +349,95 @@ class CertificateCompatibilityTest {
                 SecurityPolicy.ECC_nistP256_AesGcm.getProfile(),
                 NodeIds.EccNistP256ApplicationCertificateType,
                 certificate));
+  }
+
+  // Clients and DefaultCertificateGroup.forIdentity derive the certificate type from externally
+  // issued material, so every key family must map to the CertificateType that endpoint selection
+  // and Part 12 ServerConfiguration expect, and RSA must split on the SHA-1 signature boundary.
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("inferableCertificates")
+  void inferCertificateTypeIdMapsKeyFamilyAndSignatureToCertificateType(
+      String name, X509Certificate certificate, NodeId expectedCertificateTypeId) {
+
+    assertEquals(
+        Optional.of(expectedCertificateTypeId),
+        CertificateCompatibility.inferCertificateTypeId(certificate));
+  }
+
+  // A key no OPC UA security policy can use must not be forced into a nearby type; callers rely on
+  // empty to reject the configuration up front instead of failing during the handshake.
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("uninferableCertificates")
+  void inferCertificateTypeIdIsEmptyForUnsupportedKey(String name, X509Certificate certificate) {
+    assertEquals(Optional.empty(), CertificateCompatibility.inferCertificateTypeId(certificate));
+  }
+
+  static Stream<Arguments> inferableCertificates() throws Exception {
+    return Stream.of(
+        Arguments.of(
+            "RSA SHA-256",
+            buildRsaCertificate(SelfSignedCertificateBuilder.SA_SHA256_RSA),
+            NodeIds.RsaSha256ApplicationCertificateType),
+        Arguments.of(
+            "RSA SHA-1",
+            buildRsaCertificate(SelfSignedCertificateBuilder.SA_SHA1_RSA),
+            NodeIds.RsaMinApplicationCertificateType),
+        Arguments.of(
+            "NIST P-256",
+            buildEccApplicationCertificate(
+                SelfSignedCertificateGenerator.generateNistP256KeyPair()),
+            NodeIds.EccNistP256ApplicationCertificateType),
+        Arguments.of(
+            "NIST P-384",
+            buildEccApplicationCertificate(
+                SelfSignedCertificateGenerator.generateNistP384KeyPair()),
+            NodeIds.EccNistP384ApplicationCertificateType),
+        Arguments.of(
+            "Brainpool P-256r1",
+            buildEccApplicationCertificate(
+                SelfSignedCertificateGenerator.generateBrainpoolP256r1KeyPair()),
+            NodeIds.EccBrainpoolP256r1ApplicationCertificateType),
+        Arguments.of(
+            "Brainpool P-384r1",
+            buildEccApplicationCertificate(
+                SelfSignedCertificateGenerator.generateBrainpoolP384r1KeyPair()),
+            NodeIds.EccBrainpoolP384r1ApplicationCertificateType),
+        Arguments.of(
+            "Ed25519",
+            buildEccApplicationCertificate(SelfSignedCertificateGenerator.generateEd25519KeyPair()),
+            NodeIds.EccCurve25519ApplicationCertificateType),
+        Arguments.of(
+            "Ed448",
+            buildEccApplicationCertificate(SelfSignedCertificateGenerator.generateEd448KeyPair()),
+            NodeIds.EccCurve448ApplicationCertificateType));
+  }
+
+  static Stream<Arguments> uninferableCertificates() throws Exception {
+    return Stream.of(
+        Arguments.of("DSA", buildDsaCertificate()),
+        Arguments.of("X25519", buildX25519Certificate()));
+  }
+
+  private static X509Certificate buildRsaCertificate(String signatureAlgorithm) throws Exception {
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+
+    return new SelfSignedCertificateBuilder(keyPair)
+        .setSignatureAlgorithm(signatureAlgorithm)
+        .setApplicationUri("urn:eclipse:milo:test")
+        .addDnsName("localhost")
+        .build();
+  }
+
+  private static X509Certificate buildDsaCertificate() throws Exception {
+    KeyPairGenerator generator = KeyPairGenerator.getInstance("DSA");
+    generator.initialize(2048);
+    KeyPair keyPair = generator.generateKeyPair();
+
+    return new SelfSignedCertificateBuilder(keyPair)
+        .setSignatureAlgorithm("SHA256withDSA")
+        .setApplicationUri("urn:eclipse:milo:test")
+        .addDnsName("localhost")
+        .build();
   }
 
   private static X509Certificate buildEccApplicationCertificate(KeyPair keyPair) throws Exception {
