@@ -95,7 +95,7 @@ public class CloseSessionWrongChannelTest {
 
     ApplicationDescription clientDescription =
         new ApplicationDescription(
-            client.getConfig().getApplicationUri(),
+            client.resolveApplicationUri(null),
             client.getConfig().getProductUri(),
             client.getConfig().getApplicationName(),
             ApplicationType.Client,

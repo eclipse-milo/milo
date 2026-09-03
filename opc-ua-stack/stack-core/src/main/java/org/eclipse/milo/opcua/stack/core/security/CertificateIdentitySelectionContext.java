@@ -30,8 +30,9 @@ import org.jspecify.annotations.Nullable;
  *     be used.
  * @param certificateTypeId the preferred certificate type, or {@code null} if the policy should
  *     decide.
- * @param explicitCertificate an explicitly configured certificate to prefer when it is present in
- *     the manager, or {@code null}.
+ * @param explicitCertificate an explicitly configured certificate that pins selection to its
+ *     compatible manager identity, or {@code null}. Selectors return empty when the pinned
+ *     certificate is not available so callers can use fixed-certificate compatibility paths.
  */
 @NullMarked
 public record CertificateIdentitySelectionContext(

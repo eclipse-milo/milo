@@ -79,7 +79,60 @@ class DefaultCertificateIdentitySelectorTest {
     assertEquals(identity, selected.get());
   }
 
+  // An explicit certificate pins the configured identity. If it is external to the manager, the
+  // caller must receive Optional.empty so it can use the matching fixed key pair and chain.
+  @Test
+  void returnsEmptyWhenExplicitCertificateIsNotManaged() throws Exception {
+    CertificateIdentity managedIdentity =
+        rsaIdentity(KeyUsage.digitalSignature | KeyUsage.keyEncipherment);
+    CertificateIdentity explicitIdentity =
+        rsaIdentity(KeyUsage.digitalSignature | KeyUsage.keyEncipherment);
+
+    CertificateIdentitySelectionContext context =
+        CertificateIdentitySelectionContext.forClientConnectionSetup(
+            certificateManager(List.of(managedIdentity)),
+            SecurityPolicy.Basic256Sha256.getProfile(),
+            null,
+            null,
+            explicitIdentity.certificate());
+
+    Optional<CertificateIdentity> selected =
+        DefaultCertificateIdentitySelector.create().select(context);
+
+    assertTrue(selected.isEmpty());
+  }
+
+  // A manager entry for the explicit certificate must not allow selection to fall through to a
+  // different identity when the pinned identity is incompatible with the security policy.
+  @Test
+  void returnsEmptyWhenExplicitCertificateIsIncompatible() throws Exception {
+    CertificateIdentity compatibleIdentity =
+        rsaIdentity(KeyUsage.digitalSignature | KeyUsage.keyEncipherment);
+    CertificateIdentity explicitIdentity =
+        rsaIdentity(
+            NodeIds.RsaMinApplicationCertificateType,
+            KeyUsage.digitalSignature | KeyUsage.keyEncipherment);
+
+    CertificateIdentitySelectionContext context =
+        CertificateIdentitySelectionContext.forClientConnectionSetup(
+            certificateManager(List.of(compatibleIdentity, explicitIdentity)),
+            SecurityPolicy.Basic256Sha256.getProfile(),
+            null,
+            null,
+            explicitIdentity.certificate());
+
+    Optional<CertificateIdentity> selected =
+        DefaultCertificateIdentitySelector.create().select(context);
+
+    assertTrue(selected.isEmpty());
+  }
+
   private static CertificateIdentity rsaIdentity(int keyUsage) throws Exception {
+    return rsaIdentity(NodeIds.RsaSha256ApplicationCertificateType, keyUsage);
+  }
+
+  private static CertificateIdentity rsaIdentity(NodeId certificateTypeId, int keyUsage)
+      throws Exception {
     KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
     X509Certificate certificate =
         new SelfSignedCertificateBuilder(keyPair, new KeyUsageCertificateGenerator(keyUsage))
@@ -89,16 +142,20 @@ class DefaultCertificateIdentitySelectorTest {
 
     return new CertificateIdentity(
         NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup,
-        NodeIds.RsaSha256ApplicationCertificateType,
+        certificateTypeId,
         keyPair,
         new X509Certificate[] {certificate});
   }
 
   private static CertificateManager singleIdentityManager(CertificateIdentity identity) {
+    return certificateManager(List.of(identity));
+  }
+
+  private static CertificateManager certificateManager(List<CertificateIdentity> identities) {
     return new CertificateManager() {
       @Override
       public List<CertificateIdentity> getCertificateIdentities() {
-        return List.of(identity);
+        return identities;
       }
 
       @Override

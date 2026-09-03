@@ -159,10 +159,15 @@ public interface OpcUaClientConfig {
   LocalizedText getApplicationName();
 
   /**
-   * @return a URI for the client's application instance. This should be the same as the URI in the
-   *     client certificate, if present.
+   * The explicitly configured client application URI.
+   *
+   * <p>When empty, the client derives the URI from its effective certificate identity; see {@link
+   * OpcUaClient#resolveApplicationUri(CertificateIdentity)}.
+   *
+   * @return the explicitly configured client application URI, or empty when it should be derived
+   *     from the effective certificate identity.
    */
-  String getApplicationUri();
+  Optional<String> getApplicationUri();
 
   /**
    * @return the URI for the client's application product.
@@ -274,7 +279,7 @@ public interface OpcUaClientConfig {
     builder.setCertificateGroupId(config.getCertificateGroupId().orElse(null));
     builder.setCertificateTypeId(config.getCertificateTypeId().orElse(null));
     builder.setApplicationName(config.getApplicationName());
-    builder.setApplicationUri(config.getApplicationUri());
+    config.getApplicationUri().ifPresent(builder::setApplicationUri);
     builder.setProductUri(config.getProductUri());
     builder.setSessionName(config.getSessionName());
     builder.setSessionTimeout(config.getSessionTimeout());

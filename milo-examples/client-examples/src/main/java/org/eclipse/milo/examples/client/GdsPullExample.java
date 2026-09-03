@@ -76,7 +76,7 @@ public class GdsPullExample implements ClientExample {
     client.connect();
 
     GdsClient gds = GdsClient.create(client);
-    String applicationUri = client.getConfig().getApplicationUri();
+    String applicationUri = client.getConfig().getApplicationUri().orElseThrow();
 
     // Part 12 §6.4: look for an existing registration before creating one.
     ApplicationRecordDataType[] found = gds.findApplications(applicationUri);
@@ -171,7 +171,7 @@ public class GdsPullExample implements ClientExample {
   private static ApplicationRecordDataType clientRecord(OpcUaClient client) {
     return new ApplicationRecordDataType(
         NodeId.NULL_VALUE,
-        client.getConfig().getApplicationUri(),
+        client.getConfig().getApplicationUri().orElseThrow(),
         ApplicationType.Client,
         new LocalizedText[] {client.getConfig().getApplicationName()},
         client.getConfig().getProductUri(),

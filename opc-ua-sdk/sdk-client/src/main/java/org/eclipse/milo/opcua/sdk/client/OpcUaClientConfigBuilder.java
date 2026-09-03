@@ -48,7 +48,7 @@ public class OpcUaClientConfigBuilder {
 
   private LocalizedText applicationName =
       LocalizedText.english("Eclipse Milo application name not configured");
-  private String applicationUri = "urn:eclipse:milo:client:applicationUriNotConfigured";
+  private @Nullable String applicationUri;
   private String productUri = "https://github.com/eclipse-milo/milo";
 
   private Supplier<String> sessionName;
@@ -75,6 +75,15 @@ public class OpcUaClientConfigBuilder {
     return this;
   }
 
+  /**
+   * Set the client application URI explicitly.
+   *
+   * <p>An explicitly configured URI takes precedence over the URI in the effective client
+   * certificate identity.
+   *
+   * @param applicationUri the client application URI.
+   * @return this builder.
+   */
   public OpcUaClientConfigBuilder setApplicationUri(String applicationUri) {
     this.applicationUri = applicationUri;
     return this;
@@ -282,7 +291,7 @@ public class OpcUaClientConfigBuilder {
     private final @Nullable NodeId certificateTypeId;
     private final CertificateValidator certificateValidator;
     private final LocalizedText applicationName;
-    private final String applicationUri;
+    private final @Nullable String applicationUri;
     private final String productUri;
     private final Supplier<String> sessionName;
     private final String[] sessionLocaleIds;
@@ -311,7 +320,7 @@ public class OpcUaClientConfigBuilder {
         @Nullable NodeId certificateTypeId,
         CertificateValidator certificateValidator,
         LocalizedText applicationName,
-        String applicationUri,
+        @Nullable String applicationUri,
         String productUri,
         Supplier<String> sessionName,
         String[] sessionLocaleIds,
@@ -411,8 +420,8 @@ public class OpcUaClientConfigBuilder {
     }
 
     @Override
-    public String getApplicationUri() {
-      return applicationUri;
+    public Optional<String> getApplicationUri() {
+      return Optional.ofNullable(applicationUri);
     }
 
     @Override

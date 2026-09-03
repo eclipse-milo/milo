@@ -58,10 +58,12 @@ import org.eclipse.milo.opcua.stack.core.types.structured.GetEndpointsRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.GetEndpointsResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
+import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class EndpointConfigTest {
@@ -96,12 +98,11 @@ public class EndpointConfigTest {
                 .build());
   }
 
+  // Secure endpoints may defer certificate selection to the server's DefaultApplicationGroup.
   @Test
-  public void missingCertificateThrows() {
-    assertThrows(
-        IllegalStateException.class,
+  public void secureEndpointWithoutCertificateConfigurationIsAccepted() {
+    assertDoesNotThrow(
         () ->
-            // missing certificate
             EndpointConfig.newBuilder()
                 .setSecurityPolicy(SecurityPolicy.Basic128Rsa15)
                 .setSecurityMode(MessageSecurityMode.SignAndEncrypt)
@@ -200,6 +201,258 @@ public class EndpointConfigTest {
 
     assertArrayEquals(
         certificate.certificate().getEncoded(), description.getServerCertificate().bytesOrEmpty());
+  }
+
+  // An implicit managed certificate request is constrained to the DefaultApplicationGroup instead
+  // of selecting a compatible identity from an unrelated group.
+  @Test
+  public void secureEndpointDefaultsToManagedDefaultApplicationGroup() throws Exception {
+    CertificateMaterial other = rsaCertificate("other");
+    CertificateMaterial defaultApplication = rsaCertificate("default-application");
+    CertificateManager certificateManager =
+        manager(
+            group(new NodeId(2, "other-group"), other),
+            group(
+                NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup,
+                defaultApplication));
+
+    EndpointConfig endpoint =
+        EndpointConfig.newBuilder()
+            .setSecurityPolicy(SecurityPolicy.Basic256Sha256)
+            .setSecurityMode(MessageSecurityMode.SignAndEncrypt)
+            .build();
+
+    EndpointDescription description =
+        server(Set.of(endpoint), certificateManager)
+            .getApplicationContext()
+            .getEndpointDescriptions()
+            .get(0);
+
+    assertArrayEquals(
+        defaultApplication.certificate().getEncoded(),
+        description.getServerCertificate().bytesOrEmpty());
+  }
+
+  // Part 4 §5.7.3.1 encrypts username and issued-token secrets using the certificate advertised by
+  // a None endpoint. Selection must use the effective token policy profile, not
+  // SecurityPolicy.None.
+  @ParameterizedTest
+  @EnumSource(
+      value = UserTokenType.class,
+      names = {"UserName", "IssuedToken"})
+  public void encryptedUserTokenOnNoneEndpointUsesManagedCertificate(UserTokenType tokenType)
+      throws Exception {
+    CertificateMaterial rsaMin =
+        rsaCertificate(NodeIds.RsaMinApplicationCertificateType, "rsa-min");
+    CertificateMaterial rsaSha256 = rsaCertificate("rsa-sha256");
+    CertificateManager certificateManager =
+        manager(
+            group(
+                NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup,
+                rsaMin,
+                rsaSha256));
+    UserTokenPolicy tokenPolicy =
+        new UserTokenPolicy(
+            "encrypted", tokenType, null, null, SecurityPolicy.Basic256Sha256.getUri());
+    EndpointConfig endpoint = EndpointConfig.newBuilder().addTokenPolicy(tokenPolicy).build();
+
+    EndpointDescription description =
+        server(Set.of(endpoint), certificateManager)
+            .getApplicationContext()
+            .getEndpointDescriptions()
+            .get(0);
+
+    assertArrayEquals(
+        rsaSha256.certificate().getEncoded(), description.getServerCertificate().bytesOrEmpty());
+  }
+
+  // Enhanced token secrets cannot run on a None channel. They must not prevent a later usable RSA
+  // token policy from selecting the certificate that clients need for legacy secret encryption.
+  @Test
+  public void noneEndpointSkipsEnhancedTokenPolicyWhenSelectingCertificate() throws Exception {
+    CertificateMaterial rsaCertificate = rsaCertificate("rsa");
+    CertificateManager certificateManager =
+        manager(
+            group(
+                NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup,
+                rsaCertificate));
+    UserTokenPolicy enhancedPolicy =
+        new UserTokenPolicy(
+            "enhanced",
+            UserTokenType.UserName,
+            null,
+            null,
+            SecurityPolicy.ECC_nistP256_AesGcm.getUri());
+    UserTokenPolicy rsaPolicy =
+        new UserTokenPolicy(
+            "rsa", UserTokenType.UserName, null, null, SecurityPolicy.Basic256Sha256.getUri());
+    EndpointConfig endpoint =
+        EndpointConfig.newBuilder().addTokenPolicies(enhancedPolicy, rsaPolicy).build();
+
+    EndpointDescription description =
+        server(Set.of(endpoint), certificateManager)
+            .getApplicationContext()
+            .getEndpointDescriptions()
+            .get(0);
+
+    assertArrayEquals(
+        rsaCertificate.certificate().getEncoded(),
+        description.getServerCertificate().bytesOrEmpty());
+  }
+
+  // One advertised certificate only needs to support a usable token policy. Selection must keep
+  // trying when the available identity is incompatible with an earlier legacy policy.
+  @Test
+  public void noneEndpointTriesEachLegacyTokenPolicyWhenSelectingCertificate() throws Exception {
+    CertificateMaterial rsaMin =
+        rsaCertificate(NodeIds.RsaMinApplicationCertificateType, "rsa-min");
+    CertificateManager certificateManager =
+        manager(
+            group(NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup, rsaMin));
+    UserTokenPolicy rsaSha256Policy =
+        new UserTokenPolicy(
+            "rsa-sha256",
+            UserTokenType.UserName,
+            null,
+            null,
+            SecurityPolicy.Basic256Sha256.getUri());
+    UserTokenPolicy rsaMinPolicy =
+        new UserTokenPolicy(
+            "rsa-min", UserTokenType.UserName, null, null, SecurityPolicy.Basic128Rsa15.getUri());
+    EndpointConfig endpoint =
+        EndpointConfig.newBuilder().addTokenPolicies(rsaSha256Policy, rsaMinPolicy).build();
+
+    EndpointDescription description =
+        server(Set.of(endpoint), certificateManager)
+            .getApplicationContext()
+            .getEndpointDescriptions()
+            .get(0);
+
+    assertArrayEquals(
+        rsaMin.certificate().getEncoded(), description.getServerCertificate().bytesOrEmpty());
+  }
+
+  // Anonymous access over a None endpoint needs no certificate and must remain certificate-free
+  // even when the server has a managed application identity.
+  @Test
+  public void anonymousNoneEndpointRemainsCertificateFree() throws Exception {
+    CertificateMaterial managed = rsaCertificate("managed");
+    CertificateManager certificateManager =
+        manager(
+            group(NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup, managed));
+    EndpointConfig endpoint = EndpointConfig.newBuilder().build();
+
+    EndpointDescription description =
+        server(Set.of(endpoint), certificateManager)
+            .getApplicationContext()
+            .getEndpointDescriptions()
+            .get(0);
+
+    assertTrue(description.getServerCertificate().isNullOrEmpty());
+  }
+
+  // Before implicit selection existed, a None endpoint with an encrypted user token policy was
+  // advertised without a certificate. A server with no usable managed identity must keep that
+  // behavior so anonymous access still works, instead of losing the endpoint entirely.
+  @Test
+  public void encryptedUserTokenOnNoneEndpointWithoutIdentityStaysAdvertised() throws Exception {
+    UserTokenPolicy tokenPolicy =
+        new UserTokenPolicy(
+            "encrypted",
+            UserTokenType.UserName,
+            null,
+            null,
+            SecurityPolicy.Basic256Sha256.getUri());
+    EndpointConfig endpoint =
+        EndpointConfig.newBuilder()
+            .addTokenPolicy(EndpointConfig.Builder.USER_TOKEN_POLICY_ANONYMOUS)
+            .addTokenPolicy(tokenPolicy)
+            .build();
+
+    List<EndpointDescription> descriptions =
+        server(Set.of(endpoint), manager()).getApplicationContext().getEndpointDescriptions();
+
+    assertEquals(1, descriptions.size());
+    assertTrue(descriptions.get(0).getServerCertificate().isNullOrEmpty());
+  }
+
+  // A token policy with an unrecognized security policy URI cannot drive certificate selection.
+  // It must not cause the endpoint, and its other token policies, to be omitted.
+  @Test
+  public void unknownTokenSecurityPolicyDoesNotOmitNoneEndpoint() throws Exception {
+    UserTokenPolicy tokenPolicy =
+        new UserTokenPolicy(
+            "custom", UserTokenType.UserName, null, null, "http://example.com/UA/SecurityPolicy#X");
+    EndpointConfig endpoint =
+        EndpointConfig.newBuilder()
+            .addTokenPolicy(EndpointConfig.Builder.USER_TOKEN_POLICY_ANONYMOUS)
+            .addTokenPolicy(tokenPolicy)
+            .build();
+
+    List<EndpointDescription> descriptions =
+        server(Set.of(endpoint), manager()).getApplicationContext().getEndpointDescriptions();
+
+    assertEquals(1, descriptions.size());
+  }
+
+  // A fixed certificate remains authoritative on a None endpoint that encrypts user tokens, which
+  // preserves the legacy configuration path when a manager contains a different identity.
+  @Test
+  public void encryptedUserTokenOnNoneEndpointPreservesFixedCertificate() throws Exception {
+    CertificateMaterial fixed = rsaCertificate("fixed");
+    CertificateMaterial managed = rsaCertificate("managed");
+    CertificateManager certificateManager =
+        manager(
+            group(NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup, fixed),
+            group(new NodeId(2, "other-group"), managed));
+    UserTokenPolicy tokenPolicy =
+        new UserTokenPolicy(
+            "username", UserTokenType.UserName, null, null, SecurityPolicy.Basic256Sha256.getUri());
+    EndpointConfig endpoint =
+        EndpointConfig.newBuilder()
+            .setCertificate(fixed.certificate())
+            .addTokenPolicy(tokenPolicy)
+            .build();
+
+    EndpointDescription description =
+        server(Set.of(endpoint), certificateManager)
+            .getApplicationContext()
+            .getEndpointDescriptions()
+            .get(0);
+
+    assertArrayEquals(
+        fixed.certificate().getEncoded(), description.getServerCertificate().bytesOrEmpty());
+    assertTrue(
+        certificateManager.getKeyPair(CertificateUtil.thumbprint(fixed.certificate())).isPresent());
+  }
+
+  // An explicit selection request constrains a fixed certificate on a None endpoint just as it
+  // does on a secure endpoint. The server must omit the endpoint instead of silently replacing the
+  // pinned certificate with another group's identity.
+  @Test
+  public void certificateConfigConstrainsFixedCertificateOnNoneEndpoint() throws Exception {
+    CertificateMaterial fixed = rsaCertificate("fixed");
+    CertificateMaterial managed = rsaCertificate("managed");
+    CertificateManager certificateManager =
+        manager(
+            group(new NodeId(2, "fixed-group"), fixed),
+            group(NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup, managed));
+    UserTokenPolicy tokenPolicy =
+        new UserTokenPolicy(
+            "username", UserTokenType.UserName, null, null, SecurityPolicy.Basic256Sha256.getUri());
+    EndpointConfig endpoint =
+        EndpointConfig.newBuilder()
+            .setCertificate(fixed.certificate())
+            .setEndpointCertificateConfig(EndpointCertificateConfig.newBuilder().build())
+            .addTokenPolicy(tokenPolicy)
+            .build();
+
+    List<EndpointDescription> descriptions =
+        server(Set.of(endpoint), certificateManager)
+            .getApplicationContext()
+            .getEndpointDescriptions();
+
+    assertTrue(descriptions.isEmpty());
   }
 
   // Legacy fixed-certificate endpoints remain authoritative even when other managed identities
@@ -694,6 +947,12 @@ public class EndpointConfigTest {
 
   private static CertificateMaterial rsaCertificate(String commonName) throws Exception {
 
+    return rsaCertificate(NodeIds.RsaSha256ApplicationCertificateType, commonName);
+  }
+
+  private static CertificateMaterial rsaCertificate(NodeId certificateTypeId, String commonName)
+      throws Exception {
+
     KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
     X509Certificate certificate =
         new SelfSignedCertificateBuilder(keyPair)
@@ -702,8 +961,7 @@ public class EndpointConfigTest {
             .setApplicationUri("urn:test:" + commonName)
             .build();
 
-    return new CertificateMaterial(
-        NodeIds.RsaSha256ApplicationCertificateType, keyPair, new X509Certificate[] {certificate});
+    return new CertificateMaterial(certificateTypeId, keyPair, new X509Certificate[] {certificate});
   }
 
   private static CertificateMaterial nistP256Certificate() throws Exception {
