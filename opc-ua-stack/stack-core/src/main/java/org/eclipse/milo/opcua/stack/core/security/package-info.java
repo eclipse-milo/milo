@@ -70,7 +70,11 @@
  * <p>Certificate managers and certificate groups remain the source of local certificate identity
  * and trust material. Certificate validators enforce trust-list and certificate-chain decisions at
  * connection boundaries; callers should keep certificate lookup, trust configuration, and policy
- * selection coordinated through these APIs. {@link
+ * selection coordinated through these APIs. Operations that consume multiple trust lists should
+ * capture one {@link org.eclipse.milo.opcua.stack.core.security.TrustListSnapshot}, and operations
+ * that read and then change trust lists should do so through {@code TrustListManager.update}.
+ * Built-in trust list managers capture snapshots and apply updates atomically; custom managers
+ * should override those two methods when they need the same guarantee. {@link
  * org.eclipse.milo.opcua.stack.core.security.CertificateIdentity} represents a concrete local
  * identity selected from those sources for endpoint advertisement or SecureChannel setup. {@link
  * org.eclipse.milo.opcua.stack.core.security.CertificateCompatibility} contains the

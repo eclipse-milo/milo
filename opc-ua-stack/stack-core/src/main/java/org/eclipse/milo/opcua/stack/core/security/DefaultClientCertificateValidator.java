@@ -79,14 +79,15 @@ public class DefaultClientCertificateValidator implements CertificateValidator {
       @Nullable SecurityPolicyProfile securityPolicyProfile)
       throws UaException {
 
+    TrustListSnapshot trustListSnapshot = trustListManager.getSnapshot();
     PKIXCertPathBuilderResult certPathResult;
 
     try {
       certPathResult =
           CertificateValidationUtil.buildTrustedCertPath(
               certificateChain,
-              trustListManager.getTrustedCertificates(),
-              trustListManager.getIssuerCertificates());
+              trustListSnapshot.trustedCertificates(),
+              trustListSnapshot.issuerCertificates());
     } catch (UaException e) {
       certificateChain.forEach(certificateQuarantine::addRejectedCertificate);
 
@@ -97,8 +98,8 @@ public class DefaultClientCertificateValidator implements CertificateValidator {
 
     try {
       List<X509CRL> crls = new ArrayList<>();
-      crls.addAll(trustListManager.getTrustedCrls());
-      crls.addAll(trustListManager.getIssuerCrls());
+      crls.addAll(trustListSnapshot.trustedCrls());
+      crls.addAll(trustListSnapshot.issuerCrls());
 
       CertificateValidationUtil.validateTrustedCertPath(
           certPathResult.getCertPath(),

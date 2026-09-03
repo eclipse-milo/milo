@@ -118,12 +118,14 @@ capped so a chunk fits inside the client's `EncodingLimits.getMaxMessageSize()`.
 overload exists for unusual servers.
 
 `TrustListApplier.apply` reads `SpecifiedLists` as `TrustListMasks` bits and replaces each
-specified list in the `TrustListManager` in full (`setIssuerCertificates`,
-`setTrustedCertificates`, `setIssuerCrls`, `setTrustedCrls`, in that order). Unspecified lists are
-untouched. Replacement rather than merging is what the Pull Model calls for: each specified list
-is the complete authoritative list, and a merge could never remove a certificate the GDS dropped.
-All entries are decoded before the first replacement, so a malformed certificate or CRL rejects the
-update and leaves the manager as it was.
+specified list in the `TrustListManager` in full. Replacement rather than merging list entries is
+what the Pull Model calls for: each specified list is the complete authoritative list, and merging
+its entries could never remove a certificate the GDS dropped. All entries are decoded first, so a
+malformed certificate or CRL rejects the update without touching the manager. The decoded lists are
+then merged into the manager's current snapshot inside `TrustListManager.update`, which Milo's
+built-in managers run under their own synchronization. Unspecified lists therefore keep whatever
+value they hold at commit time, a concurrent change to one of them is not lost, and a validator
+reading `getSnapshot()` sees either the old lists or the new ones, never a mix.
 
 * * *
 
@@ -239,8 +241,5 @@ server hosting the GDS namespace invokes them itself after adding the URI to its
   `Bad_MethodInvalid` or `Bad_NodeIdUnknown`.
 - `StartNewKeyPairRequest` is a thin wrapper. No helper decodes the returned PFX or PEM private
   key; prefer `StartSigningRequest` with a locally generated key pair.
-- `TrustListApplier.apply` issues four separate `set*` calls. `FileBasedTrustListManager` takes a
-  write lock per call, so a validation running concurrently can briefly see a mix of old and new
-  lists. Decoding first and applying issuer lists first bound the window.
 - KeyCredential management (Part 12 §8), AuthorizationServices (§9), and the GDS audit event types
   are covered only by their generated model classes.

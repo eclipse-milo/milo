@@ -20,6 +20,7 @@ import java.util.List;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.TrustListManager;
+import org.eclipse.milo.opcua.stack.core.security.TrustListSnapshot;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TrustListMasks;
 import org.eclipse.milo.opcua.stack.core.types.structured.TrustListDataType;
@@ -44,9 +45,10 @@ public final class TrustListApplier {
    * the certificates and CRLs it carries.
    *
    * <p>All entries are decoded before anything is replaced, so a malformed entry rejects the whole
-   * update and the manager is unchanged. Lists are replaced in the order issuer certificates,
-   * trusted certificates, issuer CRLs, trusted CRLs. The replacements are separate operations on
-   * the manager, so a validation running concurrently may briefly see a mix of old and new lists.
+   * update and the manager is unchanged. The specified lists are then merged into the manager's
+   * current snapshot through {@link TrustListManager#update}, so unspecified lists keep whatever
+   * value they hold at commit time and the replacement is published as one snapshot. If no list is
+   * specified nothing is committed.
    *
    * @param trustList the list to apply.
    * @param manager the {@link TrustListManager} to update.
@@ -75,18 +77,32 @@ public final class TrustListApplier {
             ? decodeCrls("TrustedCrls", trustList.getTrustedCrls())
             : null;
 
-    if (issuerCertificates != null) {
-      manager.setIssuerCertificates(issuerCertificates);
+    if (issuerCertificates == null
+        && trustedCertificates == null
+        && issuerCrls == null
+        && trustedCrls == null) {
+      return;
     }
-    if (trustedCertificates != null) {
-      manager.setTrustedCertificates(trustedCertificates);
-    }
-    if (issuerCrls != null) {
-      manager.setIssuerCrls(issuerCrls);
-    }
-    if (trustedCrls != null) {
-      manager.setTrustedCrls(trustedCrls);
-    }
+
+    manager.update(
+        current -> {
+          TrustListSnapshot updated = current;
+
+          if (issuerCertificates != null) {
+            updated = updated.withIssuerCertificates(issuerCertificates);
+          }
+          if (trustedCertificates != null) {
+            updated = updated.withTrustedCertificates(trustedCertificates);
+          }
+          if (issuerCrls != null) {
+            updated = updated.withIssuerCrls(issuerCrls);
+          }
+          if (trustedCrls != null) {
+            updated = updated.withTrustedCrls(trustedCrls);
+          }
+
+          return updated;
+        });
   }
 
   /**
@@ -102,16 +118,18 @@ public final class TrustListApplier {
   public static TrustListDataType toTrustListDataType(TrustListManager manager, int masks)
       throws UaException {
 
+    TrustListSnapshot snapshot = manager.getSnapshot();
+
     return new TrustListDataType(
         uint(masks),
         isSet(masks, TrustListMasks.TrustedCertificates)
-            ? encodeCertificates(manager.getTrustedCertificates())
+            ? encodeCertificates(snapshot.trustedCertificates())
             : null,
-        isSet(masks, TrustListMasks.TrustedCrls) ? encodeCrls(manager.getTrustedCrls()) : null,
+        isSet(masks, TrustListMasks.TrustedCrls) ? encodeCrls(snapshot.trustedCrls()) : null,
         isSet(masks, TrustListMasks.IssuerCertificates)
-            ? encodeCertificates(manager.getIssuerCertificates())
+            ? encodeCertificates(snapshot.issuerCertificates())
             : null,
-        isSet(masks, TrustListMasks.IssuerCrls) ? encodeCrls(manager.getIssuerCrls()) : null);
+        isSet(masks, TrustListMasks.IssuerCrls) ? encodeCrls(snapshot.issuerCrls()) : null);
   }
 
   private static boolean isSet(int masks, TrustListMasks mask) {

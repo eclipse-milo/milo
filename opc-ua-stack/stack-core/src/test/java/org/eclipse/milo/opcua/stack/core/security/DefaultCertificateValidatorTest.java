@@ -11,18 +11,22 @@
 package org.eclipse.milo.opcua.stack.core.security;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.cert.CertIOException;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
 import org.eclipse.milo.opcua.stack.core.util.validation.CaSignedCertificateBuilder;
@@ -242,6 +246,36 @@ class DefaultCertificateValidatorTest {
                 List.of(certificate), null, null, SecurityPolicy.Basic256Sha256.getProfile()));
   }
 
+  // Certificate path construction and revocation checks must use the same trust-list generation.
+  @Test
+  void defaultClientValidatorReadsOneTrustListSnapshot() {
+    X509Certificate certificate = createRsaCertificate();
+    var trustListManager = new SnapshotOnlyTrustListManager(certificate);
+    var validator =
+        new DefaultClientCertificateValidator(
+            trustListManager,
+            ValidationCheck.NO_OPTIONAL_CHECKS,
+            new MemoryCertificateQuarantine());
+
+    assertDoesNotThrow(() -> validator.validateCertificateChain(List.of(certificate), null, null));
+    assertEquals(1, trustListManager.snapshotReads.get());
+  }
+
+  // Servers have the same two-phase path and revocation validation boundary as clients.
+  @Test
+  void defaultServerValidatorReadsOneTrustListSnapshot() {
+    X509Certificate certificate = createRsaCertificate();
+    var trustListManager = new SnapshotOnlyTrustListManager(certificate);
+    var validator =
+        new DefaultServerCertificateValidator(
+            trustListManager,
+            ValidationCheck.NO_OPTIONAL_CHECKS,
+            new MemoryCertificateQuarantine());
+
+    assertDoesNotThrow(() -> validator.validateCertificateChain(List.of(certificate), null, null));
+    assertEquals(1, trustListManager.snapshotReads.get());
+  }
+
   private static X509Certificate createMinimalEccCertificate() throws Exception {
     KeyPair keyPair = SelfSignedCertificateGenerator.generateNistP256KeyPair();
 
@@ -355,6 +389,43 @@ class DefaultCertificateValidatorTest {
     MemoryTrustListManager trustListManager = new MemoryTrustListManager();
     trustListManager.addTrustedCertificate(certificate);
     return trustListManager;
+  }
+
+  private static final class SnapshotOnlyTrustListManager extends MemoryTrustListManager {
+
+    private final AtomicInteger snapshotReads = new AtomicInteger();
+
+    SnapshotOnlyTrustListManager(X509Certificate trustedCertificate) {
+      replaceAll(
+          new TrustListSnapshot(
+              List.of(), List.of(), List.of(trustedCertificate), List.of(), DateTime.MIN_VALUE));
+    }
+
+    @Override
+    public TrustListSnapshot getSnapshot() {
+      snapshotReads.incrementAndGet();
+      return super.getSnapshot();
+    }
+
+    @Override
+    public List<X509CRL> getIssuerCrls() {
+      throw new AssertionError("validator must use getSnapshot()");
+    }
+
+    @Override
+    public List<X509CRL> getTrustedCrls() {
+      throw new AssertionError("validator must use getSnapshot()");
+    }
+
+    @Override
+    public List<X509Certificate> getIssuerCertificates() {
+      throw new AssertionError("validator must use getSnapshot()");
+    }
+
+    @Override
+    public List<X509Certificate> getTrustedCertificates() {
+      throw new AssertionError("validator must use getSnapshot()");
+    }
   }
 
   private record CertificateChain(X509Certificate certificate, X509Certificate issuerCertificate) {}

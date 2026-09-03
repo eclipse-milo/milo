@@ -67,6 +67,19 @@ public class TrustListManagerLastUpdateTimeTest {
         mutation("setIssuerCertificates", m -> m.setIssuerCertificates(List.of(CERTIFICATE))),
         mutation("setTrustedCrls", m -> m.setTrustedCrls(List.of(CRL))),
         mutation("setIssuerCrls", m -> m.setIssuerCrls(List.of(CRL))),
+        // The manager owns lastUpdateTime, so the time carried by a replacement snapshot must
+        // be ignored rather than installed.
+        mutation(
+            "replaceAll",
+            m ->
+                m.replaceAll(
+                    new TrustListSnapshot(
+                        List.of(CERTIFICATE),
+                        List.of(CRL),
+                        List.of(CERTIFICATE),
+                        List.of(CRL),
+                        DateTime.MIN_VALUE))),
+        mutation("update", m -> m.update(current -> current.withTrustedCrls(List.of(CRL)))),
         mutation("addTrustedCertificate", m -> m.addTrustedCertificate(CERTIFICATE)),
         mutation("addIssuerCertificate", m -> m.addIssuerCertificate(CERTIFICATE)),
         mutation(
@@ -146,6 +159,18 @@ public class TrustListManagerLastUpdateTimeTest {
       boolean removed = manager.removeTrustedCertificate(ByteString.of(new byte[] {1, 2, 3}));
 
       assertFalse(removed);
+      assertEquals(before, manager.getLastUpdateTime());
+    }
+
+    // An update operator that returns the snapshot it was given commits nothing.
+    @Test
+    void identityUpdateDoesNotAdvanceLastUpdateTime() {
+      DateTime before = manager.getLastUpdateTime();
+      awaitClockTickAfter(before);
+
+      TrustListSnapshot committed = manager.update(current -> current);
+
+      assertEquals(before, committed.lastUpdateTime());
       assertEquals(before, manager.getLastUpdateTime());
     }
   }
