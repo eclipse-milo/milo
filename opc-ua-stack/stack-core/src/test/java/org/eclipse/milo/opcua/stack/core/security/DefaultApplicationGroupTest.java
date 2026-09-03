@@ -76,7 +76,7 @@ class DefaultApplicationGroupTest {
             new CertificateValidator.InsecureCertificateValidator(),
             certificateTypeIds);
 
-    group.initialize();
+    group.createMissingCertificates();
 
     assertEquals(certificateTypeIds, group.getSupportedCertificateTypeIds());
     assertEquals(5, group.getCertificateEntries().size());
@@ -162,7 +162,7 @@ class DefaultApplicationGroupTest {
                 NodeIds.RsaSha256ApplicationCertificateType,
                 NodeIds.EccNistP256ApplicationCertificateType));
 
-    group.initialize();
+    group.createMissingCertificates();
 
     // Arm the failure only after initialization has populated the store.
     store.failGet = true;
@@ -175,10 +175,11 @@ class DefaultApplicationGroupTest {
     assertFalse(group.getKeyPair(NodeIds.EccNistP256ApplicationCertificateType).isPresent());
   }
 
-  // A failure partway through initialize() must leave the group retryable rather than latched as
-  // a silent permanent no-op; otherwise a transient store/factory error would require a restart.
+  // A failure partway through createMissingCertificates() must leave the group retryable rather
+  // than latched as a silent permanent no-op; otherwise a transient store/factory error would
+  // require a restart.
   @Test
-  void initializeIsRetryableAfterFailure() throws Exception {
+  void createMissingCertificatesIsRetryableAfterFailure() throws Exception {
     var store = new FailingSetCertificateStore(NodeIds.EccNistP256ApplicationCertificateType);
     DefaultApplicationGroup group =
         new DefaultApplicationGroup(
@@ -191,14 +192,84 @@ class DefaultApplicationGroupTest {
                 NodeIds.EccNistP256ApplicationCertificateType));
 
     store.failSet = true;
-    assertThrows(RuntimeException.class, group::initialize);
+    assertThrows(RuntimeException.class, group::createMissingCertificates);
 
     // Clear the fault and retry; the second call must do the work rather than no-op.
     store.failSet = false;
-    group.initialize();
+    List<NodeId> created = group.createMissingCertificates();
 
+    assertEquals(
+        List.of(NodeIds.EccNistP256ApplicationCertificateType),
+        created,
+        "only the type that failed the first time should be created on retry");
     assertEquals(2, group.getCertificateEntries().size());
     assertTrue(group.getKeyPair(NodeIds.RsaSha256ApplicationCertificateType).isPresent());
+    assertTrue(group.getKeyPair(NodeIds.EccNistP256ApplicationCertificateType).isPresent());
+  }
+
+  // Externally provisioned material must survive createMissingCertificates(): the factory only
+  // fills gaps, so an application that mixes a GDS-issued RSA identity with a Milo-generated ECC
+  // identity keeps the GDS-issued one, and the return value tells the caller what was generated.
+  @Test
+  void createMissingCertificatesReportsOnlyTypesItCreatedAndKeepsExistingEntries()
+      throws Exception {
+    var certificateStore = new MemoryCertificateStore();
+    var certificateFactory = new CurrentEccCertificateFactory();
+    KeyPair keyPair = certificateFactory.createRsaSha256KeyPair();
+    X509Certificate[] certificateChain =
+        certificateFactory.createRsaSha256CertificateChain(keyPair);
+    certificateStore.set(
+        NodeIds.RsaSha256ApplicationCertificateType,
+        new CertificateStore.Entry(keyPair.getPrivate(), certificateChain));
+
+    DefaultApplicationGroup group =
+        new DefaultApplicationGroup(
+            new MemoryTrustListManager(),
+            certificateStore,
+            certificateFactory,
+            new CertificateValidator.InsecureCertificateValidator(),
+            List.of(
+                NodeIds.RsaSha256ApplicationCertificateType,
+                NodeIds.EccNistP256ApplicationCertificateType));
+
+    List<NodeId> created = group.createMissingCertificates();
+
+    assertEquals(List.of(NodeIds.EccNistP256ApplicationCertificateType), created);
+    assertSame(
+        certificateChain,
+        group.getCertificateChain(NodeIds.RsaSha256ApplicationCertificateType).orElseThrow(),
+        "pre-existing entry must not be replaced");
+    assertTrue(group.getKeyPair(NodeIds.EccNistP256ApplicationCertificateType).isPresent());
+
+    assertEquals(
+        List.of(),
+        group.createMissingCertificates(),
+        "nothing is missing on the second call, so nothing should be created");
+  }
+
+  // A group is a view over its store, not a lifecycle: if an entry disappears after the first
+  // call (a KeyStore reload, an application removing it), a later call must re-create it rather
+  // than treat the group as already provisioned.
+  @Test
+  void createMissingCertificatesRecreatesEntryRemovedFromStore() throws Exception {
+    var certificateStore = new MemoryCertificateStore();
+    DefaultApplicationGroup group =
+        new DefaultApplicationGroup(
+            new MemoryTrustListManager(),
+            certificateStore,
+            new CurrentEccCertificateFactory(),
+            new CertificateValidator.InsecureCertificateValidator(),
+            List.of(
+                NodeIds.RsaSha256ApplicationCertificateType,
+                NodeIds.EccNistP256ApplicationCertificateType));
+
+    group.createMissingCertificates();
+    certificateStore.remove(NodeIds.EccNistP256ApplicationCertificateType);
+    assertFalse(group.getKeyPair(NodeIds.EccNistP256ApplicationCertificateType).isPresent());
+
+    List<NodeId> created = group.createMissingCertificates();
+
+    assertEquals(List.of(NodeIds.EccNistP256ApplicationCertificateType), created);
     assertTrue(group.getKeyPair(NodeIds.EccNistP256ApplicationCertificateType).isPresent());
   }
 

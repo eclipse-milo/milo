@@ -181,8 +181,10 @@ public class ExampleServer {
         new DefaultServerCertificateValidator(trustListManager, certificateQuarantine);
 
     var defaultGroup =
-        DefaultApplicationGroup.createAndInitialize(
+        new DefaultApplicationGroup(
             trustListManager, certificateStore, certificateFactory, certificateValidator);
+
+    defaultGroup.createMissingCertificates();
 
     var certificateManager = new DefaultCertificateManager(certificateQuarantine, defaultGroup);
 

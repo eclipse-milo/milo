@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -25,21 +24,43 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Default OPC UA application certificate group backed by a {@link CertificateStore}.
+ * OPC UA application certificate group backed by a {@link CertificateStore}.
+ *
+ * <p>The group reads and writes its {@link CertificateStore} directly and has no lifecycle of its
+ * own: it is usable as soon as it is constructed, and it exposes whatever certificate material the
+ * store holds for its supported certificate types.
+ *
+ * <p>When the store is missing material for a supported certificate type, {@link
+ * #createMissingCertificates()} uses the {@link CertificateFactory} to generate it. This is a
+ * convenience for applications that want Milo to bootstrap a self-signed identity. Applications
+ * whose certificates are provisioned externally, for example by a GDS or deployment tooling, never
+ * need to call it.
  *
  * <p>By default, this group supports the {@link NodeIds#RsaSha256ApplicationCertificateType}
  * CertificateType, which can be used with 2048- and 4096-bit RSA keys. Callers can configure
  * additional certificate type IDs and an application-defined group ID.
  *
- * <p>Construction does not initialize the group. Call {@link #initialize()} to create material for
- * missing certificate types, or leave the group uninitialized when an external authority supplies
- * its certificates.
+ * <p>Example, bootstrapping a self-signed identity when the store is empty:
+ *
+ * <pre>{@code
+ * var group =
+ *     new DefaultApplicationGroup(
+ *         trustListManager, certificateStore, certificateFactory, certificateValidator);
+ *
+ * group.createMissingCertificates();
+ * }</pre>
+ *
+ * <p>Example, using material an external authority has already placed in the store:
+ *
+ * <pre>{@code
+ * var group =
+ *     new DefaultApplicationGroup(
+ *         trustListManager, certificateStore, certificateFactory, certificateValidator);
+ * }</pre>
  */
 public class DefaultApplicationGroup implements CertificateGroup {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DefaultApplicationGroup.class);
-
-  private final AtomicBoolean initialized = new AtomicBoolean(false);
 
   private final NodeId certificateGroupId;
   private final CertificateValidator certificateValidator;
@@ -153,15 +174,23 @@ public class DefaultApplicationGroup implements CertificateGroup {
     }
   }
 
-  public synchronized void initialize() throws Exception {
-    if (initialized.get()) {
-      return;
-    }
+  /**
+   * Create certificate material for every supported certificate type the {@link CertificateStore}
+   * is missing.
+   *
+   * <p>For each missing type, the {@link CertificateFactory} creates a key pair and certificate
+   * chain, which are then stored. Types that already have an entry are left untouched. The call is
+   * idempotent and may be repeated, for example after a failure or after an entry has been removed
+   * from the store.
+   *
+   * @return the certificate type IDs for which material was created, in supported-type order; empty
+   *     if the store already held every supported type.
+   * @throws Exception if the store or the factory fails for any certificate type. Material created
+   *     for earlier types before the failure remains in the store.
+   */
+  public synchronized List<NodeId> createMissingCertificates() throws Exception {
+    var created = new ArrayList<NodeId>();
 
-    // Only latch the initialized flag after every configured certificate type has been
-    // successfully created/stored. If a later type fails (e.g. a factory throwing
-    // Bad_NotSupported for an ECC hook), the flag stays false so initialize() can be retried
-    // rather than leaving the group permanently half-initialized.
     for (NodeId certificateTypeId : getSupportedCertificateTypeIds()) {
       if (!certificateStore.contains(certificateTypeId)) {
         KeyPair keyPair = certificateFactory.createKeyPair(certificateTypeId);
@@ -170,10 +199,24 @@ public class DefaultApplicationGroup implements CertificateGroup {
 
         certificateStore.set(
             certificateTypeId, new CertificateStore.Entry(keyPair.getPrivate(), certificateChain));
+
+        created.add(certificateTypeId);
       }
     }
 
-    initialized.set(true);
+    return List.copyOf(created);
+  }
+
+  /**
+   * Create certificate material for every supported certificate type the store is missing.
+   *
+   * @throws Exception if the store or the factory fails for any certificate type.
+   * @deprecated use {@link #createMissingCertificates()}. The group has no initialization step;
+   *     this method only creates missing certificate material.
+   */
+  @Deprecated
+  public void initialize() throws Exception {
+    createMissingCertificates();
   }
 
   @Override
@@ -275,15 +318,20 @@ public class DefaultApplicationGroup implements CertificateGroup {
   }
 
   /**
-   * Create and initialize a {@link DefaultApplicationGroup}.
+   * Create a default application group and create any certificate material the store is missing.
    *
    * @param trustListManager the {@link TrustListManager} to use.
    * @param certificateStore the {@link CertificateStore} to use.
    * @param certificateFactory the {@link CertificateFactory} to use.
    * @param certificateValidator the {@link CertificateValidator} to use.
-   * @return an initialized {@link DefaultApplicationGroup} instance.
-   * @throws Exception if an error occurs while initializing the {@link DefaultApplicationGroup}.
+   * @return a {@link DefaultApplicationGroup} whose store holds material for every supported
+   *     certificate type.
+   * @throws Exception if creating or storing missing certificate material fails.
+   * @deprecated construct the group directly, then call {@link #createMissingCertificates()} if
+   *     Milo should generate material the store is missing. Omit that call when certificates are
+   *     provisioned externally.
    */
+  @Deprecated
   public static DefaultApplicationGroup createAndInitialize(
       TrustListManager trustListManager,
       CertificateStore certificateStore,
@@ -300,16 +348,21 @@ public class DefaultApplicationGroup implements CertificateGroup {
   }
 
   /**
-   * Create and initialize a {@link DefaultApplicationGroup}.
+   * Create a default application group and create any certificate material the store is missing.
    *
    * @param trustListManager the {@link TrustListManager} to use.
    * @param certificateStore the {@link CertificateStore} to use.
    * @param certificateFactory the {@link CertificateFactory} to use.
    * @param certificateValidator the {@link CertificateValidator} to use.
    * @param supportedCertificateTypeIds the certificate type IDs this group supports.
-   * @return an initialized {@link DefaultApplicationGroup} instance.
-   * @throws Exception if an error occurs while initializing the {@link DefaultApplicationGroup}.
+   * @return a {@link DefaultApplicationGroup} whose store holds material for every supported
+   *     certificate type.
+   * @throws Exception if creating or storing missing certificate material fails.
+   * @deprecated construct the group directly, then call {@link #createMissingCertificates()} if
+   *     Milo should generate material the store is missing. Omit that call when certificates are
+   *     provisioned externally.
    */
+  @Deprecated
   public static DefaultApplicationGroup createAndInitialize(
       TrustListManager trustListManager,
       CertificateStore certificateStore,
@@ -318,7 +371,7 @@ public class DefaultApplicationGroup implements CertificateGroup {
       List<NodeId> supportedCertificateTypeIds)
       throws Exception {
 
-    var defaultApplicationGroup =
+    var group =
         new DefaultApplicationGroup(
             trustListManager,
             certificateStore,
@@ -326,8 +379,8 @@ public class DefaultApplicationGroup implements CertificateGroup {
             certificateValidator,
             supportedCertificateTypeIds);
 
-    defaultApplicationGroup.initialize();
+    group.createMissingCertificates();
 
-    return defaultApplicationGroup;
+    return group;
   }
 }

@@ -43,7 +43,7 @@ public class TestCertificateManager implements CertificateManager {
     this.certificate = certificate;
 
     certificateGroup =
-        DefaultApplicationGroup.createAndInitialize(
+        new DefaultApplicationGroup(
             new MemoryTrustListManager(),
             new MemoryCertificateStore(),
             new AbstractCertificateFactory() {
@@ -58,6 +58,8 @@ public class TestCertificateManager implements CertificateManager {
               }
             },
             certificateValidator);
+
+    certificateGroup.createMissingCertificates();
   }
 
   @Override
