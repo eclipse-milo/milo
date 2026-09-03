@@ -31,9 +31,12 @@ import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
@@ -44,15 +47,36 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * A PKCS#12-backed {@link CertificateStore}.
+ *
+ * <p>After {@link #initialize()} returns, operations on one instance are serialized. Before each
+ * {@link #set(NodeId, Entry)} or {@link #remove(NodeId)}, the store re-reads the on-disk KeyStore,
+ * so entries written by another owner before that read begins are preserved. Writes by other store
+ * instances or processes are not coordinated; overlapping read-modify-replace operations are
+ * last-replacement-wins.
+ */
 public class KeyStoreCertificateStore implements CertificateStore, Closeable {
 
-  protected static final String RSA_SHA256_ALIAS = "server-rsa-sha256";
-  protected static final String ECC_NIST_P256_ALIAS = "server-ecc-nistp256";
-  protected static final String ECC_NIST_P384_ALIAS = "server-ecc-nistp384";
-  protected static final String ECC_BRAINPOOL_P256R1_ALIAS = "server-ecc-brainpoolp256r1";
-  protected static final String ECC_BRAINPOOL_P384R1_ALIAS = "server-ecc-brainpoolp384r1";
-  protected static final String ECC_CURVE25519_ALIAS = "server-ecc-curve25519";
-  protected static final String ECC_CURVE448_ALIAS = "server-ecc-curve448";
+  private static final String DEFAULT_ALIAS_PREFIX = "server-";
+
+  /**
+   * Alias suffixes for the standard application certificate types, in the order they are preloaded.
+   * Custom certificate types use {@link NodeId#toParseableString()} as their alias.
+   */
+  private static final Map<NodeId, String> ALIAS_SUFFIXES;
+
+  static {
+    var suffixes = new LinkedHashMap<NodeId, String>();
+    suffixes.put(NodeIds.RsaSha256ApplicationCertificateType, "rsa-sha256");
+    suffixes.put(NodeIds.EccNistP256ApplicationCertificateType, "ecc-nistp256");
+    suffixes.put(NodeIds.EccNistP384ApplicationCertificateType, "ecc-nistp384");
+    suffixes.put(NodeIds.EccBrainpoolP256r1ApplicationCertificateType, "ecc-brainpoolp256r1");
+    suffixes.put(NodeIds.EccBrainpoolP384r1ApplicationCertificateType, "ecc-brainpoolp384r1");
+    suffixes.put(NodeIds.EccCurve25519ApplicationCertificateType, "ecc-curve25519");
+    suffixes.put(NodeIds.EccCurve448ApplicationCertificateType, "ecc-curve448");
+    ALIAS_SUFFIXES = Collections.unmodifiableMap(suffixes);
+  }
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -76,14 +100,10 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
     if (initialized.compareAndSet(false, true)) {
       logger.info("Loading KeyStore at {}", settings.keyStorePath);
 
-      keyStore = KeyStore.getInstance("pkcs12");
-
       File keyStoreFile = settings.keyStorePath.toAbsolutePath().toFile();
 
       if (keyStoreFile.exists()) {
-        try (var inputStream = new FileInputStream(keyStoreFile)) {
-          keyStore.load(inputStream, settings.getKeyStorePassword.get());
-        }
+        keyStore = loadKeyStore(keyStoreFile.toPath());
 
         try {
           keyStoreLock.lock();
@@ -93,6 +113,7 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
           keyStoreLock.unlock();
         }
       } else {
+        keyStore = KeyStore.getInstance("pkcs12");
         keyStore.load(null, settings.getKeyStorePassword.get());
 
         storeKeyStore();
@@ -179,6 +200,8 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
       String alias = getAlias(certificateTypeId);
 
       if (alias != null) {
+        reloadBeforeWrite();
+
         char[] password = settings.getAliasPassword.apply(alias);
 
         KeyStore.Entry entry = keyStore.getEntry(alias, new KeyStore.PasswordProtection(password));
@@ -223,6 +246,8 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
         return;
       }
 
+      reloadBeforeWrite();
+
       char[] password = settings.getAliasPassword.apply(alias);
 
       KeyStore.Entry previousEntry =
@@ -253,23 +278,9 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
    *     {@code null} if the certificate type is not supported.
    */
   protected @Nullable String getAlias(NodeId certificateTypeId) {
-    if (certificateTypeId.equals(NodeIds.RsaSha256ApplicationCertificateType)) {
-      return RSA_SHA256_ALIAS;
-    } else if (certificateTypeId.equals(NodeIds.EccNistP256ApplicationCertificateType)) {
-      return ECC_NIST_P256_ALIAS;
-    } else if (certificateTypeId.equals(NodeIds.EccNistP384ApplicationCertificateType)) {
-      return ECC_NIST_P384_ALIAS;
-    } else if (certificateTypeId.equals(NodeIds.EccBrainpoolP256r1ApplicationCertificateType)) {
-      return ECC_BRAINPOOL_P256R1_ALIAS;
-    } else if (certificateTypeId.equals(NodeIds.EccBrainpoolP384r1ApplicationCertificateType)) {
-      return ECC_BRAINPOOL_P384R1_ALIAS;
-    } else if (certificateTypeId.equals(NodeIds.EccCurve25519ApplicationCertificateType)) {
-      return ECC_CURVE25519_ALIAS;
-    } else if (certificateTypeId.equals(NodeIds.EccCurve448ApplicationCertificateType)) {
-      return ECC_CURVE448_ALIAS;
-    } else {
-      return certificateTypeId.toParseableString();
-    }
+    String suffix = ALIAS_SUFFIXES.get(certificateTypeId);
+
+    return suffix != null ? settings.aliasPrefix + suffix : certificateTypeId.toParseableString();
   }
 
   /**
@@ -289,14 +300,7 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
    * @return the certificate type IDs to load eagerly.
    */
   protected List<NodeId> getPreloadedCertificateTypeIds() {
-    return List.of(
-        NodeIds.RsaSha256ApplicationCertificateType,
-        NodeIds.EccNistP256ApplicationCertificateType,
-        NodeIds.EccNistP384ApplicationCertificateType,
-        NodeIds.EccBrainpoolP256r1ApplicationCertificateType,
-        NodeIds.EccBrainpoolP384r1ApplicationCertificateType,
-        NodeIds.EccCurve25519ApplicationCertificateType,
-        NodeIds.EccCurve448ApplicationCertificateType);
+    return List.copyOf(ALIAS_SUFFIXES.keySet());
   }
 
   private Entry loadEntry(String alias, Key key) throws Exception {
@@ -316,6 +320,37 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
     } else {
       return null;
     }
+  }
+
+  /**
+   * Re-read the on-disk KeyStore immediately before a mutation.
+   *
+   * <p>This method must be called while {@link #keyStoreLock} is held. Replacing the in-memory
+   * KeyStore with the fresh snapshot preserves every alias already committed by another owner,
+   * including entries whose passwords are not available to this store.
+   */
+  private void reloadBeforeWrite() throws Exception {
+    Path keyStorePath = resolveKeyStorePath();
+
+    // A missing file has nothing to merge; storeKeyStore() recreates it from memory.
+    if (Files.exists(keyStorePath)) {
+      keyStore = loadKeyStore(keyStorePath);
+
+      // Cached entries may be stale relative to the fresh snapshot. get() refills the cache
+      // lazily rather than loading every alias here, so an unreadable foreign entry under one of
+      // this store's aliases cannot fail an unrelated write.
+      entries.clear();
+    }
+  }
+
+  private KeyStore loadKeyStore(Path keyStorePath) throws Exception {
+    KeyStore loaded = KeyStore.getInstance("pkcs12");
+
+    try (var inputStream = new FileInputStream(keyStorePath.toFile())) {
+      loaded.load(inputStream, settings.getKeyStorePassword.get());
+    }
+
+    return loaded;
   }
 
   /**
@@ -504,15 +539,9 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
    */
   void reload(Path keyStorePath) {
     try {
-      KeyStore reloaded = KeyStore.getInstance("pkcs12");
-
-      try (var inputStream = new FileInputStream(keyStorePath.toFile())) {
-        reloaded.load(inputStream, settings.getKeyStorePassword.get());
-      }
-
       keyStoreLock.lock();
       try {
-        keyStore = reloaded;
+        keyStore = loadKeyStore(keyStorePath);
 
         entries.clear();
         loadEntries();
@@ -545,6 +574,7 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
     public final Path keyStorePath;
     public final Supplier<char[]> getKeyStorePassword;
     public final Function<String, char[]> getAliasPassword;
+    public final String aliasPrefix;
     public final boolean watchForChanges;
 
     public Settings(
@@ -561,9 +591,54 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
         Function<String, char[]> getAliasPassword,
         boolean watchForChanges) {
 
+      this(
+          keyStorePath,
+          getKeyStorePassword,
+          getAliasPassword,
+          DEFAULT_ALIAS_PREFIX,
+          watchForChanges);
+    }
+
+    /**
+     * Create settings with a custom prefix for standard certificate type aliases.
+     *
+     * @param keyStorePath the path of the PKCS#12 KeyStore.
+     * @param getKeyStorePassword the supplier for the KeyStore password.
+     * @param getAliasPassword the function that supplies each entry password.
+     * @param aliasPrefix the prefix for standard application certificate aliases.
+     */
+    public Settings(
+        Path keyStorePath,
+        Supplier<char[]> getKeyStorePassword,
+        Function<String, char[]> getAliasPassword,
+        String aliasPrefix) {
+
+      this(keyStorePath, getKeyStorePassword, getAliasPassword, aliasPrefix, false);
+    }
+
+    /**
+     * Create settings with a custom alias prefix and optional external-change watching.
+     *
+     * <p>Watching makes completed external writes visible to reads. It does not serialize writes by
+     * separate store instances or processes.
+     *
+     * @param keyStorePath the path of the PKCS#12 KeyStore.
+     * @param getKeyStorePassword the supplier for the KeyStore password.
+     * @param getAliasPassword the function that supplies each entry password.
+     * @param aliasPrefix the prefix for standard application certificate aliases.
+     * @param watchForChanges whether to watch the KeyStore file for external changes.
+     */
+    public Settings(
+        Path keyStorePath,
+        Supplier<char[]> getKeyStorePassword,
+        Function<String, char[]> getAliasPassword,
+        String aliasPrefix,
+        boolean watchForChanges) {
+
       this.keyStorePath = keyStorePath;
       this.getKeyStorePassword = getKeyStorePassword;
       this.getAliasPassword = getAliasPassword;
+      this.aliasPrefix = Objects.requireNonNull(aliasPrefix, "aliasPrefix");
       this.watchForChanges = watchForChanges;
     }
   }
