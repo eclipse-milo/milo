@@ -26,7 +26,8 @@ import org.jspecify.annotations.Nullable;
  * <p>Use this with {@link EndpointConfig.Builder#setEndpointCertificateConfig} when an endpoint
  * should select its advertised certificate from the server {@link CertificateManager}. Endpoints
  * that use {@link EndpointConfig.Builder#setCertificate(X509Certificate)} continue to advertise
- * that fixed certificate directly.
+ * that fixed certificate directly. Secure endpoints without either configuration select from the
+ * DefaultApplicationGroup.
  */
 @NullMarked
 public final class EndpointCertificateConfig {

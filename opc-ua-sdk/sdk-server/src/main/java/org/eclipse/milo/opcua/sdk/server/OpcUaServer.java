@@ -107,8 +107,10 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.core.util.FutureUtils;
@@ -1271,7 +1273,7 @@ public class OpcUaServer extends AbstractServiceHandler {
       if (endpoint.getSecurityPolicy() != SecurityPolicy.None) {
         securityProviderResolver.resolve(profile);
 
-        if (endpoint.getEndpointCertificateConfig().isPresent()) {
+        if (endpoint.getEndpointCertificateConfig().isPresent() || certificate == null) {
           certificateIdentity = resolveCertificateIdentity(endpoint, profile, certificate);
           certificate = certificateIdentity.certificate();
         } else if (certificate != null && profile.secureChannelEnhancements()) {
@@ -1281,6 +1283,19 @@ public class OpcUaServer extends AbstractServiceHandler {
           // ECC policy can never complete a handshake. Omit such endpoints from advertisement
           // rather than advertise an unusable endpoint.
           CertificateCompatibility.checkCompatible(profile, certificate);
+        }
+      } else {
+        Optional<SecurityPolicyProfile> tokenProfile =
+            getEncryptedUserTokenSecurityPolicyProfile(endpoint);
+
+        if (tokenProfile.isPresent()) {
+          securityProviderResolver.resolve(tokenProfile.get());
+
+          if (endpoint.getEndpointCertificateConfig().isPresent() || certificate == null) {
+            certificateIdentity =
+                resolveCertificateIdentity(endpoint, tokenProfile.get(), certificate);
+            certificate = certificateIdentity.certificate();
+          }
         }
       }
 
@@ -1334,7 +1349,9 @@ public class OpcUaServer extends AbstractServiceHandler {
         endpoint.getEndpointCertificateConfig().orElse(null);
 
     NodeId certificateGroupId =
-        certificateConfig != null ? certificateConfig.getCertificateGroupId() : null;
+        certificateConfig != null
+            ? certificateConfig.getCertificateGroupId()
+            : NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup;
     NodeId certificateTypeId =
         certificateConfig != null ? certificateConfig.getCertificateTypeId().orElse(null) : null;
 
@@ -1357,12 +1374,35 @@ public class OpcUaServer extends AbstractServiceHandler {
     return selectedIdentity;
   }
 
+  private Optional<SecurityPolicyProfile> getEncryptedUserTokenSecurityPolicyProfile(
+      EndpointConfig endpoint) throws UaException {
+
+    for (UserTokenPolicy tokenPolicy : endpoint.getTokenPolicies()) {
+      UserTokenType tokenType = tokenPolicy.getTokenType();
+
+      if (tokenType == UserTokenType.UserName || tokenType == UserTokenType.IssuedToken) {
+        SecurityPolicy securityPolicy =
+            SecurityPolicy.fromUri(endpoint.getEffectiveTokenSecurityPolicyUri(tokenPolicy));
+
+        SecurityPolicyProfile profile = SecurityPolicyProfiles.get(securityPolicy);
+
+        if (securityPolicy != SecurityPolicy.None && !profile.usesEnhancedUserTokenSecret()) {
+          return Optional.of(profile);
+        }
+      }
+    }
+
+    return Optional.empty();
+  }
+
   private void logOmittedEndpoint(EndpointConfig endpoint, String reason) {
     String certificateGroup =
         endpoint
             .getEndpointCertificateConfig()
             .map(config -> config.getCertificateGroupId().toParseableString())
-            .orElse("<any>");
+            .orElse(
+                NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup
+                    .toParseableString());
     String certificateType =
         endpoint
             .getEndpointCertificateConfig()

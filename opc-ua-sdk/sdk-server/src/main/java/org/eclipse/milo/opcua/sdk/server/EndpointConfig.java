@@ -245,10 +245,12 @@ public class EndpointConfig {
      * Set the certificate selection request for this endpoint.
      *
      * <p>Leave this unset when the endpoint should advertise the fixed certificate configured with
-     * {@link #setCertificate(X509Certificate)} or {@link #setCertificate(Supplier)}.
+     * {@link #setCertificate(X509Certificate)} or {@link #setCertificate(Supplier)}. A secure
+     * endpoint without a fixed certificate or selection request uses the server certificate
+     * manager's DefaultApplicationGroup.
      *
      * @param endpointCertificateConfig the certificate selection request, or {@code null} to use
-     *     the configured certificate supplier.
+     *     the configured certificate supplier or the implicit DefaultApplicationGroup.
      * @return this builder.
      */
     public Builder setEndpointCertificateConfig(
@@ -306,9 +308,6 @@ public class EndpointConfig {
         if (securityMode != MessageSecurityMode.Sign
             && securityMode != MessageSecurityMode.SignAndEncrypt) {
           throw new IllegalArgumentException("securityMode: " + securityMode);
-        }
-        if (certificateSupplier.get() == null && endpointCertificateConfig == null) {
-          throw new IllegalStateException("security requires certificate or certificate config");
         }
       }
 
