@@ -401,6 +401,89 @@ public class OpcUaClientConfigTest {
         client.resolveApplicationUri(Optional.empty()));
   }
 
+  // A None endpoint presents no identity, but the client is still the same application. When every
+  // manager identity carries the same URI, that URI must be advertised instead of the placeholder,
+  // so servers see one ApplicationUri across secure and None connections.
+  @Test
+  public void managerApplicationUriIsUsedWhenNoIdentityIsPresented() throws Exception {
+    CertificateIdentity identityA = identity("urn:eclipse:milo:test:managed", "groupA");
+    CertificateIdentity identityB = identity("urn:eclipse:milo:test:managed", "groupB");
+    OpcUaClientConfig config =
+        OpcUaClientConfig.builder()
+            .setEndpoint(endpoint)
+            .setCertificateManager(multiIdentityManager(List.of(identityA, identityB)))
+            .build();
+
+    OpcUaClient client = client(config);
+
+    assertEquals("urn:eclipse:milo:test:managed", client.resolveApplicationUri(Optional.empty()));
+  }
+
+  // Manager identities with differing URIs cannot define the application, so the placeholder
+  // remains when no identity is presented.
+  @Test
+  public void differingManagerApplicationUrisFallBackToPlaceholder() throws Exception {
+    CertificateIdentity identityA = identity("urn:eclipse:milo:test:a", "groupA");
+    CertificateIdentity identityB = identity("urn:eclipse:milo:test:b", "groupB");
+    OpcUaClientConfig config =
+        OpcUaClientConfig.builder()
+            .setEndpoint(endpoint)
+            .setCertificateManager(multiIdentityManager(List.of(identityA, identityB)))
+            .build();
+
+    OpcUaClient client = client(config);
+
+    assertEquals(
+        "urn:eclipse:milo:client:applicationUriNotConfigured",
+        client.resolveApplicationUri(Optional.empty()));
+  }
+
+  // URI inference is best-effort. A None connection must retain the placeholder when a custom
+  // manager cannot enumerate identities, instead of failing session creation.
+  @Test
+  public void managerFailureFallsBackToPlaceholder() {
+    CertificateManager certificateManager = mock(CertificateManager.class);
+    when(certificateManager.getCertificateIdentities())
+        .thenThrow(new IllegalStateException("identity store unavailable"));
+    OpcUaClientConfig config =
+        OpcUaClientConfig.builder()
+            .setEndpoint(endpoint)
+            .setCertificateManager(certificateManager)
+            .build();
+
+    OpcUaClient client = client(config);
+
+    assertEquals(
+        "urn:eclipse:milo:client:applicationUriNotConfigured",
+        client.resolveApplicationUri(Optional.empty()));
+  }
+
+  // A configured certificate is still presented on a None connection. If it has no SAN URI, a URI
+  // from an unrelated managed identity must not be advertised as though it described that
+  // certificate.
+  @Test
+  public void managerApplicationUriDoesNotReplaceMissingFixedCertificateUri() throws Exception {
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    X509Certificate certificateWithoutSanUri =
+        new SelfSignedCertificateBuilder(keyPair)
+            .setApplicationUri(null)
+            .addDnsName("localhost")
+            .build();
+    CertificateIdentity managed = identity("urn:eclipse:milo:test:managed", "group");
+    OpcUaClientConfig config =
+        OpcUaClientConfig.builder()
+            .setEndpoint(endpoint)
+            .setCertificateManager(multiIdentityManager(List.of(managed)))
+            .setCertificate(certificateWithoutSanUri)
+            .build();
+
+    OpcUaClient client = client(config);
+
+    assertEquals(
+        "urn:eclipse:milo:client:applicationUriNotConfigured",
+        client.resolveApplicationUri(Optional.empty()));
+  }
+
   // A selected identity without a SAN URI cannot define the ApplicationUri. The fixed certificate
   // remains the next compatibility source before the placeholder.
   @Test

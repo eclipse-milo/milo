@@ -1269,14 +1269,17 @@ public class OpcUaServer extends AbstractServiceHandler {
     try {
       CertificateIdentity certificateIdentity = null;
       X509Certificate certificate = endpoint.getCertificate();
+      // A fixed certificate without a selection request is advertised verbatim; everything else
+      // selects a managed identity.
+      boolean managed = endpoint.getEndpointCertificateConfig().isPresent() || certificate == null;
 
       if (endpoint.getSecurityPolicy() != SecurityPolicy.None) {
         securityProviderResolver.resolve(profile);
 
-        if (endpoint.getEndpointCertificateConfig().isPresent() || certificate == null) {
+        if (managed) {
           certificateIdentity = resolveCertificateIdentity(endpoint, profile, certificate);
           certificate = certificateIdentity.certificate();
-        } else if (certificate != null && profile.secureChannelEnhancements()) {
+        } else if (profile.secureChannelEnhancements()) {
           // The legacy fixed-certificate API (setCertificate) advertises the certificate verbatim,
           // bypassing the CertificateIdentitySelector compatibility checks. Enhanced policies (e.g.
           // ECC) require a matching certificate family, so an RSA fixed certificate paired with an
@@ -1284,18 +1287,12 @@ public class OpcUaServer extends AbstractServiceHandler {
           // rather than advertise an unusable endpoint.
           CertificateCompatibility.checkCompatible(profile, certificate);
         }
-      } else {
-        Optional<SecurityPolicyProfile> tokenProfile =
-            getEncryptedUserTokenSecurityPolicyProfile(endpoint);
+      } else if (managed) {
+        certificateIdentity =
+            resolveUserTokenCertificateIdentity(endpoint, certificate).orElse(null);
 
-        if (tokenProfile.isPresent()) {
-          securityProviderResolver.resolve(tokenProfile.get());
-
-          if (endpoint.getEndpointCertificateConfig().isPresent() || certificate == null) {
-            certificateIdentity =
-                resolveCertificateIdentity(endpoint, tokenProfile.get(), certificate);
-            certificate = certificateIdentity.certificate();
-          }
+        if (certificateIdentity != null) {
+          certificate = certificateIdentity.certificate();
         }
       }
 
@@ -1345,15 +1342,12 @@ public class OpcUaServer extends AbstractServiceHandler {
       throw new EndpointResolutionException("no CertificateManager configured");
     }
 
-    EndpointCertificateConfig certificateConfig =
-        endpoint.getEndpointCertificateConfig().orElse(null);
-
-    NodeId certificateGroupId =
-        certificateConfig != null
-            ? certificateConfig.getCertificateGroupId()
-            : NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup;
+    NodeId certificateGroupId = effectiveCertificateGroupId(endpoint);
     NodeId certificateTypeId =
-        certificateConfig != null ? certificateConfig.getCertificateTypeId().orElse(null) : null;
+        endpoint
+            .getEndpointCertificateConfig()
+            .flatMap(EndpointCertificateConfig::getCertificateTypeId)
+            .orElse(null);
 
     CertificateIdentitySelectionContext context =
         CertificateIdentitySelectionContext.forEndpointAdvertisement(
@@ -1374,35 +1368,92 @@ public class OpcUaServer extends AbstractServiceHandler {
     return selectedIdentity;
   }
 
-  private Optional<SecurityPolicyProfile> getEncryptedUserTokenSecurityPolicyProfile(
-      EndpointConfig endpoint) throws UaException {
+  /**
+   * Select the certificate a {@link SecurityPolicy#None} endpoint advertises so clients can encrypt
+   * legacy UserName and IssuedToken secrets.
+   *
+   * <p>Returns empty when no token policy needs one. An implicit DefaultApplicationGroup request
+   * that cannot be satisfied also returns empty, after a WARN, so the endpoint stays advertised
+   * without a certificate and anonymous access keeps working. An explicit {@link
+   * EndpointCertificateConfig} that cannot be satisfied still omits the endpoint.
+   */
+  private Optional<CertificateIdentity> resolveUserTokenCertificateIdentity(
+      EndpointConfig endpoint, @Nullable X509Certificate certificate)
+      throws UaException, EndpointResolutionException {
+
+    List<SecurityPolicyProfile> tokenProfiles =
+        getEncryptedUserTokenSecurityPolicyProfiles(endpoint);
+
+    if (tokenProfiles.isEmpty()) {
+      return Optional.empty();
+    }
+
+    String failureReason = "no compatible certificate identity found";
+
+    for (SecurityPolicyProfile tokenProfile : tokenProfiles) {
+      try {
+        securityProviderResolver.resolve(tokenProfile);
+
+        return Optional.of(resolveCertificateIdentity(endpoint, tokenProfile, certificate));
+      } catch (UaException | EndpointResolutionException e) {
+        failureReason = Objects.toString(e.getMessage(), e.getClass().getSimpleName());
+      }
+    }
+
+    if (endpoint.getEndpointCertificateConfig().isPresent()) {
+      throw new EndpointResolutionException(failureReason);
+    }
+
+    logger.warn(
+        "Advertising endpoint without a certificate; encrypted user tokens will be rejected:"
+            + " endpointUrl={}, reason={}",
+        endpoint.getEndpointUrl(),
+        failureReason);
+
+    return Optional.empty();
+  }
+
+  private static List<SecurityPolicyProfile> getEncryptedUserTokenSecurityPolicyProfiles(
+      EndpointConfig endpoint) {
+
+    List<SecurityPolicyProfile> profiles = new ArrayList<>();
 
     for (UserTokenPolicy tokenPolicy : endpoint.getTokenPolicies()) {
       UserTokenType tokenType = tokenPolicy.getTokenType();
 
       if (tokenType == UserTokenType.UserName || tokenType == UserTokenType.IssuedToken) {
-        SecurityPolicy securityPolicy =
-            SecurityPolicy.fromUri(endpoint.getEffectiveTokenSecurityPolicyUri(tokenPolicy));
+        SecurityPolicy securityPolicy;
+        try {
+          securityPolicy =
+              SecurityPolicy.fromUri(endpoint.getEffectiveTokenSecurityPolicyUri(tokenPolicy));
+        } catch (UaException e) {
+          // An unknown token security policy cannot use this server's certificate, so it does not
+          // decide whether the endpoint advertises one.
+          continue;
+        }
 
         SecurityPolicyProfile profile = SecurityPolicyProfiles.get(securityPolicy);
 
-        if (securityPolicy != SecurityPolicy.None && !profile.usesEnhancedUserTokenSecret()) {
-          return Optional.of(profile);
+        if (securityPolicy != SecurityPolicy.None
+            && !profile.usesEnhancedUserTokenSecret()
+            && !profiles.contains(profile)) {
+          profiles.add(profile);
         }
       }
     }
 
-    return Optional.empty();
+    return profiles;
+  }
+
+  private static NodeId effectiveCertificateGroupId(EndpointConfig endpoint) {
+    return endpoint
+        .getEndpointCertificateConfig()
+        .map(EndpointCertificateConfig::getCertificateGroupId)
+        .orElse(NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup);
   }
 
   private void logOmittedEndpoint(EndpointConfig endpoint, String reason) {
-    String certificateGroup =
-        endpoint
-            .getEndpointCertificateConfig()
-            .map(config -> config.getCertificateGroupId().toParseableString())
-            .orElse(
-                NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup
-                    .toParseableString());
+    String certificateGroup = effectiveCertificateGroupId(endpoint).toParseableString();
     String certificateType =
         endpoint
             .getEndpointCertificateConfig()

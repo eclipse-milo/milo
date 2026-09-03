@@ -109,25 +109,19 @@ public final class DefaultCertificateIdentitySelector implements CertificateIden
 
   private static Optional<CertificateIdentity> selectExplicitIdentity(
       CertificateIdentitySelectionContext context,
-      @Nullable ByteString explicitThumbprint,
+      ByteString explicitThumbprint,
       List<CertificateIdentity> candidates)
       throws UaException {
 
-    if (explicitThumbprint == null) {
-      return Optional.empty();
-    }
-
-    CertificateIdentity selected = null;
-    Comparator<CertificateIdentity> order = selectionOrder(context);
+    List<CertificateIdentity> pinned = new ArrayList<>();
 
     for (CertificateIdentity candidate : candidates) {
-      if (explicitThumbprint.equals(candidate.thumbprint())
-          && (selected == null || order.compare(candidate, selected) < 0)) {
-        selected = candidate;
+      if (explicitThumbprint.equals(candidate.thumbprint())) {
+        pinned.add(candidate);
       }
     }
 
-    return Optional.ofNullable(selected);
+    return pinned.stream().min(selectionOrder(context));
   }
 
   private static @Nullable ByteString explicitThumbprint(

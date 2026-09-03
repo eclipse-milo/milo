@@ -20,13 +20,17 @@
  *
  * <p>Endpoint advertisement starts from the {@link
  * org.eclipse.milo.opcua.sdk.server.EndpointConfig} instances in {@link
- * org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig}. A secure endpoint may either advertise a
- * fixed certificate supplied directly on the endpoint config, or it may use {@link
+ * org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig}. A secure endpoint may advertise a fixed
+ * certificate supplied directly on the endpoint config, use {@link
  * org.eclipse.milo.opcua.sdk.server.EndpointCertificateConfig} to select a compatible local
  * identity from the configured {@link
- * org.eclipse.milo.opcua.stack.core.security.CertificateManager}. Endpoints whose security policy
- * or certificate request cannot be served by the current runtime are omitted from discovery
- * advertisements.
+ * org.eclipse.milo.opcua.stack.core.security.CertificateManager}, or, with neither configured,
+ * select from the manager's DefaultApplicationGroup. A SecurityPolicy.None endpoint whose UserName
+ * or IssuedToken policies encrypt secrets with a legacy RSA policy selects a certificate the same
+ * way, against the token policies' profiles. An implicit selection failure keeps the None endpoint
+ * advertised without a certificate, while an unsatisfied explicit certificate request omits it.
+ * Other endpoints whose security policy or certificate request cannot be served by the current
+ * runtime are omitted from discovery advertisements.
  *
  * <h2>Lifecycle extensions</h2>
  *

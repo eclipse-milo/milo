@@ -300,6 +300,38 @@ public class EndpointConfigTest {
         description.getServerCertificate().bytesOrEmpty());
   }
 
+  // One advertised certificate only needs to support a usable token policy. Selection must keep
+  // trying when the available identity is incompatible with an earlier legacy policy.
+  @Test
+  public void noneEndpointTriesEachLegacyTokenPolicyWhenSelectingCertificate() throws Exception {
+    CertificateMaterial rsaMin =
+        rsaCertificate(NodeIds.RsaMinApplicationCertificateType, "rsa-min");
+    CertificateManager certificateManager =
+        manager(
+            group(NodeIds.ServerConfiguration_CertificateGroups_DefaultApplicationGroup, rsaMin));
+    UserTokenPolicy rsaSha256Policy =
+        new UserTokenPolicy(
+            "rsa-sha256",
+            UserTokenType.UserName,
+            null,
+            null,
+            SecurityPolicy.Basic256Sha256.getUri());
+    UserTokenPolicy rsaMinPolicy =
+        new UserTokenPolicy(
+            "rsa-min", UserTokenType.UserName, null, null, SecurityPolicy.Basic128Rsa15.getUri());
+    EndpointConfig endpoint =
+        EndpointConfig.newBuilder().addTokenPolicies(rsaSha256Policy, rsaMinPolicy).build();
+
+    EndpointDescription description =
+        server(Set.of(endpoint), certificateManager)
+            .getApplicationContext()
+            .getEndpointDescriptions()
+            .get(0);
+
+    assertArrayEquals(
+        rsaMin.certificate().getEncoded(), description.getServerCertificate().bytesOrEmpty());
+  }
+
   // Anonymous access over a None endpoint needs no certificate and must remain certificate-free
   // even when the server has a managed application identity.
   @Test
@@ -317,6 +349,50 @@ public class EndpointConfigTest {
             .get(0);
 
     assertTrue(description.getServerCertificate().isNullOrEmpty());
+  }
+
+  // Before implicit selection existed, a None endpoint with an encrypted user token policy was
+  // advertised without a certificate. A server with no usable managed identity must keep that
+  // behavior so anonymous access still works, instead of losing the endpoint entirely.
+  @Test
+  public void encryptedUserTokenOnNoneEndpointWithoutIdentityStaysAdvertised() throws Exception {
+    UserTokenPolicy tokenPolicy =
+        new UserTokenPolicy(
+            "encrypted",
+            UserTokenType.UserName,
+            null,
+            null,
+            SecurityPolicy.Basic256Sha256.getUri());
+    EndpointConfig endpoint =
+        EndpointConfig.newBuilder()
+            .addTokenPolicy(EndpointConfig.Builder.USER_TOKEN_POLICY_ANONYMOUS)
+            .addTokenPolicy(tokenPolicy)
+            .build();
+
+    List<EndpointDescription> descriptions =
+        server(Set.of(endpoint), manager()).getApplicationContext().getEndpointDescriptions();
+
+    assertEquals(1, descriptions.size());
+    assertTrue(descriptions.get(0).getServerCertificate().isNullOrEmpty());
+  }
+
+  // A token policy with an unrecognized security policy URI cannot drive certificate selection.
+  // It must not cause the endpoint, and its other token policies, to be omitted.
+  @Test
+  public void unknownTokenSecurityPolicyDoesNotOmitNoneEndpoint() throws Exception {
+    UserTokenPolicy tokenPolicy =
+        new UserTokenPolicy(
+            "custom", UserTokenType.UserName, null, null, "http://example.com/UA/SecurityPolicy#X");
+    EndpointConfig endpoint =
+        EndpointConfig.newBuilder()
+            .addTokenPolicy(EndpointConfig.Builder.USER_TOKEN_POLICY_ANONYMOUS)
+            .addTokenPolicy(tokenPolicy)
+            .build();
+
+    List<EndpointDescription> descriptions =
+        server(Set.of(endpoint), manager()).getApplicationContext().getEndpointDescriptions();
+
+    assertEquals(1, descriptions.size());
   }
 
   // A fixed certificate remains authoritative on a None endpoint that encrypts user tokens, which

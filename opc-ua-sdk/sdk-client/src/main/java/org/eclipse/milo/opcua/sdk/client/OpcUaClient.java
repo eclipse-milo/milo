@@ -515,7 +515,7 @@ public class OpcUaClient {
   private final Object certificateIdentityLock = new Object();
   private final Map<SecurityPolicyProfile, Optional<CertificateIdentity>>
       selectedCertificateIdentities = new HashMap<>();
-  private boolean managerIdentityApplicationUrisChecked;
+  private @Nullable List<String> managerApplicationUris;
 
   public OpcUaClient(OpcUaClientConfig config, OpcClientTransport transport) {
     this.config = config;
@@ -841,6 +841,10 @@ public class OpcUaClient {
       }
 
       Optional<CertificateIdentity> selected = config.getCertificateIdentity(securityPolicyProfile);
+      if (selectedCertificateIdentities.isEmpty()) {
+        // First selection for this connection: surface inconsistent manager identities once.
+        getManagerApplicationUris();
+      }
       selectedCertificateIdentities.put(securityPolicyProfile, selected);
 
       return selected;
@@ -851,8 +855,10 @@ public class OpcUaClient {
    * Resolve the client application URI from the effective certificate identity.
    *
    * <p>An explicitly configured URI takes precedence. Otherwise the URI is read from {@code
-   * certificateIdentity}, then the fixed compatibility certificate. The configured placeholder is
-   * returned only when neither certificate contains a SAN URI.
+   * certificateIdentity}, then the fixed compatibility certificate. When no certificate is
+   * presented, the URI shared by every {@link CertificateManager} identity is used so a {@link
+   * SecurityPolicy#None} connection still advertises the same URI as secure connections. The
+   * configured placeholder is returned only when none of these yields a SAN URI.
    *
    * @param certificateIdentity the identity selected for the connection, or empty when no managed
    *     identity is presented.
@@ -863,47 +869,58 @@ public class OpcUaClient {
       return config.getApplicationUri();
     }
 
-    if (certificateIdentity.isPresent()) {
-      warnIfManagerIdentityApplicationUrisDiffer();
+    Optional<X509Certificate> fixedCertificate = config.getCertificate();
+    Optional<String> certificateApplicationUri =
+        certificateIdentity
+            .map(CertificateIdentity::certificate)
+            .flatMap(CertificateUtil::getSanUri)
+            .or(() -> fixedCertificate.flatMap(CertificateUtil::getSanUri));
 
-      Optional<String> applicationUri =
-          CertificateUtil.getSanUri(certificateIdentity.get().certificate());
-      if (applicationUri.isPresent()) {
-        return applicationUri.get();
-      }
+    if (certificateApplicationUri.isPresent()) {
+      return certificateApplicationUri.get();
     }
 
-    return config
-        .getCertificate()
-        .flatMap(CertificateUtil::getSanUri)
-        .orElse(config.getApplicationUri());
+    return certificateIdentity.isEmpty() && fixedCertificate.isEmpty()
+        ? getManagerApplicationUri().orElse(config.getApplicationUri())
+        : config.getApplicationUri();
   }
 
-  private void warnIfManagerIdentityApplicationUrisDiffer() {
+  private Optional<String> getManagerApplicationUri() {
+    List<String> applicationUris = getManagerApplicationUris();
+
+    return applicationUris.size() == 1 ? Optional.of(applicationUris.get(0)) : Optional.empty();
+  }
+
+  /**
+   * Get the distinct SAN URIs of the {@link CertificateManager} identities, computed once per
+   * connection and logged at WARN when they differ.
+   */
+  private List<String> getManagerApplicationUris() {
     synchronized (certificateIdentityLock) {
-      if (managerIdentityApplicationUrisChecked) {
-        return;
-      }
-      managerIdentityApplicationUrisChecked = true;
-    }
+      if (managerApplicationUris == null) {
+        try {
+          managerApplicationUris =
+              config.getCertificateManager().stream()
+                  .flatMap(manager -> manager.getCertificateIdentities().stream())
+                  .map(CertificateIdentity::certificate)
+                  .map(CertificateUtil::getSanUri)
+                  .flatMap(Optional::stream)
+                  .distinct()
+                  .sorted()
+                  .toList();
 
-    try {
-      List<String> applicationUris =
-          config.getCertificateManager().stream()
-              .flatMap(manager -> manager.getCertificateIdentities().stream())
-              .map(CertificateIdentity::certificate)
-              .map(CertificateUtil::getSanUri)
-              .flatMap(Optional::stream)
-              .distinct()
-              .sorted()
-              .toList();
-
-      if (applicationUris.size() > 1) {
-        logger.warn(
-            "CertificateManager identities have differing ApplicationUris: {}", applicationUris);
+          if (managerApplicationUris.size() > 1) {
+            logger.warn(
+                "CertificateManager identities have differing ApplicationUris: {}",
+                managerApplicationUris);
+          }
+        } catch (RuntimeException e) {
+          logger.warn("Could not inspect CertificateManager identity ApplicationUris", e);
+          managerApplicationUris = List.of();
+        }
       }
-    } catch (RuntimeException e) {
-      logger.warn("Could not compare CertificateManager identity ApplicationUris", e);
+
+      return managerApplicationUris;
     }
   }
 
@@ -915,7 +932,7 @@ public class OpcUaClient {
   private void clearCertificateIdentities() {
     synchronized (certificateIdentityLock) {
       selectedCertificateIdentities.clear();
-      managerIdentityApplicationUrisChecked = false;
+      managerApplicationUris = null;
     }
   }
 
