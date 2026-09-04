@@ -437,51 +437,7 @@ public class OpcUaClient {
 
     sessionFsm = SessionFsmFactory.newSessionFsm(this);
 
-    sessionFsm.addInitializer(
-        (client, session) -> {
-          logger.debug("SessionInitializer: NamespaceTable and ServerTable");
-          RequestHeader requestHeader = newRequestHeader(session.getAuthenticationToken());
-
-          ReadRequest readRequest =
-              new ReadRequest(
-                  requestHeader,
-                  0.0,
-                  TimestampsToReturn.Neither,
-                  new ReadValueId[] {
-                    new ReadValueId(
-                        NodeIds.Server_NamespaceArray,
-                        AttributeId.Value.uid(),
-                        null,
-                        QualifiedName.NULL_VALUE),
-                    new ReadValueId(
-                        NodeIds.Server_ServerArray,
-                        AttributeId.Value.uid(),
-                        null,
-                        QualifiedName.NULL_VALUE)
-                  });
-
-          return client
-              .sendRequestAsync(readRequest)
-              .thenApply(ReadResponse.class::cast)
-              .thenApply(response -> Objects.requireNonNull(response.getResults()))
-              .thenApply(
-                  results -> {
-                    String[] namespaceArray = (String[]) results[0].value().value();
-                    String[] serverArray = (String[]) results[1].value().value();
-                    if (namespaceArray != null) {
-                      updateNamespaceTable(namespaceArray);
-                    }
-                    if (serverArray != null) {
-                      updateServerTable(serverArray);
-                    }
-                    return Unit.VALUE;
-                  })
-              .exceptionally(
-                  ex -> {
-                    logger.warn("SessionInitializer: NamespaceTable", ex);
-                    return Unit.VALUE;
-                  });
-        });
+    sessionFsm.addInitializer(this::initializeNamespaceAndServerTables);
 
     addSessionInitializer(
         (client, session) -> {
@@ -502,6 +458,129 @@ public class OpcUaClient {
 
     ObjectTypeInitializer.initialize(namespaceTable, objectTypeManager);
     VariableTypeInitializer.initialize(namespaceTable, variableTypeManager);
+  }
+
+  private CompletableFuture<Unit> initializeNamespaceAndServerTables(
+      OpcUaClient client, OpcUaSession session) {
+
+    logger.debug("SessionInitializer: NamespaceTable and ServerTable");
+
+    return readNamespaceAndServerArrays(client, session.getAuthenticationToken())
+        .handle(
+            (unit, ex) -> {
+              if (ex == null) {
+                return CompletableFuture.completedFuture(unit);
+              }
+
+              boolean tooManyOperations =
+                  UaException.extractStatusCode(ex)
+                      .map(statusCode -> statusCode.value() == StatusCodes.Bad_TooManyOperations)
+                      .orElse(false);
+
+              if (tooManyOperations) {
+                return readNamespaceAndServerArraysIndividually(
+                    client, session.getAuthenticationToken());
+              }
+
+              logger.warn("SessionInitializer: NamespaceTable and ServerTable", ex);
+              return CompletableFuture.completedFuture(Unit.VALUE);
+            })
+        .thenCompose(Function.identity());
+  }
+
+  private CompletableFuture<Unit> readNamespaceAndServerArrays(
+      OpcUaClient client, NodeId authenticationToken) {
+
+    return readValuesDuringSessionInitialization(
+            client, authenticationToken, NodeIds.Server_NamespaceArray, NodeIds.Server_ServerArray)
+        .thenApply(
+            results -> {
+              if (results[0] != null) {
+                updateNamespaceTable(results[0]);
+              }
+              if (results[1] != null) {
+                updateServerTable(results[1]);
+              }
+
+              return Unit.VALUE;
+            });
+  }
+
+  private CompletableFuture<Unit> readNamespaceAndServerArraysIndividually(
+      OpcUaClient client, NodeId authenticationToken) {
+
+    CompletableFuture<Unit> namespaceArray =
+        readValuesDuringSessionInitialization(
+                client, authenticationToken, NodeIds.Server_NamespaceArray)
+            .thenApply(
+                results -> {
+                  if (results[0] != null) {
+                    updateNamespaceTable(results[0]);
+                  }
+                  return Unit.VALUE;
+                })
+            .exceptionally(
+                ex -> {
+                  logger.warn("SessionInitializer: NamespaceTable singleton Read", ex);
+                  return Unit.VALUE;
+                });
+
+    CompletableFuture<Unit> serverArray =
+        readValuesDuringSessionInitialization(
+                client, authenticationToken, NodeIds.Server_ServerArray)
+            .thenApply(
+                results -> {
+                  if (results[0] != null) {
+                    updateServerTable(results[0]);
+                  }
+                  return Unit.VALUE;
+                })
+            .exceptionally(
+                ex -> {
+                  logger.warn("SessionInitializer: ServerTable singleton Read", ex);
+                  return Unit.VALUE;
+                });
+
+    return CompletableFuture.allOf(namespaceArray, serverArray).thenApply(v -> Unit.VALUE);
+  }
+
+  private CompletableFuture<String[][]> readValuesDuringSessionInitialization(
+      OpcUaClient client, NodeId authenticationToken, NodeId... nodeIds) {
+
+    ReadValueId[] nodesToRead =
+        Stream.of(nodeIds)
+            .map(
+                nodeId ->
+                    new ReadValueId(
+                        nodeId, AttributeId.Value.uid(), null, QualifiedName.NULL_VALUE))
+            .toArray(ReadValueId[]::new);
+
+    ReadRequest readRequest =
+        new ReadRequest(
+            newRequestHeader(authenticationToken), 0.0, TimestampsToReturn.Neither, nodesToRead);
+
+    return client
+        .sendRequestAsync(readRequest)
+        .thenApply(ReadResponse.class::cast)
+        .thenCompose(
+            response -> {
+              DataValue[] results = response.getResults();
+
+              if (results == null || results.length != nodeIds.length) {
+                return CompletableFuture.failedFuture(
+                    new UaException(
+                        StatusCodes.Bad_UnexpectedError,
+                        "Read returned %s results, expected %s"
+                            .formatted(results == null ? "null" : results.length, nodeIds.length)));
+              }
+
+              String[][] values = new String[results.length][];
+              for (int i = 0; i < results.length; i++) {
+                values[i] = (String[]) results[i].value().value();
+              }
+
+              return CompletableFuture.completedFuture(values);
+            });
   }
 
   /**
