@@ -489,6 +489,7 @@ public class OpcUaClient {
           // are refreshed (eagerly or lazily, depending on configuration). Resetting the tree
           // also resets the dynamic DataTypeManager and EncodingContext derived from it.
 
+          resetOperationLimits();
           resetDataTypeTree();
 
           return CompletableFuture.completedFuture(Unit.VALUE);
