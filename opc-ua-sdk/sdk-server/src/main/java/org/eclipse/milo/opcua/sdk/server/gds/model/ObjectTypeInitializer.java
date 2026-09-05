@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.eclipse.milo.opcua.sdk.server.gds;
+package org.eclipse.milo.opcua.sdk.server.gds.model;
 
 import org.eclipse.milo.opcua.sdk.server.ObjectTypeManager;
 import org.eclipse.milo.opcua.sdk.server.gds.model.objects.AccessTokenIssuedAuditEventTypeNode;

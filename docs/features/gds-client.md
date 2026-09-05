@@ -31,13 +31,14 @@ model does. It lives in subpackages of the existing modules:
 | `milo-stack-core` | `org.eclipse.milo.opcua.stack.core.gds`             | `GdsNodeIds` (one `ExpandedNodeId` per GDS node), `DataTypeInitializer`                          |
 | `milo-stack-core` | `org.eclipse.milo.opcua.stack.core.gds.types`       | `ApplicationRecordDataType` with its codec and `StructureDefinition`                             |
 | `milo-dtd-core`   | `org.eclipse.milo.opcua.sdk.core.dtd.gds`           | `BinaryDataTypeDictionaryInitializer` for the legacy type dictionary mechanism (deprecated)      |
-| `milo-sdk-client` | `org.eclipse.milo.opcua.sdk.client.gds`             | `ObjectTypeInitializer`, `VariableTypeInitializer`                                                |
+| `milo-sdk-client` | `org.eclipse.milo.opcua.sdk.client.gds.model`             | `ObjectTypeInitializer`, `VariableTypeInitializer`                                                |
 | `milo-sdk-client` | `org.eclipse.milo.opcua.sdk.client.gds.model.objects` | Client node classes for `DirectoryType`, `CertificateDirectoryType`, the KeyCredential and AuthorizationService types, and the GDS audit event types |
-| `milo-sdk-server` | `org.eclipse.milo.opcua.sdk.server.gds` and `.model.objects` | The server-side mirror of the same types, for a GDS hosted on Milo                        |
+| `milo-sdk-server` | `org.eclipse.milo.opcua.sdk.server.gds.model` and `.objects` | The server-side mirror of the same types, for a GDS hosted on Milo                        |
 
 The **client layer** is the module `opc-ua-sdk/sdk-client-gds` (artifact `milo-sdk-client-gds`,
-listed in `milo-bom`). It depends only on `milo-sdk-client` and shares the package
-`org.eclipse.milo.opcua.sdk.client.gds` with the generated client initializers:
+listed in `milo-bom`). It depends only on `milo-sdk-client` and owns the package
+`org.eclipse.milo.opcua.sdk.client.gds`. The generated initializers remain in the core SDK
+under `.gds.model`, so the two jars can be used together as Java modules:
 
 - `GdsClient` wraps a connected `OpcUaClient` and exposes every `DirectoryType` and
   `CertificateDirectoryType` method with a typed signature, plus reads of a CertificateGroup's
@@ -253,29 +254,44 @@ the [opc-ua-gds-model](https://github.com/kevinherron/opc-ua-gds-model) reposito
 1.05.07 base, the same base as Milo's namespace 0 model. Every file is copied with its package
 rewritten and the Eclipse Milo license header prepended; nothing else changes.
 
-| Source package (`opc-ua-gds-model`)          | Milo package                                          | Module            |
-|----------------------------------------------|-------------------------------------------------------|-------------------|
-| `com.digitalpetri.opcua.gds`                 | `org.eclipse.milo.opcua.stack.core.gds`               | `stack-core`      |
-| `com.digitalpetri.opcua.gds.types`           | `org.eclipse.milo.opcua.stack.core.gds.types`         | `stack-core`      |
+The GDS generators use `com.digitalpetri.opcua.gds.client.model` and
+`com.digitalpetri.opcua.gds.server.model` as model roots. Initializers live directly in those
+packages, and typed nodes live in their `.objects` and `.variables` subpackages. Each generated
+package belongs to one module; handwritten APIs in separate modules use the parent packages.
+`PackageMap.create(...)` uses the supplied prefixes as-is, so new companion model generators
+should explicitly supply dedicated model roots.
+
+The following mappings apply to output regenerated with that convention. The recorded source
+commit `efa229d` predates it: its initializers live in `.client` and `.server`, and its typed nodes
+live in `.client.objects` and `.server.objects`. When copying that older output, map those packages
+to the same Milo model destinations below.
+
+| Source package (`opc-ua-gds-model`) | Milo package | Module |
+|-----------------------------------|--------------|--------|
+| `com.digitalpetri.opcua.gds` | `org.eclipse.milo.opcua.stack.core.gds` | `stack-core` |
+| `com.digitalpetri.opcua.gds.types` | `org.eclipse.milo.opcua.stack.core.gds.types` | `stack-core` |
 | `com.digitalpetri.opcua.gds` (`BinaryDataTypeDictionaryInitializer` only) | `org.eclipse.milo.opcua.sdk.core.dtd.gds` | `dtd-core` |
-| `com.digitalpetri.opcua.gds.client`          | `org.eclipse.milo.opcua.sdk.client.gds`               | `sdk-client`      |
-| `com.digitalpetri.opcua.gds.client.objects`  | `org.eclipse.milo.opcua.sdk.client.gds.model.objects` | `sdk-client`      |
-| `com.digitalpetri.opcua.gds.server`          | `org.eclipse.milo.opcua.sdk.server.gds`               | `sdk-server`      |
-| `com.digitalpetri.opcua.gds.server.objects`  | `org.eclipse.milo.opcua.sdk.server.gds.model.objects` | `sdk-server`      |
+| `com.digitalpetri.opcua.gds.client.model` (including subpackages) | `org.eclipse.milo.opcua.sdk.client.gds.model` (including subpackages) | `sdk-client` |
+| `com.digitalpetri.opcua.gds.server.model` (including subpackages) | `org.eclipse.milo.opcua.sdk.server.gds.model` (including subpackages) | `sdk-server` |
 
 To pick up a new GDS NodeSet release:
 
-1. Regenerate in `opc-ua-gds-model` and commit there. Do not edit the Milo copy by hand.
+1. Regenerate in `opc-ua-gds-model` using the GDS generators with `.client.model` and
+   `.server.model` package roots, and commit there. Do not edit the Milo copy by hand. Use a clean
+   output directory and remove obsolete generated files from the old packages when importing the
+   new output; generation does not delete files left by an earlier package layout.
 2. Copy `src/main/java` of `gds-model-core`, `gds-model-client`, and `gds-model-server` into the
    Milo packages above, rewriting `package` and `import` lines by prefix (most specific prefix
-   first: `.client.objects` before `.client`, `.server.objects` before `.server`, `.types` before
-   the bare prefix). `BinaryDataTypeDictionaryInitializer` gets the `dtd-core` package because it
-   extends `DataTypeDictionaryInitializer` from that module.
+   first: `.client.model`, `.server.model`, and `.types` before the bare prefix).
+   `BinaryDataTypeDictionaryInitializer` gets the `dtd-core` package because it extends
+   `DataTypeDictionaryInitializer` from that module.
 3. Prepend the EPL-2.0 header, run `mise exec -- mvn -q spotless:apply`, and compile.
 4. Update the commit and NodeSet version recorded in each `package-info.java` and in this
    document.
 5. Diff the Milo packages against the source with the prefixes rewritten; only the header and
    import order may differ.
+6. Run `GdsModulePathTest` and `GdsServerModelTest` in `opc-ua-sdk/integration-tests` to verify
+   module package ownership and server type registration.
 
 The GDS `DataTypeInitializer` and both `ObjectTypeInitializer`s take a `NamespaceTable` and must
 stay out of the namespace 0 startup path (`DefaultDataTypeManager.createAndInitialize` and the
