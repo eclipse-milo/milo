@@ -19,6 +19,7 @@ import org.eclipse.milo.opcua.sdk.server.NodeManager;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -182,13 +183,20 @@ public final class InstantiationResult<T extends UaNode> {
     }
 
     RuntimeException failure = null;
+    Map<NodeId, UaNode> expectedNodes = new LinkedHashMap<>();
+    for (MaterializedNode node : materializedNodes) {
+      expectedNodes.put(node.nodeId(), node.node());
+    }
 
     for (MaterializedReference reference : references) {
       if (!reference.added()) {
         continue;
       }
       try {
-        target.removeReference(reference.reference());
+        target.removeReferenceIfSame(
+            reference.reference(),
+            expectedNodes,
+            root.getNodeContext().getServer().getNamespaceTable());
       } catch (RuntimeException e) {
         failure = suppress(failure, e);
       }
@@ -199,7 +207,7 @@ public final class InstantiationResult<T extends UaNode> {
         continue;
       }
       try {
-        target.removeNode(node.nodeId());
+        target.removeNodeIfSame(node.nodeId(), node.node());
       } catch (RuntimeException e) {
         failure = suppress(failure, e);
       }

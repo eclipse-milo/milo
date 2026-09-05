@@ -18,6 +18,7 @@ import com.google.common.base.Preconditions;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -44,7 +45,8 @@ import org.jspecify.annotations.Nullable;
 
 public class UaMethodNode extends UaNode implements MethodNode {
 
-  private volatile MethodInvocationHandler handler = MethodInvocationHandler.NOT_IMPLEMENTED;
+  private final AtomicReference<MethodInvocationHandler> handler =
+      new AtomicReference<>(MethodInvocationHandler.NOT_IMPLEMENTED);
 
   private Boolean executable;
   private Boolean userExecutable;
@@ -185,11 +187,26 @@ public class UaMethodNode extends UaNode implements MethodNode {
   }
 
   public MethodInvocationHandler getInvocationHandler() {
-    return handler;
+    return handler.get();
   }
 
   public void setInvocationHandler(MethodInvocationHandler handler) {
-    this.handler = handler;
+    this.handler.set(handler);
+  }
+
+  /**
+   * Replace the invocation handler only while the current handler is {@code expected} by identity.
+   *
+   * <p>Behavior owners can release their dispatch without removing a handler installed later by
+   * another owner or by the application.
+   *
+   * @param expected the handler owned by the caller.
+   * @param replacement the handler to install if ownership has not changed.
+   * @return whether the replacement was applied.
+   */
+  public boolean compareAndSetInvocationHandler(
+      MethodInvocationHandler expected, MethodInvocationHandler replacement) {
+    return handler.compareAndSet(expected, replacement);
   }
 
   /**

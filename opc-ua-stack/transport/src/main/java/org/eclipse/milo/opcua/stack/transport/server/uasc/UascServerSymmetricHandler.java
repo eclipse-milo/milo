@@ -163,80 +163,76 @@ public class UascServerSymmetricHandler extends ByteToMessageCodec<UascServiceRe
 
     char chunkType = (char) buffer.readByte();
 
-    if (chunkType == 'A') {
-      chunkBuffers.releaseAll();
-    } else {
-      buffer.skipBytes(4); // Skip messageSize
+    buffer.skipBytes(4); // Skip messageSize
 
-      long secureChannelId = buffer.readUnsignedIntLE();
-      if (secureChannelId != secureChannel.getChannelId()) {
-        throw new UaException(
-            StatusCodes.Bad_SecureChannelIdInvalid,
-            "invalid secure channel id: " + secureChannelId);
-      }
+    long secureChannelId = buffer.readUnsignedIntLE();
+    if (secureChannelId != secureChannel.getChannelId()) {
+      throw new UaException(
+          StatusCodes.Bad_SecureChannelIdInvalid, "invalid secure channel id: " + secureChannelId);
+    }
 
-      int chunkSize = buffer.readerIndex(0).readableBytes();
-      if (chunkSize > maxChunkSize) {
-        throw new UaException(
-            StatusCodes.Bad_TcpMessageTooLarge,
-            String.format("max chunk size exceeded (%s)", maxChunkSize));
-      }
+    int chunkSize = buffer.readerIndex(0).readableBytes();
+    if (chunkSize > maxChunkSize) {
+      throw new UaException(
+          StatusCodes.Bad_TcpMessageTooLarge,
+          String.format("max chunk size exceeded (%s)", maxChunkSize));
+    }
 
-      chunkBuffers.add(buffer);
+    chunkBuffers.add(buffer);
 
-      if (maxChunkCount > 0 && chunkBuffers.size() > maxChunkCount) {
-        throw new UaException(
-            StatusCodes.Bad_TcpMessageTooLarge,
-            String.format("max chunk count exceeded (%s)", maxChunkCount));
-      }
+    if (chunkType != 'A' && maxChunkCount > 0 && chunkBuffers.size() > maxChunkCount) {
+      throw new UaException(
+          StatusCodes.Bad_TcpMessageTooLarge,
+          String.format("max chunk count exceeded (%s)", maxChunkCount));
+    }
 
-      if (chunkType == 'F') {
-        final List<ByteBuf> buffersToDecode = chunkBuffers.takeAll();
+    // Abort terminates a message only after all accumulated chunks pass security and sequence
+    // checks. The decoder consumes the Abort sequence number before reporting
+    // MessageAbortException.
+    if (chunkType == 'F' || chunkType == 'A') {
+      final List<ByteBuf> buffersToDecode = chunkBuffers.takeAll();
 
-        ByteBuf message = null;
+      ByteBuf message = null;
 
-        try {
-          DecodedMessage decodedMessage =
-              chunkDecoder.decodeSymmetric(secureChannel, buffersToDecode);
+      try {
+        DecodedMessage decodedMessage =
+            chunkDecoder.decodeSymmetric(secureChannel, buffersToDecode);
 
-          message = decodedMessage.getMessage();
-          long requestId = decodedMessage.getRequestId();
+        message = decodedMessage.getMessage();
+        long requestId = decodedMessage.getRequestId();
 
-          binaryDecoder.setBuffer(message);
-          UaRequestMessageType requestMessage =
-              (UaRequestMessageType) binaryDecoder.decodeMessage(null);
+        binaryDecoder.setBuffer(message);
+        UaRequestMessageType requestMessage =
+            (UaRequestMessageType) binaryDecoder.decodeMessage(null);
 
-          String endpointUrl = ctx.channel().attr(UascServerHelloHandler.ENDPOINT_URL_KEY).get();
+        String endpointUrl = ctx.channel().attr(UascServerHelloHandler.ENDPOINT_URL_KEY).get();
 
-          EndpointDescription endpoint =
-              ctx.channel().attr(UascServerAsymmetricHandler.ENDPOINT_KEY).get();
+        EndpointDescription endpoint =
+            ctx.channel().attr(UascServerAsymmetricHandler.ENDPOINT_KEY).get();
 
-          var serviceRequest =
-              new UascServiceRequest(
-                  endpointUrl,
-                  transportProfile,
-                  ctx.channel(),
-                  secureChannel,
-                  endpoint,
-                  requestMessage,
-                  requestId);
+        var serviceRequest =
+            new UascServiceRequest(
+                endpointUrl,
+                transportProfile,
+                ctx.channel(),
+                secureChannel,
+                endpoint,
+                requestMessage,
+                requestId);
 
-          out.add(serviceRequest);
-        } catch (MessageAbortException e) {
-          logger.warn(
-              "Received message abort chunk; error={}, reason={}",
-              e.getStatusCode(),
-              e.getMessage());
-        } catch (MessageDecodeException e) {
-          logger.error("Error decoding symmetric message", e);
+        out.add(serviceRequest);
+      } catch (MessageAbortException e) {
+        logger.warn(
+            "Received message abort chunk; error={}, reason={}", e.getStatusCode(), e.getMessage());
+      } catch (MessageDecodeException e) {
+        logger.error("Error decoding symmetric message", e);
 
-          ctx.close();
-        } finally {
-          if (message != null) {
-            message.release();
-          }
-          buffersToDecode.clear();
+        ctx.close();
+      } finally {
+        if (message != null) {
+          message.release();
         }
+        buffersToDecode.clear();
       }
     }
   }

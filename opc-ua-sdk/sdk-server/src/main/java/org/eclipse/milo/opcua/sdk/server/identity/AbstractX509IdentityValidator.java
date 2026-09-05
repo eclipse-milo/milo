@@ -22,7 +22,6 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.ChannelBoundSignatureData;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
-import org.eclipse.milo.opcua.stack.core.security.UserTokenSecurityPolicyRules;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SignatureData;
@@ -91,12 +90,6 @@ public abstract class AbstractX509IdentityValidator extends AbstractIdentityVali
     } else {
       securityPolicy = SecurityPolicy.fromUri(securityPolicyUri);
     }
-
-    UserTokenSecurityPolicyRules.requireSamePublicKeyAlgorithmAsChannel(
-        session.getSecurityConfiguration().getSecurityMode(),
-        session.getSecurityConfiguration().getSecurityPolicy(),
-        securityPolicy,
-        securityPolicyUri != null && !securityPolicyUri.isEmpty());
 
     return securityPolicy;
   }

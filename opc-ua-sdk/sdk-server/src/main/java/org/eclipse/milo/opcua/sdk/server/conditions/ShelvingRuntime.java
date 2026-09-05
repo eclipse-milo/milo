@@ -78,6 +78,7 @@ final class ShelvingRuntime {
 
   // Guarded by the owning Condition's lock.
   private long shelveGeneration = 0;
+  private boolean transitionInProgress;
   private @Nullable ScheduledFuture<?> expiryTimer;
   private boolean expiryTimerSuppressed = false;
   private boolean shutdown = false;
@@ -360,6 +361,7 @@ final class ShelvingRuntime {
     DateTime deadline = unshelveDeadline;
 
     if (!shutdown
+        && !transitionInProgress
         && state != ShelvedState.UNSHELVED
         && deadline != null
         && System.currentTimeMillis() >= deadline.getJavaTime()) {
@@ -370,9 +372,15 @@ final class ShelvingRuntime {
   private void shelveTransition(
       ShelvedState target, @Nullable Function<DateTime, DateTime> deadline) {
 
-    alarm.withStateChange(
-        target.stateName(),
-        now -> applyTransition(target, deadline != null ? deadline.apply(now) : null, now));
+    boolean previous = transitionInProgress;
+    transitionInProgress = true;
+    try {
+      alarm.withStateChange(
+          target.stateName(),
+          now -> applyTransition(target, deadline != null ? deadline.apply(now) : null, now));
+    } finally {
+      transitionInProgress = previous;
+    }
   }
 
   private void applyTransition(ShelvedState target, @Nullable DateTime deadline, DateTime time) {
@@ -584,10 +592,14 @@ final class ShelvingRuntime {
   }
 
   private double computeUnshelveTime() {
-    // A read is a shelving touch. Apply due expiry under the Condition lock before producing the
-    // value; event-field extraction may recursively read UnshelveTime, but by then the state is
-    // already Unshelved and this check is a no-op.
-    alarm.runLocked(this::applyExpiryIfDue);
+    // An ordinary read still supplies the lazy fallback. Event selection and refresh copying have
+    // already resolved expiry and must not change state if the deadline passes between fields.
+    alarm.runLocked(
+        () -> {
+          if (!alarm.isReadingEventFields()) {
+            applyExpiryIfDue();
+          }
+        });
 
     ReadSnapshot snapshot = readSnapshot;
     ShelvedState state = snapshot.state();

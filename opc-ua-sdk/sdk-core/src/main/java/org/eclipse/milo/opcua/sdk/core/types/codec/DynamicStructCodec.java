@@ -112,9 +112,11 @@ public class DynamicStructCodec extends GenericDataTypeCodec<DynamicStructType> 
     if (definition.getStructureType() == StructureType.StructureWithOptionalFields) {
       int optionalFieldIndex = 0;
       for (StructureField field : fields) {
-        if (field.getIsOptional()
-            && struct.getMembers().containsKey(requireNonNull(field.getName()))) {
-          encodingMask = encodingMask | (1L << optionalFieldIndex++);
+        if (field.getIsOptional()) {
+          if (struct.getMembers().containsKey(requireNonNull(field.getName()))) {
+            encodingMask |= 1L << optionalFieldIndex;
+          }
+          optionalFieldIndex++;
         }
       }
       encoder.encodeUInt32("EncodingMask", UInteger.valueOf(encodingMask));
