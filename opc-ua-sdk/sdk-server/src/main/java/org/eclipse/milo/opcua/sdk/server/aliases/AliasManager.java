@@ -938,7 +938,7 @@ public final class AliasManager extends AbstractLifecycle {
           removeFromCategory(aliasNode, categoryId);
 
           if (getOrganizingCategories(aliasNodeId).isEmpty()) {
-            aliasNode.delete();
+            deleteAliasNode(aliasNode);
           }
         } finally {
           versionManager.publishPending();
@@ -1325,13 +1325,10 @@ public final class AliasManager extends AbstractLifecycle {
    * target that is not associated changes nothing and reports {@code Good}; §6.3.5 reserves {@code
    * Bad_NotFound} for an alias name the category does not contain.
    *
-   * <p>Validation happens before any mutation, and reference removal through the manager's own
-   * fragment cannot partially fail, so an entry ordinarily either fully applies or leaves its state
-   * untouched (§6.3.5: "If all targets for an AliasNames array entry cannot be deleted, then none
-   * of the targets are deleted"). Aliases living in an application {@link NodeManager} can throw
-   * unchecked mid-entry, however; such a failure is confined to its entry as {@code
-   * Bad_InternalError}, and any category whose new version was prepared before the mutation still
-   * gets its LastChange published.
+   * <p>Validation and category-version persistence happen before any mutation. Reference removal
+   * spans every registered {@link NodeManager}. A custom NodeManager can throw unchecked mid-entry;
+   * such a failure is confined to its entry as {@code Bad_InternalError}, and any category whose
+   * new version was prepared before the mutation still gets its LastChange published.
    */
   private StatusCode deleteAliasEntry(
       NodeId categoryId, @Nullable String aliasName, @Nullable ExpandedNodeId targetNode) {
@@ -1368,7 +1365,7 @@ public final class AliasManager extends AbstractLifecycle {
           removeFromCategory(aliasNode, categoryId);
 
           if (getOrganizingCategories(aliasNodeId).isEmpty()) {
-            aliasNode.delete();
+            deleteAliasNode(aliasNode);
           }
         }
 
@@ -1939,9 +1936,19 @@ public final class AliasManager extends AbstractLifecycle {
 
     versionManager.prepare(getOrganizingCategories(aliasNodeId));
 
-    aliasNode.delete();
+    deleteAliasNode(aliasNode);
 
     return true;
+  }
+
+  private void deleteAliasNode(UaNode aliasNode) {
+    var addressSpaceManager = server.getAddressSpaceManager();
+    List<Reference> references = addressSpaceManager.getManagedReferences(aliasNode.getNodeId());
+
+    // Preserve UaNode.delete's traversal of owned HasChild references before removing the
+    // snapshotted associations from every registered manager.
+    aliasNode.delete();
+    references.forEach(addressSpaceManager::removeManagedReferences);
   }
 
   /** The forward {@code AliasFor}-or-subtype References of an alias Node. */

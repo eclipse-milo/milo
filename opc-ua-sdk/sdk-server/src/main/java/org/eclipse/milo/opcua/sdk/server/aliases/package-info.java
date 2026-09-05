@@ -63,12 +63,14 @@
  * already has — and that out-of-band AddressSpace edits do not bump {@code LastChange}; mutations
  * must flow through the manager (or be followed by an explicit {@code touch}) for version
  * correctness. Association removal covers every registered NodeManager that may store either
- * direction, matching the scope of reference collection. Out-of-band edits carry one further
- * caveat: References recorded in only one direction (e.g. a category-side-only {@code Organizes}
- * Reference loaded from a NodeSet without its inverse) are still found by search, which follows the
- * forward direction, but are invisible to alias-side operations — organizing-category resolution
- * during delete and ancestor discovery during version propagation both walk inverse References and
- * miss such linkage.
+ * direction, matching the scope of reference collection. Whole-alias deletion preserves the owning
+ * manager's child-node traversal and removes the alias's collected References from all registered
+ * managers, so NodeId reuse cannot restore a deleted target or category membership. Out-of-band
+ * edits carry one further caveat: References recorded in only one direction (e.g. a
+ * category-side-only {@code Organizes} Reference loaded from a NodeSet without its inverse) are
+ * still found by search, which follows the forward direction, but are invisible to alias-side
+ * operations — organizing-category resolution during delete and ancestor discovery during version
+ * propagation both walk inverse References and miss such linkage.
  *
  * <h2>Network mutation</h2>
  *

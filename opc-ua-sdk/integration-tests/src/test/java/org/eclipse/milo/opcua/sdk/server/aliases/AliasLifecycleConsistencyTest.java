@@ -34,11 +34,13 @@ import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.UaNodeManager;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AliasNameCategoryType;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectNode;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
@@ -130,6 +132,95 @@ class AliasLifecycleConsistencyTest extends AbstractClientServerTest {
     assertFalse(
         nodeManager.getReferences(second).contains(external),
         "inverse reference must also be removed");
+  }
+
+  // Whole-alias deletion must remove cross-manager references before the deterministic alias
+  // NodeId is reused, or an old target silently becomes part of the replacement alias.
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void deletingWholeAliasDoesNotResurrectTargetsFromAnotherManager(boolean wire) throws Exception {
+    manager.startup();
+    NodeId first = newNodeId("TestInt32");
+    NodeId second = newNodeId("TestAnalogValue");
+    NodeId aliasId = manager.addAlias(NodeIds.Aliases, prefix, List.of(target(first)));
+    Reference external =
+        new Reference(second, NodeIds.AliasFor, aliasId.expanded(), Reference.Direction.INVERSE);
+    managed(second).addReference(external);
+    externalReferences.add(external);
+    manager.touch(NodeIds.Aliases);
+    assertEquals(Set.of(first, second), targets(NodeIds.Aliases, prefix));
+
+    if (wire) {
+      assertArrayEquals(
+          new StatusCode[] {StatusCode.GOOD}, deleteOverWire(NodeIds.Aliases, prefix, null));
+    } else {
+      manager.deleteAlias(NodeIds.Aliases, prefix, null);
+    }
+    assertTrue(server.getAddressSpaceManager().getManagedNode(aliasId).isEmpty());
+    NodeId replacement = manager.addAlias(NodeIds.Aliases, prefix, List.of(target(first)));
+    assertEquals(aliasId, replacement);
+    assertEquals(
+        Set.of(first), targets(NodeIds.Aliases, prefix), "deleted targets must not reappear");
+    assertTrue(nodeManager.getReferences(aliasId).isEmpty());
+    assertFalse(nodeManager.getReferences(second).contains(external));
+  }
+
+  // Removing the last target deletes the alias from every category, including Organizes links
+  // stored outside the alias's manager. Reuse must not reconnect the deleted membership.
+  @Test
+  void deletingTargetlessAliasRemovesExternalOrganizingReferences() throws Exception {
+    manager.startup();
+    NodeId first = newNodeId("TestInt32");
+    NodeId aliasId = manager.addAlias(NodeIds.Aliases, prefix, List.of(target(first)));
+    AliasCategoryConfig other = category("Other", NodeIds.Aliases);
+    manager.addCategory(other);
+    Reference external =
+        new Reference(
+            other.categoryNodeId(),
+            NodeIds.Organizes,
+            aliasId.expanded(),
+            Reference.Direction.FORWARD);
+    managed(other.categoryNodeId()).addReference(external);
+    externalReferences.add(external);
+    manager.touch(other.categoryNodeId());
+    assertEquals(Set.of(first), targets(other.categoryNodeId(), prefix));
+
+    manager.deleteAlias(NodeIds.Aliases, prefix, List.of(target(first)));
+    assertTrue(server.getAddressSpaceManager().getManagedNode(aliasId).isEmpty());
+    assertEquals(aliasId, manager.addAlias(NodeIds.Aliases, prefix, List.of(target(first))));
+    assertTrue(
+        targets(other.categoryNodeId(), prefix).isEmpty(), "deleted membership must not reappear");
+    assertFalse(nodeManager.getReferences(other.categoryNodeId()).contains(external));
+    assertTrue(nodeManager.getReferences(aliasId).isEmpty());
+  }
+
+  // UaNode.delete traverses owned HasChild links. Global reference cleanup must preserve that
+  // traversal so deleting an alias cannot strand a component in its own manager.
+  @Test
+  void deletingWholeAliasStillDeletesItsOwnedChildren() throws Exception {
+    manager.startup();
+    NodeId aliasId =
+        manager.addAlias(NodeIds.Aliases, prefix, List.of(target(newNodeId("TestInt32"))));
+    UaNode alias = managed(aliasId);
+    NodeId childId = newNodeId(prefix + "Component");
+    UaObjectNode child =
+        new UaObjectNode.UaObjectNodeBuilder(alias.getNodeContext())
+            .setNodeId(childId)
+            .setBrowseName(newQualifiedName(prefix + "Component"))
+            .setDisplayName(LocalizedText.english("component"))
+            .build();
+    alias.getNodeManager().addNode(child);
+    alias.addReference(
+        new Reference(
+            aliasId, NodeIds.HasComponent, childId.expanded(), Reference.Direction.FORWARD));
+    assertTrue(server.getAddressSpaceManager().getManagedNode(childId).isPresent());
+
+    manager.deleteAlias(NodeIds.Aliases, prefix, null);
+
+    assertTrue(server.getAddressSpaceManager().getManagedNode(aliasId).isEmpty());
+    assertTrue(
+        server.getAddressSpaceManager().getManagedNode(childId).isEmpty(),
+        "owned child deletion must still follow HasComponent");
   }
 
   // A child's parent reference was created after its parent journal. Parent removal must detach
@@ -325,7 +416,7 @@ class AliasLifecycleConsistencyTest extends AbstractClientServerTest {
         .longValue();
   }
 
-  private StatusCode[] deleteOverWire(NodeId category, String name, NodeId target)
+  private StatusCode[] deleteOverWire(NodeId category, String name, @Nullable NodeId target)
       throws UaException {
     NodeId method =
         server
@@ -346,7 +437,8 @@ class AliasLifecycleConsistencyTest extends AbstractClientServerTest {
                         method,
                         new Variant[] {
                           new Variant(new String[] {name}),
-                          new Variant(new ExpandedNodeId[] {target.expanded()})
+                          new Variant(
+                              new ExpandedNodeId[] {target == null ? null : target.expanded()})
                         })))
             .getResults()[0];
     assertEquals(StatusCode.GOOD, result.getStatusCode());
