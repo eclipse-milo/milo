@@ -52,6 +52,15 @@
  * later child fails. Each failing child cleans up its own partial startup before propagating the
  * failure.
  *
+ * <h2>Node storage</h2>
+ *
+ * <p>{@link org.eclipse.milo.opcua.sdk.server.NodeManager} owns node identity and reference
+ * storage. The built-in manager serializes mutations, batch commits, and identity-conditional
+ * cleanup on its monitor. It resolves node attributes and invokes reference filters outside that
+ * monitor because attribute observers may call back into the manager while holding a node's
+ * monitor. Application managers that use the default batch and cleanup primitives need a single
+ * writer.
+ *
  * <h2>Runtime boundaries</h2>
  *
  * <p>The SDK server package coordinates high-level server configuration and lifecycle. Certificate
