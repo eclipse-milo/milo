@@ -16,11 +16,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.util.HashedWheelTimer;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -57,6 +59,8 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportConfig;
+import org.eclipse.milo.opcua.stack.transport.client.uasc.ClientSecureChannel;
+import org.eclipse.milo.opcua.stack.transport.client.uasc.UascClientAcknowledgeHandler;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -364,6 +368,59 @@ class ReverseTcpClientTransportTest {
     } finally {
       channel.close();
       manager.shutdown();
+    }
+  }
+
+  // A completed SecureChannel handshake must reach connect callers even if executor dispatch
+  // rejects.
+  @Test
+  @SuppressWarnings("unchecked")
+  void rejectedHandshakeDispatchStillCompletesConnect() throws Exception {
+    executor =
+        new QueuingExecutorService() {
+          @Override
+          public void execute(Runnable task) {
+            throw new RejectedExecutionException("saturated");
+          }
+        };
+    EmbeddedChannel channel = new EmbeddedChannel();
+    HashedWheelTimer timer = new HashedWheelTimer();
+    ReverseTcpClientTransport transport =
+        new ReverseTcpClientTransport(
+            OpcTcpClientTransportConfig.newBuilder()
+                .setExecutor(executor)
+                .setScheduledExecutor(scheduledExecutor())
+                .setWheelTimer(timer)
+                .build(),
+            newConnection(channel));
+    OpcUaClient client = new OpcUaClient(clientConfig(), transport);
+    CompletableFuture<Channel> target = new CompletableFuture<>();
+    setField(transport, "started", true);
+    setField(transport, "disconnecting", false);
+    setField(transport, "channelFuture", target);
+    setField(
+        transport,
+        "applicationContext",
+        declaredField(OpcUaClient.class, "applicationContext").get(client));
+    try {
+      invokeInitializeClaimedConnection(transport, newConnection(channel), target);
+      channel.runPendingTasks();
+      UascClientAcknowledgeHandler acknowledge =
+          channel.pipeline().get(UascClientAcknowledgeHandler.class);
+      CompletableFuture<ClientSecureChannel> handshake =
+          (CompletableFuture<ClientSecureChannel>)
+              declaredField(UascClientAcknowledgeHandler.class, "handshakeFuture").get(acknowledge);
+      ClientSecureChannel secureChannel =
+          new ClientSecureChannel(SecurityPolicy.None, MessageSecurityMode.None);
+      secureChannel.setChannel(channel);
+      handshake.complete(secureChannel);
+      assertTrue(target.isDone(), "executor rejection must not lose the completed handshake");
+      assertSame(channel, target.get(5, TimeUnit.SECONDS));
+      assertTrue(channel.isOpen(), "a successful handshake remains usable");
+    } finally {
+      transport.disconnect().get(5, TimeUnit.SECONDS);
+      channel.finishAndReleaseAll();
+      timer.stop();
     }
   }
 

@@ -566,26 +566,31 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
             });
 
     handshakeFuture.whenComplete(
-        (secureChannel, ex) ->
-            config
-                .getExecutor()
-                .execute(
-                    () -> {
-                      if (secureChannel != null) {
-                        completeHandshake(targetFuture, secureChannel.getChannel());
-                      } else {
-                        Throwable failure = unwrap(ex);
-                        CompletableFuture<Channel> nextFuture =
-                            rearmOnFailure ? rearmAfterFailedClaim(targetFuture, channel) : null;
+        (secureChannel, ex) -> {
+          Runnable completion =
+              () -> {
+                if (secureChannel != null) {
+                  completeHandshake(targetFuture, secureChannel.getChannel());
+                } else {
+                  Throwable failure = unwrap(ex);
+                  CompletableFuture<Channel> nextFuture =
+                      rearmOnFailure ? rearmAfterFailedClaim(targetFuture, channel) : null;
 
-                        targetFuture.completeExceptionally(failure);
-                        channel.close();
+                  targetFuture.completeExceptionally(failure);
+                  channel.close();
 
-                        if (nextFuture != null) {
-                          registerForNextChannel(nextFuture);
-                        }
-                      }
-                    }));
+                  if (nextFuture != null) {
+                    registerForNextChannel(nextFuture);
+                  }
+                }
+              };
+          try {
+            config.getExecutor().execute(completion);
+          } catch (RejectedExecutionException rejected) {
+            // The handshake is finished; no remaining handshake deadline can settle connect.
+            completion.run();
+          }
+        });
   }
 
   private @Nullable CompletableFuture<Channel> rearmAfterFailedClaim(
