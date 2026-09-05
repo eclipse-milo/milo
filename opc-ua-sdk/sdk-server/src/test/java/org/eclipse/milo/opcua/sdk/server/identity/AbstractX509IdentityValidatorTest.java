@@ -37,6 +37,8 @@ import org.eclipse.milo.opcua.stack.core.types.structured.X509IdentityToken;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class AbstractX509IdentityValidatorTest {
 
@@ -49,10 +51,10 @@ class AbstractX509IdentityValidatorTest {
             0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F
           });
 
-  // Part 4 (7.41): an explicit certificate user-token policy must use the same public-key family
-  // as the SecureChannel; the server rejects the mismatch before signature verification.
+  // The current transport cannot provide channel-bound signatures over a legacy secured channel.
+  // This runtime restriction is separate from the certificate-token policy's key algorithm.
   @Test
-  void rejectsExplicitCrossFamilyX509TokenPolicy() throws Exception {
+  void rejectsUnsupportedEnhancedSignatureOnLegacyChannel() throws Exception {
     CertificateMaterial user = eccCertificate("x509-user");
     Session session =
         session(SecurityPolicy.Basic256Sha256, MessageSecurityMode.SignAndEncrypt, null, null);
@@ -68,22 +70,24 @@ class AbstractX509IdentityValidatorTest {
                     policy(SecurityPolicy.ECC_nistP256_AesGcm),
                     new SignatureData(null, null)));
 
-    assertEquals(StatusCodes.Bad_SecurityPolicyRejected, exception.getStatusCode().getValue());
+    assertEquals(StatusCodes.Bad_IdentityTokenInvalid, exception.getStatusCode().getValue());
   }
 
   // A compatible explicit X509 token policy still verifies the user-token signature and
   // authenticates the certificate identity.
-  @Test
-  void acceptsCompatibleExplicitX509TokenPolicy() throws Exception {
-    CertificateMaterial server = rsaCertificate("server");
+  @ParameterizedTest
+  @EnumSource(
+      value = SecurityPolicy.class,
+      names = {"Basic256Sha256", "ECC_nistP256_AesGcm"})
+  void acceptsCompatibleExplicitX509TokenPolicy(SecurityPolicy channelPolicy) throws Exception {
+    CertificateMaterial server =
+        channelPolicy == SecurityPolicy.Basic256Sha256
+            ? rsaCertificate("server")
+            : eccCertificate("server");
     CertificateMaterial user = rsaCertificate("x509-user");
     UserTokenPolicy policy = policy(SecurityPolicy.Basic256Sha256);
     Session session =
-        session(
-            SecurityPolicy.Basic256Sha256,
-            MessageSecurityMode.SignAndEncrypt,
-            server.certificate(),
-            policy);
+        session(channelPolicy, MessageSecurityMode.SignAndEncrypt, server.certificate(), policy);
     SignatureData signature =
         ChannelBoundSignatureData.sign(
             SecurityPolicy.Basic256Sha256,

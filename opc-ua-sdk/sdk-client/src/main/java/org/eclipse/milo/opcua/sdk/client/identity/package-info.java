@@ -17,6 +17,11 @@
  * providers: anonymous, username/password, X.509 certificate, or a composite provider that tries
  * several providers in order.
  *
+ * <p>The X.509 provider tries advertised certificate-token policies in order and selects the first
+ * signing policy compatible with both the user certificate's public key and the SecureChannel.
+ * Policies resolving to SecurityPolicy.None are skipped. Selection uses the public key, including
+ * its curve, so it does not access a supplied private key until signing.
+ *
  * <h2>Session handoff</h2>
  *
  * <p>Some user-token policies need data learned during CreateSession before the provider can build

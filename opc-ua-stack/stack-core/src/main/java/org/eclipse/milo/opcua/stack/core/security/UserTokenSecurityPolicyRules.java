@@ -20,9 +20,9 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
  * Enforcement of the OPC UA Part 4 (7.41) rules that constrain how a user identity token's {@link
  * SecurityPolicy} may relate to the carrying SecureChannel.
  *
- * <p>The rules are independent of the identity provider, so client and server username and
- * certificate identity paths share them here rather than each re-deriving the constraint. They have
- * different applicability and are exposed separately:
+ * <p>Client and server paths for encrypted user-token secrets share these checks. Certificate
+ * tokens are signed rather than encrypted and may use any valid user-token SecurityPolicy. The
+ * constraints for encrypted secrets are exposed separately:
  *
  * <ul>
  *   <li>{@link #requireSecuredChannelForEnhancedSecret} applies only to token types whose secret is
@@ -31,9 +31,9 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
  *       policies need. It must not be applied to signed certificate tokens, whose enhanced
  *       signatures are explicitly supported on a {@code None} channel (the reduced Part 4 6.1.8
  *       Table 101 layout).
- *   <li>{@link #requireSamePublicKeyAlgorithmAsChannel} applies to every user-token type: an
- *       explicitly specified user-token SecurityPolicy must share the SecureChannel's public-key
- *       algorithm family (RSA vs ECC).
+ *   <li>{@link #requireSamePublicKeyAlgorithmAsChannel} applies to username and issued-token
+ *       secrets: an explicitly specified SecurityPolicy must share the SecureChannel's public-key
+ *       algorithm family (RSA vs ECC). It does not apply to certificate tokens.
  * </ul>
  *
  * @see <a href="https://reference.opcfoundation.org/Core/Part4/v105/docs/7.41">
@@ -95,7 +95,7 @@ public final class UserTokenSecurityPolicyRules {
    * PublicKey algorithm (RSA vs ECC) as the SecureChannel. Only an explicitly specified, encrypting
    * (RSA or ECC) policy is constrained: an inherited policy already matches the channel, and an
    * explicit {@code None} policy (the plaintext-secret case) carries no PublicKey algorithm. The
-   * rule is independent of the user-token type, so username and certificate tokens both apply it.
+   * rule applies to username and issued-token secrets. Certificate tokens are exempt.
    *
    * @param endpoint the endpoint whose SecurityMode and SecurityPolicy describe the SecureChannel.
    * @param userTokenSecurityPolicy the resolved user-token security policy.
