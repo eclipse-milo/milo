@@ -34,7 +34,7 @@
  * <p>Every class in this package and in {@code org.eclipse.milo.opcua.stack.core.gds.types} is
  * generated and must not be edited by hand. The source is the {@code gds-model-core} module of <a
  * href="https://github.com/kevinherron/opc-ua-gds-model">opc-ua-gds-model</a> at commit {@code
- * efa229d} (GDS NodeSet2 1.05.07 on a 1.05.07 base model), copied in with the package prefix {@code
+ * 800aeae} (GDS NodeSet2 1.05.07 on a 1.05.07 base model), copied in with the package prefix {@code
  * com.digitalpetri.opcua.gds} rewritten to {@code org.eclipse.milo.opcua.stack.core.gds} and the
  * Eclipse Milo license header prepended. To pick up a newer NodeSet, regenerate in that repository
  * first, then recopy; the procedure is documented in {@code docs/features/gds-client.md}.

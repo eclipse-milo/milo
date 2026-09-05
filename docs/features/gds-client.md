@@ -31,13 +31,14 @@ model does. It lives in subpackages of the existing modules:
 | `milo-stack-core` | `org.eclipse.milo.opcua.stack.core.gds`             | `GdsNodeIds` (one `ExpandedNodeId` per GDS node), `DataTypeInitializer`                          |
 | `milo-stack-core` | `org.eclipse.milo.opcua.stack.core.gds.types`       | `ApplicationRecordDataType` with its codec and `StructureDefinition`                             |
 | `milo-dtd-core`   | `org.eclipse.milo.opcua.sdk.core.dtd.gds`           | `BinaryDataTypeDictionaryInitializer` for the legacy type dictionary mechanism (deprecated)      |
-| `milo-sdk-client` | `org.eclipse.milo.opcua.sdk.client.gds`             | `ObjectTypeInitializer`, `VariableTypeInitializer`                                                |
+| `milo-sdk-client` | `org.eclipse.milo.opcua.sdk.client.gds.model`             | `ObjectTypeInitializer`, `VariableTypeInitializer`                                                |
 | `milo-sdk-client` | `org.eclipse.milo.opcua.sdk.client.gds.model.objects` | Client node classes for `DirectoryType`, `CertificateDirectoryType`, the KeyCredential and AuthorizationService types, and the GDS audit event types |
 | `milo-sdk-server` | `org.eclipse.milo.opcua.sdk.server.gds` and `.model.objects` | The server-side mirror of the same types, for a GDS hosted on Milo                        |
 
 The **client layer** is the module `opc-ua-sdk/sdk-client-gds` (artifact `milo-sdk-client-gds`,
-listed in `milo-bom`). It depends only on `milo-sdk-client` and shares the package
-`org.eclipse.milo.opcua.sdk.client.gds` with the generated client initializers:
+listed in `milo-bom`). It depends only on `milo-sdk-client` and owns the package
+`org.eclipse.milo.opcua.sdk.client.gds`. The generated initializers remain in the core SDK
+under `.gds.model`, so the two jars can be used together as Java modules:
 
 - `GdsClient` wraps a connected `OpcUaClient` and exposes every `DirectoryType` and
   `CertificateDirectoryType` method with a typed signature, plus reads of a CertificateGroup's
@@ -59,7 +60,10 @@ application-side Pull workflow tests. Tests can control registration and Certifi
 access, pre-register applications, change the advertised application certificate types, delay or
 reject requests, and inspect method counters and TrustList file calls. The artifact is listed in
 `milo-bom` and is separate from `milo-sdk-client-gds` to avoid adding server dependencies to the
-runtime client module.
+runtime client module. Its new-key requests return PKCS#8 PEM or PKCS#12 PFX according to
+`PrivateKeyFormat`, encrypt the private key when `PrivateKeyPassword` is supplied, and reject
+unsupported formats with `Bad_InvalidArgument`. PFX output includes the issued certificate and
+its issuer.
 
 * * *
 
@@ -248,9 +252,9 @@ administrator can approve the request.
 
 The model is generated and checked in; no code generation runs in the Maven build. The source is
 the [opc-ua-gds-model](https://github.com/kevinherron/opc-ua-gds-model) repository at commit
-`efa229d` ("Regenerate model from GDS NodeSet2 1.05.07"), produced by the GDS generators in
-[opc-ua-codegen2](https://github.com/kevinherron/opc-ua-codegen2) from GDS NodeSet2 1.05.07 on a
-1.05.07 base, the same base as Milo's namespace 0 model. Every file is copied with its package
+`800aeae`, produced by the GDS generators in
+[opc-ua-codegen2](https://github.com/kevinherron/opc-ua-codegen2) at commit `4027daa` from GDS
+NodeSet2 1.05.07 on a 1.05.07 base, the same base as Milo's namespace 0 model. Every file is copied with its package
 rewritten and the Eclipse Milo license header prepended; nothing else changes.
 
 | Source package (`opc-ua-gds-model`)          | Milo package                                          | Module            |
@@ -258,7 +262,7 @@ rewritten and the Eclipse Milo license header prepended; nothing else changes.
 | `com.digitalpetri.opcua.gds`                 | `org.eclipse.milo.opcua.stack.core.gds`               | `stack-core`      |
 | `com.digitalpetri.opcua.gds.types`           | `org.eclipse.milo.opcua.stack.core.gds.types`         | `stack-core`      |
 | `com.digitalpetri.opcua.gds` (`BinaryDataTypeDictionaryInitializer` only) | `org.eclipse.milo.opcua.sdk.core.dtd.gds` | `dtd-core` |
-| `com.digitalpetri.opcua.gds.client`          | `org.eclipse.milo.opcua.sdk.client.gds`               | `sdk-client`      |
+| `com.digitalpetri.opcua.gds.client`          | `org.eclipse.milo.opcua.sdk.client.gds.model`               | `sdk-client`      |
 | `com.digitalpetri.opcua.gds.client.objects`  | `org.eclipse.milo.opcua.sdk.client.gds.model.objects` | `sdk-client`      |
 | `com.digitalpetri.opcua.gds.server`          | `org.eclipse.milo.opcua.sdk.server.gds`               | `sdk-server`      |
 | `com.digitalpetri.opcua.gds.server.objects`  | `org.eclipse.milo.opcua.sdk.server.gds.model.objects` | `sdk-server`      |
@@ -276,6 +280,10 @@ To pick up a new GDS NodeSet release:
    document.
 5. Diff the Milo packages against the source with the prefixes rewritten; only the header and
    import order may differ.
+
+Generated blocking property writers throw `UaException` carrying any non-Good operation status.
+Their asynchronous counterparts return the `StatusCode`. The namespace 0 model uses the same
+writer generator and follows the same contract.
 
 The GDS `DataTypeInitializer` and both `ObjectTypeInitializer`s take a `NamespaceTable` and must
 stay out of the namespace 0 startup path (`DefaultDataTypeManager.createAndInitialize` and the
