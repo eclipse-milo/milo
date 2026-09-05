@@ -23,12 +23,14 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -108,6 +110,40 @@ class SubscriptionLifecycleRecoveryTest {
             new CreateMonitoredItemsResponse(
                 null, new MonitoredItemCreateResult[] {createdItem(42)}, null));
     assertTrue(fixture.subscription.createMonitoredItems().get(0).isGood());
+  }
+
+  @Test
+  void rejectedTransitionHandoffPreservesSuccessAndDrainsWaiters() throws Exception {
+    assertHandoffCompletes(
+        command -> {
+          throw new RejectedExecutionException("executor stopped");
+        });
+  }
+
+  @Test
+  void directTransitionHandoffDrainsWithoutRecursion() throws Exception {
+    assertHandoffCompletes(Runnable::run);
+  }
+
+  private void assertHandoffCompletes(Executor executor) throws Exception {
+    var fixture = new Fixture(executor);
+    var response = new CompletableFuture<CreateSubscriptionResponse>();
+    when(fixture.client.createSubscriptionAsync(
+            anyDouble(), any(), any(), any(), anyBoolean(), any()))
+        .thenReturn(response);
+    var create = fixture.subscription.createAsync().toCompletableFuture();
+    var queued = new ArrayList<CompletableFuture<?>>();
+    for (int i = 0; i < 10_000; i++) {
+      queued.add(fixture.subscription.modifyAsync().toCompletableFuture());
+    }
+    response.complete(Fixture.created(21));
+    create.get(5, TimeUnit.SECONDS);
+    CompletableFuture.allOf(queued.toArray(CompletableFuture[]::new)).get(5, TimeUnit.SECONDS);
+    fixture
+        .subscription
+        .setPublishingModeAsync(false)
+        .toCompletableFuture()
+        .get(5, TimeUnit.SECONDS);
   }
 
   @Test

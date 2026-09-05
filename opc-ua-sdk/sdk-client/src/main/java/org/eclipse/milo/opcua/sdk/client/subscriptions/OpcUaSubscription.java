@@ -15,6 +15,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
 import com.google.common.primitives.Ints;
+import com.google.common.util.concurrent.MoreExecutors;
 import java.math.BigInteger;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -29,6 +30,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -238,13 +241,26 @@ public class OpcUaSubscription {
   private volatile @Nullable SubscriptionListener listener;
 
   private final TaskQueue deliveryQueue;
+  private final Executor transitionHandoffExecutor;
 
   private final OpcUaClient client;
 
   public OpcUaSubscription(OpcUaClient client) {
     this.client = client;
 
-    deliveryQueue = new TaskQueue(client.getTransport().getConfig().getExecutor());
+    Executor executor = client.getTransport().getConfig().getExecutor();
+    deliveryQueue = new TaskQueue(executor);
+    transitionHandoffExecutor =
+        MoreExecutors.newSequentialExecutor(
+            command -> {
+              try {
+                executor.execute(command);
+              } catch (RejectedExecutionException e) {
+                // Finishing a transition must release its successor even when the executor shuts
+                // down.
+                command.run();
+              }
+            });
   }
 
   /**
@@ -732,11 +748,9 @@ public class OpcUaSubscription {
     }
 
     if (next != null) {
-      // Completed asynchronously rather than on this stack: a queued transition that completes
-      // synchronously — nothing pending to send, or an immediate Bad_InvalidState — would re-enter
-      // this method inline, one frame per waiter, and enough waiters is a StackOverflowError that
-      // leaves the slot claimed forever.
-      next.completeAsync(() -> Unit.VALUE, client.getTransport().getConfig().getExecutor());
+      // The sequential executor trampolines direct execution and rejected handoffs. A long queue
+      // of synchronous transitions cannot recurse, and no completion runs under lifecycleLock.
+      transitionHandoffExecutor.execute(() -> next.complete(Unit.VALUE));
     }
   }
 
