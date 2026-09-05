@@ -185,7 +185,8 @@ public final class ReverseConnectTargetManager {
   /**
    * Add a listener for target and attempt lifecycle events.
    *
-   * <p>Callbacks are dispatched asynchronously on the server executor supplied to the manager.
+   * <p>Callbacks are serialized on the server executor supplied to the manager. If that executor
+   * rejects work, callbacks run on the submitting thread instead.
    *
    * @param listener the listener to register.
    */
@@ -438,7 +439,7 @@ public final class ReverseConnectTargetManager {
           // cleanup callback removes the key if the attempt actually fails.
           AttemptKey rescueKey = new AttemptKey(record.attemptCounter, attemptGeneration);
           record.pendingHandoffAttempts.add(rescueKey);
-          installHandoffRescueCleanup(target.getId(), attempt, rescueKey);
+          installHandoffRescueCleanup(record, attempt, rescueKey);
         }
 
         record.target = target;
@@ -535,7 +536,7 @@ public final class ReverseConnectTargetManager {
       // fails so the target does not remain stuck with phantom pending state.
       AttemptKey rescueKey = new AttemptKey(record.attemptCounter, attemptGeneration);
       record.pendingHandoffAttempts.add(rescueKey);
-      installHandoffRescueCleanup(record.target.getId(), attempt, rescueKey);
+      installHandoffRescueCleanup(record, attempt, rescueKey);
     }
     if (!handoffAccepted) {
       record.generation++;
@@ -545,7 +546,7 @@ public final class ReverseConnectTargetManager {
   }
 
   private void installHandoffRescueCleanup(
-      UUID targetId, OpcTcpServerReverseConnectAttempt attempt, AttemptKey rescueKey) {
+      TargetRecord owner, OpcTcpServerReverseConnectAttempt attempt, AttemptKey rescueKey) {
 
     attempt
         .channelFuture()
@@ -556,8 +557,8 @@ public final class ReverseConnectTargetManager {
               }
               ReverseConnectTargetSnapshot updatedSnapshot = null;
               synchronized (lock) {
-                TargetRecord record = records.get(targetId);
-                if (record == null) {
+                TargetRecord record = records.get(owner.target.getId());
+                if (record != owner) {
                   return;
                 }
                 if (!record.pendingHandoffAttempts.remove(rescueKey)) {
@@ -587,7 +588,7 @@ public final class ReverseConnectTargetManager {
     record.nextAttemptTime = Instant.now().plusMillis(normalizedDelayMillis);
     record.scheduledFuture =
         scheduler.schedule(
-            () -> runScheduledAttempt(record.target.getId(), generation),
+            () -> runScheduledAttempt(record, generation),
             normalizedDelayMillis,
             TimeUnit.MILLISECONDS);
   }
@@ -607,11 +608,11 @@ public final class ReverseConnectTargetManager {
         && !record.hasPendingAttempt();
   }
 
-  private void runScheduledAttempt(UUID targetId, long generation) {
+  private void runScheduledAttempt(TargetRecord owner, long generation) {
     AttemptStart start;
     synchronized (lock) {
-      TargetRecord record = records.get(targetId);
-      if (record == null
+      TargetRecord record = records.get(owner.target.getId());
+      if (record != owner
           || generation != record.generation
           || !running
           || shutdown
@@ -626,7 +627,8 @@ public final class ReverseConnectTargetManager {
       record.lastAttemptTime = Instant.now();
 
       start =
-          new AttemptStart(record.target, ++record.attemptCounter, generation, record.snapshot());
+          new AttemptStart(
+              record, record.target, ++record.attemptCounter, generation, record.snapshot());
     }
 
     notifyTargetUpdated(start.snapshot());
@@ -648,7 +650,7 @@ public final class ReverseConnectTargetManager {
                     start.target().getConnectTimeout().intValue(),
                     event ->
                         onTransportAttemptEvent(
-                            start.target().getId(), start.number(), start.generation(), event)));
+                            start.owner(), start.number(), start.generation(), event)));
       } else {
         throw new UaException(
             StatusCodes.Bad_ConfigurationError,
@@ -664,15 +666,14 @@ public final class ReverseConnectTargetManager {
         .whenComplete(
             (channel, ex) -> {
               if (ex == null) {
-                onAttemptChannel(
-                    start.target().getId(), start.number(), start.generation(), channel);
+                onAttemptChannel(start.owner(), start.number(), start.generation(), channel);
               }
             });
 
     boolean shouldClose = false;
     synchronized (lock) {
       TargetRecord record = records.get(start.target().getId());
-      if (record != null
+      if (record == start.owner()
           && record.attemptCounter == start.number()
           && record.generation == start.generation()
           && running
@@ -713,7 +714,7 @@ public final class ReverseConnectTargetManager {
     ReverseConnectTargetSnapshot snapshot = null;
     synchronized (lock) {
       TargetRecord record = records.get(start.target().getId());
-      if (record != null
+      if (record == start.owner()
           && record.attemptCounter == start.number()
           && record.generation == start.generation()) {
         record.attemptInProgress = false;
@@ -724,7 +725,12 @@ public final class ReverseConnectTargetManager {
         if (running && !shutdown && record.isSchedulable()) {
           retryContext =
               new RetryContext(
-                  start.target().getId(), start.number(), start.generation(), record.target, event);
+                  record,
+                  start.target().getId(),
+                  start.number(),
+                  start.generation(),
+                  record.target,
+                  event);
         }
 
         snapshot = record.snapshot();
@@ -742,11 +748,12 @@ public final class ReverseConnectTargetManager {
   }
 
   private void onTransportAttemptEvent(
-      UUID targetId,
+      TargetRecord owner,
       long attemptNumber,
       long attemptGeneration,
       OpcTcpServerReverseConnectAttemptEvent transportEvent) {
 
+    UUID targetId = owner.target.getId();
     ReverseConnectAttemptEvent event =
         new ReverseConnectAttemptEvent(
             targetId,
@@ -761,7 +768,7 @@ public final class ReverseConnectTargetManager {
     ReverseConnectTargetSnapshot snapshot = null;
     synchronized (lock) {
       TargetRecord record = records.get(targetId);
-      if (record != null && record.attemptCounter == attemptNumber && isTerminal(event.state())) {
+      if (record == owner && record.attemptCounter == attemptNumber && isTerminal(event.state())) {
         boolean handoff = event.state() == ReverseConnectAttemptState.HANDOFF;
         if (handoff && shutdown) {
           return;
@@ -783,7 +790,8 @@ public final class ReverseConnectTargetManager {
 
           if (shouldRetry(record, event)) {
             retryContext =
-                new RetryContext(targetId, attemptNumber, attemptGeneration, record.target, event);
+                new RetryContext(
+                    record, targetId, attemptNumber, attemptGeneration, record.target, event);
           }
 
           snapshot = record.snapshot();
@@ -802,13 +810,14 @@ public final class ReverseConnectTargetManager {
   }
 
   private void onAttemptChannel(
-      UUID targetId, long attemptNumber, long attemptGeneration, Channel channel) {
+      TargetRecord owner, long attemptNumber, long attemptGeneration, Channel channel) {
+    UUID targetId = owner.target.getId();
     ReverseConnectTargetSnapshot snapshot = null;
     boolean closeChannel = false;
 
     synchronized (lock) {
       TargetRecord record = records.get(targetId);
-      if (record == null || shutdown) {
+      if (record != owner || shutdown) {
         closeChannel = true;
       } else {
         var attemptKey = new AttemptKey(attemptNumber, attemptGeneration);
@@ -830,18 +839,19 @@ public final class ReverseConnectTargetManager {
       return;
     }
 
-    channel.closeFuture().addListener(f -> onActiveChannelClosed(targetId, channel));
+    channel.closeFuture().addListener(f -> onActiveChannelClosed(owner, channel));
 
     notifyTargetUpdated(snapshot);
   }
 
-  private void onActiveChannelClosed(UUID targetId, Channel channel) {
+  private void onActiveChannelClosed(TargetRecord owner, Channel channel) {
+    UUID targetId = owner.target.getId();
     PostCloseRetryContext retryContext = null;
     ReverseConnectTargetSnapshot snapshot;
 
     synchronized (lock) {
       TargetRecord record = records.get(targetId);
-      if (record == null) {
+      if (record != owner) {
         return;
       }
 
@@ -862,7 +872,8 @@ public final class ReverseConnectTargetManager {
                 null,
                 "reverse-connect active channel closed");
 
-        retryContext = new PostCloseRetryContext(targetId, record.generation, record.target, event);
+        retryContext =
+            new PostCloseRetryContext(record, targetId, record.generation, record.target, event);
       }
 
       snapshot = record.snapshot();
@@ -963,7 +974,8 @@ public final class ReverseConnectTargetManager {
   }
 
   private boolean isRetryCurrent(TargetRecord record, RetryContext retryContext) {
-    return record.attemptCounter == retryContext.attemptNumber()
+    return record == retryContext.owner()
+        && record.attemptCounter == retryContext.attemptNumber()
         && record.generation == retryContext.generation()
         && shouldRetry(record, retryContext.event());
   }
@@ -977,7 +989,8 @@ public final class ReverseConnectTargetManager {
 
   private boolean isPostCloseRetryCurrent(TargetRecord record, PostCloseRetryContext retryContext) {
 
-    return record.generation == retryContext.generation()
+    return record == retryContext.owner()
+        && record.generation == retryContext.generation()
         && running
         && !shutdown
         && record.isSchedulable()
@@ -1158,6 +1171,7 @@ public final class ReverseConnectTargetManager {
   }
 
   private record AttemptStart(
+      TargetRecord owner,
       ReverseConnectTarget target,
       long number,
       long generation,
@@ -1166,6 +1180,7 @@ public final class ReverseConnectTargetManager {
   private record AttemptKey(long number, long generation) {}
 
   private record RetryContext(
+      TargetRecord owner,
       UUID targetId,
       long attemptNumber,
       long generation,
@@ -1173,6 +1188,7 @@ public final class ReverseConnectTargetManager {
       ReverseConnectAttemptEvent event) {}
 
   private record PostCloseRetryContext(
+      TargetRecord owner,
       UUID targetId,
       long generation,
       ReverseConnectTarget target,

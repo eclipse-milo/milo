@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.core.ValueRank;
 import org.eclipse.milo.opcua.sdk.server.AbstractLifecycle;
@@ -60,6 +61,8 @@ import org.slf4j.LoggerFactory;
 public class SessionSecurityDiagnosticsVariableArray extends AbstractLifecycle {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
+
+  private final AtomicLong nextElementId = new AtomicLong();
 
   private final AtomicBoolean diagnosticsEnabled = new AtomicBoolean(false);
 
@@ -192,7 +195,7 @@ public class SessionSecurityDiagnosticsVariableArray extends AbstractLifecycle {
 
   private void createSessionSecurityDiagnosticsVariable(Session session) {
     try {
-      int index = sessionSecurityDiagnosticsVariables.size();
+      long index = nextElementId.getAndIncrement();
       String id = Util.buildBrowseNamePath(node) + "[" + index + "]";
       NodeId elementNodeId = new NodeId(1, id);
 

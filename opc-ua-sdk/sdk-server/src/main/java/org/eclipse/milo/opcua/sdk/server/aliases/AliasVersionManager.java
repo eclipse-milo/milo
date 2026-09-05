@@ -50,7 +50,9 @@ import org.slf4j.LoggerFactory;
  * the prepared values to the {@code LastChange} Property Nodes, called from a {@code finally} so
  * values whose mutation partially applied are still published. Because no value becomes observable
  * before it is persisted, a restart can never re-produce an observed {@code LastChange} value for
- * different content — the failure mode that would leave Client caches undetectably stale.
+ * different content while its stored entry is retained. Removed categories keep their in-memory
+ * high-water mark for the manager's lifetime; retention across restarts depends on the store's
+ * deletion policy.
  *
  * <p>Store entries are keyed by namespace-URI-qualified {@link ExpandedNodeId}s (see {@link
  * AliasVersionStore}); this class converts to and from runtime NodeIds at the store boundary.
@@ -263,18 +265,18 @@ class AliasVersionManager {
   }
 
   /**
-   * Drop the version entry of a category that no longer exists, in memory and — best-effort — in
-   * the store.
+   * Remove pending publication and clean up the stored entry of a category that no longer exists,
+   * retaining its in-memory high-water mark for the manager's lifetime.
    *
    * <p>The store delete is cleanup, not correctness: a failure is logged and the removal proceeds,
    * and stores whose {@link AliasVersionStore#delete} is the default no-op simply keep the entry. A
-   * leftover entry is inert unless a category with the same NodeId is created again, in which case
-   * the monotonic version sequence resumes from the persisted value — which is the safe direction.
+   * retained entry also preserves the sequence across a manager restart. A store that deletes the
+   * entry gives up that restart guarantee for the removed category. Recreating the NodeId within
+   * this manager always resumes above the previous version, regardless of store deletion.
    *
    * @param categoryId the NodeId of the removed category.
    */
   void remove(NodeId categoryId) {
-    versions.remove(categoryId);
     pending.remove(categoryId);
 
     try {

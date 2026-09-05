@@ -134,4 +134,18 @@ public class AddressSpaceManager extends AddressSpaceComposite {
         .flatMap(Collection::stream)
         .collect(Collectors.toList());
   }
+
+  /**
+   * Remove {@code reference} and its inverse from every registered {@link NodeManager}.
+   *
+   * <p>References may be stored by either endpoint's manager, or by another registered manager. Use
+   * this when removing an association collected through {@link #getManagedReferences(NodeId)}.
+   *
+   * @param reference the association to remove in both directions.
+   */
+  public void removeManagedReferences(Reference reference) {
+    for (NodeManager<UaNode> nodeManager : nodeManagers) {
+      nodeManager.removeReferences(reference, getServer().getNamespaceTable());
+    }
+  }
 }

@@ -49,7 +49,9 @@ public final class ReverseConnectRegistration implements AutoCloseable {
    * <p>The future completes with a {@link ReverseConnectConnection} after the first matching
    * candidate is claimed. It completes exceptionally if the registration is closed before a match,
    * if the selector throws while matching, or if the manager shuts down while the registration is
-   * still waiting.
+   * still waiting. Cancelling this future or completing it exceptionally (including through {@link
+   * CompletableFuture#orTimeout(long, java.util.concurrent.TimeUnit)}) unregisters the selector. If
+   * cancellation races a claim, the undeliverable connection is closed.
    *
    * @return the claim future.
    */

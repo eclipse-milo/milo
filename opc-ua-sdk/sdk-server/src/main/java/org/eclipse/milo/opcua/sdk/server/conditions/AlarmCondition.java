@@ -224,6 +224,11 @@ public class AlarmCondition extends AcknowledgeableCondition {
   }
 
   @Override
+  void prepareEventState() {
+    applyShelvingExpiryIfDue();
+  }
+
+  @Override
   Optional<UaMethodNode> findMethodNode(NodeId methodId) {
     return shelvingRuntime != null ? shelvingRuntime.findMethodNode(methodId) : Optional.empty();
   }

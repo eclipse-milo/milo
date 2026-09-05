@@ -13,10 +13,13 @@ package org.eclipse.milo.opcua.sdk.client.reverse;
 import static java.util.Objects.requireNonNull;
 
 import io.netty.channel.Channel;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.RejectedExecutionException;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
@@ -67,6 +70,9 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
   private final OpcTcpClientTransportConfig config;
   private final List<ChannelStateObservable.TransitionListener> transitionListeners =
       new CopyOnWriteArrayList<>();
+
+  private final Deque<Boolean> pendingTransitions = new ArrayDeque<>();
+  private boolean notifyingTransitions = false;
 
   private CompletableFuture<Channel> channelFuture = new CompletableFuture<>();
 
@@ -175,6 +181,9 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
               && !channelFuture.isCancelled();
 
       currentChannel = null;
+      if (emitSyntheticDisconnect) {
+        pendingTransitions.add(false);
+      }
 
       if (channelFuture.isDone()) {
         channelFuture = new CompletableFuture<>();
@@ -189,7 +198,7 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
     }
 
     if (emitSyntheticDisconnect) {
-      notifyTransitionListeners(false);
+      drainTransitionNotifications();
     }
 
     if (futureToRegister != null) {
@@ -280,6 +289,9 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
         directConnectionConsumed = true;
       }
       currentChannel = null;
+      if (notifyDisconnected) {
+        pendingTransitions.add(false);
+      }
 
       if (directConnection != null) {
         enterDirectTerminalStateLocked(
@@ -315,7 +327,7 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
             future -> {
               if (future.isSuccess()) {
                 if (notifyDisconnected) {
-                  notifyTransitionListeners(false);
+                  drainTransitionNotifications();
                 }
                 disconnectFuture.complete(Unit.VALUE);
               } else {
@@ -382,13 +394,21 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
     nextRegistration
         .connectionFuture()
         .whenComplete(
-            (connection, ex) ->
+            (connection, ex) -> {
+              try {
                 config
                     .getExecutor()
                     .execute(
                         () ->
                             handleClaimedConnection(
-                                nextRegistration, targetFuture, connection, ex)));
+                                nextRegistration, targetFuture, connection, ex));
+              } catch (RejectedExecutionException rejected) {
+                if (connection != null) {
+                  connection.close();
+                }
+                handleClaimedConnection(nextRegistration, targetFuture, null, rejected);
+              }
+            });
 
     if (stale) {
       nextRegistration.close();
@@ -546,26 +566,31 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
             });
 
     handshakeFuture.whenComplete(
-        (secureChannel, ex) ->
-            config
-                .getExecutor()
-                .execute(
-                    () -> {
-                      if (secureChannel != null) {
-                        completeHandshake(targetFuture, secureChannel.getChannel());
-                      } else {
-                        Throwable failure = unwrap(ex);
-                        CompletableFuture<Channel> nextFuture =
-                            rearmOnFailure ? rearmAfterFailedClaim(targetFuture, channel) : null;
+        (secureChannel, ex) -> {
+          Runnable completion =
+              () -> {
+                if (secureChannel != null) {
+                  completeHandshake(targetFuture, secureChannel.getChannel());
+                } else {
+                  Throwable failure = unwrap(ex);
+                  CompletableFuture<Channel> nextFuture =
+                      rearmOnFailure ? rearmAfterFailedClaim(targetFuture, channel) : null;
 
-                        targetFuture.completeExceptionally(failure);
-                        channel.close();
+                  targetFuture.completeExceptionally(failure);
+                  channel.close();
 
-                        if (nextFuture != null) {
-                          registerForNextChannel(nextFuture);
-                        }
-                      }
-                    }));
+                  if (nextFuture != null) {
+                    registerForNextChannel(nextFuture);
+                  }
+                }
+              };
+          try {
+            config.getExecutor().execute(completion);
+          } catch (RejectedExecutionException rejected) {
+            // The handshake is finished; no remaining handshake deadline can settle connect.
+            completion.run();
+          }
+        });
   }
 
   private @Nullable CompletableFuture<Channel> rearmAfterFailedClaim(
@@ -594,11 +619,8 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
       stale = disconnecting || targetFuture != channelFuture;
       if (!stale) {
         currentChannel = channel;
-        // Complete inside the lock so a concurrent disconnect() observes futureToCancel.isDone()
-        // and emits a matching connected=false transition. Completing outside the lock allows the
-        // disconnect to interleave between the publish of currentChannel and the future
-        // completion, suppressing its matching disconnect notification and producing an orphan
-        // connected=true event.
+        // Reserve the notification before completion can invoke a reentrant close callback.
+        pendingTransitions.add(true);
         targetFuture.complete(channel);
       }
     }
@@ -606,7 +628,7 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
     if (stale) {
       channel.close();
     } else {
-      notifyTransitionListeners(true);
+      drainTransitionNotifications();
     }
   }
 
@@ -625,6 +647,10 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
             channelFuture.isDone()
                 && !channelFuture.isCompletedExceptionally()
                 && !channelFuture.isCancelled();
+
+        if (notifyDisconnected) {
+          pendingTransitions.add(false);
+        }
 
         if (started && !disconnecting) {
           closedFuture = channelFuture;
@@ -648,7 +674,7 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
     }
 
     if (notifyDisconnected) {
-      notifyTransitionListeners(false);
+      drainTransitionNotifications();
     }
   }
 
@@ -680,12 +706,36 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
     channelFuture = CompletableFuture.failedFuture(failure);
   }
 
-  private void notifyTransitionListeners(boolean connected) {
-    for (ChannelStateObservable.TransitionListener listener : transitionListeners) {
-      try {
-        listener.onStateTransition(connected);
-      } catch (Throwable t) {
-        logger.warn("Channel state transition listener failed.", t);
+  private void drainTransitionNotifications() {
+    // Future completion under lock can reenter connect/disconnect. The outer operation drains
+    // after unlocking so user listeners never run inside the transport's state critical section.
+    if (Thread.holdsLock(lock)) {
+      return;
+    }
+
+    synchronized (lock) {
+      if (notifyingTransitions) {
+        return;
+      }
+      notifyingTransitions = true;
+    }
+
+    while (true) {
+      Boolean connected;
+      synchronized (lock) {
+        connected = pendingTransitions.poll();
+        if (connected == null) {
+          notifyingTransitions = false;
+          return;
+        }
+      }
+
+      for (ChannelStateObservable.TransitionListener listener : transitionListeners) {
+        try {
+          listener.onStateTransition(connected);
+        } catch (Throwable t) {
+          logger.warn("Channel state transition listener failed.", t);
+        }
       }
     }
   }

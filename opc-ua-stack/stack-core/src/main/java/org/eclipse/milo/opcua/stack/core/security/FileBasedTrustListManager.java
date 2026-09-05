@@ -20,9 +20,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
@@ -176,25 +178,25 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
           updated.issuerCertificates(),
           issuerCertsDir,
           FileBasedTrustListManager::writeCertificateToDir,
-          FileBasedTrustListManager::deleteCertificateFromDir);
+          FileBasedTrustListManager::deleteCertificatesFromDir);
       updateFiles(
           current.issuerCrls(),
           updated.issuerCrls(),
           issuerCrlDir,
           FileBasedTrustListManager::writeCrlToDir,
-          FileBasedTrustListManager::deleteCrlFromDir);
+          FileBasedTrustListManager::deleteCrlsFromDir);
       updateFiles(
           current.trustedCertificates(),
           updated.trustedCertificates(),
           trustedCertsDir,
           FileBasedTrustListManager::writeCertificateToDir,
-          FileBasedTrustListManager::deleteCertificateFromDir);
+          FileBasedTrustListManager::deleteCertificatesFromDir);
       updateFiles(
           current.trustedCrls(),
           updated.trustedCrls(),
           trustedCrlDir,
           FileBasedTrustListManager::writeCrlToDir,
-          FileBasedTrustListManager::deleteCrlFromDir);
+          FileBasedTrustListManager::deleteCrlsFromDir);
 
       TrustListSnapshot committed = updated.withLastUpdateTime(DateTime.now());
       snapshot.set(committed);
@@ -290,7 +292,7 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
       List<T> replacement,
       Path directory,
       BiConsumer<T, Path> write,
-      BiConsumer<T, Path> delete) {
+      BiConsumer<Set<T>, Path> delete) {
 
     if (current.equals(replacement)) {
       return;
@@ -300,7 +302,10 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
     Set<T> replacementSet = Set.copyOf(replacement);
 
     Sets.difference(replacementSet, currentSet).forEach(entry -> write.accept(entry, directory));
-    Sets.difference(currentSet, replacementSet).forEach(entry -> delete.accept(entry, directory));
+    Set<T> removed = Sets.difference(currentSet, replacementSet);
+    if (!removed.isEmpty()) {
+      delete.accept(removed, directory);
+    }
   }
 
   private void synchronizeIssuerCertificates() {
@@ -400,18 +405,20 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
     }
   }
 
-  private static void deleteCertificateFromDir(X509Certificate certificate, Path path) {
-    try {
-      String thumbprint = ByteBufUtil.hexDump(sha1(certificate.getEncoded()));
-      File file = path.resolve(String.format("%s.der", thumbprint)).toFile();
-
-      if (file.exists()) {
-        Files.delete(file.toPath());
-
-        LOGGER.debug("Deleted certificate: {}", file.getAbsolutePath());
+  private static void deleteCertificatesFromDir(Set<X509Certificate> certificates, Path directory) {
+    try (var files = Files.list(directory)) {
+      for (Path file : files.toList()) {
+        if (decodeCertificateFile(file).filter(certificates::contains).isPresent()) {
+          try {
+            Files.delete(file);
+            LOGGER.debug("Deleted certificate: {}", file);
+          } catch (IOException e) {
+            LOGGER.error("Error deleting certificate: {}", file, e);
+          }
+        }
       }
-    } catch (Exception e) {
-      LOGGER.error("Error deleting certificate", e);
+    } catch (IOException e) {
+      LOGGER.error("Error listing certificate directory: {}", directory, e);
     }
   }
 
@@ -432,18 +439,52 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
     }
   }
 
-  private static void deleteCrlFromDir(X509CRL crl, Path path) {
-    try {
-      String thumbprint = ByteBufUtil.hexDump(sha1(crl.getEncoded()));
-      File file = path.resolve(String.format("%s.crl", thumbprint)).toFile();
-
-      if (file.exists()) {
-        Files.delete(file.toPath());
-
-        LOGGER.debug("Deleted CRL: {}", file.getAbsolutePath());
+  private static void deleteCrlsFromDir(Set<X509CRL> removed, Path directory) {
+    try (var files = Files.list(directory)) {
+      for (Path file : files.toList()) {
+        List<X509CRL> contents = decodeCrlFile(file).orElse(List.of());
+        List<X509CRL> retained = contents.stream().filter(crl -> !removed.contains(crl)).toList();
+        if (retained.size() == contents.size()) {
+          continue;
+        }
+        try {
+          if (retained.isEmpty()) {
+            Files.delete(file);
+            LOGGER.debug("Deleted CRL file: {}", file);
+          } else {
+            replaceCrlFile(file, retained);
+            LOGGER.debug("Removed CRLs from bundle: {}", file);
+          }
+        } catch (Exception e) {
+          LOGGER.error("Error removing CRLs from file: {}", file, e);
+        }
       }
-    } catch (Exception e) {
-      LOGGER.error("Error deleting CRL", e);
+    } catch (IOException e) {
+      LOGGER.error("Error listing CRL directory: {}", directory, e);
+    }
+  }
+
+  private static void replaceCrlFile(Path file, List<X509CRL> crls) throws Exception {
+    // Write the surviving members completely before replacing a bundle, so an encoding or write
+    // failure cannot destroy the unrelated CRLs that it also contains.
+    Path temporary = Files.createTempFile(file.getParent(), ".crl-", ".tmp");
+    try {
+      if (file.getFileSystem().supportedFileAttributeViews().contains("posix")) {
+        Files.setPosixFilePermissions(temporary, Files.getPosixFilePermissions(file));
+      }
+      try (var output = Files.newOutputStream(temporary)) {
+        for (X509CRL crl : crls) {
+          output.write(crl.getEncoded());
+        }
+      }
+      try {
+        Files.move(
+            temporary, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+      } catch (AtomicMoveNotSupportedException e) {
+        Files.move(temporary, file, StandardCopyOption.REPLACE_EXISTING);
+      }
+    } finally {
+      Files.deleteIfExists(temporary);
     }
   }
 

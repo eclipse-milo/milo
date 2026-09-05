@@ -104,6 +104,11 @@ public class Condition {
   private final Set<FilterRegistration> filterRegistrations = ConcurrentHashMap.newKeySet();
   private final Map<NodeId, MethodInvocationHandler> sharedMethodHandlers =
       new ConcurrentHashMap<>();
+  private final Map<UaMethodNode, MethodInvocationHandler> ownedMethodHandlers =
+      new ConcurrentHashMap<>();
+
+  /** Suppresses lazy read-side transitions while one event's fields are selected or copied. */
+  private int eventFieldReadDepth;
 
   private volatile ConditionMethodInterceptor interceptor = NOOP_INTERCEPTOR;
 
@@ -584,6 +589,7 @@ public class Condition {
   protected void withStateChange(String message, StateMutation mutation) {
     lock.lock();
     try {
+      prepareEventState();
       DateTime now = DateTime.now();
 
       boolean wasRetained = trunk.isRetained();
@@ -651,6 +657,7 @@ public class Condition {
   List<ConditionEventSnapshot> createRefreshSnapshots() throws UaException {
     lock.lock();
     try {
+      prepareEventState();
       if (!trunk.isRetained()) {
         return List.of();
       }
@@ -671,7 +678,12 @@ public class Condition {
       // The replayed EventId is now client-visible: a later restore may not invalidate it.
       live = true;
 
-      return List.of(ConditionEventSnapshot.create(server, node, trunk));
+      eventFieldReadDepth++;
+      try {
+        return List.of(ConditionEventSnapshot.create(server, node, trunk));
+      } finally {
+        eventFieldReadDepth--;
+      }
     } finally {
       lock.unlock();
     }
@@ -834,7 +846,20 @@ public class Condition {
 
     trunk.recordEvent(eventId, time);
 
-    server.getEventNotifier().fire(node);
+    eventFieldReadDepth++;
+    try {
+      server.getEventNotifier().fire(node);
+    } finally {
+      eventFieldReadDepth--;
+    }
+  }
+
+  /** Resolve deferred runtime transitions before assigning or exposing an event identity. */
+  void prepareEventState() {}
+
+  /** Whether the calling thread is selecting or copying one event under this Condition's lock. */
+  final boolean isReadingEventFields() {
+    return lock.isHeldByCurrentThread() && eventFieldReadDepth > 0;
   }
 
   void handleEnable(InvocationContext context) throws UaException {
@@ -1001,6 +1026,7 @@ public class Condition {
 
     if (discovered.exclusivelyOwned()) {
       method.setInvocationHandler(invocationHandler);
+      ownedMethodHandlers.put(method, invocationHandler);
     } else if (method.getInvocationHandler() == MethodInvocationHandler.NOT_IMPLEMENTED) {
       sharedMethodHandlers.put(method.getNodeId(), invocationHandler);
     }
@@ -1016,7 +1042,8 @@ public class Condition {
   }
 
   /**
-   * Find a Method exposed through ConditionId dispatch but owned by a nested state machine.
+   * Find a Method owned by a nested state machine and also exposed through ConditionId dispatch.
+   * The manager uses this lookup to restrict calls targeting the nested ObjectId to its Methods.
    * Subclasses override for the nested methods they support.
    */
   Optional<UaMethodNode> findMethodNode(NodeId methodId) {
@@ -1029,6 +1056,11 @@ public class Condition {
 
   /** Release runtime resources when this Condition is unregistered or the server shuts down. */
   void shutdown() {
+    ownedMethodHandlers.forEach(
+        (method, handler) ->
+            method.compareAndSetInvocationHandler(
+                handler, MethodInvocationHandler.NOT_IMPLEMENTED));
+    ownedMethodHandlers.clear();
     for (FilterRegistration registration : filterRegistrations) {
       registration.node().getFilterChain().remove(registration.filter());
     }

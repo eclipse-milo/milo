@@ -18,7 +18,7 @@ public enum ReverseConnectCandidateState {
   /** {@code ReverseHello} was decoded and verified, but no selector has claimed the socket yet. */
   PENDING,
 
-  /** A selector claimed the socket and ownership has been transferred to the caller. */
+  /** A selector reserved ownership of the socket; connection delivery may still be pending. */
   CLAIMED,
 
   /** The manager rejected the socket before it could be claimed. */

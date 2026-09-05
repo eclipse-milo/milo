@@ -71,8 +71,11 @@ public interface AliasVersionStore {
    * <p>Called when a manager-created category is removed, so durable stores do not accumulate
    * entries forever. Best-effort cleanup: a thrown exception is logged by the caller and the
    * removal proceeds — a leftover entry is inert unless a category with the same NodeId is created
-   * again, in which case the version sequence resumes from it, which is harmless. The default
-   * implementation does nothing, for stores that prefer to keep (or externally expire) old entries.
+   * again, in which case the version sequence resumes from it. Within the same manager lifetime, an
+   * in-memory high-water mark preserves the sequence even if the stored entry is deleted. Across
+   * manager restarts, preserving the sequence for reused NodeIds requires retaining their entries.
+   * The default implementation does nothing, for stores that prefer to keep (or externally expire)
+   * old entries.
    *
    * @param categoryId the namespace-URI-qualified ExpandedNodeId of the removed category.
    * @throws UaException if the entry cannot be removed.
