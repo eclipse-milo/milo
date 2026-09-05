@@ -324,10 +324,10 @@ public final class AliasManager extends AbstractLifecycle {
    * @throws IllegalStateException if the manager is not running.
    */
   public AliasCategory addCategory(AliasCategoryConfig categoryConfig) throws UaException {
-    checkRunning();
-
     lock.lock();
     try {
+      checkRunning();
+
       String name = categoryConfig.browseName().getName();
       if (name == null || name.isEmpty()) {
         throw new UaException(
@@ -470,10 +470,10 @@ public final class AliasManager extends AbstractLifecycle {
    * @throws IllegalStateException if the manager is not running.
    */
   public AliasCategory adoptCategory(NodeId categoryId) throws UaException {
-    checkRunning();
-
     lock.lock();
     try {
+      checkRunning();
+
       if (categories.containsKey(categoryId)) {
         throw new UaException(
             StatusCodes.Bad_NodeIdExists,
@@ -603,10 +603,10 @@ public final class AliasManager extends AbstractLifecycle {
    * @throws IllegalStateException if the manager is not running.
    */
   public void removeCategory(NodeId categoryId) throws UaException {
-    checkRunning();
-
     lock.lock();
     try {
+      checkRunning();
+
       if (STANDARD_CATEGORY_IDS.contains(categoryId)) {
         throw new UaException(
             StatusCodes.Bad_InvalidArgument,
@@ -710,10 +710,10 @@ public final class AliasManager extends AbstractLifecycle {
   public NodeId addAlias(NodeId categoryId, String aliasName, List<AliasTarget> targets)
       throws UaException {
 
-    checkRunning();
-
     lock.lock();
     try {
+      checkRunning();
+
       CategoryRecord record = resolveCategoryRecord(categoryId);
 
       if (aliasName.isEmpty()) {
@@ -904,10 +904,10 @@ public final class AliasManager extends AbstractLifecycle {
   public void deleteAlias(NodeId categoryId, String aliasName, @Nullable List<AliasTarget> targets)
       throws UaException {
 
-    checkRunning();
-
     lock.lock();
     try {
+      checkRunning();
+
       resolveCategoryRecord(categoryId);
 
       NodeId aliasNodeId = findAliasInCategory(categoryId, aliasName);
@@ -1483,10 +1483,10 @@ public final class AliasManager extends AbstractLifecycle {
    * @throws IllegalStateException if the manager is not running.
    */
   public void touch(NodeId categoryId) throws UaException {
-    checkRunning();
-
     lock.lock();
     try {
+      checkRunning();
+
       versionManager.touch(categoryId);
     } finally {
       lock.unlock();

@@ -13,15 +13,21 @@ package org.eclipse.milo.opcua.sdk.server.aliases;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.server.Session;
@@ -44,6 +50,7 @@ import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -275,6 +282,72 @@ class AliasLifecycleConsistencyTest extends AbstractClientServerTest {
     assertEquals(Set.of(targetId), targets(other, prefix));
   }
 
+  // Pausing just before the mutation lock models a caller that passed its running check while
+  // shutdown wins the lock. Every public mutator must reject after shutdown and avoid persistence.
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "addCategory",
+        "adoptCategory",
+        "removeCategory",
+        "addAlias",
+        "deleteAlias",
+        "touch"
+      })
+  void publicMutationRechecksLifecycleAfterWaitingForLock(String operation) throws Exception {
+    manager.startup();
+    AliasCategoryConfig category = category("Category", NodeIds.Aliases);
+    manager.addCategory(category);
+    manager.addAlias(NodeIds.Aliases, prefix, List.of(target(newNodeId("TestInt32"))));
+    Executable mutation =
+        switch (operation) {
+          case "addCategory" -> () -> manager.addCategory(category("New", NodeIds.Aliases));
+          case "adoptCategory" -> () -> manager.adoptCategory(category.categoryNodeId());
+          case "removeCategory" -> () -> manager.removeCategory(category.categoryNodeId());
+          case "addAlias" ->
+              () ->
+                  manager.addAlias(
+                      NodeIds.Aliases,
+                      prefix + "AfterShutdown",
+                      List.of(target(newNodeId("TestInt32"))));
+          case "deleteAlias" -> () -> manager.deleteAlias(NodeIds.Aliases, prefix, null);
+          case "touch" -> () -> manager.touch(NodeIds.Aliases);
+          default -> throw new AssertionError(operation);
+        };
+    var gate = new PausingLock();
+    Field field = AliasManager.class.getDeclaredField("lock");
+    field.setAccessible(true);
+    field.set(manager, gate);
+    var executor = Executors.newSingleThreadExecutor();
+    try {
+      var result =
+          executor.submit(
+              () -> {
+                gate.pausedThread = Thread.currentThread();
+                try {
+                  mutation.execute();
+                  return null;
+                } catch (Throwable e) {
+                  return e;
+                }
+              });
+      gate.entered.get(10, TimeUnit.SECONDS);
+      manager.shutdown();
+      int savesAfterShutdown = store.saves.get();
+      gate.resume.complete(null);
+
+      assertInstanceOf(IllegalStateException.class, result.get(10, TimeUnit.SECONDS));
+      assertEquals(
+          savesAfterShutdown, store.saves.get(), "shutdown must fence later version writes");
+      assertTrue(
+          server.getAddressSpaceManager().getManagedNode(newNodeId(prefix + "New")).isEmpty());
+    } finally {
+      gate.resume.complete(null);
+      executor.shutdownNow();
+      assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS));
+    }
+  }
+
   private AliasCategoryConfig category(String suffix, NodeId parent) {
     return new AliasCategoryConfig(
         newNodeId(prefix + suffix),
@@ -331,8 +404,28 @@ class AliasLifecycleConsistencyTest extends AbstractClientServerTest {
     return (StatusCode[]) result.getOutputArguments()[0].value();
   }
 
+  private static final class PausingLock extends ReentrantLock {
+    private volatile Thread pausedThread;
+    private final CompletableFuture<Void> entered = new CompletableFuture<>();
+    private final CompletableFuture<Void> resume = new CompletableFuture<>();
+
+    @Override
+    public void lock() {
+      if (Thread.currentThread() == pausedThread) {
+        entered.complete(null);
+        try {
+          resume.get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+          throw new AssertionError(e);
+        }
+      }
+      super.lock();
+    }
+  }
+
   private static final class TestVersionStore implements AliasVersionStore {
     private final Map<ExpandedNodeId, UInteger> entries = new ConcurrentHashMap<>();
+    private final AtomicInteger saves = new AtomicInteger();
     private volatile ExpandedNodeId failOn;
 
     @Override
@@ -346,6 +439,7 @@ class AliasLifecycleConsistencyTest extends AbstractClientServerTest {
         throw new UaException(StatusCodes.Bad_ResourceUnavailable, "controlled save failure");
       }
       entries.put(categoryId, value);
+      saves.incrementAndGet();
     }
   }
 }
