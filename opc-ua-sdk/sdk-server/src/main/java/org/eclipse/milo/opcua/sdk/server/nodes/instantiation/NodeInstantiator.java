@@ -2310,10 +2310,14 @@ public final class NodeInstantiator {
      */
     private List<InstantiationDiagnostic> rollBack(NodeManager.CommitResult applied) {
       List<InstantiationDiagnostic> findings = new ArrayList<>();
+      Map<NodeId, UaNode> expectedNodes = new LinkedHashMap<>();
+      for (UaNode node : staged.values()) {
+        expectedNodes.put(node.getNodeId(), node);
+      }
 
       for (Reference reference : applied.addedReferences()) {
         try {
-          target.removeReference(reference);
+          target.removeReferenceIfSame(reference, expectedNodes, server.getNamespaceTable());
         } catch (Exception e) {
           findings.add(
               InstantiationDiagnostic.applyError(
@@ -2326,7 +2330,7 @@ public final class NodeInstantiator {
 
       for (NodeId nodeId : applied.addedNodes()) {
         try {
-          target.removeNode(nodeId);
+          target.removeNodeIfSame(nodeId, Objects.requireNonNull(expectedNodes.get(nodeId)));
         } catch (Exception e) {
           findings.add(
               InstantiationDiagnostic.applyError(

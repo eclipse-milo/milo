@@ -50,7 +50,10 @@
  * <p>Updating a target replaces the future-attempt configuration, including enabled and paused
  * state, without closing reverse-opened channels that have already been handed to the normal server
  * path. Removing a target is stronger: it cancels scheduled work, closes an in-flight attempt, and
- * closes active channels owned by that target.
+ * closes active channels owned by that target. Asynchronous callbacks belong to one registration
+ * instance; reusing a removed target's UUID creates a separate owner. Late handoffs from the
+ * removed registration close their channels, and stale timers or retry callbacks cannot change its
+ * replacement.
  *
  * <h2>Failure handling</h2>
  *
@@ -58,7 +61,9 @@
  * org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectAttemptEvent}s and retained on target
  * snapshots as the last status or a defensive copy of the last exception. Retry timing is delegated
  * to {@link org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectRetryPolicy}; the default
- * policy uses the target registration period.
+ * policy uses the target registration period. Listener dispatch uses a serial execution queue;
+ * executor rejection runs callbacks on the submitting thread so notification failures cannot
+ * abandon an attempt transition. Callbacks should return promptly even during executor overload.
  *
  * <p>Successful outbound UA-TCP connections are handed back to the normal server SecureChannel and
  * Session paths after the stack transport installs the standard server Hello handler. Client-side

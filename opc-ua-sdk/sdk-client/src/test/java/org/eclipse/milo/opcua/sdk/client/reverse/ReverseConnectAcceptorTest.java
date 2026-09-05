@@ -126,6 +126,42 @@ class ReverseConnectAcceptorTest {
     }
   }
 
+  // Delivered clients remain caller-owned while stopped, but disconnected keys must be reusable.
+  @Test
+  void disconnectWhileStoppedAllowsRediscoveryAfterRestart() throws Exception {
+    ReverseConnectManager manager = newManager();
+    List<UUID> discovered = new ArrayList<>();
+    ReverseConnectAcceptor acceptor =
+        ReverseConnectAcceptor.builder(manager)
+            .setDiscoveryTransport(
+                builder -> {
+                  throw new IllegalStateException("discovery observed");
+                })
+            .setErrorListener((candidate, failure) -> discovered.add(candidate.id()))
+            .build();
+    EmbeddedChannel channel = new EmbeddedChannel();
+    FakeClientTransport transport = new FakeClientTransport(channel);
+    OpcUaClient client = new OpcUaClient(clientConfig(), transport);
+    try {
+      acceptor.start();
+      addActiveKey(acceptor, SERVER_URI);
+      assertTrue(invokeObserveProductionTransportForKeyRelease(acceptor, SERVER_URI, client));
+      acceptor.stop();
+      assertEquals(1, activeKeyCount(acceptor), "stopping must retain the connected client's key");
+      UUID pendingId = addPendingCandidate(manager, new EmbeddedChannel());
+      channel.close();
+      transport.listeners.forEach(listener -> listener.onStateTransition(false));
+      assertTrue(discovered.isEmpty(), "a stopped acceptor must not start discovery");
+      acceptor.start();
+      assertEquals(List.of(pendingId), discovered);
+      assertEquals(0, activeKeyCount(acceptor));
+    } finally {
+      channel.close();
+      acceptor.stop();
+      manager.shutdown();
+    }
+  }
+
   private ReverseConnectManager newManager() {
     return ReverseConnectManager.builder()
         .addBindAddress(new InetSocketAddress("127.0.0.1", 0))

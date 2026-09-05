@@ -231,7 +231,7 @@ final class ClientBrowseUtils {
 
     int iterations = 0;
 
-    while (continuationPoint != null && continuationPoint.isNotNull()) {
+    while (continuationPoint != null && !continuationPoint.isNullOrEmpty()) {
       if (++iterations > MAX_BROWSE_NEXT_ITERATIONS) {
         var limitException =
             new UaException(

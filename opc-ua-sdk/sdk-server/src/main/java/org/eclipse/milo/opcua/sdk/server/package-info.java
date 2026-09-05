@@ -44,7 +44,40 @@
  * reverse-connect endpoints. Startup rollback and terminal shutdown stop only successfully started
  * participants, in reverse order. On normal shutdown, transports and sessions are quiesced first;
  * participant shutdown therefore runs without external server visibility but before the standard
- * address space and event facilities are torn down.
+ * address space and event facilities are torn down. Shutdown waits for the actual startup work,
+ * even if an application cancels or completes the public startup result.
+ *
+ * <p>{@link org.eclipse.milo.opcua.sdk.server.LifecycleManager} applies the same ownership rule
+ * within composite components: failed child startup unwinds successfully started children in
+ * reverse order. A managed namespace therefore releases its base address-space registrations when a
+ * later child fails. Each failing child cleans up its own partial startup before propagating the
+ * failure.
+ *
+ * <h2>Node storage</h2>
+ *
+ * <p>{@link org.eclipse.milo.opcua.sdk.server.NodeManager} owns node identity and reference
+ * storage. The built-in manager serializes mutations, batch commits, and identity-conditional
+ * cleanup on its monitor. It resolves node attributes and invokes reference filters outside that
+ * monitor because attribute observers may call back into the manager while holding a node's
+ * monitor. Application managers that use the default batch and cleanup primitives need a single
+ * writer.
+ *
+ * <h2>Session response preparation</h2>
+ *
+ * <p>A Session owns a timeout as soon as it is constructed. Failed CreateSession preparation must
+ * close that provisional Session before returning an error. ActivateSession prepares its response
+ * additional header before committing identity, nonce, locale, or channel changes. A failed
+ * negotiation therefore leaves an existing Session usable on its previous channel and leaves an
+ * initial Session unactivated. Enhanced username-token keys consumed during validation remain
+ * single-use even if later response preparation fails.
+ *
+ * <h2>Reference storage</h2>
+ *
+ * <p>{@link org.eclipse.milo.opcua.sdk.server.AddressSpaceManager} aggregates references from every
+ * registered NodeManager. Reference ownership is independent of node ownership: either endpoint's
+ * manager, or another registered manager, can store an association. Removing an association through
+ * the address-space manager removes both directions from all registered stores, matching the scope
+ * used for discovery.
  *
  * <h2>Runtime boundaries</h2>
  *

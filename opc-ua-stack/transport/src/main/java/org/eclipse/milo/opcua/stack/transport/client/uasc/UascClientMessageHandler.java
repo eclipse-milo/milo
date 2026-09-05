@@ -155,6 +155,8 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
 
   @Override
   public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+    releaseChunkBuffers();
+
     if (renewFuture != null) {
       renewFuture.cancel(false);
     }
@@ -174,8 +176,7 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
         cause.getMessage(),
         cause);
 
-    chunkBuffers.forEach(ReferenceCountUtil::safeRelease);
-    chunkBuffers.clear();
+    releaseChunkBuffers();
 
     // If the handshake hasn't completed yet this cause will be more
     // accurate than the generic "connection closed" exception that
@@ -183,6 +184,17 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
     handshakeFuture.completeExceptionally(cause);
 
     ctx.close();
+  }
+
+  @Override
+  public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
+    releaseChunkBuffers();
+    super.handlerRemoved(ctx);
+  }
+
+  private void releaseChunkBuffers() {
+    chunkBuffers.forEach(ReferenceCountUtil::safeRelease);
+    chunkBuffers.clear();
   }
 
   @Override
@@ -626,13 +638,13 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
 
     chunkBuffers.add(buffer.retain());
 
-    if (maxChunkCount > 0 && chunkBuffers.size() > maxChunkCount) {
+    char chunkType = (char) buffer.getByte(3);
+
+    if (chunkType != 'A' && maxChunkCount > 0 && chunkBuffers.size() > maxChunkCount) {
       throw new UaException(
           StatusCodes.Bad_TcpMessageTooLarge,
           String.format("max chunk count exceeded (%s)", maxChunkCount));
     }
-
-    char chunkType = (char) buffer.getByte(3);
 
     return (chunkType == 'A' || chunkType == 'F');
   }

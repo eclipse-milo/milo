@@ -771,6 +771,27 @@ class DynamicTypeSerializationTest {
 
   private static Stream<Arguments> structWithOptionalScalarFieldsProvider() {
     return Stream.of(
+        // An omitted earlier optional field must not shift a later field's wire mask bit.
+        Arguments.of(
+            new StructWithOptionalScalarFields(
+                "required",
+                null,
+                1,
+                7,
+                2.0,
+                null,
+                new ConcreteTestType((short) 0, 0.0, "", false),
+                null)),
+        Arguments.of(
+            new StructWithOptionalScalarFields(
+                "required",
+                "present",
+                1,
+                null,
+                2.0,
+                3.0,
+                new ConcreteTestType((short) 0, 0.0, "", false),
+                null)),
         Arguments.of(
             new StructWithOptionalScalarFields(
                 "",
@@ -795,6 +816,17 @@ class DynamicTypeSerializationTest {
 
   private static Stream<Arguments> structWithOptionalArrayFieldsProvider() {
     return Stream.of(
+        // Sparse optional arrays use the same mask positions as the declared field order.
+        Arguments.of(
+            new StructWithOptionalArrayFields(
+                new Integer[] {1},
+                null,
+                new String[] {"required"},
+                new String[] {"present"},
+                new Double[] {2.0},
+                null,
+                new ConcreteTestType[0],
+                null)),
         Arguments.of(
             new StructWithOptionalArrayFields(
                 new Integer[] {0, 0},

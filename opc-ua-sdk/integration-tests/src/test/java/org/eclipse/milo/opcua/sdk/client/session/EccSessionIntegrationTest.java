@@ -734,9 +734,9 @@ class EccSessionIntegrationTest {
     }
   }
 
-  // Part 4 (7.41) requires an explicitly specified certificate user-token policy to use the same
-  // public-key algorithm as the SecureChannel. The client must reject an ECC token policy over an
-  // RSA channel before attempting to construct the identity signature.
+  // Part 4 (6.1.8, Table 101) requires channel-bound inputs for an enhanced user-token signature.
+  // A legacy secured channel cannot supply them, so the only advertised certificate policy is
+  // unusable. Exhausting the advertised policies must reject the identity before signing.
   @Test
   void rejectsEnhancedX509TokenOverLegacyChannel() throws Exception {
     SecurityPolicy channelPolicy = SecurityPolicy.Basic256Sha256;
@@ -772,7 +772,7 @@ class EccSessionIntegrationTest {
       try {
         UaException exception = assertThrows(UaException.class, client::connect);
 
-        assertEquals(StatusCodes.Bad_SecurityPolicyRejected, exception.getStatusCode().getValue());
+        assertEquals(StatusCodes.Bad_IdentityTokenRejected, exception.getStatusCode().getValue());
       } finally {
         disconnectQuietly(client);
       }
