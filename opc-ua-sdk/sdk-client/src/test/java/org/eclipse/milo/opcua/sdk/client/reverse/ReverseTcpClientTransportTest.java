@@ -39,6 +39,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
@@ -320,6 +321,52 @@ class ReverseTcpClientTransportTest {
     }
   }
 
+  // Once a manager hands off a channel, rejection must settle connect and close the socket.
+  @Test
+  void rejectedClaimDispatchClosesChannelAndFailsConnect() throws Exception {
+    QueuingExecutorService rejectingExecutor =
+        new QueuingExecutorService() {
+          @Override
+          public void execute(Runnable task) {
+            throw new RejectedExecutionException("saturated");
+          }
+        };
+    executor = rejectingExecutor;
+    ReverseConnectManager manager =
+        ReverseConnectManager.builder()
+            .addBindAddress(new InetSocketAddress("127.0.0.1", 0))
+            .setExecutor(Runnable::run)
+            .setScheduler(scheduledExecutor())
+            .build();
+    EmbeddedChannel channel = new EmbeddedChannel();
+    ReverseTcpClientTransport transport =
+        new ReverseTcpClientTransport(
+            transportConfig(rejectingExecutor), manager, ReverseConnectSelector.any());
+    CompletableFuture<Channel> target = new CompletableFuture<>();
+    try {
+      addPendingCandidate(manager, channel);
+      setField(transport, "started", true);
+      setField(transport, "disconnecting", false);
+      setField(transport, "channelFuture", target);
+      setField(transport, "waitingForReverseConnection", true);
+      Method register =
+          ReverseTcpClientTransport.class.getDeclaredMethod(
+              "registerForNextChannel", CompletableFuture.class);
+      register.setAccessible(true);
+      register.invoke(transport, target);
+      assertTrue(
+          target.isCompletedExceptionally(), "dispatch failure must settle connect immediately");
+      assertFalse(channel.isOpen(), "the manager no longer owns this claimed channel");
+      assertFalse(
+          (boolean)
+              declaredField(ReverseTcpClientTransport.class, "waitingForReverseConnection")
+                  .get(transport));
+    } finally {
+      channel.close();
+      manager.shutdown();
+    }
+  }
+
   private OpcTcpClientTransportConfig transportConfig() {
     return transportConfig(executor());
   }
@@ -510,7 +557,7 @@ class ReverseTcpClientTransportTest {
     }
   }
 
-  private static final class QueuingExecutorService extends AbstractExecutorService {
+  private static class QueuingExecutorService extends AbstractExecutorService {
 
     private final List<Runnable> tasks = Collections.synchronizedList(new ArrayList<>());
 

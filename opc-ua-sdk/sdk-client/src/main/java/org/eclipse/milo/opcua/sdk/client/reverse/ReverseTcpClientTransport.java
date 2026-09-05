@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.RejectedExecutionException;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
@@ -393,13 +394,21 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
     nextRegistration
         .connectionFuture()
         .whenComplete(
-            (connection, ex) ->
+            (connection, ex) -> {
+              try {
                 config
                     .getExecutor()
                     .execute(
                         () ->
                             handleClaimedConnection(
-                                nextRegistration, targetFuture, connection, ex)));
+                                nextRegistration, targetFuture, connection, ex));
+              } catch (RejectedExecutionException rejected) {
+                if (connection != null) {
+                  connection.close();
+                }
+                handleClaimedConnection(nextRegistration, targetFuture, null, rejected);
+              }
+            });
 
     if (stale) {
       nextRegistration.close();
