@@ -35,6 +35,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** Policy advertisement order must not prevent a compatible certificate identity from signing. */
 class X509PolicySelectionTest {
@@ -74,6 +75,28 @@ class X509PolicySelectionTest {
             SecurityPolicy.None,
             policy("incompatible", incompatible),
             policy("compatible", compatible));
+    assertSignsWithCompatiblePolicy(endpoint);
+  }
+
+  // A certificate identity must prove possession of its private key. Both explicit None and
+  // inherited None are unusable even when advertised before a valid signing policy.
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void skipsCertificatePoliciesThatResolveToNone(boolean inherited) throws Exception {
+    assertSignsWithCompatiblePolicy(
+        endpoint(
+            SecurityPolicy.None,
+            new UserTokenPolicy(
+                "none",
+                UserTokenType.Certificate,
+                null,
+                null,
+                inherited ? null : SecurityPolicy.None.getUri()),
+            policy("compatible", SecurityPolicy.ECC_nistP256_AesGcm)));
+  }
+
+  private void assertSignsWithCompatiblePolicy(EndpointDescription endpoint) throws Exception {
+    SecurityPolicy compatible = SecurityPolicy.ECC_nistP256_AesGcm;
     AtomicInteger privateKeyReads = new AtomicInteger();
     X509IdentityProvider provider =
         new X509IdentityProvider(

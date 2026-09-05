@@ -18,8 +18,9 @@
  * several providers in order.
  *
  * <p>The X.509 provider tries advertised certificate-token policies in order and selects the first
- * compatible with both the user certificate's public key and the SecureChannel. Selection uses the
- * public key, including its curve, so it does not access a supplied private key until signing.
+ * signing policy compatible with both the user certificate's public key and the SecureChannel.
+ * Policies resolving to SecurityPolicy.None are skipped. Selection uses the public key, including
+ * its curve, so it does not access a supplied private key until signing.
  *
  * <h2>Session handoff</h2>
  *

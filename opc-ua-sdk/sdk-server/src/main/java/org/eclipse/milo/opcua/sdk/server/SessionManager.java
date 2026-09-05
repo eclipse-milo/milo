@@ -911,6 +911,7 @@ public class SessionManager {
           ExtensionObject additionalHeader =
               activateSessionAdditionalHeader(request, securityConfiguration, session);
 
+          // The header can install a new key; keep the remaining commit operations non-throwing.
           session.setClientAddress(context.clientAddress());
           session.setIdentity(identity, identityToken);
           session.setLastNonce(serverNonce);
@@ -976,6 +977,8 @@ public class SessionManager {
               ExtensionObject additionalHeader =
                   activateSessionAdditionalHeader(request, newSecurityConfiguration, session);
 
+              // The header can install a new key; keep the remaining commit operations
+              // non-throwing.
               session.setSecureChannelId(secureChannelId);
 
               logger.debug(
@@ -1038,6 +1041,7 @@ public class SessionManager {
         activeSessions.put(authToken, session);
       }
 
+      // The header installed any candidate key; commit after the registry check must not throw.
       session.setClientAddress(context.clientAddress());
       session.setIdentity(identity, identityToken);
       session.setLocaleIds(request.getLocaleIds());

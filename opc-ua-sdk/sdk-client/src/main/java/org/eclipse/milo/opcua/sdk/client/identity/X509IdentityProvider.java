@@ -39,7 +39,8 @@ import org.jspecify.annotations.Nullable;
  * An {@link IdentityProvider} that authenticates with a certificate user-token policy.
  *
  * <p>The provider sends the configured certificate chain as the user identity token and signs the
- * server certificate plus nonce when the selected user-token security policy requires a signature.
+ * server certificate plus nonce with the selected signing policy. Certificate policies resolving to
+ * SecurityPolicy.None are skipped because they cannot prove possession of the private key.
  * Certificate-token policies do not use the enhanced username-secret additional-header exchange,
  * even when the certificate-token policy itself uses an ECC or RSA-DH security policy.
  */
@@ -239,6 +240,11 @@ public class X509IdentityProvider implements IdentityProvider {
 
       try {
         SecurityPolicy securityPolicy = resolveSecurityPolicy(endpoint, tokenPolicy);
+        if (securityPolicy == SecurityPolicy.None) {
+          throw new UaException(
+              StatusCodes.Bad_SecurityPolicyRejected,
+              "certificate user token requires a signing policy");
+        }
         CertificateCompatibility.checkPublicKey(
             securityPolicy.getProfile(), certificate.getPublicKey());
         ChannelBoundSignatureData.checkUserTokenChannelCompatibility(
