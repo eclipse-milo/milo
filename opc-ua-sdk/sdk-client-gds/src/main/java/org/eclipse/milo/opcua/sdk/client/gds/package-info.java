@@ -13,9 +13,9 @@
  * registration, certificate requests through the Pull Model, and trust list retrieval.
  *
  * <p>This package spans two modules. {@code milo-sdk-client} contributes the generated GDS model:
- * {@link org.eclipse.milo.opcua.sdk.client.gds.ObjectTypeInitializer}, {@link
- * org.eclipse.milo.opcua.sdk.client.gds.VariableTypeInitializer}, and the typed node classes in
- * {@code org.eclipse.milo.opcua.sdk.client.gds.model.objects}. {@code milo-sdk-client-gds}
+ * {@link org.eclipse.milo.opcua.sdk.client.gds.model.ObjectTypeInitializer}, {@link
+ * org.eclipse.milo.opcua.sdk.client.gds.model.VariableTypeInitializer}, and the typed node classes
+ * in {@code org.eclipse.milo.opcua.sdk.client.gds.model.objects}. {@code milo-sdk-client-gds}
  * contributes the hand-written layer described here, which an application opts into by adding that
  * module as a dependency.
  *
