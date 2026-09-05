@@ -23,7 +23,9 @@ import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.events.EventNotifierScope;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredEventItem;
+import org.eclipse.milo.opcua.sdk.server.methods.MethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.Subscription;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -102,6 +104,51 @@ public class DefaultConditionManager implements ConditionManager {
   @Override
   public Optional<Condition> findCondition(NodeId conditionId) {
     return Optional.ofNullable(conditions.get(conditionId));
+  }
+
+  @Override
+  public Optional<MethodInvocationHandler> findMethodInvocationHandler(
+      NodeId objectId, NodeId methodId) {
+    return findMethodOwner(objectId)
+        .flatMap(condition -> condition.findMethodInvocationHandler(methodId));
+  }
+
+  @Override
+  public Optional<UaMethodNode> findMethodNode(NodeId objectId, NodeId methodId) {
+    return findMethodOwner(objectId).flatMap(condition -> condition.findMethodNode(methodId));
+  }
+
+  private Optional<Condition> findMethodOwner(NodeId objectId) {
+    Condition direct = conditions.get(objectId);
+    if (direct != null) {
+      return Optional.of(direct);
+    }
+
+    // A ShelvingState ObjectId names a nested state machine, while its behavior belongs to the
+    // registered AlarmCondition. Follow only its actual parent edge and verify that ownership.
+    return server
+        .getAddressSpaceManager()
+        .getManagedNode(objectId)
+        .flatMap(
+            node ->
+                node.getReferences().stream()
+                    .filter(
+                        reference ->
+                            !reference.isForward()
+                                && reference.getReferenceTypeId().equals(NodeIds.HasComponent))
+                    .map(
+                        reference ->
+                            reference
+                                .getTargetNodeId()
+                                .toNodeId(server.getNamespaceTable())
+                                .map(conditions::get)
+                                .orElse(null))
+                    .filter(
+                        condition ->
+                            condition instanceof AlarmCondition alarm
+                                && alarm.getShelvingState() != null
+                                && alarm.getShelvingState().getNodeId().equals(objectId))
+                    .findFirst());
   }
 
   @Override
