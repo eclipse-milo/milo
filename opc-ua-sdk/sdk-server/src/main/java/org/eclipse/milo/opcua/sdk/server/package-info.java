@@ -46,6 +46,15 @@
  * participant shutdown therefore runs without external server visibility but before the standard
  * address space and event facilities are torn down.
  *
+ * <h2>Session response preparation</h2>
+ *
+ * <p>A Session owns a timeout as soon as it is constructed. Failed CreateSession preparation must
+ * close that provisional Session before returning an error. ActivateSession prepares its response
+ * additional header before committing identity, nonce, locale, or channel changes. A failed
+ * negotiation therefore leaves an existing Session usable on its previous channel and leaves an
+ * initial Session unactivated. Enhanced username-token keys consumed during validation remain
+ * single-use even if later response preparation fails.
+ *
  * <h2>Runtime boundaries</h2>
  *
  * <p>The SDK server package coordinates high-level server configuration and lifecycle. Certificate
