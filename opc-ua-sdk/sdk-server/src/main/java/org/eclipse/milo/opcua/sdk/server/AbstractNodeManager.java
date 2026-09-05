@@ -108,6 +108,17 @@ public class AbstractNodeManager<T extends Node> implements NodeManager<T> {
   }
 
   @Override
+  public synchronized boolean removeNodeIfSame(NodeId nodeId, T expectedNode) {
+    return NodeManager.super.removeNodeIfSame(nodeId, expectedNode);
+  }
+
+  @Override
+  public synchronized boolean removeReferenceIfSame(
+      Reference reference, Map<NodeId, T> expectedNodes, NamespaceTable namespaceTable) {
+    return NodeManager.super.removeReferenceIfSame(reference, expectedNodes, namespaceTable);
+  }
+
+  @Override
   public Optional<T> getNode(NodeId nodeId) {
     return Optional.ofNullable(nodeMap.get(nodeId));
   }
