@@ -454,54 +454,78 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
   }
 
   private void configureWatchService(File keyStoreFile) throws IOException {
-    Path keyStorePath = keyStoreFile.toPath();
-    Path watchedDirectory = keyStorePath.getParent();
-
+    Path keyStorePath = keyStoreFile.toPath().toAbsolutePath().normalize();
     watchService = FileSystems.getDefault().newWatchService();
 
-    // ENTRY_CREATE matters as much as ENTRY_MODIFY here: writing a file by renaming a temporary
-    // one over it is the usual way to replace a KeyStore safely, and a rename arrives as a
-    // creation. This store writes its own file that way.
-    WatchKey watchKey =
-        watchedDirectory.register(
-            watchService,
-            StandardWatchEventKinds.ENTRY_CREATE,
-            StandardWatchEventKinds.ENTRY_MODIFY);
-
-    watchThread = new Thread(() -> watchForChanges(watchKey, watchedDirectory, keyStorePath));
+    WatchedFile configured = watchFile(keyStorePath);
+    WatchedFile target = watchFile(keyStorePath.toRealPath());
+    watchThread = new Thread(() -> watchForChanges(configured, target));
     watchThread.setName("milo-key-store-watcher");
     watchThread.setDaemon(true);
     watchThread.start();
   }
 
-  private void watchForChanges(WatchKey watchKey, Path watchedDirectory, Path keyStorePath) {
+  private WatchedFile watchFile(Path path) throws IOException {
+    // Atomic replacement is reported as ENTRY_CREATE. ENTRY_DELETE keeps the current target
+    // watch active across a temporary disappearance while its replacement is being installed.
+    WatchKey key =
+        path.getParent()
+            .register(
+                watchService,
+                StandardWatchEventKinds.ENTRY_CREATE,
+                StandardWatchEventKinds.ENTRY_MODIFY,
+                StandardWatchEventKinds.ENTRY_DELETE);
+    return new WatchedFile(path, key);
+  }
+
+  private void watchForChanges(WatchedFile configured, WatchedFile initialTarget) {
+    WatchedFile target = initialTarget;
     while (true) {
       WatchKey key;
-
       try {
         key = watchService.take();
       } catch (ClosedWatchServiceException e) {
         return;
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
-
         return;
       }
 
-      if (key == watchKey
-          && key.pollEvents().stream()
-              .anyMatch(e -> isKeyStoreEvent(e, watchedDirectory, keyStorePath))) {
-
-        reload(keyStorePath);
+      List<WatchEvent<?>> events = key.pollEvents();
+      if (configured.matches(key, events) || target.matches(key, events)) {
+        try {
+          Path resolved = configured.path().toRealPath();
+          if (!resolved.equals(target.path()) || !target.key().isValid()) {
+            WatchedFile replacement = watchFile(resolved);
+            // Directory registrations share keys. Cancelling the old target must not cancel the
+            // configured-link watch or a replacement target in that same directory.
+            if (target.key() != configured.key() && target.key() != replacement.key()) {
+              target.key().cancel();
+            }
+            target = replacement;
+          }
+        } catch (IOException e) {
+          // Preserve the previous target watch while the file is missing or temporarily
+          // unreadable; its recreation can then trigger another resolution and reload.
+          logger.warn("Error resolving watched KeyStore at {}", configured.path(), e);
+        }
+        reload(configured.path());
       }
 
-      // A WatchKey stays signalled, and is never queued again, until it has been reset.
-      if (!key.reset()) {
-        logger.warn(
-            "No longer watching {} for changes: the watch key is no longer valid", keyStorePath);
-
-        return;
+      // Reset every delivered key, including obsolete target keys already cancelled above.
+      if (!key.reset() && (key == configured.key() || key == target.key())) {
+        logger.warn("KeyStore watch directory is no longer available: {}", key.watchable());
+        if (!configured.key().isValid() && !target.key().isValid()) {
+          return;
+        }
       }
+    }
+  }
+
+  private record WatchedFile(Path path, WatchKey key) {
+    boolean matches(WatchKey signalled, List<WatchEvent<?>> events) {
+      return signalled == key
+          && events.stream().anyMatch(event -> isKeyStoreEvent(event, path.getParent(), path));
     }
   }
 
