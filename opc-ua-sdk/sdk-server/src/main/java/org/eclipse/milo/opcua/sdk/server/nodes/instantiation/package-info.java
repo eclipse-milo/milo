@@ -24,6 +24,11 @@
  * <p>The cache coordinates explicit invalidation with pending compilations. A load that overlaps
  * invalidation retries against the current cache before returning a model.
  *
+ * <p>Instantiation results own the node and reference additions recorded by their commit. Cleanup
+ * and rollback check object identity before removing those additions, preserving replacements
+ * installed later under the same identifiers. Built-in node managers make those checks atomic with
+ * removal. Custom managers using the default storage primitives require a single writer.
+ *
  * <p><strong>Experimental:</strong> this package is new API, subject to adjustment for one minor
  * release based on experience from Milo's in-tree migrations and validation of the placeholder
  * surface against real companion-specification workloads, after which it freezes. The legacy {@code
