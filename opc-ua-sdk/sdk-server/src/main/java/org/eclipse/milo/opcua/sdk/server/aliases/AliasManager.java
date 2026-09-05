@@ -15,6 +15,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -1323,10 +1324,10 @@ public final class AliasManager extends AbstractLifecycle {
    * target that is not associated changes nothing and reports {@code Good}; §6.3.5 reserves {@code
    * Bad_NotFound} for an alias name the category does not contain.
    *
-   * <p>Validation happens before any mutation. Reference removal spans every registered {@link
-   * NodeManager}. A custom NodeManager can throw unchecked mid-entry; such a failure is confined to
-   * its entry as {@code Bad_InternalError}, and any category whose new version was prepared before
-   * the mutation still gets its LastChange published.
+   * <p>Validation and category-version persistence happen before any mutation. Reference removal
+   * spans every registered {@link NodeManager}. A custom NodeManager can throw unchecked mid-entry;
+   * such a failure is confined to its entry as {@code Bad_InternalError}, and any category whose
+   * new version was prepared before the mutation still gets its LastChange published.
    */
   private StatusCode deleteAliasEntry(
       NodeId categoryId, @Nullable String aliasName, @Nullable ExpandedNodeId targetNode) {
@@ -1376,6 +1377,9 @@ public final class AliasManager extends AbstractLifecycle {
         return StatusCode.GOOD;
       }
 
+      var removals = new LinkedHashMap<UaNode, List<Reference>>();
+      var bumped = new LinkedHashSet<NodeId>();
+
       for (NodeId aliasNodeId : aliasNodeIds) {
         UaNode aliasNode = server.getAddressSpaceManager().getManagedNode(aliasNodeId).orElse(null);
         if (aliasNode == null) {
@@ -1387,24 +1391,23 @@ public final class AliasManager extends AbstractLifecycle {
         List<Reference> matching =
             findTargetReferences(aliasNodeId, targetNodeId, aliasTypes::isAliasForOrSubtype);
 
-        if (matching.isEmpty()) {
-          continue;
+        if (!matching.isEmpty()) {
+          removals.put(aliasNode, matching);
+          bumped.add(categoryId);
+          bumped.addAll(getOrganizingCategories(aliasNodeId));
         }
+      }
 
-        // A target change is observable from every category that organizes the alias, not just
-        // the one addressed, so all of them get a LastChange bump. Prepared BEFORE the mutation
-        // so a failed save fails the entry before this alias is touched, and the bumps publish
-        // even if a Reference removal throws partway through.
-        var bumped = new ArrayList<NodeId>();
-        bumped.add(categoryId);
-        bumped.addAll(getOrganizingCategories(aliasNodeId));
-        versionManager.prepare(bumped);
+      // One entry can affect several same-name aliases and their other organizing categories.
+      // Persist the entire union before the first deletion, so any save failure leaves every
+      // alias in this entry untouched.
+      versionManager.prepare(bumped);
 
-        for (Reference reference : matching) {
+      for (var removal : removals.entrySet()) {
+        for (Reference reference : removal.getValue()) {
           server.getAddressSpaceManager().removeManagedReferences(reference);
         }
-
-        deleteIfTargetless(aliasNode);
+        deleteIfTargetless(removal.getKey());
       }
 
       return StatusCode.GOOD;

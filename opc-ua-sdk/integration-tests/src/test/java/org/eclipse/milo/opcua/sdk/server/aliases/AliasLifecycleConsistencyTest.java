@@ -30,6 +30,7 @@ import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectNode;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
@@ -86,6 +87,7 @@ class AliasLifecycleConsistencyTest extends AbstractClientServerTest {
 
   @AfterEach
   void cleanFixture() {
+    store.failOn = null;
     manager.shutdown();
     externalReferences.forEach(
         reference -> nodeManager.removeReferences(reference, server.getNamespaceTable()));
@@ -241,6 +243,38 @@ class AliasLifecycleConsistencyTest extends AbstractClientServerTest {
     assertEquals(Set.of(newNodeId("TestInt32")), targets(child.categoryNodeId(), prefix));
   }
 
+  // Part 17 §6.3.5 requires all-or-none deletion per entry. A later same-name alias can introduce
+  // an additional affected category whose version save fails; earlier aliases must remain intact.
+  @Test
+  void failedVersionSaveLeavesEveryAliasInOneWireDeletionEntryUntouched() throws Exception {
+    manager.startup();
+    NodeId category = category("Category", NodeIds.Aliases).categoryNodeId();
+    NodeId other = category("Other", NodeIds.Aliases).categoryNodeId();
+    manager.addCategory(category("Category", NodeIds.Aliases));
+    manager.addCategory(category("Other", NodeIds.Aliases));
+    NodeId targetId = newNodeId("TestInt32");
+    NodeId first = manager.addAlias(category, prefix, List.of(target(targetId)));
+    NodeId second = manager.addAlias(other, prefix, List.of(target(targetId)));
+    managed(second)
+        .addReference(
+            new Reference(
+                second, NodeIds.Organizes, category.expanded(), Reference.Direction.INVERSE));
+    manager.touch(category);
+    assertEquals(2, manager.findAlias(category, prefix, null).size());
+    store.failOn = other.expanded(server.getNamespaceTable());
+
+    assertArrayEquals(
+        new StatusCode[] {StatusCode.of(StatusCodes.Bad_InternalError)},
+        deleteOverWire(category, prefix, targetId));
+
+    assertTrue(
+        server.getAddressSpaceManager().getManagedNode(first).isPresent(),
+        "first alias must survive later save failure");
+    assertTrue(server.getAddressSpaceManager().getManagedNode(second).isPresent());
+    assertEquals(2, manager.findAlias(category, prefix, null).size());
+    assertEquals(Set.of(targetId), targets(other, prefix));
+  }
+
   private AliasCategoryConfig category(String suffix, NodeId parent) {
     return new AliasCategoryConfig(
         newNodeId(prefix + suffix),
@@ -299,6 +333,7 @@ class AliasLifecycleConsistencyTest extends AbstractClientServerTest {
 
   private static final class TestVersionStore implements AliasVersionStore {
     private final Map<ExpandedNodeId, UInteger> entries = new ConcurrentHashMap<>();
+    private volatile ExpandedNodeId failOn;
 
     @Override
     public Map<ExpandedNodeId, UInteger> load() {
@@ -307,6 +342,9 @@ class AliasLifecycleConsistencyTest extends AbstractClientServerTest {
 
     @Override
     public void save(ExpandedNodeId categoryId, UInteger value) throws UaException {
+      if (categoryId.equals(failOn)) {
+        throw new UaException(StatusCodes.Bad_ResourceUnavailable, "controlled save failure");
+      }
       entries.put(categoryId, value);
     }
   }
