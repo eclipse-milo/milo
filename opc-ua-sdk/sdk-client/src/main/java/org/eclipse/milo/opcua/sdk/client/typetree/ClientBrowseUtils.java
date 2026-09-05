@@ -12,9 +12,9 @@ package org.eclipse.milo.opcua.sdk.client.typetree;
 
 import static java.util.Objects.requireNonNullElse;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
-import static org.eclipse.milo.opcua.stack.core.util.Lists.partition;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -113,25 +113,31 @@ final class ClientBrowseUtils {
     int partitionSize =
         limits
             .maxNodesPerRead()
-            .map(UInteger::intValue)
+            .map(ClientBrowseUtils::toPartitionSize)
             .filter(v -> v > 0)
-            .orElse(Integer.MAX_VALUE);
+            .orElse(1);
 
-    var values = new ArrayList<DataValue>();
+    return executeWithOperationLimit(
+        readValueIds,
+        partitionSize,
+        partitionList -> {
+          ReadResponse response;
+          try {
+            response = client.read(0.0, TimestampsToReturn.Neither, partitionList);
+          } catch (UaException e) {
+            throw retryableTooManyOperations(partitionList, e);
+          }
 
-    for (List<ReadValueId> partitionList : partition(readValueIds, partitionSize).toList()) {
-      ReadResponse response = client.read(0.0, TimestampsToReturn.Neither, partitionList);
-      DataValue[] results = response.getResults();
-      if (results == null || results.length != partitionList.size()) {
-        throw new UaException(
-            StatusCodes.Bad_UnexpectedError,
-            "Read returned %s results, expected %s"
-                .formatted(results == null ? "null" : results.length, partitionList.size()));
-      }
-      Collections.addAll(values, results);
-    }
+          DataValue[] results = response.getResults();
+          if (results == null || results.length != partitionList.size()) {
+            throw new UaException(
+                StatusCodes.Bad_UnexpectedError,
+                "Read returned %s results, expected %s"
+                    .formatted(results == null ? "null" : results.length, partitionList.size()));
+          }
 
-    return values;
+          return Arrays.asList(results);
+        });
   }
 
   /**
@@ -156,18 +162,62 @@ final class ClientBrowseUtils {
     int partitionSize =
         limits
             .maxNodesPerBrowse()
-            .map(UInteger::intValue)
+            .map(ClientBrowseUtils::toPartitionSize)
             .filter(v -> v > 0)
-            .orElse(Integer.MAX_VALUE);
+            .orElse(1);
 
-    var references = new ArrayList<List<ReferenceDescription>>();
+    return executeWithOperationLimit(
+        browseDescriptions, partitionSize, partitionList -> browsePartition(client, partitionList));
+  }
 
-    for (List<BrowseDescription> partitionList :
-        partition(browseDescriptions, partitionSize).toList()) {
-      references.addAll(browse(client, partitionList));
+  private static int toPartitionSize(UInteger operationLimit) {
+    return (int) Math.min(operationLimit.longValue(), Integer.MAX_VALUE);
+  }
+
+  private static <T, R> List<R> executeWithOperationLimit(
+      List<T> inputs, int partitionSize, PartitionOperation<T, R> operation) throws UaException {
+
+    var results = new ArrayList<R>(inputs.size());
+
+    int index = 0;
+    int currentPartitionSize = partitionSize;
+
+    while (index < inputs.size()) {
+      int count = Math.min(currentPartitionSize, inputs.size() - index);
+      List<T> partitionList = inputs.subList(index, index + count);
+
+      try {
+        results.addAll(operation.apply(partitionList));
+        index += count;
+      } catch (RetryableTooManyOperationsException e) {
+        currentPartitionSize = 1;
+      }
     }
 
-    return references;
+    return results;
+  }
+
+  @FunctionalInterface
+  private interface PartitionOperation<T, R> {
+
+    List<R> apply(List<T> partitionList) throws UaException;
+  }
+
+  private static UaException retryableTooManyOperations(List<?> partition, UaException failure) {
+    if (partition.size() > 1
+        && failure.getStatusCode().value() == StatusCodes.Bad_TooManyOperations) {
+
+      return new RetryableTooManyOperationsException(failure);
+    }
+
+    return failure;
+  }
+
+  private static final class RetryableTooManyOperationsException extends UaException {
+
+    private RetryableTooManyOperationsException(UaException cause) {
+      super(cause);
+    }
   }
 
   /**
@@ -185,15 +235,38 @@ final class ClientBrowseUtils {
       return List.of();
     }
 
-    final var referenceDescriptionLists = new ArrayList<List<ReferenceDescription>>();
-
     List<BrowseResult> browseResults = client.browse(browseDescriptions);
+
+    return collectBrowseResults(client, browseDescriptions, browseResults);
+  }
+
+  private static List<List<ReferenceDescription>> browsePartition(
+      OpcUaClient client, List<BrowseDescription> browseDescriptions) throws UaException {
+
+    List<BrowseResult> browseResults;
+    try {
+      browseResults = client.browse(browseDescriptions);
+    } catch (UaException e) {
+      throw retryableTooManyOperations(browseDescriptions, e);
+    }
+
+    return collectBrowseResults(client, browseDescriptions, browseResults);
+  }
+
+  private static List<List<ReferenceDescription>> collectBrowseResults(
+      OpcUaClient client,
+      List<BrowseDescription> browseDescriptions,
+      List<BrowseResult> browseResults)
+      throws UaException {
+
     if (browseResults.size() != browseDescriptions.size()) {
       throw new UaException(
           StatusCodes.Bad_UnexpectedError,
           "Browse returned %d results, expected %d"
               .formatted(browseResults.size(), browseDescriptions.size()));
     }
+
+    final var referenceDescriptionLists = new ArrayList<List<ReferenceDescription>>();
 
     for (BrowseResult result : browseResults) {
       if (result.getStatusCode().isGood()) {

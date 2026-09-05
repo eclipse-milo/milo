@@ -15,6 +15,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -139,7 +140,11 @@ public class PublishingManager {
 
   private final ConcurrentMap<NodeId, AtomicLong> pendingCountMap = new ConcurrentHashMap<>();
 
-  private final Map<UInteger, SubscriptionDetails> subscriptionDetails = new ConcurrentHashMap<>();
+  private final Object registrationLock = new Object();
+
+  // Replace the immutable map only when registration changes. Each Publish request can retain
+  // its identity snapshot with one volatile read instead of copying the registry on the hot path.
+  private volatile Map<UInteger, SubscriptionDetails> subscriptionDetails = Map.of();
 
   /**
    * Incremented every time a Subscription is registered with or unregistered from this manager.
@@ -258,18 +263,17 @@ public class PublishingManager {
         .getSubscriptionId()
         .ifPresent(
             id -> {
-              SubscriptionDetails displaced =
-                  subscriptionDetails.put(id, new SubscriptionDetails(subscription, id, executor));
-
-              if (displaced != null) {
-                // The Server has reused this SubscriptionId while an entry was still registered
-                // under it. Displacement removed that entry from the map, so unregister() — which
-                // matches by (key, value) — can never succeed for it again; without this, work
-                // still queued for it would be applied as if its Subscription existed, forever.
-                displaced.registered = false;
+              // Construct outside registrationLock because this reads the subscription lifecycle.
+              var details = new SubscriptionDetails(subscription, id, executor);
+              synchronized (registrationLock) {
+                var updated = new HashMap<>(subscriptionDetails);
+                SubscriptionDetails displaced = updated.put(id, details);
+                if (displaced != null) {
+                  displaced.registered = false;
+                }
+                subscriptionDetails = Map.copyOf(updated);
+                subscriptionGeneration.incrementAndGet();
               }
-
-              subscriptionGeneration.incrementAndGet();
             });
 
     // The client wants a deeper pipeline than it did when any ceiling was learned, and Part 4
@@ -310,15 +314,18 @@ public class PublishingManager {
    *     it; {@code false} if something else unregistered it first.
    */
   private boolean unregister(SubscriptionDetails details) {
-    if (subscriptionDetails.remove(details.subscriptionId, details)) {
+    synchronized (registrationLock) {
+      if (subscriptionDetails.get(details.subscriptionId) != details) {
+        return false;
+      }
+
+      var updated = new HashMap<>(subscriptionDetails);
+      updated.remove(details.subscriptionId);
       details.registered = false;
-
+      subscriptionDetails = Map.copyOf(updated);
       subscriptionGeneration.incrementAndGet();
-
       return true;
     }
-
-    return false;
   }
 
   /**
@@ -876,6 +883,7 @@ public class PublishingManager {
     // Read before the request is built, so that a Subscription registered or unregistered while it
     // is in flight is seen as a change by the failure handler rather than missed.
     long generation = subscriptionGeneration.get();
+    Map<UInteger, SubscriptionDetails> requestRegistrations = subscriptionDetails;
 
     // Read for the same reason: a Session-level failure describes the Session the request was sent
     // on, and once another activation has been counted it no longer describes the client.
@@ -957,7 +965,12 @@ public class PublishingManager {
 
                   boolean queued = false;
 
-                  if (details != null) {
+                  SubscriptionDetails requestedDetails = requestRegistrations.get(subscriptionId);
+                  if (details != null
+                      && (requestedDetails == null || requestedDetails == details)) {
+                    // A queued Publish may serve a subscription created after the request. Only
+                    // reject a known id that now belongs to another registration: its delayed
+                    // response cannot safely be attributed to the replacement incarnation.
                     // Cheap and non-blocking: cancels and re-schedules a timer. The watchdog
                     // watches for the Server going quiet, so it is reset when the response is
                     // received rather than when it is eventually processed.
