@@ -638,13 +638,13 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
 
     chunkBuffers.add(buffer.retain());
 
-    if (maxChunkCount > 0 && chunkBuffers.size() > maxChunkCount) {
+    char chunkType = (char) buffer.getByte(3);
+
+    if (chunkType != 'A' && maxChunkCount > 0 && chunkBuffers.size() > maxChunkCount) {
       throw new UaException(
           StatusCodes.Bad_TcpMessageTooLarge,
           String.format("max chunk count exceeded (%s)", maxChunkCount));
     }
-
-    char chunkType = (char) buffer.getByte(3);
 
     return (chunkType == 'A' || chunkType == 'F');
   }

@@ -17,7 +17,9 @@
  * <p>Handlers retain partial-message buffers until a final or Abort chunk completes the message.
  * Both terminal chunk types pass through the core decoder, which authenticates the accumulated
  * chunks and advances sequence state. A valid Abort discards the message while leaving the channel
- * open; malformed or unauthenticated chunks follow the decoding-error path.
+ * open; malformed or unauthenticated chunks follow the decoding-error path. An Abort may follow the
+ * maximum allowed number of intermediate chunks, adding at most one size-limited chunk before the
+ * decoder releases the accumulated message.
  *
  * <p>Buffer ownership stays on the channel's event loop. Accumulation transfers retained buffers to
  * the decoder for message completion, and disconnect, handler removal, and exception cleanup

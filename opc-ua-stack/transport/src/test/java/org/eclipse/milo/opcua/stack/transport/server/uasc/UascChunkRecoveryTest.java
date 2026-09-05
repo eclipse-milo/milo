@@ -84,6 +84,8 @@ class UascChunkRecoveryTest {
   private static final String ENDPOINT_URL = "opc.tcp://localhost:4840";
   private static final ChannelParameters PARAMETERS =
       new ChannelParameters(100_000, 8192, 8192, 20, 0, 8192, 8192, 1);
+  private static final ChannelParameters ABORT_PARAMETERS =
+      new ChannelParameters(100_000, 8192, 8192, 1, 0, 8192, 8192, 1);
 
   // A peer may advertise unlimited message size but limit the number of chunks. The fallback
   // ServiceFault must use the next sequence number the peer expects, including its AEAD nonce.
@@ -125,7 +127,8 @@ class UascChunkRecoveryTest {
     }
   }
 
-  // Part 6 §6.7.3 requires Abort to pass security checks and leave the SecureChannel open.
+  // The peer may discover overflow after sending the permitted C chunks. Abort must still pass
+  // security checks, discard those chunks and leave the SecureChannel open (Part 6 §6.7.3).
   @ParameterizedTest
   @EnumSource(
       value = SecurityPolicy.class,
@@ -136,7 +139,8 @@ class UascChunkRecoveryTest {
     var encoder = new ChunkEncoder(PARAMETERS);
     var decoder = new ChunkDecoder(PARAMETERS, EncodingLimits.DEFAULT);
     startAfterOpen(encoder, decoder, policy);
-    EmbeddedChannel channel = fixture.symmetricChannel(new ChunkEncoder(PARAMETERS), decoder);
+    EmbeddedChannel channel =
+        fixture.symmetricChannel(new ChunkEncoder(PARAMETERS), decoder, ABORT_PARAMETERS);
     try {
       channel.writeInbound(encodeRequest(encoder, fixture.client));
       assertInstanceOf(UascServiceRequest.class, channel.readInbound());
@@ -169,7 +173,8 @@ class UascChunkRecoveryTest {
     var fixture = new Fixture(SecurityPolicy.ECC_nistP256_AesGcm);
     var decoder = new ChunkDecoder(PARAMETERS, EncodingLimits.DEFAULT);
     setLong(decoder, "lastSequenceNumber", 1);
-    EmbeddedChannel channel = fixture.symmetricChannel(new ChunkEncoder(PARAMETERS), decoder);
+    EmbeddedChannel channel =
+        fixture.symmetricChannel(new ChunkEncoder(PARAMETERS), decoder, ABORT_PARAMETERS);
     try {
       ByteBuf partial = symmetricChunk(fixture.policy, 'C', 2, 1, new byte[] {1, 2, 3});
       ByteBuf abort = symmetricChunk(fixture.policy, 'A', 3, 2, abortBody());
@@ -221,7 +226,7 @@ class UascChunkRecoveryTest {
     var fixture = new Fixture(SecurityPolicy.None);
     var handler =
         new UascServerAsymmetricHandler(
-            CONFIG, fixture.application(), TransportProfile.TCP_UASC_UABINARY, PARAMETERS);
+            CONFIG, fixture.application(), TransportProfile.TCP_UASC_UABINARY, ABORT_PARAMETERS);
     EmbeddedChannel channel = new EmbeddedChannel(handler);
     try {
       channel.attr(UascServerHelloHandler.ENDPOINT_URL_KEY).set(ENDPOINT_URL);
@@ -265,7 +270,9 @@ class UascChunkRecoveryTest {
           decoded.getMessage().release();
         }
       } finally {
-        if (response.refCnt() > 0) response.release();
+        if (response.refCnt() > 0) {
+          response.release();
+        }
       }
       assertTrue(channel.isOpen());
     } finally {
@@ -287,24 +294,29 @@ class UascChunkRecoveryTest {
     var fixture = new Fixture(SecurityPolicy.ECC_nistP256_AesGcm);
     var handler =
         new UascServerAsymmetricHandler(
-            CONFIG, fixture.application(), TransportProfile.TCP_UASC_UABINARY, PARAMETERS);
+            CONFIG, fixture.application(), TransportProfile.TCP_UASC_UABINARY, ABORT_PARAMETERS);
     Field field = UascServerAsymmetricHandler.class.getDeclaredField("secureChannel");
     field.setAccessible(true);
     field.set(handler, fixture.server);
     EmbeddedChannel channel = new EmbeddedChannel(handler);
     try {
       channel.attr(UascServerHelloHandler.ENDPOINT_URL_KEY).set(ENDPOINT_URL);
-      ByteBuf abort = fixture.asymmetricChunk('A', 0, abortBody());
-      if (tamper)
+      ByteBuf partial = fixture.asymmetricChunk('C', 0, new byte[] {1, 2, 3});
+      ByteBuf abort = fixture.asymmetricChunk('A', 1, abortBody());
+      if (tamper) {
         abort.setByte(abort.writerIndex() - 1, abort.getByte(abort.writerIndex() - 1) ^ 1);
+      }
+      channel.writeInbound(partial);
+      assertEquals(1, partial.refCnt());
       channel.writeInbound(abort);
       channel.advanceTimeBy(1, TimeUnit.SECONDS);
       channel.runScheduledPendingTasks();
       assertEquals(
           !tamper, channel.isOpen(), "only an authenticated OPN Abort may leave the channel open");
+      assertEquals(0, partial.refCnt());
       assertEquals(0, abort.refCnt());
       if (!tamper) {
-        channel.writeInbound(fixture.asymmetricChunk('A', 1, abortBody()));
+        channel.writeInbound(fixture.asymmetricChunk('A', 2, abortBody()));
         assertTrue(channel.isOpen());
       }
     } finally {
@@ -339,7 +351,9 @@ class UascChunkRecoveryTest {
   private static ByteBuf outbound(EmbeddedChannel channel) {
     ByteBuf buffer;
     while ((buffer = channel.readOutbound()) != null) {
-      if (buffer.isReadable()) return buffer;
+      if (buffer.isReadable()) {
+        return buffer;
+      }
       buffer.release();
     }
     throw new AssertionError("no response was sent");
@@ -506,13 +520,18 @@ class UascChunkRecoveryTest {
     }
 
     EmbeddedChannel symmetricChannel(ChunkEncoder encoder, ChunkDecoder decoder) {
+      return symmetricChannel(encoder, decoder, PARAMETERS);
+    }
+
+    EmbeddedChannel symmetricChannel(
+        ChunkEncoder encoder, ChunkDecoder decoder, ChannelParameters parameters) {
       var channel =
           new EmbeddedChannel(
               new UascServerSymmetricHandler(
                   CONFIG,
                   application(),
                   TransportProfile.TCP_UASC_UABINARY,
-                  PARAMETERS,
+                  parameters,
                   encoder,
                   decoder,
                   server));

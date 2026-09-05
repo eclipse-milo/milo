@@ -17,8 +17,9 @@
  * <p>Intermediate response chunks remain retained until a final or Abort chunk arrives. The core
  * decoder then validates security and sequence state and takes ownership of those buffers. An
  * authenticated Abort fails the affected request without invalidating the channel's sequence
- * stream. Disconnect, handler removal, and exception cleanup release any partial message that can
- * no longer complete.
+ * stream. An Abort may follow the maximum allowed number of intermediate chunks; its size and
+ * security checks still apply, and the decoder releases the accumulated message. Disconnect,
+ * handler removal, and exception cleanup release any partial message that can no longer complete.
  *
  * <p>Channel state and buffer ownership follow the Netty event loop. The transport receives decoded
  * responses and owns their request-future completion; this package handles framing, cryptographic
