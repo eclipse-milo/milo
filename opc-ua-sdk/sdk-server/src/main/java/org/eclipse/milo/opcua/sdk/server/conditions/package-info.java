@@ -49,6 +49,10 @@
  * Condition through the ConditionManager, leaving the shared node and any application-installed
  * handler unchanged.
  *
+ * <p>Unregistering retires handlers installed on copied Methods only while they still belong to
+ * that behavior, preserving later application or replacement handlers. Calls that already obtained
+ * a handler may finish against the retired behavior.
+ *
  * <p>Deferred shelving expiry is resolved before event emission or refresh copying. Field reads
  * within those operations cannot trigger another expiry transition, so one event retains one
  * EventId and one shelving state. Ordinary UnshelveTime reads still apply the lazy expiry fallback

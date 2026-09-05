@@ -104,6 +104,8 @@ public class Condition {
   private final Set<FilterRegistration> filterRegistrations = ConcurrentHashMap.newKeySet();
   private final Map<NodeId, MethodInvocationHandler> sharedMethodHandlers =
       new ConcurrentHashMap<>();
+  private final Map<UaMethodNode, MethodInvocationHandler> ownedMethodHandlers =
+      new ConcurrentHashMap<>();
 
   /** Suppresses lazy read-side transitions while one event's fields are selected or copied. */
   private int eventFieldReadDepth;
@@ -1024,6 +1026,7 @@ public class Condition {
 
     if (discovered.exclusivelyOwned()) {
       method.setInvocationHandler(invocationHandler);
+      ownedMethodHandlers.put(method, invocationHandler);
     } else if (method.getInvocationHandler() == MethodInvocationHandler.NOT_IMPLEMENTED) {
       sharedMethodHandlers.put(method.getNodeId(), invocationHandler);
     }
@@ -1052,6 +1055,11 @@ public class Condition {
 
   /** Release runtime resources when this Condition is unregistered or the server shuts down. */
   void shutdown() {
+    ownedMethodHandlers.forEach(
+        (method, handler) ->
+            method.compareAndSetInvocationHandler(
+                handler, MethodInvocationHandler.NOT_IMPLEMENTED));
+    ownedMethodHandlers.clear();
     for (FilterRegistration registration : filterRegistrations) {
       registration.node().getFilterChain().remove(registration.filter());
     }
