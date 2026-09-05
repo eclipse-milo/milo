@@ -21,15 +21,20 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
 import java.lang.reflect.Field;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -38,15 +43,18 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerReverseConnectAttempt;
+import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerReverseConnectAttemptState;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerReverseConnectParameters;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransportConfig;
@@ -376,6 +384,87 @@ class ReverseConnectTargetManagerTest {
     assertUnknownTargetFailure(handle::resume, target.getId());
     assertUnknownTargetFailure(handle::trigger, target.getId());
     assertUnknownTargetFailure(handle::remove, target.getId());
+  }
+
+  // State observers must not prevent an attempt from acquiring a transport when dispatch rejects.
+  @Test
+  void listenerExecutorRejectionDoesNotStrandScheduledAttempt() throws Exception {
+    try (ControlledAttempts fixture = new ControlledAttempts()) {
+      fixture.manager.addListener(new ReverseConnectTargetListener() {});
+      fixture.manager.startup();
+      fixture.rejectNotifications.set(true);
+      fixture.scheduled.remove().run();
+      assertEquals(1, fixture.transport.attempts.size());
+      fixture.rejectNotifications.set(false);
+      fixture.manager.trigger(fixture.target.getId()).get(5, TimeUnit.SECONDS);
+      assertEquals(
+          1, fixture.transport.attempts.size(), "the original attempt remains in progress");
+    }
+  }
+
+  private static final class ControlledAttempts implements AutoCloseable {
+    final Queue<Runnable> scheduled = new ArrayDeque<>();
+    final AtomicBoolean rejectNotifications = new AtomicBoolean();
+    final ControlledTransport transport = new ControlledTransport();
+    final ReverseConnectTarget target =
+        target("opc.tcp://localhost:12686/reverse-target-test", "opc.tcp://localhost:12687");
+    final ReverseConnectTargetManager manager;
+
+    ControlledAttempts() {
+      ExecutorService executor = mock(ExecutorService.class);
+      doAnswer(
+              invocation -> {
+                if (rejectNotifications.get()) {
+                  throw new RejectedExecutionException("saturated");
+                }
+                invocation.<Runnable>getArgument(0).run();
+                return null;
+              })
+          .when(executor)
+          .execute(any(Runnable.class));
+      ScheduledExecutorService scheduler = mock(ScheduledExecutorService.class);
+      when(scheduler.schedule(any(Runnable.class), anyLong(), any(TimeUnit.class)))
+          .thenAnswer(
+              invocation -> {
+                scheduled.add(invocation.getArgument(0));
+                return mock(ScheduledFuture.class);
+              });
+      manager =
+          new ReverseConnectTargetManager(
+              mock(ServerApplicationContext.class),
+              () -> List.of(endpointDescription(target.getEndpointUrl())),
+              profile -> transport,
+              "urn:eclipse:milo:test:server:reverse-targets",
+              executor,
+              scheduler,
+              Set.of(target));
+    }
+
+    @Override
+    public void close() {
+      manager.shutdown();
+    }
+  }
+
+  private static final class ControlledTransport extends OpcTcpServerTransport {
+    final List<OpcTcpServerReverseConnectAttempt> attempts = new ArrayList<>();
+    final List<CompletableFuture<Channel>> channels = new ArrayList<>();
+
+    ControlledTransport() {
+      super(OpcTcpServerTransportConfig.newBuilder().build());
+    }
+
+    @Override
+    public OpcTcpServerReverseConnectAttempt connectReverse(
+        OpcTcpServerReverseConnectParameters parameters) {
+      OpcTcpServerReverseConnectAttempt attempt = mock(OpcTcpServerReverseConnectAttempt.class);
+      CompletableFuture<Channel> channel = new CompletableFuture<>();
+      when(attempt.channelFuture()).thenReturn(channel);
+      when(attempt.state()).thenReturn(OpcTcpServerReverseConnectAttemptState.CONNECTING);
+      attempts.add(attempt);
+      channels.add(channel);
+      return attempt;
+    }
   }
 
   private static void assertUnknownTargetFailure(

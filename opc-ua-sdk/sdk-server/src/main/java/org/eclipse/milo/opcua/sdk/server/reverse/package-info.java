@@ -58,7 +58,9 @@
  * org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectAttemptEvent}s and retained on target
  * snapshots as the last status or a defensive copy of the last exception. Retry timing is delegated
  * to {@link org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectRetryPolicy}; the default
- * policy uses the target registration period.
+ * policy uses the target registration period. Listener dispatch uses a serial execution queue;
+ * executor rejection runs callbacks on the submitting thread so notification failures cannot
+ * abandon an attempt transition. Callbacks should return promptly even during executor overload.
  *
  * <p>Successful outbound UA-TCP connections are handed back to the normal server SecureChannel and
  * Session paths after the stack transport installs the standard server Hello handler. Client-side
