@@ -106,6 +106,10 @@
  * registration future removes the selector, and a claim that races that completion closes its
  * undeliverable channel.
  *
+ * <p>Stopping an acceptor suppresses new discovery work while preserving ownership of delivered
+ * clients. Their channel transitions continue updating the reserved keys so restart can discover
+ * servers whose delivered clients disconnected during the stopped interval.
+ *
  * <h2>Security boundary</h2>
  *
  * <p>{@code ReverseHello} is only a routing and resource-admission hint. The types here
