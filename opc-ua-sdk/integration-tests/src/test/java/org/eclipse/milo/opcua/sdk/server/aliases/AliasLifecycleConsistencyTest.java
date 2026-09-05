@@ -213,6 +213,34 @@ class AliasLifecycleConsistencyTest extends AbstractClientServerTest {
         "owned child deletion must still follow HasComponent");
   }
 
+  // A child's parent reference was created after its parent journal. Parent removal must detach
+  // the surviving child so reuse of the parent's NodeId cannot silently reconnect its contents.
+  @Test
+  void removingParentDetachesSurvivingChildBeforeParentNodeIdReuse() throws Exception {
+    manager.startup();
+    AliasCategoryConfig parent = category("Parent", NodeIds.Aliases);
+    AliasCategoryConfig child = category("Child", parent.categoryNodeId());
+    manager.addCategory(parent);
+    manager.addCategory(child);
+    NodeId aliasId =
+        manager.addAlias(child.categoryNodeId(), prefix, List.of(target(newNodeId("TestInt32"))));
+    manager.removeCategory(parent.categoryNodeId());
+
+    assertTrue(server.getAddressSpaceManager().getManagedNode(child.categoryNodeId()).isPresent());
+    assertTrue(server.getAddressSpaceManager().getManagedNode(aliasId).isPresent());
+    assertFalse(
+        server
+            .getAddressSpaceManager()
+            .getManagedReferences(child.categoryNodeId(), Reference.ORGANIZED_BY_PREDICATE)
+            .stream()
+            .anyMatch(
+                reference ->
+                    reference.getTargetNodeId().equals(parent.categoryNodeId().expanded())));
+    manager.addCategory(parent);
+    assertTrue(manager.findAlias(parent.categoryNodeId(), prefix, null).isEmpty());
+    assertEquals(Set.of(newNodeId("TestInt32")), targets(child.categoryNodeId(), prefix));
+  }
+
   private AliasCategoryConfig category(String suffix, NodeId parent) {
     return new AliasCategoryConfig(
         newNodeId(prefix + suffix),

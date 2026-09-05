@@ -584,10 +584,10 @@ public final class AliasManager extends AbstractLifecycle {
    * Stop managing a category: unbind its Method handlers and, if the category was created by {@link
    * #addCategory}, delete the Nodes and References that creation added.
    *
-   * <p>Alias Nodes added to the category after its creation are not deleted — their {@code
-   * Organizes} linkage to the category is removed so no References target the deleted NodeId, but
-   * the alias Nodes themselves survive. Delete them first with {@link #deleteAlias} if they should
-   * not outlive the category.
+   * <p>Alias Nodes and child categories added after the category's creation survive. Their {@code
+   * Organizes} linkage to the deleted category is removed so recreating its NodeId does not
+   * reconnect them. Delete aliases first with {@link #deleteAlias} if they should not outlive the
+   * category.
    *
    * <p>When the category Node is deleted, {@code LastChange} is bumped for its former ancestor
    * categories (captured before deletion) and the category's own in-memory version entry is
@@ -640,16 +640,13 @@ public final class AliasManager extends AbstractLifecycle {
         }
 
         if (record.instantiationResult() != null) {
-          // Detach aliases organized after creation: deleteCreated removes only what the
-          // instantiation recorded, so their Organizes linkage would otherwise dangle on the
-          // alias side, pointing at the deleted category — and silently reattach if a category
-          // with the same NodeId were created later. The alias Nodes themselves survive, per
-          // this method's contract.
-          for (NodeId aliasNodeId : findOrganizedAliases(categoryId)) {
+          // A surviving member's linkage may have been added after this category's creation
+          // journal. Detach both aliases and child categories before deleting the parent.
+          for (NodeId memberId : findOrganizedMembers(categoryId)) {
             server
                 .getAddressSpaceManager()
-                .getManagedNode(aliasNodeId)
-                .ifPresent(aliasNode -> removeFromCategory(aliasNode, categoryId));
+                .getManagedNode(memberId)
+                .ifPresent(member -> removeFromCategory(member, categoryId));
           }
 
           record.instantiationResult().deleteCreated();
@@ -1822,8 +1819,8 @@ public final class AliasManager extends AbstractLifecycle {
         .orElse(null);
   }
 
-  /** Find every alias Object directly organized by {@code categoryId}, regardless of name. */
-  private List<NodeId> findOrganizedAliases(NodeId categoryId) {
+  /** Find alias Objects and child categories directly organized by {@code categoryId}. */
+  private List<NodeId> findOrganizedMembers(NodeId categoryId) {
     List<Reference> organizes =
         server
             .getAddressSpaceManager()
@@ -1834,7 +1831,9 @@ public final class AliasManager extends AbstractLifecycle {
       reference
           .getTargetNodeId()
           .toNodeId(server.getNamespaceTable())
-          .filter(aliasTypes::isAliasNameInstance)
+          .filter(
+              id ->
+                  aliasTypes.isAliasNameInstance(id) || aliasTypes.isAliasNameCategoryInstance(id))
           .ifPresent(found::add);
     }
     return found;

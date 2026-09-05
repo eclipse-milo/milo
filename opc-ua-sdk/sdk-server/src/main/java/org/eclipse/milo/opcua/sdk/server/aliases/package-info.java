@@ -48,7 +48,9 @@
  * and unregisters its fragment: Nodes the manager hosts there (materialized Methods, alias Nodes
  * created in standard or adopted categories) leave the AddressSpace with it, while category and
  * alias Nodes hosted in application NodeManagers remain in place. Applications register their own
- * categories and aliases through the manager's programmatic API after startup.
+ * categories and aliases through the manager's programmatic API after startup. Removing a
+ * manager-created category detaches its surviving aliases and child categories before deleting the
+ * category itself.
  *
  * <h2>Data flow</h2>
  *
