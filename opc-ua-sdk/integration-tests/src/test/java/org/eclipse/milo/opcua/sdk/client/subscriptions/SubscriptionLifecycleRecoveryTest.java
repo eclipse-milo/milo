@@ -45,6 +45,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.CreateMonitoredItemsRe
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateSubscriptionResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.DeleteMonitoredItemsResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.ModifyMonitoredItemsResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemCreateRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemCreateResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemModifyResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
@@ -144,6 +145,67 @@ class SubscriptionLifecycleRecoveryTest {
         .setPublishingModeAsync(false)
         .toCompletableFuture()
         .get(5, TimeUnit.SECONDS);
+  }
+
+  @Test
+  void transferCleanupDoesNotWaitForLimitsThatNeedSessionActivation() throws Exception {
+    var fixture = new Fixture(Runnable::run);
+    fixture.create();
+    fixture.addItem();
+    var limitsEntered = new CountDownLatch(1);
+    var sessionActive = new CompletableFuture<OperationLimits>();
+    when(fixture.client.getOperationLimits())
+        .thenAnswer(
+            invocation -> {
+              limitsEntered.countDown();
+              return sessionActive.get(10, TimeUnit.SECONDS);
+            });
+    var create =
+        workers.submit(
+            () -> {
+              return fixture.subscription.createMonitoredItems();
+            });
+    assertTrue(limitsEntered.await(5, TimeUnit.SECONDS));
+    var cleanup =
+        workers.submit(
+            () -> {
+              fixture.subscription.handleTransferFailure(
+                  new StatusCode(StatusCodes.Bad_SubscriptionIdInvalid));
+              // Session initialization must finish transfer cleanup before publishing its active
+              // Session.
+              sessionActive.complete(Fixture.limits());
+            });
+    try {
+      cleanup.get(5, TimeUnit.SECONDS);
+      assertTrue(sessionActive.isDone());
+      assertEquals(
+          new StatusCode(StatusCodes.Bad_InvalidState),
+          create.get(5, TimeUnit.SECONDS).get(0).serviceResult());
+    } finally {
+      sessionActive.complete(Fixture.limits());
+      cleanup.get(5, TimeUnit.SECONDS);
+      create.get(5, TimeUnit.SECONDS);
+    }
+
+    // Completing the discarded lookup must not restore its old cached partition size.
+    when(fixture.client.getOperationLimits())
+        .thenReturn(
+            new OperationLimits(
+                null, null, null, null, null, null, null, uint(1), null, null, null, null));
+    fixture.create();
+    fixture.addItem();
+    var calls = new AtomicInteger();
+    when(fixture.client.createMonitoredItems(any(), any(), anyList()))
+        .thenAnswer(
+            invocation -> {
+              calls.incrementAndGet();
+              List<MonitoredItemCreateRequest> requests = invocation.getArgument(2);
+              var results = new MonitoredItemCreateResult[requests.size()];
+              for (int i = 0; i < results.length; i++) results[i] = createdItem(100 + i);
+              return new CreateMonitoredItemsResponse(null, results, null);
+            });
+    assertEquals(2, fixture.subscription.createMonitoredItems().size());
+    assertEquals(2, calls.get(), "replacement must discover the current singleton server limit");
   }
 
   @Test

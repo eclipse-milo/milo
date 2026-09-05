@@ -66,7 +66,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemModifyRes
 import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemNotification;
 import org.eclipse.milo.opcua.stack.core.types.structured.SetMonitoringModeResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.SetPublishingModeResponse;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.NonBlockingLazy;
 import org.eclipse.milo.opcua.stack.core.util.TaskQueue;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.jspecify.annotations.Nullable;
@@ -233,7 +233,7 @@ public class OpcUaSubscription {
   private volatile double watchdogMultiplier = 1.5;
 
   private volatile UInteger maxMonitoredItemsPerCall = uint(DEFAULT_MAX_MONITORED_ITEMS_PER_CALL);
-  private final Lazy<UInteger> monitoredItemPartitionSize = new Lazy<>();
+  private final NonBlockingLazy<UInteger> monitoredItemPartitionSize = new NonBlockingLazy<>();
   private volatile long monitoredItemPartitionGeneration;
 
   private volatile @Nullable Object userObject;

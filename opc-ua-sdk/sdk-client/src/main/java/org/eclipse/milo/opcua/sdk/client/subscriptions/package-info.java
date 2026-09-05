@@ -27,5 +27,9 @@
  * inline fallback when the caller-owned transport executor rejects dispatch. Reset and item
  * add/remove operations coordinate collection membership and ClientHandle ownership; code requiring
  * both locks takes the lifecycle lock before the item collection lock.
+ *
+ * <p>Discovering a monitored-item partition limit may wait for Session activation and server I/O.
+ * Reset invalidates that cache without waiting for an in-progress lookup, because Session recovery
+ * itself may need to reset Subscriptions before activation can finish.
  */
 package org.eclipse.milo.opcua.sdk.client.subscriptions;
