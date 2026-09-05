@@ -26,6 +26,13 @@
  * common token validation, nonce check, size limits, and decryption path before handing the
  * resulting username and password to the application-specific authentication method.
  *
+ * <h2>Certificate-token signatures</h2>
+ *
+ * <p>A certificate token's advertised policy selects the user signature algorithm. Its public-key
+ * algorithm may differ from the SecureChannel's algorithm. The X.509 validator verifies that
+ * signature before calling application authentication; the channel restrictions for encrypted
+ * username or issued-token secrets do not apply to certificate tokens.
+ *
  * <h2>Extension guidance</h2>
  *
  * <p>Applications usually extend the abstract validators and implement only the final credential

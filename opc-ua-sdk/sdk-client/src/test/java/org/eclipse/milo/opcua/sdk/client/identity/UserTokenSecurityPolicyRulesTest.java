@@ -179,7 +179,8 @@ class UserTokenSecurityPolicyRulesTest {
                 endpoint, SecurityPolicy.ECC_nistP256_AesGcm));
   }
 
-  // Certificate policies must match the configured user certificate.
+  // Certificate policies must match the configured user certificate. Encrypted-secret policy
+  // restrictions do not apply to their signatures.
 
   @Test
   void x509ProviderRejectsPolicyIncompatibleWithItsCertificate() throws Exception {

@@ -141,6 +141,33 @@ class X509PolicySelectionTest {
   }
 
   @Test
+  void certificatePolicyCanUseADifferentKeyAlgorithmFromTheChannel() throws Exception {
+    KeyPair rsaKeys = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    X509Certificate rsaCertificate =
+        SelfSignedCertificateBuilder.forRsaApplicationCertificate(rsaKeys)
+            .setCommonName("rsa-user")
+            .setApplicationUri("urn:test:rsa-user")
+            .build();
+    X509IdentityProvider provider = new X509IdentityProvider(rsaCertificate, rsaKeys.getPrivate());
+    EndpointDescription endpoint =
+        endpoint(
+            SecurityPolicy.ECC_nistP256_AesGcm,
+            policy("ecc", SecurityPolicy.ECC_nistP256_AesGcm),
+            policy("rsa", SecurityPolicy.Basic256Sha256));
+    ByteString nonce = NonceUtil.generateNonce(32);
+
+    assertEquals(
+        SecurityPolicy.Basic256Sha256, provider.getUserTokenSecurityPolicy(endpoint).orElseThrow());
+    SignedIdentityToken signed = provider.getIdentityToken(endpoint, nonce);
+    assertEquals("rsa", signed.getToken().getPolicyId());
+    ChannelBoundSignatureData.verify(
+        SecurityPolicy.Basic256Sha256,
+        rsaCertificate,
+        ChannelBoundSignatureData.legacyUserTokenSignatureData(serverCertificate, nonce),
+        signed.getSignature());
+  }
+
+  @Test
   void failsSelectionWhenNoPolicyMatchesTheCertificate() {
     X509IdentityProvider provider =
         new X509IdentityProvider(userCertificate, userKeys.getPrivate());
