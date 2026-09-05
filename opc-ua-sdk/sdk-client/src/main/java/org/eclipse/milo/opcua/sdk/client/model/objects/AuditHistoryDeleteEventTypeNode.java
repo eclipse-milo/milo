@@ -88,7 +88,10 @@ public class AuditHistoryDeleteEventTypeNode extends AuditHistoryUpdateEventType
   @Override
   public void writeUpdatedNode(NodeId value) throws UaException {
     try {
-      writeUpdatedNodeAsync(value).get();
+      StatusCode statusCode = writeUpdatedNodeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

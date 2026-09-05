@@ -88,7 +88,10 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   @Override
   public void writeWriterGroupId(UShort value) throws UaException {
     try {
-      writeWriterGroupIdAsync(value).get();
+      StatusCode statusCode = writeWriterGroupIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -158,7 +161,10 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   @Override
   public void writePublishingInterval(Double value) throws UaException {
     try {
-      writePublishingIntervalAsync(value).get();
+      StatusCode statusCode = writePublishingIntervalAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -231,7 +237,10 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   @Override
   public void writeKeepAliveTime(Double value) throws UaException {
     try {
-      writeKeepAliveTimeAsync(value).get();
+      StatusCode statusCode = writeKeepAliveTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -301,7 +310,10 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   @Override
   public void writePriority(UByte value) throws UaException {
     try {
-      writePriorityAsync(value).get();
+      StatusCode statusCode = writePriorityAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -371,7 +383,10 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   @Override
   public void writeLocaleIds(String[] value) throws UaException {
     try {
-      writeLocaleIdsAsync(value).get();
+      StatusCode statusCode = writeLocaleIdsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -441,7 +456,10 @@ public class WriterGroupTypeNode extends PubSubGroupTypeNode implements WriterGr
   @Override
   public void writeHeaderLayoutUri(String value) throws UaException {
     try {
-      writeHeaderLayoutUriAsync(value).get();
+      StatusCode statusCode = writeHeaderLayoutUriAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

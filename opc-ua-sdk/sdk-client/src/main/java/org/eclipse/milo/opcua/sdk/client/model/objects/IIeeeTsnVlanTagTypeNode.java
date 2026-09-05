@@ -88,7 +88,10 @@ public class IIeeeTsnVlanTagTypeNode extends BaseInterfaceTypeNode implements II
   @Override
   public void writeVlanId(UShort value) throws UaException {
     try {
-      writeVlanIdAsync(value).get();
+      StatusCode statusCode = writeVlanIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -158,7 +161,10 @@ public class IIeeeTsnVlanTagTypeNode extends BaseInterfaceTypeNode implements II
   @Override
   public void writePriorityCodePoint(UByte value) throws UaException {
     try {
-      writePriorityCodePointAsync(value).get();
+      StatusCode statusCode = writePriorityCodePointAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

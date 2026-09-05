@@ -289,6 +289,10 @@ To pick up a new GDS NodeSet release:
 6. Run `GdsModulePathTest` and `GdsServerModelTest` in `opc-ua-sdk/integration-tests` to verify
    module package ownership and server type registration.
 
+Generated blocking property writers throw `UaException` carrying any non-Good operation status.
+Their asynchronous counterparts return the `StatusCode`. The namespace 0 model uses the same
+writer generator and follows the same contract.
+
 The GDS `DataTypeInitializer` and both `ObjectTypeInitializer`s take a `NamespaceTable` and must
 stay out of the namespace 0 startup path (`DefaultDataTypeManager.createAndInitialize` and the
 client and server namespace 0 initializers). `GdsClient.create` invokes them on the client side; a

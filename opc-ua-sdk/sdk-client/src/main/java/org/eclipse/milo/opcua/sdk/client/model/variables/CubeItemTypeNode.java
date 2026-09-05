@@ -106,7 +106,10 @@ public class CubeItemTypeNode extends ArrayItemTypeNode implements CubeItemType 
   @Override
   public void writeXAxisDefinition(AxisInformation value) throws UaException {
     try {
-      writeXAxisDefinitionAsync(value).get();
+      StatusCode statusCode = writeXAxisDefinitionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -179,7 +182,10 @@ public class CubeItemTypeNode extends ArrayItemTypeNode implements CubeItemType 
   @Override
   public void writeYAxisDefinition(AxisInformation value) throws UaException {
     try {
-      writeYAxisDefinitionAsync(value).get();
+      StatusCode statusCode = writeYAxisDefinitionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -252,7 +258,10 @@ public class CubeItemTypeNode extends ArrayItemTypeNode implements CubeItemType 
   @Override
   public void writeZAxisDefinition(AxisInformation value) throws UaException {
     try {
-      writeZAxisDefinitionAsync(value).get();
+      StatusCode statusCode = writeZAxisDefinitionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

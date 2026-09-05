@@ -90,7 +90,10 @@ public class AlternativeUnitTypeNode extends UnitTypeNode implements Alternative
   @Override
   public void writeLinearConversion(LinearConversionDataType value) throws UaException {
     try {
-      writeLinearConversionAsync(value).get();
+      StatusCode statusCode = writeLinearConversionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -166,7 +169,10 @@ public class AlternativeUnitTypeNode extends UnitTypeNode implements Alternative
   @Override
   public void writeMathMlConversion(String value) throws UaException {
     try {
-      writeMathMlConversionAsync(value).get();
+      StatusCode statusCode = writeMathMlConversionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -239,7 +245,10 @@ public class AlternativeUnitTypeNode extends UnitTypeNode implements Alternative
   @Override
   public void writeMathMlInverseConversion(String value) throws UaException {
     try {
-      writeMathMlInverseConversionAsync(value).get();
+      StatusCode statusCode = writeMathMlInverseConversionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

@@ -88,7 +88,10 @@ public class PubSubTransportLimitsExceedEventTypeNode extends PubSubStatusEventT
   @Override
   public void writeActual(UInteger value) throws UaException {
     try {
-      writeActualAsync(value).get();
+      StatusCode statusCode = writeActualAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -158,7 +161,10 @@ public class PubSubTransportLimitsExceedEventTypeNode extends PubSubStatusEventT
   @Override
   public void writeMaximum(UInteger value) throws UaException {
     try {
-      writeMaximumAsync(value).get();
+      StatusCode statusCode = writeMaximumAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

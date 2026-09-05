@@ -104,7 +104,10 @@ public class MultiStateDictionaryEntryDiscreteBaseTypeNode extends MultiStateVal
   @Override
   public void writeEnumDictionaryEntries(Object value) throws UaException {
     try {
-      writeEnumDictionaryEntriesAsync(value).get();
+      StatusCode statusCode = writeEnumDictionaryEntriesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -178,7 +181,10 @@ public class MultiStateDictionaryEntryDiscreteBaseTypeNode extends MultiStateVal
   @Override
   public void writeValueAsDictionaryEntries(NodeId[] value) throws UaException {
     try {
-      writeValueAsDictionaryEntriesAsync(value).get();
+      StatusCode statusCode = writeValueAsDictionaryEntriesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

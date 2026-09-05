@@ -103,7 +103,10 @@ public class OptionSetTypeNode extends BaseDataVariableTypeNode implements Optio
   @Override
   public void writeOptionSetValues(LocalizedText[] value) throws UaException {
     try {
-      writeOptionSetValuesAsync(value).get();
+      StatusCode statusCode = writeOptionSetValuesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -173,7 +176,10 @@ public class OptionSetTypeNode extends BaseDataVariableTypeNode implements Optio
   @Override
   public void writeBitMask(Boolean[] value) throws UaException {
     try {
-      writeBitMaskAsync(value).get();
+      StatusCode statusCode = writeBitMaskAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

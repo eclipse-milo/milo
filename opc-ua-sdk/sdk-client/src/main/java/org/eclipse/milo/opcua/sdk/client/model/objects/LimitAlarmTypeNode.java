@@ -88,7 +88,10 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   @Override
   public void writeHighHighLimit(Double value) throws UaException {
     try {
-      writeHighHighLimitAsync(value).get();
+      StatusCode statusCode = writeHighHighLimitAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -158,7 +161,10 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   @Override
   public void writeHighLimit(Double value) throws UaException {
     try {
-      writeHighLimitAsync(value).get();
+      StatusCode statusCode = writeHighLimitAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -228,7 +234,10 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   @Override
   public void writeLowLimit(Double value) throws UaException {
     try {
-      writeLowLimitAsync(value).get();
+      StatusCode statusCode = writeLowLimitAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -298,7 +307,10 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   @Override
   public void writeLowLowLimit(Double value) throws UaException {
     try {
-      writeLowLowLimitAsync(value).get();
+      StatusCode statusCode = writeLowLowLimitAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -368,7 +380,10 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   @Override
   public void writeBaseHighHighLimit(Double value) throws UaException {
     try {
-      writeBaseHighHighLimitAsync(value).get();
+      StatusCode statusCode = writeBaseHighHighLimitAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -441,7 +456,10 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   @Override
   public void writeBaseHighLimit(Double value) throws UaException {
     try {
-      writeBaseHighLimitAsync(value).get();
+      StatusCode statusCode = writeBaseHighLimitAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -511,7 +529,10 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   @Override
   public void writeBaseLowLimit(Double value) throws UaException {
     try {
-      writeBaseLowLimitAsync(value).get();
+      StatusCode statusCode = writeBaseLowLimitAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -581,7 +602,10 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   @Override
   public void writeBaseLowLowLimit(Double value) throws UaException {
     try {
-      writeBaseLowLowLimitAsync(value).get();
+      StatusCode statusCode = writeBaseLowLowLimitAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -651,7 +675,10 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   @Override
   public void writeSeverityHighHigh(UShort value) throws UaException {
     try {
-      writeSeverityHighHighAsync(value).get();
+      StatusCode statusCode = writeSeverityHighHighAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -724,7 +751,10 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   @Override
   public void writeSeverityHigh(UShort value) throws UaException {
     try {
-      writeSeverityHighAsync(value).get();
+      StatusCode statusCode = writeSeverityHighAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -794,7 +824,10 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   @Override
   public void writeSeverityLow(UShort value) throws UaException {
     try {
-      writeSeverityLowAsync(value).get();
+      StatusCode statusCode = writeSeverityLowAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -864,7 +897,10 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   @Override
   public void writeSeverityLowLow(UShort value) throws UaException {
     try {
-      writeSeverityLowLowAsync(value).get();
+      StatusCode statusCode = writeSeverityLowLowAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -934,7 +970,10 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   @Override
   public void writeHighHighDeadband(Double value) throws UaException {
     try {
-      writeHighHighDeadbandAsync(value).get();
+      StatusCode statusCode = writeHighHighDeadbandAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1007,7 +1046,10 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   @Override
   public void writeHighDeadband(Double value) throws UaException {
     try {
-      writeHighDeadbandAsync(value).get();
+      StatusCode statusCode = writeHighDeadbandAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1077,7 +1119,10 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   @Override
   public void writeLowDeadband(Double value) throws UaException {
     try {
-      writeLowDeadbandAsync(value).get();
+      StatusCode statusCode = writeLowDeadbandAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1147,7 +1192,10 @@ public class LimitAlarmTypeNode extends AlarmConditionTypeNode implements LimitA
   @Override
   public void writeLowLowDeadband(Double value) throws UaException {
     try {
-      writeLowLowDeadbandAsync(value).get();
+      StatusCode statusCode = writeLowLowDeadbandAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

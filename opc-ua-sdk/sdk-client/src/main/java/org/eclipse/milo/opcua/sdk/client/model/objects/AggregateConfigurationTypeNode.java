@@ -88,7 +88,10 @@ public class AggregateConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeTreatUncertainAsBad(Boolean value) throws UaException {
     try {
-      writeTreatUncertainAsBadAsync(value).get();
+      StatusCode statusCode = writeTreatUncertainAsBadAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -161,7 +164,10 @@ public class AggregateConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writePercentDataBad(UByte value) throws UaException {
     try {
-      writePercentDataBadAsync(value).get();
+      StatusCode statusCode = writePercentDataBadAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -231,7 +237,10 @@ public class AggregateConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writePercentDataGood(UByte value) throws UaException {
     try {
-      writePercentDataGoodAsync(value).get();
+      StatusCode statusCode = writePercentDataGoodAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -301,7 +310,10 @@ public class AggregateConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeUseSlopedExtrapolation(Boolean value) throws UaException {
     try {
-      writeUseSlopedExtrapolationAsync(value).get();
+      StatusCode statusCode = writeUseSlopedExtrapolationAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

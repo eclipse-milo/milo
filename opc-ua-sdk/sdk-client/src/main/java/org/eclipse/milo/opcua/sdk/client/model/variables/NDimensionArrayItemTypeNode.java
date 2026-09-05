@@ -108,7 +108,10 @@ public class NDimensionArrayItemTypeNode extends ArrayItemTypeNode
   @Override
   public void writeAxisDefinition(AxisInformation[] value) throws UaException {
     try {
-      writeAxisDefinitionAsync(value).get();
+      StatusCode statusCode = writeAxisDefinitionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

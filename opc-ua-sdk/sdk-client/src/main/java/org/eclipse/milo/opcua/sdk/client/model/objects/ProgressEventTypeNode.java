@@ -88,7 +88,10 @@ public class ProgressEventTypeNode extends BaseEventTypeNode implements Progress
   @Override
   public void writeContext(Object value) throws UaException {
     try {
-      writeContextAsync(value).get();
+      StatusCode statusCode = writeContextAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -158,7 +161,10 @@ public class ProgressEventTypeNode extends BaseEventTypeNode implements Progress
   @Override
   public void writeProgress(UShort value) throws UaException {
     try {
-      writeProgressAsync(value).get();
+      StatusCode statusCode = writeProgressAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

@@ -107,7 +107,10 @@ public class CartesianCoordinatesTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeLengthUnit(EUInformation value) throws UaException {
     try {
-      writeLengthUnitAsync(value).get();
+      StatusCode statusCode = writeLengthUnitAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

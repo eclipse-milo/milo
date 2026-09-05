@@ -106,7 +106,10 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeSessionId(NodeId value) throws UaException {
     try {
-      writeSessionIdAsync(value).get();
+      StatusCode statusCode = writeSessionIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -176,7 +179,10 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeClientUserIdOfSession(String value) throws UaException {
     try {
-      writeClientUserIdOfSessionAsync(value).get();
+      StatusCode statusCode = writeClientUserIdOfSessionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -250,7 +256,10 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeClientUserIdHistory(String[] value) throws UaException {
     try {
-      writeClientUserIdHistoryAsync(value).get();
+      StatusCode statusCode = writeClientUserIdHistoryAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -323,7 +332,10 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeAuthenticationMechanism(String value) throws UaException {
     try {
-      writeAuthenticationMechanismAsync(value).get();
+      StatusCode statusCode = writeAuthenticationMechanismAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -398,7 +410,10 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeEncoding(String value) throws UaException {
     try {
-      writeEncodingAsync(value).get();
+      StatusCode statusCode = writeEncodingAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -468,7 +483,10 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeTransportProtocol(String value) throws UaException {
     try {
-      writeTransportProtocolAsync(value).get();
+      StatusCode statusCode = writeTransportProtocolAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -549,7 +567,10 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeSecurityMode(MessageSecurityMode value) throws UaException {
     try {
-      writeSecurityModeAsync(value).get();
+      StatusCode statusCode = writeSecurityModeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -627,7 +648,10 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeSecurityPolicyUri(String value) throws UaException {
     try {
-      writeSecurityPolicyUriAsync(value).get();
+      StatusCode statusCode = writeSecurityPolicyUriAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -700,7 +724,10 @@ public class SessionSecurityDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeClientCertificate(ByteString value) throws UaException {
     try {
-      writeClientCertificateAsync(value).get();
+      StatusCode statusCode = writeClientCertificateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

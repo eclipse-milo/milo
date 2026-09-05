@@ -88,7 +88,10 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   @Override
   public void writeObjectId(ExpandedNodeId value) throws UaException {
     try {
-      writeObjectIdAsync(value).get();
+      StatusCode statusCode = writeObjectIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -158,7 +161,10 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   @Override
   public void writeMethodId(ExpandedNodeId value) throws UaException {
     try {
-      writeMethodIdAsync(value).get();
+      StatusCode statusCode = writeMethodIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -228,7 +234,10 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   @Override
   public void writeStatusCodeId(StatusCode value) throws UaException {
     try {
-      writeStatusCodeIdAsync(value).get();
+      StatusCode statusCode = writeStatusCodeIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -298,7 +307,10 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   @Override
   public void writeInputArguments(Object[] value) throws UaException {
     try {
-      writeInputArgumentsAsync(value).get();
+      StatusCode statusCode = writeInputArgumentsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -368,7 +380,10 @@ public class AuditClientUpdateMethodResultEventTypeNode extends AuditClientEvent
   @Override
   public void writeOutputArguments(Object[] value) throws UaException {
     try {
-      writeOutputArgumentsAsync(value).get();
+      StatusCode statusCode = writeOutputArgumentsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

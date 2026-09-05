@@ -93,7 +93,10 @@ public class NonTransparentBackupRedundancyTypeNode extends NonTransparentRedund
   @Override
   public void writeRedundantServerArray(RedundantServerDataType[] value) throws UaException {
     try {
-      writeRedundantServerArrayAsync(value).get();
+      StatusCode statusCode = writeRedundantServerArrayAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -177,7 +180,10 @@ public class NonTransparentBackupRedundancyTypeNode extends NonTransparentRedund
   @Override
   public void writeMode(RedundantServerMode value) throws UaException {
     try {
-      writeModeAsync(value).get();
+      StatusCode statusCode = writeModeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

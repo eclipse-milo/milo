@@ -88,7 +88,10 @@ public class AuditUpdateStateEventTypeNode extends AuditUpdateMethodEventTypeNod
   @Override
   public void writeOldStateId(Object value) throws UaException {
     try {
-      writeOldStateIdAsync(value).get();
+      StatusCode statusCode = writeOldStateIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -158,7 +161,10 @@ public class AuditUpdateStateEventTypeNode extends AuditUpdateMethodEventTypeNod
   @Override
   public void writeNewStateId(Object value) throws UaException {
     try {
-      writeNewStateIdAsync(value).get();
+      StatusCode statusCode = writeNewStateIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

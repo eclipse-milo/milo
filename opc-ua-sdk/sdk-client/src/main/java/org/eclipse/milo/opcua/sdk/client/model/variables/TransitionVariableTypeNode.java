@@ -105,7 +105,10 @@ public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeId(Object value) throws UaException {
     try {
-      writeIdAsync(value).get();
+      StatusCode statusCode = writeIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -174,7 +177,10 @@ public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeName(QualifiedName value) throws UaException {
     try {
-      writeNameAsync(value).get();
+      StatusCode statusCode = writeNameAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -244,7 +250,10 @@ public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeNumber(UInteger value) throws UaException {
     try {
-      writeNumberAsync(value).get();
+      StatusCode statusCode = writeNumberAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -314,7 +323,10 @@ public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeTransitionTime(DateTime value) throws UaException {
     try {
-      writeTransitionTimeAsync(value).get();
+      StatusCode statusCode = writeTransitionTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -384,7 +396,10 @@ public class TransitionVariableTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeEffectiveTransitionTime(DateTime value) throws UaException {
     try {
-      writeEffectiveTransitionTimeAsync(value).get();
+      StatusCode statusCode = writeEffectiveTransitionTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

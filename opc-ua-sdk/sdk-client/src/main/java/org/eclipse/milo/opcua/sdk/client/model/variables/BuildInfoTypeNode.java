@@ -104,7 +104,10 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   @Override
   public void writeProductUri(String value) throws UaException {
     try {
-      writeProductUriAsync(value).get();
+      StatusCode statusCode = writeProductUriAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -174,7 +177,10 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   @Override
   public void writeManufacturerName(String value) throws UaException {
     try {
-      writeManufacturerNameAsync(value).get();
+      StatusCode statusCode = writeManufacturerNameAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -247,7 +253,10 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   @Override
   public void writeProductName(String value) throws UaException {
     try {
-      writeProductNameAsync(value).get();
+      StatusCode statusCode = writeProductNameAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -317,7 +326,10 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   @Override
   public void writeSoftwareVersion(String value) throws UaException {
     try {
-      writeSoftwareVersionAsync(value).get();
+      StatusCode statusCode = writeSoftwareVersionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -387,7 +399,10 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   @Override
   public void writeBuildNumber(String value) throws UaException {
     try {
-      writeBuildNumberAsync(value).get();
+      StatusCode statusCode = writeBuildNumberAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -457,7 +472,10 @@ public class BuildInfoTypeNode extends BaseDataVariableTypeNode implements Build
   @Override
   public void writeBuildDate(DateTime value) throws UaException {
     try {
-      writeBuildDateAsync(value).get();
+      StatusCode statusCode = writeBuildDateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

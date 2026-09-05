@@ -87,7 +87,10 @@ public class NetworkAddressTypeNode extends BaseObjectTypeNode implements Networ
   @Override
   public void writeNetworkInterface(String value) throws UaException {
     try {
-      writeNetworkInterfaceAsync(value).get();
+      StatusCode statusCode = writeNetworkInterfaceAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
