@@ -62,6 +62,11 @@
  * monitor. Application managers that use the default batch and cleanup primitives need a single
  * writer.
  *
+ * <h2>Session response preparation</h2>
+ *
+ * <p>A Session owns a timeout as soon as it is constructed. Failed CreateSession preparation must
+ * close that provisional Session before returning an error.
+ *
  * <h2>Runtime boundaries</h2>
  *
  * <p>The SDK server package coordinates high-level server configuration and lifecycle. Certificate

@@ -376,51 +376,57 @@ public class SessionManager {
             secureChannelId,
             securityConfiguration);
 
-    session.setLastNonce(serverNonce);
-    session.setClientNonce(clientNonce);
-    session.setClientAddress(context.clientAddress());
+    ExtensionObject additionalHeader;
+    boolean registered = false;
+    try {
+      session.setLastNonce(serverNonce);
+      session.setClientNonce(clientNonce);
+      session.setClientAddress(context.clientAddress());
 
-    ExtensionObject additionalHeader =
-        createSessionAdditionalHeader(request, securityConfiguration, session);
+      additionalHeader = createSessionAdditionalHeader(request, securityConfiguration, session);
 
-    // Enforce the session limit and register the new session atomically so that concurrent
-    // CreateSession requests cannot exceed the maximum. Done after validation so that a request
-    // which is going to fail never evicts another client's pending session.
-    synchronized (sessionLock) {
-      if (isShutdownRequested()) {
-        session.close(false);
-        throw new UaException(StatusCodes.Bad_Shutdown);
-      }
-
-      long maxSessionCount = server.getConfig().getLimits().getMaxSessions().longValue();
-      if (createdSessions.size() + activeSessions.size() >= maxSessionCount) {
-        // OPC UA Part 4, 5.7.2: at the session limit the Server shall close the oldest Session
-        // that has not yet been activated before rejecting a new request. Only if every existing
-        // Session has already been activated is Bad_TooManySessions returned.
-        Session oldestUnactivated =
-            createdSessions.values().stream()
-                .min(Comparator.comparingLong(s -> s.getConnectionTime().getUtcTime()))
-                .orElse(null);
-
-        if (oldestUnactivated == null) {
-          // Release the timeout task of the session we are not going to register. No lifecycle
-          // listener has been added yet, so this fires no session-closed notifications.
-          session.close(false);
-          throw new UaException(StatusCodes.Bad_TooManySessions);
+      // Enforce the session limit and register the new session atomically so that concurrent
+      // CreateSession requests cannot exceed the maximum. Done after validation so that a request
+      // which is going to fail never evicts another client's pending session.
+      synchronized (sessionLock) {
+        if (isShutdownRequested()) {
+          throw new UaException(StatusCodes.Bad_Shutdown);
         }
 
-        oldestUnactivated.close(false);
+        long maxSessionCount = server.getConfig().getLimits().getMaxSessions().longValue();
+        if (createdSessions.size() + activeSessions.size() >= maxSessionCount) {
+          // OPC UA Part 4, 5.7.2: at the session limit the Server shall close the oldest Session
+          // that has not yet been activated before rejecting a new request. Only if every existing
+          // Session has already been activated is Bad_TooManySessions returned.
+          Session oldestUnactivated =
+              createdSessions.values().stream()
+                  .min(Comparator.comparingLong(s -> s.getConnectionTime().getUtcTime()))
+                  .orElse(null);
+
+          if (oldestUnactivated == null) {
+            throw new UaException(StatusCodes.Bad_TooManySessions);
+          }
+
+          oldestUnactivated.close(false);
+        }
+
+        session.addLifecycleListener(
+            (s, remove) -> {
+              createdSessions.remove(authenticationToken);
+              activeSessions.remove(authenticationToken);
+
+              fireSessionClosed(s);
+            });
+
+        createdSessions.put(authenticationToken, session);
+        registered = true;
       }
 
-      session.addLifecycleListener(
-          (s, remove) -> {
-            createdSessions.remove(authenticationToken);
-            activeSessions.remove(authenticationToken);
-
-            fireSessionClosed(s);
-          });
-
-      createdSessions.put(authenticationToken, session);
+    } finally {
+      if (!registered) {
+        // The constructor schedules the timeout before response-header negotiation can fail.
+        session.close(false);
+      }
     }
 
     fireSessionCreated(session);
