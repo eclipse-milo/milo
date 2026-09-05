@@ -44,7 +44,8 @@
  * reverse-connect endpoints. Startup rollback and terminal shutdown stop only successfully started
  * participants, in reverse order. On normal shutdown, transports and sessions are quiesced first;
  * participant shutdown therefore runs without external server visibility but before the standard
- * address space and event facilities are torn down.
+ * address space and event facilities are torn down. Shutdown waits for the actual startup work,
+ * even if an application cancels or completes the public startup result.
  *
  * <p>{@link org.eclipse.milo.opcua.sdk.server.LifecycleManager} applies the same ownership rule
  * within composite components: failed child startup unwinds successfully started children in

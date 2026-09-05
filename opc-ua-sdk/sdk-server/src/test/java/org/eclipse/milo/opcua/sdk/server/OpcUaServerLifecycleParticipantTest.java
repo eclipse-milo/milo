@@ -42,6 +42,8 @@ import org.eclipse.milo.opcua.stack.transport.server.OpcServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class OpcUaServerLifecycleParticipantTest {
 
@@ -148,10 +150,14 @@ class OpcUaServerLifecycleParticipantTest {
     server.addLifecycleParticipant(
         participant(() -> events.add("start-c"), () -> events.add("stop-c")));
 
+    CompletableFuture<OpcUaServer> startup = server.startup();
+    CompletableFuture<Throwable> callbackFailure = new CompletableFuture<>();
+    startup.whenComplete((result, failure) -> callbackFailure.complete(failure));
     ExecutionException ex =
-        assertThrows(ExecutionException.class, () -> server.startup().get(5, TimeUnit.SECONDS));
+        assertThrows(ExecutionException.class, () -> startup.get(5, TimeUnit.SECONDS));
 
     assertSame(startupFailure, ex.getCause());
+    assertSame(startupFailure, callbackFailure.get(5, TimeUnit.SECONDS));
     assertEquals(List.of("start-a", "start-b", "stop-a"), events);
     assertFalse(transport.bound);
 
@@ -447,6 +453,56 @@ class OpcUaServerLifecycleParticipantTest {
     } finally {
       releaseStartup.countDown();
       executor.shutdownNow();
+    }
+  }
+
+  // A cancelled or externally completed result is not evidence that the startup callback returned.
+  @ParameterizedTest
+  @ValueSource(strings = {"cancel", "complete", "fail"})
+  void publicStartupCompletionCannotReleaseShutdownBarrier(String completion) throws Exception {
+    var startupEntered = new CountDownLatch(1);
+    var releaseStartup = new CountDownLatch(1);
+    var participantStopped = new AtomicBoolean();
+    OpcUaServer server = newServer(new RecordingTransport());
+    server.addLifecycleParticipant(
+        participant(
+            () -> {
+              startupEntered.countDown();
+              await(releaseStartup);
+            },
+            () -> {
+              assertTrue(server.getEventInstantiator().isRunning());
+              assertTrue(
+                  server
+                      .getAddressSpaceManager()
+                      .isRegistered(server.getOpcUaNamespace().getNodeManager()));
+              participantStopped.set(true);
+            }));
+
+    ExecutorService executor = Executors.newSingleThreadExecutor();
+    try {
+      Future<CompletableFuture<OpcUaServer>> firstCall = executor.submit(server::startup);
+      assertTrue(startupEntered.await(5, TimeUnit.SECONDS));
+      CompletableFuture<OpcUaServer> result = server.startup();
+      switch (completion) {
+        case "cancel" -> assertTrue(result.cancel(false));
+        case "complete" -> assertTrue(result.complete(server));
+        case "fail" ->
+            assertTrue(result.completeExceptionally(new IllegalStateException("caller")));
+        default -> throw new AssertionError(completion);
+      }
+
+      CompletableFuture<OpcUaServer> shutdown = server.shutdown();
+      assertFalse(shutdown.isDone(), "shutdown must await the participant callback");
+      assertTrue(server.getEventInstantiator().isRunning());
+      releaseStartup.countDown();
+      assertSame(result, firstCall.get(5, TimeUnit.SECONDS));
+      shutdown.get(5, TimeUnit.SECONDS);
+      assertTrue(participantStopped.get());
+    } finally {
+      releaseStartup.countDown();
+      executor.shutdown();
+      assertTrue(executor.awaitTermination(5, TimeUnit.SECONDS));
     }
   }
 
