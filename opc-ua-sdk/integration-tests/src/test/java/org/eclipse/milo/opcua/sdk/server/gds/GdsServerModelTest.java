@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.client.gds.GdsClient;
 import org.eclipse.milo.opcua.sdk.server.ObjectTypeManager;
+import org.eclipse.milo.opcua.sdk.server.gds.model.ObjectTypeInitializer;
 import org.eclipse.milo.opcua.sdk.server.gds.model.objects.AccessTokenIssuedAuditEventTypeNode;
 import org.eclipse.milo.opcua.sdk.server.gds.model.objects.AccessTokenRequestedAuditEventTypeNode;
 import org.eclipse.milo.opcua.sdk.server.gds.model.objects.ApplicationRegistrationChangedAuditEventTypeNode;

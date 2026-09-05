@@ -33,7 +33,7 @@ model does. It lives in subpackages of the existing modules:
 | `milo-dtd-core`   | `org.eclipse.milo.opcua.sdk.core.dtd.gds`           | `BinaryDataTypeDictionaryInitializer` for the legacy type dictionary mechanism (deprecated)      |
 | `milo-sdk-client` | `org.eclipse.milo.opcua.sdk.client.gds.model`             | `ObjectTypeInitializer`, `VariableTypeInitializer`                                                |
 | `milo-sdk-client` | `org.eclipse.milo.opcua.sdk.client.gds.model.objects` | Client node classes for `DirectoryType`, `CertificateDirectoryType`, the KeyCredential and AuthorizationService types, and the GDS audit event types |
-| `milo-sdk-server` | `org.eclipse.milo.opcua.sdk.server.gds` and `.model.objects` | The server-side mirror of the same types, for a GDS hosted on Milo                        |
+| `milo-sdk-server` | `org.eclipse.milo.opcua.sdk.server.gds.model` and `.objects` | The server-side mirror of the same types, for a GDS hosted on Milo                        |
 
 The **client layer** is the module `opc-ua-sdk/sdk-client-gds` (artifact `milo-sdk-client-gds`,
 listed in `milo-bom`). It depends only on `milo-sdk-client` and owns the package
@@ -261,7 +261,7 @@ rewritten and the Eclipse Milo license header prepended; nothing else changes.
 | `com.digitalpetri.opcua.gds` (`BinaryDataTypeDictionaryInitializer` only) | `org.eclipse.milo.opcua.sdk.core.dtd.gds` | `dtd-core` |
 | `com.digitalpetri.opcua.gds.client`          | `org.eclipse.milo.opcua.sdk.client.gds.model`               | `sdk-client`      |
 | `com.digitalpetri.opcua.gds.client.objects`  | `org.eclipse.milo.opcua.sdk.client.gds.model.objects` | `sdk-client`      |
-| `com.digitalpetri.opcua.gds.server`          | `org.eclipse.milo.opcua.sdk.server.gds`               | `sdk-server`      |
+| `com.digitalpetri.opcua.gds.server`          | `org.eclipse.milo.opcua.sdk.server.gds.model`         | `sdk-server`      |
 | `com.digitalpetri.opcua.gds.server.objects`  | `org.eclipse.milo.opcua.sdk.server.gds.model.objects` | `sdk-server`      |
 
 To pick up a new GDS NodeSet release:
