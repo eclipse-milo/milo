@@ -262,6 +262,64 @@ class ReverseTcpClientTransportTest {
     return new ReverseTcpClientTransport(transportConfig(), newConnection(channel));
   }
 
+  // A listener can synchronously close the channel; every observer must see the same order.
+  @Test
+  void reentrantCloseDoesNotOvertakeConnectedNotification() throws Exception {
+    EmbeddedChannel channel = new EmbeddedChannel();
+    ReverseTcpClientTransport transport = newTransport(channel);
+    CompletableFuture<Channel> activeFuture = new CompletableFuture<>();
+    List<Boolean> transitions = new ArrayList<>();
+    setField(transport, "started", true);
+    setField(transport, "disconnecting", false);
+    setField(transport, "channelFuture", activeFuture);
+    transport.addTransitionListener(
+        connected -> {
+          if (connected) {
+            try {
+              invokeOnChannelClosed(transport, channel);
+            } catch (Exception e) {
+              throw new AssertionError(e);
+            }
+          }
+        });
+    transport.addTransitionListener(transitions::add);
+    try {
+      invokeCompleteHandshake(transport, activeFuture, channel);
+      assertEquals(List.of(true, false), transitions);
+      assertNull(transport.getCurrentChannel());
+    } finally {
+      channel.close();
+    }
+  }
+
+  // User future callbacks can close a channel before the handshake callback starts notifying.
+  @Test
+  void futureCompletionCloseDoesNotOvertakeConnectedNotification() throws Exception {
+    EmbeddedChannel channel = new EmbeddedChannel();
+    ReverseTcpClientTransport transport = newTransport(channel);
+    CompletableFuture<Channel> activeFuture = new CompletableFuture<>();
+    List<Boolean> transitions = new ArrayList<>();
+    setField(transport, "started", true);
+    setField(transport, "disconnecting", false);
+    setField(transport, "channelFuture", activeFuture);
+    transport.addTransitionListener(transitions::add);
+    activeFuture.thenRun(
+        () -> {
+          try {
+            invokeOnChannelClosed(transport, channel);
+          } catch (Exception e) {
+            throw new AssertionError(e);
+          }
+        });
+    try {
+      invokeCompleteHandshake(transport, activeFuture, channel);
+      assertEquals(List.of(true, false), transitions);
+      assertNull(transport.getCurrentChannel());
+    } finally {
+      channel.close();
+    }
+  }
+
   private OpcTcpClientTransportConfig transportConfig() {
     return transportConfig(executor());
   }

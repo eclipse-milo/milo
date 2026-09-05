@@ -104,7 +104,8 @@
  * <p>Shutdown fences listener installation, including a startup still in application bootstrap
  * customization. A selector owns only its pending claim: cancelling or exceptionally completing the
  * registration future removes the selector, and a claim that races that completion closes its
- * undeliverable channel.
+ * undeliverable channel. Channel observers receive connected and disconnected transitions serially
+ * in state-change order, including when a callback itself disconnects the transport.
  *
  * <p>Stopping an acceptor suppresses new discovery work while preserving ownership of delivered
  * clients. Their channel transitions continue updating the reserved keys so restart can discover
