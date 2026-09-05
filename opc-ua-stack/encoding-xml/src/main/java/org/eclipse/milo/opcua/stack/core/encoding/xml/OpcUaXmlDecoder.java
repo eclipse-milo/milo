@@ -607,7 +607,8 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
       Node node = currentNode;
 
       try {
-        currentNode = node.getFirstChild().getFirstChild();
+        Node valueNode = firstElementChild(node);
+        currentNode = valueNode != null ? firstElementChild(valueNode) : null;
 
         if (currentNode == null) {
           return Variant.NULL_VALUE;
@@ -652,39 +653,21 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
 
         return array;
       } else if (nodeName.equals("Matrix")) {
-        List<Integer> dimensions = new ArrayList<>();
-        Node child = node.getFirstChild();
-        for (int i = 0; i < child.getChildNodes().getLength(); i++) {
-          currentNode = child.getChildNodes().item(i);
-
-          if (currentNode.getNodeType() == Node.ELEMENT_NODE) {
-            dimensions.add(decodeInt32("Int32"));
-          }
+        Node dimensionsNode = firstElementChild(node);
+        if (dimensionsNode == null) {
+          return Matrix.ofNull();
         }
 
-        List<Object> elements = new ArrayList<>();
-        child = child.getNextSibling();
-        for (int i = 0; i < child.getChildNodes().getLength(); i++) {
-          currentNode = child.getChildNodes().item(i);
-
-          if (currentNode.getNodeType() == Node.ELEMENT_NODE) {
-            String type = currentNode.getLocalName();
-            elements.add(readBuiltinType(type, type));
-          }
+        Node elementsNode = nextElementSibling(dimensionsNode);
+        Node element = elementsNode != null ? firstElementChild(elementsNode) : null;
+        if (element == null) {
+          throw new UaSerializationException(
+              StatusCodes.Bad_DecodingError, "Matrix has dimensions but no elements");
         }
 
-        Class<?> clazz = elements.get(0).getClass();
-        Object array = Array.newInstance(clazz, elements.size());
-        for (int i = 0; i < elements.size(); i++) {
-          Array.set(array, i, elements.get(i));
-        }
-
-        int[] dims = new int[dimensions.size()];
-        for (int i = 0; i < dimensions.size(); i++) {
-          dims[i] = dimensions.get(i);
-        }
-
-        return new Matrix(array, dims);
+        OpcUaDataType dataType = OpcUaDataType.valueOf(element.getLocalName());
+        currentNode = node;
+        return decodeMatrix("Matrix", dataType);
       } else {
         return readBuiltinType(nodeName, nodeName);
       }
