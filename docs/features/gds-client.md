@@ -249,8 +249,8 @@ administrator can approve the request.
 
 The model is generated and checked in; no code generation runs in the Maven build. The source is
 the [opc-ua-gds-model](https://github.com/kevinherron/opc-ua-gds-model) repository at commit
-`297d894`, produced by the GDS generators in
-[opc-ua-codegen2](https://github.com/kevinherron/opc-ua-codegen2) at commit `67ec865` from GDS
+`7ba70e8`, produced by the GDS generators in
+[opc-ua-codegen2](https://github.com/kevinherron/opc-ua-codegen2) at commit `4027daa` from GDS
 NodeSet2 1.05.07 on a 1.05.07 base, the same base as Milo's namespace 0 model. Every file is copied with its package
 rewritten and the Eclipse Milo license header prepended; nothing else changes.
 
