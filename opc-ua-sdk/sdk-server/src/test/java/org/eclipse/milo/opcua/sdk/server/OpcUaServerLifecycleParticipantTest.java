@@ -30,6 +30,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.eclipse.milo.opcua.sdk.server.items.DataItem;
+import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
@@ -40,6 +42,8 @@ import org.eclipse.milo.opcua.stack.transport.server.OpcServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class OpcUaServerLifecycleParticipantTest {
 
@@ -446,6 +450,87 @@ class OpcUaServerLifecycleParticipantTest {
       releaseStartup.countDown();
       executor.shutdownNow();
     }
+  }
+
+  // A cancelled or externally completed result is not evidence that the startup callback returned.
+  @ParameterizedTest
+  @ValueSource(strings = {"cancel", "complete", "fail"})
+  void publicStartupCompletionCannotReleaseShutdownBarrier(String completion) throws Exception {
+    var startupEntered = new CountDownLatch(1);
+    var releaseStartup = new CountDownLatch(1);
+    var participantStopped = new AtomicBoolean();
+    OpcUaServer server = newServer(new RecordingTransport());
+    server.addLifecycleParticipant(
+        participant(
+            () -> {
+              startupEntered.countDown();
+              await(releaseStartup);
+            },
+            () -> {
+              assertTrue(server.getEventInstantiator().isRunning());
+              assertTrue(
+                  server
+                      .getAddressSpaceManager()
+                      .isRegistered(server.getOpcUaNamespace().getNodeManager()));
+              participantStopped.set(true);
+            }));
+
+    ExecutorService executor = Executors.newSingleThreadExecutor();
+    try {
+      Future<CompletableFuture<OpcUaServer>> firstCall = executor.submit(server::startup);
+      assertTrue(startupEntered.await(5, TimeUnit.SECONDS));
+      CompletableFuture<OpcUaServer> result = server.startup();
+      switch (completion) {
+        case "cancel" -> assertTrue(result.cancel(false));
+        case "complete" -> assertTrue(result.complete(server));
+        case "fail" ->
+            assertTrue(result.completeExceptionally(new IllegalStateException("caller")));
+        default -> throw new AssertionError(completion);
+      }
+
+      CompletableFuture<OpcUaServer> shutdown = server.shutdown();
+      assertFalse(shutdown.isDone(), "shutdown must await the participant callback");
+      assertTrue(server.getEventInstantiator().isRunning());
+      releaseStartup.countDown();
+      assertSame(result, firstCall.get(5, TimeUnit.SECONDS));
+      shutdown.get(5, TimeUnit.SECONDS);
+      assertTrue(participantStopped.get());
+    } finally {
+      releaseStartup.countDown();
+      executor.shutdown();
+      assertTrue(executor.awaitTermination(5, TimeUnit.SECONDS));
+    }
+  }
+
+  // Namespace registration is an earlier child lifecycle and must be removed on later failure.
+  @Test
+  void failedNamespaceStartupUnregistersItsNodeManager() {
+    OpcUaServer server = newServer(new RecordingTransport());
+    var failure = new IllegalStateException("namespace child startup");
+    var namespace =
+        new ManagedNamespaceWithLifecycle(server, "urn:test:failed-namespace") {
+          @Override
+          public void onDataItemsCreated(List<DataItem> dataItems) {}
+
+          @Override
+          public void onDataItemsModified(List<DataItem> dataItems) {}
+
+          @Override
+          public void onDataItemsDeleted(List<DataItem> dataItems) {}
+
+          @Override
+          public void onMonitoringModeChanged(List<MonitoredItem> monitoredItems) {}
+        };
+    namespace
+        .getLifecycleManager()
+        .addStartupTask(
+            () -> {
+              throw failure;
+            });
+
+    assertSame(failure, assertThrows(IllegalStateException.class, namespace::startup));
+    assertFalse(server.getAddressSpaceManager().isRegistered(namespace.getNodeManager()));
+    namespace.shutdown();
   }
 
   private OpcUaServer newServer(RecordingTransport transport) {

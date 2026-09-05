@@ -201,17 +201,18 @@ public class OpcUaServer extends AbstractServiceHandler {
 
   private final Map<TransportProfile, OpcServerTransport> transports = new ConcurrentHashMap<>();
 
-  // lifecycleState, startupFuture, and shutdownFuture are guarded by lifecycleLock.
+  // lifecycleState and the lifecycle futures are guarded by lifecycleLock.
   // lifecycleParticipants is mutated under the lock and only while state is NEW, so the startup
   // thread may iterate it unlocked once the state leaves NEW and registration is closed.
   // startedParticipants is confined to the thread executing startup; teardown reads it only after
-  // startupFuture completes, which orders the accesses.
+  // the private startupCompletion completes, which orders the accesses.
   private final Object lifecycleLock = new Object();
   private final List<Lifecycle> lifecycleParticipants = new ArrayList<>();
   private final List<Lifecycle> startedParticipants = new ArrayList<>();
 
   private ServerLifecycleState lifecycleState = ServerLifecycleState.NEW;
   private @Nullable CompletableFuture<OpcUaServer> startupFuture;
+  private @Nullable CompletableFuture<OpcUaServer> startupCompletion;
   private @Nullable CompletableFuture<OpcUaServer> shutdownFuture;
 
   private final EventBus eventBus = new EventBus("server");
@@ -384,6 +385,8 @@ public class OpcUaServer extends AbstractServiceHandler {
    *
    * <p>Startup is single-flight. Concurrent or subsequent calls return the same future. Once
    * startup begins, the server is terminal: a failed or shut-down server cannot be started again.
+   * Cancelling or completing the returned future does not stop startup or release shutdown's wait
+   * for the startup work to finish.
    *
    * <p>A {@link #shutdown()} requested before endpoints are bound abandons startup and fails this
    * future; a later request lets startup complete and then tears the server down.
@@ -392,6 +395,7 @@ public class OpcUaServer extends AbstractServiceHandler {
    */
   public CompletableFuture<OpcUaServer> startup() {
     CompletableFuture<OpcUaServer> future;
+    CompletableFuture<OpcUaServer> result;
 
     synchronized (lifecycleLock) {
       if (startupFuture != null) {
@@ -405,7 +409,10 @@ public class OpcUaServer extends AbstractServiceHandler {
       }
 
       lifecycleState = ServerLifecycleState.STARTING;
-      startupFuture = future = new CompletableFuture<>();
+      startupCompletion = future = new CompletableFuture<>();
+      // The public result may be cancelled or completed by a caller. Only the private future
+      // establishes when shutdown can safely inspect participants and release core facilities.
+      startupFuture = result = future.copy();
     }
 
     try {
@@ -432,7 +439,7 @@ public class OpcUaServer extends AbstractServiceHandler {
       future.completeExceptionally(t);
     }
 
-    return future;
+    return result;
   }
 
   private void startupInternal() throws UaException {
@@ -614,7 +621,7 @@ public class OpcUaServer extends AbstractServiceHandler {
       }
 
       shutdownFuture = newShutdownFuture = new CompletableFuture<>();
-      startupToAwait = startupFuture;
+      startupToAwait = startupCompletion;
       lifecycleState = ServerLifecycleState.SHUTTING_DOWN;
     }
 
