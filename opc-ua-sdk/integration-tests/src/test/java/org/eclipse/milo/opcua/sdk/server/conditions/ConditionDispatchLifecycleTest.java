@@ -159,26 +159,7 @@ class ConditionDispatchLifecycleTest extends AbstractClientServerTest {
 
   @Test
   void sharedShelvingMethodResolvesItsNestedObjectWithoutChangingTheTypeHandler() throws Exception {
-    AlarmConditionTypeNode node =
-        server
-            .getNodeInstantiator()
-            .instantiate(
-                InstantiationRequest.of(AlarmConditionTypeNode.class, NodeIds.AlarmConditionType)
-                    .nodeId(newNodeId("shared"))
-                    .browseName(newQualifiedName("shared"))
-                    .target(testNamespace.getNodeManager())
-                    .methodInstantiation(MethodInstantiation.SHARE)
-                    .includeOptionals(
-                        d ->
-                            Set.of("ShelvingState", "LastTransition")
-                                .contains(d.browseName().name()))
-                    .build())
-            .root();
-    node.setEventType(NodeIds.AlarmConditionType);
-    node.setSeverity(ushort(700));
-    AlarmCondition alarm = AlarmCondition.attach(node);
-    server.getConditionManager().register(alarm);
-    alarm.setActive(true);
+    AlarmCondition alarm = newSharedAlarm("shared");
     var shelving = requireNonNull(alarm.getShelvingState());
     UaMethodNode method = requireNonNull(shelving.getTimedShelveMethodNode());
     MethodInvocationHandler typeHandler = method.getInvocationHandler();
@@ -193,6 +174,50 @@ class ConditionDispatchLifecycleTest extends AbstractClientServerTest {
     assertTrue(unshelve.getStatusCode().isGood(), () -> unshelve.getStatusCode().toString());
     assertEquals("Unshelved", shelving.getCurrentState().text());
     assertSame(typeHandler, method.getInvocationHandler());
+  }
+
+  // The nested state machine exposes shelving Methods only. An otherwise valid Acknowledge
+  // call must use the ConditionId and must not mutate the alarm through ShelvingState.
+  @Test
+  void nestedShelvingObjectCannotInvokeAnAlarmMethod() throws Exception {
+    AlarmCondition alarm = newSharedAlarm("shared-method-owner");
+    var shelving = requireNonNull(alarm.getShelvingState());
+    UaMethodNode acknowledge = requireNonNull(alarm.getNode().getAcknowledgeMethodNode());
+    Variant[] inputs = {
+      new Variant(alarm.currentBranch().getLastEventId()), new Variant(LocalizedText.NULL_VALUE)
+    };
+
+    CallMethodResult rejected = call(shelving.getNodeId(), acknowledge.getNodeId(), inputs);
+
+    assertEquals(StatusCodes.Bad_MethodInvalid, rejected.getStatusCode().value());
+    assertFalse(alarm.isAcked());
+    CallMethodResult accepted = call(alarm.getConditionId(), acknowledge.getNodeId(), inputs);
+    assertTrue(accepted.getStatusCode().isGood(), () -> accepted.getStatusCode().toString());
+    assertTrue(alarm.isAcked());
+  }
+
+  private AlarmCondition newSharedAlarm(String name) throws Exception {
+    AlarmConditionTypeNode node =
+        server
+            .getNodeInstantiator()
+            .instantiate(
+                InstantiationRequest.of(AlarmConditionTypeNode.class, NodeIds.AlarmConditionType)
+                    .nodeId(newNodeId(name))
+                    .browseName(newQualifiedName(name))
+                    .target(testNamespace.getNodeManager())
+                    .methodInstantiation(MethodInstantiation.SHARE)
+                    .includeOptionals(
+                        d ->
+                            Set.of("ShelvingState", "LastTransition")
+                                .contains(d.browseName().name()))
+                    .build())
+            .root();
+    node.setEventType(NodeIds.AlarmConditionType);
+    node.setSeverity(ushort(700));
+    AlarmCondition alarm = AlarmCondition.attach(node);
+    server.getConditionManager().register(alarm);
+    alarm.setActive(true);
+    return alarm;
   }
 
   private AlarmCondition newAlarm(String name) throws Exception {

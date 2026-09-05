@@ -25,6 +25,7 @@ import org.eclipse.milo.opcua.sdk.server.events.EventNotifierScope;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredEventItem;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.ShelvedStateMachineTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.Subscription;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
@@ -109,26 +110,29 @@ public class DefaultConditionManager implements ConditionManager {
   @Override
   public Optional<MethodInvocationHandler> findMethodInvocationHandler(
       NodeId objectId, NodeId methodId) {
-    return findMethodOwner(objectId)
+    return findMethodOwner(objectId, methodId)
         .flatMap(condition -> condition.findMethodInvocationHandler(methodId));
   }
 
   @Override
   public Optional<UaMethodNode> findMethodNode(NodeId objectId, NodeId methodId) {
-    return findMethodOwner(objectId).flatMap(condition -> condition.findMethodNode(methodId));
+    return findMethodOwner(objectId, methodId)
+        .flatMap(condition -> condition.findMethodNode(methodId));
   }
 
-  private Optional<Condition> findMethodOwner(NodeId objectId) {
+  private Optional<Condition> findMethodOwner(NodeId objectId, NodeId methodId) {
     Condition direct = conditions.get(objectId);
     if (direct != null) {
       return Optional.of(direct);
     }
 
     // A ShelvingState ObjectId names a nested state machine, while its behavior belongs to the
-    // registered AlarmCondition. Follow only its actual parent edge and verify that ownership.
+    // registered AlarmCondition. Verify its parent ownership and restrict this route to Methods
+    // actually exposed by the nested state machine.
     return server
         .getAddressSpaceManager()
         .getManagedNode(objectId)
+        .filter(ShelvedStateMachineTypeNode.class::isInstance)
         .flatMap(
             node ->
                 node.getReferences().stream()
@@ -147,7 +151,8 @@ public class DefaultConditionManager implements ConditionManager {
                         condition ->
                             condition instanceof AlarmCondition alarm
                                 && alarm.getShelvingState() != null
-                                && alarm.getShelvingState().getNodeId().equals(objectId))
+                                && alarm.getShelvingState().getNodeId().equals(objectId)
+                                && alarm.findMethodNode(methodId).isPresent())
                     .findFirst());
   }
 
