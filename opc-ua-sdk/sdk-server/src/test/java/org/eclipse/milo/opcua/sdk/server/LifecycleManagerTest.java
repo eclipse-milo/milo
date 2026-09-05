@@ -11,11 +11,64 @@
 package org.eclipse.milo.opcua.sdk.server;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 public class LifecycleManagerTest {
+
+  // Startup failure must unwind acquired children even though subsequent shutdown is a no-op.
+  @ParameterizedTest
+  @EnumSource(LifecycleManager.ShutdownOrder.class)
+  void failedStartupRollsBackSuccessfulChildren(LifecycleManager.ShutdownOrder order) {
+    var manager = new LifecycleManager(order);
+    var events = new ArrayList<String>();
+    var startupFailure = new IllegalStateException("startup");
+    var cleanupFailure = new IllegalStateException("cleanup");
+    manager.addLifecycle(recordingLifecycle("a", events, null, null));
+    manager.addLifecycle(recordingLifecycle("b", events, null, cleanupFailure));
+    manager.addLifecycle(recordingLifecycle("c", events, startupFailure, null));
+    manager.addLifecycle(recordingLifecycle("d", events, null, null));
+
+    assertSame(startupFailure, assertThrows(IllegalStateException.class, manager::startup));
+    assertEquals(List.of("start-a", "start-b", "start-c", "stop-b", "stop-a"), events);
+    assertEquals(List.of(cleanupFailure), List.of(startupFailure.getSuppressed()));
+    assertFalse(manager.isRunning());
+
+    manager.shutdown();
+    assertEquals(List.of("start-a", "start-b", "start-c", "stop-b", "stop-a"), events);
+  }
+
+  private static Lifecycle recordingLifecycle(
+      String name,
+      List<String> events,
+      RuntimeException startupFailure,
+      RuntimeException cleanupFailure) {
+    return new Lifecycle() {
+      @Override
+      public void startup() {
+        events.add("start-" + name);
+        if (startupFailure != null) {
+          throw startupFailure;
+        }
+      }
+
+      @Override
+      public void shutdown() {
+        events.add("stop-" + name);
+        if (cleanupFailure != null) {
+          throw cleanupFailure;
+        }
+      }
+    };
+  }
 
   @Test
   public void testStartupShutdown() {
