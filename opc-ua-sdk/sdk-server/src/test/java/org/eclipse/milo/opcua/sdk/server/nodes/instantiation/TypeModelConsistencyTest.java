@@ -18,10 +18,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectNode;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
@@ -186,5 +188,50 @@ class TypeModelConsistencyTest {
       return ((Argument[]) matrix.getElements())[0];
     }
     return (Argument) ((ExtensionObject) value).decode(DefaultEncodingContext.INSTANCE);
+  }
+
+  // Part 3 declaration overrides change the effective instance at a path. References to any
+  // declaration in that chain must point to that instance, without an extra edge into type space.
+  @Test
+  void referencesToOverriddenDeclarationsResolveToTheEffectiveInstance() throws Exception {
+    var fx = TypeFixtures.create();
+    var referenceType = fx.addReferenceType("RelatedTo", NodeIds.NonHierarchicalReferences);
+    var base = fx.addObjectType("Base", NodeIds.BaseObjectType);
+    var original =
+        fx.addObjectDeclaration(base, "Y", NodeIds.BaseObjectType, NodeIds.ModellingRule_Mandatory);
+    var derived = fx.addObjectType("Derived", base.getNodeId());
+    fx.addObjectDeclaration(derived, "Y", NodeIds.BaseObjectType, NodeIds.ModellingRule_Mandatory);
+    var z =
+        fx.addObjectDeclaration(
+            derived, "Z", NodeIds.BaseObjectType, NodeIds.ModellingRule_Mandatory);
+    fx.nodeManager()
+        .addReferences(
+            new Reference(
+                z.getNodeId(), referenceType.getNodeId(), original.getNodeId().expanded(), true),
+            fx.namespaceTable());
+    var model = fx.compiler().compile(derived.getNodeId());
+    List<ReferenceRow> rows =
+        model.references().stream()
+            .filter(row -> row.referenceTypeId().equals(referenceType.getNodeId()))
+            .toList();
+    assertEquals(
+        List.of(ReferenceRow.relative(path("Z"), referenceType.getNodeId(), path("Y"))), rows);
+    var target = fx.newTargetManager();
+    var result =
+        fx.instantiator()
+            .instantiate(
+                InstantiationRequest.of(UaObjectNode.class, derived.getNodeId())
+                    .nodeId(fx.newNodeId("Instance"))
+                    .target(target)
+                    .build());
+    NodeId instanceY = result.node(path("Y")).orElseThrow().getNodeId();
+    NodeId instanceZ = result.node(path("Z")).orElseThrow().getNodeId();
+    var outgoing =
+        target.getReferences(instanceZ).stream()
+            .filter(r -> r.getReferenceTypeId().equals(referenceType.getNodeId()))
+            .toList();
+    assertEquals(
+        List.of(new Reference(instanceZ, referenceType.getNodeId(), instanceY.expanded(), true)),
+        outgoing);
   }
 }
