@@ -96,6 +96,17 @@
  * consumes one pre-claimed connection directly, installs the standard client UASC pipeline, and
  * then lets the Session FSM create and maintain the Session as it would for outbound TCP.
  *
+ * <p>Shutdown fences listener installation, including a startup still in application bootstrap
+ * customization. A selector owns only its pending claim: cancelling or exceptionally completing the
+ * registration future removes the selector, and a claim that races that completion closes its
+ * undeliverable channel. A transport dispatch failure also releases the claimed channel and fails
+ * the waiting connect operation. Channel observers receive connected and disconnected transitions
+ * serially in state-change order, including when a callback itself disconnects the transport.
+ *
+ * <p>Stopping an acceptor suppresses new discovery work while preserving ownership of delivered
+ * clients. Their channel transitions continue updating the reserved keys so restart can discover
+ * servers whose delivered clients disconnected during the stopped interval.
+ *
  * <h2>Security boundary</h2>
  *
  * <p>{@code ReverseHello} is only a routing and resource-admission hint. The types here

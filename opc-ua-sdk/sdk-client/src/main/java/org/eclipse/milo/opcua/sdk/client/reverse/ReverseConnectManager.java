@@ -211,6 +211,10 @@ public final class ReverseConnectManager implements AutoCloseable {
           listenerQueue.pause();
           lock.lock();
           try {
+            if (!running) {
+              throw new CancellationException("ReverseConnectManager stopped during startup");
+            }
+
             ChannelFuture bindFuture = bootstrap.bind(listenerState.bindAddress).sync();
 
             listenerState.bindChannel = bindFuture.channel();
@@ -344,6 +348,13 @@ public final class ReverseConnectManager implements AutoCloseable {
     } finally {
       lock.unlock();
     }
+
+    registration.connectionFuture.whenComplete(
+        (connection, failure) -> {
+          if (failure != null) {
+            unregisterSelector(registration.id);
+          }
+        });
 
     if (stoppedException != null) {
       registration.connectionFuture.completeExceptionally(stoppedException);
@@ -1245,7 +1256,9 @@ public final class ReverseConnectManager implements AutoCloseable {
 
     void completeAndFire(ReverseConnectManager manager) {
       if (connection != null && registration != null && snapshot != null) {
-        registration.connectionFuture.complete(connection);
+        if (!registration.connectionFuture.complete(connection)) {
+          connection.close();
+        }
         manager.fireCandidateClaimed(snapshot);
       }
     }
