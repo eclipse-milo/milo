@@ -63,8 +63,9 @@ import org.jspecify.annotations.Nullable;
  * (the source-side constituents — Variant, StatusCode, sourceTime — are preserved verbatim).
  *
  * <p>Mutable attribute values — arrays (e.g. ArrayDimensions, RolePermissions) and array-valued
- * {@link DataValue}s — are defensively copied on ingress and egress, so neither later mutation of
- * the node-owned value nor mutation of a value read from this snapshot can change the snapshot.
+ * {@link DataValue}s, including standard OPC UA structures and their nested fields, are defensively
+ * copied on ingress and egress. Custom Java values without a standard codec, and standard
+ * structures containing such values, pass through and must be immutable.
  */
 public final class AttributeSnapshot {
 
@@ -315,11 +316,46 @@ public final class AttributeSnapshot {
       return copyArray(value);
     }
     if (value instanceof DataValue dataValue) {
-      Object contained = dataValue.getValue().getValue();
-      if (contained != null && contained.getClass().isArray()) {
-        Object containedCopy = copyArray(contained);
-        return dataValue.copy(b -> b.setValue(new Variant(containedCopy)));
+      Variant copied = (Variant) defensiveCopy(dataValue.getValue());
+      return copied == dataValue.getValue() ? dataValue : dataValue.copy(b -> b.setValue(copied));
+    }
+    if (value instanceof Variant variant) {
+      Object contained = variant.getValue();
+      Object copied = contained == null ? null : defensiveCopy(contained);
+      return copied == contained ? variant : new Variant(copied);
+    }
+    if (value instanceof UaStructuredType structure && hasStandardCodec(structure)) {
+      try {
+        return ExtensionObject.encode(DefaultEncodingContext.INSTANCE, structure)
+            .decode(DefaultEncodingContext.INSTANCE);
+      } catch (UaSerializationException e) {
+        // Preserve the opaque, caller-immutable contract for unencodable nested custom values.
+        return value;
       }
+    }
+    if (value instanceof ByteString bytes) {
+      byte[] data = bytes.bytes();
+      return data == null ? ByteString.NULL_VALUE : ByteString.of(data.clone());
+    }
+    if (value instanceof ExtensionObject.Binary extension) {
+      return ExtensionObject.of(
+          (ByteString) defensiveCopy(extension.getBody()), extension.getEncodingOrTypeId());
+    }
+    if (value instanceof ExtensionObject.Xml extension) {
+      return ExtensionObject.of(extension.getBody(), extension.getEncodingOrTypeId());
+    }
+    if (value instanceof ExtensionObject.Json extension) {
+      return ExtensionObject.of(extension.getBody(), extension.getEncodingOrTypeId());
+    }
+    if (value instanceof Matrix matrix) {
+      Object elements = matrix.getElements();
+      return elements == null
+          ? new Matrix(null)
+          : new Matrix(
+              copyArray(elements),
+              matrix.getDimensions().clone(),
+              matrix.getDataType().orElseThrow(),
+              matrix.getDataTypeId().orElse(null));
     }
     return value;
   }

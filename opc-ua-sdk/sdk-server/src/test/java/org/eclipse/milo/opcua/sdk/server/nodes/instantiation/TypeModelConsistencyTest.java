@@ -11,6 +11,8 @@
 package org.eclipse.milo.opcua.sdk.server.nodes.instantiation;
 
 import static org.eclipse.milo.opcua.sdk.server.nodes.instantiation.TypeFixtures.path;
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -22,11 +24,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectNode;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -128,5 +136,55 @@ class TypeModelConsistencyTest {
         error.getDiagnostics().stream()
             .anyMatch(d -> d.code() == InstantiationDiagnostic.Code.MODEL_CHANGED));
     assertTrue(target.getNodes().isEmpty());
+  }
+
+  // Method argument dimensions are nested inside structures. Each supported Variant container
+  // must isolate those dimensions from both declaration owners and snapshot readers.
+  @ParameterizedTest
+  @ValueSource(strings = {"scalar", "array", "matrix", "extension"})
+  void structuredValuesAreIsolatedOnIngressAndEgress(String container) {
+    var argument =
+        new Argument("A", NodeIds.Int32, 1, new UInteger[] {uint(3)}, LocalizedText.NULL_VALUE);
+    Object source =
+        switch (container) {
+          case "scalar" -> argument;
+          case "array" -> new Argument[] {argument};
+          case "matrix" -> new Matrix(new Argument[] {argument}, new int[] {1, 1});
+          case "extension" -> ExtensionObject.encode(DefaultEncodingContext.INSTANCE, argument);
+          default -> throw new AssertionError(container);
+        };
+    var fx = TypeFixtures.create();
+    var type = fx.addObjectType("Arguments", NodeIds.BaseObjectType);
+    var declaration =
+        fx.addVariableDeclaration(
+            type, "V", NodeIds.BaseDataVariableType, NodeIds.ModellingRule_Mandatory);
+    declaration.setDataType(NodeIds.Argument);
+    declaration.setValue(new DataValue(new Variant(source)));
+    AttributeSnapshot snapshot = AttributeSnapshot.of(declaration);
+    String originalContent = snapshot.contentHash();
+    Argument sourceArgument = unwrapArgument(source);
+    unwrapArgument(snapshot.value().getValue().getValue()).getArrayDimensions()[0] = uint(7);
+    assertEquals(
+        uint(3),
+        unwrapArgument(declaration.getValue().getValue().getValue()).getArrayDimensions()[0]);
+    assertEquals(
+        uint(3), unwrapArgument(snapshot.value().getValue().getValue()).getArrayDimensions()[0]);
+    sourceArgument.getArrayDimensions()[0] = uint(9);
+    assertEquals(
+        uint(3), unwrapArgument(snapshot.value().getValue().getValue()).getArrayDimensions()[0]);
+    assertEquals(originalContent, snapshot.contentHash());
+  }
+
+  private static Argument unwrapArgument(Object value) {
+    if (value instanceof Argument argument) {
+      return argument;
+    }
+    if (value instanceof Argument[] arguments) {
+      return arguments[0];
+    }
+    if (value instanceof Matrix matrix) {
+      return ((Argument[]) matrix.getElements())[0];
+    }
+    return (Argument) ((ExtensionObject) value).decode(DefaultEncodingContext.INSTANCE);
   }
 }
