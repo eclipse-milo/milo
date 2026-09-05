@@ -939,7 +939,7 @@ public final class AliasManager extends AbstractLifecycle {
           removeFromCategory(aliasNode, categoryId);
 
           if (getOrganizingCategories(aliasNodeId).isEmpty()) {
-            aliasNode.delete();
+            deleteAliasNode(aliasNode);
           }
         } finally {
           versionManager.publishPending();
@@ -994,7 +994,7 @@ public final class AliasManager extends AbstractLifecycle {
         versionManager.prepare(bumped);
 
         for (Reference reference : matching) {
-          aliasNode.removeReference(reference);
+          server.getAddressSpaceManager().removeManagedReferences(reference);
         }
 
         deleteIfTargetless(aliasNode);
@@ -1326,13 +1326,10 @@ public final class AliasManager extends AbstractLifecycle {
    * target that is not associated changes nothing and reports {@code Good}; §6.3.5 reserves {@code
    * Bad_NotFound} for an alias name the category does not contain.
    *
-   * <p>Validation happens before any mutation, and reference removal through the manager's own
-   * fragment cannot partially fail, so an entry ordinarily either fully applies or leaves its state
-   * untouched (§6.3.5: "If all targets for an AliasNames array entry cannot be deleted, then none
-   * of the targets are deleted"). Aliases living in an application {@link NodeManager} can throw
-   * unchecked mid-entry, however; such a failure is confined to its entry as {@code
-   * Bad_InternalError}, and any category whose new version was prepared before the mutation still
-   * gets its LastChange published.
+   * <p>Validation happens before any mutation. Reference removal spans every registered {@link
+   * NodeManager}. A custom NodeManager can throw unchecked mid-entry; such a failure is confined to
+   * its entry as {@code Bad_InternalError}, and any category whose new version was prepared before
+   * the mutation still gets its LastChange published.
    */
   private StatusCode deleteAliasEntry(
       NodeId categoryId, @Nullable String aliasName, @Nullable ExpandedNodeId targetNode) {
@@ -1369,7 +1366,7 @@ public final class AliasManager extends AbstractLifecycle {
           removeFromCategory(aliasNode, categoryId);
 
           if (getOrganizingCategories(aliasNodeId).isEmpty()) {
-            aliasNode.delete();
+            deleteAliasNode(aliasNode);
           }
         }
 
@@ -1407,7 +1404,7 @@ public final class AliasManager extends AbstractLifecycle {
         versionManager.prepare(bumped);
 
         for (Reference reference : matching) {
-          aliasNode.removeReference(reference);
+          server.getAddressSpaceManager().removeManagedReferences(reference);
         }
 
         deleteIfTargetless(aliasNode);
@@ -1936,9 +1933,19 @@ public final class AliasManager extends AbstractLifecycle {
 
     versionManager.prepare(getOrganizingCategories(aliasNodeId));
 
-    aliasNode.delete();
+    deleteAliasNode(aliasNode);
 
     return true;
+  }
+
+  private void deleteAliasNode(UaNode aliasNode) {
+    var addressSpaceManager = server.getAddressSpaceManager();
+    List<Reference> references = addressSpaceManager.getManagedReferences(aliasNode.getNodeId());
+
+    // Preserve UaNode.delete's traversal of owned HasChild references before removing the
+    // snapshotted associations from every registered manager.
+    aliasNode.delete();
+    references.forEach(addressSpaceManager::removeManagedReferences);
   }
 
   /** The forward {@code AliasFor}-or-subtype References of an alias Node. */
@@ -1978,28 +1985,16 @@ public final class AliasManager extends AbstractLifecycle {
     return categoryIds;
   }
 
-  /**
-   * Remove the Organizes linkage between {@code categoryId} and the alias, from both Nodes'
-   * NodeManagers — the linkage may have been stored by either side.
-   */
-  private void removeFromCategory(UaNode aliasNode, NodeId categoryId) {
-    NodeId aliasNodeId = aliasNode.getNodeId();
-
-    aliasNode.removeReference(
-        new Reference(
-            aliasNodeId, NodeIds.Organizes, categoryId.expanded(), Reference.Direction.INVERSE));
-
+  /** Remove both directions of a member's Organizes linkage from every registered manager. */
+  private void removeFromCategory(UaNode member, NodeId categoryId) {
     server
         .getAddressSpaceManager()
-        .getManagedNode(categoryId)
-        .ifPresent(
-            categoryNode ->
-                categoryNode.removeReference(
-                    new Reference(
-                        categoryId,
-                        NodeIds.Organizes,
-                        aliasNodeId.expanded(),
-                        Reference.Direction.FORWARD)));
+        .removeManagedReferences(
+            new Reference(
+                member.getNodeId(),
+                NodeIds.Organizes,
+                categoryId.expanded(),
+                Reference.Direction.INVERSE));
   }
 
   /**
