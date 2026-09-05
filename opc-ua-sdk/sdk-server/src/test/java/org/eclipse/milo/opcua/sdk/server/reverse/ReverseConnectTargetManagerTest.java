@@ -30,6 +30,7 @@ import static org.mockito.Mockito.when;
 import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
 import java.lang.reflect.Field;
+import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,6 +55,7 @@ import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerReverseConnectAttempt;
+import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerReverseConnectAttemptEvent;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerReverseConnectAttemptState;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerReverseConnectParameters;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransport;
@@ -402,6 +404,52 @@ class ReverseConnectTargetManagerTest {
     }
   }
 
+  // UUIDs identify public targets, but a removed registration must never own a replacement's
+  // channel.
+  @Test
+  void oldHandoffCannotAttachChannelToReplacementWithSameTargetId() throws Exception {
+    try (ControlledAttempts fixture = new ControlledAttempts()) {
+      fixture.manager.startup();
+      fixture.scheduled.remove().run();
+      fixture.transport.handoff(0);
+      fixture.manager.remove(fixture.target.getId()).get(5, TimeUnit.SECONDS);
+      fixture.manager.addTarget(fixture.target);
+      fixture.scheduled.remove().run();
+      EmbeddedChannel oldChannel = new EmbeddedChannel();
+      EmbeddedChannel newChannel = new EmbeddedChannel();
+      try {
+        fixture.transport.channels.get(0).complete(oldChannel);
+        assertFalse(oldChannel.isOpen(), "late channel from the removed registration must close");
+        assertEquals(0, fixture.manager.snapshots().get(0).activeChannelCount());
+        fixture.transport.handoff(1);
+        fixture.transport.channels.get(1).complete(newChannel);
+        assertTrue(newChannel.isOpen());
+        assertEquals(1, fixture.manager.snapshots().get(0).activeChannelCount());
+      } finally {
+        oldChannel.close();
+        newChannel.close();
+      }
+    }
+  }
+
+  // Removing in the HANDOFF/future-completion interval must still close the later channel.
+  @Test
+  void removalClosesChannelDeliveredAfterHandoffEvent() throws Exception {
+    try (ControlledAttempts fixture = new ControlledAttempts()) {
+      fixture.manager.startup();
+      fixture.scheduled.remove().run();
+      fixture.transport.handoff(0);
+      fixture.manager.remove(fixture.target.getId()).get(5, TimeUnit.SECONDS);
+      EmbeddedChannel channel = new EmbeddedChannel();
+      try {
+        fixture.transport.channels.get(0).complete(channel);
+        assertFalse(channel.isOpen());
+      } finally {
+        channel.close();
+      }
+    }
+  }
+
   private static final class ControlledAttempts implements AutoCloseable {
     final Queue<Runnable> scheduled = new ArrayDeque<>();
     final AtomicBoolean rejectNotifications = new AtomicBoolean();
@@ -447,6 +495,7 @@ class ReverseConnectTargetManagerTest {
   }
 
   private static final class ControlledTransport extends OpcTcpServerTransport {
+    final List<OpcTcpServerReverseConnectParameters> parameters = new ArrayList<>();
     final List<OpcTcpServerReverseConnectAttempt> attempts = new ArrayList<>();
     final List<CompletableFuture<Channel>> channels = new ArrayList<>();
 
@@ -461,9 +510,25 @@ class ReverseConnectTargetManagerTest {
       CompletableFuture<Channel> channel = new CompletableFuture<>();
       when(attempt.channelFuture()).thenReturn(channel);
       when(attempt.state()).thenReturn(OpcTcpServerReverseConnectAttemptState.CONNECTING);
+      this.parameters.add(parameters);
       attempts.add(attempt);
       channels.add(channel);
       return attempt;
+    }
+
+    void handoff(int index) {
+      when(attempts.get(index).state()).thenReturn(OpcTcpServerReverseConnectAttemptState.HANDOFF);
+      parameters
+          .get(index)
+          .observer()
+          .onStateTransition(
+              new OpcTcpServerReverseConnectAttemptEvent(
+                  UUID.randomUUID(),
+                  OpcTcpServerReverseConnectAttemptState.HANDOFF,
+                  Instant.now(),
+                  null,
+                  null,
+                  null));
     }
   }
 

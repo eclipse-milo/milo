@@ -50,7 +50,10 @@
  * <p>Updating a target replaces the future-attempt configuration, including enabled and paused
  * state, without closing reverse-opened channels that have already been handed to the normal server
  * path. Removing a target is stronger: it cancels scheduled work, closes an in-flight attempt, and
- * closes active channels owned by that target.
+ * closes active channels owned by that target. Asynchronous callbacks belong to one registration
+ * instance; reusing a removed target's UUID creates a separate owner. Late handoffs from the
+ * removed registration close their channels, and stale timers or retry callbacks cannot change its
+ * replacement.
  *
  * <h2>Failure handling</h2>
  *
