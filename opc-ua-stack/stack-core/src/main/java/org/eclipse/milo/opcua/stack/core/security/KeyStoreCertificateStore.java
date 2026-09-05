@@ -504,6 +504,8 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
             }
             target = replacement;
           }
+        } catch (ClosedWatchServiceException e) {
+          return;
         } catch (IOException e) {
           // Preserve the previous target watch while the file is missing or temporarily
           // unreadable; its recreation can then trigger another resolution and reload.

@@ -469,6 +469,9 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
     // failure cannot destroy the unrelated CRLs that it also contains.
     Path temporary = Files.createTempFile(file.getParent(), ".crl-", ".tmp");
     try {
+      if (file.getFileSystem().supportedFileAttributeViews().contains("posix")) {
+        Files.setPosixFilePermissions(temporary, Files.getPosixFilePermissions(file));
+      }
       try (var output = Files.newOutputStream(temporary)) {
         for (X509CRL crl : crls) {
           output.write(crl.getEncoded());

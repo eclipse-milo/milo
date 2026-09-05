@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.security.KeyPair;
 import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
@@ -93,6 +94,10 @@ class FileBasedTrustListPersistenceTest {
             + pem("X509 CRL", retained.crl().getEncoded())
             + pem("X509 CRL", alsoRetained.crl().getEncoded()));
     Files.write(crls.resolve("duplicate.revocations"), removed.crl().getEncoded());
+    boolean posix = bundle.getFileSystem().supportedFileAttributeViews().contains("posix");
+    if (posix) {
+      Files.setPosixFilePermissions(bundle, PosixFilePermissions.fromString("rw-r-----"));
+    }
 
     try (var manager = FileBasedTrustListManager.createAndInitialize(directory)) {
       assertEquals(
@@ -109,6 +114,12 @@ class FileBasedTrustListPersistenceTest {
 
     try (var reopened = FileBasedTrustListManager.createAndInitialize(directory)) {
       assertEquals(List.of(retained.crl(), alsoRetained.crl()), crls(reopened, list));
+      if (posix) {
+        assertEquals(
+            PosixFilePermissions.fromString("rw-r-----"),
+            Files.getPosixFilePermissions(bundle),
+            "rewriting must preserve group read access");
+      }
     }
   }
 
