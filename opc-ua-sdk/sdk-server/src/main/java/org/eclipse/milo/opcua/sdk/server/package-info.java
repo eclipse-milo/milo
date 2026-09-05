@@ -46,6 +46,14 @@
  * participant shutdown therefore runs without external server visibility but before the standard
  * address space and event facilities are torn down.
  *
+ * <h2>Reference storage</h2>
+ *
+ * <p>{@link org.eclipse.milo.opcua.sdk.server.AddressSpaceManager} aggregates references from every
+ * registered NodeManager. Reference ownership is independent of node ownership: either endpoint's
+ * manager, or another registered manager, can store an association. Removing an association through
+ * the address-space manager removes both directions from all registered stores, matching the scope
+ * used for discovery.
+ *
  * <h2>Runtime boundaries</h2>
  *
  * <p>The SDK server package coordinates high-level server configuration and lifecycle. Certificate

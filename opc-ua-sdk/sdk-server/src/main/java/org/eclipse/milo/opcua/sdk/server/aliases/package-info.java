@@ -48,7 +48,10 @@
  * and unregisters its fragment: Nodes the manager hosts there (materialized Methods, alias Nodes
  * created in standard or adopted categories) leave the AddressSpace with it, while category and
  * alias Nodes hosted in application NodeManagers remain in place. Applications register their own
- * categories and aliases through the manager's programmatic API after startup.
+ * categories and aliases through the manager's programmatic API after startup. Public and wire
+ * mutations check lifecycle state while holding the mutation lock, so a caller waiting for that
+ * lock cannot mutate after shutdown completes. Removing a manager-created category detaches its
+ * surviving aliases and child categories before deleting the category itself.
  *
  * <h2>Data flow</h2>
  *
@@ -59,11 +62,13 @@
  * trade-off is weak consistency under concurrent mutation — the same weak consistency Browse
  * already has — and that out-of-band AddressSpace edits do not bump {@code LastChange}; mutations
  * must flow through the manager (or be followed by an explicit {@code touch}) for version
- * correctness. Out-of-band edits carry one further caveat: References recorded in only one
- * direction (e.g. a category-side-only {@code Organizes} Reference loaded from a NodeSet without
- * its inverse) are still found by search, which follows the forward direction, but are invisible to
- * alias-side operations — organizing-category resolution during delete and ancestor discovery
- * during version propagation both walk inverse References and miss such linkage.
+ * correctness. Association removal covers every registered NodeManager that may store either
+ * direction, matching the scope of reference collection. Out-of-band edits carry one further
+ * caveat: References recorded in only one direction (e.g. a category-side-only {@code Organizes}
+ * Reference loaded from a NodeSet without its inverse) are still found by search, which follows the
+ * forward direction, but are invisible to alias-side operations — organizing-category resolution
+ * during delete and ancestor discovery during version propagation both walk inverse References and
+ * miss such linkage.
  *
  * <h2>Network mutation</h2>
  *
@@ -92,12 +97,15 @@
  * org.eclipse.milo.opcua.sdk.server.aliases.AliasVersionStore} <em>before</em> the mutation they
  * describe is applied or the value is published: a failed save aborts the operation (or fails the
  * entry) with {@code Bad_InternalError} and nothing changed, so no Client can ever observe an
- * unpersisted {@code LastChange} value — after a restart the sequence therefore never repeats an
- * observed value for different content, which would leave Client caches undetectably stale.
- * Likewise a failed load at startup fails startup, because silently reset versions would violate
- * the persistence contract undetectably. Categories whose {@code LastChange} Property does not
- * exist (it is Optional per category) still participate in propagation; only the Property write is
- * skipped.
+ * unpersisted {@code LastChange} value. A deletion entry prepares the union of categories affected
+ * by every matching alias before deleting any association, so a later category's save failure
+ * leaves the whole entry untouched. Likewise a failed load at startup fails startup, because
+ * silently reset versions would violate the persistence contract undetectably. Categories whose
+ * {@code LastChange} Property does not exist (it is Optional per category) still participate in
+ * propagation; only the Property write is skipped. Removed categories retain an in-memory version
+ * high-water mark for the manager's lifetime, so reusing a category NodeId cannot repeat a version
+ * for different contents. Across restarts, that guarantee for removed categories depends on the
+ * version store retaining their entries; the root category is never removed.
  */
 @NullMarked
 package org.eclipse.milo.opcua.sdk.server.aliases;
