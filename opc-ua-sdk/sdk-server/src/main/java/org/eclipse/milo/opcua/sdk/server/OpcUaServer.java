@@ -412,7 +412,7 @@ public class OpcUaServer extends AbstractServiceHandler {
       startupCompletion = future = new CompletableFuture<>();
       // The public result may be cancelled or completed by a caller. Only the private future
       // establishes when shutdown can safely inspect participants and release core facilities.
-      startupFuture = result = future.copy();
+      startupFuture = result = new CompletableFuture<>();
     }
 
     try {
@@ -427,6 +427,7 @@ public class OpcUaServer extends AbstractServiceHandler {
       }
 
       future.complete(this);
+      result.complete(this);
     } catch (Throwable t) {
       rollbackStartup(t);
 
@@ -437,6 +438,7 @@ public class OpcUaServer extends AbstractServiceHandler {
       }
 
       future.completeExceptionally(t);
+      result.completeExceptionally(t);
     }
 
     return result;

@@ -150,10 +150,14 @@ class OpcUaServerLifecycleParticipantTest {
     server.addLifecycleParticipant(
         participant(() -> events.add("start-c"), () -> events.add("stop-c")));
 
+    CompletableFuture<OpcUaServer> startup = server.startup();
+    CompletableFuture<Throwable> callbackFailure = new CompletableFuture<>();
+    startup.whenComplete((result, failure) -> callbackFailure.complete(failure));
     ExecutionException ex =
-        assertThrows(ExecutionException.class, () -> server.startup().get(5, TimeUnit.SECONDS));
+        assertThrows(ExecutionException.class, () -> startup.get(5, TimeUnit.SECONDS));
 
     assertSame(startupFailure, ex.getCause());
+    assertSame(startupFailure, callbackFailure.get(5, TimeUnit.SECONDS));
     assertEquals(List.of("start-a", "start-b", "stop-a"), events);
     assertFalse(transport.bound);
 
