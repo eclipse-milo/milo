@@ -591,9 +591,10 @@ public final class AliasManager extends AbstractLifecycle {
    * category.
    *
    * <p>When the category Node is deleted, {@code LastChange} is bumped for its former ancestor
-   * categories (captured before deletion) and the category's own in-memory version entry is
-   * dropped. Removing an <em>adopted</em> category only unbinds handlers — the AddressSpace is
-   * unchanged, so no version is bumped.
+   * categories (captured before deletion). The category's version high-water mark is retained for
+   * the manager's lifetime so recreating its NodeId continues the sequence. Removing an
+   * <em>adopted</em> category only unbinds handlers — the AddressSpace is unchanged, so no version
+   * is bumped.
    *
    * @param categoryId the NodeId of the category to remove.
    * @throws UaException with {@code Bad_InvalidArgument} if {@code categoryId} is a standard

@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.UaNodeManager;
+import org.eclipse.milo.opcua.sdk.server.model.objects.AliasNameCategoryType;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectNode;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
@@ -348,6 +349,35 @@ class AliasLifecycleConsistencyTest extends AbstractClientServerTest {
     }
   }
 
+  // A stored version ahead of wall time makes NodeId reuse deterministic without a timing race.
+  // Both deleting stores and stores that retain entries must preserve the live manager's sequence.
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void recreatedCategoryAdvancesBeyondItsPreviousContents(boolean deleteStoredEntry)
+      throws Exception {
+    AliasCategoryConfig category = category("Versioned", NodeIds.Aliases);
+    store.deleteEntries = deleteStoredEntry;
+    store.entries.put(
+        category.categoryNodeId().expanded(server.getNamespaceTable()),
+        UInteger.valueOf(4_000_000_000L));
+    manager.startup();
+    manager.addCategory(category);
+    manager.addAlias(
+        category.categoryNodeId(), prefix + "Old", List.of(target(newNodeId("TestInt32"))));
+    long before = lastChange(category.categoryNodeId());
+    manager.removeCategory(category.categoryNodeId());
+    manager.addCategory(category);
+    manager.addAlias(
+        category.categoryNodeId(), prefix + "New", List.of(target(newNodeId("TestAnalogValue"))));
+
+    assertTrue(
+        lastChange(category.categoryNodeId()) > before,
+        "different category contents require a new version");
+    assertTrue(manager.findAlias(category.categoryNodeId(), prefix + "Old", null).isEmpty());
+    assertEquals(
+        Set.of(newNodeId("TestAnalogValue")), targets(category.categoryNodeId(), prefix + "New"));
+  }
+
   private AliasCategoryConfig category(String suffix, NodeId parent) {
     return new AliasCategoryConfig(
         newNodeId(prefix + suffix),
@@ -373,6 +403,17 @@ class AliasLifecycleConsistencyTest extends AbstractClientServerTest {
         .flatMap(alias -> Arrays.stream(alias.getReferencedNodes()))
         .map(id -> id.toNodeId(server.getNamespaceTable()).orElseThrow())
         .collect(Collectors.toSet());
+  }
+
+  private long lastChange(NodeId categoryId) {
+    return ((UInteger)
+            managed(categoryId)
+                .getPropertyNode(AliasNameCategoryType.LAST_CHANGE)
+                .orElseThrow()
+                .getValue()
+                .value()
+                .value())
+        .longValue();
   }
 
   private StatusCode[] deleteOverWire(NodeId category, String name, @Nullable NodeId target)
@@ -427,6 +468,7 @@ class AliasLifecycleConsistencyTest extends AbstractClientServerTest {
     private final Map<ExpandedNodeId, UInteger> entries = new ConcurrentHashMap<>();
     private final AtomicInteger saves = new AtomicInteger();
     private volatile ExpandedNodeId failOn;
+    private boolean deleteEntries;
 
     @Override
     public Map<ExpandedNodeId, UInteger> load() {
@@ -440,6 +482,11 @@ class AliasLifecycleConsistencyTest extends AbstractClientServerTest {
       }
       entries.put(categoryId, value);
       saves.incrementAndGet();
+    }
+
+    @Override
+    public void delete(ExpandedNodeId categoryId) {
+      if (deleteEntries) entries.remove(categoryId);
     }
   }
 }

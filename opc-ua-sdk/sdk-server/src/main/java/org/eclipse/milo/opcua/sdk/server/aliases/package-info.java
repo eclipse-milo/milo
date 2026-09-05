@@ -99,14 +99,15 @@
  * org.eclipse.milo.opcua.sdk.server.aliases.AliasVersionStore} <em>before</em> the mutation they
  * describe is applied or the value is published: a failed save aborts the operation (or fails the
  * entry) with {@code Bad_InternalError} and nothing changed, so no Client can ever observe an
- * unpersisted {@code LastChange} value — after a restart the sequence therefore never repeats an
- * observed value for different content, which would leave Client caches undetectably stale. A
- * deletion entry prepares the union of categories affected by every matching alias before deleting
- * any association, so a later category's save failure leaves the whole entry untouched. Likewise a
- * failed load at startup fails startup, because silently reset versions would violate the
- * persistence contract undetectably. Categories whose {@code LastChange} Property does not exist
- * (it is Optional per category) still participate in propagation; only the Property write is
- * skipped.
+ * unpersisted {@code LastChange} value. A deletion entry prepares the union of categories affected
+ * by every matching alias before deleting any association, so a later category's save failure
+ * leaves the whole entry untouched. Likewise a failed load at startup fails startup, because
+ * silently reset versions would violate the persistence contract undetectably. Categories whose
+ * {@code LastChange} Property does not exist (it is Optional per category) still participate in
+ * propagation; only the Property write is skipped. Removed categories retain an in-memory version
+ * high-water mark for the manager's lifetime, so reusing a category NodeId cannot repeat a version
+ * for different contents. Across restarts, that guarantee for removed categories depends on the
+ * version store retaining their entries; the root category is never removed.
  */
 @NullMarked
 package org.eclipse.milo.opcua.sdk.server.aliases;
