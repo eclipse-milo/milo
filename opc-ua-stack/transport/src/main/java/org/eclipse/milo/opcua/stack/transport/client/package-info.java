@@ -45,8 +45,10 @@
  *
  * <h2>Threading</h2>
  *
- * <p>Request futures complete on the transport config's executor, never inline on a Netty event
- * loop or wheel-timer thread, so caller continuations cannot stall I/O or timeouts. Publish
- * responses are serialized through a dedicated {@code ExecutionQueue} to preserve ordering.
+ * <p>Request futures normally complete on the transport config's executor. If that executor rejects
+ * work, completion runs on the submitting thread so requests do not remain pending after their
+ * response or failure has been consumed. Caller continuations should return promptly because this
+ * fallback may run on an I/O or timer thread. Publish responses pass through a dedicated {@code
+ * ExecutionQueue} that preserves their order across normal dispatch and rejection fallback.
  */
 package org.eclipse.milo.opcua.stack.transport.client;
