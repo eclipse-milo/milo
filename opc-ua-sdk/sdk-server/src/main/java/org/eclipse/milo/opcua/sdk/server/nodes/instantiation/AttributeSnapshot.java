@@ -14,6 +14,7 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HexFormat;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -25,8 +26,16 @@ import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableTypeNode;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
+import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.jspecify.annotations.Nullable;
@@ -232,44 +241,63 @@ public final class AttributeSnapshot {
     return sb.toString();
   }
 
-  /**
-   * A canonical, content-complete string of an attribute value. Arrays render element-wise
-   * (identity-based {@code Object.toString} never leaks in: {@link DataValue} and {@link Variant}
-   * are decomposed so contained arrays also render element-wise).
-   */
+  /** Type tags and length prefixes keep values and array element boundaries unambiguous. */
   private static String canonicalString(@Nullable Object value) {
     if (value == null) {
-      return "null";
+      return "N;";
     }
-    if (value instanceof Object[] array) {
-      return Arrays.deepToString(array);
-    }
-    if (value.getClass().isArray()) {
+    StringBuilder contents = new StringBuilder();
+    if (value instanceof byte[] bytes) {
+      contents.append(bytes.length).append(':').append(HexFormat.of().formatHex(bytes));
+    } else if (value.getClass().isArray()) {
       int length = Array.getLength(value);
-      StringBuilder sb = new StringBuilder("[");
+      contents.append(length).append(':');
       for (int i = 0; i < length; i++) {
-        if (i > 0) {
-          sb.append(", ");
-        }
-        sb.append(Array.get(value, i));
+        contents.append(canonicalString(Array.get(value, i)));
       }
-      return sb.append(']').toString();
+    } else if (value instanceof DataValue dataValue) {
+      contents.append(canonicalString(dataValue.getValue()));
+      contents.append(canonicalString(dataValue.getStatusCode()));
+      contents.append(canonicalString(dataValue.getSourceTime()));
+      contents.append(canonicalString(dataValue.getSourcePicoseconds()));
+    } else if (value instanceof Variant variant) {
+      contents.append(canonicalString(variant.getValue()));
+    } else if (value instanceof LocalizedText text) {
+      contents.append(canonicalString(text.getLocale()));
+      contents.append(canonicalString(text.getText()));
+    } else if (value instanceof QualifiedName name) {
+      contents.append(canonicalString(name.getNamespaceIndex()));
+      contents.append(canonicalString(name.getName()));
+    } else if (value instanceof Matrix matrix) {
+      contents.append(canonicalString(matrix.getDimensions()));
+      contents.append(canonicalString(matrix.getElements()));
+      contents.append(canonicalString(matrix.getDataTypeId().orElse(null)));
+    } else if (value instanceof UaStructuredType structure && hasStandardCodec(structure)) {
+      try {
+        contents.append(
+            canonicalString(ExtensionObject.encode(DefaultEncodingContext.INSTANCE, structure)));
+      } catch (UaSerializationException e) {
+        // A standard outer structure may contain an application-defined value without a codec.
+        contents.append(value);
+      }
+    } else if (value instanceof ExtensionObject extension) {
+      contents.append(canonicalString(extension.getEncodingOrTypeId()));
+      contents.append(canonicalString(extension.getBody()));
+    } else if (value instanceof ByteString bytes) {
+      contents.append(canonicalString(bytes.bytes()));
+    } else {
+      contents.append(value);
     }
-    if (value instanceof DataValue dataValue) {
-      return "DataValue{"
-          + canonicalString(dataValue.getValue().getValue())
-          + ", status="
-          + dataValue.getStatusCode()
-          + ", sourceTime="
-          + dataValue.getSourceTime()
-          + ", sourcePicoseconds="
-          + dataValue.getSourcePicoseconds()
-          + "}";
-    }
-    if (value instanceof Variant variant) {
-      return "Variant{" + canonicalString(variant.getValue()) + "}";
-    }
-    return String.valueOf(value);
+    String type = value.getClass().getName();
+    return type.length() + ":" + type + contents.length() + ":" + contents;
+  }
+
+  private static boolean hasStandardCodec(UaStructuredType structure) {
+    return structure
+        .getBinaryEncodingId()
+        .toNodeId(DefaultEncodingContext.INSTANCE.getNamespaceTable())
+        .map(id -> DefaultEncodingContext.INSTANCE.getDataTypeManager().getCodec(id) != null)
+        .orElse(false);
   }
 
   /** Array-aware, null-safe hash of an attribute value, used by {@link #hashCode}. */
