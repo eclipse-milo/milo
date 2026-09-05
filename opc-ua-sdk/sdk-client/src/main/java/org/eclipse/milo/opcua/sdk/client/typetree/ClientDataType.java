@@ -54,11 +54,13 @@ class ClientDataType implements DataType {
     this.nodeId = nodeId;
     // Keep codec registration and decoded values on the same effective encoding ID, even when
     // a server omits its HasEncoding references.
+    NodeId effectiveEncodingId = binaryEncodingId;
+    if ((effectiveEncodingId == null || effectiveEncodingId.isNull())
+        && dataTypeDefinition instanceof StructureDefinition definition) {
+      effectiveEncodingId = definition.getDefaultEncodingId();
+    }
     this.binaryEncodingId =
-        (binaryEncodingId == null || binaryEncodingId.isNull())
-                && dataTypeDefinition instanceof StructureDefinition definition
-            ? definition.getDefaultEncodingId()
-            : binaryEncodingId;
+        effectiveEncodingId == null || effectiveEncodingId.isNull() ? null : effectiveEncodingId;
     this.xmlEncodingId = xmlEncodingId;
     this.jsonEncodingId = jsonEncodingId;
     this.dataTypeDefinition = dataTypeDefinition;

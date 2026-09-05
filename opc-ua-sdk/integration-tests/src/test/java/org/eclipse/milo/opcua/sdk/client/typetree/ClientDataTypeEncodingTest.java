@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.client.typetree;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.core.types.DynamicStructType;
@@ -35,8 +36,30 @@ import org.eclipse.milo.opcua.stack.core.util.Tree;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class ClientDataTypeEncodingTest {
+
+  // Abstract and nested-only structures have no binary encoding; wire null must remain absent.
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void nullDefaultEncodingRemainsAbsent(boolean isAbstract) {
+    var definition =
+        new StructureDefinition(
+            NodeId.NULL_VALUE, NodeIds.Structure, StructureType.Structure, new StructureField[0]);
+    var dataType =
+        new ClientDataType(
+            new QualifiedName(1, "NoEncoding"),
+            new NodeId(1, 3002),
+            null,
+            null,
+            null,
+            definition,
+            isAbstract);
+    var tree = new DataTypeTree(new Tree<DataType>(null, dataType));
+
+    assertNull(tree.getBinaryEncodingId(dataType.getNodeId()));
+  }
 
   // The encoding ID used for codec registration must also survive in decoded value metadata.
   @ParameterizedTest
