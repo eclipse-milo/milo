@@ -13,7 +13,9 @@ package org.eclipse.milo.opcua.sdk.server;
 import com.google.common.collect.LinkedHashMultiset;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.concurrent.ConcurrentHashMap;
@@ -83,19 +85,25 @@ public class AbstractNodeManager<T extends Node> implements NodeManager<T> {
   }
 
   @Override
-  public synchronized Optional<T> addNode(T node) {
-    generation++;
-    return Optional.ofNullable(nodeMap.put(node.getNodeId(), node));
+  public Optional<T> addNode(T node) {
+    NodeId nodeId = node.getNodeId();
+    synchronized (this) {
+      generation++;
+      return Optional.ofNullable(nodeMap.put(nodeId, node));
+    }
   }
 
   @Override
-  public synchronized boolean addNodeIfAbsent(T node) {
-    if (nodeMap.containsKey(node.getNodeId())) {
-      return false;
-    } else {
-      nodeMap.put(node.getNodeId(), node);
-      generation++;
-      return true;
+  public boolean addNodeIfAbsent(T node) {
+    NodeId nodeId = node.getNodeId();
+    synchronized (this) {
+      if (nodeMap.containsKey(nodeId)) {
+        return false;
+      } else {
+        nodeMap.put(nodeId, node);
+        generation++;
+        return true;
+      }
     }
   }
 
@@ -186,12 +194,8 @@ public class AbstractNodeManager<T extends Node> implements NodeManager<T> {
   }
 
   @Override
-  public synchronized List<Reference> getReferences(NodeId nodeId, Predicate<Reference> filter) {
-    LinkedHashMultiset<Reference> references = referenceMap.get(nodeId);
-
-    return references != null
-        ? references.stream().filter(filter).toList()
-        : Collections.emptyList();
+  public List<Reference> getReferences(NodeId nodeId, Predicate<Reference> filter) {
+    return getReferences(nodeId).stream().filter(filter).toList();
   }
 
   /**
@@ -203,9 +207,18 @@ public class AbstractNodeManager<T extends Node> implements NodeManager<T> {
    * monitor.
    */
   @Override
-  public synchronized CommitResult commit(NodeManagerBatch<T> batch)
-      throws NodeManagerBatchException {
+  public CommitResult commit(NodeManagerBatch<T> batch) throws NodeManagerBatchException {
+    Map<NodeId, T> additions = new LinkedHashMap<>();
+    for (T node : batch.getNodeAdditions()) {
+      additions.put(node.getNodeId(), node);
+    }
+    synchronized (this) {
+      return commit(batch, additions);
+    }
+  }
 
+  private CommitResult commit(NodeManagerBatch<T> batch, Map<NodeId, T> additions)
+      throws NodeManagerBatchException {
     CommitResult nothingApplied = new CommitResult(List.of(), List.of());
 
     OptionalLong expectedGeneration = batch.getExpectedGeneration();
@@ -220,9 +233,9 @@ public class AbstractNodeManager<T extends Node> implements NodeManager<T> {
       }
     }
 
-    for (T node : batch.getNodeAdditions()) {
-      if (nodeMap.containsKey(node.getNodeId())) {
-        throw NodeManagerBatchException.nodeExists(node.getNodeId(), nothingApplied);
+    for (NodeId nodeId : additions.keySet()) {
+      if (nodeMap.containsKey(nodeId)) {
+        throw NodeManagerBatchException.nodeExists(nodeId, nothingApplied);
       }
     }
 
@@ -248,9 +261,9 @@ public class AbstractNodeManager<T extends Node> implements NodeManager<T> {
     List<NodeId> addedNodes = new ArrayList<>();
     List<Reference> addedReferences = new ArrayList<>();
     try {
-      for (T node : batch.getNodeAdditions()) {
-        nodeMap.put(node.getNodeId(), node);
-        addedNodes.add(node.getNodeId());
+      for (Map.Entry<NodeId, T> entry : additions.entrySet()) {
+        nodeMap.put(entry.getKey(), entry.getValue());
+        addedNodes.add(entry.getKey());
       }
       // Logical deduplication: only References not already present get a new occurrence.
       for (Reference reference : batch.getReferenceAdditions()) {
