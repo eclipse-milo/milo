@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.server;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.Predicate;
@@ -189,6 +190,57 @@ public interface NodeManager<T extends Node> {
    */
   default Optional<T> removeNode(T node) {
     return removeNode(node.getNodeId());
+  }
+
+  /**
+   * Remove the node only while the stored object is {@code expectedNode} by identity.
+   *
+   * <p>The default implementation requires a single writer. Atomic managers must override it.
+   *
+   * @param nodeId the node identifier.
+   * @param expectedNode the exact object owned by the caller.
+   * @return whether the node was removed.
+   */
+  default boolean removeNodeIfSame(NodeId nodeId, T expectedNode) {
+    if (getNode(nodeId).orElse(null) != expectedNode) {
+      return false;
+    }
+    return removeNode(nodeId).isPresent();
+  }
+
+  /**
+   * Remove a journaled reference only while the stored occurrence retains its identity and none of
+   * its journaled endpoints has been replaced.
+   *
+   * <p>The default implementation requires a single writer. Atomic managers must override it.
+   * Missing endpoints allow removal of dangling references left after a node was removed directly.
+   *
+   * @param reference the exact reference object added by a commit.
+   * @param expectedNodes the journal's node identifiers and object identities.
+   * @param namespaceTable the namespace table used to resolve the target identifier.
+   * @return whether the reference was removed.
+   */
+  default boolean removeReferenceIfSame(
+      Reference reference, Map<NodeId, T> expectedNodes, NamespaceTable namespaceTable) {
+    if (hasReplacement(reference.getSourceNodeId(), expectedNodes)
+        || reference
+            .getTargetNodeId()
+            .toNodeId(namespaceTable)
+            .map(nodeId -> hasReplacement(nodeId, expectedNodes))
+            .orElse(false)) {
+      return false;
+    }
+    if (getReferences(reference.getSourceNodeId()).stream().noneMatch(r -> r == reference)) {
+      return false;
+    }
+    removeReference(reference);
+    return true;
+  }
+
+  private boolean hasReplacement(NodeId nodeId, Map<NodeId, T> expectedNodes) {
+    T expected = expectedNodes.get(nodeId);
+    T current = getNode(nodeId).orElse(null);
+    return expected != null && current != null && current != expected;
   }
 
   /**
