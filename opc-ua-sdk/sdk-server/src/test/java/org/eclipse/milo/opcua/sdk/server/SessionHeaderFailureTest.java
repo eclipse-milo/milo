@@ -11,7 +11,12 @@
 package org.eclipse.milo.opcua.sdk.server;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -24,6 +29,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.net.InetAddress;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
@@ -43,10 +49,13 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
+import org.eclipse.milo.opcua.stack.core.types.structured.ActivateSessionRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateSessionRequest;
+import org.eclipse.milo.opcua.stack.core.types.structured.CreateSessionResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
+import org.eclipse.milo.opcua.stack.core.types.structured.SignatureData;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
 import org.eclipse.milo.opcua.stack.transport.server.OpcServerTransport;
@@ -54,6 +63,8 @@ import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** Exercises failed header negotiation through real session creation and activation. */
 class SessionHeaderFailureTest {
@@ -103,6 +114,79 @@ class SessionHeaderFailureTest {
     verify(timeout).cancel(false);
     manager.shutdown();
     verifyNoInteractions(listener);
+  }
+
+  /** The initial activation must remain pending if preparing its response fails. */
+  @Test
+  void failedInitialActivationDoesNotAuthorizeServices() throws Exception {
+    ServiceRequestContext context = context(1, "/a");
+    CreateSessionResponse created = manager.createSession(context, createRequest(null));
+    Session session = manager.getAllSessions().get(0);
+    ByteString nonce = session.getLastNonce();
+
+    assertRejectedActivation(context, created.getAuthenticationToken());
+
+    assertAll(
+        () -> assertEquals(nonce, session.getLastNonce()),
+        () -> assertNull(session.getIdentity()),
+        () -> assertNull(session.getLocaleIds()),
+        () -> assertTrue(session.getClientUserIdHistory().isEmpty()),
+        () ->
+            assertEquals(
+                StatusCodes.Bad_SessionNotActivated,
+                assertThrows(
+                        UaException.class,
+                        () ->
+                            manager.getSession(
+                                context, header(created.getAuthenticationToken(), null)))
+                    .getStatusCode()
+                    .value()));
+  }
+
+  /** Neither identity refresh nor channel replacement may commit before its response is ready. */
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void failedReactivationPreservesPriorState(boolean replaceChannel) throws Exception {
+    ServiceRequestContext original = context(1, "/a");
+    CreateSessionResponse created = manager.createSession(original, createRequest(null));
+    NodeId token = created.getAuthenticationToken();
+    manager.activateSession(original, activateRequest(token, null, "en-US"));
+    Session session = manager.getAllSessions().get(0);
+    ByteString nonce = session.getLastNonce();
+    Object identity = session.getIdentity();
+    Object security = session.getSecurityConfiguration();
+    EndpointDescription endpoint = session.getEndpoint();
+    List<String> identityHistory = session.getClientUserIdHistory();
+
+    ServiceRequestContext candidate = replaceChannel ? context(2, "/b") : original;
+    assertRejectedActivation(candidate, token);
+
+    assertAll(
+        () -> assertEquals(1L, session.getSecureChannelId()),
+        () -> assertSame(endpoint, session.getEndpoint()),
+        () -> assertSame(security, session.getSecurityConfiguration()),
+        () -> assertSame(identity, session.getIdentity()),
+        () -> assertEquals(nonce, session.getLastNonce()),
+        () -> assertArrayEquals(new String[] {"en-US"}, session.getLocaleIds()),
+        () -> assertEquals(identityHistory, session.getClientUserIdHistory()),
+        () -> assertSame(session, manager.getSession(original, header(token, null))));
+
+    // The same request can subsequently succeed when it omits the rejected negotiation.
+    manager.activateSession(candidate, activateRequest(token, null, "de-DE"));
+    assertSame(session, manager.getSession(candidate, header(token, null)));
+    assertArrayEquals(new String[] {"de-DE"}, session.getLocaleIds());
+    assertNotEquals(nonce, session.getLastNonce());
+  }
+
+  private void assertRejectedActivation(ServiceRequestContext context, NodeId token)
+      throws Exception {
+    UaException failure =
+        assertThrows(
+            UaException.class,
+            () ->
+                manager.activateSession(
+                    context, activateRequest(token, rejectedHeader(), "de-DE")));
+    assertEquals(StatusCodes.Bad_SecurityPolicyRejected, failure.getStatusCode().value());
   }
 
   private ExtensionObject rejectedHeader() throws UaException {
@@ -159,6 +243,17 @@ class SessionHeaderFailureTest {
         ByteString.NULL_VALUE,
         60_000.0,
         uint(0));
+  }
+
+  private static ActivateSessionRequest activateRequest(
+      NodeId token, ExtensionObject additionalHeader, String locale) {
+    return new ActivateSessionRequest(
+        header(token, additionalHeader),
+        new SignatureData(null, null),
+        null,
+        new String[] {locale},
+        null,
+        new SignatureData(null, null));
   }
 
   private static RequestHeader header(NodeId token, ExtensionObject additionalHeader) {

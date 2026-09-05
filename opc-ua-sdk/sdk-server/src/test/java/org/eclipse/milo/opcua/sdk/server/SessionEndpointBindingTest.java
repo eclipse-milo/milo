@@ -42,12 +42,15 @@ import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.CertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
+import org.eclipse.milo.opcua.stack.core.security.ChannelBoundSignatureData;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
+import org.eclipse.milo.opcua.stack.core.security.EnhancedUserTokenAdditionalHeader;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.TrustListManager;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
@@ -74,6 +77,8 @@ import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * OPC UA does not transmit an EndpointDescription identifier during OpenSecureChannel (Part 6,
@@ -382,6 +387,74 @@ public class SessionEndpointBindingTest {
       session.close(true);
     }
 
+    // Part 4 §5.7.3.1 binds activation to the last ServerNonce received by the client. A failed
+    // response-header negotiation must leave a signed retry using that delivered nonce valid.
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void securedReactivationRetriesWithTheLastDeliveredNonce(boolean replaceChannel)
+        throws Exception {
+      OpcUaServer server =
+          server(
+              manager(group(GROUP_A, certificateA)),
+              List.of(securedEndpoint(GROUP_A, ANONYMOUS_POLICY)));
+      SessionManager sessions = server.getSessionManager();
+      try {
+        EndpointDescription endpoint = endpointForPath(server, "/test");
+        var original =
+            new TestServiceRequestContext(
+                endpointUrl("/test"), securedChannel(1L, certificateA), endpoint);
+        var create = createSessionRequest(clientCertificate.byteString());
+        CreateSessionResponse created = sessions.createSession(original, create);
+        NodeId token = created.getAuthenticationToken();
+        var activated =
+            sessions.activateSession(
+                original,
+                signedActivation(token, created.getServerNonce(), create.getClientNonce(), null));
+        ByteString deliveredNonce = activated.getServerNonce();
+        var candidate =
+            replaceChannel
+                ? new TestServiceRequestContext(
+                    endpointUrl("/test"), securedChannel(2L, certificateA), endpoint)
+                : original;
+
+        UaException wrongNonce =
+            assertThrows(
+                UaException.class,
+                () ->
+                    sessions.activateSession(
+                        candidate,
+                        signedActivation(
+                            token, NonceUtil.generateNonce(32), create.getClientNonce(), null)));
+        assertEquals(
+            StatusCodes.Bad_ApplicationSignatureInvalid, wrongNonce.getStatusCode().value());
+
+        ExtensionObject rejected =
+            EnhancedUserTokenAdditionalHeader.createRequest(
+                server.getStaticEncodingContext(), SecurityPolicy.ECC_nistP256_AesGcm);
+        UaException failure =
+            assertThrows(
+                UaException.class,
+                () ->
+                    sessions.activateSession(
+                        candidate,
+                        signedActivation(
+                            token, deliveredNonce, create.getClientNonce(), rejected)));
+        assertEquals(StatusCodes.Bad_SecurityPolicyRejected, failure.getStatusCode().value());
+        assertEquals(1L, sessions.getSession(original, requestHeader(token)).getSecureChannelId());
+
+        // Sign only the nonce delivered in the previous successful response, never Session state.
+        var retried =
+            sessions.activateSession(
+                candidate, signedActivation(token, deliveredNonce, create.getClientNonce(), null));
+        assertNotEquals(deliveredNonce, retried.getServerNonce());
+        assertEquals(
+            replaceChannel ? 2L : 1L,
+            sessions.getSession(candidate, requestHeader(token)).getSecureChannelId());
+      } finally {
+        sessions.shutdown();
+      }
+    }
+
     /**
      * When a Session is reactivated onto a replacement SecureChannel, its endpoint association must
      * follow the endpoint selected by that new channel; identity validation runs against the new
@@ -553,6 +626,34 @@ public class SessionEndpointBindingTest {
         clientCertificateBytes,
         60_000.0,
         uint(0));
+  }
+
+  private static ActivateSessionRequest signedActivation(
+      NodeId token,
+      ByteString serverNonce,
+      ByteString clientNonce,
+      @Nullable ExtensionObject additionalHeader)
+      throws Exception {
+    byte[] data =
+        ChannelBoundSignatureData.clientSignatureData(
+            SecurityPolicy.Basic256Sha256.getProfile(),
+            ByteString.NULL_VALUE,
+            serverNonce,
+            certificateA.byteString(),
+            certificateA.byteString(),
+            clientCertificate.byteString(),
+            clientNonce);
+    SignatureData signature =
+        ChannelBoundSignatureData.sign(
+            SecurityPolicy.Basic256Sha256, clientCertificate.keyPair().getPrivate(), data);
+    return new ActivateSessionRequest(
+        new RequestHeader(
+            token, DateTime.now(), uint(1), uint(0), null, uint(10_000), additionalHeader),
+        signature,
+        null,
+        null,
+        null,
+        new SignatureData(null, null));
   }
 
   private static ActivateSessionRequest activateSessionRequest(NodeId authToken) {

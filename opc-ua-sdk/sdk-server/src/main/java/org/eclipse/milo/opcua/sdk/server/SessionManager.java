@@ -566,10 +566,13 @@ public class SessionManager {
         EccEncryptedSecret.createEphemeralKey(
             securityPolicy.getProfile(), signingKeyPair, ephemeralKeyPair);
 
+    ExtensionObject response =
+        EnhancedUserTokenAdditionalHeader.createResponse(
+            server.getStaticEncodingContext(), securityPolicy, ephemeralKey);
+
     session.setUserTokenEphemeralKeyPair(ephemeralKeyPair, ephemeralPublicKey);
 
-    return EnhancedUserTokenAdditionalHeader.createResponse(
-        server.getStaticEncodingContext(), securityPolicy, ephemeralKey);
+    return response;
   }
 
   private KeyPair selectUserTokenSigningKeyPair(
@@ -905,13 +908,14 @@ public class SessionManager {
 
           ByteString serverNonce = NonceUtil.generateNonce(32);
 
+          ExtensionObject additionalHeader =
+              activateSessionAdditionalHeader(request, securityConfiguration, session);
+
+          // The header can install a new key; keep the remaining commit operations non-throwing.
           session.setClientAddress(context.clientAddress());
           session.setIdentity(identity, identityToken);
           session.setLastNonce(serverNonce);
           session.setLocaleIds(request.getLocaleIds());
-
-          ExtensionObject additionalHeader =
-              activateSessionAdditionalHeader(request, securityConfiguration, session);
 
           return new ActivateSessionResponse(
               createResponseHeader(request, StatusCode.GOOD, additionalHeader),
@@ -965,6 +969,16 @@ public class SessionManager {
                     clientCertificateBytes, securityConfiguration.getClientCertificateBytes());
 
             if (sameIdentity && sameCertificate) {
+              StatusCode[] results = new StatusCode[clientSoftwareCertificates.length];
+              Arrays.fill(results, StatusCode.GOOD);
+
+              ByteString serverNonce = NonceUtil.generateNonce(32);
+
+              ExtensionObject additionalHeader =
+                  activateSessionAdditionalHeader(request, newSecurityConfiguration, session);
+
+              // The header can install a new key; keep the remaining commit operations
+              // non-throwing.
               session.setSecureChannelId(secureChannelId);
 
               logger.debug(
@@ -972,17 +986,9 @@ public class SessionManager {
                   session.getSessionId(),
                   secureChannelId);
 
-              StatusCode[] results = new StatusCode[clientSoftwareCertificates.length];
-              Arrays.fill(results, StatusCode.GOOD);
-
-              ByteString serverNonce = NonceUtil.generateNonce(32);
-
               session.setClientAddress(context.clientAddress());
               session.setLastNonce(serverNonce);
               session.setLocaleIds(request.getLocaleIds());
-
-              ExtensionObject additionalHeader =
-                  activateSessionAdditionalHeader(request, newSecurityConfiguration, session);
 
               activated = true;
 
@@ -1017,6 +1023,14 @@ public class SessionManager {
       Identity identity =
           validateIdentityToken(session, identityToken, request.getUserTokenSignature());
 
+      StatusCode[] results = new StatusCode[clientSoftwareCertificates.length];
+      Arrays.fill(results, StatusCode.GOOD);
+
+      ByteString serverNonce = NonceUtil.generateNonce(32);
+
+      ExtensionObject additionalHeader =
+          activateSessionAdditionalHeader(request, session.getSecurityConfiguration(), session);
+
       // Move the session from created to active atomically with respect to the limit check in
       // createSession, so a concurrent CreateSession cannot evict a session that is activating.
       synchronized (sessionLock) {
@@ -1027,18 +1041,11 @@ public class SessionManager {
         activeSessions.put(authToken, session);
       }
 
-      StatusCode[] results = new StatusCode[clientSoftwareCertificates.length];
-      Arrays.fill(results, StatusCode.GOOD);
-
-      ByteString serverNonce = NonceUtil.generateNonce(32);
-
+      // The header installed any candidate key; commit after the registry check must not throw.
       session.setClientAddress(context.clientAddress());
       session.setIdentity(identity, identityToken);
       session.setLocaleIds(request.getLocaleIds());
       session.setLastNonce(serverNonce);
-
-      ExtensionObject additionalHeader =
-          activateSessionAdditionalHeader(request, session.getSecurityConfiguration(), session);
 
       return new ActivateSessionResponse(
           createResponseHeader(request, StatusCode.GOOD, additionalHeader),
