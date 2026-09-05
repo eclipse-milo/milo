@@ -87,7 +87,10 @@ public class UnitTypeNode extends BaseObjectTypeNode implements UnitType {
   @Override
   public void writeSymbol(LocalizedText value) throws UaException {
     try {
-      writeSymbolAsync(value).get();
+      StatusCode statusCode = writeSymbolAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -157,7 +160,10 @@ public class UnitTypeNode extends BaseObjectTypeNode implements UnitType {
   @Override
   public void writeUnitSystem(String value) throws UaException {
     try {
-      writeUnitSystemAsync(value).get();
+      StatusCode statusCode = writeUnitSystemAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -227,7 +233,10 @@ public class UnitTypeNode extends BaseObjectTypeNode implements UnitType {
   @Override
   public void writeDiscipline(String value) throws UaException {
     try {
-      writeDisciplineAsync(value).get();
+      StatusCode statusCode = writeDisciplineAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

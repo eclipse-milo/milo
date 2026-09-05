@@ -89,7 +89,10 @@ public class AuditCreateSessionEventTypeNode extends AuditSessionEventTypeNode
   @Override
   public void writeSecureChannelId(String value) throws UaException {
     try {
-      writeSecureChannelIdAsync(value).get();
+      StatusCode statusCode = writeSecureChannelIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -159,7 +162,10 @@ public class AuditCreateSessionEventTypeNode extends AuditSessionEventTypeNode
   @Override
   public void writeClientCertificate(ByteString value) throws UaException {
     try {
-      writeClientCertificateAsync(value).get();
+      StatusCode statusCode = writeClientCertificateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -232,7 +238,10 @@ public class AuditCreateSessionEventTypeNode extends AuditSessionEventTypeNode
   @Override
   public void writeClientCertificateThumbprint(String value) throws UaException {
     try {
-      writeClientCertificateThumbprintAsync(value).get();
+      StatusCode statusCode = writeClientCertificateThumbprintAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -306,7 +315,10 @@ public class AuditCreateSessionEventTypeNode extends AuditSessionEventTypeNode
   @Override
   public void writeRevisedSessionTimeout(Double value) throws UaException {
     try {
-      writeRevisedSessionTimeoutAsync(value).get();
+      StatusCode statusCode = writeRevisedSessionTimeoutAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

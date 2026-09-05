@@ -107,7 +107,10 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   @Override
   public void writeStartTime(DateTime value) throws UaException {
     try {
-      writeStartTimeAsync(value).get();
+      StatusCode statusCode = writeStartTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -177,7 +180,10 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   @Override
   public void writeCurrentTime(DateTime value) throws UaException {
     try {
-      writeCurrentTimeAsync(value).get();
+      StatusCode statusCode = writeCurrentTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -255,7 +261,10 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   @Override
   public void writeState(ServerState value) throws UaException {
     try {
-      writeStateAsync(value).get();
+      StatusCode statusCode = writeStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -334,7 +343,10 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   @Override
   public void writeBuildInfo(BuildInfo value) throws UaException {
     try {
-      writeBuildInfoAsync(value).get();
+      StatusCode statusCode = writeBuildInfoAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -405,7 +417,10 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   @Override
   public void writeSecondsTillShutdown(UInteger value) throws UaException {
     try {
-      writeSecondsTillShutdownAsync(value).get();
+      StatusCode statusCode = writeSecondsTillShutdownAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -478,7 +493,10 @@ public class ServerStatusTypeNode extends BaseDataVariableTypeNode implements Se
   @Override
   public void writeShutdownReason(LocalizedText value) throws UaException {
     try {
-      writeShutdownReasonAsync(value).get();
+      StatusCode statusCode = writeShutdownReasonAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

@@ -90,7 +90,10 @@ public class FiniteStateMachineTypeNode extends StateMachineTypeNode
   @Override
   public void writeCurrentState(LocalizedText value) throws UaException {
     try {
-      writeCurrentStateAsync(value).get();
+      StatusCode statusCode = writeCurrentStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -160,7 +163,10 @@ public class FiniteStateMachineTypeNode extends StateMachineTypeNode
   @Override
   public void writeLastTransition(LocalizedText value) throws UaException {
     try {
-      writeLastTransitionAsync(value).get();
+      StatusCode statusCode = writeLastTransitionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -231,7 +237,10 @@ public class FiniteStateMachineTypeNode extends StateMachineTypeNode
   @Override
   public void writeAvailableStates(NodeId[] value) throws UaException {
     try {
-      writeAvailableStatesAsync(value).get();
+      StatusCode statusCode = writeAvailableStatesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -301,7 +310,10 @@ public class FiniteStateMachineTypeNode extends StateMachineTypeNode
   @Override
   public void writeAvailableTransitions(NodeId[] value) throws UaException {
     try {
-      writeAvailableTransitionsAsync(value).get();
+      StatusCode statusCode = writeAvailableTransitionsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

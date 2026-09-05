@@ -88,7 +88,10 @@ public class AuditHistoryUpdateEventTypeNode extends AuditUpdateEventTypeNode
   @Override
   public void writeParameterDataTypeId(NodeId value) throws UaException {
     try {
-      writeParameterDataTypeIdAsync(value).get();
+      StatusCode statusCode = writeParameterDataTypeIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

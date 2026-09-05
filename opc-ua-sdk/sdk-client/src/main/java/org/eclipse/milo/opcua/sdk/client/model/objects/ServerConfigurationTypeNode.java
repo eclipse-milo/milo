@@ -89,7 +89,10 @@ public class ServerConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeApplicationUri(String value) throws UaException {
     try {
-      writeApplicationUriAsync(value).get();
+      StatusCode statusCode = writeApplicationUriAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -159,7 +162,10 @@ public class ServerConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeProductUri(String value) throws UaException {
     try {
-      writeProductUriAsync(value).get();
+      StatusCode statusCode = writeProductUriAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -237,7 +243,10 @@ public class ServerConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeApplicationType(ApplicationType value) throws UaException {
     try {
-      writeApplicationTypeAsync(value).get();
+      StatusCode statusCode = writeApplicationTypeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -315,7 +324,10 @@ public class ServerConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeApplicationNames(LocalizedText[] value) throws UaException {
     try {
-      writeApplicationNamesAsync(value).get();
+      StatusCode statusCode = writeApplicationNamesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -389,7 +401,10 @@ public class ServerConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeServerCapabilities(String[] value) throws UaException {
     try {
-      writeServerCapabilitiesAsync(value).get();
+      StatusCode statusCode = writeServerCapabilitiesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -462,7 +477,10 @@ public class ServerConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeSupportedPrivateKeyFormats(String[] value) throws UaException {
     try {
-      writeSupportedPrivateKeyFormatsAsync(value).get();
+      StatusCode statusCode = writeSupportedPrivateKeyFormatsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -536,7 +554,10 @@ public class ServerConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxTrustListSize(UInteger value) throws UaException {
     try {
-      writeMaxTrustListSizeAsync(value).get();
+      StatusCode statusCode = writeMaxTrustListSizeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -609,7 +630,10 @@ public class ServerConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMulticastDnsEnabled(Boolean value) throws UaException {
     try {
-      writeMulticastDnsEnabledAsync(value).get();
+      StatusCode statusCode = writeMulticastDnsEnabledAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -682,7 +706,10 @@ public class ServerConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeHasSecureElement(Boolean value) throws UaException {
     try {
-      writeHasSecureElementAsync(value).get();
+      StatusCode statusCode = writeHasSecureElementAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -755,7 +782,10 @@ public class ServerConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeSupportsTransactions(Boolean value) throws UaException {
     try {
-      writeSupportsTransactionsAsync(value).get();
+      StatusCode statusCode = writeSupportsTransactionsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -829,7 +859,10 @@ public class ServerConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeInApplicationSetup(Boolean value) throws UaException {
     try {
-      writeInApplicationSetupAsync(value).get();
+      StatusCode statusCode = writeInApplicationSetupAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

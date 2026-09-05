@@ -103,7 +103,10 @@ public class AudioVariableTypeNode extends BaseDataVariableTypeNode implements A
   @Override
   public void writeListId(String value) throws UaException {
     try {
-      writeListIdAsync(value).get();
+      StatusCode statusCode = writeListIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -173,7 +176,10 @@ public class AudioVariableTypeNode extends BaseDataVariableTypeNode implements A
   @Override
   public void writeAgencyId(String value) throws UaException {
     try {
-      writeAgencyIdAsync(value).get();
+      StatusCode statusCode = writeAgencyIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -243,7 +249,10 @@ public class AudioVariableTypeNode extends BaseDataVariableTypeNode implements A
   @Override
   public void writeVersionId(String value) throws UaException {
     try {
-      writeVersionIdAsync(value).get();
+      StatusCode statusCode = writeVersionIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

@@ -88,7 +88,10 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
   @Override
   public void writeUnshelveTime(Double value) throws UaException {
     try {
-      writeUnshelveTimeAsync(value).get();
+      StatusCode statusCode = writeUnshelveTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
