@@ -125,7 +125,9 @@
  * identities with a read-modify-replace boundary. Each mutation incorporates KeyStore entries
  * committed before its disk read, including application-owned aliases, then atomically replaces the
  * file. Separate store instances and processes do not share a write lock, so applications must
- * coordinate writes that overlap.
+ * coordinate writes that overlap. When file watching is enabled, the store observes both the
+ * configured path and its resolved target. Replacing the configured symbolic link updates the
+ * target registration while retaining observation of the link itself.
  *
  * <p>{@link org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager} provides a
  * thread-safe mutable group registry. Applications own the groups and their backing stores,
