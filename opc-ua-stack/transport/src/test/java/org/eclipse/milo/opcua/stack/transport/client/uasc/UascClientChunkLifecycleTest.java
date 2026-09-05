@@ -36,6 +36,7 @@ import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.channel.ChannelParameters;
 import org.eclipse.milo.opcua.stack.core.channel.ChannelSecurity;
 import org.eclipse.milo.opcua.stack.core.channel.ChunkDecoder;
+import org.eclipse.milo.opcua.stack.core.channel.messages.MessageType;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryEncoder;
@@ -61,8 +62,58 @@ import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-/** Authenticated Abort responses preserve the following response at the chunk-count boundary. */
+/**
+ * Retained partial responses must be released when their owning handler can no longer finish them.
+ */
 class UascClientChunkLifecycleTest {
+
+  private static final ChannelParameters CHANNEL_PARAMETERS =
+      new ChannelParameters(65535, 65535, 8196, 0, 65535, 65535, 8196, 0);
+
+  @ParameterizedTest
+  @EnumSource(Cleanup.class)
+  void partialResponseIsReleasedAtEveryTerminationBoundary(Cleanup cleanup) throws Exception {
+    var wheelTimer = new HashedWheelTimer();
+    var channel = new EmbeddedChannel();
+    ByteBuf chunk = PooledByteBufAllocator.DEFAULT.directBuffer();
+    try {
+      var handler =
+          new UascClientMessageHandler(
+              config(wheelTimer),
+              application(),
+              new AtomicLong(1L)::getAndIncrement,
+              new CompletableFuture<>(),
+              List.of(),
+              CHANNEL_PARAMETERS);
+      channel.pipeline().addLast(handler);
+      channel.runPendingTasks();
+      Object outbound;
+      while ((outbound = channel.readOutbound()) != null) {
+        ReferenceCountUtil.release(outbound);
+      }
+
+      chunk.writeMediumLE(MessageType.toMediumInt(MessageType.SecureMessage));
+      chunk.writeByte('C').writeIntLE(112).writeIntLE(0).writeZero(100);
+      channel.writeInbound(chunk);
+      assertEquals(1, chunk.refCnt(), "the partial response must be retained before termination");
+      switch (cleanup) {
+        case CLOSE -> channel.close().syncUninterruptibly();
+        case REMOVE -> channel.pipeline().remove(handler);
+        case EXCEPTION ->
+            channel.pipeline().fireExceptionCaught(new RuntimeException("test failure"));
+      }
+      channel.runPendingTasks();
+      assertEquals(0, chunk.refCnt(), "termination must release the retained pooled response");
+      channel.close().syncUninterruptibly();
+      assertEquals(0, chunk.refCnt(), "a second cleanup boundary must not double-release");
+    } finally {
+      channel.finishAndReleaseAll();
+      if (chunk.refCnt() > 0) {
+        chunk.release();
+      }
+      wheelTimer.stop();
+    }
+  }
 
   // A response Abort may follow every permitted C chunk. It must release the message, report the
   // request failure, and preserve the authenticated stream for the next response.
@@ -206,6 +257,12 @@ class UascClientChunkLifecycleTest {
       chunk.writeBytes(plaintext);
     }
     return chunk;
+  }
+
+  private enum Cleanup {
+    CLOSE,
+    REMOVE,
+    EXCEPTION
   }
 
   static UascClientConfig config(HashedWheelTimer wheelTimer) {
