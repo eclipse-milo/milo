@@ -48,7 +48,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
  */
 public class TypeModelCache {
 
-  private final Cache<NodeId, TypeInstantiationModel> models = CacheBuilder.newBuilder().build();
+  private volatile Cache<NodeId, TypeInstantiationModel> models = CacheBuilder.newBuilder().build();
 
   private final Supplier<TypeModelCompiler> compilerFactory;
 
@@ -89,7 +89,16 @@ public class TypeModelCache {
       throws ModelCompilationException {
 
     try {
-      return models.get(typeDefinitionId, () -> compilerFactory.get().compile(typeDefinitionId));
+      while (true) {
+        Cache<NodeId, TypeInstantiationModel> current = models;
+        TypeInstantiationModel model =
+            current.get(typeDefinitionId, () -> compilerFactory.get().compile(typeDefinitionId));
+        synchronized (this) {
+          if (models == current) {
+            return model;
+          }
+        }
+      }
     } catch (ExecutionException e) {
       // compile(...)'s only checked exception; Guava wraps it here.
       throw (ModelCompilationException) e.getCause();
@@ -120,16 +129,23 @@ public class TypeModelCache {
    *
    * @param nodeId the {@link NodeId} of the changed node.
    */
-  public void invalidate(NodeId nodeId) {
+  public synchronized void invalidate(NodeId nodeId) {
+    Cache<NodeId, TypeInstantiationModel> retained = CacheBuilder.newBuilder().build();
     models
         .asMap()
-        .entrySet()
-        .removeIf(e -> e.getKey().equals(nodeId) || e.getValue().dependencies().contains(nodeId));
+        .forEach(
+            (typeId, model) -> {
+              if (!typeId.equals(nodeId) && !model.dependencies().contains(nodeId)) {
+                retained.put(typeId, model);
+              }
+            });
+    // Pending loads have unknown dependencies. Retiring the cache also retires their publication.
+    models = retained;
   }
 
   /** Invalidate every cached model. */
-  public void invalidateAll() {
-    models.invalidateAll();
+  public synchronized void invalidateAll() {
+    models = CacheBuilder.newBuilder().build();
   }
 
   /**
