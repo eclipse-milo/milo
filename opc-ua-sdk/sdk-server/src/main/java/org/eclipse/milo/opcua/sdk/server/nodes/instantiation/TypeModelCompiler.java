@@ -1502,6 +1502,13 @@ public class TypeModelCompiler {
       pathsByDeclarationId
           .computeIfAbsent(d.declarationNodeId(), k -> new ArrayList<>())
           .add(d.browsePath());
+      for (NodeId overriddenId : d.overriddenDeclarations()) {
+        List<BrowsePath> paths =
+            pathsByDeclarationId.computeIfAbsent(overriddenId, k -> new ArrayList<>());
+        if (!paths.contains(d.browsePath())) {
+          paths.add(d.browsePath());
+        }
+      }
     }
 
     List<Row> resolved = new ArrayList<>(table.rows.size());

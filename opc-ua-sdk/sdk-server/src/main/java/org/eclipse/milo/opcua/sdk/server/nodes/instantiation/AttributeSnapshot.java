@@ -25,8 +25,15 @@ import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableTypeNode;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.jspecify.annotations.Nullable;
@@ -54,8 +61,8 @@ import org.jspecify.annotations.Nullable;
  * (the source-side constituents — Variant, StatusCode, sourceTime — are preserved verbatim).
  *
  * <p>Mutable attribute values — arrays (e.g. ArrayDimensions, RolePermissions) and array-valued
- * {@link DataValue}s — are defensively copied on ingress and egress, so neither later mutation of
- * the node-owned value nor mutation of a value read from this snapshot can change the snapshot.
+ * {@link DataValue}s, including standard OPC UA structures and their nested fields, are defensively
+ * copied on ingress and egress. Custom Java values without a standard codec must be immutable.
  */
 public final class AttributeSnapshot {
 
@@ -232,44 +239,56 @@ public final class AttributeSnapshot {
     return sb.toString();
   }
 
-  /**
-   * A canonical, content-complete string of an attribute value. Arrays render element-wise
-   * (identity-based {@code Object.toString} never leaks in: {@link DataValue} and {@link Variant}
-   * are decomposed so contained arrays also render element-wise).
-   */
+  /** Type tags and length prefixes keep values and array element boundaries unambiguous. */
   private static String canonicalString(@Nullable Object value) {
     if (value == null) {
-      return "null";
+      return "N;";
     }
-    if (value instanceof Object[] array) {
-      return Arrays.deepToString(array);
-    }
+    StringBuilder contents = new StringBuilder();
     if (value.getClass().isArray()) {
       int length = Array.getLength(value);
-      StringBuilder sb = new StringBuilder("[");
+      contents.append(length).append(':');
       for (int i = 0; i < length; i++) {
-        if (i > 0) {
-          sb.append(", ");
-        }
-        sb.append(Array.get(value, i));
+        contents.append(canonicalString(Array.get(value, i)));
       }
-      return sb.append(']').toString();
+    } else if (value instanceof DataValue dataValue) {
+      contents.append(canonicalString(dataValue.getValue()));
+      contents.append(canonicalString(dataValue.getStatusCode()));
+      contents.append(canonicalString(dataValue.getSourceTime()));
+      contents.append(canonicalString(dataValue.getSourcePicoseconds()));
+    } else if (value instanceof Variant variant) {
+      contents.append(canonicalString(variant.getValue()));
+    } else if (value instanceof LocalizedText text) {
+      contents.append(canonicalString(text.getLocale()));
+      contents.append(canonicalString(text.getText()));
+    } else if (value instanceof QualifiedName name) {
+      contents.append(canonicalString(name.getNamespaceIndex()));
+      contents.append(canonicalString(name.getName()));
+    } else if (value instanceof Matrix matrix) {
+      contents.append(canonicalString(matrix.getDimensions()));
+      contents.append(canonicalString(matrix.getElements()));
+      contents.append(canonicalString(matrix.getDataTypeId().orElse(null)));
+    } else if (value instanceof UaStructuredType structure && hasStandardCodec(structure)) {
+      contents.append(
+          canonicalString(ExtensionObject.encode(DefaultEncodingContext.INSTANCE, structure)));
+    } else if (value instanceof ExtensionObject extension) {
+      contents.append(canonicalString(extension.getEncodingOrTypeId()));
+      contents.append(canonicalString(extension.getBody()));
+    } else if (value instanceof ByteString bytes) {
+      contents.append(canonicalString(bytes.bytes()));
+    } else {
+      contents.append(value);
     }
-    if (value instanceof DataValue dataValue) {
-      return "DataValue{"
-          + canonicalString(dataValue.getValue().getValue())
-          + ", status="
-          + dataValue.getStatusCode()
-          + ", sourceTime="
-          + dataValue.getSourceTime()
-          + ", sourcePicoseconds="
-          + dataValue.getSourcePicoseconds()
-          + "}";
-    }
-    if (value instanceof Variant variant) {
-      return "Variant{" + canonicalString(variant.getValue()) + "}";
-    }
-    return String.valueOf(value);
+    String type = value.getClass().getName();
+    return type.length() + ":" + type + contents.length() + ":" + contents;
+  }
+
+  private static boolean hasStandardCodec(UaStructuredType structure) {
+    return structure
+        .getBinaryEncodingId()
+        .toNodeId(DefaultEncodingContext.INSTANCE.getNamespaceTable())
+        .map(id -> DefaultEncodingContext.INSTANCE.getDataTypeManager().getCodec(id) != null)
+        .orElse(false);
   }
 
   /** Array-aware, null-safe hash of an attribute value, used by {@link #hashCode}. */
@@ -287,11 +306,41 @@ public final class AttributeSnapshot {
       return copyArray(value);
     }
     if (value instanceof DataValue dataValue) {
-      Object contained = dataValue.getValue().getValue();
-      if (contained != null && contained.getClass().isArray()) {
-        Object containedCopy = copyArray(contained);
-        return dataValue.copy(b -> b.setValue(new Variant(containedCopy)));
-      }
+      Variant copied = (Variant) defensiveCopy(dataValue.getValue());
+      return copied == dataValue.getValue() ? dataValue : dataValue.copy(b -> b.setValue(copied));
+    }
+    if (value instanceof Variant variant) {
+      Object contained = variant.getValue();
+      Object copied = contained == null ? null : defensiveCopy(contained);
+      return copied == contained ? variant : new Variant(copied);
+    }
+    if (value instanceof UaStructuredType structure && hasStandardCodec(structure)) {
+      return ExtensionObject.encode(DefaultEncodingContext.INSTANCE, structure)
+          .decode(DefaultEncodingContext.INSTANCE);
+    }
+    if (value instanceof ByteString bytes) {
+      byte[] data = bytes.bytes();
+      return data == null ? ByteString.NULL_VALUE : ByteString.of(data.clone());
+    }
+    if (value instanceof ExtensionObject.Binary extension) {
+      return ExtensionObject.of(
+          (ByteString) defensiveCopy(extension.getBody()), extension.getEncodingOrTypeId());
+    }
+    if (value instanceof ExtensionObject.Xml extension) {
+      return ExtensionObject.of(extension.getBody(), extension.getEncodingOrTypeId());
+    }
+    if (value instanceof ExtensionObject.Json extension) {
+      return ExtensionObject.of(extension.getBody(), extension.getEncodingOrTypeId());
+    }
+    if (value instanceof Matrix matrix) {
+      Object elements = matrix.getElements();
+      return elements == null
+          ? new Matrix(null)
+          : new Matrix(
+              copyArray(elements),
+              matrix.getDimensions().clone(),
+              matrix.getDataType().orElseThrow(),
+              matrix.getDataTypeId().orElseThrow());
     }
     return value;
   }
