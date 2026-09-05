@@ -103,7 +103,10 @@ public class StateVariableTypeNode extends BaseDataVariableTypeNode implements S
   @Override
   public void writeId(Object value) throws UaException {
     try {
-      writeIdAsync(value).get();
+      StatusCode statusCode = writeIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -172,7 +175,10 @@ public class StateVariableTypeNode extends BaseDataVariableTypeNode implements S
   @Override
   public void writeName(QualifiedName value) throws UaException {
     try {
-      writeNameAsync(value).get();
+      StatusCode statusCode = writeNameAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -242,7 +248,10 @@ public class StateVariableTypeNode extends BaseDataVariableTypeNode implements S
   @Override
   public void writeNumber(UInteger value) throws UaException {
     try {
-      writeNumberAsync(value).get();
+      StatusCode statusCode = writeNumberAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -312,7 +321,10 @@ public class StateVariableTypeNode extends BaseDataVariableTypeNode implements S
   @Override
   public void writeEffectiveDisplayName(LocalizedText value) throws UaException {
     try {
-      writeEffectiveDisplayNameAsync(value).get();
+      StatusCode statusCode = writeEffectiveDisplayNameAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

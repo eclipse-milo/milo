@@ -88,7 +88,10 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
   @Override
   public void writeEnabledState(LocalizedText value) throws UaException {
     try {
-      writeEnabledStateAsync(value).get();
+      StatusCode statusCode = writeEnabledStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -158,7 +161,10 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
   @Override
   public void writeAckedState(LocalizedText value) throws UaException {
     try {
-      writeAckedStateAsync(value).get();
+      StatusCode statusCode = writeAckedStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -228,7 +234,10 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
   @Override
   public void writeConfirmedState(LocalizedText value) throws UaException {
     try {
-      writeConfirmedStateAsync(value).get();
+      StatusCode statusCode = writeConfirmedStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

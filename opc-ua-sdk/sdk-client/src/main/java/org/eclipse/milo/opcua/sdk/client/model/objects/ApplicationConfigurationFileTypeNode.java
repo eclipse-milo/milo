@@ -91,7 +91,10 @@ public class ApplicationConfigurationFileTypeNode extends ConfigurationFileTypeN
   @Override
   public void writeAvailableNetworks(String[] value) throws UaException {
     try {
-      writeAvailableNetworksAsync(value).get();
+      StatusCode statusCode = writeAvailableNetworksAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -164,7 +167,10 @@ public class ApplicationConfigurationFileTypeNode extends ConfigurationFileTypeN
   @Override
   public void writeAvailablePorts(String value) throws UaException {
     try {
-      writeAvailablePortsAsync(value).get();
+      StatusCode statusCode = writeAvailablePortsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -234,7 +240,10 @@ public class ApplicationConfigurationFileTypeNode extends ConfigurationFileTypeN
   @Override
   public void writeMaxEndpoints(UShort value) throws UaException {
     try {
-      writeMaxEndpointsAsync(value).get();
+      StatusCode statusCode = writeMaxEndpointsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -304,7 +313,10 @@ public class ApplicationConfigurationFileTypeNode extends ConfigurationFileTypeN
   @Override
   public void writeMaxCertificateGroups(UShort value) throws UaException {
     try {
-      writeMaxCertificateGroupsAsync(value).get();
+      StatusCode statusCode = writeMaxCertificateGroupsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -377,7 +389,10 @@ public class ApplicationConfigurationFileTypeNode extends ConfigurationFileTypeN
   @Override
   public void writeSecurityPolicyUris(String[] value) throws UaException {
     try {
-      writeSecurityPolicyUrisAsync(value).get();
+      StatusCode statusCode = writeSecurityPolicyUrisAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -452,7 +467,10 @@ public class ApplicationConfigurationFileTypeNode extends ConfigurationFileTypeN
   @Override
   public void writeUserTokenTypes(UserTokenPolicy[] value) throws UaException {
     try {
-      writeUserTokenTypesAsync(value).get();
+      StatusCode statusCode = writeUserTokenTypesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -524,7 +542,10 @@ public class ApplicationConfigurationFileTypeNode extends ConfigurationFileTypeN
   @Override
   public void writeCertificateTypes(NodeId[] value) throws UaException {
     try {
-      writeCertificateTypesAsync(value).get();
+      StatusCode statusCode = writeCertificateTypesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -597,7 +618,10 @@ public class ApplicationConfigurationFileTypeNode extends ConfigurationFileTypeN
   @Override
   public void writeCertificateGroupPurposes(NodeId[] value) throws UaException {
     try {
-      writeCertificateGroupPurposesAsync(value).get();
+      StatusCode statusCode = writeCertificateGroupPurposesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

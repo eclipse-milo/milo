@@ -92,7 +92,10 @@ public class PublishedDataSetTypeNode extends BaseObjectTypeNode implements Publ
   @Override
   public void writeConfigurationVersion(ConfigurationVersionDataType value) throws UaException {
     try {
-      writeConfigurationVersionAsync(value).get();
+      StatusCode statusCode = writeConfigurationVersionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -169,7 +172,10 @@ public class PublishedDataSetTypeNode extends BaseObjectTypeNode implements Publ
   @Override
   public void writeDataSetMetaData(DataSetMetaDataType value) throws UaException {
     try {
-      writeDataSetMetaDataAsync(value).get();
+      StatusCode statusCode = writeDataSetMetaDataAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -242,7 +248,10 @@ public class PublishedDataSetTypeNode extends BaseObjectTypeNode implements Publ
   @Override
   public void writeDataSetClassId(UUID value) throws UaException {
     try {
-      writeDataSetClassIdAsync(value).get();
+      StatusCode statusCode = writeDataSetClassIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -312,7 +321,10 @@ public class PublishedDataSetTypeNode extends BaseObjectTypeNode implements Publ
   @Override
   public void writeCyclicDataSet(Boolean value) throws UaException {
     try {
-      writeCyclicDataSetAsync(value).get();
+      StatusCode statusCode = writeCyclicDataSetAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

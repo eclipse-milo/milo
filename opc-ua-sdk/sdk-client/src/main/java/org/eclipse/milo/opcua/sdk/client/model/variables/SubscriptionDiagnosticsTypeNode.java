@@ -104,7 +104,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeSessionId(NodeId value) throws UaException {
     try {
-      writeSessionIdAsync(value).get();
+      StatusCode statusCode = writeSessionIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -174,7 +177,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeSubscriptionId(UInteger value) throws UaException {
     try {
-      writeSubscriptionIdAsync(value).get();
+      StatusCode statusCode = writeSubscriptionIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -244,7 +250,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writePriority(UByte value) throws UaException {
     try {
-      writePriorityAsync(value).get();
+      StatusCode statusCode = writePriorityAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -314,7 +323,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writePublishingInterval(Double value) throws UaException {
     try {
-      writePublishingIntervalAsync(value).get();
+      StatusCode statusCode = writePublishingIntervalAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -387,7 +399,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeMaxKeepAliveCount(UInteger value) throws UaException {
     try {
-      writeMaxKeepAliveCountAsync(value).get();
+      StatusCode statusCode = writeMaxKeepAliveCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -460,7 +475,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeMaxLifetimeCount(UInteger value) throws UaException {
     try {
-      writeMaxLifetimeCountAsync(value).get();
+      StatusCode statusCode = writeMaxLifetimeCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -533,7 +551,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeMaxNotificationsPerPublish(UInteger value) throws UaException {
     try {
-      writeMaxNotificationsPerPublishAsync(value).get();
+      StatusCode statusCode = writeMaxNotificationsPerPublishAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -608,7 +629,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writePublishingEnabled(Boolean value) throws UaException {
     try {
-      writePublishingEnabledAsync(value).get();
+      StatusCode statusCode = writePublishingEnabledAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -681,7 +705,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeModifyCount(UInteger value) throws UaException {
     try {
-      writeModifyCountAsync(value).get();
+      StatusCode statusCode = writeModifyCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -751,7 +778,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeEnableCount(UInteger value) throws UaException {
     try {
-      writeEnableCountAsync(value).get();
+      StatusCode statusCode = writeEnableCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -821,7 +851,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeDisableCount(UInteger value) throws UaException {
     try {
-      writeDisableCountAsync(value).get();
+      StatusCode statusCode = writeDisableCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -891,7 +924,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeRepublishRequestCount(UInteger value) throws UaException {
     try {
-      writeRepublishRequestCountAsync(value).get();
+      StatusCode statusCode = writeRepublishRequestCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -965,7 +1001,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeRepublishMessageRequestCount(UInteger value) throws UaException {
     try {
-      writeRepublishMessageRequestCountAsync(value).get();
+      StatusCode statusCode = writeRepublishMessageRequestCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1040,7 +1079,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeRepublishMessageCount(UInteger value) throws UaException {
     try {
-      writeRepublishMessageCountAsync(value).get();
+      StatusCode statusCode = writeRepublishMessageCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1114,7 +1156,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeTransferRequestCount(UInteger value) throws UaException {
     try {
-      writeTransferRequestCountAsync(value).get();
+      StatusCode statusCode = writeTransferRequestCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1188,7 +1233,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeTransferredToAltClientCount(UInteger value) throws UaException {
     try {
-      writeTransferredToAltClientCountAsync(value).get();
+      StatusCode statusCode = writeTransferredToAltClientCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1263,7 +1311,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeTransferredToSameClientCount(UInteger value) throws UaException {
     try {
-      writeTransferredToSameClientCountAsync(value).get();
+      StatusCode statusCode = writeTransferredToSameClientCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1338,7 +1389,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writePublishRequestCount(UInteger value) throws UaException {
     try {
-      writePublishRequestCountAsync(value).get();
+      StatusCode statusCode = writePublishRequestCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1411,7 +1465,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeDataChangeNotificationsCount(UInteger value) throws UaException {
     try {
-      writeDataChangeNotificationsCountAsync(value).get();
+      StatusCode statusCode = writeDataChangeNotificationsCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1486,7 +1543,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeEventNotificationsCount(UInteger value) throws UaException {
     try {
-      writeEventNotificationsCountAsync(value).get();
+      StatusCode statusCode = writeEventNotificationsCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1561,7 +1621,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeNotificationsCount(UInteger value) throws UaException {
     try {
-      writeNotificationsCountAsync(value).get();
+      StatusCode statusCode = writeNotificationsCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1634,7 +1697,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeLatePublishRequestCount(UInteger value) throws UaException {
     try {
-      writeLatePublishRequestCountAsync(value).get();
+      StatusCode statusCode = writeLatePublishRequestCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1709,7 +1775,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeCurrentKeepAliveCount(UInteger value) throws UaException {
     try {
-      writeCurrentKeepAliveCountAsync(value).get();
+      StatusCode statusCode = writeCurrentKeepAliveCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1783,7 +1852,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeCurrentLifetimeCount(UInteger value) throws UaException {
     try {
-      writeCurrentLifetimeCountAsync(value).get();
+      StatusCode statusCode = writeCurrentLifetimeCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1857,7 +1929,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeUnacknowledgedMessageCount(UInteger value) throws UaException {
     try {
-      writeUnacknowledgedMessageCountAsync(value).get();
+      StatusCode statusCode = writeUnacknowledgedMessageCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1932,7 +2007,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeDiscardedMessageCount(UInteger value) throws UaException {
     try {
-      writeDiscardedMessageCountAsync(value).get();
+      StatusCode statusCode = writeDiscardedMessageCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -2006,7 +2084,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeMonitoredItemCount(UInteger value) throws UaException {
     try {
-      writeMonitoredItemCountAsync(value).get();
+      StatusCode statusCode = writeMonitoredItemCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -2079,7 +2160,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeDisabledMonitoredItemCount(UInteger value) throws UaException {
     try {
-      writeDisabledMonitoredItemCountAsync(value).get();
+      StatusCode statusCode = writeDisabledMonitoredItemCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -2154,7 +2238,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeMonitoringQueueOverflowCount(UInteger value) throws UaException {
     try {
-      writeMonitoringQueueOverflowCountAsync(value).get();
+      StatusCode statusCode = writeMonitoringQueueOverflowCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -2229,7 +2316,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeNextSequenceNumber(UInteger value) throws UaException {
     try {
-      writeNextSequenceNumberAsync(value).get();
+      StatusCode statusCode = writeNextSequenceNumberAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -2302,7 +2392,10 @@ public class SubscriptionDiagnosticsTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeEventQueueOverflowCount(UInteger value) throws UaException {
     try {
-      writeEventQueueOverflowCountAsync(value).get();
+      StatusCode statusCode = writeEventQueueOverflowCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

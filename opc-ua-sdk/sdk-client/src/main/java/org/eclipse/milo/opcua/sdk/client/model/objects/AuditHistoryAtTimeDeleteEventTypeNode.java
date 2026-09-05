@@ -89,7 +89,10 @@ public class AuditHistoryAtTimeDeleteEventTypeNode extends AuditHistoryDeleteEve
   @Override
   public void writeReqTimes(DateTime[] value) throws UaException {
     try {
-      writeReqTimesAsync(value).get();
+      StatusCode statusCode = writeReqTimesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -159,7 +162,10 @@ public class AuditHistoryAtTimeDeleteEventTypeNode extends AuditHistoryDeleteEve
   @Override
   public void writeOldValues(DataValue[] value) throws UaException {
     try {
-      writeOldValuesAsync(value).get();
+      StatusCode statusCode = writeOldValuesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

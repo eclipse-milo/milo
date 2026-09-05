@@ -89,7 +89,10 @@ public class IIeeeBaseTsnStreamTypeNode extends BaseInterfaceTypeNode
   @Override
   public void writeStreamId(UByte[] value) throws UaException {
     try {
-      writeStreamIdAsync(value).get();
+      StatusCode statusCode = writeStreamIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -159,7 +162,10 @@ public class IIeeeBaseTsnStreamTypeNode extends BaseInterfaceTypeNode
   @Override
   public void writeStreamName(String value) throws UaException {
     try {
-      writeStreamNameAsync(value).get();
+      StatusCode statusCode = writeStreamNameAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -237,7 +243,10 @@ public class IIeeeBaseTsnStreamTypeNode extends BaseInterfaceTypeNode
   @Override
   public void writeState(TsnStreamState value) throws UaException {
     try {
-      writeStateAsync(value).get();
+      StatusCode statusCode = writeStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -315,7 +324,10 @@ public class IIeeeBaseTsnStreamTypeNode extends BaseInterfaceTypeNode
   @Override
   public void writeAccumulatedLatency(UInteger value) throws UaException {
     try {
-      writeAccumulatedLatencyAsync(value).get();
+      StatusCode statusCode = writeAccumulatedLatencyAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -388,7 +400,10 @@ public class IIeeeBaseTsnStreamTypeNode extends BaseInterfaceTypeNode
   @Override
   public void writeSrClassId(UByte value) throws UaException {
     try {
-      writeSrClassIdAsync(value).get();
+      StatusCode statusCode = writeSrClassIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

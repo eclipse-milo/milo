@@ -106,7 +106,10 @@ public class YArrayItemTypeNode extends ArrayItemTypeNode implements YArrayItemT
   @Override
   public void writeXAxisDefinition(AxisInformation value) throws UaException {
     try {
-      writeXAxisDefinitionAsync(value).get();
+      StatusCode statusCode = writeXAxisDefinitionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

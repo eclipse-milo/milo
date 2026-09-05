@@ -88,7 +88,10 @@ public class NonTransparentRedundancyTypeNode extends ServerRedundancyTypeNode
   @Override
   public void writeServerUriArray(String[] value) throws UaException {
     try {
-      writeServerUriArrayAsync(value).get();
+      StatusCode statusCode = writeServerUriArrayAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

@@ -88,7 +88,10 @@ public class AuditSecurityEventTypeNode extends AuditEventTypeNode
   @Override
   public void writeStatusCodeId(StatusCode value) throws UaException {
     try {
-      writeStatusCodeIdAsync(value).get();
+      StatusCode statusCode = writeStatusCodeIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

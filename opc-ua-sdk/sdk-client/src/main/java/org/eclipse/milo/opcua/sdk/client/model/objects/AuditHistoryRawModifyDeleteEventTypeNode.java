@@ -89,7 +89,10 @@ public class AuditHistoryRawModifyDeleteEventTypeNode extends AuditHistoryDelete
   @Override
   public void writeIsDeleteModified(Boolean value) throws UaException {
     try {
-      writeIsDeleteModifiedAsync(value).get();
+      StatusCode statusCode = writeIsDeleteModifiedAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -162,7 +165,10 @@ public class AuditHistoryRawModifyDeleteEventTypeNode extends AuditHistoryDelete
   @Override
   public void writeStartTime(DateTime value) throws UaException {
     try {
-      writeStartTimeAsync(value).get();
+      StatusCode statusCode = writeStartTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -232,7 +238,10 @@ public class AuditHistoryRawModifyDeleteEventTypeNode extends AuditHistoryDelete
   @Override
   public void writeEndTime(DateTime value) throws UaException {
     try {
-      writeEndTimeAsync(value).get();
+      StatusCode statusCode = writeEndTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -302,7 +311,10 @@ public class AuditHistoryRawModifyDeleteEventTypeNode extends AuditHistoryDelete
   @Override
   public void writeOldValues(DataValue[] value) throws UaException {
     try {
-      writeOldValuesAsync(value).get();
+      StatusCode statusCode = writeOldValuesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
