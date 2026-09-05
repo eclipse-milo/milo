@@ -19,13 +19,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.security.CertificateCompatibility;
 import org.eclipse.milo.opcua.stack.core.security.ChannelBoundSignatureData;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
-import org.eclipse.milo.opcua.stack.core.security.UserTokenSecurityPolicyRules;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
@@ -222,14 +221,38 @@ public class X509IdentityProvider implements IdentityProvider {
         inputs.clientNonce());
   }
 
-  private static UserTokenPolicy selectTokenPolicy(EndpointDescription endpoint) throws Exception {
+  private UserTokenPolicy selectTokenPolicy(EndpointDescription endpoint) throws UaException {
     UserTokenPolicy[] userIdentityTokens =
         requireNonNullElse(endpoint.getUserIdentityTokens(), new UserTokenPolicy[0]);
 
-    return Stream.of(userIdentityTokens)
-        .filter(t -> t.getTokenType() == UserTokenType.Certificate)
-        .findFirst()
-        .orElseThrow(() -> new Exception("no x509 certificate token policy found"));
+    if (certificateChain.isEmpty()) {
+      throw new UaException(StatusCodes.Bad_IdentityTokenInvalid, "no user certificate configured");
+    }
+
+    X509Certificate certificate = certificateChain.get(0);
+    UaException lastFailure = null;
+
+    for (UserTokenPolicy tokenPolicy : userIdentityTokens) {
+      if (tokenPolicy == null || tokenPolicy.getTokenType() != UserTokenType.Certificate) {
+        continue;
+      }
+
+      try {
+        SecurityPolicy securityPolicy = resolveSecurityPolicy(endpoint, tokenPolicy);
+        CertificateCompatibility.checkPublicKey(
+            securityPolicy.getProfile(), certificate.getPublicKey());
+        ChannelBoundSignatureData.checkUserTokenChannelCompatibility(
+            securityPolicy.getProfile(), SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri()));
+        return tokenPolicy;
+      } catch (UaException e) {
+        lastFailure = e;
+      }
+    }
+
+    throw new UaException(
+        StatusCodes.Bad_IdentityTokenRejected,
+        "no compatible x509 certificate token policy found",
+        lastFailure);
   }
 
   private static SecurityPolicy resolveSecurityPolicy(
@@ -247,13 +270,7 @@ public class X509IdentityProvider implements IdentityProvider {
       throw new UaException(StatusCodes.Bad_SecurityPolicyRejected, t);
     }
 
-    // Part 4 (7.41): an explicitly specified certificate user-token policy must use the same
-    // public-key algorithm as the SecureChannel. The enhanced-secret/None rule does not apply to
-    // certificate tokens: they are signed, not encrypted, and an enhanced signature is supported on
-    // a None channel (the reduced Part 4 §6.1.8 Table 101 layout).
-    UserTokenSecurityPolicyRules.requireSamePublicKeyAlgorithmAsChannel(
-        endpoint, securityPolicy, explicitlySpecified);
-
+    // Part 4 (7.41) permits certificate-token policies to use a different key algorithm.
     return securityPolicy;
   }
 }

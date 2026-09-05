@@ -255,6 +255,25 @@ public final class CertificateCompatibility {
     }
   }
 
+  /**
+   * Check whether a public key supports the profile's signature algorithm and curve.
+   *
+   * <p>This check also applies to user identity certificates, which do not have the application
+   * certificate type and KeyUsage requirements enforced by {@link
+   * #checkCompatible(SecurityPolicyProfile, X509Certificate)}.
+   *
+   * @param securityPolicyProfile the profile used to sign or verify.
+   * @param publicKey the signing certificate's public key.
+   * @throws UaException if the public key is incompatible with the profile.
+   */
+  public static void checkPublicKey(
+      SecurityPolicyProfile securityPolicyProfile, PublicKey publicKey) throws UaException {
+
+    requireNonNull(securityPolicyProfile, "securityPolicyProfile");
+    requireNonNull(publicKey, "publicKey");
+    checkPublicKey(securityPolicyProfile.authAxis(), publicKey);
+  }
+
   private static void checkPublicKey(AuthAxis authAxis, PublicKey publicKey) throws UaException {
     switch (authAxis) {
       case NONE -> {}
