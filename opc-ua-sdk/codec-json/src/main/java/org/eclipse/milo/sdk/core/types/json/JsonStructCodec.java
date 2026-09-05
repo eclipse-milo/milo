@@ -606,8 +606,11 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
     if (definition.getStructureType() == StructureType.StructureWithOptionalFields) {
       int optionalFieldIndex = 0;
       for (StructureField field : fields) {
-        if (field.getIsOptional() && value.getJsonObject().has(requireNonNull(field.getName()))) {
-          switchField = switchField | (1L << optionalFieldIndex++);
+        if (field.getIsOptional()) {
+          if (value.getJsonObject().has(requireNonNull(field.getName()))) {
+            switchField |= 1L << optionalFieldIndex;
+          }
+          optionalFieldIndex++;
         }
       }
       encoder.encodeUInt32("SwitchField", UInteger.valueOf(switchField));

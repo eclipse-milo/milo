@@ -22,6 +22,7 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.DecoderException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.ChannelParameters;
 import org.eclipse.milo.opcua.stack.core.channel.ChannelSecurity;
@@ -203,8 +204,8 @@ class UascServerChunkLifecycleTest {
     UascServerSymmetricHandler handler = newSymmetricHandler();
     var channel = new EmbeddedChannel(handler);
 
-    ByteBuf partialChunk = newSymmetricPartialChunk();
-    ByteBuf abortChunk = newSymmetricChunk('A');
+    ByteBuf partialChunk = newValidatedSymmetricChunk('C', 1);
+    ByteBuf abortChunk = newValidatedSymmetricChunk('A', 2);
 
     channel.writeInbound(partialChunk);
     assertEquals(1, partialChunk.refCnt());
@@ -337,6 +338,20 @@ class UascServerChunkLifecycleTest {
       SequenceHeader.encode(new SequenceHeader(1L, 1L), buffer);
     }
     buffer.setIntLE(chunkStart + 4, buffer.writerIndex() - chunkStart);
+  }
+
+  private static ByteBuf newValidatedSymmetricChunk(char chunkType, long sequence) {
+    ByteBuf buffer = PooledByteBufAllocator.DEFAULT.directBuffer();
+    buffer.writeMediumLE(MessageType.toMediumInt(MessageType.SecureMessage));
+    buffer.writeByte(chunkType).writeIntLE(0).writeIntLE(1).writeIntLE(1);
+    SequenceHeader.encode(new SequenceHeader(sequence, 1), buffer);
+    if (chunkType == 'A') {
+      buffer.writeIntLE((int) StatusCodes.Bad_EncodingLimitsExceeded).writeIntLE(-1);
+    } else {
+      buffer.writeByte(0);
+    }
+    buffer.setIntLE(4, buffer.writerIndex());
+    return buffer;
   }
 
   private static ByteBuf newSymmetricPartialChunk() {

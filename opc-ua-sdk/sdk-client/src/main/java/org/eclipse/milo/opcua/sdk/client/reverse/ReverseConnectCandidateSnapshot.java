@@ -38,7 +38,7 @@ import org.jspecify.annotations.Nullable;
  * @param completedAt the time the candidate reached a terminal manager state, or {@code null} while
  *     it can still be matched or claimed.
  * @param rejectionReason the manager-level reason the candidate was rejected, expired, or closed,
- *     or {@code null} for non-terminal and successfully claimed candidates.
+ *     or {@code null} for non-terminal and claimed candidates.
  * @param rejectionStatusCode the TCP error status associated with a rejected or expired candidate,
  *     or {@code null} when no error status applies.
  * @param diagnostic a human-readable diagnostic associated with rejection, expiry, or close events,

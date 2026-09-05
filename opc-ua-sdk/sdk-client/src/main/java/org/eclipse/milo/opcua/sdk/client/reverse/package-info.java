@@ -49,6 +49,11 @@
  * application rejected it, the pending limit was exceeded, the hold time expired, the manager
  * stopped, the peer closed the channel, or a selector threw.
  *
+ * <p>Claimed snapshots, callbacks, and counters record ownership reserved for a selector. Delivery
+ * to its registration future happens afterward. If cancellation or another exceptional completion
+ * prevents delivery, the manager closes the undelivered connection and logs a debug diagnostic; the
+ * recorded claim remains part of the manager's history.
+ *
  * <p>Listener callbacks are serialized on the manager callback executor. For a successfully claimed
  * candidate the callback order is accepted, then claimed if a selector was already waiting, or
  * accepted, pending, then claimed when the candidate first has to be parked. Rejected, expired, and
@@ -95,6 +100,17 @@
  * to the normal client SDK path. It waits for the manager to hand off a claimed channel, or
  * consumes one pre-claimed connection directly, installs the standard client UASC pipeline, and
  * then lets the Session FSM create and maintain the Session as it would for outbound TCP.
+ *
+ * <p>Shutdown fences listener installation, including a startup still in application bootstrap
+ * customization. A selector owns only its pending claim: cancelling or exceptionally completing the
+ * registration future removes the selector, and a claim that races that completion closes its
+ * undeliverable channel. A transport dispatch failure also releases the claimed channel and fails
+ * the waiting connect operation. Channel observers receive connected and disconnected transitions
+ * serially in state-change order, including when a callback itself disconnects the transport.
+ *
+ * <p>Stopping an acceptor suppresses new discovery work while preserving ownership of delivered
+ * clients. Their channel transitions continue updating the reserved keys so restart can discover
+ * servers whose delivered clients disconnected during the stopped interval.
  *
  * <h2>Security boundary</h2>
  *
