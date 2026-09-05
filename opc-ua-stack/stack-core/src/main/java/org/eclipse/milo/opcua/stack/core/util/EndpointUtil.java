@@ -18,10 +18,30 @@ import org.jspecify.annotations.Nullable;
 
 public class EndpointUtil {
 
+  /**
+   * Matches an endpoint URL, capturing the scheme, host, port, and path.
+   *
+   * <p>Matched case-insensitively because URL scheme names are case-insensitive (RFC 3986, section
+   * 3.1). Only the scheme alternation is affected; the remaining groups contain no letters. The
+   * scheme is captured verbatim rather than normalized, so callers that compare it must do so
+   * case-insensitively.
+   */
   private static final Pattern ENDPOINT_URL_PATTERN =
       Pattern.compile(
-          "(opc.tcp|http|https|opc.http|opc.https|opc.ws|opc.wss)://([^:/]+|\\[.*])(:\\d+)?(/.*)?");
+          "(opc.tcp|http|https|opc.http|opc.https|opc.ws|opc.wss)://([^:/]+|\\[.*])(:\\d+)?(/.*)?",
+          Pattern.CASE_INSENSITIVE);
 
+  /**
+   * Get the scheme component from an endpoint URL.
+   *
+   * <p>The scheme is returned as it appeared in {@code endpointUrl}; it is not normalized. Since
+   * scheme names are case-insensitive, callers comparing the result against a known scheme must
+   * ignore case.
+   *
+   * @param endpointUrl the endpoint URL.
+   * @return the scheme component from the endpoint URL, or {@code null} if {@code endpointUrl} is
+   *     null or does not name a supported scheme.
+   */
   public static @Nullable String getScheme(String endpointUrl) {
     if (endpointUrl != null) {
       Matcher matcher = ENDPOINT_URL_PATTERN.matcher(endpointUrl);
