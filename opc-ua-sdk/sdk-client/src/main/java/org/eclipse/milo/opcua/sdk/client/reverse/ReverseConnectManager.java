@@ -349,6 +349,13 @@ public final class ReverseConnectManager implements AutoCloseable {
       lock.unlock();
     }
 
+    registration.connectionFuture.whenComplete(
+        (connection, failure) -> {
+          if (failure != null) {
+            unregisterSelector(registration.id);
+          }
+        });
+
     if (stoppedException != null) {
       registration.connectionFuture.completeExceptionally(stoppedException);
     }
@@ -1249,7 +1256,13 @@ public final class ReverseConnectManager implements AutoCloseable {
 
     void completeAndFire(ReverseConnectManager manager) {
       if (connection != null && registration != null && snapshot != null) {
-        registration.connectionFuture.complete(connection);
+        if (!registration.connectionFuture.complete(connection)) {
+          manager.logger.debug(
+              "Closing claimed reverse-connect candidate {} because its registration future no"
+                  + " longer accepts delivery.",
+              snapshot.id());
+          connection.close();
+        }
         manager.fireCandidateClaimed(snapshot);
       }
     }

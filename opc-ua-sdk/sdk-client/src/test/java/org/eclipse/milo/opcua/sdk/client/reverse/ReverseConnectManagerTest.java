@@ -148,6 +148,44 @@ class ReverseConnectManagerTest {
     }
   }
 
+  // A cancelled raw registration must leave later candidates available to another caller.
+  @Test
+  void cancelledRegistrationDoesNotClaimLaterCandidate() throws Exception {
+    manager = newManagerBuilder().build();
+    manager.startup();
+    ReverseConnectRegistration abandoned = manager.registerSelector(ReverseConnectSelector.any());
+    abandoned.connectionFuture().cancel(false);
+    ReverseConnectRegistration replacement = manager.registerSelector(ReverseConnectSelector.any());
+    try (Socket socket = sendReverseHello(boundAddress(manager), endpointUrl())) {
+      ReverseConnectConnection connection = replacement.connectionFuture().get(5, TimeUnit.SECONDS);
+      assertEquals(1, manager.snapshot().claimedCount());
+      connection.close();
+      assertPeerClosed(socket);
+    }
+  }
+
+  // Completing a claim future can race cancellation after the manager relinquishes ownership.
+  @Test
+  void cancellationAfterClaimClosesUndeliverableConnection() throws Exception {
+    manager = newManagerBuilder().build();
+    manager.startup();
+    ReverseConnectRegistration registration = manager.registerSelector(candidate -> false);
+    try (Socket socket = sendReverseHello(boundAddress(manager), endpointUrl())) {
+      waitUntil(() -> manager.snapshot().pendingCandidates().size() == 1);
+      UUID candidateId = manager.snapshot().pendingCandidates().get(0).id();
+      Method claim =
+          ReverseConnectManager.class.getDeclaredMethod("claimCandidate", UUID.class, UUID.class);
+      claim.setAccessible(true);
+      Object handoff = claim.invoke(manager, candidateId, registration.id());
+      registration.connectionFuture().cancel(false);
+      Method complete =
+          handoff.getClass().getDeclaredMethod("completeAndFire", ReverseConnectManager.class);
+      complete.setAccessible(true);
+      complete.invoke(handoff, manager);
+      assertPeerClosed(socket);
+    }
+  }
+
   @Test
   void shutdownCancelsPreStartupRegistrations() {
     manager = newManagerBuilder().build();
