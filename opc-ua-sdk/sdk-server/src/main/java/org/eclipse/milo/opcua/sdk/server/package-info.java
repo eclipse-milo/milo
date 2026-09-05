@@ -46,6 +46,12 @@
  * participant shutdown therefore runs without external server visibility but before the standard
  * address space and event facilities are torn down.
  *
+ * <p>{@link org.eclipse.milo.opcua.sdk.server.LifecycleManager} applies the same ownership rule
+ * within composite components: failed child startup unwinds successfully started children in
+ * reverse order. A managed namespace therefore releases its base address-space registrations when a
+ * later child fails. Each failing child cleans up its own partial startup before propagating the
+ * failure.
+ *
  * <h2>Runtime boundaries</h2>
  *
  * <p>The SDK server package coordinates high-level server configuration and lifecycle. Certificate

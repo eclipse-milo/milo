@@ -30,6 +30,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.eclipse.milo.opcua.sdk.server.items.DataItem;
+import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
@@ -446,6 +448,37 @@ class OpcUaServerLifecycleParticipantTest {
       releaseStartup.countDown();
       executor.shutdownNow();
     }
+  }
+
+  // Namespace registration is an earlier child lifecycle and must be removed on later failure.
+  @Test
+  void failedNamespaceStartupUnregistersItsNodeManager() {
+    OpcUaServer server = newServer(new RecordingTransport());
+    var failure = new IllegalStateException("namespace child startup");
+    var namespace =
+        new ManagedNamespaceWithLifecycle(server, "urn:test:failed-namespace") {
+          @Override
+          public void onDataItemsCreated(List<DataItem> dataItems) {}
+
+          @Override
+          public void onDataItemsModified(List<DataItem> dataItems) {}
+
+          @Override
+          public void onDataItemsDeleted(List<DataItem> dataItems) {}
+
+          @Override
+          public void onMonitoringModeChanged(List<MonitoredItem> monitoredItems) {}
+        };
+    namespace
+        .getLifecycleManager()
+        .addStartupTask(
+            () -> {
+              throw failure;
+            });
+
+    assertSame(failure, assertThrows(IllegalStateException.class, namespace::startup));
+    assertFalse(server.getAddressSpaceManager().isRegistered(namespace.getNodeManager()));
+    namespace.shutdown();
   }
 
   private OpcUaServer newServer(RecordingTransport transport) {
