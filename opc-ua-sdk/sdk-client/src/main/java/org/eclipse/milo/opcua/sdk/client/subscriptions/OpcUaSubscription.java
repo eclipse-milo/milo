@@ -15,6 +15,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
 import com.google.common.primitives.Ints;
+import com.google.common.util.concurrent.MoreExecutors;
 import java.math.BigInteger;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -29,6 +30,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -63,7 +66,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemModifyRes
 import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemNotification;
 import org.eclipse.milo.opcua.stack.core.types.structured.SetMonitoringModeResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.SetPublishingModeResponse;
-import org.eclipse.milo.opcua.stack.core.util.Lazy;
+import org.eclipse.milo.opcua.stack.core.util.NonBlockingLazy;
 import org.eclipse.milo.opcua.stack.core.util.TaskQueue;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.jspecify.annotations.Nullable;
@@ -230,7 +233,7 @@ public class OpcUaSubscription {
   private volatile double watchdogMultiplier = 1.5;
 
   private volatile UInteger maxMonitoredItemsPerCall = uint(DEFAULT_MAX_MONITORED_ITEMS_PER_CALL);
-  private final Lazy<UInteger> monitoredItemPartitionSize = new Lazy<>();
+  private final NonBlockingLazy<UInteger> monitoredItemPartitionSize = new NonBlockingLazy<>();
   private volatile long monitoredItemPartitionGeneration;
 
   private volatile @Nullable Object userObject;
@@ -238,13 +241,26 @@ public class OpcUaSubscription {
   private volatile @Nullable SubscriptionListener listener;
 
   private final TaskQueue deliveryQueue;
+  private final Executor transitionHandoffExecutor;
 
   private final OpcUaClient client;
 
   public OpcUaSubscription(OpcUaClient client) {
     this.client = client;
 
-    deliveryQueue = new TaskQueue(client.getTransport().getConfig().getExecutor());
+    Executor executor = client.getTransport().getConfig().getExecutor();
+    deliveryQueue = new TaskQueue(executor);
+    transitionHandoffExecutor =
+        MoreExecutors.newSequentialExecutor(
+            command -> {
+              try {
+                executor.execute(command);
+              } catch (RejectedExecutionException e) {
+                // Finishing a transition must release its successor even when the executor shuts
+                // down.
+                command.run();
+              }
+            });
   }
 
   /**
@@ -732,11 +748,9 @@ public class OpcUaSubscription {
     }
 
     if (next != null) {
-      // Completed asynchronously rather than on this stack: a queued transition that completes
-      // synchronously — nothing pending to send, or an immediate Bad_InvalidState — would re-enter
-      // this method inline, one frame per waiter, and enough waiters is a StackOverflowError that
-      // leaves the slot claimed forever.
-      next.completeAsync(() -> Unit.VALUE, client.getTransport().getConfig().getExecutor());
+      // The sequential executor trampolines direct execution and rejected handoffs. A long queue
+      // of synchronous transitions cannot recurse, and no completion runs under lifecycleLock.
+      transitionHandoffExecutor.execute(() -> next.complete(Unit.VALUE));
     }
   }
 
@@ -2248,17 +2262,21 @@ public class OpcUaSubscription {
         modifications = null;
 
         monitoredItemPartitionSize.reset();
-        monitoredItems.values().forEach(OpcUaMonitoredItem::reset);
+        // Keep reset's handle cleanup atomic with add/remove, in the same lock order used
+        // when applying monitored-item service results.
+        synchronized (monitoredItemsLock) {
+          monitoredItems.values().forEach(OpcUaMonitoredItem::reset);
 
-        // MonitoredItemIds are scoped to the Subscription that no longer exists, so the items
-        // pending deletion are already gone and their ids must never be sent again. Detach them
-        // completely, including the ClientHandle, so they can be added to a Subscription again.
-        itemsToDelete.forEach(
-            item -> {
-              item.reset();
-              item.setClientHandle(null);
-            });
-        itemsToDelete.clear();
+          // MonitoredItemIds are scoped to the Subscription that no longer exists, so the items
+          // pending deletion are already gone and their ids must never be sent again. Detach them
+          // completely, including the ClientHandle, so they can be added to a Subscription again.
+          itemsToDelete.forEach(
+              item -> {
+                item.reset();
+                item.setClientHandle(null);
+              });
+          itemsToDelete.clear();
+        }
 
         syncState = SyncState.INITIAL;
       }
