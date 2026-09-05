@@ -1042,7 +1042,8 @@ public class Condition {
   }
 
   /**
-   * Find a Method exposed through ConditionId dispatch but owned by a nested state machine.
+   * Find a Method owned by a nested state machine and also exposed through ConditionId dispatch.
+   * The manager uses this lookup to restrict calls targeting the nested ObjectId to its Methods.
    * Subclasses override for the nested methods they support.
    */
   Optional<UaMethodNode> findMethodNode(NodeId methodId) {

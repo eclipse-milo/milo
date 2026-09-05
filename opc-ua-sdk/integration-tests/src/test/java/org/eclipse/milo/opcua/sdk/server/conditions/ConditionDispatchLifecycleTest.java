@@ -30,8 +30,11 @@ import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.events.EventContentFilter;
 import org.eclipse.milo.opcua.sdk.server.events.FilterContext;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodInvocationHandler;
+import org.eclipse.milo.opcua.sdk.server.model.objects.AlarmConditionTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationRequest;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.MethodInstantiation;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
@@ -152,6 +155,69 @@ class ConditionDispatchLifecycleTest extends AbstractClientServerTest {
 
     assertTrue(result.getStatusCode().isGood());
     assertTrue(replacement.isAcked());
+  }
+
+  @Test
+  void sharedShelvingMethodResolvesItsNestedObjectWithoutChangingTheTypeHandler() throws Exception {
+    AlarmCondition alarm = newSharedAlarm("shared");
+    var shelving = requireNonNull(alarm.getShelvingState());
+    UaMethodNode method = requireNonNull(shelving.getTimedShelveMethodNode());
+    MethodInvocationHandler typeHandler = method.getInvocationHandler();
+
+    CallMethodResult result = call(shelving.getNodeId(), method.getNodeId(), new Variant(30_000.0));
+
+    assertTrue(result.getStatusCode().isGood(), () -> result.getStatusCode().toString());
+    assertEquals("TimedShelved", shelving.getCurrentState().text());
+    assertSame(typeHandler, method.getInvocationHandler());
+    CallMethodResult unshelve =
+        call(alarm.getConditionId(), requireNonNull(shelving.getUnshelveMethodNode()).getNodeId());
+    assertTrue(unshelve.getStatusCode().isGood(), () -> unshelve.getStatusCode().toString());
+    assertEquals("Unshelved", shelving.getCurrentState().text());
+    assertSame(typeHandler, method.getInvocationHandler());
+  }
+
+  // The nested state machine exposes shelving Methods only. An otherwise valid Acknowledge
+  // call must use the ConditionId and must not mutate the alarm through ShelvingState.
+  @Test
+  void nestedShelvingObjectCannotInvokeAnAlarmMethod() throws Exception {
+    AlarmCondition alarm = newSharedAlarm("shared-method-owner");
+    var shelving = requireNonNull(alarm.getShelvingState());
+    UaMethodNode acknowledge = requireNonNull(alarm.getNode().getAcknowledgeMethodNode());
+    Variant[] inputs = {
+      new Variant(alarm.currentBranch().getLastEventId()), new Variant(LocalizedText.NULL_VALUE)
+    };
+
+    CallMethodResult rejected = call(shelving.getNodeId(), acknowledge.getNodeId(), inputs);
+
+    assertEquals(StatusCodes.Bad_MethodInvalid, rejected.getStatusCode().value());
+    assertFalse(alarm.isAcked());
+    CallMethodResult accepted = call(alarm.getConditionId(), acknowledge.getNodeId(), inputs);
+    assertTrue(accepted.getStatusCode().isGood(), () -> accepted.getStatusCode().toString());
+    assertTrue(alarm.isAcked());
+  }
+
+  private AlarmCondition newSharedAlarm(String name) throws Exception {
+    AlarmConditionTypeNode node =
+        server
+            .getNodeInstantiator()
+            .instantiate(
+                InstantiationRequest.of(AlarmConditionTypeNode.class, NodeIds.AlarmConditionType)
+                    .nodeId(newNodeId(name))
+                    .browseName(newQualifiedName(name))
+                    .target(testNamespace.getNodeManager())
+                    .methodInstantiation(MethodInstantiation.SHARE)
+                    .includeOptionals(
+                        d ->
+                            Set.of("ShelvingState", "LastTransition")
+                                .contains(d.browseName().name()))
+                    .build())
+            .root();
+    node.setEventType(NodeIds.AlarmConditionType);
+    node.setSeverity(ushort(700));
+    AlarmCondition alarm = AlarmCondition.attach(node);
+    server.getConditionManager().register(alarm);
+    alarm.setActive(true);
+    return alarm;
   }
 
   private AlarmCondition newAlarm(String name) throws Exception {
