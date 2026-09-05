@@ -15,5 +15,10 @@
  * browse inheritance and encoding references within a session, honoring operation limits and
  * following continuation points until the server returns a null or empty token. Lazy trees resolve
  * types on demand and discard stale work when their session or cache generation changes.
+ *
+ * <p>DataType managers register codecs from the resolved metadata. A structure's DefaultEncodingId
+ * supplies its binary encoding ID when the server omits HasEncoding references. The effective ID
+ * belongs to the metadata as well as the registration, allowing decoded dynamic values to be
+ * encoded again. Definitions and codec registrations must describe the same type-tree generation.
  */
 package org.eclipse.milo.opcua.sdk.client.typetree;
