@@ -278,6 +278,21 @@ public final class ChunkEncoder {
 
       assert (maxPlainTextSize + securityHeaderSize + SECURE_MESSAGE_HEADER_SIZE <= maxChunkSize);
 
+      if (messageBuffer.isReadable() && maxBodySize <= 0) {
+        throw new UaException(
+            StatusCodes.Bad_EncodingLimitsExceeded, "send buffer cannot fit a message body");
+      }
+
+      // No chunk has been emitted yet. Reject the complete message before reserving sequence
+      // numbers or AEAD nonces so a following ServiceFault uses the peer's expected stream state.
+      int remoteMaxChunkCount = parameters.getRemoteMaxChunkCount();
+      if (remoteMaxChunkCount > 0
+          && messageBuffer.readableBytes() > (long) maxBodySize * remoteMaxChunkCount) {
+        throw new UaException(
+            StatusCodes.Bad_EncodingLimitsExceeded,
+            "remote chunk count exceeded: " + remoteMaxChunkCount);
+      }
+
       byte[] lastSignature = null;
 
       while (messageBuffer.readableBytes() > 0) {
@@ -307,13 +322,6 @@ public final class ChunkEncoder {
         ByteBuf chunkBuffer = BufferUtil.pooledBuffer(chunkSize);
 
         chunks.add(chunkBuffer);
-
-        int remoteMaxChunkCount = parameters.getRemoteMaxChunkCount();
-        if (remoteMaxChunkCount > 0 && chunks.size() > remoteMaxChunkCount) {
-          throw new UaException(
-              StatusCodes.Bad_EncodingLimitsExceeded,
-              "remote chunk count exceeded: " + remoteMaxChunkCount);
-        }
 
         /* Message Header */
         SecureMessageHeader messageHeader =

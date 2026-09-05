@@ -26,6 +26,12 @@
  * They frame message headers, security headers, sequence headers, message bodies, signatures,
  * padding, and encrypted payload bytes according to the selected security policy profile.
  *
+ * <p>The encoder owns one outbound sequence stream across asymmetric and symmetric messages. A
+ * message that exceeds the peer's chunk count is rejected before reserving sequence numbers or AEAD
+ * nonces, leaving the stream usable for an error response. The decoder checks every chunk's
+ * security and sequence state, including Abort chunks. A valid Abort consumes its sequence number
+ * and discards that message while preserving the stream for subsequent messages.
+ *
  * <h2>Runtime boundaries</h2>
  *
  * <p>SecureChannel cryptography is resolved from security policy profiles into authentication,
