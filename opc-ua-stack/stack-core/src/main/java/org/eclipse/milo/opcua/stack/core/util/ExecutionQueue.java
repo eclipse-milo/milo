@@ -10,9 +10,9 @@
 
 package org.eclipse.milo.opcua.stack.core.util;
 
-import com.google.common.base.Preconditions;
 import java.util.ArrayDeque;
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +25,9 @@ import org.slf4j.LoggerFactory;
  *
  * <p>When {@code concurrency > 1} there are no guarantees beyond the fact that tasks are still
  * pulled from a queue to be executed.
+ *
+ * <p>If the executor rejects execution, the submitting thread runs queued tasks synchronously.
+ * Callbacks should return promptly because this fallback may run on an I/O or timer thread.
  */
 public class ExecutionQueue {
 
@@ -56,9 +59,8 @@ public class ExecutionQueue {
   public void submit(Runnable runnable) {
     synchronized (queueLock) {
       queue.add(runnable);
-
-      maybePollAndExecute();
     }
+    maybePollAndExecute();
   }
 
   /**
@@ -69,9 +71,8 @@ public class ExecutionQueue {
   public void submitToHead(Runnable runnable) {
     synchronized (queueLock) {
       queue.addFirst(runnable);
-
-      maybePollAndExecute();
     }
+    maybePollAndExecute();
   }
 
   /** Pause execution of queued {@link java.lang.Runnable}s. */
@@ -85,81 +86,92 @@ public class ExecutionQueue {
   public void resume() {
     synchronized (queueLock) {
       paused = false;
-
-      maybePollAndExecute();
     }
+    maybePollAndExecute();
   }
 
   private void maybePollAndExecute() {
     synchronized (queueLock) {
-      if (pending < concurrencyLimit && !paused && !queue.isEmpty()) {
-        executor.execute(new Task(queue.poll()));
-        pending++;
+      if (pending >= concurrencyLimit || paused || queue.isEmpty()) {
+        return;
       }
+      // Reserve the worker before dispatch, including when the executor runs it inline.
+      pending++;
+    }
+
+    Task task = new Task();
+    try {
+      executor.execute(task);
+    } catch (RejectedExecutionException e) {
+      task.run();
     }
   }
 
   private class Task implements Runnable {
 
-    private final Runnable runnable;
-
-    Task(Runnable runnable) {
-      Preconditions.checkNotNull(runnable);
-
-      this.runnable = runnable;
-    }
+    // A continuation can run before execute() returns, either inline or on another worker.
+    // In that case the current invocation keeps ownership and drains the next batch itself.
+    private boolean running;
+    private boolean runAgain;
 
     @Override
     public void run() {
-      try {
-        runnable.run();
-      } catch (Throwable throwable) {
-        log.warn("Uncaught Throwable during execution.", throwable);
+      synchronized (this) {
+        if (running) {
+          runAgain = true;
+          return;
+        }
+        running = true;
       }
 
-      InlineTask inlineTask = null;
+      while (true) {
+        boolean moreTasks = runBatch();
+        if (moreTasks) {
+          try {
+            executor.execute(this);
+          } catch (RejectedExecutionException e) {
+            synchronized (this) {
+              runAgain = true;
+            }
+          }
+        }
 
-      synchronized (queueLock) {
-        if (queue.isEmpty() || paused) {
-          pending--;
-        } else {
-          // pending count remains the same
-          inlineTask = new InlineTask(queue.poll());
+        synchronized (this) {
+          if (moreTasks && runAgain) {
+            runAgain = false;
+          } else {
+            running = false;
+            return;
+          }
+        }
+      }
+    }
+
+    private boolean runBatch() {
+      for (int i = 0; i < 2; i++) {
+        Runnable runnable;
+        synchronized (queueLock) {
+          if (paused || queue.isEmpty()) {
+            pending--;
+            return false;
+          }
+          runnable = queue.remove();
+        }
+
+        try {
+          runnable.run();
+        } catch (Throwable throwable) {
+          log.warn("Uncaught Throwable during execution.", throwable);
         }
       }
 
-      if (inlineTask != null) {
-        inlineTask.run();
-      }
-    }
-  }
-
-  private class InlineTask implements Runnable {
-
-    private final Runnable runnable;
-
-    InlineTask(Runnable runnable) {
-      Preconditions.checkNotNull(runnable);
-
-      this.runnable = runnable;
-    }
-
-    @Override
-    public void run() {
-      try {
-        runnable.run();
-      } catch (Throwable throwable) {
-        log.warn("Uncaught Throwable during execution.", throwable);
-      }
-
       synchronized (queueLock) {
-        if (queue.isEmpty() || paused) {
+        if (paused || queue.isEmpty()) {
           pending--;
-        } else {
-          // pending count remains the same
-          executor.execute(new Task(queue.poll()));
+          return false;
         }
       }
+      return true;
     }
   }
 }
