@@ -18,9 +18,7 @@
  * deprecated for removal; new code should register the codec through {@link
  * org.eclipse.milo.opcua.stack.core.gds.DataTypeInitializer} instead.
  *
- * <p>Generated code, copied from the {@code gds-model-core} module of <a
- * href="https://github.com/kevinherron/opc-ua-gds-model">opc-ua-gds-model</a> at commit {@code
- * efa229d}; see the regeneration notes in {@link org.eclipse.milo.opcua.stack.core.gds}.
+ * <p>Generated code; see the regeneration notes in {@link org.eclipse.milo.opcua.stack.core.gds}.
  */
 @Deprecated(forRemoval = true, since = "1.2.0")
 package org.eclipse.milo.opcua.sdk.core.dtd.gds;
