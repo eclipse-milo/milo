@@ -665,7 +665,12 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
               StatusCodes.Bad_DecodingError, "Matrix has dimensions but no elements");
         }
 
-        OpcUaDataType dataType = OpcUaDataType.valueOf(element.getLocalName());
+        OpcUaDataType dataType;
+        try {
+          dataType = OpcUaDataType.valueOf(element.getLocalName());
+        } catch (IllegalArgumentException e) {
+          throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
+        }
         currentNode = node;
         return decodeMatrix("Matrix", dataType);
       } else {

@@ -13,14 +13,29 @@ package org.eclipse.milo.opcua.stack.core.encoding.xml;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class OpcUaXmlVariantWhitespaceTest {
+
+  // The public value decoder must report malformed matrix element names as decoding failures.
+  @Test
+  void unknownMatrixElementFailsWithDecodingStatus() throws Exception {
+    String xml =
+        "<Matrix><Dimensions><Int32>1</Int32></Dimensions>"
+            + "<Elements><Unknown>7</Unknown></Elements></Matrix>";
+    try (var decoder = new OpcUaXmlDecoder(DefaultEncodingContext.INSTANCE, xml)) {
+      UaSerializationException failure =
+          assertThrows(UaSerializationException.class, decoder::decodeVariantValue);
+      assertEquals(StatusCodes.Bad_DecodingError, failure.getStatusCode().value());
+    }
+  }
 
   // Formatting and comments around Value must not turn a valid scalar into a null Variant.
   @ParameterizedTest
