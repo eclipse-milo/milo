@@ -14,6 +14,7 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HexFormat;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -25,6 +26,7 @@ import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableTypeNode;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
@@ -62,7 +64,8 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>Mutable attribute values — arrays (e.g. ArrayDimensions, RolePermissions) and array-valued
  * {@link DataValue}s, including standard OPC UA structures and their nested fields, are defensively
- * copied on ingress and egress. Custom Java values without a standard codec must be immutable.
+ * copied on ingress and egress. Custom Java values without a standard codec, and standard
+ * structures containing such values, pass through and must be immutable.
  */
 public final class AttributeSnapshot {
 
@@ -245,7 +248,9 @@ public final class AttributeSnapshot {
       return "N;";
     }
     StringBuilder contents = new StringBuilder();
-    if (value.getClass().isArray()) {
+    if (value instanceof byte[] bytes) {
+      contents.append(bytes.length).append(':').append(HexFormat.of().formatHex(bytes));
+    } else if (value.getClass().isArray()) {
       int length = Array.getLength(value);
       contents.append(length).append(':');
       for (int i = 0; i < length; i++) {
@@ -269,8 +274,13 @@ public final class AttributeSnapshot {
       contents.append(canonicalString(matrix.getElements()));
       contents.append(canonicalString(matrix.getDataTypeId().orElse(null)));
     } else if (value instanceof UaStructuredType structure && hasStandardCodec(structure)) {
-      contents.append(
-          canonicalString(ExtensionObject.encode(DefaultEncodingContext.INSTANCE, structure)));
+      try {
+        contents.append(
+            canonicalString(ExtensionObject.encode(DefaultEncodingContext.INSTANCE, structure)));
+      } catch (UaSerializationException e) {
+        // A standard outer structure may contain an application-defined value without a codec.
+        contents.append(value);
+      }
     } else if (value instanceof ExtensionObject extension) {
       contents.append(canonicalString(extension.getEncodingOrTypeId()));
       contents.append(canonicalString(extension.getBody()));
@@ -315,8 +325,13 @@ public final class AttributeSnapshot {
       return copied == contained ? variant : new Variant(copied);
     }
     if (value instanceof UaStructuredType structure && hasStandardCodec(structure)) {
-      return ExtensionObject.encode(DefaultEncodingContext.INSTANCE, structure)
-          .decode(DefaultEncodingContext.INSTANCE);
+      try {
+        return ExtensionObject.encode(DefaultEncodingContext.INSTANCE, structure)
+            .decode(DefaultEncodingContext.INSTANCE);
+      } catch (UaSerializationException e) {
+        // Preserve the opaque, caller-immutable contract for unencodable nested custom values.
+        return value;
+      }
     }
     if (value instanceof ByteString bytes) {
       byte[] data = bytes.bytes();
@@ -340,7 +355,7 @@ public final class AttributeSnapshot {
               copyArray(elements),
               matrix.getDimensions().clone(),
               matrix.getDataType().orElseThrow(),
-              matrix.getDataTypeId().orElseThrow());
+              matrix.getDataTypeId().orElse(null));
     }
     return value;
   }

@@ -212,8 +212,12 @@ public interface NodeManager<T extends Node> {
    * Remove a journaled reference only while the stored occurrence retains its identity and none of
    * its journaled endpoints has been replaced.
    *
-   * <p>The default implementation requires a single writer. Atomic managers must override it.
-   * Missing endpoints allow removal of dangling references left after a node was removed directly.
+   * <p>The default implementation requires a single writer and retains ownership by object
+   * identity: {@link #getReferences(NodeId)} must return the same Reference instances supplied to
+   * {@link #addReference(Reference)}. Managers that reconstruct references from external storage
+   * must override this method with an equivalent ownership check. Atomic managers must also
+   * override it. Missing endpoints allow removal of dangling references left after a node was
+   * removed directly.
    *
    * @param reference the exact reference object added by a commit.
    * @param expectedNodes the journal's node identifiers and object identities.
