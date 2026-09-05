@@ -19,9 +19,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.security.CertificateCompatibility;
 import org.eclipse.milo.opcua.stack.core.security.ChannelBoundSignatureData;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
@@ -40,7 +40,8 @@ import org.jspecify.annotations.Nullable;
  * An {@link IdentityProvider} that authenticates with a certificate user-token policy.
  *
  * <p>The provider sends the configured certificate chain as the user identity token and signs the
- * server certificate plus nonce when the selected user-token security policy requires a signature.
+ * server certificate plus nonce with the selected signing policy. Certificate policies resolving to
+ * SecurityPolicy.None are skipped because they cannot prove possession of the private key.
  * Certificate-token policies do not use the enhanced username-secret additional-header exchange,
  * even when the certificate-token policy itself uses an ECC or RSA-DH security policy.
  */
@@ -222,14 +223,43 @@ public class X509IdentityProvider implements IdentityProvider {
         inputs.clientNonce());
   }
 
-  private static UserTokenPolicy selectTokenPolicy(EndpointDescription endpoint) throws Exception {
+  private UserTokenPolicy selectTokenPolicy(EndpointDescription endpoint) throws UaException {
     UserTokenPolicy[] userIdentityTokens =
         requireNonNullElse(endpoint.getUserIdentityTokens(), new UserTokenPolicy[0]);
 
-    return Stream.of(userIdentityTokens)
-        .filter(t -> t.getTokenType() == UserTokenType.Certificate)
-        .findFirst()
-        .orElseThrow(() -> new Exception("no x509 certificate token policy found"));
+    if (certificateChain.isEmpty()) {
+      throw new UaException(StatusCodes.Bad_IdentityTokenInvalid, "no user certificate configured");
+    }
+
+    X509Certificate certificate = certificateChain.get(0);
+    UaException lastFailure = null;
+
+    for (UserTokenPolicy tokenPolicy : userIdentityTokens) {
+      if (tokenPolicy == null || tokenPolicy.getTokenType() != UserTokenType.Certificate) {
+        continue;
+      }
+
+      try {
+        SecurityPolicy securityPolicy = resolveSecurityPolicy(endpoint, tokenPolicy);
+        if (securityPolicy == SecurityPolicy.None) {
+          throw new UaException(
+              StatusCodes.Bad_SecurityPolicyRejected,
+              "certificate user token requires a signing policy");
+        }
+        CertificateCompatibility.checkPublicKey(
+            securityPolicy.getProfile(), certificate.getPublicKey());
+        ChannelBoundSignatureData.checkUserTokenChannelCompatibility(
+            securityPolicy.getProfile(), SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri()));
+        return tokenPolicy;
+      } catch (UaException e) {
+        lastFailure = e;
+      }
+    }
+
+    throw new UaException(
+        StatusCodes.Bad_IdentityTokenRejected,
+        "no compatible x509 certificate token policy found",
+        lastFailure);
   }
 
   private static SecurityPolicy resolveSecurityPolicy(

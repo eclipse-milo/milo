@@ -179,11 +179,10 @@ class UserTokenSecurityPolicyRulesTest {
                 endpoint, SecurityPolicy.ECC_nistP256_AesGcm));
   }
 
-  // ---- X509IdentityProvider wiring: the certificate provider applies the public-key-family rule,
-  // but not the enhanced-secret rule (its token is signed, not encrypted) ----
+  // Certificate policies must match the configured user certificate.
 
   @Test
-  void x509ProviderRejectsExplicitCrossFamilyCertificateTokenPolicy() throws Exception {
+  void x509ProviderRejectsPolicyIncompatibleWithItsCertificate() throws Exception {
     X509IdentityProvider provider = rsaX509Provider();
     EndpointDescription endpoint =
         endpointWithCertificateToken(
@@ -194,8 +193,8 @@ class UserTokenSecurityPolicyRulesTest {
     UaException ex =
         assertThrows(UaException.class, () -> provider.getUserTokenSecurityPolicy(endpoint));
 
-    assertEquals(StatusCodes.Bad_SecurityPolicyRejected, ex.getStatusCode().getValue());
-    assertTrue(ex.getMessage().contains("public-key algorithm"));
+    assertEquals(StatusCodes.Bad_IdentityTokenRejected, ex.getStatusCode().getValue());
+    assertTrue(ex.getMessage().contains("no compatible"));
   }
 
   // The enhanced-secret rule must NOT be applied to certificate tokens: an enhanced X509 signature
@@ -203,7 +202,13 @@ class UserTokenSecurityPolicyRulesTest {
   // rejected the way an enhanced username secret would be.
   @Test
   void x509ProviderAllowsEnhancedCertificateTokenPolicyOnNoneChannel() throws Exception {
-    X509IdentityProvider provider = rsaX509Provider();
+    KeyPair keys = SelfSignedCertificateGenerator.generateNistP256KeyPair();
+    X509Certificate certificate =
+        SelfSignedCertificateBuilder.forEccApplicationCertificate(keys)
+            .setCommonName("user")
+            .setApplicationUri("urn:test:user")
+            .build();
+    X509IdentityProvider provider = new X509IdentityProvider(certificate, keys.getPrivate());
     EndpointDescription endpoint =
         endpointWithCertificateToken(
             SecurityPolicy.None,
