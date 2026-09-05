@@ -1257,6 +1257,10 @@ public final class ReverseConnectManager implements AutoCloseable {
     void completeAndFire(ReverseConnectManager manager) {
       if (connection != null && registration != null && snapshot != null) {
         if (!registration.connectionFuture.complete(connection)) {
+          manager.logger.debug(
+              "Closing claimed reverse-connect candidate {} because its registration future no"
+                  + " longer accepts delivery.",
+              snapshot.id());
           connection.close();
         }
         manager.fireCandidateClaimed(snapshot);

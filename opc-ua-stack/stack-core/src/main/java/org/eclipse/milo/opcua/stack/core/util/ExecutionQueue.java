@@ -12,7 +12,6 @@ package org.eclipse.milo.opcua.stack.core.util;
 
 import java.util.ArrayDeque;
 import java.util.concurrent.Executor;
-import java.util.concurrent.RejectedExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,8 +25,9 @@ import org.slf4j.LoggerFactory;
  * <p>When {@code concurrency > 1} there are no guarantees beyond the fact that tasks are still
  * pulled from a queue to be executed.
  *
- * <p>If the executor rejects execution, the submitting thread runs queued tasks synchronously.
- * Callbacks should return promptly because this fallback may run on an I/O or timer thread.
+ * <p>If the executor throws a runtime exception during dispatch, the submitting thread runs queued
+ * tasks synchronously. Callbacks should return promptly because this fallback may run on an I/O or
+ * timer thread.
  */
 public class ExecutionQueue {
 
@@ -102,7 +102,7 @@ public class ExecutionQueue {
     Task task = new Task();
     try {
       executor.execute(task);
-    } catch (RejectedExecutionException e) {
+    } catch (RuntimeException e) {
       task.run();
     }
   }
@@ -113,10 +113,14 @@ public class ExecutionQueue {
     // In that case the current invocation keeps ownership and drains the next batch itself.
     private boolean running;
     private boolean runAgain;
+    private boolean completed;
 
     @Override
     public void run() {
       synchronized (this) {
+        if (completed) {
+          return;
+        }
         if (running) {
           runAgain = true;
           return;
@@ -129,7 +133,7 @@ public class ExecutionQueue {
         if (moreTasks) {
           try {
             executor.execute(this);
-          } catch (RejectedExecutionException e) {
+          } catch (RuntimeException e) {
             synchronized (this) {
               runAgain = true;
             }
@@ -141,6 +145,9 @@ public class ExecutionQueue {
             runAgain = false;
           } else {
             running = false;
+            // A decorating executor can run this worker before reporting a dispatch failure.
+            // Its fallback invocation must not release a finished worker's reservation twice.
+            completed = !moreTasks;
             return;
           }
         }

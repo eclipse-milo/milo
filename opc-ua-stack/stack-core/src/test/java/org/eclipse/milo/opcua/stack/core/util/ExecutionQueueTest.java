@@ -77,6 +77,89 @@ public class ExecutionQueueTest {
     assertEquals(List.of(1, 2, 3, 4), completed);
   }
 
+  // A custom executor may translate rejection to another runtime exception. Its reserved worker
+  // must still finish, and later submissions must acquire a fresh worker normally.
+  @Test
+  void executorFailureDuringInitialDispatchDoesNotStrandLaterSubmissions() {
+    AtomicInteger dispatches = new AtomicInteger();
+    ExecutionQueue queue =
+        new ExecutionQueue(
+            task -> {
+              if (dispatches.getAndIncrement() == 0) {
+                throw new IllegalStateException("executor unavailable");
+              }
+              task.run();
+            });
+    List<Integer> completed = new ArrayList<>();
+    queue.submit(() -> completed.add(1));
+    queue.submit(() -> completed.add(2));
+    assertEquals(List.of(1, 2), completed);
+    assertEquals(2, dispatches.get());
+  }
+
+  // Failure to dispatch a continuation cannot retain the running flag or worker reservation.
+  @Test
+  void executorFailureDuringContinuationDoesNotStrandLaterSubmissions() {
+    AtomicReference<Runnable> worker = new AtomicReference<>();
+    ExecutionQueue queue =
+        new ExecutionQueue(
+            task -> {
+              if (!worker.compareAndSet(null, task)) {
+                throw new IllegalStateException("executor unavailable");
+              }
+            });
+    List<Integer> completed = new ArrayList<>();
+    queue.submit(() -> completed.add(1));
+    queue.submit(() -> completed.add(2));
+    queue.submit(() -> completed.add(3));
+    worker.get().run();
+    queue.submit(() -> completed.add(4));
+    assertEquals(List.of(1, 2, 3, 4), completed);
+  }
+
+  // An executor decorator can throw after running a worker. Retrying that completed worker must
+  // not release its reservation twice and permit a later callback to overtake a blocked callback.
+  @Test
+  void executorFailureAfterRunningWorkerPreservesSerialExecution() throws Exception {
+    ExecutionQueue queue =
+        new ExecutionQueue(
+            task -> {
+              task.run();
+              throw new IllegalStateException("executor failed after execution");
+            });
+    AtomicInteger completed = new AtomicInteger();
+    queue.submit(completed::incrementAndGet);
+    assertEquals(1, completed.get());
+
+    CountDownLatch firstStarted = new CountDownLatch(1);
+    CountDownLatch releaseFirst = new CountDownLatch(1);
+    try {
+      var first =
+          executor.submit(
+              () ->
+                  queue.submit(
+                      () -> {
+                        firstStarted.countDown();
+                        try {
+                          assertTrue(releaseFirst.await(5, TimeUnit.SECONDS));
+                        } catch (InterruptedException e) {
+                          Thread.currentThread().interrupt();
+                          throw new AssertionError(e);
+                        }
+                      }));
+      assertTrue(firstStarted.await(5, TimeUnit.SECONDS));
+      queue.submit(completed::incrementAndGet);
+      assertEquals(1, completed.get(), "the second callback must wait for the first callback");
+      releaseFirst.countDown();
+      first.get(5, TimeUnit.SECONDS);
+      assertEquals(2, completed.get());
+      queue.submit(completed::incrementAndGet);
+      assertEquals(3, completed.get());
+    } finally {
+      releaseFirst.countDown();
+    }
+  }
+
   // Direct executors and nested submissions must not recurse once per queued task.
   @Test
   void reentrantSubmissionWithDirectExecutorDrainsWithoutRecursion() {
@@ -95,9 +178,9 @@ public class ExecutionQueueTest {
     assertEquals(100_000, completed.get());
   }
 
-  // A busy queue must yield so unrelated tasks sharing its executor can make progress.
+  // A FIFO executor can run unrelated tasks between batches from a busy queue.
   @Test
-  void workersYieldToOtherExecutorTasksBetweenBatches() {
+  void fifoExecutorRunsOtherTasksBetweenBatches() {
     Queue<Runnable> executorTasks = new ArrayDeque<>();
     ExecutionQueue queue = new ExecutionQueue(executorTasks::add);
     List<String> completed = new ArrayList<>();

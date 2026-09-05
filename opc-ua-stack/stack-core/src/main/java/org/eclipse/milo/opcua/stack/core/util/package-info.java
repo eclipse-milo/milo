@@ -16,10 +16,10 @@
  * resource lifecycles; utility objects do not own its channels, sessions, or executor shutdown.
  *
  * <p>{@link org.eclipse.milo.opcua.stack.core.util.ExecutionQueue} serializes callbacks by default
- * and can permit an explicit number of concurrent workers. It retains queued tasks through executor
- * rejection by running the rejected worker on the submitting thread. Pausing stops new task
- * execution after currently running callbacks finish; resuming makes queued tasks eligible again.
- * Callbacks run outside the queue lock, and normal asynchronous workers yield between small batches
- * so other users of the executor can make progress.
+ * and can permit an explicit number of concurrent workers. It retains queued tasks when executor
+ * dispatch throws a runtime exception by running the worker on the submitting thread. Pausing stops
+ * new task execution after currently running callbacks finish; resuming makes queued tasks eligible
+ * again. Callbacks run outside the queue lock. Workers submit a continuation between small batches;
+ * scheduling among executor users depends on the supplied executor.
  */
 package org.eclipse.milo.opcua.stack.core.util;
