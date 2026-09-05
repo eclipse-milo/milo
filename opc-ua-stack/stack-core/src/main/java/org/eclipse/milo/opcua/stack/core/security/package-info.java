@@ -127,6 +127,12 @@
  * file. Separate store instances and processes do not share a write lock, so applications must
  * coordinate writes that overlap.
  *
+ * <p>{@link org.eclipse.milo.opcua.stack.core.security.FileBasedTrustListManager} accepts imported
+ * certificate and CRL files independently of their names. Removal finds those files by their
+ * decoded contents; removing CRLs from a bundle preserves its unrelated entries. Persistence
+ * remains best-effort on I/O failure, and a subsequent directory reload reconciles the published
+ * snapshot with the files that remain.
+ *
  * <p>{@link org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager} provides a
  * thread-safe mutable group registry. Applications own the groups and their backing stores,
  * trust-list managers, and quarantines. Removing or replacing a group returns it to the application
