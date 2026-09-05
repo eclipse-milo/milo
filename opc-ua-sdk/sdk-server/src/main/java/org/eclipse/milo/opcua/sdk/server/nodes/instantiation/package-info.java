@@ -22,7 +22,8 @@
  * classified and provenance preserved for diagnostics.
  *
  * <p>The cache coordinates explicit invalidation with pending compilations. A load that overlaps
- * invalidation retries against the current cache before returning a model.
+ * invalidation retries against the current cache before returning a model. Fingerprints retain type
+ * and element boundaries so apply can reject plans compiled against different attribute values.
  *
  * <p><strong>Experimental:</strong> this package is new API, subject to adjustment for one minor
  * release based on experience from Milo's in-tree migrations and validation of the placeholder
