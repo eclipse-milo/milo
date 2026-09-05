@@ -89,7 +89,10 @@ public class CertificateRequestedAuditEventTypeNode extends AuditUpdateMethodEve
   @Override
   public void writeCertificateGroup(NodeId value) throws UaException {
     try {
-      writeCertificateGroupAsync(value).get();
+      StatusCode statusCode = writeCertificateGroupAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -162,7 +165,10 @@ public class CertificateRequestedAuditEventTypeNode extends AuditUpdateMethodEve
   @Override
   public void writeCertificateType(NodeId value) throws UaException {
     try {
-      writeCertificateTypeAsync(value).get();
+      StatusCode statusCode = writeCertificateTypeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

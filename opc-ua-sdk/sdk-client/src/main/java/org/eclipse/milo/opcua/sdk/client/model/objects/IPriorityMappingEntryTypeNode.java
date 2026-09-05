@@ -88,7 +88,10 @@ public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
   @Override
   public void writeMappingUri(String value) throws UaException {
     try {
-      writeMappingUriAsync(value).get();
+      StatusCode statusCode = writeMappingUriAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -158,7 +161,10 @@ public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
   @Override
   public void writePriorityLabel(String value) throws UaException {
     try {
-      writePriorityLabelAsync(value).get();
+      StatusCode statusCode = writePriorityLabelAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -228,7 +234,10 @@ public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
   @Override
   public void writePriorityValuePcp(UByte value) throws UaException {
     try {
-      writePriorityValuePcpAsync(value).get();
+      StatusCode statusCode = writePriorityValuePcpAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -301,7 +310,10 @@ public class IPriorityMappingEntryTypeNode extends BaseInterfaceTypeNode
   @Override
   public void writePriorityValueDscp(UInteger value) throws UaException {
     try {
-      writePriorityValueDscpAsync(value).get();
+      StatusCode statusCode = writePriorityValueDscpAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

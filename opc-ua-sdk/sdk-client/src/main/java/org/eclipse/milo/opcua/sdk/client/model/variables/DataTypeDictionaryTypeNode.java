@@ -104,7 +104,10 @@ public class DataTypeDictionaryTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeDataTypeVersion(String value) throws UaException {
     try {
-      writeDataTypeVersionAsync(value).get();
+      StatusCode statusCode = writeDataTypeVersionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -174,7 +177,10 @@ public class DataTypeDictionaryTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeNamespaceUri(String value) throws UaException {
     try {
-      writeNamespaceUriAsync(value).get();
+      StatusCode statusCode = writeNamespaceUriAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -244,7 +250,10 @@ public class DataTypeDictionaryTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeDeprecated(Boolean value) throws UaException {
     try {
-      writeDeprecatedAsync(value).get();
+      StatusCode statusCode = writeDeprecatedAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

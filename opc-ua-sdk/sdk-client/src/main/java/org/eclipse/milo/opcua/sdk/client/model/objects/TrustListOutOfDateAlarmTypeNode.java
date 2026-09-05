@@ -89,7 +89,10 @@ public class TrustListOutOfDateAlarmTypeNode extends SystemOffNormalAlarmTypeNod
   @Override
   public void writeTrustListId(NodeId value) throws UaException {
     try {
-      writeTrustListIdAsync(value).get();
+      StatusCode statusCode = writeTrustListIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -159,7 +162,10 @@ public class TrustListOutOfDateAlarmTypeNode extends SystemOffNormalAlarmTypeNod
   @Override
   public void writeLastUpdateTime(DateTime value) throws UaException {
     try {
-      writeLastUpdateTimeAsync(value).get();
+      StatusCode statusCode = writeLastUpdateTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -229,7 +235,10 @@ public class TrustListOutOfDateAlarmTypeNode extends SystemOffNormalAlarmTypeNod
   @Override
   public void writeUpdateFrequency(Double value) throws UaException {
     try {
-      writeUpdateFrequencyAsync(value).get();
+      StatusCode statusCode = writeUpdateFrequencyAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

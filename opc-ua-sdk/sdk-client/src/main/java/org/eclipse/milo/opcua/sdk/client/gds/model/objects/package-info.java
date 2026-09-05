@@ -24,20 +24,20 @@
  * <p>Instances of these classes are produced by {@link
  * org.eclipse.milo.opcua.sdk.client.AddressSpace} once the types are registered with the client's
  * {@link org.eclipse.milo.opcua.sdk.client.ObjectTypeManager} by {@link
- * org.eclipse.milo.opcua.sdk.client.gds.ObjectTypeInitializer}. That initializer resolves the GDS
- * namespace index through the client's live {@link
+ * org.eclipse.milo.opcua.sdk.client.gds.model.ObjectTypeInitializer}. That initializer resolves the
+ * GDS namespace index through the client's live {@link
  * org.eclipse.milo.opcua.stack.core.NamespaceTable}, so it can only run against a connected client
  * and is not part of the namespace 0 startup path.
  *
  * <h2>Regeneration</h2>
  *
  * <p>Every class in this package, together with {@link
- * org.eclipse.milo.opcua.sdk.client.gds.ObjectTypeInitializer} and {@link
- * org.eclipse.milo.opcua.sdk.client.gds.VariableTypeInitializer}, is generated and must not be
- * edited by hand. The source is the {@code gds-model-client} module of <a
+ * org.eclipse.milo.opcua.sdk.client.gds.model.ObjectTypeInitializer} and {@link
+ * org.eclipse.milo.opcua.sdk.client.gds.model.VariableTypeInitializer}, is generated and must not
+ * be edited by hand. The source is the {@code gds-model-client} module of <a
  * href="https://github.com/kevinherron/opc-ua-gds-model">opc-ua-gds-model</a> at commit {@code
- * efa229d} (GDS NodeSet2 1.05.07), copied in with {@code com.digitalpetri.opcua.gds.client}
- * rewritten to {@code org.eclipse.milo.opcua.sdk.client.gds} and {@code
+ * 800aeae} (GDS NodeSet2 1.05.07), copied in with {@code com.digitalpetri.opcua.gds.client}
+ * rewritten to {@code org.eclipse.milo.opcua.sdk.client.gds.model} and {@code
  * com.digitalpetri.opcua.gds.client.objects} rewritten to this package. See {@code
  * docs/features/gds-client.md} for the procedure.
  */

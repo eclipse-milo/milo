@@ -91,7 +91,10 @@ public class DataSetWriterTypeNode extends BaseObjectTypeNode implements DataSet
   @Override
   public void writeDataSetWriterId(UShort value) throws UaException {
     try {
-      writeDataSetWriterIdAsync(value).get();
+      StatusCode statusCode = writeDataSetWriterIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -161,7 +164,10 @@ public class DataSetWriterTypeNode extends BaseObjectTypeNode implements DataSet
   @Override
   public void writeDataSetFieldContentMask(DataSetFieldContentMask value) throws UaException {
     try {
-      writeDataSetFieldContentMaskAsync(value).get();
+      StatusCode statusCode = writeDataSetFieldContentMaskAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -235,7 +241,10 @@ public class DataSetWriterTypeNode extends BaseObjectTypeNode implements DataSet
   @Override
   public void writeKeyFrameCount(UInteger value) throws UaException {
     try {
-      writeKeyFrameCountAsync(value).get();
+      StatusCode statusCode = writeKeyFrameCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -307,7 +316,10 @@ public class DataSetWriterTypeNode extends BaseObjectTypeNode implements DataSet
   @Override
   public void writeDataSetWriterProperties(KeyValuePair[] value) throws UaException {
     try {
-      writeDataSetWriterPropertiesAsync(value).get();
+      StatusCode statusCode = writeDataSetWriterPropertiesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

@@ -92,7 +92,10 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
   @Override
   public void writeServerArray(String[] value) throws UaException {
     try {
-      writeServerArrayAsync(value).get();
+      StatusCode statusCode = writeServerArrayAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -162,7 +165,10 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
   @Override
   public void writeNamespaceArray(String[] value) throws UaException {
     try {
-      writeNamespaceArrayAsync(value).get();
+      StatusCode statusCode = writeNamespaceArrayAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -232,7 +238,10 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
   @Override
   public void writeUrisVersion(UInteger value) throws UaException {
     try {
-      writeUrisVersionAsync(value).get();
+      StatusCode statusCode = writeUrisVersionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -302,7 +311,10 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
   @Override
   public void writeServiceLevel(UByte value) throws UaException {
     try {
-      writeServiceLevelAsync(value).get();
+      StatusCode statusCode = writeServiceLevelAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -372,7 +384,10 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
   @Override
   public void writeAuditing(Boolean value) throws UaException {
     try {
-      writeAuditingAsync(value).get();
+      StatusCode statusCode = writeAuditingAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -442,7 +457,10 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
   @Override
   public void writeEstimatedReturnTime(DateTime value) throws UaException {
     try {
-      writeEstimatedReturnTimeAsync(value).get();
+      StatusCode statusCode = writeEstimatedReturnTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -516,7 +534,10 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
   @Override
   public void writeLocalTime(TimeZoneDataType value) throws UaException {
     try {
-      writeLocalTimeAsync(value).get();
+      StatusCode statusCode = writeLocalTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -588,7 +609,10 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
   @Override
   public void writeServerStatus(ServerStatusDataType value) throws UaException {
     try {
-      writeServerStatusAsync(value).get();
+      StatusCode statusCode = writeServerStatusAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

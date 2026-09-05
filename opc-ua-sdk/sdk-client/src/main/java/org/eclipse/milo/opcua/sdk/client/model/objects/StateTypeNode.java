@@ -87,7 +87,10 @@ public class StateTypeNode extends BaseObjectTypeNode implements StateType {
   @Override
   public void writeStateNumber(UInteger value) throws UaException {
     try {
-      writeStateNumberAsync(value).get();
+      StatusCode statusCode = writeStateNumberAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

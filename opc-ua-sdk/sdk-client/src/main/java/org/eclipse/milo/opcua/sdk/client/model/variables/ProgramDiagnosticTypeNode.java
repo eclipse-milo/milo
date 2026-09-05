@@ -107,7 +107,10 @@ public class ProgramDiagnosticTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeCreateSessionId(NodeId value) throws UaException {
     try {
-      writeCreateSessionIdAsync(value).get();
+      StatusCode statusCode = writeCreateSessionIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -177,7 +180,10 @@ public class ProgramDiagnosticTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeCreateClientName(String value) throws UaException {
     try {
-      writeCreateClientNameAsync(value).get();
+      StatusCode statusCode = writeCreateClientNameAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -250,7 +256,10 @@ public class ProgramDiagnosticTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeInvocationCreationTime(DateTime value) throws UaException {
     try {
-      writeInvocationCreationTimeAsync(value).get();
+      StatusCode statusCode = writeInvocationCreationTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -324,7 +333,10 @@ public class ProgramDiagnosticTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeLastTransitionTime(DateTime value) throws UaException {
     try {
-      writeLastTransitionTimeAsync(value).get();
+      StatusCode statusCode = writeLastTransitionTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -397,7 +409,10 @@ public class ProgramDiagnosticTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeLastMethodCall(String value) throws UaException {
     try {
-      writeLastMethodCallAsync(value).get();
+      StatusCode statusCode = writeLastMethodCallAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -467,7 +482,10 @@ public class ProgramDiagnosticTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeLastMethodSessionId(NodeId value) throws UaException {
     try {
-      writeLastMethodSessionIdAsync(value).get();
+      StatusCode statusCode = writeLastMethodSessionIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -540,7 +558,10 @@ public class ProgramDiagnosticTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeLastMethodInputArguments(Object[] value) throws UaException {
     try {
-      writeLastMethodInputArgumentsAsync(value).get();
+      StatusCode statusCode = writeLastMethodInputArgumentsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -614,7 +635,10 @@ public class ProgramDiagnosticTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeLastMethodOutputArguments(Object[] value) throws UaException {
     try {
-      writeLastMethodOutputArgumentsAsync(value).get();
+      StatusCode statusCode = writeLastMethodOutputArgumentsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -688,7 +712,10 @@ public class ProgramDiagnosticTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeLastMethodCallTime(DateTime value) throws UaException {
     try {
-      writeLastMethodCallTimeAsync(value).get();
+      StatusCode statusCode = writeLastMethodCallTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -762,7 +789,10 @@ public class ProgramDiagnosticTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeLastMethodReturnStatus(StatusResult value) throws UaException {
     try {
-      writeLastMethodReturnStatusAsync(value).get();
+      StatusCode statusCode = writeLastMethodReturnStatusAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
