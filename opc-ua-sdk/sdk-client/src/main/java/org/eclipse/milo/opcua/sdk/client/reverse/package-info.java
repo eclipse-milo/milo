@@ -96,6 +96,9 @@
  * consumes one pre-claimed connection directly, installs the standard client UASC pipeline, and
  * then lets the Session FSM create and maintain the Session as it would for outbound TCP.
  *
+ * <p>Shutdown fences listener installation, including a startup still in application bootstrap
+ * customization.
+ *
  * <h2>Security boundary</h2>
  *
  * <p>{@code ReverseHello} is only a routing and resource-admission hint. The types here

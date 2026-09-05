@@ -108,6 +108,46 @@ class ReverseConnectManagerTest {
     assertFalse(stopped.listeners().get(0).bound());
   }
 
+  // A shutdown completed during application customization must fence the later listener bind.
+  @Test
+  void shutdownDuringStartupPreventsLateListenerBind() throws Exception {
+    CountDownLatch customizing = new CountDownLatch(1);
+    CountDownLatch resumeStartup = new CountDownLatch(1);
+    manager =
+        newManagerBuilder()
+            .setBootstrapCustomizer(
+                bootstrap -> {
+                  customizing.countDown();
+                  try {
+                    assertTrue(resumeStartup.await(5, TimeUnit.SECONDS));
+                  } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new AssertionError(e);
+                  }
+                })
+            .build();
+    ExecutorService startupExecutor = Executors.newSingleThreadExecutor();
+    try {
+      Future<?> startup =
+          startupExecutor.submit(
+              () -> {
+                manager.startup();
+                return null;
+              });
+      assertTrue(customizing.await(5, TimeUnit.SECONDS));
+      manager.shutdown();
+      resumeStartup.countDown();
+      ExecutionException failure =
+          assertThrows(ExecutionException.class, () -> startup.get(5, TimeUnit.SECONDS));
+      assertInstanceOf(CancellationException.class, failure.getCause());
+      assertFalse(manager.snapshot().running());
+      assertFalse(manager.snapshot().listeners().get(0).bound());
+    } finally {
+      resumeStartup.countDown();
+      startupExecutor.shutdownNow();
+    }
+  }
+
   @Test
   void shutdownCancelsPreStartupRegistrations() {
     manager = newManagerBuilder().build();

@@ -211,6 +211,10 @@ public final class ReverseConnectManager implements AutoCloseable {
           listenerQueue.pause();
           lock.lock();
           try {
+            if (!running) {
+              throw new CancellationException("ReverseConnectManager stopped during startup");
+            }
+
             ChannelFuture bindFuture = bootstrap.bind(listenerState.bindAddress).sync();
 
             listenerState.bindChannel = bindFuture.channel();
