@@ -21,6 +21,13 @@
  * org.eclipse.milo.opcua.sdk.server.nodes.instantiation.BrowsePath}, with every ModellingRule
  * classified and provenance preserved for diagnostics.
  *
+ * <p>The cache coordinates explicit invalidation with pending compilations. A load that overlaps
+ * invalidation retries against the current cache before returning a model. Attribute snapshots copy
+ * arrays and standard OPC UA structures on both ingress and egress; application values without a
+ * standard codec, including standard structures that contain them, must be immutable. Fingerprints
+ * retain type and element boundaries so apply can reject plans compiled against different attribute
+ * values.
+ *
  * <p>Instantiation results own the node and reference additions recorded by their commit. Cleanup
  * and rollback check object identity before removing those additions, preserving replacements
  * installed later under the same identifiers. Built-in node managers make those checks atomic with
