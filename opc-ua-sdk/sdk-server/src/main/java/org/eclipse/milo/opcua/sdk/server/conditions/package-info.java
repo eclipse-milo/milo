@@ -49,6 +49,11 @@
  * Condition through the ConditionManager, leaving the shared node and any application-installed
  * handler unchanged.
  *
+ * <p>Deferred shelving expiry is resolved before event emission or refresh copying. Field reads
+ * within those operations cannot trigger another expiry transition, so one event retains one
+ * EventId and one shelving state. Ordinary UnshelveTime reads still apply the lazy expiry fallback
+ * when a timer prompt was lost or delayed.
+ *
  * <h2>Limit-alarm data flow</h2>
  *
  * <p>Limit-alarm behavior separates domain evaluation from Condition state application. The {@code
