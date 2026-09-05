@@ -12,11 +12,12 @@
  * Legacy DataTypeDictionary registration for the OPC UA Global Discovery Server namespace.
  *
  * <p>{@link org.eclipse.milo.opcua.sdk.core.dtd.gds.BinaryDataTypeDictionaryInitializer} adds the
- * {@code ApplicationRecordDataType} entry to the OPC UA Binary type dictionary, for applications
- * that still exchange type information through OPC UA 1.03-style dictionaries instead of the
- * DataTypeDefinition attribute. Like the rest of {@code org.eclipse.milo.opcua.sdk.core.dtd} it is
- * deprecated for removal; new code should register the codec through {@link
- * org.eclipse.milo.opcua.stack.core.gds.DataTypeInitializer} instead.
+ * {@code ApplicationRecordDataType} entry to a dictionary for the GDS namespace, independently of
+ * standard dictionary initialization order, for applications that still exchange type information
+ * through OPC UA 1.03-style dictionaries instead of the DataTypeDefinition attribute. Like the rest
+ * of {@code org.eclipse.milo.opcua.sdk.core.dtd} it is deprecated for removal; new code should
+ * register the codec through {@link org.eclipse.milo.opcua.stack.core.gds.DataTypeInitializer}
+ * instead.
  *
  * <p>Generated code; see the regeneration notes in {@link org.eclipse.milo.opcua.stack.core.gds}.
  */
