@@ -2248,17 +2248,21 @@ public class OpcUaSubscription {
         modifications = null;
 
         monitoredItemPartitionSize.reset();
-        monitoredItems.values().forEach(OpcUaMonitoredItem::reset);
+        // Keep reset's handle cleanup atomic with add/remove, in the same lock order used
+        // when applying monitored-item service results.
+        synchronized (monitoredItemsLock) {
+          monitoredItems.values().forEach(OpcUaMonitoredItem::reset);
 
-        // MonitoredItemIds are scoped to the Subscription that no longer exists, so the items
-        // pending deletion are already gone and their ids must never be sent again. Detach them
-        // completely, including the ClientHandle, so they can be added to a Subscription again.
-        itemsToDelete.forEach(
-            item -> {
-              item.reset();
-              item.setClientHandle(null);
-            });
-        itemsToDelete.clear();
+          // MonitoredItemIds are scoped to the Subscription that no longer exists, so the items
+          // pending deletion are already gone and their ids must never be sent again. Detach them
+          // completely, including the ClientHandle, so they can be added to a Subscription again.
+          itemsToDelete.forEach(
+              item -> {
+                item.reset();
+                item.setClientHandle(null);
+              });
+          itemsToDelete.clear();
+        }
 
         syncState = SyncState.INITIAL;
       }

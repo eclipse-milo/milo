@@ -21,5 +21,8 @@
  * immutable registry snapshot; retaining it for each Publish request needs no registry lock or map
  * copy. Per-subscription processing and delivery queues preserve the order received from the
  * transport.
+ *
+ * <p>Reset and item add/remove operations coordinate collection membership and ClientHandle
+ * ownership; code requiring both locks takes the lifecycle lock before the item collection lock.
  */
 package org.eclipse.milo.opcua.sdk.client.subscriptions;
