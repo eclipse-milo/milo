@@ -420,6 +420,54 @@ public class CertificateValidationUtilTest {
     checkHostnameOrIpAddress(createSelfSignedCertificate("DigitalPetri.com"), hostname);
   }
 
+  @Test
+  public void testIpv4Address() throws Exception {
+    X509Certificate certificate = createSelfSignedCertificateWithIpAddress("192.168.0.1");
+
+    checkHostnameOrIpAddress(certificate, "192.168.0.1");
+  }
+
+  // EndpointUtil.getHost() returns IPv6 hosts in the bracketed form they have in the endpoint URL,
+  // and that value is what the client passes here (SessionFsmFactory, UsernameProvider). The
+  // certificate stores the address unbracketed.
+  @Test
+  public void testIpv6AddressInBracketedUriForm() throws Exception {
+    X509Certificate certificate = createSelfSignedCertificateWithIpAddress("2001:db8::1");
+
+    checkHostnameOrIpAddress(certificate, "[2001:db8::1]");
+  }
+
+  // The JDK renders a SubjectAltName IPAddress entry from its raw bytes, so the text in the
+  // certificate need not use the same notation the caller does.
+  @Test
+  public void testIpv6AddressNotationDiffers() throws Exception {
+    X509Certificate certificate = createSelfSignedCertificateWithIpAddress("2001:db8::1");
+
+    checkHostnameOrIpAddress(certificate, "2001:db8::1");
+    checkHostnameOrIpAddress(certificate, "2001:0db8:0000:0000:0000:0000:0000:0001");
+    checkHostnameOrIpAddress(certificate, "2001:DB8::1");
+  }
+
+  @Test
+  public void testNonMatchingIpAddressIsRejected() throws Exception {
+    X509Certificate certificate = createSelfSignedCertificateWithIpAddress("2001:db8::1");
+
+    assertThrows(UaException.class, () -> checkHostnameOrIpAddress(certificate, "[2001:db8::2]"));
+    assertThrows(UaException.class, () -> checkHostnameOrIpAddress(certificate, "192.168.0.1"));
+  }
+
+  // A host name is matched against DNSName entries only; it must never be resolved to an address
+  // and compared against IPAddress entries. Names containing ':' are included because
+  // InetAddress.getByName() would hand those to the system resolver.
+  @Test
+  public void testHostNameIsNotResolvedToIpAddress() throws Exception {
+    X509Certificate certificate = createSelfSignedCertificateWithIpAddress("127.0.0.1");
+
+    assertThrows(UaException.class, () -> checkHostnameOrIpAddress(certificate, "localhost"));
+    assertThrows(UaException.class, () -> checkHostnameOrIpAddress(certificate, "[not:an:ip]"));
+    assertThrows(UaException.class, () -> checkHostnameOrIpAddress(certificate, "not:an:ip"));
+  }
+
   private X509CRL generateCrl(
       X509Certificate ca, PrivateKey caPrivateKey, X509Certificate... revoked) throws Exception {
     X509v2CRLBuilder builder =
@@ -456,6 +504,19 @@ public class CertificateValidationUtilTest {
         new SelfSignedCertificateBuilder(keyPair)
             .setApplicationUri("urn:eclipse:milo:test")
             .addDnsName(dnsName);
+
+    return builder.build();
+  }
+
+  private static X509Certificate createSelfSignedCertificateWithIpAddress(String ipAddress)
+      throws Exception {
+
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+
+    SelfSignedCertificateBuilder builder =
+        new SelfSignedCertificateBuilder(keyPair)
+            .setApplicationUri("urn:eclipse:milo:test")
+            .addIpAddress(ipAddress);
 
     return builder.build();
   }
