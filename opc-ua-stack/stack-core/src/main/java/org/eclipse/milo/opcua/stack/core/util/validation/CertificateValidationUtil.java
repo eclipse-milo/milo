@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.util.validation;
 
 import com.google.common.base.Preconditions;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.PublicKey;
@@ -44,6 +46,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.GeneralName;
@@ -66,6 +69,11 @@ public class CertificateValidationUtil {
   private static final int SUBJECT_ALT_NAME_URI = 6;
   private static final int SUBJECT_ALT_NAME_DNS_NAME = 2;
   private static final int SUBJECT_ALT_NAME_IP_ADDRESS = 7;
+
+  /** Matches a dotted-quad IPv4 literal, rejecting any octet outside 0-255. */
+  private static final Pattern IPV4_LITERAL =
+      Pattern.compile(
+          "(?:(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)\\.){3}(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)");
 
   /**
    * Given a possibly partial certificate chain with at least one certificate in it, builds a path
@@ -478,8 +486,13 @@ public class CertificateValidationUtil {
    * Validate that one of {@code hostNames} matches a SubjectAltName DNSName or IPAddress entry in
    * the certificate.
    *
+   * <p>DNSName entries are compared case-insensitively. IPAddress entries are compared by address
+   * rather than by text, so that the same address written in different forms still matches; an
+   * entry that is not an IP address literal never matches.
+   *
    * @param certificate the certificate to validate against.
-   * @param hostNames the host names or ip addresses to look for.
+   * @param hostNames the host names or ip addresses to look for. IPv6 addresses may be given in
+   *     either the bare or the bracketed URI form.
    * @throws UaException if there is no matching DNSName or IPAddress entry.
    */
   public static void checkHostnameOrIpAddress(X509Certificate certificate, String... hostNames)
@@ -504,9 +517,19 @@ public class CertificateValidationUtil {
         Arrays.stream(hostNames)
             .anyMatch(
                 n -> {
+                  byte[] address = parseIpAddress(n);
+
+                  if (address == null) {
+                    return false;
+                  }
+
                   try {
                     return checkSubjectAltNameField(
-                        certificate, SUBJECT_ALT_NAME_IP_ADDRESS, n::equals);
+                        certificate,
+                        SUBJECT_ALT_NAME_IP_ADDRESS,
+                        fieldValue ->
+                            (fieldValue instanceof String s)
+                                && Arrays.equals(address, parseIpAddress(s)));
                   } catch (Throwable t) {
                     return false;
                   }
@@ -627,6 +650,36 @@ public class CertificateValidationUtil {
       } catch (IOException | CertificateEncodingException e) {
         throw new UaException(StatusCodes.Bad_CertificateUriInvalid, e);
       }
+    }
+  }
+
+  /**
+   * Parse a textual IP address into its raw address bytes.
+   *
+   * <p>No name resolution is attempted: an argument that is not an IP address literal returns
+   * {@code null} rather than being looked up.
+   *
+   * @param address an IPv4 or IPv6 address literal. IPv6 literals may be bracketed, as they appear
+   *     in the host component of a URL (RFC 3986, section 3.2.2).
+   * @return the raw address bytes, or {@code null} if {@code address} is not an IP address literal.
+   */
+  private static byte[] parseIpAddress(String address) {
+    String literal = address;
+
+    if (literal.length() > 2 && literal.startsWith("[") && literal.endsWith("]")) {
+      literal = literal.substring(1, literal.length() - 1);
+    }
+
+    // A DNS name can contain neither ':' nor the strict dotted-quad form, so getByName() resolves
+    // both of these as literals and never performs a lookup.
+    if (literal.indexOf(':') < 0 && !IPV4_LITERAL.matcher(literal).matches()) {
+      return null;
+    }
+
+    try {
+      return InetAddress.getByName(literal).getAddress();
+    } catch (UnknownHostException e) {
+      return null;
     }
   }
 
