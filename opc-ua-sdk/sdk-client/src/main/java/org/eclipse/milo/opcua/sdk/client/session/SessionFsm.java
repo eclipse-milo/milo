@@ -12,9 +12,12 @@ package org.eclipse.milo.opcua.sdk.client.session;
 
 import com.digitalpetri.fsm.Fsm;
 import com.digitalpetri.fsm.FsmContext;
+import com.google.common.util.concurrent.MoreExecutors;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
@@ -34,7 +37,7 @@ public class SessionFsm {
 
   private final Fsm<State, Event> fsm;
 
-  SessionFsm(Fsm<State, Event> fsm) {
+  SessionFsm(Fsm<State, Event> fsm, Executor executor) {
     this.fsm = fsm;
 
     sessionInitializers =
@@ -47,7 +50,7 @@ public class SessionFsm {
     sessionActivityListeners =
         fsm.getFromContext(
             ctx -> {
-              KEY_SESSION_ACTIVITY_LISTENERS.set(ctx, new SessionActivityListeners());
+              KEY_SESSION_ACTIVITY_LISTENERS.set(ctx, new SessionActivityListeners(executor));
               return KEY_SESSION_ACTIVITY_LISTENERS.get(ctx).sessionActivityListeners;
             });
   }
@@ -191,7 +194,21 @@ public class SessionFsm {
   }
 
   static class SessionActivityListeners {
-    private SessionActivityListeners() {}
+    final Executor executor;
+
+    private SessionActivityListeners(Executor delegate) {
+      executor =
+          MoreExecutors.newSequentialExecutor(
+              command -> {
+                try {
+                  delegate.execute(command);
+                } catch (RejectedExecutionException e) {
+                  // Lifecycle notifications must remain ordered even when dispatch falls back
+                  // inline.
+                  command.run();
+                }
+              });
+    }
 
     final List<SessionActivityListener> sessionActivityListeners = new CopyOnWriteArrayList<>();
   }

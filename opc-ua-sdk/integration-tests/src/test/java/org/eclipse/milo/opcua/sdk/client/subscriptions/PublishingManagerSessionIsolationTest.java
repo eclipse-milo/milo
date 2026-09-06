@@ -20,6 +20,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -202,7 +203,7 @@ public class PublishingManagerSessionIsolationTest {
       subscriptionDetailsClass =
           Class.forName(PublishingManager.class.getName() + "$SubscriptionDetails");
 
-      Map<UInteger, Object> details = subscriptionDetails(manager);
+      var details = new HashMap<UInteger, Object>();
 
       primaryDetails = newSubscriptionDetails(subscriptionId);
 
@@ -210,6 +211,7 @@ public class PublishingManagerSessionIsolationTest {
         UInteger id = uint(i + 1L);
         details.put(id, i == 0 ? primaryDetails : newSubscriptionDetails(id));
       }
+      setSubscriptionDetails(Map.copyOf(details));
     }
 
     UaSession newSession() {
@@ -227,8 +229,7 @@ public class PublishingManagerSessionIsolationTest {
     }
 
     void retainOnlyPrimarySubscription() throws Exception {
-      Map<UInteger, Object> details = subscriptionDetails(manager);
-      details.keySet().removeIf(id -> !id.equals(subscriptionId));
+      setSubscriptionDetails(Map.of(subscriptionId, primaryDetails));
     }
 
     void setResponder(
@@ -327,14 +328,12 @@ public class PublishingManagerSessionIsolationTest {
           subscription, id, (java.util.concurrent.Executor) Runnable::run);
     }
 
-    @SuppressWarnings("unchecked")
-    private static Map<UInteger, Object> subscriptionDetails(PublishingManager manager)
-        throws Exception {
+    private void setSubscriptionDetails(Map<UInteger, Object> details) throws Exception {
 
       Field field = PublishingManager.class.getDeclaredField("subscriptionDetails");
       field.setAccessible(true);
 
-      return (Map<UInteger, Object>) field.get(manager);
+      field.set(manager, details);
     }
   }
 }
