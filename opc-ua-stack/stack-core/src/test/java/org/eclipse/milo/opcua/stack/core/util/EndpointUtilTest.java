@@ -42,10 +42,8 @@ public class EndpointUtilTest {
         "/no spaces allowed", EndpointUtil.getPath("opc.tcp://localhost:4840/no spaces allowed"));
   }
 
-  // RFC 3986 section 3.1 makes scheme names case-insensitive, and Part 6 endpoint URLs inherit
-  // that. Consumers already normalize the scheme themselves (DiscoveryClient lowercases it, the
-  // HTTPS and WebSocket transports use equalsIgnoreCase), so parsing must not reject a mixed-case
-  // scheme before they get the chance.
+  // RFC 3986 section 3.1 defines scheme names as case-insensitive. Parsing must accept mixed-case
+  // schemes so discovery and transport selection can recognize them.
   @ParameterizedTest
   @ValueSource(strings = {"opc.tcp", "OPC.TCP", "Opc.Tcp", "opc.wss", "OPC.WSS", "https", "HTTPS"})
   public void testMixedCaseScheme(String scheme) {
@@ -57,9 +55,8 @@ public class EndpointUtilTest {
     assertEquals("/foo", EndpointUtil.getPath(endpointUrl));
   }
 
-  // A server matches an incoming Hello against its configured endpoints by comparing paths
-  // (UascServerHelloHandler, UascServerAsymmetricHandler). An unmatched URL silently yields "/",
-  // which matches the wrong endpoint rather than failing loudly.
+  // Server endpoint selection compares paths. Falling back to "/" for a mixed-case scheme can
+  // select a root endpoint instead of the requested path.
   @Test
   public void testGetPath_MixedCaseScheme() {
     assertEquals("/foo", EndpointUtil.getPath("OPC.TCP://localhost:4840/foo"));
@@ -68,8 +65,8 @@ public class EndpointUtilTest {
     assertEquals("/", EndpointUtil.getPath("OPC.TCP://localhost:4840"));
   }
 
-  // Servers behind NAT rewrite the hostname of the endpoints they advertise. A URL the parser
-  // rejects is returned unchanged, leaving the client with an unreachable address.
+  // Hostname overrides must also work with mixed-case schemes, including when clients connect
+  // through NAT and the advertised hostname is unreachable.
   @Test
   public void testUpdateUrlWithMixedCaseScheme() {
     assertEquals("OPC.TCP://localhost2:4840", updateUrl("OPC.TCP://localhost:4840", "localhost2"));
@@ -93,8 +90,7 @@ public class EndpointUtilTest {
     assertEquals("OPC.TCP://[2001:db8::1]:4840/foo", updateUrl(endpointUrl, "[2001:db8::1]"));
   }
 
-  // An unrecognized scheme must still be rejected; case-insensitivity is not a license to parse
-  // anything.
+  // Unsupported schemes such as FTP must remain rejected regardless of case.
   @Test
   public void testUnknownSchemeIsStillRejected() {
     assertNull(EndpointUtil.getScheme("ftp://localhost:4840/foo"));

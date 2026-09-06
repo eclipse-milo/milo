@@ -22,9 +22,8 @@ public class EndpointUtil {
    * Matches an endpoint URL, capturing the scheme, host, port, and path.
    *
    * <p>Matched case-insensitively because URL scheme names are case-insensitive (RFC 3986, section
-   * 3.1). Only the scheme alternation is affected; the remaining groups contain no letters. The
-   * scheme is captured verbatim rather than normalized, so callers that compare it must do so
-   * case-insensitively.
+   * 3.1). Only the scheme alternatives contain literal letters, so the flag does not affect host,
+   * port, or path matching. Captured components retain their original spelling.
    */
   private static final Pattern ENDPOINT_URL_PATTERN =
       Pattern.compile(
@@ -40,7 +39,7 @@ public class EndpointUtil {
    *
    * @param endpointUrl the endpoint URL.
    * @return the scheme component from the endpoint URL, or {@code null} if {@code endpointUrl} is
-   *     null or does not name a supported scheme.
+   *     null or does not match the endpoint URL pattern.
    */
   public static @Nullable String getScheme(String endpointUrl) {
     if (endpointUrl != null) {
