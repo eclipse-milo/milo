@@ -30,7 +30,6 @@ import java.security.Signature;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
@@ -443,11 +442,6 @@ class UascChunkRecoveryTest {
 
   private static final UascServerConfig CONFIG =
       new UascServerConfig() {
-        @Override
-        public ExecutorService getExecutor() {
-          return null;
-        }
-
         @Override
         public UInteger getHelloDeadline() {
           return uint(60_000);

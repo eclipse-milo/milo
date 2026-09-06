@@ -16,14 +16,12 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
-import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 
 public class OpcTcpServerTransportConfigBuilder {
 
-  private ExecutorService executor;
   private EventLoopGroup eventLoop;
   private UInteger helloDeadline = uint(10_000);
   private UInteger minimumSecureChannelLifetime = uint(60_000);
@@ -31,11 +29,6 @@ public class OpcTcpServerTransportConfigBuilder {
   private Consumer<ServerBootstrap> bootstrapCustomizer = b -> {};
   private Consumer<Bootstrap> reverseConnectBootstrapCustomizer = b -> {};
   private Consumer<ChannelPipeline> channelPipelineCustomizer = p -> {};
-
-  public OpcTcpServerTransportConfigBuilder setExecutor(ExecutorService executor) {
-    this.executor = executor;
-    return this;
-  }
 
   public OpcTcpServerTransportConfigBuilder setEventLoop(EventLoopGroup eventLoop) {
     this.eventLoop = eventLoop;
@@ -105,15 +98,11 @@ public class OpcTcpServerTransportConfigBuilder {
   }
 
   public OpcTcpServerTransportConfig build() {
-    if (executor == null) {
-      executor = Stack.sharedExecutor();
-    }
     if (eventLoop == null) {
       eventLoop = Stack.sharedEventLoop();
     }
 
     return new OpcTcpServerTransportConfigImpl(
-        executor,
         eventLoop,
         bootstrapCustomizer,
         reverseConnectBootstrapCustomizer,
@@ -125,7 +114,6 @@ public class OpcTcpServerTransportConfigBuilder {
 
   static class OpcTcpServerTransportConfigImpl implements OpcTcpServerTransportConfig {
 
-    private final ExecutorService executor;
     private final EventLoopGroup eventLoop;
     private final UInteger helloDeadline;
     private final UInteger minimumSecureChannelLifetime;
@@ -135,7 +123,6 @@ public class OpcTcpServerTransportConfigBuilder {
     private final Consumer<ChannelPipeline> channelPipelineCustomizer;
 
     public OpcTcpServerTransportConfigImpl(
-        ExecutorService executor,
         EventLoopGroup eventLoop,
         Consumer<ServerBootstrap> bootstrapCustomizer,
         Consumer<Bootstrap> reverseConnectBootstrapCustomizer,
@@ -144,7 +131,6 @@ public class OpcTcpServerTransportConfigBuilder {
         UInteger minimumSecureChannelLifetime,
         UInteger maximumSecureChannelLifetime) {
 
-      this.executor = executor;
       this.eventLoop = eventLoop;
       this.bootstrapCustomizer = bootstrapCustomizer;
       this.reverseConnectBootstrapCustomizer = reverseConnectBootstrapCustomizer;
@@ -152,11 +138,6 @@ public class OpcTcpServerTransportConfigBuilder {
       this.helloDeadline = helloDeadline;
       this.minimumSecureChannelLifetime = minimumSecureChannelLifetime;
       this.maximumSecureChannelLifetime = maximumSecureChannelLifetime;
-    }
-
-    @Override
-    public ExecutorService getExecutor() {
-      return executor;
     }
 
     @Override
