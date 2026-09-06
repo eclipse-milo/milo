@@ -94,7 +94,7 @@ public class UascServerSymmetricHandler extends ByteToMessageCodec<UascServiceRe
 
   @Override
   public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
-    ctx.pipeline().addLast(new UascServiceRequestHandler(config, applicationContext));
+    ctx.pipeline().addLast(new UascServiceRequestHandler(applicationContext));
 
     super.handlerAdded(ctx);
   }

@@ -22,7 +22,6 @@ import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
 import org.eclipse.milo.opcua.stack.core.channel.ChannelParameters;
 import org.eclipse.milo.opcua.stack.core.channel.ChannelSecurity;
 import org.eclipse.milo.opcua.stack.core.channel.ChunkDecoder;
@@ -183,11 +182,6 @@ class UascServerSymmetricHandlerTest {
 
   private static UascServerConfig stubConfig() {
     return new UascServerConfig() {
-      @Override
-      public ExecutorService getExecutor() {
-        return null;
-      }
-
       @Override
       public UInteger getHelloDeadline() {
         return uint(0);

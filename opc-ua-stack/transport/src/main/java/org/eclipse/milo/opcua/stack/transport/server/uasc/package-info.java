@@ -24,6 +24,7 @@
  * <p>Buffer ownership stays on the channel's event loop. Accumulation transfers retained buffers to
  * the decoder for message completion, and disconnect, handler removal, and exception cleanup
  * release buffers still owned by the handler. Service dispatch begins only after successful
- * decoding and uses the executor supplied by the server transport configuration.
+ * decoding and hands the request to the {@code ServerApplicationContext} on the event loop thread;
+ * any handoff to an application executor is the application context's responsibility.
  */
 package org.eclipse.milo.opcua.stack.transport.server.uasc;
