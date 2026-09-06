@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -31,6 +32,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -78,6 +80,18 @@ import org.slf4j.LoggerFactory;
  * and the next {@code startup()}, structure-changing operations ({@link #addTarget}, {@code
  * update}, and the channel- and attempt-side event handlers) throw {@link IllegalStateException};
  * configure or remove targets while the manager is running or before the first startup.
+ *
+ * <p>The manager uses two caller-owned execution resources. The scheduler only fires attempt
+ * timers; its callbacks check whether the timer is still current and hand the work to the server
+ * executor. The executor runs attempt startup (including client listener hostname resolution and
+ * transport startup), custom {@link ReverseConnectRetryPolicy} evaluation, and, through a separate
+ * serialized queue, listener callbacks. Work handed to the executor revalidates target ownership,
+ * generation, and lifecycle state when it starts, so a timer that fired before a pause, update,
+ * removal, or shutdown cannot start a stale attempt. If the executor rejects attempt startup or
+ * retry evaluation, the manager records the rejection as a failed attempt or skipped retry
+ * evaluation, emits the usual listener notifications, and reschedules the target after its
+ * registration period without consulting the custom retry policy. The manager never shuts down the
+ * executor or the scheduler.
  */
 public final class ReverseConnectTargetManager {
 
@@ -91,6 +105,7 @@ public final class ReverseConnectTargetManager {
   private final Supplier<List<EndpointDescription>> endpointDescriptions;
   private final Function<TransportProfile, OpcServerTransport> transportSupplier;
   private final String serverUri;
+  private final Executor executor;
   private final ExecutionQueue listenerQueue;
   private final ScheduledExecutorService scheduler;
 
@@ -100,12 +115,15 @@ public final class ReverseConnectTargetManager {
   /**
    * Construct a target manager for one server instance.
    *
+   * <p>The manager does not take ownership of {@code executor} or {@code scheduler}; the caller
+   * remains responsible for shutting them down.
+   *
    * @param applicationContext the server application context used by reverse-opened channels.
    * @param endpointDescriptions supplies current endpoint descriptions for target validation.
    * @param transportSupplier supplies the server transport for a transport profile.
    * @param serverUri the server application URI advertised in {@code ReverseHello}.
-   * @param listenerExecutor dispatches target and attempt listener callbacks.
-   * @param scheduler schedules initial, retry, and reconnect attempts.
+   * @param executor runs attempt startup, retry-policy evaluation, and listener callbacks.
+   * @param scheduler fires timers for initial, retry, and reconnect attempts.
    * @param initialTargets the targets registered when the server is constructed.
    */
   public ReverseConnectTargetManager(
@@ -113,7 +131,7 @@ public final class ReverseConnectTargetManager {
       Supplier<List<EndpointDescription>> endpointDescriptions,
       Function<TransportProfile, OpcServerTransport> transportSupplier,
       String serverUri,
-      ExecutorService listenerExecutor,
+      ExecutorService executor,
       ScheduledExecutorService scheduler,
       Collection<ReverseConnectTarget> initialTargets) {
 
@@ -121,7 +139,8 @@ public final class ReverseConnectTargetManager {
     this.endpointDescriptions = requireNonNull(endpointDescriptions, "endpointDescriptions");
     this.transportSupplier = requireNonNull(transportSupplier, "transportSupplier");
     this.serverUri = requireNonNull(serverUri, "serverUri");
-    this.listenerQueue = new ExecutionQueue(requireNonNull(listenerExecutor, "listenerExecutor"));
+    this.executor = requireNonNull(executor, "executor");
+    this.listenerQueue = new ExecutionQueue(executor);
     this.scheduler = requireNonNull(scheduler, "scheduler");
 
     requireNonNull(initialTargets, "initialTargets");
@@ -588,7 +607,7 @@ public final class ReverseConnectTargetManager {
     record.nextAttemptTime = Instant.now().plusMillis(normalizedDelayMillis);
     record.scheduledFuture =
         scheduler.schedule(
-            () -> runScheduledAttempt(record, generation),
+            () -> dispatchScheduledAttempt(record, generation),
             normalizedDelayMillis,
             TimeUnit.MILLISECONDS);
   }
@@ -608,31 +627,102 @@ public final class ReverseConnectTargetManager {
         && !record.hasPendingAttempt();
   }
 
+  /**
+   * Scheduler timer callback. Only checks that the timer is still current and hands the attempt to
+   * the executor; the executor task revalidates before it mutates any state.
+   */
+  private void dispatchScheduledAttempt(TargetRecord owner, long generation) {
+    synchronized (lock) {
+      if (!isScheduledAttemptCurrentLocked(owner, generation)) {
+        return;
+      }
+    }
+
+    try {
+      executor.execute(() -> runScheduledAttempt(owner, generation));
+    } catch (RejectedExecutionException e) {
+      onAttemptDispatchRejected(owner, generation, e);
+    }
+  }
+
   private void runScheduledAttempt(TargetRecord owner, long generation) {
     AttemptStart start;
     synchronized (lock) {
-      TargetRecord record = records.get(owner.target.getId());
-      if (record != owner
-          || generation != record.generation
-          || !running
-          || shutdown
-          || !record.isSchedulable()
-          || record.hasPendingAttempt()) {
+      if (!isScheduledAttemptCurrentLocked(owner, generation)) {
         return;
       }
 
-      record.scheduledFuture = null;
-      record.nextAttemptTime = null;
-      record.attemptInProgress = true;
-      record.lastAttemptTime = Instant.now();
+      owner.scheduledFuture = null;
+      owner.nextAttemptTime = null;
+      owner.attemptInProgress = true;
+      owner.lastAttemptTime = Instant.now();
 
       start =
           new AttemptStart(
-              record, record.target, ++record.attemptCounter, generation, record.snapshot());
+              owner, owner.target, ++owner.attemptCounter, generation, owner.snapshot());
     }
 
     notifyTargetUpdated(start.snapshot());
     startTransportAttempt(start);
+  }
+
+  private boolean isScheduledAttemptCurrentLocked(TargetRecord owner, long generation) {
+    TargetRecord record = records.get(owner.target.getId());
+    return record == owner
+        && generation == record.generation
+        && running
+        && !shutdown
+        && record.isSchedulable()
+        && !record.hasPendingAttempt();
+  }
+
+  /**
+   * The executor refused the attempt before it started. The attempt number is consumed and reported
+   * as FAILED so listeners observe the outcome, and the target is rescheduled after its
+   * registration period; the custom retry policy is not consulted because it would need the same
+   * executor.
+   */
+  private void onAttemptDispatchRejected(
+      TargetRecord owner, long generation, RejectedExecutionException cause) {
+
+    ReverseConnectAttemptEvent event;
+    ReverseConnectTargetSnapshot snapshot;
+    synchronized (lock) {
+      if (!isScheduledAttemptCurrentLocked(owner, generation)) {
+        return;
+      }
+
+      Instant now = Instant.now();
+      StatusCode statusCode = new StatusCode(StatusCodes.Bad_ResourceUnavailable);
+
+      owner.scheduledFuture = null;
+      owner.nextAttemptTime = null;
+      owner.lastAttemptTime = now;
+      owner.lastStatusCode = statusCode;
+      owner.lastError = ReverseConnectTargetSnapshot.copyThrowable(cause);
+
+      event =
+          new ReverseConnectAttemptEvent(
+              owner.target.getId(),
+              ++owner.attemptCounter,
+              ReverseConnectAttemptState.FAILED,
+              now,
+              statusCode,
+              cause,
+              "reverse-connect attempt rejected by server executor");
+
+      scheduleLocked(owner, fallbackRetryDelayMillis(owner.target));
+      snapshot = owner.snapshot();
+    }
+
+    logger.warn(
+        "Server executor rejected Reverse Connect attempt for target {}; retrying after the"
+            + " registration period.",
+        owner.target.getId(),
+        cause);
+
+    notifyAttemptEvent(event);
+    notifyTargetUpdated(snapshot);
   }
 
   private void startTransportAttempt(AttemptStart start) {
@@ -898,13 +988,15 @@ public final class ReverseConnectTargetManager {
       RetryContext retryContext, @Nullable ReverseConnectTargetSnapshot terminalSnapshot) {
 
     try {
-      scheduler.execute(() -> evaluateRetry(retryContext));
+      executor.execute(() -> evaluateRetry(retryContext));
     } catch (RejectedExecutionException e) {
-      logger.warn("Unable to evaluate Reverse Connect retry policy.", e);
-      notifyAttemptEvent(retryContext.event());
-      if (terminalSnapshot != null) {
-        notifyTargetUpdated(terminalSnapshot);
-      }
+      onRetryEvaluationRejected(
+          retryContext.targetId(),
+          retryContext.target(),
+          retryContext.event(),
+          record -> isRetryCurrent(record, retryContext),
+          terminalSnapshot,
+          e);
     }
   }
 
@@ -912,11 +1004,49 @@ public final class ReverseConnectTargetManager {
       PostCloseRetryContext retryContext, ReverseConnectTargetSnapshot closedSnapshot) {
 
     try {
-      scheduler.execute(() -> evaluatePostCloseRetry(retryContext));
+      executor.execute(() -> evaluatePostCloseRetry(retryContext));
     } catch (RejectedExecutionException e) {
-      logger.warn("Unable to evaluate Reverse Connect retry policy.", e);
-      notifyAttemptEvent(retryContext.event());
-      notifyTargetUpdated(closedSnapshot);
+      onRetryEvaluationRejected(
+          retryContext.targetId(),
+          retryContext.target(),
+          retryContext.event(),
+          record -> isPostCloseRetryCurrent(record, retryContext),
+          closedSnapshot,
+          e);
+    }
+  }
+
+  /**
+   * The executor refused to run the retry policy. The target is rescheduled after its registration
+   * period when the retry is still current, so a saturated executor cannot strand a target, and the
+   * terminal notifications are still delivered.
+   */
+  private void onRetryEvaluationRejected(
+      UUID targetId,
+      ReverseConnectTarget target,
+      ReverseConnectAttemptEvent event,
+      Predicate<TargetRecord> isCurrent,
+      @Nullable ReverseConnectTargetSnapshot terminalSnapshot,
+      RejectedExecutionException cause) {
+
+    logger.warn(
+        "Server executor rejected Reverse Connect retry evaluation for target {}; retrying after"
+            + " the registration period.",
+        targetId,
+        cause);
+
+    ReverseConnectTargetSnapshot snapshot = terminalSnapshot;
+    synchronized (lock) {
+      TargetRecord record = records.get(targetId);
+      if (record != null && isCurrent.test(record)) {
+        scheduleLocked(record, fallbackRetryDelayMillis(target));
+        snapshot = record.snapshot();
+      }
+    }
+
+    notifyAttemptEvent(event);
+    if (snapshot != null) {
+      notifyTargetUpdated(snapshot);
     }
   }
 
@@ -1006,8 +1136,12 @@ public final class ReverseConnectTargetManager {
           "Reverse Connect retry policy failed for target {}; using registration period.",
           target.getId(),
           t);
-      return target.getRegistrationPeriod().longValue();
+      return fallbackRetryDelayMillis(target);
     }
+  }
+
+  private static long fallbackRetryDelayMillis(ReverseConnectTarget target) {
+    return target.getRegistrationPeriod().longValue();
   }
 
   private void validateTarget(ReverseConnectTarget target) {
