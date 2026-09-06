@@ -60,7 +60,10 @@ application-side Pull workflow tests. Tests can control registration and Certifi
 access, pre-register applications, change the advertised application certificate types, delay or
 reject requests, and inspect method counters and TrustList file calls. The artifact is listed in
 `milo-bom` and is separate from `milo-sdk-client-gds` to avoid adding server dependencies to the
-runtime client module.
+runtime client module. Its new-key requests return PKCS#8 PEM or PKCS#12 PFX according to
+`PrivateKeyFormat`, encrypt the private key when `PrivateKeyPassword` is supplied, and reject
+unsupported formats with `Bad_InvalidArgument`. PFX output includes the issued certificate and
+its issuer.
 
 * * *
 
