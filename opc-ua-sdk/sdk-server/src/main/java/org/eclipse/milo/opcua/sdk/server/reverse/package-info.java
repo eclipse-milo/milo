@@ -55,6 +55,25 @@
  * removed registration close their channels, and stale timers or retry callbacks cannot change its
  * replacement.
  *
+ * <h2>Runtime boundaries</h2>
+ *
+ * <p>The manager borrows two execution resources from the server configuration and owns neither.
+ * The scheduled executor is a timer only: its callbacks decide whether a fired timer is still
+ * current and hand the work to the server executor. The server executor, the one configured with
+ * {@code OpcUaServerConfigBuilder.setExecutor(...)}, runs everything that can block or that
+ * application code controls: client listener hostname resolution and transport startup for an
+ * attempt, custom retry-policy evaluation, and listener callbacks. Listener callbacks additionally
+ * pass through a serialized queue so they are observed in order; attempt and retry work never runs
+ * through that queue. Transport attempt events and channel-close events arrive on Netty threads and
+ * only update bookkeeping and hand off before returning.
+ *
+ * <p>Because a timer can fire before a pause, update, removal, or shutdown takes effect, cancelling
+ * the timer is not enough to discard work already queued on the executor. Executor tasks therefore
+ * revalidate the owning registration, its generation, and lifecycle state when they begin, and a
+ * transport attempt that outruns one of those operations is closed rather than adopted. Because the
+ * server executor is shared with service dispatch, applications may size it or supply a
+ * virtual-thread-per-task executor without any reverse-connect specific configuration.
+ *
  * <h2>Failure handling</h2>
  *
  * <p>Attempt failures are translated into immutable {@link
@@ -64,6 +83,12 @@
  * policy uses the target registration period. Listener dispatch uses a serial execution queue;
  * executor rejection runs callbacks on the submitting thread so notification failures cannot
  * abandon an attempt transition. Callbacks should return promptly even during executor overload.
+ *
+ * <p>If the server executor rejects attempt startup, the attempt is reported as {@code FAILED} with
+ * {@code Bad_ResourceUnavailable} and the rejection as its cause. If it rejects retry-policy
+ * evaluation, the terminal event is still delivered. In both cases the target is rescheduled after
+ * its registration period without consulting the custom retry policy, so a saturated executor
+ * delays reconnection but never leaves a target stranded, marked in progress, or silently dropped.
  *
  * <p>Successful outbound UA-TCP connections are handed back to the normal server SecureChannel and
  * Session paths after the stack transport installs the standard server Hello handler. Client-side
