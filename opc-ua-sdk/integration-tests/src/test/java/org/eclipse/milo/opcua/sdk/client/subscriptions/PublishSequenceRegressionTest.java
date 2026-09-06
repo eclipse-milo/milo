@@ -127,7 +127,13 @@ public class PublishSequenceRegressionTest {
 
     server.startup().get();
 
-    client = TestClient.create(server, cfg -> cfg.setRequestTimeout(uint(REQUEST_TIMEOUT_MILLIS)));
+    // One outstanding Publish request preserves scripted response order across server dispatch.
+    client =
+        TestClient.create(
+            server,
+            cfg ->
+                cfg.setRequestTimeout(uint(REQUEST_TIMEOUT_MILLIS))
+                    .setMaxPendingPublishRequests(uint(1)));
     client.connect();
 
     subscription = new OpcUaSubscription(client);
