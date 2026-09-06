@@ -90,7 +90,10 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   @Override
   public void writeMessageRepeatCount(UByte value) throws UaException {
     try {
-      writeMessageRepeatCountAsync(value).get();
+      StatusCode statusCode = writeMessageRepeatCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -163,7 +166,10 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   @Override
   public void writeMessageRepeatDelay(Double value) throws UaException {
     try {
-      writeMessageRepeatDelayAsync(value).get();
+      StatusCode statusCode = writeMessageRepeatDelayAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -236,7 +242,10 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   @Override
   public void writeQosCategory(String value) throws UaException {
     try {
-      writeQosCategoryAsync(value).get();
+      StatusCode statusCode = writeQosCategoryAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -308,7 +317,10 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   @Override
   public void writeDatagramQos(TransmitQosDataType[] value) throws UaException {
     try {
-      writeDatagramQosAsync(value).get();
+      StatusCode statusCode = writeDatagramQosAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -380,7 +392,10 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   @Override
   public void writeDiscoveryAnnounceRate(UInteger value) throws UaException {
     try {
-      writeDiscoveryAnnounceRateAsync(value).get();
+      StatusCode statusCode = writeDiscoveryAnnounceRateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -454,7 +469,10 @@ public class DatagramWriterGroupTransportTypeNode extends WriterGroupTransportTy
   @Override
   public void writeTopic(String value) throws UaException {
     try {
-      writeTopicAsync(value).get();
+      StatusCode statusCode = writeTopicAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

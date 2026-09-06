@@ -36,7 +36,7 @@
  * org.eclipse.milo.opcua.sdk.client.gds.model.VariableTypeInitializer}, is generated and must not
  * be edited by hand. The source is the {@code gds-model-client} module of <a
  * href="https://github.com/kevinherron/opc-ua-gds-model">opc-ua-gds-model</a> at commit {@code
- * efa229d} (GDS NodeSet2 1.05.07), copied in with {@code com.digitalpetri.opcua.gds.client}
+ * 297d894} (GDS NodeSet2 1.05.07), copied in with {@code com.digitalpetri.opcua.gds.client}
  * rewritten to {@code org.eclipse.milo.opcua.sdk.client.gds.model} and {@code
  * com.digitalpetri.opcua.gds.client.objects} rewritten to this package. See {@code
  * docs/features/gds-client.md} for the procedure.

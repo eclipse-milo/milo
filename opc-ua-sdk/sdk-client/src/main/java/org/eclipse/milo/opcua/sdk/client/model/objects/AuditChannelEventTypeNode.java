@@ -88,7 +88,10 @@ public class AuditChannelEventTypeNode extends AuditSecurityEventTypeNode
   @Override
   public void writeSecureChannelId(String value) throws UaException {
     try {
-      writeSecureChannelIdAsync(value).get();
+      StatusCode statusCode = writeSecureChannelIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

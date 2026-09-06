@@ -103,7 +103,10 @@ public class TwoStateDiscreteTypeNode extends DiscreteItemTypeNode implements Tw
   @Override
   public void writeFalseState(LocalizedText value) throws UaException {
     try {
-      writeFalseStateAsync(value).get();
+      StatusCode statusCode = writeFalseStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -173,7 +176,10 @@ public class TwoStateDiscreteTypeNode extends DiscreteItemTypeNode implements Tw
   @Override
   public void writeTrueState(LocalizedText value) throws UaException {
     try {
-      writeTrueStateAsync(value).get();
+      StatusCode statusCode = writeTrueStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

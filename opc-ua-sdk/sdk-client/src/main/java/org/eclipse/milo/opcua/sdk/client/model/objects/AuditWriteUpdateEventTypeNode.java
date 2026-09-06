@@ -88,7 +88,10 @@ public class AuditWriteUpdateEventTypeNode extends AuditUpdateEventTypeNode
   @Override
   public void writeAttributeId(UInteger value) throws UaException {
     try {
-      writeAttributeIdAsync(value).get();
+      StatusCode statusCode = writeAttributeIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -158,7 +161,10 @@ public class AuditWriteUpdateEventTypeNode extends AuditUpdateEventTypeNode
   @Override
   public void writeIndexRange(String value) throws UaException {
     try {
-      writeIndexRangeAsync(value).get();
+      StatusCode statusCode = writeIndexRangeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -228,7 +234,10 @@ public class AuditWriteUpdateEventTypeNode extends AuditUpdateEventTypeNode
   @Override
   public void writeOldValue(Object value) throws UaException {
     try {
-      writeOldValueAsync(value).get();
+      StatusCode statusCode = writeOldValueAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -298,7 +307,10 @@ public class AuditWriteUpdateEventTypeNode extends AuditUpdateEventTypeNode
   @Override
   public void writeNewValue(Object value) throws UaException {
     try {
-      writeNewValueAsync(value).get();
+      StatusCode statusCode = writeNewValueAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

@@ -87,7 +87,10 @@ public class OffNormalAlarmTypeNode extends DiscreteAlarmTypeNode implements Off
   @Override
   public void writeNormalState(NodeId value) throws UaException {
     try {
-      writeNormalStateAsync(value).get();
+      StatusCode statusCode = writeNormalStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

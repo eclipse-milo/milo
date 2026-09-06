@@ -92,7 +92,10 @@ public class TransparentRedundancyTypeNode extends ServerRedundancyTypeNode
   @Override
   public void writeRedundantServerArray(RedundantServerDataType[] value) throws UaException {
     try {
-      writeRedundantServerArrayAsync(value).get();
+      StatusCode statusCode = writeRedundantServerArrayAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -168,7 +171,10 @@ public class TransparentRedundancyTypeNode extends ServerRedundancyTypeNode
   @Override
   public void writeCurrentServerId(String value) throws UaException {
     try {
-      writeCurrentServerIdAsync(value).get();
+      StatusCode statusCode = writeCurrentServerIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

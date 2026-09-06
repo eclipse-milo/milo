@@ -166,7 +166,10 @@ public class UadpDataSetWriterMessageTypeNode extends DataSetWriterMessageTypeNo
   @Override
   public void writeConfiguredSize(UShort value) throws UaException {
     try {
-      writeConfiguredSizeAsync(value).get();
+      StatusCode statusCode = writeConfiguredSizeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -236,7 +239,10 @@ public class UadpDataSetWriterMessageTypeNode extends DataSetWriterMessageTypeNo
   @Override
   public void writeNetworkMessageNumber(UShort value) throws UaException {
     try {
-      writeNetworkMessageNumberAsync(value).get();
+      StatusCode statusCode = writeNetworkMessageNumberAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -309,7 +315,10 @@ public class UadpDataSetWriterMessageTypeNode extends DataSetWriterMessageTypeNo
   @Override
   public void writeDataSetOffset(UShort value) throws UaException {
     try {
-      writeDataSetOffsetAsync(value).get();
+      StatusCode statusCode = writeDataSetOffsetAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

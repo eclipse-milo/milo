@@ -88,7 +88,10 @@ public class AuditProgramTransitionEventTypeNode extends AuditUpdateStateEventTy
   @Override
   public void writeTransitionNumber(UInteger value) throws UaException {
     try {
-      writeTransitionNumberAsync(value).get();
+      StatusCode statusCode = writeTransitionNumberAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

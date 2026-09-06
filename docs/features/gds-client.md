@@ -249,9 +249,9 @@ administrator can approve the request.
 
 The model is generated and checked in; no code generation runs in the Maven build. The source is
 the [opc-ua-gds-model](https://github.com/kevinherron/opc-ua-gds-model) repository at commit
-`efa229d` ("Regenerate model from GDS NodeSet2 1.05.07"), produced by the GDS generators in
-[opc-ua-codegen2](https://github.com/kevinherron/opc-ua-codegen2) from GDS NodeSet2 1.05.07 on a
-1.05.07 base, the same base as Milo's namespace 0 model. Every file is copied with its package
+`297d894`, produced by the GDS generators in
+[opc-ua-codegen2](https://github.com/kevinherron/opc-ua-codegen2) at commit `67ec865` from GDS
+NodeSet2 1.05.07 on a 1.05.07 base, the same base as Milo's namespace 0 model. Every file is copied with its package
 rewritten and the Eclipse Milo license header prepended; nothing else changes.
 
 The GDS generators use `com.digitalpetri.opcua.gds.client.model` and
@@ -292,6 +292,10 @@ To pick up a new GDS NodeSet release:
    import order may differ.
 6. Run `GdsModulePathTest` and `GdsServerModelTest` in `opc-ua-sdk/integration-tests` to verify
    module package ownership and server type registration.
+
+Generated blocking property writers throw `UaException` carrying any non-Good operation status.
+Their asynchronous counterparts return the `StatusCode`. The namespace 0 model uses the same
+writer generator and follows the same contract.
 
 The GDS `DataTypeInitializer` and both `ObjectTypeInitializer`s take a `NamespaceTable` and must
 stay out of the namespace 0 startup path (`DefaultDataTypeManager.createAndInitialize` and the

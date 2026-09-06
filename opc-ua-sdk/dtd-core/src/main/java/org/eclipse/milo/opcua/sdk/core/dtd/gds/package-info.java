@@ -20,7 +20,7 @@
  *
  * <p>Generated code, copied from the {@code gds-model-core} module of <a
  * href="https://github.com/kevinherron/opc-ua-gds-model">opc-ua-gds-model</a> at commit {@code
- * efa229d}; see the regeneration notes in {@link org.eclipse.milo.opcua.stack.core.gds}.
+ * 297d894}; see the regeneration notes in {@link org.eclipse.milo.opcua.stack.core.gds}.
  */
 @Deprecated(forRemoval = true, since = "1.2.0")
 package org.eclipse.milo.opcua.sdk.core.dtd.gds;

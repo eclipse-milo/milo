@@ -88,7 +88,10 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   @Override
   public void writePrompt(LocalizedText value) throws UaException {
     try {
-      writePromptAsync(value).get();
+      StatusCode statusCode = writePromptAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -158,7 +161,10 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   @Override
   public void writeResponseOptionSet(LocalizedText[] value) throws UaException {
     try {
-      writeResponseOptionSetAsync(value).get();
+      StatusCode statusCode = writeResponseOptionSetAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -232,7 +238,10 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   @Override
   public void writeDefaultResponse(Integer value) throws UaException {
     try {
-      writeDefaultResponseAsync(value).get();
+      StatusCode statusCode = writeDefaultResponseAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -302,7 +311,10 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   @Override
   public void writeOkResponse(Integer value) throws UaException {
     try {
-      writeOkResponseAsync(value).get();
+      StatusCode statusCode = writeOkResponseAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -372,7 +384,10 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   @Override
   public void writeCancelResponse(Integer value) throws UaException {
     try {
-      writeCancelResponseAsync(value).get();
+      StatusCode statusCode = writeCancelResponseAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -442,7 +457,10 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   @Override
   public void writeLastResponse(Integer value) throws UaException {
     try {
-      writeLastResponseAsync(value).get();
+      StatusCode statusCode = writeLastResponseAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -512,7 +530,10 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   @Override
   public void writeEnabledState(LocalizedText value) throws UaException {
     try {
-      writeEnabledStateAsync(value).get();
+      StatusCode statusCode = writeEnabledStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -582,7 +603,10 @@ public class DialogConditionTypeNode extends ConditionTypeNode implements Dialog
   @Override
   public void writeDialogState(LocalizedText value) throws UaException {
     try {
-      writeDialogStateAsync(value).get();
+      StatusCode statusCode = writeDialogStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

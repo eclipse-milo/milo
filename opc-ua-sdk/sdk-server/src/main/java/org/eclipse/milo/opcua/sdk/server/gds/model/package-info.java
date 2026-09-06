@@ -32,7 +32,7 @@
  * <p>Every class in this package and its {@code objects} subpackage is generated and must not be
  * edited by hand. The source is the {@code gds-model-server} module of <a
  * href="https://github.com/kevinherron/opc-ua-gds-model">opc-ua-gds-model</a> at commit {@code
- * efa229d} (GDS NodeSet2 1.05.07), copied in with {@code com.digitalpetri.opcua.gds.server}
+ * 297d894} (GDS NodeSet2 1.05.07), copied in with {@code com.digitalpetri.opcua.gds.server}
  * rewritten to this package and {@code com.digitalpetri.opcua.gds.server.objects} rewritten to
  * {@code org.eclipse.milo.opcua.sdk.server.gds.model.objects}. See {@code
  * docs/features/gds-client.md} for the procedure.

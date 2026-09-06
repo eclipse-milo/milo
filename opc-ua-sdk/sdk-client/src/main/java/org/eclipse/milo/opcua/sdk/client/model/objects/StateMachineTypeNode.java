@@ -88,7 +88,10 @@ public class StateMachineTypeNode extends BaseObjectTypeNode implements StateMac
   @Override
   public void writeCurrentState(LocalizedText value) throws UaException {
     try {
-      writeCurrentStateAsync(value).get();
+      StatusCode statusCode = writeCurrentStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -158,7 +161,10 @@ public class StateMachineTypeNode extends BaseObjectTypeNode implements StateMac
   @Override
   public void writeLastTransition(LocalizedText value) throws UaException {
     try {
-      writeLastTransitionAsync(value).get();
+      StatusCode statusCode = writeLastTransitionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

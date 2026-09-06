@@ -104,7 +104,10 @@ public class MultiStateDiscreteTypeNode extends DiscreteItemTypeNode
   @Override
   public void writeEnumStrings(LocalizedText[] value) throws UaException {
     try {
-      writeEnumStringsAsync(value).get();
+      StatusCode statusCode = writeEnumStringsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

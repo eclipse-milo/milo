@@ -88,7 +88,10 @@ public class AuditConditionRespondEventTypeNode extends AuditConditionEventTypeN
   @Override
   public void writeSelectedResponse(UInteger value) throws UaException {
     try {
-      writeSelectedResponseAsync(value).get();
+      StatusCode statusCode = writeSelectedResponseAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

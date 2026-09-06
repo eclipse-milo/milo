@@ -99,7 +99,10 @@ public class IIeeeBaseTsnStatusStreamTypeNode extends BaseInterfaceTypeNode
   @Override
   public void writeTalkerStatus(TsnTalkerStatus value) throws UaException {
     try {
-      writeTalkerStatusAsync(value).get();
+      StatusCode statusCode = writeTalkerStatusAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -185,7 +188,10 @@ public class IIeeeBaseTsnStatusStreamTypeNode extends BaseInterfaceTypeNode
   @Override
   public void writeListenerStatus(TsnListenerStatus value) throws UaException {
     try {
-      writeListenerStatusAsync(value).get();
+      StatusCode statusCode = writeListenerStatusAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -271,7 +277,10 @@ public class IIeeeBaseTsnStatusStreamTypeNode extends BaseInterfaceTypeNode
   @Override
   public void writeFailureCode(TsnFailureCode value) throws UaException {
     try {
-      writeFailureCodeAsync(value).get();
+      StatusCode statusCode = writeFailureCodeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -349,7 +358,10 @@ public class IIeeeBaseTsnStatusStreamTypeNode extends BaseInterfaceTypeNode
   @Override
   public void writeFailureSystemIdentifier(Object value) throws UaException {
     try {
-      writeFailureSystemIdentifierAsync(value).get();
+      StatusCode statusCode = writeFailureSystemIdentifierAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

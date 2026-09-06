@@ -88,7 +88,10 @@ public class ExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode
   @Override
   public void writeActiveState(LocalizedText value) throws UaException {
     try {
-      writeActiveStateAsync(value).get();
+      StatusCode statusCode = writeActiveStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

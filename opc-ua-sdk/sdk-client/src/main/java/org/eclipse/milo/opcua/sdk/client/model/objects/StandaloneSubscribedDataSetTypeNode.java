@@ -91,7 +91,10 @@ public class StandaloneSubscribedDataSetTypeNode extends BaseObjectTypeNode
   @Override
   public void writeDataSetMetaData(DataSetMetaDataType value) throws UaException {
     try {
-      writeDataSetMetaDataAsync(value).get();
+      StatusCode statusCode = writeDataSetMetaDataAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -164,7 +167,10 @@ public class StandaloneSubscribedDataSetTypeNode extends BaseObjectTypeNode
   @Override
   public void writeIsConnected(Boolean value) throws UaException {
     try {
-      writeIsConnectedAsync(value).get();
+      StatusCode statusCode = writeIsConnectedAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
