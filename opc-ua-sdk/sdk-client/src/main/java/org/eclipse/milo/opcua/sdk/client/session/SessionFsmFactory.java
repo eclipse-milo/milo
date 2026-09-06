@@ -157,7 +157,7 @@ public class SessionFsmFactory {
 
     client.addFaultListener(new SessionFaultListener(fsm));
 
-    return new SessionFsm(fsm);
+    return new SessionFsm(fsm, client.getTransport().getConfig().getExecutor());
   }
 
   private static void configureSessionFsm(FsmBuilder<State, Event> fb, OpcUaClient client) {
@@ -771,14 +771,10 @@ public class SessionFsmFactory {
               SessionFsm.SessionActivityListeners sessionActivityListeners =
                   KEY_SESSION_ACTIVITY_LISTENERS.get(ctx);
 
-              client
-                  .getTransport()
-                  .getConfig()
-                  .getExecutor()
-                  .execute(
-                      () ->
-                          sessionActivityListeners.sessionActivityListeners.forEach(
-                              listener -> listener.onSessionActive(session)));
+              sessionActivityListeners.executor.execute(
+                  () ->
+                      sessionActivityListeners.sessionActivityListeners.forEach(
+                          listener -> listener.onSessionActive(session)));
             });
 
     // onSessionInactive() callbacks
@@ -792,14 +788,10 @@ public class SessionFsmFactory {
               SessionFsm.SessionActivityListeners sessionActivityListeners =
                   KEY_SESSION_ACTIVITY_LISTENERS.get(ctx);
 
-              client
-                  .getTransport()
-                  .getConfig()
-                  .getExecutor()
-                  .execute(
-                      () ->
-                          sessionActivityListeners.sessionActivityListeners.forEach(
-                              listener -> listener.onSessionInactive(session)));
+              sessionActivityListeners.executor.execute(
+                  () ->
+                      sessionActivityListeners.sessionActivityListeners.forEach(
+                          listener -> listener.onSessionInactive(session)));
             });
 
     /* Internal Transition Actions */
