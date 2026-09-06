@@ -54,6 +54,7 @@ import org.bouncycastle.asn1.x509.GeneralNames;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -663,21 +664,29 @@ public class CertificateValidationUtil {
    *     in the host component of a URL (RFC 3986, section 3.2.2).
    * @return the raw address bytes, or {@code null} if {@code address} is not an IP address literal.
    */
-  private static byte[] parseIpAddress(String address) {
+  private static byte @Nullable [] parseIpAddress(String address) {
     String literal = address;
 
     if (literal.length() > 2 && literal.startsWith("[") && literal.endsWith("]")) {
       literal = literal.substring(1, literal.length() - 1);
     }
 
-    // A DNS name can contain neither ':' nor the strict dotted-quad form, so getByName() resolves
-    // both of these as literals and never performs a lookup.
-    if (literal.indexOf(':') < 0 && !IPV4_LITERAL.matcher(literal).matches()) {
+    // InetAddress.getByName() hands anything it cannot parse as a literal to the system resolver,
+    // including some strings that contain ':'. Only call it with the two forms it always treats as
+    // a literal: a strict dotted-quad, or a bracketed RFC 2732 IPv6 literal. A bracketed argument
+    // that is not a valid IPv6 address is rejected outright rather than looked up.
+    String candidate;
+
+    if (IPV4_LITERAL.matcher(literal).matches()) {
+      candidate = literal;
+    } else if (literal.indexOf(':') >= 0) {
+      candidate = "[" + literal + "]";
+    } else {
       return null;
     }
 
     try {
-      return InetAddress.getByName(literal).getAddress();
+      return InetAddress.getByName(candidate).getAddress();
     } catch (UnknownHostException e) {
       return null;
     }

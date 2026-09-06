@@ -457,12 +457,15 @@ public class CertificateValidationUtilTest {
   }
 
   // A host name is matched against DNSName entries only; it must never be resolved to an address
-  // and compared against IPAddress entries.
+  // and compared against IPAddress entries. Names containing ':' are included because
+  // InetAddress.getByName() would hand those to the system resolver.
   @Test
   public void testHostNameIsNotResolvedToIpAddress() throws Exception {
     X509Certificate certificate = createSelfSignedCertificateWithIpAddress("127.0.0.1");
 
     assertThrows(UaException.class, () -> checkHostnameOrIpAddress(certificate, "localhost"));
+    assertThrows(UaException.class, () -> checkHostnameOrIpAddress(certificate, "[not:an:ip]"));
+    assertThrows(UaException.class, () -> checkHostnameOrIpAddress(certificate, "not:an:ip"));
   }
 
   private X509CRL generateCrl(
