@@ -12,10 +12,13 @@ package org.eclipse.milo.opcua.stack.core.types.builtin;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ThreeDVector;
@@ -131,6 +134,43 @@ class MatrixTest {
 
     assertEquals(new Matrix(primitive), new Matrix(boxed));
     assertEquals(new Matrix(boxed), new Matrix(primitive));
+  }
+
+  @Test
+  void equalMatricesHashTheSame() {
+    Matrix m1 = new Matrix(new int[][] {{1, 2}, {3, 4}});
+    Matrix m2 = new Matrix(new int[][] {{1, 2}, {3, 4}});
+
+    assertEquals(m1, m2);
+    assertEquals(m1.hashCode(), m2.hashCode());
+
+    Set<Matrix> set = new HashSet<>();
+    set.add(m1);
+    assertTrue(set.contains(m2));
+  }
+
+  // equals() boxes before comparing, so the hash has to be taken over boxed elements too.
+  @Test
+  void primitiveBoxedHashEquality() {
+    assertEquals(new Matrix(primitiveInt2d).hashCode(), new Matrix(boxedInt2d).hashCode());
+  }
+
+  // Matrix does not copy the elements it is given, so two Matrices can share a backing array and
+  // still describe different values.
+  @Test
+  void sharedElementsWithDifferentDimensionsAreNotEqual() {
+    int[] elements = {1, 2, 3, 4};
+
+    assertNotEquals(new Matrix(elements, new int[] {2, 2}), new Matrix(elements, new int[] {4, 1}));
+  }
+
+  @Test
+  void sharedElementsWithDifferentDataTypesAreNotEqual() {
+    int[] elements = {1, 2, 3, 4};
+
+    assertNotEquals(
+        new Matrix(elements, new int[] {2, 2}, OpcUaDataType.Int32),
+        new Matrix(elements, new int[] {2, 2}, OpcUaDataType.UInt32));
   }
 
   @Test

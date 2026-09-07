@@ -280,6 +280,10 @@ public class Matrix {
     if (o == null || getClass() != o.getClass()) return false;
     Matrix matrix = (Matrix) o;
 
+    if (!Arrays.equals(dimensions, matrix.dimensions) || dataType != matrix.dataType) {
+      return false;
+    }
+
     final Object thisArray = flatArray;
     final Object thatArray = matrix.flatArray;
 
@@ -295,22 +299,33 @@ public class Matrix {
         Object thisBoxed = ArrayUtil.box(thisArray);
         Object thatBoxed = ArrayUtil.box(thatArray);
 
-        return Objects.deepEquals(thisBoxed, thatBoxed)
-            && Arrays.equals(dimensions, matrix.dimensions)
-            && dataType == matrix.dataType;
+        return Objects.deepEquals(thisBoxed, thatBoxed);
       } else {
-        return Objects.deepEquals(thisArray, thatArray)
-            && Arrays.equals(dimensions, matrix.dimensions)
-            && dataType == matrix.dataType;
+        return Objects.deepEquals(thisArray, thatArray);
       }
     }
   }
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(flatArray, dataType);
+    int result = elementsHash();
     result = 31 * result + Arrays.hashCode(dimensions);
+    result = 31 * result + Objects.hashCode(dataType);
     return result;
+  }
+
+  /**
+   * Hash the elements by value, boxing primitive arrays first so that a Matrix of primitives hashes
+   * the same as an equal Matrix of the boxed type.
+   */
+  private int elementsHash() {
+    if (flatArray == null) {
+      return 0;
+    }
+
+    Object boxed = ArrayUtil.box(flatArray);
+
+    return boxed instanceof Object[] array ? Arrays.deepHashCode(array) : Objects.hashCode(boxed);
   }
 
   @Override
