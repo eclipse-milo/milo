@@ -38,6 +38,15 @@ import org.jspecify.annotations.Nullable;
  *   <li>UaEnumeratedType
  *   <li>OptionSetUInteger subclasses
  * </ul>
+ *
+ * <p>Constructors accepting a flat array retain both the elements and dimensions arrays. The
+ * nested-array constructor copies the array structure, but does not copy mutable element values.
+ * {@link #getElements()} and {@link #getDimensions()} return the backing arrays.
+ *
+ * <p>Equality and hashing depend on the current elements, dimensions, and built-in data type. Do
+ * not modify these arrays or mutable elements while this Matrix, or a value containing it, is a map
+ * key or set member. Keep published values unchanged while consumers may retain them for
+ * comparison. Nested values must be acyclic for recursive equality, hashing, and encoding.
  */
 public class Matrix {
 
@@ -91,6 +100,8 @@ public class Matrix {
   /**
    * Get the elements of this Matrix in a flattened array.
    *
+   * <p>The returned array is the backing array, not a copy.
+   *
    * @return the elements of this Matrix in a flattened array.
    */
   public @Nullable Object getElements() {
@@ -100,7 +111,8 @@ public class Matrix {
   /**
    * Get the dimensions of this Matrix.
    *
-   * <p>The returned array is zero length if this Matrix contains a null value.
+   * <p>The returned array is the backing array, not a copy. It is zero length if this Matrix
+   * contains a null value.
    *
    * @return the dimensions of this Matrix.
    */
@@ -280,6 +292,10 @@ public class Matrix {
     if (o == null || getClass() != o.getClass()) return false;
     Matrix matrix = (Matrix) o;
 
+    if (!Arrays.equals(dimensions, matrix.dimensions) || dataType != matrix.dataType) {
+      return false;
+    }
+
     final Object thisArray = flatArray;
     final Object thatArray = matrix.flatArray;
 
@@ -295,22 +311,44 @@ public class Matrix {
         Object thisBoxed = ArrayUtil.box(thisArray);
         Object thatBoxed = ArrayUtil.box(thatArray);
 
-        return Objects.deepEquals(thisBoxed, thatBoxed)
-            && Arrays.equals(dimensions, matrix.dimensions)
-            && dataType == matrix.dataType;
+        return Objects.deepEquals(thisBoxed, thatBoxed);
       } else {
-        return Objects.deepEquals(thisArray, thatArray)
-            && Arrays.equals(dimensions, matrix.dimensions)
-            && dataType == matrix.dataType;
+        return Objects.deepEquals(thisArray, thatArray);
       }
     }
   }
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(flatArray, dataType);
+    int result = elementsHash();
     result = 31 * result + Arrays.hashCode(dimensions);
+    result = 31 * result + Objects.hashCode(dataType);
     return result;
+  }
+
+  private int elementsHash() {
+    // Primitive array hashes match their boxed equivalents without allocating a boxed array.
+    if (flatArray instanceof Object[] array) {
+      return Arrays.deepHashCode(array);
+    } else if (flatArray instanceof boolean[] array) {
+      return Arrays.hashCode(array);
+    } else if (flatArray instanceof byte[] array) {
+      return Arrays.hashCode(array);
+    } else if (flatArray instanceof short[] array) {
+      return Arrays.hashCode(array);
+    } else if (flatArray instanceof int[] array) {
+      return Arrays.hashCode(array);
+    } else if (flatArray instanceof long[] array) {
+      return Arrays.hashCode(array);
+    } else if (flatArray instanceof float[] array) {
+      return Arrays.hashCode(array);
+    } else if (flatArray instanceof double[] array) {
+      return Arrays.hashCode(array);
+    } else if (flatArray instanceof char[] array) {
+      return Arrays.hashCode(array);
+    } else {
+      return Objects.hashCode(flatArray);
+    }
   }
 
   @Override

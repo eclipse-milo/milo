@@ -12,14 +12,23 @@ package org.eclipse.milo.opcua.stack.core.types.builtin;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ThreeDVector;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class MatrixTest {
   private final int[][] primitiveInt2d = {{1, 2}, {3, 4}};
@@ -131,6 +140,129 @@ class MatrixTest {
 
     assertEquals(new Matrix(primitive), new Matrix(boxed));
     assertEquals(new Matrix(boxed), new Matrix(primitive));
+  }
+
+  // Independently created values must remain interchangeable in hash collections, including
+  // when wrapped in the Variant and DataValue containers used by the SDK.
+  @ParameterizedTest
+  @MethodSource("equalMatrixValues")
+  void equalMatricesHashTheSame(Matrix m1, Matrix m2) {
+    assertEquals(m1, m2);
+    assertEquals(m2, m1);
+    assertEquals(m1.hashCode(), m2.hashCode());
+
+    Set<Matrix> set = new HashSet<>();
+    set.add(m1);
+    assertTrue(set.contains(m2));
+
+    Map<Variant, String> variants = new HashMap<>();
+    variants.put(new Variant(m1), "found");
+    assertEquals("found", variants.get(new Variant(m2)));
+
+    Set<DataValue> values = new HashSet<>();
+    values.add(new DataValue(new Variant(m1), StatusCode.GOOD, null, null));
+    assertTrue(values.contains(new DataValue(new Variant(m2), StatusCode.GOOD, null, null)));
+  }
+
+  private static Stream<Arguments> equalMatrixValues() {
+    return Stream.of(
+        Arguments.of(
+            new Matrix(new int[][] {{1, 2}, {3, 4}}), new Matrix(new int[][] {{1, 2}, {3, 4}})),
+        Arguments.of(Matrix.ofNull(), Matrix.ofNull()),
+        Arguments.of(
+            new Matrix(new int[0], new int[] {0, 2}), new Matrix(new Integer[0], new int[] {0, 2})),
+        Arguments.of(
+            Matrix.ofString(new String[][] {{"value", null}}),
+            Matrix.ofString(new String[][] {{"value", null}})),
+        Arguments.of(
+            Matrix.ofByteString(new ByteString[][] {{ByteString.of(new byte[] {1, 2})}}),
+            Matrix.ofByteString(new ByteString[][] {{ByteString.of(new byte[] {1, 2})}})),
+        Arguments.of(
+            Matrix.ofStruct(new ThreeDVector[][] {{new ThreeDVector(1.0, 2.0, 3.0)}}),
+            Matrix.ofStruct(new ThreeDVector[][] {{new ThreeDVector(1.0, 2.0, 3.0)}})),
+        Arguments.of(
+            Matrix.ofVariant(new Variant[][] {{new Variant(Matrix.ofInt32(new int[][] {{1, 2}}))}}),
+            Matrix.ofVariant(
+                new Variant[][] {{new Variant(Matrix.ofInt32(new Integer[][] {{1, 2}}))}})));
+  }
+
+  // Primitive hashing must preserve the existing mixed primitive/boxed equality contract,
+  // including distinct NaN representations and both signs of zero.
+  @ParameterizedTest
+  @MethodSource("primitiveAndBoxedArrays")
+  void primitiveBoxedHashEquality(Object primitive, Object boxed) {
+    Matrix primitiveMatrix = new Matrix(primitive);
+    Matrix boxedMatrix = new Matrix(boxed);
+
+    assertEquals(primitiveMatrix, boxedMatrix);
+    assertEquals(boxedMatrix, primitiveMatrix);
+    assertEquals(primitiveMatrix.hashCode(), boxedMatrix.hashCode());
+  }
+
+  private static Stream<Arguments> primitiveAndBoxedArrays() {
+    return Stream.of(
+        Arguments.of(new boolean[][] {{true, false}}, new Boolean[][] {{true, false}}),
+        Arguments.of(new byte[][] {{-128, 127}}, new Byte[][] {{-128, 127}}),
+        Arguments.of(new short[][] {{-32768, 32767}}, new Short[][] {{-32768, 32767}}),
+        Arguments.of(
+            new int[][] {{Integer.MIN_VALUE, Integer.MAX_VALUE}},
+            new Integer[][] {{Integer.MIN_VALUE, Integer.MAX_VALUE}}),
+        Arguments.of(
+            new long[][] {{Long.MIN_VALUE, Long.MAX_VALUE}},
+            new Long[][] {{Long.MIN_VALUE, Long.MAX_VALUE}}),
+        Arguments.of(
+            new float[][] {
+              {
+                Float.intBitsToFloat(0x7fc00001),
+                -0.0f,
+                0.0f,
+                Float.NEGATIVE_INFINITY,
+                Float.POSITIVE_INFINITY
+              }
+            },
+            new Float[][] {
+              {Float.NaN, -0.0f, 0.0f, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY}
+            }),
+        Arguments.of(
+            new double[][] {
+              {
+                Double.longBitsToDouble(0x7ff8000000000001L),
+                -0.0,
+                0.0,
+                Double.NEGATIVE_INFINITY,
+                Double.POSITIVE_INFINITY
+              }
+            },
+            new Double[][] {
+              {Double.NaN, -0.0, 0.0, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY}
+            }));
+  }
+
+  // Floating-point equality distinguishes signed zero even across primitive/boxed arrays.
+  @Test
+  void signedZerosRemainUnequal() {
+    assertNotEquals(
+        Matrix.ofFloat(new float[][] {{-0.0f}}), Matrix.ofFloat(new Float[][] {{0.0f}}));
+    assertNotEquals(
+        Matrix.ofDouble(new double[][] {{-0.0}}), Matrix.ofDouble(new Double[][] {{0.0}}));
+  }
+
+  // Matrix does not copy the elements it is given, so two Matrices can share a backing array and
+  // still describe different values.
+  @Test
+  void sharedElementsWithDifferentDimensionsAreNotEqual() {
+    int[] elements = {1, 2, 3, 4};
+
+    assertNotEquals(new Matrix(elements, new int[] {2, 2}), new Matrix(elements, new int[] {4, 1}));
+  }
+
+  @Test
+  void sharedElementsWithDifferentDataTypesAreNotEqual() {
+    int[] elements = {1, 2, 3, 4};
+
+    assertNotEquals(
+        new Matrix(elements, new int[] {2, 2}, OpcUaDataType.Int32),
+        new Matrix(elements, new int[] {2, 2}, OpcUaDataType.UInt32));
   }
 
   @Test
