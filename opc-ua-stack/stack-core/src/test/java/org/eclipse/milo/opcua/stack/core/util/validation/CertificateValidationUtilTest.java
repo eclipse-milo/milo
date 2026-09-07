@@ -42,7 +42,9 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.BasicConstraints;
 import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.asn1.x509.KeyPurposeId;
 import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.cert.CertIOException;
@@ -494,6 +496,121 @@ public class CertificateValidationUtilTest {
     checkHostnameOrIpAddress(createSelfSignedCertificate("DigitalPetri.com"), hostname);
   }
 
+  /**
+   * A Global Discovery Server certificate group that offers more than one certificate type issues
+   * one CA per type, all under the group's single configured subject name, and publishes a CRL for
+   * each. The trust list a client pulls then holds several same-named CAs, and PKIX selects a CRL
+   * by issuer name alone.
+   */
+  @Test
+  void revocationResolvesWhenSeveralCasShareASubjectName() throws Exception {
+    String sharedSubject = "Plant Default CA";
+
+    KeyPair issuingCaKeyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    X509Certificate issuingCa = createSharedNameCa(issuingCaKeyPair, sharedSubject);
+
+    // The second CA of the group is ECC, as it would be for a group that offers an ECC certificate
+    // type alongside RSA.
+    KeyPair sameNameCaKeyPair = SelfSignedCertificateGenerator.generateNistP256KeyPair();
+    X509Certificate sameNameCa = createSharedNameCa(sameNameCaKeyPair, sharedSubject);
+
+    KeyPair leafKeyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    X509Certificate leaf =
+        new CaSignedCertificateBuilder(leafKeyPair, issuingCa, issuingCaKeyPair.getPrivate())
+            .setCommonName("Ignition OPC UA Client")
+            .setOrganization("Eclipse Milo")
+            .setApplicationUri("urn:eclipse:milo:test:shared-name-ca-client")
+            .addDnsName("localhost")
+            .setIsCa(false)
+            .setKeyUsage(
+                KeyUsage.digitalSignature
+                    | KeyUsage.nonRepudiation
+                    | KeyUsage.keyEncipherment
+                    | KeyUsage.dataEncipherment)
+            .setExtendedKeyUsage(
+                List.of(KeyPurposeId.id_kp_serverAuth, KeyPurposeId.id_kp_clientAuth))
+            .build();
+
+    Set<X509CRL> crls =
+        Set.of(
+            CrlTestUtil.generateCrl(issuingCa, issuingCaKeyPair.getPrivate()),
+            CrlTestUtil.generateCrl(sameNameCa, sameNameCaKeyPair.getPrivate()));
+
+    PKIXCertPathBuilderResult pathBuilderResult =
+        buildTrustedCertPath(List.of(leaf), Set.of(issuingCa, sameNameCa), emptySet());
+
+    // Both CRLs are candidates by issuer name and only one of them verifies. Passing both to PKIX
+    // unfiltered yields Bad_CertificateRevocationUnknown instead of a successful validation.
+    validateTrustedCertPath(
+        pathBuilderResult.getCertPath(),
+        pathBuilderResult.getTrustAnchor(),
+        crls,
+        EnumSet.of(ValidationCheck.REVOCATION, ValidationCheck.REVOCATION_LISTS),
+        true);
+  }
+
+  /** The revoking CRL must still be honored when a same-named CA's CRL is alongside it. */
+  @Test
+  void revocationIsDetectedWhenSeveralCasShareASubjectName() throws Exception {
+    String sharedSubject = "Plant Default CA";
+
+    KeyPair issuingCaKeyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    X509Certificate issuingCa = createSharedNameCa(issuingCaKeyPair, sharedSubject);
+
+    // The second CA of the group is ECC, as it would be for a group that offers an ECC certificate
+    // type alongside RSA.
+    KeyPair sameNameCaKeyPair = SelfSignedCertificateGenerator.generateNistP256KeyPair();
+    X509Certificate sameNameCa = createSharedNameCa(sameNameCaKeyPair, sharedSubject);
+
+    KeyPair leafKeyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    X509Certificate leaf =
+        new CaSignedCertificateBuilder(leafKeyPair, issuingCa, issuingCaKeyPair.getPrivate())
+            .setCommonName("Ignition OPC UA Client")
+            .setOrganization("Eclipse Milo")
+            .setApplicationUri("urn:eclipse:milo:test:shared-name-ca-client-revoked")
+            .addDnsName("localhost")
+            .setIsCa(false)
+            .setKeyUsage(
+                KeyUsage.digitalSignature
+                    | KeyUsage.nonRepudiation
+                    | KeyUsage.keyEncipherment
+                    | KeyUsage.dataEncipherment)
+            .setExtendedKeyUsage(
+                List.of(KeyPurposeId.id_kp_serverAuth, KeyPurposeId.id_kp_clientAuth))
+            .build();
+
+    Set<X509CRL> crls =
+        Set.of(
+            CrlTestUtil.generateCrl(issuingCa, issuingCaKeyPair.getPrivate(), leaf),
+            CrlTestUtil.generateCrl(sameNameCa, sameNameCaKeyPair.getPrivate()));
+
+    PKIXCertPathBuilderResult pathBuilderResult =
+        buildTrustedCertPath(List.of(leaf), Set.of(issuingCa, sameNameCa), emptySet());
+
+    UaException e =
+        assertThrows(
+            UaException.class,
+            () ->
+                validateTrustedCertPath(
+                    pathBuilderResult.getCertPath(),
+                    pathBuilderResult.getTrustAnchor(),
+                    crls,
+                    EnumSet.of(ValidationCheck.REVOCATION, ValidationCheck.REVOCATION_LISTS),
+                    true));
+
+    assertEquals(new StatusCode(StatusCodes.Bad_CertificateRevoked), e.getStatusCode());
+  }
+
+  private static X509Certificate createSharedNameCa(KeyPair keyPair, String commonName)
+      throws Exception {
+
+    return new SelfSignedCertificateBuilder(keyPair, new CaCertificateGenerator())
+        .setCommonName(commonName)
+        .setOrganization("Ignition QA")
+        .setApplicationUri("urn:eclipse:milo:test:" + commonName.toLowerCase().replace(" ", "-"))
+        .build();
+  }
+
   private static X509Certificate createSelfSignedCertificate(String dnsName) throws Exception {
     KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
 
@@ -526,6 +643,27 @@ public class CertificateValidationUtilTest {
     JcaX509CertificateConverter converter = new JcaX509CertificateConverter();
     converter.setProvider("BC");
     return converter.getCertificate(certBuilder.build(signer));
+  }
+
+  /** Generates a self-signed CA certificate that can sign certificates and CRLs. */
+  private static final class CaCertificateGenerator extends SelfSignedCertificateGenerator {
+
+    @Override
+    protected void addExtendedKeyUsage(X509v3CertificateBuilder certificateBuilder) {}
+
+    @Override
+    protected void addKeyUsage(X509v3CertificateBuilder certificateBuilder) throws CertIOException {
+      certificateBuilder.addExtension(
+          Extension.keyUsage, true, new KeyUsage(KeyUsage.keyCertSign | KeyUsage.cRLSign));
+    }
+
+    @Override
+    protected void addBasicConstraints(
+        X509v3CertificateBuilder certificateBuilder, BasicConstraints basicConstraints)
+        throws CertIOException {
+
+      certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(true));
+    }
   }
 
   private static final class KeyUsageCertificateGenerator extends SelfSignedCertificateGenerator {

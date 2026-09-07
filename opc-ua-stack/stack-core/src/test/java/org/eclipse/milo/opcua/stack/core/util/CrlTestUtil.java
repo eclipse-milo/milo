@@ -10,15 +10,22 @@
 
 package org.eclipse.milo.opcua.stack.core.util;
 
+import java.math.BigInteger;
 import java.security.PrivateKey;
 import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
 import java.util.Date;
 import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.AuthorityKeyIdentifier;
+import org.bouncycastle.asn1.x509.CRLNumber;
 import org.bouncycastle.asn1.x509.CRLReason;
+import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.asn1.x509.GeneralName;
+import org.bouncycastle.asn1.x509.GeneralNames;
 import org.bouncycastle.cert.X509CRLHolder;
 import org.bouncycastle.cert.X509v2CRLBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CRLConverter;
+import org.bouncycastle.cert.jcajce.JcaX509ExtensionUtils;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
 /** Builds X.509 CRLs for tests that need real, decodable CRL bytes. */
@@ -44,6 +51,20 @@ public final class CrlTestUtil {
 
     builder.setNextUpdate(new Date(System.currentTimeMillis() + 60_000));
 
+    // Real CAs identify their signing key on the CRL, and PKIX uses it to choose a signer when
+    // more than one certificate carries the issuer name.
+    var issuerName =
+        new GeneralNames(
+            new GeneralName(X500Name.getInstance(issuer.getSubjectX500Principal().getEncoded())));
+    builder.addExtension(
+        Extension.authorityKeyIdentifier,
+        false,
+        new AuthorityKeyIdentifier(
+            new JcaX509ExtensionUtils().createAuthorityKeyIdentifier(issuer).getKeyIdentifier(),
+            issuerName,
+            issuer.getSerialNumber()));
+    builder.addExtension(Extension.cRLNumber, false, new CRLNumber(BigInteger.ONE));
+
     for (X509Certificate certificate : revoked) {
       builder.addCRLEntry(
           certificate.getSerialNumber(),
@@ -51,8 +72,11 @@ public final class CrlTestUtil {
           CRLReason.privilegeWithdrawn);
     }
 
+    String signatureAlgorithm =
+        "EC".equals(issuerKey.getAlgorithm()) ? "SHA256withECDSA" : "SHA256WithRSAEncryption";
+
     X509CRLHolder holder =
-        builder.build(new JcaContentSignerBuilder("SHA256WithRSAEncryption").build(issuerKey));
+        builder.build(new JcaContentSignerBuilder(signatureAlgorithm).build(issuerKey));
 
     return new JcaX509CRLConverter().getCRL(holder);
   }
