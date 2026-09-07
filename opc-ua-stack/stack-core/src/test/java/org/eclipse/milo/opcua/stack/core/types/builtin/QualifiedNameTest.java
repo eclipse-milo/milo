@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.stack.core.types.builtin;
 
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
@@ -20,6 +21,40 @@ public class QualifiedNameTest {
   void parseableStringSymmetry() {
     assertSymmetry("0:foo");
     assertSymmetry("0:foo:bar");
+  }
+
+  // The namespace index is a UInt16, so every index up to 65535 must survive a round trip. Parsing
+  // it as a short silently yields index 0 for anything above 32767.
+  @Test
+  void parseableStringSymmetryAcrossNamespaceRange() {
+    assertSymmetry("1:foo");
+    assertSymmetry("32767:foo");
+    assertSymmetry("32768:foo");
+    assertSymmetry("40000:foo");
+    assertSymmetry("65535:foo");
+  }
+
+  @Test
+  void parseNamespaceIndex() {
+    assertEquals(ushort(0), QualifiedName.parse("0:foo").namespaceIndex());
+    assertEquals(ushort(32768), QualifiedName.parse("32768:foo").namespaceIndex());
+    assertEquals(ushort(65535), QualifiedName.parse("65535:foo").namespaceIndex());
+    assertEquals("foo", QualifiedName.parse("65535:foo").name());
+  }
+
+  // A prefix that is not a namespace index in range is ignored and the name after the separator is
+  // kept, which is how an unparseable prefix has always been treated.
+  @Test
+  void parseIgnoresPrefixThatIsNotANamespaceIndex() {
+    assertEquals(new QualifiedName(0, "foo"), QualifiedName.parse("abc:foo"));
+    assertEquals(new QualifiedName(0, "foo"), QualifiedName.parse("65536:foo"));
+    assertEquals(new QualifiedName(0, "foo"), QualifiedName.parse("99999999999:foo"));
+    assertEquals(new QualifiedName(0, "foo"), QualifiedName.parse("-1:foo"));
+  }
+
+  @Test
+  void parseWithoutSeparator() {
+    assertEquals(new QualifiedName(0, "foo"), QualifiedName.parse("foo"));
   }
 
   @Test

@@ -148,6 +148,9 @@ public record QualifiedName(UShort namespaceIndex, @Nullable String name) {
   /**
    * Parse a {@link QualifiedName} from its parseable string representation.
    *
+   * <p>A prefix that is not a namespace index in the UInt16 range is ignored, and the namespace
+   * index of the result is 0.
+   *
    * @param s the string to parse.
    * @return the parsed {@link QualifiedName}.
    */
@@ -159,7 +162,13 @@ public record QualifiedName(UShort namespaceIndex, @Nullable String name) {
 
     if (ss.length > 1) {
       try {
-        namespaceIndex = Short.parseShort(ss[0]);
+        // The namespace index is a UInt16, so it is parsed as an int and range checked rather than
+        // parsed as a short, which cannot represent an index above 32767.
+        int parsed = Integer.parseInt(ss[0]);
+
+        if (parsed >= UShort.MIN_VALUE && parsed <= UShort.MAX_VALUE) {
+          namespaceIndex = parsed;
+        }
       } catch (NumberFormatException ignored) {
       }
       name = ss[1];
