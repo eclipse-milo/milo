@@ -292,6 +292,11 @@ public class CertificateValidationUtil {
                     PKIXRevocationChecker.Option.NO_FALLBACK,
                     PKIXRevocationChecker.Option.PREFER_CRLS,
                     PKIXRevocationChecker.Option.SOFT_FAIL));
+
+            // Configuring the checker is not enough; it only takes effect once it's part of the
+            // parameters. Without this the default revocation checker runs instead, and its
+            // stricter options fail the whole path when a CRL can't be located.
+            parameters.addCertPathChecker(pkixRevocationChecker);
           } else {
             parameters.setRevocationEnabled(false);
           }
