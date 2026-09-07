@@ -406,7 +406,13 @@ public class CertificateValidationUtil {
 
   private static boolean verifies(X509CRL crl, X509Certificate issuer) {
     try {
-      crl.verify(issuer.getPublicKey());
+      // Use the same provider routing as path validation so unsupported SunEC curves do not
+      // cause a valid CRL to be discarded before the revocation checker sees it.
+      if (usesUnsupportedCurve(issuer)) {
+        crl.verify(issuer.getPublicKey(), bouncyCastleProvider());
+      } else {
+        crl.verify(issuer.getPublicKey());
+      }
       return true;
     } catch (GeneralSecurityException e) {
       return false;
