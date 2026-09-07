@@ -267,9 +267,13 @@ public class CertificateValidationUtil {
 
           parameters.setRevocationEnabled(true);
 
-          if (!crls.isEmpty()) {
+          Collection<X509CRL> applicableCrls =
+              selectApplicableCrls(crls, pathCertificates, anchorCert);
+
+          if (!applicableCrls.isEmpty()) {
             parameters.addCertStore(
-                CertStore.getInstance("Collection", new CollectionCertStoreParameters(crls)));
+                CertStore.getInstance(
+                    "Collection", new CollectionCertStoreParameters(applicableCrls)));
           }
 
           parameters.addCertPathChecker(
@@ -349,6 +353,63 @@ public class CertificateValidationUtil {
       } catch (GeneralSecurityException e) {
         throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
       }
+    }
+  }
+
+  /**
+   * Removes CRLs that share an issuer name with a certificate in the path but were signed by a
+   * different key.
+   *
+   * <p>PKIX selects a CRL by issuer name alone. That is ambiguous whenever a trust list holds
+   * several CA certificates with the same subject name, which a Global Discovery Server produces as
+   * a matter of course: a certificate group that offers more than one certificate type issues one
+   * CA per type, all under the group's single configured subject name, and publishes a CRL for
+   * each. Handed more than one candidate, PKIX reports {@link
+   * BasicReason#UNDETERMINED_REVOCATION_STATUS} instead of trying each in turn, so the whole path
+   * fails even though the right CRL was present.
+   *
+   * <p>A CRL whose issuer name matches nothing in the path is left alone; it belongs to some other
+   * path and is not ours to judge.
+   *
+   * @param crls the CRLs from the trust list.
+   * @param pathCertificates the certificates of the path being validated.
+   * @param anchorCert the trust anchor certificate.
+   * @return the CRLs that PKIX can unambiguously attribute to an issuer in the path.
+   */
+  private static Collection<X509CRL> selectApplicableCrls(
+      Collection<X509CRL> crls,
+      List<X509Certificate> pathCertificates,
+      X509Certificate anchorCert) {
+
+    var issuers = new ArrayList<X509Certificate>(pathCertificates);
+    issuers.add(anchorCert);
+
+    var applicable = new ArrayList<X509CRL>(crls.size());
+
+    for (X509CRL crl : crls) {
+      List<X509Certificate> candidates =
+          issuers.stream()
+              .filter(c -> c.getSubjectX500Principal().equals(crl.getIssuerX500Principal()))
+              .collect(Collectors.toList());
+
+      if (candidates.isEmpty() || candidates.stream().anyMatch(c -> verifies(crl, c))) {
+        applicable.add(crl);
+      } else {
+        LOGGER.debug(
+            "Discarding CRL from issuer={} that no same-named certificate in the path signed.",
+            crl.getIssuerX500Principal().getName());
+      }
+    }
+
+    return applicable;
+  }
+
+  private static boolean verifies(X509CRL crl, X509Certificate issuer) {
+    try {
+      crl.verify(issuer.getPublicKey());
+      return true;
+    } catch (GeneralSecurityException e) {
+      return false;
     }
   }
 
