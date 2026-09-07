@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.eclipse.milo.opcua.sdk.client.gds;
+package org.eclipse.milo.opcua.sdk.client.gds.model;
 
 import org.eclipse.milo.opcua.sdk.client.VariableTypeManager;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;

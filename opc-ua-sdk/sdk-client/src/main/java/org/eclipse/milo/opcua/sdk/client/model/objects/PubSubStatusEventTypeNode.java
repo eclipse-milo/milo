@@ -89,7 +89,10 @@ public class PubSubStatusEventTypeNode extends SystemEventTypeNode
   @Override
   public void writeConnectionId(NodeId value) throws UaException {
     try {
-      writeConnectionIdAsync(value).get();
+      StatusCode statusCode = writeConnectionIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -159,7 +162,10 @@ public class PubSubStatusEventTypeNode extends SystemEventTypeNode
   @Override
   public void writeGroupId(NodeId value) throws UaException {
     try {
-      writeGroupIdAsync(value).get();
+      StatusCode statusCode = writeGroupIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -237,7 +243,10 @@ public class PubSubStatusEventTypeNode extends SystemEventTypeNode
   @Override
   public void writeState(PubSubState value) throws UaException {
     try {
-      writeStateAsync(value).get();
+      StatusCode statusCode = writeStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

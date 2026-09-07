@@ -88,7 +88,10 @@ public class AuditCertificateDataMismatchEventTypeNode extends AuditCertificateE
   @Override
   public void writeInvalidHostname(String value) throws UaException {
     try {
-      writeInvalidHostnameAsync(value).get();
+      StatusCode statusCode = writeInvalidHostnameAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -158,7 +161,10 @@ public class AuditCertificateDataMismatchEventTypeNode extends AuditCertificateE
   @Override
   public void writeInvalidUri(String value) throws UaException {
     try {
-      writeInvalidUriAsync(value).get();
+      StatusCode statusCode = writeInvalidUriAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

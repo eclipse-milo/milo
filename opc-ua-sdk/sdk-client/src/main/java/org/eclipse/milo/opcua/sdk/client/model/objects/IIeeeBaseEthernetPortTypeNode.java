@@ -92,7 +92,10 @@ public class IIeeeBaseEthernetPortTypeNode extends BaseInterfaceTypeNode
   @Override
   public void writeSpeed(ULong value) throws UaException {
     try {
-      writeSpeedAsync(value).get();
+      StatusCode statusCode = writeSpeedAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -170,7 +173,10 @@ public class IIeeeBaseEthernetPortTypeNode extends BaseInterfaceTypeNode
   @Override
   public void writeDuplex(Duplex value) throws UaException {
     try {
-      writeDuplexAsync(value).get();
+      StatusCode statusCode = writeDuplexAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -248,7 +254,10 @@ public class IIeeeBaseEthernetPortTypeNode extends BaseInterfaceTypeNode
   @Override
   public void writeMaxFrameLength(UShort value) throws UaException {
     try {
-      writeMaxFrameLengthAsync(value).get();
+      StatusCode statusCode = writeMaxFrameLengthAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

@@ -107,7 +107,10 @@ public class ExpressionGuardVariableTypeNode extends GuardVariableTypeNode
   @Override
   public void writeExpression(ContentFilter value) throws UaException {
     try {
-      writeExpressionAsync(value).get();
+      StatusCode statusCode = writeExpressionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

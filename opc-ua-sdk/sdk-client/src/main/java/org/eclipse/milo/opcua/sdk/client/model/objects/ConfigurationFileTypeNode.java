@@ -88,7 +88,10 @@ public class ConfigurationFileTypeNode extends FileTypeNode implements Configura
   @Override
   public void writeLastUpdateTime(DateTime value) throws UaException {
     try {
-      writeLastUpdateTimeAsync(value).get();
+      StatusCode statusCode = writeLastUpdateTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -158,7 +161,10 @@ public class ConfigurationFileTypeNode extends FileTypeNode implements Configura
   @Override
   public void writeCurrentVersion(UInteger value) throws UaException {
     try {
-      writeCurrentVersionAsync(value).get();
+      StatusCode statusCode = writeCurrentVersionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -228,7 +234,10 @@ public class ConfigurationFileTypeNode extends FileTypeNode implements Configura
   @Override
   public void writeActivityTimeout(Double value) throws UaException {
     try {
-      writeActivityTimeoutAsync(value).get();
+      StatusCode statusCode = writeActivityTimeoutAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -298,7 +307,10 @@ public class ConfigurationFileTypeNode extends FileTypeNode implements Configura
   @Override
   public void writeSupportedDataType(NodeId value) throws UaException {
     try {
-      writeSupportedDataTypeAsync(value).get();
+      StatusCode statusCode = writeSupportedDataTypeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

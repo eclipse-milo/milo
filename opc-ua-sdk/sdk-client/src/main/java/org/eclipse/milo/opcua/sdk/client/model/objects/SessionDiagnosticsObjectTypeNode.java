@@ -95,7 +95,10 @@ public class SessionDiagnosticsObjectTypeNode extends BaseObjectTypeNode
   @Override
   public void writeCurrentRoleIds(NodeId[] value) throws UaException {
     try {
-      writeCurrentRoleIdsAsync(value).get();
+      StatusCode statusCode = writeCurrentRoleIdsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -166,7 +169,10 @@ public class SessionDiagnosticsObjectTypeNode extends BaseObjectTypeNode
   @Override
   public void writeSessionDiagnostics(SessionDiagnosticsDataType value) throws UaException {
     try {
-      writeSessionDiagnosticsAsync(value).get();
+      StatusCode statusCode = writeSessionDiagnosticsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

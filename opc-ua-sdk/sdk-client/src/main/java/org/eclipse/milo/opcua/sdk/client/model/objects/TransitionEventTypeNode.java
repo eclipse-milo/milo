@@ -88,7 +88,10 @@ public class TransitionEventTypeNode extends BaseEventTypeNode implements Transi
   @Override
   public void writeTransition(LocalizedText value) throws UaException {
     try {
-      writeTransitionAsync(value).get();
+      StatusCode statusCode = writeTransitionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -158,7 +161,10 @@ public class TransitionEventTypeNode extends BaseEventTypeNode implements Transi
   @Override
   public void writeFromState(LocalizedText value) throws UaException {
     try {
-      writeFromStateAsync(value).get();
+      StatusCode statusCode = writeFromStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -228,7 +234,10 @@ public class TransitionEventTypeNode extends BaseEventTypeNode implements Transi
   @Override
   public void writeToState(LocalizedText value) throws UaException {
     try {
-      writeToStateAsync(value).get();
+      StatusCode statusCode = writeToStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

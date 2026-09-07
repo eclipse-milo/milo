@@ -93,7 +93,10 @@ public class LldpRemoteSystemTypeNode extends BaseObjectTypeNode implements Lldp
   @Override
   public void writeTimeMark(UInteger value) throws UaException {
     try {
-      writeTimeMarkAsync(value).get();
+      StatusCode statusCode = writeTimeMarkAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -163,7 +166,10 @@ public class LldpRemoteSystemTypeNode extends BaseObjectTypeNode implements Lldp
   @Override
   public void writeRemoteIndex(UInteger value) throws UaException {
     try {
-      writeRemoteIndexAsync(value).get();
+      StatusCode statusCode = writeRemoteIndexAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -241,7 +247,10 @@ public class LldpRemoteSystemTypeNode extends BaseObjectTypeNode implements Lldp
   @Override
   public void writeChassisIdSubtype(ChassisIdSubtype value) throws UaException {
     try {
-      writeChassisIdSubtypeAsync(value).get();
+      StatusCode statusCode = writeChassisIdSubtypeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -323,7 +332,10 @@ public class LldpRemoteSystemTypeNode extends BaseObjectTypeNode implements Lldp
   @Override
   public void writeChassisId(String value) throws UaException {
     try {
-      writeChassisIdAsync(value).get();
+      StatusCode statusCode = writeChassisIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -401,7 +413,10 @@ public class LldpRemoteSystemTypeNode extends BaseObjectTypeNode implements Lldp
   @Override
   public void writePortIdSubtype(PortIdSubtype value) throws UaException {
     try {
-      writePortIdSubtypeAsync(value).get();
+      StatusCode statusCode = writePortIdSubtypeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -479,7 +494,10 @@ public class LldpRemoteSystemTypeNode extends BaseObjectTypeNode implements Lldp
   @Override
   public void writePortId(String value) throws UaException {
     try {
-      writePortIdAsync(value).get();
+      StatusCode statusCode = writePortIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -549,7 +567,10 @@ public class LldpRemoteSystemTypeNode extends BaseObjectTypeNode implements Lldp
   @Override
   public void writePortDescription(String value) throws UaException {
     try {
-      writePortDescriptionAsync(value).get();
+      StatusCode statusCode = writePortDescriptionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -619,7 +640,10 @@ public class LldpRemoteSystemTypeNode extends BaseObjectTypeNode implements Lldp
   @Override
   public void writeSystemName(String value) throws UaException {
     try {
-      writeSystemNameAsync(value).get();
+      StatusCode statusCode = writeSystemNameAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -689,7 +713,10 @@ public class LldpRemoteSystemTypeNode extends BaseObjectTypeNode implements Lldp
   @Override
   public void writeSystemDescription(String value) throws UaException {
     try {
-      writeSystemDescriptionAsync(value).get();
+      StatusCode statusCode = writeSystemDescriptionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -762,7 +789,10 @@ public class LldpRemoteSystemTypeNode extends BaseObjectTypeNode implements Lldp
   @Override
   public void writeSystemCapabilitiesSupported(LldpSystemCapabilitiesMap value) throws UaException {
     try {
-      writeSystemCapabilitiesSupportedAsync(value).get();
+      StatusCode statusCode = writeSystemCapabilitiesSupportedAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -838,7 +868,10 @@ public class LldpRemoteSystemTypeNode extends BaseObjectTypeNode implements Lldp
   @Override
   public void writeSystemCapabilitiesEnabled(LldpSystemCapabilitiesMap value) throws UaException {
     try {
-      writeSystemCapabilitiesEnabledAsync(value).get();
+      StatusCode statusCode = writeSystemCapabilitiesEnabledAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -914,7 +947,10 @@ public class LldpRemoteSystemTypeNode extends BaseObjectTypeNode implements Lldp
   @Override
   public void writeRemoteChanges(Boolean value) throws UaException {
     try {
-      writeRemoteChangesAsync(value).get();
+      StatusCode statusCode = writeRemoteChangesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -984,7 +1020,10 @@ public class LldpRemoteSystemTypeNode extends BaseObjectTypeNode implements Lldp
   @Override
   public void writeRemoteTooManyNeighbors(Boolean value) throws UaException {
     try {
-      writeRemoteTooManyNeighborsAsync(value).get();
+      StatusCode statusCode = writeRemoteTooManyNeighborsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1061,7 +1100,10 @@ public class LldpRemoteSystemTypeNode extends BaseObjectTypeNode implements Lldp
   @Override
   public void writeManagementAddress(LldpManagementAddressType[] value) throws UaException {
     try {
-      writeManagementAddressAsync(value).get();
+      StatusCode statusCode = writeManagementAddressAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1139,7 +1181,10 @@ public class LldpRemoteSystemTypeNode extends BaseObjectTypeNode implements Lldp
   @Override
   public void writeRemoteUnknownTlv(LldpTlvType[] value) throws UaException {
     try {
-      writeRemoteUnknownTlvAsync(value).get();
+      StatusCode statusCode = writeRemoteUnknownTlvAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

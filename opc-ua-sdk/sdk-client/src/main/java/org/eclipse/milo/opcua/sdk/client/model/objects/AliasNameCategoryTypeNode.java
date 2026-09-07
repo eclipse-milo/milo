@@ -87,7 +87,10 @@ public class AliasNameCategoryTypeNode extends FolderTypeNode implements AliasNa
   @Override
   public void writeLastChange(UInteger value) throws UaException {
     try {
-      writeLastChangeAsync(value).get();
+      StatusCode statusCode = writeLastChangeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

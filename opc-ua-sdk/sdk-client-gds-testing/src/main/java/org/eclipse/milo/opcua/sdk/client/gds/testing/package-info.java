@@ -14,7 +14,9 @@
  * <p>{@link org.eclipse.milo.opcua.sdk.client.gds.testing.FakeGdsNamespace} hosts an in-memory GDS
  * namespace on an {@link org.eclipse.milo.opcua.sdk.server.OpcUaServer}. Tests can control access,
  * registration, certificate issuance, and TrustList responses, then inspect recorded calls. The
- * fixture must be started before the server and shut down during test teardown.
+ * fixture returns requested PEM or PFX private keys and applies the supplied password. Pending
+ * requests retain their key format and password until issuance or reset. The fixture must be
+ * started before the server and shut down during test teardown.
  */
 @NullMarked
 package org.eclipse.milo.opcua.sdk.client.gds.testing;

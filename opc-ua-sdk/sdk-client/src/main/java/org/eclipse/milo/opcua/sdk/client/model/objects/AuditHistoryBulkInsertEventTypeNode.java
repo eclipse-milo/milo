@@ -89,7 +89,10 @@ public class AuditHistoryBulkInsertEventTypeNode extends AuditEventTypeNode
   @Override
   public void writeUpdatedNode(NodeId value) throws UaException {
     try {
-      writeUpdatedNodeAsync(value).get();
+      StatusCode statusCode = writeUpdatedNodeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -159,7 +162,10 @@ public class AuditHistoryBulkInsertEventTypeNode extends AuditEventTypeNode
   @Override
   public void writeStartTime(DateTime value) throws UaException {
     try {
-      writeStartTimeAsync(value).get();
+      StatusCode statusCode = writeStartTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -229,7 +235,10 @@ public class AuditHistoryBulkInsertEventTypeNode extends AuditEventTypeNode
   @Override
   public void writeEndTime(DateTime value) throws UaException {
     try {
-      writeEndTimeAsync(value).get();
+      StatusCode statusCode = writeEndTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

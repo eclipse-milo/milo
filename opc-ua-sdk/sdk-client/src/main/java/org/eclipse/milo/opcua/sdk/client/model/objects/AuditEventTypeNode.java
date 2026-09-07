@@ -88,7 +88,10 @@ public class AuditEventTypeNode extends BaseEventTypeNode implements AuditEventT
   @Override
   public void writeActionTimeStamp(DateTime value) throws UaException {
     try {
-      writeActionTimeStampAsync(value).get();
+      StatusCode statusCode = writeActionTimeStampAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -158,7 +161,10 @@ public class AuditEventTypeNode extends BaseEventTypeNode implements AuditEventT
   @Override
   public void writeStatus(Boolean value) throws UaException {
     try {
-      writeStatusAsync(value).get();
+      StatusCode statusCode = writeStatusAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -228,7 +234,10 @@ public class AuditEventTypeNode extends BaseEventTypeNode implements AuditEventT
   @Override
   public void writeServerId(String value) throws UaException {
     try {
-      writeServerIdAsync(value).get();
+      StatusCode statusCode = writeServerIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -298,7 +307,10 @@ public class AuditEventTypeNode extends BaseEventTypeNode implements AuditEventT
   @Override
   public void writeClientAuditEntryId(String value) throws UaException {
     try {
-      writeClientAuditEntryIdAsync(value).get();
+      StatusCode statusCode = writeClientAuditEntryIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -371,7 +383,10 @@ public class AuditEventTypeNode extends BaseEventTypeNode implements AuditEventT
   @Override
   public void writeClientUserId(String value) throws UaException {
     try {
-      writeClientUserIdAsync(value).get();
+      StatusCode statusCode = writeClientUserIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -441,7 +456,10 @@ public class AuditEventTypeNode extends BaseEventTypeNode implements AuditEventT
   @Override
   public void writeClientApplicationUri(String value) throws UaException {
     try {
-      writeClientApplicationUriAsync(value).get();
+      StatusCode statusCode = writeClientApplicationUriAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

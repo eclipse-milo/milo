@@ -89,7 +89,10 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
   @Override
   public void writeQueueName(String value) throws UaException {
     try {
-      writeQueueNameAsync(value).get();
+      StatusCode statusCode = writeQueueNameAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -159,7 +162,10 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
   @Override
   public void writeMetaDataQueueName(String value) throws UaException {
     try {
-      writeMetaDataQueueNameAsync(value).get();
+      StatusCode statusCode = writeMetaDataQueueNameAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -232,7 +238,10 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
   @Override
   public void writeResourceUri(String value) throws UaException {
     try {
-      writeResourceUriAsync(value).get();
+      StatusCode statusCode = writeResourceUriAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -302,7 +311,10 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
   @Override
   public void writeAuthenticationProfileUri(String value) throws UaException {
     try {
-      writeAuthenticationProfileUriAsync(value).get();
+      StatusCode statusCode = writeAuthenticationProfileUriAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -469,7 +481,10 @@ public class BrokerDataSetWriterTransportTypeNode extends DataSetWriterTransport
   @Override
   public void writeMetaDataUpdateTime(Double value) throws UaException {
     try {
-      writeMetaDataUpdateTimeAsync(value).get();
+      StatusCode statusCode = writeMetaDataUpdateTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

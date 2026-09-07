@@ -97,7 +97,10 @@ public class IIeeeAutoNegotiationStatusTypeNode extends BaseInterfaceTypeNode
   @Override
   public void writeNegotiationStatus(NegotiationStatus value) throws UaException {
     try {
-      writeNegotiationStatusAsync(value).get();
+      StatusCode statusCode = writeNegotiationStatusAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

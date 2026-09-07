@@ -21,6 +21,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.gds.model.ObjectTypeInitializer;
+import org.eclipse.milo.opcua.sdk.client.gds.model.VariableTypeInitializer;
 import org.eclipse.milo.opcua.sdk.client.methods.UaMethodException;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.NodeIds;

@@ -99,7 +99,10 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
   @Override
   public void writeSecurityMode(MessageSecurityMode value) throws UaException {
     try {
-      writeSecurityModeAsync(value).get();
+      StatusCode statusCode = writeSecurityModeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -177,7 +180,10 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
   @Override
   public void writeSecurityGroupId(String value) throws UaException {
     try {
-      writeSecurityGroupIdAsync(value).get();
+      StatusCode statusCode = writeSecurityGroupIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -249,7 +255,10 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
   @Override
   public void writeSecurityKeyServices(EndpointDescription[] value) throws UaException {
     try {
-      writeSecurityKeyServicesAsync(value).get();
+      StatusCode statusCode = writeSecurityKeyServicesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -325,7 +334,10 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
   @Override
   public void writeMaxNetworkMessageSize(UInteger value) throws UaException {
     try {
-      writeMaxNetworkMessageSizeAsync(value).get();
+      StatusCode statusCode = writeMaxNetworkMessageSizeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -401,7 +413,10 @@ public class PubSubGroupTypeNode extends BaseObjectTypeNode implements PubSubGro
   @Override
   public void writeGroupProperties(KeyValuePair[] value) throws UaException {
     try {
-      writeGroupPropertiesAsync(value).get();
+      StatusCode statusCode = writeGroupPropertiesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

@@ -96,7 +96,10 @@ public class PubSubStatusTypeNode extends BaseObjectTypeNode implements PubSubSt
   @Override
   public void writeState(PubSubState value) throws UaException {
     try {
-      writeStateAsync(value).get();
+      StatusCode statusCode = writeStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

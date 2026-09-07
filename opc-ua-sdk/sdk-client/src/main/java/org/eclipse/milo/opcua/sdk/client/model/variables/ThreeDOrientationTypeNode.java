@@ -104,7 +104,10 @@ public class ThreeDOrientationTypeNode extends OrientationTypeNode
   @Override
   public void writeA(Double value) throws UaException {
     try {
-      writeAAsync(value).get();
+      StatusCode statusCode = writeAAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -173,7 +176,10 @@ public class ThreeDOrientationTypeNode extends OrientationTypeNode
   @Override
   public void writeB(Double value) throws UaException {
     try {
-      writeBAsync(value).get();
+      StatusCode statusCode = writeBAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -242,7 +248,10 @@ public class ThreeDOrientationTypeNode extends OrientationTypeNode
   @Override
   public void writeC(Double value) throws UaException {
     try {
-      writeCAsync(value).get();
+      StatusCode statusCode = writeCAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

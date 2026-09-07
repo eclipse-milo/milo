@@ -106,7 +106,10 @@ public class FrameTypeNode extends BaseDataVariableTypeNode implements FrameType
   @Override
   public void writeConstant(Boolean value) throws UaException {
     try {
-      writeConstantAsync(value).get();
+      StatusCode statusCode = writeConstantAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -176,7 +179,10 @@ public class FrameTypeNode extends BaseDataVariableTypeNode implements FrameType
   @Override
   public void writeFixedBase(Boolean value) throws UaException {
     try {
-      writeFixedBaseAsync(value).get();
+      StatusCode statusCode = writeFixedBaseAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -247,7 +253,10 @@ public class FrameTypeNode extends BaseDataVariableTypeNode implements FrameType
   @Override
   public void writeCartesianCoordinates(CartesianCoordinates value) throws UaException {
     try {
-      writeCartesianCoordinatesAsync(value).get();
+      StatusCode statusCode = writeCartesianCoordinatesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -325,7 +334,10 @@ public class FrameTypeNode extends BaseDataVariableTypeNode implements FrameType
   @Override
   public void writeOrientation(Orientation value) throws UaException {
     try {
-      writeOrientationAsync(value).get();
+      StatusCode statusCode = writeOrientationAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -397,7 +409,10 @@ public class FrameTypeNode extends BaseDataVariableTypeNode implements FrameType
   @Override
   public void writeBaseFrame(NodeId value) throws UaException {
     try {
-      writeBaseFrameAsync(value).get();
+      StatusCode statusCode = writeBaseFrameAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

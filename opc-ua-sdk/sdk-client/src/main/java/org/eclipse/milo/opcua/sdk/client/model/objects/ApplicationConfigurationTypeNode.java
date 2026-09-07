@@ -89,7 +89,10 @@ public class ApplicationConfigurationTypeNode extends ServerConfigurationTypeNod
   @Override
   public void writeApplicationUri(String value) throws UaException {
     try {
-      writeApplicationUriAsync(value).get();
+      StatusCode statusCode = writeApplicationUriAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -159,7 +162,10 @@ public class ApplicationConfigurationTypeNode extends ServerConfigurationTypeNod
   @Override
   public void writeProductUri(String value) throws UaException {
     try {
-      writeProductUriAsync(value).get();
+      StatusCode statusCode = writeProductUriAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -237,7 +243,10 @@ public class ApplicationConfigurationTypeNode extends ServerConfigurationTypeNod
   @Override
   public void writeApplicationType(ApplicationType value) throws UaException {
     try {
-      writeApplicationTypeAsync(value).get();
+      StatusCode statusCode = writeApplicationTypeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -315,7 +324,10 @@ public class ApplicationConfigurationTypeNode extends ServerConfigurationTypeNod
   @Override
   public void writeEnabled(Boolean value) throws UaException {
     try {
-      writeEnabledAsync(value).get();
+      StatusCode statusCode = writeEnabledAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -385,7 +397,10 @@ public class ApplicationConfigurationTypeNode extends ServerConfigurationTypeNod
   @Override
   public void writeIsNonUaApplication(Boolean value) throws UaException {
     try {
-      writeIsNonUaApplicationAsync(value).get();
+      StatusCode statusCode = writeIsNonUaApplicationAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

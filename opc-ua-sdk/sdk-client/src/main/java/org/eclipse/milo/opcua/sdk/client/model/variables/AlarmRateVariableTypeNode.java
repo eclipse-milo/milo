@@ -105,7 +105,10 @@ public class AlarmRateVariableTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeRate(UShort value) throws UaException {
     try {
-      writeRateAsync(value).get();
+      StatusCode statusCode = writeRateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

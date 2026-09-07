@@ -88,7 +88,10 @@ public class IBaseEthernetCapabilitiesTypeNode extends BaseInterfaceTypeNode
   @Override
   public void writeVlanTagCapable(Boolean value) throws UaException {
     try {
-      writeVlanTagCapableAsync(value).get();
+      StatusCode statusCode = writeVlanTagCapableAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

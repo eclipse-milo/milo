@@ -108,7 +108,10 @@ public class ReferenceDescriptionVariableTypeNode extends BaseDataVariableTypeNo
   @Override
   public void writeReferenceRefinement(ReferenceListEntryDataType[] value) throws UaException {
     try {
-      writeReferenceRefinementAsync(value).get();
+      StatusCode statusCode = writeReferenceRefinementAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

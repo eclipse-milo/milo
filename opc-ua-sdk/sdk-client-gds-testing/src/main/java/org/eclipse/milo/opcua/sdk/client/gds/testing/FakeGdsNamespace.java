@@ -15,8 +15,13 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
+import java.io.ByteArrayOutputStream;
+import java.io.StringWriter;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
+import java.security.KeyStore;
+import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Date;
@@ -37,8 +42,14 @@ import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.asn1.x509.GeneralNames;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.PKCS8Generator;
+import org.bouncycastle.openssl.jcajce.JcaPKCS8Generator;
+import org.bouncycastle.openssl.jcajce.JceOpenSSLPKCS8EncryptorBuilder;
+import org.bouncycastle.operator.OutputEncryptor;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.pkcs.PKCS10CertificationRequest;
+import org.bouncycastle.util.io.pem.PemWriter;
 import org.eclipse.milo.opcua.sdk.client.gds.GdsClient;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.core.Reference;
@@ -163,7 +174,11 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
   }
 
   private record SigningRequest(
-      NodeId applicationId, @Nullable PKCS10CertificationRequest csr, AtomicInteger polls) {}
+      NodeId applicationId,
+      @Nullable PKCS10CertificationRequest csr,
+      AtomicInteger polls,
+      @Nullable String privateKeyFormat,
+      @Nullable String privateKeyPassword) {}
 
   private final KeyPair caKeyPair;
   private final X509Certificate caCertificate;
@@ -853,7 +868,8 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
           }
 
           NodeId requestId = newNodeId("Requests/" + nextId.getAndIncrement());
-          requests.put(requestId, new SigningRequest(applicationId, csr, new AtomicInteger()));
+          requests.put(
+              requestId, new SigningRequest(applicationId, csr, new AtomicInteger(), null, null));
 
           return new Variant[] {Variant.ofNodeId(requestId)};
         });
@@ -879,8 +895,19 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
 
           requireApplication(applicationId);
 
+          String format = (String) inputs[5].value();
+          if (format == null || format.isEmpty()) {
+            format = "PEM";
+          }
+          if (!format.equals("PEM") && !format.equals("PFX")) {
+            throw new UaException(
+                StatusCodes.Bad_InvalidArgument, "unsupported PrivateKeyFormat: " + format);
+          }
+          String password = (String) inputs[6].value();
           NodeId requestId = newNodeId("Requests/" + nextId.getAndIncrement());
-          requests.put(requestId, new SigningRequest(applicationId, null, new AtomicInteger()));
+          requests.put(
+              requestId,
+              new SigningRequest(applicationId, null, new AtomicInteger(), format, password));
 
           return new Variant[] {Variant.ofNodeId(requestId)};
         });
@@ -937,7 +964,7 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
                           List.of(),
                           List.of(),
                           "SHA256withRSA"));
-              privateKey = ByteString.of(keyPair.getPrivate().getEncoded());
+              privateKey = encodePrivateKey(request, keyPair.getPrivate(), certificate);
             }
 
             issued
@@ -1270,6 +1297,36 @@ public class FakeGdsNamespace extends ManagedNamespaceWithLifecycle {
     }
 
     return Extensions.getInstance(attributes[0].getAttrValues().getObjectAt(0));
+  }
+
+  private ByteString encodePrivateKey(
+      SigningRequest request, PrivateKey key, X509Certificate certificate) throws Exception {
+    char[] password =
+        request.privateKeyPassword() != null
+            ? request.privateKeyPassword().toCharArray()
+            : new char[0];
+    if ("PFX".equals(request.privateKeyFormat())) {
+      KeyStore store = KeyStore.getInstance("PKCS12");
+      store.load(null, password);
+      store.setKeyEntry(
+          "application", key, password, new X509Certificate[] {certificate, caCertificate});
+      var output = new ByteArrayOutputStream();
+      store.store(output, password);
+      return ByteString.of(output.toByteArray());
+    }
+
+    OutputEncryptor encryptor =
+        password.length == 0
+            ? null
+            : new JceOpenSSLPKCS8EncryptorBuilder(PKCS8Generator.AES_256_CBC)
+                .setProvider(new BouncyCastleProvider())
+                .setPassword(password)
+                .build();
+    var output = new StringWriter();
+    try (var writer = new PemWriter(output)) {
+      writer.writeObject(new JcaPKCS8Generator(key, encryptor));
+    }
+    return ByteString.of(output.toString().getBytes(StandardCharsets.US_ASCII));
   }
 
   private X509Certificate sign(PKCS10CertificationRequest csr) throws Exception {

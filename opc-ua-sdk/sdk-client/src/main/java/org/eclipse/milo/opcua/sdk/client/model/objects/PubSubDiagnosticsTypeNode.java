@@ -97,7 +97,10 @@ public class PubSubDiagnosticsTypeNode extends BaseObjectTypeNode implements Pub
   @Override
   public void writeDiagnosticsLevel(DiagnosticsLevel value) throws UaException {
     try {
-      writeDiagnosticsLevelAsync(value).get();
+      StatusCode statusCode = writeDiagnosticsLevelAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -179,7 +182,10 @@ public class PubSubDiagnosticsTypeNode extends BaseObjectTypeNode implements Pub
   @Override
   public void writeTotalInformation(UInteger value) throws UaException {
     try {
-      writeTotalInformationAsync(value).get();
+      StatusCode statusCode = writeTotalInformationAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -253,7 +259,10 @@ public class PubSubDiagnosticsTypeNode extends BaseObjectTypeNode implements Pub
   @Override
   public void writeTotalError(UInteger value) throws UaException {
     try {
-      writeTotalErrorAsync(value).get();
+      StatusCode statusCode = writeTotalErrorAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -323,7 +332,10 @@ public class PubSubDiagnosticsTypeNode extends BaseObjectTypeNode implements Pub
   @Override
   public void writeSubError(Boolean value) throws UaException {
     try {
-      writeSubErrorAsync(value).get();
+      StatusCode statusCode = writeSubErrorAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

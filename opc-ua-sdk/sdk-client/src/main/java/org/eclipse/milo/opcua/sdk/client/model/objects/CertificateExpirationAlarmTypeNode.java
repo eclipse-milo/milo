@@ -90,7 +90,10 @@ public class CertificateExpirationAlarmTypeNode extends SystemOffNormalAlarmType
   @Override
   public void writeExpirationDate(DateTime value) throws UaException {
     try {
-      writeExpirationDateAsync(value).get();
+      StatusCode statusCode = writeExpirationDateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -160,7 +163,10 @@ public class CertificateExpirationAlarmTypeNode extends SystemOffNormalAlarmType
   @Override
   public void writeExpirationLimit(Double value) throws UaException {
     try {
-      writeExpirationLimitAsync(value).get();
+      StatusCode statusCode = writeExpirationLimitAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -230,7 +236,10 @@ public class CertificateExpirationAlarmTypeNode extends SystemOffNormalAlarmType
   @Override
   public void writeCertificateType(NodeId value) throws UaException {
     try {
-      writeCertificateTypeAsync(value).get();
+      StatusCode statusCode = writeCertificateTypeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -300,7 +309,10 @@ public class CertificateExpirationAlarmTypeNode extends SystemOffNormalAlarmType
   @Override
   public void writeCertificate(ByteString value) throws UaException {
     try {
-      writeCertificateAsync(value).get();
+      StatusCode statusCode = writeCertificateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

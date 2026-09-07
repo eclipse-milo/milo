@@ -90,7 +90,10 @@ public class DatagramDataSetReaderTransportTypeNode extends DataSetReaderTranspo
   @Override
   public void writeQosCategory(String value) throws UaException {
     try {
-      writeQosCategoryAsync(value).get();
+      StatusCode statusCode = writeQosCategoryAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -162,7 +165,10 @@ public class DatagramDataSetReaderTransportTypeNode extends DataSetReaderTranspo
   @Override
   public void writeDatagramQos(ReceiveQosDataType[] value) throws UaException {
     try {
-      writeDatagramQosAsync(value).get();
+      StatusCode statusCode = writeDatagramQosAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -234,7 +240,10 @@ public class DatagramDataSetReaderTransportTypeNode extends DataSetReaderTranspo
   @Override
   public void writeTopic(String value) throws UaException {
     try {
-      writeTopicAsync(value).get();
+      StatusCode statusCode = writeTopicAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

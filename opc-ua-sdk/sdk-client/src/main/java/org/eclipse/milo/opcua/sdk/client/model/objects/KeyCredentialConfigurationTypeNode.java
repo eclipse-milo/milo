@@ -88,7 +88,10 @@ public class KeyCredentialConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeResourceUri(String value) throws UaException {
     try {
-      writeResourceUriAsync(value).get();
+      StatusCode statusCode = writeResourceUriAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -158,7 +161,10 @@ public class KeyCredentialConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeProfileUri(String value) throws UaException {
     try {
-      writeProfileUriAsync(value).get();
+      StatusCode statusCode = writeProfileUriAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -228,7 +234,10 @@ public class KeyCredentialConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeEndpointUrls(String[] value) throws UaException {
     try {
-      writeEndpointUrlsAsync(value).get();
+      StatusCode statusCode = writeEndpointUrlsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -298,7 +307,10 @@ public class KeyCredentialConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeCredentialId(String value) throws UaException {
     try {
-      writeCredentialIdAsync(value).get();
+      StatusCode statusCode = writeCredentialIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -368,7 +380,10 @@ public class KeyCredentialConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeServiceStatus(StatusCode value) throws UaException {
     try {
-      writeServiceStatusAsync(value).get();
+      StatusCode statusCode = writeServiceStatusAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

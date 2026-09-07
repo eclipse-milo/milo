@@ -89,7 +89,10 @@ public class IIeeeTsnInterfaceConfigurationListenerTypeNode
   @Override
   public void writeReceiveOffset(UInteger value) throws UaException {
     try {
-      writeReceiveOffsetAsync(value).get();
+      StatusCode statusCode = writeReceiveOffsetAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
