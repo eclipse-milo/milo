@@ -343,15 +343,32 @@ public class EventContentFilter {
 
   @NonNull
   private static FilterOperand[] decodeOperands(
-      EncodingContext context, ExtensionObject @Nullable [] operandXos) {
+      EncodingContext context, ExtensionObject @Nullable [] operandXos) throws UaException {
 
     if (operandXos == null) {
       return new FilterOperand[0];
-    } else {
-      return Arrays.stream(operandXos)
-          .map(xo -> (FilterOperand) xo.decode(context))
-          .toArray(FilterOperand[]::new);
     }
+
+    var operands = new FilterOperand[operandXos.length];
+
+    for (int i = 0; i < operandXos.length; i++) {
+      Object decoded;
+      try {
+        decoded = operandXos[i].decode(context);
+      } catch (Exception e) {
+        throw new UaException(
+            StatusCodes.Bad_FilterOperandInvalid, "operand " + i + " could not be decoded", e);
+      }
+
+      if (decoded instanceof FilterOperand operand) {
+        operands[i] = operand;
+      } else {
+        throw new UaException(
+            StatusCodes.Bad_FilterOperandInvalid, "operand " + i + " is not a FilterOperand");
+      }
+    }
+
+    return operands;
   }
 
   @NonNull
