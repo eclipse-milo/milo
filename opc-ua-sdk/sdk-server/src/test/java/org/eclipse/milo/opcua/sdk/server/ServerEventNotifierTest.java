@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.server;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.lang.reflect.Constructor;
@@ -46,6 +47,24 @@ public class ServerEventNotifierTest {
     notifier.fire(null);
 
     assertEquals(0, eventCount.get());
+  }
+
+  // Listeners are notified in registration order; an exception from one listener must not stop
+  // delivery to the listeners registered after it, and must not propagate to the caller of fire().
+  @Test
+  public void throwingListenerDoesNotBlockLaterListeners() throws Exception {
+    EventNotifier notifier = newServerEventNotifier();
+    AtomicInteger eventCount = new AtomicInteger();
+
+    notifier.register(
+        event -> {
+          throw new IllegalStateException("listener failure");
+        });
+    notifier.register(event -> eventCount.incrementAndGet());
+
+    assertDoesNotThrow(() -> notifier.fire(null));
+
+    assertEquals(1, eventCount.get());
   }
 
   private static EventNotifier newServerEventNotifier() throws Exception {
