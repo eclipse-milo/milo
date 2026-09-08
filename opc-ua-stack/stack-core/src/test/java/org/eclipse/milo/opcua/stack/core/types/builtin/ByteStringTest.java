@@ -12,7 +12,10 @@ package org.eclipse.milo.opcua.stack.core.types.builtin;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.HashSet;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 public class ByteStringTest {
@@ -35,5 +38,31 @@ public class ByteStringTest {
     assertEquals(new ByteString(new byte[0]), new ByteString(new byte[0]));
     assertEquals(new ByteString(null), new ByteString(new byte[0]));
     assertEquals(new ByteString(new byte[0]), new ByteString(null));
+  }
+
+  @Test
+  public void equalByteStringsHashTheSame() {
+    assertEquals(
+        ByteString.of(new byte[] {1, 2, 3, 4}).hashCode(),
+        ByteString.of(new byte[] {1, 2, 3, 4}).hashCode());
+  }
+
+  // nullEquality() pins that a null and an empty ByteString are equal, so they have to hash the
+  // same to be usable in a hash-based collection.
+  @Test
+  public void nullAndEmptyHashTheSame() {
+    ByteString nullValue = new ByteString(null);
+    ByteString empty = new ByteString(new byte[0]);
+
+    assertEquals(nullValue.hashCode(), empty.hashCode());
+
+    Set<ByteString> set = new HashSet<>();
+    set.add(nullValue);
+
+    assertTrue(set.contains(empty));
+
+    set.add(empty);
+
+    assertEquals(1, set.size());
   }
 }
