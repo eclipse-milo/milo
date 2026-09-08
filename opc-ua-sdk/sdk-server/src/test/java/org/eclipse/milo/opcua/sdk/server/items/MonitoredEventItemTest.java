@@ -11,8 +11,10 @@
 package org.eclipse.milo.opcua.sdk.server.items;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -131,6 +133,33 @@ class MonitoredEventItemTest {
 
       item.onRefreshMarker(eventNode);
 
+      assertEquals(0, drainNotifications().size());
+    }
+  }
+
+  @Nested
+  class FilterEvaluation {
+
+    // Event delivery loops call onEvent for every registered item; an unexpected exception from
+    // evaluating one item's filter must be contained in that item.
+    @Test
+    void unexpectedExceptionDuringEvaluationDoesNotPropagate() throws Exception {
+      item.installFilter(
+          eventFilter(
+              where(
+                  element(
+                      FilterOperator.Equals,
+                      new SimpleAttributeOperand(
+                          NodeIds.BaseEventType,
+                          new QualifiedName[] {new QualifiedName(0, "Severity")},
+                          AttributeId.Value.uid(),
+                          null),
+                      literal(1)))));
+
+      when(eventNode.findNode(any(QualifiedName.class), any(), any()))
+          .thenThrow(new IllegalStateException("event node lookup failure"));
+
+      assertDoesNotThrow(() -> item.onEvent(eventNode));
       assertEquals(0, drainNotifications().size());
     }
   }

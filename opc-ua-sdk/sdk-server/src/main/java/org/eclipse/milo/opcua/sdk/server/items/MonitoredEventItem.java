@@ -131,7 +131,7 @@ public class MonitoredEventItem extends BaseMonitoredItem<Variant[]> implements 
           enqueueEvent(selectEventFields(eventNode), eventNode instanceof ConditionTypeNode);
         }
       }
-    } catch (UaException e) {
+    } catch (Exception e) {
       logger.error("Filter evaluation failed: {}", e.getMessage(), e);
     }
   }
