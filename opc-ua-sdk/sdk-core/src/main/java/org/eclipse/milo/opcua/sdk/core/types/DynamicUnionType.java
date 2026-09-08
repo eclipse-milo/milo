@@ -107,7 +107,7 @@ public final class DynamicUnionType extends DynamicType implements UaStructuredT
 
   @Override
   public int hashCode() {
-    return Objects.hash(dataType, value);
+    return Objects.hash(dataType.getNodeId(), value);
   }
 
   @Override
