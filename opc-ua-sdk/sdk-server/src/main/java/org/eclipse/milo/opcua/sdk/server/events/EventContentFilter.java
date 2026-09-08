@@ -12,8 +12,10 @@ package org.eclipse.milo.opcua.sdk.server.events;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -534,6 +536,11 @@ public class EventContentFilter {
     // Indices of the elements currently being evaluated, used to detect ElementOperand cycles.
     private final Set<Integer> evaluatingElements = new HashSet<>();
 
+    // Results of elements already evaluated for this event. Element evaluation has no side
+    // effects within a single event, so an element referenced from more than one place is
+    // evaluated once and its result (or failure) is reused.
+    private final Map<Integer, ElementResult> elementResults = new HashMap<>();
+
     DefaultOperatorContext(FilterContext filterContext, ContentFilterElement[] elements) {
       this.filterContext = filterContext;
       this.elements = elements;
@@ -569,6 +576,11 @@ public class EventContentFilter {
 
         int elementIndex = index.intValue();
 
+        ElementResult cached = elementResults.get(elementIndex);
+        if (cached != null) {
+          return cached.get();
+        }
+
         // Guard against self- or mutually referential ElementOperands, which would otherwise
         // recurse until a StackOverflowError escaped the per-event handler.
         if (!evaluatingElements.add(elementIndex)) {
@@ -577,11 +589,18 @@ public class EventContentFilter {
               "ElementOperand cycle detected at index: " + elementIndex);
         }
 
+        ElementResult result;
         try {
-          return evaluate(this, eventNode, elements[elementIndex]);
+          result = ElementResult.value(evaluate(this, eventNode, elements[elementIndex]));
+        } catch (UaException e) {
+          result = ElementResult.failure(e);
         } finally {
           evaluatingElements.remove(elementIndex);
         }
+
+        elementResults.put(elementIndex, result);
+
+        return result.get();
       } else if (operand instanceof AttributeOperand ao) {
         return getAttribute(filterContext, ao, eventNode);
       } else if (operand instanceof SimpleAttributeOperand sao) {
@@ -589,6 +608,25 @@ public class EventContentFilter {
       } else {
         throw new UaException(StatusCodes.Bad_FilterOperandInvalid);
       }
+    }
+  }
+
+  /** The outcome of evaluating one ContentFilterElement: a value (possibly null) or a failure. */
+  private record ElementResult(@Nullable Object value, @Nullable UaException failure) {
+
+    static ElementResult value(@Nullable Object value) {
+      return new ElementResult(value, null);
+    }
+
+    static ElementResult failure(UaException failure) {
+      return new ElementResult(null, failure);
+    }
+
+    @Nullable Object get() throws UaException {
+      if (failure != null) {
+        throw failure;
+      }
+      return value;
     }
   }
 
