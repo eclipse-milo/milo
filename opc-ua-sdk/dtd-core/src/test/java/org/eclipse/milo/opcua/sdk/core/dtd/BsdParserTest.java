@@ -10,26 +10,34 @@
 
 package org.eclipse.milo.opcua.sdk.core.dtd;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 import jakarta.xml.bind.JAXBException;
-import java.io.InputStream;
+import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.opcfoundation.opcua.binaryschema.StructuredType;
 
 class BsdParserTest {
 
   @Test
-  void parse() throws JAXBException {
-    InputStream inputStream =
-        BsdParserTest.class
-            .getClassLoader()
-            .getResourceAsStream("dictionaries/BsdParserTest.bsd.xml");
-
-    assertNotNull(BsdParser.parse(inputStream));
-  }
-
-  @Test
   void parseOpcUaTypeDictionary() throws JAXBException {
-    assertNotNull(BsdParser.parseBuiltinTypeDictionary());
+    var dictionary = BsdParser.parseBuiltinTypeDictionary();
+    assertEquals("http://opcfoundation.org/UA/", dictionary.getTargetNamespace());
+    var argument =
+        dictionary.getOpaqueTypeOrEnumeratedTypeOrStructuredType().stream()
+            .filter(type -> type.getName().equals("Argument"))
+            .map(type -> assertInstanceOf(StructuredType.class, type))
+            .findFirst()
+            .orElseThrow();
+    assertEquals(
+        List.of(
+            "Name",
+            "DataType",
+            "ValueRank",
+            "NoOfArrayDimensions",
+            "ArrayDimensions",
+            "Description"),
+        argument.getField().stream().map(field -> field.getName()).toList());
+    assertEquals("NoOfArrayDimensions", argument.getField().get(4).getLengthField());
   }
 }
