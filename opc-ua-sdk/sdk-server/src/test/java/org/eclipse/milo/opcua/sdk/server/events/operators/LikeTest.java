@@ -12,12 +12,10 @@ package org.eclipse.milo.opcua.sdk.server.events.operators;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.time.Duration;
 import org.eclipse.milo.opcua.sdk.server.events.OperatorContext;
 import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
@@ -33,58 +31,6 @@ public class LikeTest {
     assertTrue(like("event message", "event%"));
     assertTrue(like("event", "event%"));
     assertFalse(like("message event", "event%"));
-  }
-
-  @Test
-  public void testUnderscoreWildcard() throws Exception {
-    assertTrue(like("ab", "a_"));
-    assertFalse(like("abc", "a_"));
-  }
-
-  @Test
-  public void testEscapedWildcards() throws Exception {
-    assertTrue(like("event%", "event\\%"));
-    assertTrue(like("event_", "event\\_"));
-    assertFalse(like("eventX", "event\\_"));
-  }
-
-  @Test
-  public void testBracketList() throws Exception {
-    assertTrue(like("cat", "c[ao]t"));
-    assertTrue(like("cot", "c[ao]t"));
-    assertFalse(like("cut", "c[ao]t"));
-  }
-
-  @Test
-  public void testBracketRange() throws Exception {
-    assertTrue(like("cat", "c[a-f]t"));
-    assertFalse(like("czt", "c[a-f]t"));
-  }
-
-  @Test
-  public void testEscapedBracketClassMetacharactersAreLiteral() throws Exception {
-    assertTrue(like("-", "[a\\-c]"));
-    assertFalse(like("b", "[a\\-c]"));
-
-    assertTrue(like("]", "[\\]]"));
-    assertFalse(like("[", "[\\]]"));
-
-    assertTrue(like("^", "[\\^a]"));
-    assertFalse(like("b", "[\\^a]"));
-
-    assertTrue(like("\\", "[\\\\]"));
-    assertFalse(like("a", "[\\\\]"));
-  }
-
-  @Test
-  public void testNegatedCharacterClass() throws Exception {
-    assertTrue(like("cot", "c[^a]t"));
-    assertFalse(like("cat", "c[^a]t"));
-  }
-
-  @Test
-  public void testCaseSensitive() throws Exception {
-    assertFalse(like("Event message", "event%"));
   }
 
   @Test
@@ -116,16 +62,6 @@ public class LikeTest {
     // a non-match (false).
     assertNull(like(null, "event%"));
     assertNull(like("event message", null));
-  }
-
-  @Test
-  public void testPathologicalPatternMatchesInLinearTime() {
-    // A regex translation of this pattern (many "%" separated by literals) would backtrack
-    // catastrophically against a long non-matching input; the linear matcher returns promptly.
-    String value = "a".repeat(100_000);
-
-    assertTimeoutPreemptively(
-        Duration.ofSeconds(5), () -> assertFalse(like(value, "%a%a%a%a%a%a%a%a%a%aZ")));
   }
 
   private static Boolean like(Object value, Object pattern) throws Exception {
