@@ -301,7 +301,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
           secureChannel.setKeyPair(keyPair.get());
         } else {
           throw new UaException(
-              StatusCodes.Bad_SecurityChecksFailed, "no certificate for provided thumbprint");
+              StatusCodes.Bad_CertificateInvalid, "no certificate for provided thumbprint");
         }
       }
     }
