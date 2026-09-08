@@ -12,8 +12,10 @@
  * Infrastructure for SDK integration tests.
  *
  * <p>{@link org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest} owns a client, server, and
- * namespace for one test class. {@link org.eclipse.milo.opcua.sdk.test.TestServer} reuses immutable
- * certificate material within a test JVM while keeping each server's runtime state isolated.
+ * namespace for one test class. Startup and asynchronous cleanup have deadlines; partial setup
+ * releases every acquired resource, and cleanup failures propagate after all cleanup attempts.
+ * {@link org.eclipse.milo.opcua.sdk.test.TestServer} reuses immutable certificate material within a
+ * test JVM while keeping each server's runtime state isolated.
  *
  * <p>Servers obtain loopback ports from {@link org.eclipse.milo.opcua.sdk.test.TestPortAllocator}.
  * Allocations are coordinated between Milo test JVMs and retained until JVM exit, preventing

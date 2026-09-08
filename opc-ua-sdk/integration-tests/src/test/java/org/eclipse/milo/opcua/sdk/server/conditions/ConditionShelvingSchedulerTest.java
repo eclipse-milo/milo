@@ -213,7 +213,7 @@ public class ConditionShelvingSchedulerTest extends AbstractClientServerTest {
 
   @AfterAll
   @Override
-  public void stopClientAndServer() {
+  public void stopClientAndServer() throws Exception {
     try {
       super.stopClientAndServer();
     } finally {
