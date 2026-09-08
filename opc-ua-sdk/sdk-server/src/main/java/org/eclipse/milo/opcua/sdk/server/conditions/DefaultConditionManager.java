@@ -263,8 +263,12 @@ public class DefaultConditionManager implements ConditionManager {
         // capture and cannot be followed by a stale retained snapshot inside that item's bracket.
         for (MonitoredEventItem eventItem : eventItems) {
           if (eventItem.isSamplingEnabled()) {
-            eventItem.onRefreshMarker(refreshStart);
-            startedItems.add(eventItem);
+            try {
+              eventItem.onRefreshMarker(refreshStart);
+              startedItems.add(eventItem);
+            } catch (Throwable t) {
+              logger.warn("Error delivering RefreshStart to item {}", eventItem.getId(), t);
+            }
           }
         }
 

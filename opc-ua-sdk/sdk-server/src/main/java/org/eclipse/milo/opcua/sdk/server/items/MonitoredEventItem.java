@@ -131,7 +131,7 @@ public class MonitoredEventItem extends BaseMonitoredItem<Variant[]> implements 
           enqueueEvent(selectEventFields(eventNode), eventNode instanceof ConditionTypeNode);
         }
       }
-    } catch (UaException e) {
+    } catch (Exception e) {
       logger.error("Filter evaluation failed: {}", e.getMessage(), e);
     }
   }
@@ -310,8 +310,13 @@ public class MonitoredEventItem extends BaseMonitoredItem<Variant[]> implements 
 
       boolean whereClauseGood =
           Stream.of(elementResults)
-              .map(ContentFilterElementResult::getStatusCode)
-              .allMatch(StatusCode::isGood);
+              .allMatch(
+                  elementResult ->
+                      elementResult.getStatusCode().isGood()
+                          && Stream.of(
+                                  requireNonNullElse(
+                                      elementResult.getOperandStatusCodes(), new StatusCode[0]))
+                              .allMatch(StatusCode::isGood));
 
       filterResultGood = selectClauseGood && whereClauseGood;
     } else {
