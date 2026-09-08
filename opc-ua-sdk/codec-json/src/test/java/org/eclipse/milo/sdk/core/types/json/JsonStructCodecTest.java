@@ -14,7 +14,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ulong;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.digitalpetri.opcua.test.types.ConcreteTestType;
 import com.digitalpetri.opcua.test.types.ConcreteTestTypeEx;
@@ -36,6 +36,12 @@ import com.digitalpetri.opcua.test.types.TestEnumType;
 import com.digitalpetri.opcua.test.types.UnionOfArray;
 import com.digitalpetri.opcua.test.types.UnionOfMatrix;
 import com.digitalpetri.opcua.test.types.UnionOfScalar;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonPrimitive;
+import java.time.Instant;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
@@ -65,42 +71,85 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class JsonStructCodecTest {
 
-  @Test
-  void structWithScalarFields() {
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void structWithScalarFields(boolean distinct) {
     var struct =
         new StructWithBuiltinScalarFields(
-            false,
-            (byte) 0,
-            ubyte(0),
-            (short) 0,
-            ushort(0),
-            0,
-            uint(0),
-            0L,
-            ulong(0L),
-            0.0f,
-            0.0d,
-            "",
-            DateTime.MIN_DATE_TIME,
-            UUID.fromString("00000000-0000-0000-0000-000000000000"),
-            ByteString.of(new byte[] {0}),
-            XmlElement.of(""),
-            new NodeId(0, 0),
-            ExpandedNodeId.NULL_VALUE,
-            StatusCode.GOOD,
-            new QualifiedName(0, ""),
-            LocalizedText.NULL_VALUE,
-            new DataValue(new Variant(0)),
-            Variant.ofInt32(0));
+            distinct,
+            distinct ? (byte) -11 : (byte) 0,
+            distinct ? ubyte(12) : ubyte(0),
+            distinct ? (short) -130 : (short) 0,
+            distinct ? ushort(140) : ushort(0),
+            distinct ? -1500 : 0,
+            distinct ? uint(1600) : uint(0),
+            distinct ? -17000L : 0L,
+            distinct ? ulong(18000L) : ulong(0L),
+            distinct ? 19.25f : 0.0f,
+            distinct ? 20.5d : 0.0d,
+            distinct ? "scalar" : "",
+            distinct ? new DateTime(Instant.parse("2020-01-02T03:04:05Z")) : DateTime.MIN_DATE_TIME,
+            distinct
+                ? UUID.fromString("12345678-1234-5678-9abc-123456789abc")
+                : UUID.fromString("00000000-0000-0000-0000-000000000000"),
+            distinct ? ByteString.of(new byte[] {21, 22}) : ByteString.of(new byte[] {0}),
+            distinct ? XmlElement.of("<value>23</value>") : XmlElement.of(""),
+            distinct ? new NodeId(2, 24) : new NodeId(0, 0),
+            distinct ? new NodeId(3, 25).expanded() : ExpandedNodeId.NULL_VALUE,
+            distinct ? new StatusCode(0x80000000L) : StatusCode.GOOD,
+            distinct ? new QualifiedName(4, "qualified") : new QualifiedName(0, ""),
+            distinct ? LocalizedText.english("localized") : LocalizedText.NULL_VALUE,
+            distinct ? new DataValue(new Variant(26)) : new DataValue(new Variant(0)),
+            distinct ? Variant.ofInt32(27) : Variant.ofInt32(0));
 
     var encoded1 = ExtensionObject.encode(new StaticEncodingContext(), struct);
     JsonStruct decoded = (JsonStruct) encoded1.decode(new DynamicEncodingContext());
     var encoded2 = ExtensionObject.encode(new DynamicEncodingContext(), decoded);
 
     assertEquals(encoded1, encoded2);
+    assertEquals(
+        Set.of(
+            "Boolean",
+            "SByte",
+            "Byte",
+            "Int16",
+            "UInt16",
+            "Int32",
+            "UInt32",
+            "Int64",
+            "UInt64",
+            "Float",
+            "Double",
+            "String",
+            "DateTime",
+            "Guid",
+            "ByteString",
+            "XmlElement",
+            "NodeId",
+            "ExpandedNodeId",
+            "StatusCode",
+            "QualifiedName",
+            "LocalizedText",
+            "DataValue",
+            "Variant",
+            "__metadata"),
+        decoded.getJsonObject().keySet());
+    assertMember(decoded, "Boolean", struct.getBoolean());
+    assertMember(decoded, "SByte", struct.getSByte());
+    assertMember(decoded, "Byte", struct.getByte());
+    assertMember(decoded, "Int16", struct.getInt16());
+    assertMember(decoded, "UInt16", struct.getUInt16());
+    assertMember(decoded, "Int32", struct.getInt32());
+    assertMember(decoded, "UInt32", struct.getUInt32());
+    assertMember(decoded, "Int64", struct.getInt64());
+    assertMember(decoded, "UInt64", struct.getUInt64());
+    assertMember(decoded, "Float", struct.getFloat());
+    assertMember(decoded, "Double", struct.getDouble());
+    assertMember(decoded, "String", struct.getString());
   }
 
   @Test
@@ -149,8 +198,9 @@ class JsonStructCodecTest {
     assertEquals(encoded1, encoded2);
   }
 
-  @Test
-  void structWithArrayFields() {
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void structWithArrayFields(boolean distinct) {
     var struct =
         new StructWithBuiltinArrayFields(
             new Boolean[] {false, false},
@@ -158,13 +208,13 @@ class JsonStructCodecTest {
             new UByte[] {ubyte(0), ubyte(0)},
             new Short[] {0, 0},
             new UShort[] {ushort(0), ushort(0)},
-            new Integer[] {0, 0},
+            distinct ? new Integer[] {-31, 32} : new Integer[] {0, 0},
             new UInteger[] {uint(0), uint(0)},
             new Long[] {0L, 0L},
             new ULong[] {ulong(0L), ulong(0L)},
             new Float[] {0.0f, 0.0f},
             new Double[] {0.0d, 0.0d},
-            new String[] {"", ""},
+            distinct ? new String[] {"first", "second"} : new String[] {"", ""},
             new DateTime[] {DateTime.MIN_DATE_TIME, DateTime.MIN_DATE_TIME},
             new UUID[] {
               UUID.fromString("00000000-0000-0000-0000-000000000000"),
@@ -185,6 +235,35 @@ class JsonStructCodecTest {
     var encoded2 = ExtensionObject.encode(new DynamicEncodingContext(), decoded);
 
     assertEquals(encoded1, encoded2);
+    assertEquals(
+        Set.of(
+            "Boolean",
+            "SByte",
+            "Byte",
+            "Int16",
+            "UInt16",
+            "Int32",
+            "UInt32",
+            "Int64",
+            "UInt64",
+            "Float",
+            "Double",
+            "String",
+            "DateTime",
+            "Guid",
+            "ByteString",
+            "XmlElement",
+            "NodeId",
+            "ExpandedNodeId",
+            "StatusCode",
+            "QualifiedName",
+            "LocalizedText",
+            "DataValue",
+            "Variant",
+            "__metadata"),
+        decoded.getJsonObject().keySet());
+    assertMember(decoded, "Int32", struct.getInt32());
+    assertMember(decoded, "String", struct.getString());
   }
 
   @Test
@@ -321,6 +400,15 @@ class JsonStructCodecTest {
     var encoded2 = ExtensionObject.encode(new DynamicEncodingContext(), decoded);
 
     assertEquals(encoded1, encoded2);
+    assertMember(decoded, "String", struct.getString());
+    assertOptionalMember(decoded, "OptionalString", struct.getOptionalString());
+    assertMember(decoded, "Int32", struct.getInt32());
+    assertOptionalMember(decoded, "OptionalInt32", struct.getOptionalInt32());
+    assertMember(decoded, "Duration", struct.getDuration());
+    assertOptionalMember(decoded, "OptionalDuration", struct.getOptionalDuration());
+    assertEquals(
+        struct.getOptionalConcreteTestType() != null,
+        decoded.getJsonObject().has("OptionalConcreteTestType"));
   }
 
   @ParameterizedTest
@@ -331,10 +419,20 @@ class JsonStructCodecTest {
     var encoded2 = ExtensionObject.encode(new DynamicEncodingContext(), decoded);
 
     assertEquals(encoded1, encoded2);
+    assertMember(decoded, "String", struct.getString());
+    assertOptionalMember(decoded, "OptionalString", struct.getOptionalString());
+    assertMember(decoded, "Int32", struct.getInt32());
+    assertOptionalMember(decoded, "OptionalInt32", struct.getOptionalInt32());
+    assertMember(decoded, "Duration", struct.getDuration());
+    assertOptionalMember(decoded, "OptionalDuration", struct.getOptionalDuration());
+    assertEquals(
+        struct.getOptionalConcreteTestType() != null,
+        decoded.getJsonObject().has("OptionalConcreteTestType"));
   }
 
-  @Test
-  void structWithMatrixFields() {
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void structWithMatrixFields(boolean distinct) {
     var struct =
         new StructWithBuiltinMatrixFields(
             Matrix.ofBoolean(new Boolean[][] {{false, false}, {false, false}}),
@@ -342,13 +440,19 @@ class JsonStructCodecTest {
             Matrix.ofByte(new UByte[][] {{ubyte(0), ubyte(0)}, {ubyte(0), ubyte(0)}}),
             Matrix.ofInt16(new Short[][] {{0, 0}, {0, 0}}),
             Matrix.ofUInt16(new UShort[][] {{ushort(0), ushort(0)}, {ushort(0), ushort(0)}}),
-            Matrix.ofInt32(new Integer[][] {{0, 0}, {0, 0}}),
+            Matrix.ofInt32(
+                distinct
+                    ? new Integer[][] {{-31, 32}, {33, -34}}
+                    : new Integer[][] {{0, 0}, {0, 0}}),
             Matrix.ofUInt32(new UInteger[][] {{uint(0), uint(0)}, {uint(0), uint(0)}}),
             Matrix.ofInt64(new Long[][] {{0L, 0L}, {0L, 0L}}),
             Matrix.ofUInt64(new ULong[][] {{ulong(0L), ulong(0L)}, {ulong(0L), ulong(0L)}}),
             Matrix.ofFloat(new Float[][] {{0.0f, 0.0f}, {0.0f, 0.0f}}),
             Matrix.ofDouble(new Double[][] {{0.0d, 0.0d}, {0.0d, 0.0d}}),
-            Matrix.ofString(new String[][] {{"", ""}, {"", ""}}),
+            Matrix.ofString(
+                distinct
+                    ? new String[][] {{"north", "east"}, {"south", "west"}}
+                    : new String[][] {{"", ""}, {"", ""}}),
             Matrix.ofDateTime(
                 new DateTime[][] {
                   {DateTime.MIN_DATE_TIME, DateTime.MIN_DATE_TIME},
@@ -416,6 +520,35 @@ class JsonStructCodecTest {
     var encoded2 = ExtensionObject.encode(new DynamicEncodingContext(), decoded);
 
     assertEquals(encoded1, encoded2);
+    assertEquals(
+        Set.of(
+            "Boolean",
+            "SByte",
+            "Byte",
+            "Int16",
+            "UInt16",
+            "Int32",
+            "UInt32",
+            "Int64",
+            "UInt64",
+            "Float",
+            "Double",
+            "String",
+            "DateTime",
+            "Guid",
+            "ByteString",
+            "XmlElement",
+            "NodeId",
+            "ExpandedNodeId",
+            "StatusCode",
+            "QualifiedName",
+            "LocalizedText",
+            "DataValue",
+            "Variant",
+            "__metadata"),
+        decoded.getJsonObject().keySet());
+    assertMember(decoded, "Int32", struct.getInt32());
+    assertMember(decoded, "String", struct.getString());
   }
 
   @Test
@@ -634,6 +767,16 @@ class JsonStructCodecTest {
     var encoded2 = ExtensionObject.encode(new DynamicEncodingContext(), decoded);
 
     assertEquals(encoded1, encoded2);
+    String member =
+        union.isBoolean() ? "Boolean" : union.isSByte() ? "SByte" : union.isByte() ? "Byte" : null;
+    Object value =
+        union.isBoolean()
+            ? union.getBoolean()
+            : union.isSByte() ? union.getSByte() : union.isByte() ? union.getByte() : null;
+    assertEquals(
+        member == null ? Set.of("__metadata") : Set.of("__metadata", member),
+        decoded.getJsonObject().keySet());
+    if (member != null) assertMember(decoded, member, value);
   }
 
   @ParameterizedTest
@@ -644,6 +787,16 @@ class JsonStructCodecTest {
     var encoded2 = ExtensionObject.encode(new DynamicEncodingContext(), decoded);
 
     assertEquals(encoded1, encoded2);
+    String member =
+        union.isBoolean() ? "Boolean" : union.isSByte() ? "SByte" : union.isByte() ? "Byte" : null;
+    Object value =
+        union.isBoolean()
+            ? union.getBoolean()
+            : union.isSByte() ? union.getSByte() : union.isByte() ? union.getByte() : null;
+    assertEquals(
+        member == null ? Set.of("__metadata") : Set.of("__metadata", member),
+        decoded.getJsonObject().keySet());
+    if (member != null) assertMember(decoded, member, value);
   }
 
   @ParameterizedTest
@@ -654,6 +807,16 @@ class JsonStructCodecTest {
     var encoded2 = ExtensionObject.encode(new DynamicEncodingContext(), decoded);
 
     assertEquals(encoded1, encoded2);
+    String member =
+        union.isBoolean() ? "Boolean" : union.isSByte() ? "SByte" : union.isByte() ? "Byte" : null;
+    Object value =
+        union.isBoolean()
+            ? union.getBoolean()
+            : union.isSByte() ? union.getSByte() : union.isByte() ? union.getByte() : null;
+    assertEquals(
+        member == null ? Set.of("__metadata") : Set.of("__metadata", member),
+        decoded.getJsonObject().keySet());
+    if (member != null) assertMember(decoded, member, value);
   }
 
   private static Stream<Arguments> structWithOptionalScalarFieldsProvider() {
@@ -747,6 +910,9 @@ class JsonStructCodecTest {
 
   private static Stream<Arguments> unionOfScalarProvider() {
     return Stream.of(
+        Arguments.of(UnionOfScalar.ofBoolean(true)),
+        Arguments.of(UnionOfScalar.ofSByte((byte) -42)),
+        Arguments.of(UnionOfScalar.ofByte(ubyte(43))),
         Arguments.of(UnionOfScalar.ofNull()),
         Arguments.of(UnionOfScalar.ofBoolean(false)),
         Arguments.of(UnionOfScalar.ofSByte((byte) 0)),
@@ -755,6 +921,7 @@ class JsonStructCodecTest {
 
   private static Stream<Arguments> unionOfArrayProvider() {
     return Stream.of(
+        Arguments.of(UnionOfArray.ofSByte(new Byte[] {-42, 43})),
         Arguments.of(UnionOfArray.ofNull()),
         Arguments.of(UnionOfArray.ofBoolean(new Boolean[] {false, false})),
         Arguments.of(UnionOfArray.ofSByte(new Byte[] {0, 0})),
@@ -763,6 +930,7 @@ class JsonStructCodecTest {
 
   private static Stream<Arguments> unionOfMatrixProvider() {
     return Stream.of(
+        Arguments.of(UnionOfMatrix.ofSByte(Matrix.ofSByte(new Byte[][] {{-42, 43}, {44, -45}}))),
         Arguments.of(UnionOfMatrix.ofNull()),
         Arguments.of(
             UnionOfMatrix.ofBoolean(
@@ -771,5 +939,41 @@ class JsonStructCodecTest {
         Arguments.of(
             UnionOfMatrix.ofByte(
                 Matrix.ofByte(new UByte[][] {{ubyte(0), ubyte(0)}, {ubyte(0), ubyte(0)}}))));
+  }
+
+  private static void assertMember(JsonStruct decoded, String name, Object expected) {
+    assertTrue(decoded.getJsonObject().has(name), "missing field " + name);
+    Object value = expected instanceof Matrix matrix ? matrix.getElements() : expected;
+    JsonElement actual = decoded.getJsonObject().get(name);
+    if (expected instanceof Matrix matrix) {
+      assertEquals(2, matrix.getDimensions().length);
+      assertEquals(matrix.getDimensions()[0], actual.getAsJsonArray().size());
+      var flattened = new JsonArray();
+      for (JsonElement row : actual.getAsJsonArray()) {
+        assertEquals(matrix.getDimensions()[1], row.getAsJsonArray().size());
+        row.getAsJsonArray().forEach(flattened::add);
+      }
+      actual = flattened;
+    }
+    assertEquals(expectedJson(value), actual, name);
+  }
+
+  private static JsonElement expectedJson(Object value) {
+    if (value == null) return JsonNull.INSTANCE;
+    if (value instanceof Object[] values) {
+      var array = new JsonArray();
+      for (Object element : values) array.add(expectedJson(element));
+      return array;
+    }
+    if (value instanceof ULong number) return new JsonPrimitive(number.toBigInteger());
+    if (value instanceof Number number) return new JsonPrimitive(number);
+    if (value instanceof Boolean bool) return new JsonPrimitive(bool);
+    if (value instanceof String string) return new JsonPrimitive(string);
+    throw new AssertionError("unsupported expected JSON value: " + value.getClass());
+  }
+
+  private static void assertOptionalMember(JsonStruct decoded, String name, Object expected) {
+    assertEquals(expected != null, decoded.getJsonObject().has(name), name + " presence");
+    if (expected != null) assertMember(decoded, name, expected);
   }
 }
