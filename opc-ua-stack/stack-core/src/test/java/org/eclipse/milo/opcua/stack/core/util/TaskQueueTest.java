@@ -16,22 +16,48 @@ import java.util.ArrayList;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jspecify.annotations.NonNull;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 class TaskQueueTest {
 
-  private final Executor executor = Executors.newCachedThreadPool();
+  private final ExecutorService executor = Executors.newCachedThreadPool();
+  private final ArrayList<TriggeredTestTask> heldTasks = new ArrayList<>();
+  private final ConcurrentLinkedQueue<Throwable> workerFailures = new ConcurrentLinkedQueue<>();
+
+  @AfterEach
+  void terminateWorkers() throws InterruptedException {
+    heldTasks.forEach(TriggeredTestTask::trigger);
+    executor.shutdown();
+    try {
+      assertTrue(executor.awaitTermination(5, TimeUnit.SECONDS), "workers must terminate");
+    } finally {
+      executor.shutdownNow();
+      assertTrue(
+          executor.awaitTermination(5, TimeUnit.SECONDS), "interrupted workers must terminate");
+    }
+    assertTrue(workerFailures.isEmpty(), () -> "background task failed: " + workerFailures);
+  }
 
   @Test
   void serialTaskExecution() {
     var taskExecutor =
         TaskQueue.newBuilder().setExecutor(executor).setMaxConcurrentTasks(1).build();
 
+    var heldTask = new TriggeredTestTask();
+    taskExecutor.execute(heldTask);
+    heldTask.awaitEntered();
     var task = new TestTask();
-
-    taskExecutor.execute(task);
-
-    task.awaitExecution();
+    var completion = taskExecutor.submit(task);
+    assertNotNull(completion);
+    try {
+      assertThrows(
+          TimeoutException.class,
+          () -> completion.toCompletableFuture().get(100, TimeUnit.MILLISECONDS));
+    } finally {
+      heldTask.trigger();
+    }
+    assertDoesNotThrow(() -> completion.toCompletableFuture().get(5, TimeUnit.SECONDS));
   }
 
   @Test
@@ -39,18 +65,10 @@ class TaskQueueTest {
     var taskExecutor =
         TaskQueue.newBuilder().setExecutor(executor).setMaxConcurrentTasks(2).build();
 
-    taskExecutor.execute(
-        new TestTask() {
-          @Override
-          public void execute() {
-            // block indefinitely
-            try {
-              Thread.sleep(Integer.MAX_VALUE);
-            } catch (InterruptedException e) {
-              throw new RuntimeException(e);
-            }
-          }
-        });
+    var heldTask = new TriggeredTestTask();
+    var heldCompletion = taskExecutor.submit(heldTask);
+    assertNotNull(heldCompletion);
+    heldTask.awaitEntered();
 
     // these task should still execute because concurrency > 1
     var tasks = new ArrayList<TestTask>();
@@ -60,6 +78,9 @@ class TaskQueueTest {
 
     tasks.forEach(taskExecutor::execute);
     tasks.forEach(TestTask::awaitExecution);
+    assertFalse(heldCompletion.toCompletableFuture().isDone());
+    heldTask.trigger();
+    assertDoesNotThrow(() -> heldCompletion.toCompletableFuture().get(5, TimeUnit.SECONDS));
   }
 
   @Test
@@ -202,26 +223,29 @@ class TaskQueueTest {
 
     taskExecutor.execute(triggeredTask);
 
-    executor.execute(
-        () -> {
-          try {
-            Thread.sleep(500);
-            triggeredTask.trigger();
-          } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-          }
-        });
-
-    long now = System.nanoTime();
-    taskExecutor.shutdown(true);
-    long deltaMs = TimeUnit.MILLISECONDS.convert(System.nanoTime() - now, TimeUnit.NANOSECONDS);
-
-    // Hacky, but make sure we actually waited what should have been ~500ms for shutdown
-    assertTrue(deltaMs > 250 && deltaMs < 750);
+    triggeredTask.awaitEntered();
+    var shutdownEntered = new CountDownLatch(1);
+    var shutdown =
+        executor.submit(
+            () -> {
+              shutdownEntered.countDown();
+              return taskExecutor.shutdown(true);
+            });
+    await(shutdownEntered);
+    try {
+      assertThrows(
+          TimeoutException.class,
+          () -> shutdown.get(100, TimeUnit.MILLISECONDS),
+          "shutdown must wait while a task is held");
+    } finally {
+      triggeredTask.trigger();
+    }
+    assertTrue(assertDoesNotThrow(() -> shutdown.get(5, TimeUnit.SECONDS)).isEmpty());
+    triggeredTask.awaitExecution();
   }
 
   @Test
-  void executionCallback() throws ExecutionException, InterruptedException {
+  void executionCallback() throws Exception {
     var taskExecutor = new TaskQueue(executor);
 
     {
@@ -229,7 +253,7 @@ class TaskQueueTest {
       CompletionStage<Unit> callback = taskExecutor.submit(task);
       assertNotNull(callback);
       task.awaitExecution();
-      callback.toCompletableFuture().get();
+      callback.toCompletableFuture().get(5, TimeUnit.SECONDS);
       assertTrue(callback.toCompletableFuture().isDone());
     }
 
@@ -240,7 +264,7 @@ class TaskQueueTest {
       assertFalse(callback.toCompletableFuture().isDone());
       task.trigger();
       task.awaitExecution();
-      callback.toCompletableFuture().get();
+      callback.toCompletableFuture().get(5, TimeUnit.SECONDS);
       assertTrue(callback.toCompletableFuture().isDone());
     }
   }
@@ -263,7 +287,7 @@ class TaskQueueTest {
     // Expected: callback completes exceptionally when the task throws
     assertThrows(
         ExecutionException.class,
-        () -> callback.toCompletableFuture().get(250, TimeUnit.MILLISECONDS),
+        () -> callback.toCompletableFuture().get(5, TimeUnit.SECONDS),
         "Callback should complete exceptionally when task throws");
   }
 
@@ -295,13 +319,10 @@ class TaskQueueTest {
     // Ensure the task itself executed successfully
     task.awaitExecution();
 
-    // Give a brief moment for any (failing) callback scheduling attempt
-    Thread.sleep(25);
-
     // Expected: even if scheduling the callback completion throws, the callback should be
     // completed.
     assertDoesNotThrow(
-        () -> callback.toCompletableFuture().get(250, TimeUnit.MILLISECONDS),
+        () -> callback.toCompletableFuture().get(5, TimeUnit.SECONDS),
         "Callback should complete even when scheduling the completion throws");
   }
 
@@ -313,26 +334,10 @@ class TaskQueueTest {
     assertEquals(0, taskQueue.getQueueSize());
     assertEquals(0, taskQueue.getPending());
 
-    var taskStarted = new CountDownLatch(1);
-    var taskRelease = new CountDownLatch(1);
-
-    // Submit a blocking task
-    taskQueue.execute(
-        new TestTask() {
-          @Override
-          public void execute() {
-            taskStarted.countDown();
-            try {
-              taskRelease.await();
-            } catch (InterruptedException e) {
-              Thread.currentThread().interrupt();
-            }
-            super.execute();
-          }
-        });
-
-    // Wait for the task to start executing
-    assertTrue(taskStarted.await(1, TimeUnit.SECONDS));
+    var heldTask = new TriggeredTestTask();
+    var completion = taskQueue.submit(heldTask);
+    assertNotNull(completion);
+    heldTask.awaitEntered();
 
     // Now pending should be 1, queue should be 0
     assertEquals(0, taskQueue.getQueueSize());
@@ -347,8 +352,10 @@ class TaskQueueTest {
     assertEquals(1, taskQueue.getPending());
 
     // Release the blocking task and shutdown
-    taskRelease.countDown();
-    taskQueue.shutdown(true);
+    heldTask.trigger();
+    assertDoesNotThrow(() -> completion.toCompletableFuture().get(5, TimeUnit.SECONDS));
+    var shutdown = executor.submit(() -> taskQueue.shutdown(true));
+    assertDoesNotThrow(() -> shutdown.get(5, TimeUnit.SECONDS));
 
     // After shutdown, both should be 0
     assertEquals(0, taskQueue.getQueueSize());
@@ -371,34 +378,42 @@ class TaskQueueTest {
     }
 
     void awaitExecution() {
-      try {
-        executed.await();
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
+      await(executed);
     }
+  }
 
-    boolean awaitExecution(long timeout, TimeUnit unit) {
-      try {
-        return executed.await(timeout, unit);
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
+  private static void await(CountDownLatch latch) {
+    try {
+      assertTrue(latch.await(5, TimeUnit.SECONDS), "task coordination timed out");
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new AssertionError("task coordination interrupted", e);
     }
   }
 
   private class TriggeredTestTask extends TestTask {
 
     final CountDownLatch trigger = new CountDownLatch(1);
+    final CountDownLatch entered = new CountDownLatch(1);
+
+    TriggeredTestTask() {
+      heldTasks.add(this);
+    }
 
     @Override
     public void execute() {
+      entered.countDown();
       try {
-        trigger.await();
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
+        await(trigger);
+        super.execute();
+      } catch (Throwable failure) {
+        workerFailures.add(failure);
+        throw failure;
       }
-      super.execute();
+    }
+
+    void awaitEntered() {
+      await(entered);
     }
 
     void trigger() {
