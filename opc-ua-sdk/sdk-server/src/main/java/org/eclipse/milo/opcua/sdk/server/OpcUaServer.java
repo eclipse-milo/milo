@@ -943,6 +943,8 @@ public class OpcUaServer extends AbstractServiceHandler {
 
   private static class ServerEventNotifier implements EventNotifier {
 
+    private static final Logger logger = LoggerFactory.getLogger(ServerEventNotifier.class);
+
     private final Set<EventListener> eventListeners =
         Collections.synchronizedSet(new LinkedHashSet<>());
 
@@ -953,7 +955,13 @@ public class OpcUaServer extends AbstractServiceHandler {
         toNotify = List.copyOf(eventListeners);
       }
 
-      toNotify.forEach(eventListener -> eventListener.onEvent(event));
+      for (EventListener eventListener : toNotify) {
+        try {
+          eventListener.onEvent(event);
+        } catch (Exception e) {
+          logger.error("Error notifying EventListener {}: {}", eventListener, e.getMessage(), e);
+        }
+      }
     }
 
     @Override
