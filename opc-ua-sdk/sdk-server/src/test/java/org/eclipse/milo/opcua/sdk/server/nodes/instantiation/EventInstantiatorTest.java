@@ -28,6 +28,7 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -127,9 +128,11 @@ public class EventInstantiatorTest {
    * Sanity-profiles per-event creation against the legacy {@code EventFactory} — events are the
    * high-frequency path, so the replacement must stay in the same order of magnitude. Numbers are
    * logged as evidence, not asserted: absolute timings vary by machine, and the legacy factory
-   * additionally benefits from its JVM-global hierarchy cache.
+   * additionally benefits from its JVM-global hierarchy cache. Enable with {@code
+   * -Dmilo.eventTiming=true}.
    */
   @Test
+  @EnabledIfSystemProperty(named = "milo.eventTiming", matches = "true")
   @SuppressWarnings("deprecation")
   public void timingSanityAgainstLegacyEventFactory() throws UaException {
     var legacyFactory =
