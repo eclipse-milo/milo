@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.stack.core.encoding.xml;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.StringReader;
@@ -20,10 +21,14 @@ import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -161,6 +166,20 @@ public class OpcUaXmlDecoderTest {
     assertEquals(expectedByteString, decodedByteString);
   }
 
+  // Golden encoder fixtures independently protect all six decoded DataValue components.
+  @ParameterizedTest
+  @MethodSource("dataValueGoldenArguments")
+  void decodeDataValueGoldenXml(DataValue expected, String xml) throws Exception {
+    try (var decoder = new OpcUaXmlDecoder(DefaultEncodingContext.INSTANCE, xml)) {
+      assertEquals(expected, decoder.decodeDataValue("Test"));
+    }
+  }
+
+  static Stream<Arguments> dataValueGoldenArguments() {
+    return org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments.dataValueArguments()
+        .filter(arguments -> arguments.get()[0] != null);
+  }
+
   @Test
   void decodeVariantValue() throws Exception {
     String xml =
@@ -181,7 +200,16 @@ public class OpcUaXmlDecoderTest {
     OpcUaXmlDecoder decoder =
         new OpcUaXmlDecoder(DefaultEncodingContext.INSTANCE).setInput(new StringReader(xml));
 
-    assertNotNull(decoder.decodeVariantValue());
+    var values = assertInstanceOf(ExtensionObject[].class, decoder.decodeVariantValue());
+    assertEquals(1, values.length);
+    var argument =
+        assertInstanceOf(Argument.class, values[0].decode(DefaultEncodingContext.INSTANCE));
+    assertEquals("BreakLockStatus", argument.getName());
+    assertEquals(NodeIds.Int32, argument.getDataType());
+    assertEquals(-1, argument.getValueRank());
+    assertNotNull(argument.getArrayDimensions());
+    assertEquals(0, argument.getArrayDimensions().length);
+    assertEquals(LocalizedText.NULL_VALUE, argument.getDescription());
   }
 
   @Test

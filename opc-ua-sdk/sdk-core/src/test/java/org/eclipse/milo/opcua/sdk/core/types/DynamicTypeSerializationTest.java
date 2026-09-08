@@ -36,7 +36,10 @@ import com.digitalpetri.opcua.test.types.TestEnumType;
 import com.digitalpetri.opcua.test.types.UnionOfArray;
 import com.digitalpetri.opcua.test.types.UnionOfMatrix;
 import com.digitalpetri.opcua.test.types.UnionOfScalar;
+import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.core.types.DynamicUnionType.UnionValue;
@@ -69,45 +72,75 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class DynamicTypeSerializationTest {
 
   private final DynamicEncodingContext dynamicEncodingContext = new DynamicEncodingContext();
   private final StaticEncodingContext staticEncodingContext = new StaticEncodingContext();
 
-  @Test
-  void structWithScalarFields() {
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void structWithScalarFields(boolean distinct) {
     var struct =
         new StructWithBuiltinScalarFields(
-            false,
-            (byte) 0,
-            ubyte(0),
-            (short) 0,
-            ushort(0),
-            0,
-            uint(0),
-            0L,
-            ulong(0L),
-            0.0f,
-            0.0d,
-            "",
-            DateTime.MIN_DATE_TIME,
-            UUID.fromString("00000000-0000-0000-0000-000000000000"),
-            ByteString.of(new byte[] {0}),
-            XmlElement.of(""),
-            new NodeId(0, 0),
-            ExpandedNodeId.NULL_VALUE,
-            StatusCode.GOOD,
-            new QualifiedName(0, ""),
-            LocalizedText.NULL_VALUE,
-            new DataValue(new Variant(0)),
-            Variant.ofInt32(0));
+            distinct,
+            distinct ? (byte) -11 : (byte) 0,
+            distinct ? ubyte(12) : ubyte(0),
+            distinct ? (short) -130 : (short) 0,
+            distinct ? ushort(140) : ushort(0),
+            distinct ? -1500 : 0,
+            distinct ? uint(1600) : uint(0),
+            distinct ? -17000L : 0L,
+            distinct ? ulong(18000L) : ulong(0L),
+            distinct ? 19.25f : 0.0f,
+            distinct ? 20.5d : 0.0d,
+            distinct ? "scalar" : "",
+            distinct ? new DateTime(Instant.parse("2020-01-02T03:04:05Z")) : DateTime.MIN_DATE_TIME,
+            distinct
+                ? UUID.fromString("12345678-1234-5678-9abc-123456789abc")
+                : UUID.fromString("00000000-0000-0000-0000-000000000000"),
+            distinct ? ByteString.of(new byte[] {21, 22}) : ByteString.of(new byte[] {0}),
+            distinct ? XmlElement.of("<value>23</value>") : XmlElement.of(""),
+            distinct ? new NodeId(2, 24) : new NodeId(0, 0),
+            distinct ? new NodeId(3, 25).expanded() : ExpandedNodeId.NULL_VALUE,
+            distinct ? new StatusCode(0x80000000L) : StatusCode.GOOD,
+            distinct ? new QualifiedName(4, "qualified") : new QualifiedName(0, ""),
+            distinct ? LocalizedText.english("localized") : LocalizedText.NULL_VALUE,
+            distinct ? new DataValue(new Variant(26)) : new DataValue(new Variant(0)),
+            distinct ? Variant.ofInt32(27) : Variant.ofInt32(0));
 
     var encoded1 = ExtensionObject.encode(staticEncodingContext, struct);
     DynamicStructType decoded = (DynamicStructType) encoded1.decode(dynamicEncodingContext);
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
+    assertEquals(
+        Set.of(
+            "Boolean",
+            "SByte",
+            "Byte",
+            "Int16",
+            "UInt16",
+            "Int32",
+            "UInt32",
+            "Int64",
+            "UInt64",
+            "Float",
+            "Double",
+            "String",
+            "DateTime",
+            "Guid",
+            "ByteString",
+            "XmlElement",
+            "NodeId",
+            "ExpandedNodeId",
+            "StatusCode",
+            "QualifiedName",
+            "LocalizedText",
+            "DataValue",
+            "Variant"),
+        decoded.getMembers().keySet());
 
     var members = new LinkedHashMap<String, Object>();
     members.put("Boolean", struct.getBoolean());
@@ -234,8 +267,9 @@ class DynamicTypeSerializationTest {
     assertEquals(expected, decoded);
   }
 
-  @Test
-  void structWithArrayFields() {
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void structWithArrayFields(boolean distinct) {
     var struct =
         new StructWithBuiltinArrayFields(
             new Boolean[] {false, false},
@@ -243,13 +277,13 @@ class DynamicTypeSerializationTest {
             new UByte[] {ubyte(0), ubyte(0)},
             new Short[] {0, 0},
             new UShort[] {ushort(0), ushort(0)},
-            new Integer[] {0, 0},
+            distinct ? new Integer[] {-31, 32} : new Integer[] {0, 0},
             new UInteger[] {uint(0), uint(0)},
             new Long[] {0L, 0L},
             new ULong[] {ulong(0L), ulong(0L)},
             new Float[] {0.0f, 0.0f},
             new Double[] {0.0d, 0.0d},
-            new String[] {"", ""},
+            distinct ? new String[] {"first", "second"} : new String[] {"", ""},
             new DateTime[] {DateTime.MIN_DATE_TIME, DateTime.MIN_DATE_TIME},
             new UUID[] {
               UUID.fromString("00000000-0000-0000-0000-000000000000"),
@@ -270,6 +304,34 @@ class DynamicTypeSerializationTest {
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
+    assertEquals(
+        Set.of(
+            "Boolean",
+            "SByte",
+            "Byte",
+            "Int16",
+            "UInt16",
+            "Int32",
+            "UInt32",
+            "Int64",
+            "UInt64",
+            "Float",
+            "Double",
+            "String",
+            "DateTime",
+            "Guid",
+            "ByteString",
+            "XmlElement",
+            "NodeId",
+            "ExpandedNodeId",
+            "StatusCode",
+            "QualifiedName",
+            "LocalizedText",
+            "DataValue",
+            "Variant"),
+        decoded.getMembers().keySet());
+    assertMember(decoded, "Int32", struct.getInt32());
+    assertMember(decoded, "String", struct.getString());
   }
 
   @Test
@@ -406,6 +468,15 @@ class DynamicTypeSerializationTest {
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
+    assertMember(decoded, "String", struct.getString());
+    assertOptionalMember(decoded, "OptionalString", struct.getOptionalString());
+    assertMember(decoded, "Int32", struct.getInt32());
+    assertOptionalMember(decoded, "OptionalInt32", struct.getOptionalInt32());
+    assertMember(decoded, "Duration", struct.getDuration());
+    assertOptionalMember(decoded, "OptionalDuration", struct.getOptionalDuration());
+    assertEquals(
+        struct.getOptionalConcreteTestType() != null,
+        decoded.getMembers().containsKey("OptionalConcreteTestType"));
   }
 
   @ParameterizedTest
@@ -416,10 +487,20 @@ class DynamicTypeSerializationTest {
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
+    assertMember(decoded, "String", struct.getString());
+    assertOptionalMember(decoded, "OptionalString", struct.getOptionalString());
+    assertMember(decoded, "Int32", struct.getInt32());
+    assertOptionalMember(decoded, "OptionalInt32", struct.getOptionalInt32());
+    assertMember(decoded, "Duration", struct.getDuration());
+    assertOptionalMember(decoded, "OptionalDuration", struct.getOptionalDuration());
+    assertEquals(
+        struct.getOptionalConcreteTestType() != null,
+        decoded.getMembers().containsKey("OptionalConcreteTestType"));
   }
 
-  @Test
-  void structWithMatrixFields() {
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void structWithMatrixFields(boolean distinct) {
     var struct =
         new StructWithBuiltinMatrixFields(
             Matrix.ofBoolean(new Boolean[][] {{false, false}, {false, false}}),
@@ -427,13 +508,19 @@ class DynamicTypeSerializationTest {
             Matrix.ofByte(new UByte[][] {{ubyte(0), ubyte(0)}, {ubyte(0), ubyte(0)}}),
             Matrix.ofInt16(new Short[][] {{0, 0}, {0, 0}}),
             Matrix.ofUInt16(new UShort[][] {{ushort(0), ushort(0)}, {ushort(0), ushort(0)}}),
-            Matrix.ofInt32(new Integer[][] {{0, 0}, {0, 0}}),
+            Matrix.ofInt32(
+                distinct
+                    ? new Integer[][] {{-31, 32}, {33, -34}}
+                    : new Integer[][] {{0, 0}, {0, 0}}),
             Matrix.ofUInt32(new UInteger[][] {{uint(0), uint(0)}, {uint(0), uint(0)}}),
             Matrix.ofInt64(new Long[][] {{0L, 0L}, {0L, 0L}}),
             Matrix.ofUInt64(new ULong[][] {{ulong(0L), ulong(0L)}, {ulong(0L), ulong(0L)}}),
             Matrix.ofFloat(new Float[][] {{0.0f, 0.0f}, {0.0f, 0.0f}}),
             Matrix.ofDouble(new Double[][] {{0.0d, 0.0d}, {0.0d, 0.0d}}),
-            Matrix.ofString(new String[][] {{"", ""}, {"", ""}}),
+            Matrix.ofString(
+                distinct
+                    ? new String[][] {{"north", "east"}, {"south", "west"}}
+                    : new String[][] {{"", ""}, {"", ""}}),
             Matrix.ofDateTime(
                 new DateTime[][] {
                   {DateTime.MIN_DATE_TIME, DateTime.MIN_DATE_TIME},
@@ -501,6 +588,34 @@ class DynamicTypeSerializationTest {
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
+    assertEquals(
+        Set.of(
+            "Boolean",
+            "SByte",
+            "Byte",
+            "Int16",
+            "UInt16",
+            "Int32",
+            "UInt32",
+            "Int64",
+            "UInt64",
+            "Float",
+            "Double",
+            "String",
+            "DateTime",
+            "Guid",
+            "ByteString",
+            "XmlElement",
+            "NodeId",
+            "ExpandedNodeId",
+            "StatusCode",
+            "QualifiedName",
+            "LocalizedText",
+            "DataValue",
+            "Variant"),
+        decoded.getMembers().keySet());
+    assertMember(decoded, "Int32", struct.getInt32());
+    assertMember(decoded, "String", struct.getString());
   }
 
   @Test
@@ -739,6 +854,19 @@ class DynamicTypeSerializationTest {
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
+    String member =
+        union.isBoolean() ? "Boolean" : union.isSByte() ? "SByte" : union.isByte() ? "Byte" : null;
+    Object value =
+        union.isBoolean()
+            ? union.getBoolean()
+            : union.isSByte() ? union.getSByte() : union.isByte() ? union.getByte() : null;
+    var dynamicUnion = assertInstanceOf(DynamicUnionType.class, decoded);
+    assertEquals(member != null, dynamicUnion.getValue().isPresent());
+    if (member != null) {
+      var actual = dynamicUnion.getValue().orElseThrow();
+      assertEquals(member, actual.fieldName());
+      assertTrue(Objects.deepEquals(value, actual.fieldValue()), "active union value");
+    }
   }
 
   @ParameterizedTest
@@ -749,6 +877,19 @@ class DynamicTypeSerializationTest {
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
+    String member =
+        union.isBoolean() ? "Boolean" : union.isSByte() ? "SByte" : union.isByte() ? "Byte" : null;
+    Object value =
+        union.isBoolean()
+            ? union.getBoolean()
+            : union.isSByte() ? union.getSByte() : union.isByte() ? union.getByte() : null;
+    var dynamicUnion = assertInstanceOf(DynamicUnionType.class, decoded);
+    assertEquals(member != null, dynamicUnion.getValue().isPresent());
+    if (member != null) {
+      var actual = dynamicUnion.getValue().orElseThrow();
+      assertEquals(member, actual.fieldName());
+      assertTrue(Objects.deepEquals(value, actual.fieldValue()), "active union value");
+    }
   }
 
   @ParameterizedTest
@@ -759,6 +900,19 @@ class DynamicTypeSerializationTest {
     var encoded2 = ExtensionObject.encode(dynamicEncodingContext, decoded);
 
     assertEquals(encoded1, encoded2);
+    String member =
+        union.isBoolean() ? "Boolean" : union.isSByte() ? "SByte" : union.isByte() ? "Byte" : null;
+    Object value =
+        union.isBoolean()
+            ? union.getBoolean()
+            : union.isSByte() ? union.getSByte() : union.isByte() ? union.getByte() : null;
+    var dynamicUnion = assertInstanceOf(DynamicUnionType.class, decoded);
+    assertEquals(member != null, dynamicUnion.getValue().isPresent());
+    if (member != null) {
+      var actual = dynamicUnion.getValue().orElseThrow();
+      assertEquals(member, actual.fieldName());
+      assertTrue(Objects.deepEquals(value, actual.fieldValue()), "active union value");
+    }
   }
 
   private ExtensionObject nestedStructWithStructureScalarFields(int depth) {
@@ -860,6 +1014,9 @@ class DynamicTypeSerializationTest {
 
   private static Stream<Arguments> unionOfScalarProvider() {
     return Stream.of(
+        Arguments.of(UnionOfScalar.ofBoolean(true)),
+        Arguments.of(UnionOfScalar.ofSByte((byte) -42)),
+        Arguments.of(UnionOfScalar.ofByte(ubyte(43))),
         Arguments.of(UnionOfScalar.ofNull()),
         Arguments.of(UnionOfScalar.ofBoolean(false)),
         Arguments.of(UnionOfScalar.ofSByte((byte) 0)),
@@ -868,6 +1025,7 @@ class DynamicTypeSerializationTest {
 
   private static Stream<Arguments> unionOfArrayProvider() {
     return Stream.of(
+        Arguments.of(UnionOfArray.ofSByte(new Byte[] {-42, 43})),
         Arguments.of(UnionOfArray.ofNull()),
         Arguments.of(UnionOfArray.ofBoolean(new Boolean[] {false, false})),
         Arguments.of(UnionOfArray.ofSByte(new Byte[] {0, 0})),
@@ -876,6 +1034,7 @@ class DynamicTypeSerializationTest {
 
   private static Stream<Arguments> unionOfMatrixProvider() {
     return Stream.of(
+        Arguments.of(UnionOfMatrix.ofSByte(Matrix.ofSByte(new Byte[][] {{-42, 43}, {44, -45}}))),
         Arguments.of(UnionOfMatrix.ofNull()),
         Arguments.of(
             UnionOfMatrix.ofBoolean(
@@ -884,5 +1043,26 @@ class DynamicTypeSerializationTest {
         Arguments.of(
             UnionOfMatrix.ofByte(
                 Matrix.ofByte(new UByte[][] {{ubyte(0), ubyte(0)}, {ubyte(0), ubyte(0)}}))));
+  }
+
+  private static void assertMember(DynamicStructType decoded, String name, Object expected) {
+    assertTrue(decoded.getMembers().containsKey(name), "missing field " + name);
+    Object actual = decoded.getMembers().get(name);
+    if (expected instanceof Matrix matrix) {
+      var decodedMatrix = assertInstanceOf(Matrix.class, actual);
+      assertArrayEquals(
+          matrix.getDimensions(), decodedMatrix.getDimensions(), name + " dimensions");
+      assertTrue(
+          Objects.deepEquals(matrix.getElements(), decodedMatrix.getElements()),
+          name + " elements");
+    } else {
+      assertTrue(Objects.deepEquals(expected, actual), name + " value");
+    }
+  }
+
+  private static void assertOptionalMember(
+      DynamicStructType decoded, String name, Object expected) {
+    assertEquals(expected != null, decoded.getMembers().containsKey(name), name + " presence");
+    if (expected != null) assertMember(decoded, name, expected);
   }
 }

@@ -13,11 +13,14 @@ package org.eclipse.milo.opcua.sdk.server.subscriptions;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.sdk.client.AddressSpace;
 import org.eclipse.milo.opcua.sdk.client.nodes.UaVariableNode;
@@ -127,152 +130,40 @@ public class PercentDeadbandTest extends AbstractClientServerTest {
     assertEquals(1, receivedValues.size());
   }
 
+  // The unit tests WithinDeadband, ExactDeadband, and ExceedsDeadband in
+  // DataChangeMonitoringFilterTest cover the arithmetic independently. This ordered wire
+  // scenario verifies EURange lookup, delivery, and comparison with the last reported value.
   @Test
-  void testPercentDeadband_WithinDeadband_NoNotification() throws Exception {
+  void percentDeadbandSuppressesThroughBoundaryAndReportsBeyondIt() throws Exception {
     NodeId nodeId = newNodeId(NODE_ID_RANGE_100);
-
-    var receivedValues = new CopyOnWriteArrayList<DataValue>();
-    var latch = new CountDownLatch(1);
-
+    var receivedValues = new LinkedBlockingQueue<DataValue>();
     OpcUaMonitoredItem monitoredItem = OpcUaMonitoredItem.newDataItem(nodeId);
-
-    var filter =
+    monitoredItem.setFilter(
         new DataChangeFilter(
-            DataChangeTrigger.StatusValue, uint(DeadbandType.Percent.getValue()), 10.0);
-    monitoredItem.setFilter(filter);
-
-    monitoredItem.setDataValueListener(
-        (item, value) -> {
-          receivedValues.add(value);
-          latch.countDown();
-        });
-
+            DataChangeTrigger.StatusValue, uint(DeadbandType.Percent.getValue()), 10.0));
+    monitoredItem.setDataValueListener((item, value) -> receivedValues.add(value));
     subscription.addMonitoredItem(monitoredItem);
     subscription.synchronizeMonitoredItems();
 
-    // Wait for the initial value
-    assertTrue(latch.await(5, TimeUnit.SECONDS), "Initial value not received");
-    assertEquals(1, receivedValues.size());
-    receivedValues.clear();
+    DataValue initial = receivedValues.poll(5, TimeUnit.SECONDS);
+    assertNotNull(initial, "Initial value not received");
+    assertEquals(50.0, initial.value().value());
 
-    // Write a value within the deadband (9% change from 50.0 to 59.0)
-    // Range is 100, so 10% deadband = 10 units
-    var latch2 = new CountDownLatch(1);
-    monitoredItem.setDataValueListener(
-        (item, value) -> {
-          receivedValues.add(value);
-          latch2.countDown();
-        });
-
-    AddressSpace addressSpace = client.getAddressSpace();
-    UaVariableNode variableNode = (UaVariableNode) addressSpace.getNode(nodeId);
+    UaVariableNode variableNode = (UaVariableNode) client.getAddressSpace().getNode(nodeId);
     variableNode.writeValue(new Variant(59.0));
+    assertNull(
+        receivedValues.poll(1, TimeUnit.SECONDS), "A change below the deadband must be suppressed");
 
-    // Wait a bit to ensure no notification is sent
-    boolean notified = latch2.await(1, TimeUnit.SECONDS);
-
-    assertFalse(notified, "Should not receive notification for change within deadband");
-    assertEquals(
-        0, receivedValues.size(), "Should not receive notification for change within deadband");
-  }
-
-  @Test
-  void testPercentDeadband_ExceedsDeadband_Notification() throws Exception {
-    NodeId nodeId = newNodeId(NODE_ID_RANGE_100);
-
-    var receivedValues = new CopyOnWriteArrayList<DataValue>();
-    var latch = new CountDownLatch(1);
-
-    OpcUaMonitoredItem monitoredItem = OpcUaMonitoredItem.newDataItem(nodeId);
-
-    var filter =
-        new DataChangeFilter(
-            DataChangeTrigger.StatusValue, uint(DeadbandType.Percent.getValue()), 10.0);
-    monitoredItem.setFilter(filter);
-
-    monitoredItem.setDataValueListener(
-        (item, value) -> {
-          receivedValues.add(value);
-          latch.countDown();
-        });
-
-    subscription.addMonitoredItem(monitoredItem);
-    subscription.synchronizeMonitoredItems();
-
-    // Wait for the initial value
-    assertTrue(latch.await(5, TimeUnit.SECONDS), "Initial value not received");
-    assertEquals(1, receivedValues.size());
-    receivedValues.clear();
-
-    // Write a value exceeding deadband (11% change from 50.0 to 61.0)
-    var latch2 = new CountDownLatch(1);
-    monitoredItem.setDataValueListener(
-        (item, value) -> {
-          receivedValues.add(value);
-          latch2.countDown();
-        });
-
-    AddressSpace addressSpace = client.getAddressSpace();
-    UaVariableNode variableNode = (UaVariableNode) addressSpace.getNode(nodeId);
-    variableNode.writeValue(new Variant(61.0));
-
-    // Wait for notification
-    assertTrue(
-        latch2.await(5, TimeUnit.SECONDS),
-        "Should receive notification for change exceeding deadband");
-    assertEquals(1, receivedValues.size());
-    assertEquals(61.0, receivedValues.get(0).value().value());
-  }
-
-  @Test
-  void testPercentDeadband_ExactBoundary_NoNotification() throws Exception {
-    NodeId nodeId = newNodeId(NODE_ID_RANGE_100);
-
-    var receivedValues = new CopyOnWriteArrayList<DataValue>();
-    var latch = new CountDownLatch(1);
-
-    OpcUaMonitoredItem monitoredItem = OpcUaMonitoredItem.newDataItem(nodeId);
-
-    var filter =
-        new DataChangeFilter(
-            DataChangeTrigger.StatusValue, uint(DeadbandType.Percent.getValue()), 10.0);
-    monitoredItem.setFilter(filter);
-
-    monitoredItem.setDataValueListener(
-        (item, value) -> {
-          receivedValues.add(value);
-          latch.countDown();
-        });
-
-    subscription.addMonitoredItem(monitoredItem);
-    subscription.synchronizeMonitoredItems();
-
-    // Wait for the initial value
-    assertTrue(latch.await(5, TimeUnit.SECONDS), "Initial value not received");
-    assertEquals(1, receivedValues.size());
-    receivedValues.clear();
-
-    // Write a value exactly at the deadband boundary (10% change from 50.0 to 60.0)
-    var latch2 = new CountDownLatch(1);
-    monitoredItem.setDataValueListener(
-        (item, value) -> {
-          receivedValues.add(value);
-          latch2.countDown();
-        });
-
-    AddressSpace addressSpace = client.getAddressSpace();
-    UaVariableNode variableNode = (UaVariableNode) addressSpace.getNode(nodeId);
     variableNode.writeValue(new Variant(60.0));
+    assertNull(
+        receivedValues.poll(1, TimeUnit.SECONDS),
+        "A change equal to the deadband must be suppressed");
 
-    // Wait a bit to ensure no notification is sent
-    boolean notified = latch2.await(1, TimeUnit.SECONDS);
-
-    assertFalse(
-        notified, "Should not receive notification for change exactly at deadband boundary");
-    assertEquals(
-        0,
-        receivedValues.size(),
-        "Should not receive notification for change exactly at deadband boundary");
+    // Suppressed samples must not advance the baseline from the last reported value of 50.
+    variableNode.writeValue(new Variant(61.0));
+    DataValue reported = receivedValues.poll(5, TimeUnit.SECONDS);
+    assertNotNull(reported, "A change beyond the deadband must be reported");
+    assertEquals(61.0, reported.value().value());
   }
 
   @Test

@@ -10,52 +10,65 @@
 
 package org.eclipse.milo.opcua.sdk.server.util;
 
-import static java.util.stream.Collectors.toList;
 import static org.eclipse.milo.opcua.sdk.core.util.AsyncGroupMapCollate.groupMapCollate;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 public class AsyncGroupMapCollateTest {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(AsyncGroupMapCollateTest.class);
+  // Completion order must not change input order or publish a partial result.
+  @ParameterizedTest(name = "{0}")
+  @CsvSource({"single group, 1", "interleaved groups, 3", "one group per item, 10"})
+  void collatesAllResultsAfterEveryGroupCompletes(String name, int partitions) throws Exception {
+    List<Integer> items = IntStream.range(0, 10).boxed().toList();
+    var futures = new ArrayList<CompletableFuture<List<String>>>();
+    var results = new ArrayList<List<String>>();
+    CompletableFuture<List<String>> aggregate =
+        groupMapCollate(
+            items,
+            item -> item % partitions,
+            key ->
+                group -> {
+                  var future = new CompletableFuture<List<String>>();
+                  futures.add(future);
+                  results.add(group.stream().map(Object::toString).toList());
+                  return future;
+                });
+
+    for (int i = futures.size() - 1; i >= 0; i--) {
+      assertFalse(aggregate.isDone(), "aggregate must wait for every group");
+      futures.get(i).complete(results.get(i));
+    }
+    assertEquals(items.stream().map(Object::toString).toList(), aggregate.get(5, TimeUnit.SECONDS));
+  }
 
   @Test
-  public void testGroupMapCollate() throws ExecutionException, InterruptedException {
-    int N = 10;
-    List<Integer> items = new ArrayList<>();
-    IntStream.range(0, N).forEach(items::add);
+  void propagatesMapperFailure() {
+    var failure = new IllegalStateException("mapper failed");
+    CompletableFuture<List<String>> aggregate =
+        groupMapCollate(
+            List.of(1), item -> item, key -> group -> CompletableFuture.failedFuture(failure));
+    var thrown = assertThrows(ExecutionException.class, () -> aggregate.get(5, TimeUnit.SECONDS));
+    assertSame(failure, thrown.getCause());
+  }
 
-    for (int i = 1; i <= N; i++) {
-      final int mod = i;
-      CompletableFuture<List<String>> stringsFuture =
-          groupMapCollate(
-              items,
-              item -> item % mod,
-              remainder ->
-                  group -> {
-                    LOGGER.debug("mod={} remainder={} group={}", mod, remainder, group);
-
-                    CompletableFuture<List<String>> future = new CompletableFuture<>();
-
-                    future.complete(group.stream().map(Object::toString).collect(toList()));
-
-                    return future;
-                  });
-
-      List<String> strings = stringsFuture.get();
-
-      for (int j = 0; j < strings.size(); j++) {
-        assertEquals(String.valueOf(j), strings.get(j));
-      }
-      LOGGER.debug("--");
-    }
+  @Test
+  void rejectsMissingMappedResults() {
+    CompletableFuture<List<String>> aggregate =
+        groupMapCollate(
+            List.of(1, 2),
+            item -> 0,
+            key -> group -> CompletableFuture.completedFuture(List.of("1")));
+    var thrown = assertThrows(ExecutionException.class, () -> aggregate.get(5, TimeUnit.SECONDS));
+    assertEquals("result size (1) does not match pending size (2)", thrown.getCause().getMessage());
   }
 }

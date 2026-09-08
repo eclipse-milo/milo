@@ -30,19 +30,23 @@ public abstract class AbstractClientServerTest {
 
   @BeforeAll
   public void startClientAndServer() throws Exception {
-    testServer = createTestServer();
-    server = testServer.getServer();
-
-    testNamespace = new TestNamespace(server);
-    testNamespace.startup();
-
-    server.startup().get();
-
-    configureTestNamespace(testNamespace);
-
-    client = TestClient.create(server, this::customizeClientConfig);
-
-    client.connect();
+    try {
+      testServer = createTestServer();
+      server = testServer.getServer();
+      testNamespace = new TestNamespace(server);
+      testNamespace.startup();
+      server.startup().get(10, TimeUnit.SECONDS);
+      configureTestNamespace(testNamespace);
+      client = TestClient.create(server, this::customizeClientConfig);
+      client.connectAsync().get(10, TimeUnit.SECONDS);
+    } catch (Exception | Error failure) {
+      try {
+        stopClientAndServer();
+      } catch (Exception | Error cleanupFailure) {
+        failure.addSuppressed(cleanupFailure);
+      }
+      throw failure;
+    }
   }
 
   /**
@@ -56,18 +60,33 @@ public abstract class AbstractClientServerTest {
   }
 
   @AfterAll
-  public void stopClientAndServer() {
+  public void stopClientAndServer() throws Exception {
+    Throwable failure = null;
     try {
-      client.disconnectAsync().get(2, TimeUnit.SECONDS);
-    } catch (Exception e) {
-      e.printStackTrace(System.err);
+      if (client != null) client.disconnectAsync().get(10, TimeUnit.SECONDS);
+    } catch (Exception | Error e) {
+      failure = e;
+    } finally {
+      client = null;
     }
     try {
-      testNamespace.shutdown();
-      server.shutdown().get(2, TimeUnit.SECONDS);
-    } catch (Exception e) {
-      e.printStackTrace(System.err);
+      if (testNamespace != null) testNamespace.shutdown();
+    } catch (Exception | Error e) {
+      if (failure == null) failure = e;
+      else failure.addSuppressed(e);
+    } finally {
+      testNamespace = null;
     }
+    try {
+      if (server != null) server.shutdown().get(10, TimeUnit.SECONDS);
+    } catch (Exception | Error e) {
+      if (failure == null) failure = e;
+      else failure.addSuppressed(e);
+    } finally {
+      server = null;
+    }
+    if (failure instanceof Exception e) throw e;
+    if (failure instanceof Error e) throw e;
   }
 
   /**

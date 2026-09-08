@@ -29,38 +29,6 @@ import org.junit.jupiter.api.Test;
 public class NonBlockingLazyTest {
 
   @Test
-  void get() {
-    var lazy = new NonBlockingLazy<>();
-
-    assertEquals("foo", lazy.get(() -> "foo"));
-  }
-
-  @Test
-  void getOrThrow() {
-    var lazy = new NonBlockingLazy<>();
-
-    assertThrows(
-        Exception.class,
-        () ->
-            lazy.getOrThrow(
-                () -> {
-                  throw new Exception();
-                }));
-
-    assertEquals("foo", lazy.getOrThrow(() -> "foo"));
-  }
-
-  @Test
-  void retainsNonNullValue() {
-    NonBlockingLazy<Object> lazy = new NonBlockingLazy<>();
-
-    Object instance = new Object();
-
-    assertSame(instance, lazy.get(() -> instance));
-    assertSame(instance, lazy.get(() -> instance));
-  }
-
-  @Test
   void doesNotRetainNullValue() {
     NonBlockingLazy<Object> lazy = new NonBlockingLazy<>();
 

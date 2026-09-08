@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.sdk.client.subscriptions;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -24,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -31,20 +33,27 @@ import java.util.function.Function;
 import java.util.stream.LongStream;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfig;
+import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
 import org.eclipse.milo.opcua.sdk.client.UaSession;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.NotificationMessage;
+import org.eclipse.milo.opcua.stack.core.types.structured.PublishRequest;
+import org.eclipse.milo.opcua.stack.core.types.structured.PublishResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.RepublishRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.RepublishResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
 import org.eclipse.milo.opcua.stack.core.types.structured.ResponseHeader;
 import org.eclipse.milo.opcua.stack.core.util.TaskQueue;
+import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
+import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransportConfig;
 import org.junit.jupiter.api.Test;
 
 /** Session-activation ownership of reconnect recovery state in {@link PublishingManager}. */
@@ -130,23 +139,23 @@ public class PublishingManagerSessionIsolationTest {
    */
   @Test
   void oldActivationCannotClampReplacementSessionsPublishCeiling() throws Exception {
-    Fixture fixture = new Fixture(0, 1);
+    Fixture fixture = new Fixture(1, 2);
     fixture.setActivation(2L);
 
     fixture.handlePublishFailure(
         new UaException(StatusCodes.Bad_TooManyPublishRequests), new AtomicLong(1L), 1L);
 
+    fixture.startPublishing(2L);
     assertEquals(
-        Long.MAX_VALUE,
-        fixture.pendingPublishCeiling(),
-        "Bad_TooManyPublishRequests from activation 1 clamped activation 2 even though pending"
-            + " Publish limits are Session-scoped");
+        2,
+        fixture.publishResponses.size(),
+        "A stale refusal must leave the replacement Session's two-request pipeline open");
   }
 
   /** A delayed successful response cannot pay down a replacement Session's learned ceiling. */
   @Test
   void oldActivationCannotAdvanceReplacementSessionsCeilingCooldown() throws Exception {
-    Fixture fixture = new Fixture(0, 1);
+    Fixture fixture = new Fixture(1, 2);
     fixture.setActivation(2L);
 
     fixture.handlePublishFailure(
@@ -154,10 +163,18 @@ public class PublishingManagerSessionIsolationTest {
 
     fixture.releasePendingPublish(new AtomicLong(1L), 1L);
 
+    fixture.startPublishing(2L);
+    assertEquals(1, fixture.publishResponses.size(), "The current refusal must limit the pipeline");
+
+    // Recovery probes cost eight successful round trips. A stale success must not bring the
+    // first probe forward to the seventh response from the replacement Session.
+    for (int i = 0; i < 7; i++) {
+      fixture.completePublish(i);
+      assertEquals(i + 2, fixture.publishResponses.size(), "A stale success advanced the probe");
+    }
+    fixture.completePublish(7);
     assertEquals(
-        0L,
-        fixture.pendingPublishCeilingSuccesses(),
-        "a successful PublishResponse from activation 1 advanced activation 2's cooldown");
+        10, fixture.publishResponses.size(), "The eighth current success must allow a probe");
   }
 
   private static CompletableFuture<UaResponseMessageType> response(long sequenceNumber) {
@@ -172,6 +189,8 @@ public class PublishingManagerSessionIsolationTest {
   private static final class Fixture {
 
     private final List<Long> republishRequests = new ArrayList<>();
+    private final List<CompletableFuture<UaResponseMessageType>> publishResponses =
+        new ArrayList<>();
 
     private final AtomicReference<
             Function<RepublishRequest, CompletableFuture<UaResponseMessageType>>>
@@ -186,12 +205,35 @@ public class PublishingManagerSessionIsolationTest {
     Fixture(int subscriptionCount, int maxPendingPublishRequests) throws Exception {
       OpcUaClientConfig config = mock(OpcUaClientConfig.class);
       when(config.getMaxPendingPublishRequests()).thenReturn(uint(maxPendingPublishRequests));
+      when(config.getRequestTimeout()).thenReturn(uint(5000));
       when(client.getConfig()).thenReturn(config);
+      OpcClientTransport transport = mock(OpcClientTransport.class);
+      OpcClientTransportConfig transportConfig = mock(OpcClientTransportConfig.class);
+      when(client.getTransport()).thenReturn(transport);
+      when(transport.getConfig()).thenReturn(transportConfig);
+      ExecutorService executor = mock(ExecutorService.class);
+      doAnswer(
+              invocation -> {
+                invocation.<Runnable>getArgument(0).run();
+                return null;
+              })
+          .when(executor)
+          .execute(any(Runnable.class));
+      when(transportConfig.getExecutor()).thenReturn(executor);
+      RequestHeader publishHeader = mock(RequestHeader.class);
+      when(publishHeader.getRequestHandle()).thenReturn(uint(1));
+      when(client.newRequestHeader(any(NodeId.class), any(UInteger.class)))
+          .thenReturn(publishHeader);
       when(client.newRequestHeader(any(NodeId.class))).thenReturn(mock(RequestHeader.class));
       when(client.getSessionAsync()).thenReturn(new CompletableFuture<>());
       when(client.sendRequestAsync(any()))
           .thenAnswer(
               invocation -> {
+                if (invocation.getArgument(0) instanceof PublishRequest) {
+                  var future = new CompletableFuture<UaResponseMessageType>();
+                  publishResponses.add(future);
+                  return future;
+                }
                 RepublishRequest request = invocation.getArgument(0);
                 republishRequests.add(request.getRetransmitSequenceNumber().longValue());
 
@@ -214,8 +256,8 @@ public class PublishingManagerSessionIsolationTest {
       setSubscriptionDetails(Map.copyOf(details));
     }
 
-    UaSession newSession() {
-      UaSession session = mock(UaSession.class);
+    OpcUaSession newSession() {
+      OpcUaSession session = mock(OpcUaSession.class);
       when(session.getAuthenticationToken()).thenReturn(NodeId.NULL_VALUE);
       when(session.getSessionId()).thenReturn(new NodeId(1, System.identityHashCode(session)));
 
@@ -287,12 +329,30 @@ public class PublishingManagerSessionIsolationTest {
       method.invoke(manager, failure, uint(1), pendingCount, List.of(), 0L, activation);
     }
 
-    long pendingPublishCeiling() throws Exception {
-      return pendingPublishCeilingField("ceiling");
+    void startPublishing(long activation) throws Exception {
+      OpcUaSession session = newSession();
+      when(client.getSessionAsync()).thenReturn(CompletableFuture.completedFuture(session));
+      Method method =
+          PublishingManager.class.getDeclaredMethod(
+              "resumePublishing", long.class, UaSession.class);
+      method.setAccessible(true);
+      method.invoke(manager, activation, session);
     }
 
-    long pendingPublishCeilingSuccesses() throws Exception {
-      return pendingPublishCeilingField("successes");
+    void completePublish(int index) {
+      // An unregistered Subscription's response still releases its Session's permit and refills
+      // the pipeline, without involving notification delivery in these activation tests.
+      publishResponses
+          .get(index)
+          .complete(
+              new PublishResponse(
+                  mock(ResponseHeader.class),
+                  uint(99),
+                  new UInteger[0],
+                  false,
+                  new NotificationMessage(uint(1), DateTime.now(), new ExtensionObject[0]),
+                  new StatusCode[0],
+                  new DiagnosticInfo[0]));
     }
 
     void releasePendingPublish(AtomicLong pendingCount, long activation) throws Exception {
@@ -301,17 +361,6 @@ public class PublishingManagerSessionIsolationTest {
               "releasePendingPublish", AtomicLong.class, long.class);
       method.setAccessible(true);
       method.invoke(manager, pendingCount, activation);
-    }
-
-    private long pendingPublishCeilingField(String name) throws Exception {
-      Field field = PublishingManager.class.getDeclaredField("pendingPublishCeiling");
-      field.setAccessible(true);
-
-      Object state = ((AtomicReference<?>) field.get(manager)).get();
-      Method accessor = state.getClass().getDeclaredMethod(name);
-      accessor.setAccessible(true);
-
-      return (long) accessor.invoke(state);
     }
 
     private Object newSubscriptionDetails(UInteger id) throws Exception {

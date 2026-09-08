@@ -25,7 +25,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfig;
@@ -38,6 +40,8 @@ import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.SessionListener;
 import org.eclipse.milo.opcua.sdk.test.TestClient;
 import org.eclipse.milo.opcua.sdk.test.TestServer;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
@@ -84,23 +88,34 @@ public class SessionFsmTest {
   @Test
   public void testCloseSessionCompletesSessionFutureInCreatingWait() throws Exception {
     OpcUaServer server = TestServer.create().getServer();
-    server.startup().get();
+    OpcUaClient client = null;
+    ScheduledExecutorService observer = Executors.newSingleThreadScheduledExecutor();
+    try {
+      server.startup().get(10, TimeUnit.SECONDS);
+      client = TestClient.create(server, cfg -> {});
+      SessionFsm sessionFsm = client.getSessionFsm();
+      CompletableFuture<State> reached = observeState(sessionFsm, State.CreatingWait, observer);
+      server.shutdown().get(10, TimeUnit.SECONDS);
+      client.connectAsync();
+      assertEquals(State.CreatingWait, reached.get(10, TimeUnit.SECONDS));
+      CompletableFuture<OpcUaSession> sessionFuture = sessionFsm.getSession();
+      sessionFsm.closeSession().get(10, TimeUnit.SECONDS);
 
-    OpcUaClient client = TestClient.create(server, cfg -> {});
-
-    server.shutdown().get();
-    client.connectAsync();
-
-    SessionFsm sessionFsm = client.getSessionFsm();
-    while (sessionFsm.getState() != State.CreatingWait) {
-      //noinspection BusyWait
-      Thread.sleep(100);
+      ExecutionException failure =
+          assertThrows(ExecutionException.class, () -> sessionFuture.get(5, TimeUnit.SECONDS));
+      assertTrue(failure.getCause() instanceof UaException);
+      assertEquals(
+          StatusCodes.Bad_SessionClosed,
+          ((UaException) failure.getCause()).getStatusCode().value());
+    } finally {
+      observer.shutdownNow();
+      try {
+        if (client != null) client.disconnectAsync().get(10, TimeUnit.SECONDS);
+      } finally {
+        server.shutdown().get(10, TimeUnit.SECONDS);
+        assertTrue(observer.awaitTermination(5, TimeUnit.SECONDS), "state observer did not stop");
+      }
     }
-
-    CompletableFuture<OpcUaSession> sessionFuture = sessionFsm.getSession();
-    sessionFsm.closeSession();
-
-    assertThrows(ExecutionException.class, () -> sessionFuture.get(5, TimeUnit.SECONDS));
   }
 
   /**
@@ -110,25 +125,53 @@ public class SessionFsmTest {
   @Test
   public void testCloseSessionCompletesSessionFutureInReactivatingWait() throws Exception {
     OpcUaServer server = TestServer.create().getServer();
-    server.startup().get();
+    OpcUaClient client = null;
+    ScheduledExecutorService observer = Executors.newSingleThreadScheduledExecutor();
+    try {
+      server.startup().get(10, TimeUnit.SECONDS);
+      client = TestClient.create(server, cfg -> {});
+      SessionFsm sessionFsm = client.getSessionFsm();
+      CompletableFuture<State> reached = observeState(sessionFsm, State.ReactivatingWait, observer);
+      client.connectAsync().get(10, TimeUnit.SECONDS);
+      server.shutdown().get(10, TimeUnit.SECONDS);
+      assertEquals(State.ReactivatingWait, reached.get(10, TimeUnit.SECONDS));
+      CompletableFuture<OpcUaSession> sessionFuture = sessionFsm.getSession();
+      sessionFsm.closeSession().get(10, TimeUnit.SECONDS);
 
-    OpcUaClient client = TestClient.create(server, cfg -> {});
-    client.connect();
-
-    Thread.sleep(1000);
-
-    server.shutdown().get();
-
-    SessionFsm sessionFsm = client.getSessionFsm();
-    while (sessionFsm.getState() != State.ReactivatingWait) {
-      //noinspection BusyWait
-      Thread.sleep(100);
+      ExecutionException failure =
+          assertThrows(ExecutionException.class, () -> sessionFuture.get(5, TimeUnit.SECONDS));
+      assertTrue(failure.getCause() instanceof UaException);
+      assertEquals(
+          StatusCodes.Bad_SessionClosed,
+          ((UaException) failure.getCause()).getStatusCode().value());
+    } finally {
+      observer.shutdownNow();
+      try {
+        if (client != null) client.disconnectAsync().get(10, TimeUnit.SECONDS);
+      } finally {
+        server.shutdown().get(10, TimeUnit.SECONDS);
+        assertTrue(observer.awaitTermination(5, TimeUnit.SECONDS), "state observer did not stop");
+      }
     }
+  }
 
-    CompletableFuture<OpcUaSession> sessionFuture = sessionFsm.getSession();
-    sessionFsm.closeSession();
-
-    assertThrows(ExecutionException.class, () -> sessionFuture.get(5, TimeUnit.SECONDS));
+  private static CompletableFuture<State> observeState(
+      SessionFsm sessionFsm, State expected, ScheduledExecutorService executor) {
+    var reached = new CompletableFuture<State>();
+    var poll =
+        executor.scheduleWithFixedDelay(
+            () -> {
+              try {
+                if (sessionFsm.getState() == expected) reached.complete(expected);
+              } catch (Throwable t) {
+                reached.completeExceptionally(t);
+              }
+            },
+            0,
+            10,
+            TimeUnit.MILLISECONDS);
+    reached.whenComplete((state, failure) -> poll.cancel(false));
+    return reached;
   }
 
   /**

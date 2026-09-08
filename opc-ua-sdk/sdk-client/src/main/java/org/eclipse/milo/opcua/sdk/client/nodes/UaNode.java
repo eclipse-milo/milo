@@ -488,7 +488,7 @@ public abstract class UaNode implements Node {
    */
   @Nullable
   public UInteger readWriteMask() throws UaException {
-    DataValue value = readAttribute(AttributeId.UserWriteMask);
+    DataValue value = readAttribute(AttributeId.WriteMask);
 
     StatusCode statusCode = value.statusCode();
 

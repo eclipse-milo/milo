@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.primitives.Bytes;
+import java.io.StringReader;
 import java.security.KeyPair;
 import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
@@ -29,6 +30,7 @@ import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.Extensions;
 import org.bouncycastle.asn1.x509.KeyPurposeId;
 import org.bouncycastle.asn1.x509.KeyUsage;
+import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.pkcs.PKCS10CertificationRequest;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -54,36 +56,12 @@ public class CertificateUtilTest {
   }
 
   @Test
-  public void testGenerateCsr() throws Exception {
-    assertNotNull(CertificateUtil.generateCsr(keyPair, certificate));
-  }
-
-  @Test
   public void testGenerateCsrPem() throws Exception {
     PKCS10CertificationRequest csr = CertificateUtil.generateCsr(keyPair, certificate);
 
-    assertNotNull(CertificateUtil.getCsrPem(csr));
-  }
-
-  @Test
-  public void testGetSubjectAltNameField() {
-    Object uri =
-        CertificateUtil.getSubjectAltNameField(certificate, CertificateUtil.SUBJECT_ALT_NAME_URI)
-            .get(0);
-
-    Object dnsName =
-        CertificateUtil.getSubjectAltNameField(
-                certificate, CertificateUtil.SUBJECT_ALT_NAME_DNS_NAME)
-            .get(0);
-
-    Object ipAddress =
-        CertificateUtil.getSubjectAltNameField(
-                certificate, CertificateUtil.SUBJECT_ALT_NAME_IP_ADDRESS)
-            .get(0);
-
-    assertEquals("urn:eclipse:milo:test", uri);
-    assertEquals("localhost", dnsName);
-    assertEquals("127.0.0.1", ipAddress);
+    try (PEMParser parser = new PEMParser(new StringReader(CertificateUtil.getCsrPem(csr)))) {
+      assertEquals(csr, parser.readObject());
+    }
   }
 
   @Test

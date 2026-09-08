@@ -111,6 +111,6 @@ public class GenericBsdCodecTest extends AbstractBsdCodecTest {
 
     BinaryDataTypeCodec codec = getCodec("ProfilePointStruct");
 
-    assertRoundTripUsingToString("ProfilePointStruct", profilePoint, codec);
+    assertRoundTrip("ProfilePointStruct", profilePoint, codec);
   }
 }
