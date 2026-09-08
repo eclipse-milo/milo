@@ -555,7 +555,7 @@ public class SessionManager {
           "requested enhanced user-token policy is not available on the selected endpoint");
     }
 
-    KeyPair signingKeyPair = selectUserTokenSigningKeyPair(securityConfiguration, session);
+    KeyPair signingKeyPair = selectUserTokenSigningKeyPair(session);
 
     KeyPair ephemeralKeyPair =
         EccEncryptedSecret.generateEphemeralKeyPair(securityPolicy.getProfile());
@@ -575,23 +575,24 @@ public class SessionManager {
     return response;
   }
 
-  private KeyPair selectUserTokenSigningKeyPair(
-      SecurityConfiguration securityConfiguration, Session session) throws UaException {
+  private KeyPair selectUserTokenSigningKeyPair(Session session) throws UaException {
+    SessionServerCertificate original = session.getOriginalServerCertificate();
 
     /*
      * The client verifies the EphemeralKeyType signature with the certificate advertised by the
      * selected endpoint. SecureChannel key material is used only when it is the same endpoint
      * identity; otherwise the key is resolved from the certificate manager by endpoint thumbprint.
      */
-    if (securityConfiguration.getKeyPair() != null
-        && securityConfiguration.getServerCertificate() != null
-        && serverCertificateMatchesEndpoint(securityConfiguration, session)) {
-      return securityConfiguration.getKeyPair();
+    KeyPair keyPair = original.keyPair();
+    if (keyPair != null
+        && original.certificate() != null
+        && original.createSessionCertificate().equals(original.certificateBytes())) {
+      return keyPair;
     }
 
-    ByteString endpointCertificateBytes = session.getEndpoint().getServerCertificate();
+    ByteString endpointCertificateBytes = original.createSessionCertificate();
 
-    if (endpointCertificateBytes == null || endpointCertificateBytes.isNullOrEmpty()) {
+    if (endpointCertificateBytes.isNullOrEmpty()) {
       throw new UaException(
           StatusCodes.Bad_ConfigurationError,
           "enhanced user-token negotiation requires an advertised server certificate");
@@ -609,15 +610,6 @@ public class SessionManager {
                 new UaException(
                     StatusCodes.Bad_ConfigurationError,
                     "no server application key pair found for advertised certificate"));
-  }
-
-  private static boolean serverCertificateMatchesEndpoint(
-      SecurityConfiguration securityConfiguration, Session session) throws UaException {
-
-    ByteString endpointCertificateBytes = session.getEndpoint().getServerCertificate();
-
-    return endpointCertificateBytes != null
-        && endpointCertificateBytes.equals(securityConfiguration.getServerCertificateBytes());
   }
 
   /**
@@ -891,7 +883,7 @@ public class SessionManager {
         SecurityConfiguration securityConfiguration = session.getSecurityConfiguration();
 
         if (session.getSecureChannelId() == secureChannelId) {
-          verifyClientSignature(session, request, securityConfiguration, session.getEndpoint());
+          verifyClientSignature(session, request, securityConfiguration);
 
           /*
            * Identity change
@@ -932,7 +924,7 @@ public class SessionManager {
 
           EndpointDescription endpoint = findSessionEndpoint(context);
 
-          verifyClientSignature(session, request, newSecurityConfiguration, endpoint);
+          verifyClientSignature(session, request, newSecurityConfiguration);
 
           ByteString clientCertificateBytes =
               context.getSecureChannel().getRemoteCertificateBytes();
@@ -1013,8 +1005,7 @@ public class SessionManager {
         throw new UaException(StatusCodes.Bad_SecurityChecksFailed);
       }
 
-      verifyClientSignature(
-          session, request, session.getSecurityConfiguration(), session.getEndpoint());
+      verifyClientSignature(session, request, session.getSecurityConfiguration());
 
       UserIdentityToken identityToken =
           decodeIdentityToken(
@@ -1114,18 +1105,22 @@ public class SessionManager {
   }
 
   private static void verifyClientSignature(
-      Session session,
-      ActivateSessionRequest request,
-      SecurityConfiguration securityConfiguration,
-      EndpointDescription endpoint)
+      Session session, ActivateSessionRequest request, SecurityConfiguration securityConfiguration)
       throws UaException {
     if (securityConfiguration.getSecurityPolicy() != SecurityPolicy.None) {
       SignatureData clientSignature = request.getClientSignature();
       SecurityPolicy securityPolicy = securityConfiguration.getSecurityPolicy();
+      // The client signs over the server certificate from CreateSession, so verification uses the
+      // certificate the Session was created with even after the server certificate rotates. A
+      // Session created on an unsecured channel has none; use the carrying channel's.
+      SessionServerCertificate original = session.getOriginalServerCertificate();
+      boolean createdUnsecured = original.certificate() == null;
       ByteString serverCertificateBs =
           securityPolicy.getProfile().secureChannelEnhancements()
-              ? endpoint.getServerCertificate()
-              : securityConfiguration.getServerCertificateBytes();
+              ? original.createSessionCertificate()
+              : createdUnsecured
+                  ? securityConfiguration.getServerCertificateBytes()
+                  : original.certificateBytes();
       ByteString lastNonceBs = session.getLastNonce();
 
       try {
@@ -1152,7 +1147,9 @@ public class SessionManager {
         // Maybe try again using the full certificate chain bytes instead
 
         ByteString serverCertificateChainBs =
-            securityConfiguration.getServerCertificateChainBytes();
+            createdUnsecured
+                ? securityConfiguration.getServerCertificateChainBytes()
+                : original.certificateChainBytes();
 
         if (serverCertificateBs.equals(serverCertificateChainBs)) {
           throw e;

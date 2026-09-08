@@ -21,6 +21,7 @@ import java.security.cert.X509Certificate;
 import java.util.List;
 import org.eclipse.milo.opcua.sdk.server.SecurityConfiguration;
 import org.eclipse.milo.opcua.sdk.server.Session;
+import org.eclipse.milo.opcua.sdk.server.SessionServerCertificate;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.ChannelBoundSignatureData;
@@ -111,23 +112,33 @@ class AbstractX509IdentityValidatorTest {
       throws Exception {
 
     Session session = mock(Session.class);
-    when(session.getSecurityConfiguration())
-        .thenReturn(
-            new SecurityConfiguration(
-                channelPolicy,
-                securityMode,
-                null,
-                serverCertificate,
-                serverCertificate != null ? List.of(serverCertificate) : null,
-                null,
-                null));
+    SecurityConfiguration securityConfiguration =
+        new SecurityConfiguration(
+            channelPolicy,
+            securityMode,
+            null,
+            serverCertificate,
+            serverCertificate != null ? List.of(serverCertificate) : null,
+            null,
+            null);
+    when(session.getSecurityConfiguration()).thenReturn(securityConfiguration);
     when(session.getLastNonce()).thenReturn(SERVER_NONCE);
     when(session.getClientNonce()).thenReturn(ByteString.NULL_VALUE);
 
+    ByteString createSessionCertificate = ByteString.NULL_VALUE;
     if (serverCertificate != null && tokenPolicy != null) {
-      when(session.getEndpoint())
-          .thenReturn(endpoint(channelPolicy, securityMode, tokenPolicy, serverCertificate));
+      EndpointDescription endpoint =
+          endpoint(channelPolicy, securityMode, tokenPolicy, serverCertificate);
+      when(session.getEndpoint()).thenReturn(endpoint);
+      createSessionCertificate = endpoint.getServerCertificate();
     }
+    when(session.getOriginalServerCertificate())
+        .thenReturn(
+            new SessionServerCertificate(
+                createSessionCertificate,
+                securityConfiguration.getServerCertificate(),
+                securityConfiguration.getServerCertificateChain(),
+                null));
 
     return session;
   }

@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Set;
 import org.eclipse.milo.opcua.sdk.server.SecurityConfiguration;
 import org.eclipse.milo.opcua.sdk.server.Session;
+import org.eclipse.milo.opcua.sdk.server.SessionServerCertificate;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity.X509UserIdentity;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -172,10 +173,11 @@ public abstract class AbstractX509IdentityValidator extends AbstractIdentityVali
     // the peer and SecurityMode this is the endpoint (leaf) bytes, the server application
     // certificate bytes, or the full chain bytes; try each candidate to match a chain-returning
     // peer. A forged signature verifies against none of them, so trying several is safe.
+    SessionServerCertificate original = session.getOriginalServerCertificate();
     List<ByteString> serverCertificateCandidates = new ArrayList<>();
-    addCandidate(serverCertificateCandidates, session.getEndpoint().getServerCertificate());
-    addCandidate(serverCertificateCandidates, sc.getServerCertificateBytes());
-    addCandidate(serverCertificateCandidates, sc.getServerCertificateChainBytes());
+    addCandidate(serverCertificateCandidates, original.createSessionCertificate());
+    addCandidate(serverCertificateCandidates, original.certificateBytes());
+    addCandidate(serverCertificateCandidates, original.certificateChainBytes());
 
     UaException failure = null;
 

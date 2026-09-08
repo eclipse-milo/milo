@@ -17,6 +17,7 @@ import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import javax.crypto.Cipher;
 import org.eclipse.milo.opcua.sdk.server.Session;
+import org.eclipse.milo.opcua.sdk.server.SessionServerCertificate;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity.AnonymousIdentity;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity.IssuedIdentity;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity.UsernameIdentity;
@@ -177,9 +178,10 @@ public abstract class AbstractIdentityValidator implements IdentityValidator {
   protected byte[] decryptTokenData(Session session, SecurityAlgorithm algorithm, byte[] dataBytes)
       throws UaException {
 
+    SessionServerCertificate original = session.getOriginalServerCertificate();
+
     X509Certificate certificate =
-        CertificateUtil.decodeCertificate(
-            session.getEndpoint().getServerCertificate().bytesOrEmpty());
+        CertificateUtil.decodeCertificate(original.createSessionCertificate().bytesOrEmpty());
 
     int cipherTextBlockSize =
         SecureChannel.getAsymmetricCipherTextBlockSize(certificate, algorithm);
@@ -192,13 +194,17 @@ public abstract class AbstractIdentityValidator implements IdentityValidator {
     ByteBuffer passwordNioBuffer = ByteBuffer.wrap(dataBytes);
 
     try {
-      KeyPair keyPair =
-          session
-              .getServer()
-              .getConfig()
-              .getCertificateManager()
-              .getKeyPair(ByteString.of(DigestUtil.sha1(certificate.getEncoded())))
-              .orElseThrow(() -> new UaException(StatusCodes.Bad_SecurityChecksFailed));
+      // A retained Session still encrypts credentials to its original application certificate.
+      KeyPair keyPair = original.keyPair();
+      if (keyPair == null || !certificate.equals(original.certificate())) {
+        keyPair =
+            session
+                .getServer()
+                .getConfig()
+                .getCertificateManager()
+                .getKeyPair(ByteString.of(DigestUtil.sha1(certificate.getEncoded())))
+                .orElseThrow(() -> new UaException(StatusCodes.Bad_SecurityChecksFailed));
+      }
 
       Cipher cipher = getCipher(algorithm, keyPair);
 
