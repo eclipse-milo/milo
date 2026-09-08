@@ -27,7 +27,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaSubscription;
 import org.eclipse.milo.opcua.sdk.core.Reference;
@@ -989,15 +991,60 @@ public class ConditionSnapshotTest extends AbstractClientServerTest {
                     .highLimit(90.0)
                     .highHighLimit(95.0));
 
+    // A snapshot requested during a held state transition must wait for its complete state.
+    alarm.evaluate(10.0);
+    assertFalse(Boolean.TRUE.equals(alarm.captureSnapshot().trunk().orElseThrow().active()));
+    var transitionHeld = new CountDownLatch(1);
+    var releaseTransition = new CountDownLatch(1);
+    var captureRequested = new CountDownLatch(1);
+    var executor = Executors.newFixedThreadPool(2);
+    try {
+      var transition =
+          executor.submit(
+              () -> {
+                alarm.runLocked(
+                    () -> {
+                      alarm.evaluate(92.0);
+                      transitionHeld.countDown();
+                      assertTrue(
+                          releaseTransition.await(5, TimeUnit.SECONDS),
+                          "transition was not released");
+                      alarm.evaluate(96.0);
+                    });
+                return null;
+              });
+      assertTrue(transitionHeld.await(5, TimeUnit.SECONDS), "transition did not start");
+      var capture =
+          executor.submit(
+              () -> {
+                captureRequested.countDown();
+                return alarm.captureSnapshot();
+              });
+      assertTrue(captureRequested.await(5, TimeUnit.SECONDS), "capture did not start");
+      assertThrows(TimeoutException.class, () -> capture.get(100, TimeUnit.MILLISECONDS));
+      releaseTransition.countDown();
+      transition.get(5, TimeUnit.SECONDS);
+      ConditionSnapshot after = capture.get(5, TimeUnit.SECONDS);
+      assertSnapshotCoherent(after);
+      assertEquals(
+          Set.of(ExclusiveLimitState.HIGH_HIGH), after.trunk().orElseThrow().activeLimits());
+    } finally {
+      releaseTransition.countDown();
+      executor.shutdownNow();
+      assertTrue(executor.awaitTermination(5, TimeUnit.SECONDS), "snapshot workers did not stop");
+    }
+
     int iterations = 200;
     var start = new CountDownLatch(1);
+    var progressed = new CountDownLatch(2);
+    var observed = new CountDownLatch(1);
     var failure = new AtomicReference<Throwable>();
 
     Thread evaluator =
         new Thread(
             () -> {
               try {
-                start.await();
+                assertTrue(start.await(5, TimeUnit.SECONDS));
                 for (int i = 0; i < iterations; i++) {
                   double value =
                       switch (i % 3) {
@@ -1006,6 +1053,10 @@ public class ConditionSnapshotTest extends AbstractClientServerTest {
                         default -> 10.0;
                       };
                   alarm.evaluate(value);
+                  if (i == 0) {
+                    progressed.countDown();
+                    assertTrue(observed.await(5, TimeUnit.SECONDS));
+                  }
                 }
               } catch (Throwable e) {
                 failure.set(e);
@@ -1017,9 +1068,13 @@ public class ConditionSnapshotTest extends AbstractClientServerTest {
         new Thread(
             () -> {
               try {
-                start.await();
+                assertTrue(start.await(5, TimeUnit.SECONDS));
                 for (int i = 0; i < iterations; i++) {
                   alarm.setAcked(true);
+                  if (i == 0) {
+                    progressed.countDown();
+                    assertTrue(observed.await(5, TimeUnit.SECONDS));
+                  }
                 }
               } catch (Throwable e) {
                 failure.set(e);
@@ -1029,19 +1084,32 @@ public class ConditionSnapshotTest extends AbstractClientServerTest {
 
     evaluator.start();
     acknowledger.start();
-    start.countDown();
-
-    // Capture continuously while both mutators run: every snapshot must be a legal whole-state
-    // combination, i.e. one lock-consistent cut, never a torn mix of two transitions.
-    long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
-    while ((evaluator.isAlive() || acknowledger.isAlive()) && System.nanoTime() < deadline) {
+    int observations = 0;
+    try {
+      start.countDown();
+      assertTrue(progressed.await(5, TimeUnit.SECONDS), "both mutators must make progress");
       assertSnapshotCoherent(alarm.captureSnapshot());
-    }
+      observations++;
+      observed.countDown();
 
-    evaluator.join(10_000);
-    acknowledger.join(10_000);
-    assertFalse(evaluator.isAlive(), "evaluator did not finish");
-    assertFalse(acknowledger.isAlive(), "acknowledger did not finish");
+      long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+      while ((evaluator.isAlive() || acknowledger.isAlive()) && System.nanoTime() < deadline) {
+        assertSnapshotCoherent(alarm.captureSnapshot());
+        observations++;
+      }
+      evaluator.join(10_000);
+      acknowledger.join(10_000);
+      assertFalse(evaluator.isAlive(), "evaluator did not finish");
+      assertFalse(acknowledger.isAlive(), "acknowledger did not finish");
+      assertTrue(observations > 0, "stress run must capture after both mutators make progress");
+    } finally {
+      start.countDown();
+      observed.countDown();
+      evaluator.interrupt();
+      acknowledger.interrupt();
+      evaluator.join(5_000);
+      acknowledger.join(5_000);
+    }
     if (failure.get() != null) {
       throw new AssertionError("mutator thread failed", failure.get());
     }
