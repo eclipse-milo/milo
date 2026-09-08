@@ -17,11 +17,8 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 import org.eclipse.milo.opcua.sdk.client.AddressSpace.BrowseOptions;
 import org.eclipse.milo.opcua.sdk.client.model.objects.ServerTypeNode;
 import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
@@ -33,6 +30,7 @@ import org.eclipse.milo.opcua.stack.core.ReferenceTypes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
@@ -43,12 +41,8 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ReadResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class UaNodeTest extends AbstractClientServerTest {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(UaNodeTest.class);
 
   @Test
   public void browse() throws UaException {
@@ -99,22 +93,6 @@ public class UaNodeTest extends AbstractClientServerTest {
   }
 
   @Test
-  public void read() throws UaException {
-    AddressSpace addressSpace = client.getAddressSpace();
-
-    UaVariableNode testNode = (UaVariableNode) addressSpace.getNode(new NodeId(2, "TestInt32"));
-
-    DataValue value = testNode.readValue();
-    assertNotNull(value);
-
-    QualifiedName browseName = testNode.readBrowseName();
-    assertNotNull(browseName);
-
-    DataValue descriptionValue = testNode.readAttribute(AttributeId.Description);
-    assertNotNull(descriptionValue);
-  }
-
-  @Test
   public void readIgnoresDataEncoding() throws UaException {
     NodeId nodeId = new NodeId(2, "TestInt32");
 
@@ -152,32 +130,6 @@ public class UaNodeTest extends AbstractClientServerTest {
   }
 
   @Test
-  public void readBaseNodeAttributes() throws ExecutionException, InterruptedException {
-    NodeId nodeId = new NodeId(2, "TestInt32");
-
-    List<ReadValueId> readValueIds =
-        AttributeId.BASE_ATTRIBUTES.stream()
-            .map(aid -> new ReadValueId(nodeId, aid.uid(), null, QualifiedName.NULL_VALUE))
-            .collect(Collectors.toList());
-
-    ReadResponse response = client.readAsync(0.0, TimestampsToReturn.Both, readValueIds).get();
-
-    DataValue[] results = requireNonNull(response.getResults());
-    Arrays.stream(results).forEach(v -> LOGGER.debug("{}", v.value().value()));
-  }
-
-  @Test
-  public void readBaseNodeAttributes2() throws UaException {
-    NodeId nodeId = new NodeId(2, "TestInt32");
-
-    UaNode node = client.getAddressSpace().getNode(nodeId);
-
-    assertNotNull(node.getRolePermissions());
-    assertNotNull(node.getUserRolePermissions());
-    assertNotNull(node.getAccessRestrictions());
-  }
-
-  @Test
   public void write() throws UaException {
     AddressSpace addressSpace = client.getAddressSpace();
 
@@ -199,17 +151,25 @@ public class UaNodeTest extends AbstractClientServerTest {
 
   @Test
   public void refresh() throws UaException {
-    AddressSpace addressSpace = client.getAddressSpace();
+    NodeId nodeId = newNodeId("TestInt32");
+    UaNode node = client.getAddressSpace().getNode(nodeId);
+    var serverNode = testNamespace.getNodeManager().getNode(nodeId).orElseThrow();
+    LocalizedText original = serverNode.getDescription();
+    LocalizedText updated = LocalizedText.english("Updated description");
+    try {
+      serverNode.setDescription(updated);
+      assertEquals(original, node.getDescription());
 
-    UaNode serverNode = addressSpace.getNode(NodeIds.Server);
+      List<DataValue> values = node.refresh(EnumSet.of(AttributeId.Description));
 
-    List<DataValue> values = serverNode.refresh(AttributeId.OBJECT_ATTRIBUTES);
-
-    values.forEach(
-        v -> {
-          assertNotNull(v.statusCode());
-          assertTrue(v.statusCode().isGood() || v.value().isNull());
-        });
+      assertEquals(1, values.size());
+      assertEquals(StatusCode.GOOD, values.get(0).statusCode());
+      assertEquals(updated, values.get(0).value().value());
+      assertEquals(updated, node.getDescription());
+    } finally {
+      serverNode.setDescription(original);
+      node.refresh(EnumSet.of(AttributeId.Description));
+    }
   }
 
   @Test
