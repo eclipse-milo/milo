@@ -24,7 +24,6 @@ import java.security.cert.PKIXCertPathBuilderResult;
 import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
 import java.util.Date;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import org.bouncycastle.asn1.x500.X500Name;
@@ -155,10 +154,8 @@ class BrainpoolCertificateValidationTest {
 
     BrainpoolChain chain = generateCaSignedBrainpoolChain(keySize);
     X509CRL crl = generateCrl(chain, chain.leaf());
-    EnumSet<ValidationCheck> checks = EnumSet.of(ValidationCheck.REVOCATION);
-    if (requireCrl) {
-      checks.add(ValidationCheck.REVOCATION_LISTS);
-    }
+    Set<ValidationCheck> checks =
+        requireCrl ? Set.of(ValidationCheck.REVOCATION_LISTS) : ValidationCheck.NO_OPTIONAL_CHECKS;
 
     UaException e = assertThrows(UaException.class, () -> validateChain(chain, crl, checks));
 
@@ -175,12 +172,7 @@ class BrainpoolCertificateValidationTest {
     BrainpoolChain chain = generateCaSignedBrainpoolChain(keySize);
     X509CRL crl = generateCrl(chain);
 
-    assertDoesNotThrow(
-        () ->
-            validateChain(
-                chain,
-                crl,
-                EnumSet.of(ValidationCheck.REVOCATION, ValidationCheck.REVOCATION_LISTS)));
+    assertDoesNotThrow(() -> validateChain(chain, crl, Set.of(ValidationCheck.REVOCATION_LISTS)));
   }
 
   private static void validateChain(BrainpoolChain chain, X509CRL crl, Set<ValidationCheck> checks)

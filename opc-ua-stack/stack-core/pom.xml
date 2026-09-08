@@ -108,10 +108,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <argLine>
-            -Dio.netty.noReflectiveAccessible=false
-            --add-opens java.base/sun.security.provider.certpath=ALL-UNNAMED
-          </argLine>
+          <argLine>-Dio.netty.noReflectiveAccessible=false</argLine>
         </configuration>
       </plugin>
       <plugin>

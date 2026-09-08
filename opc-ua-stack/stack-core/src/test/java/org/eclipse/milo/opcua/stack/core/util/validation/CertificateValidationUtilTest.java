@@ -38,7 +38,6 @@ import java.security.cert.PKIXCertPathBuilderResult;
 import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
 import java.util.Date;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import org.bouncycastle.asn1.x500.X500Name;
@@ -63,12 +62,16 @@ import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
 import org.eclipse.milo.opcua.stack.core.util.validation.TestCertificateGenerator.TestCertificates;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class CertificateValidationUtilTest {
 
   static {
     Security.addProvider(new BouncyCastleProvider());
   }
+
+  private static final long ONE_DAY_MS = 24L * 60 * 60 * 1000;
 
   private static TestCertificates testCertificates;
   private static X509Certificate caIntermediate;
@@ -197,6 +200,45 @@ public class CertificateValidationUtilTest {
     assertEquals(StatusCodes.Bad_CertificateUseNotAllowed, exception.getStatusCode().getValue());
   }
 
+  // Part 4 §6.1.3 allows the validity-period error to be suppressed, and VALIDITY is absent from
+  // NO_OPTIONAL_CHECKS, so an expired but trusted self-signed certificate is accepted by default.
+  @Test
+  void expiredTrustedSelfSignedCertificateIsAcceptedWhenValidityCheckIsSuppressed()
+      throws Exception {
+    X509Certificate expired = createExpiredSelfSignedCertificate();
+
+    PKIXCertPathBuilderResult result =
+        buildTrustedCertPath(List.of(expired), Set.of(expired), emptySet());
+
+    validateTrustedCertPath(
+        result.getCertPath(),
+        result.getTrustAnchor(),
+        emptySet(),
+        ValidationCheck.NO_OPTIONAL_CHECKS,
+        true);
+  }
+
+  @Test
+  void expiredTrustedSelfSignedCertificateIsRejectedWhenValidityCheckIsEnabled() throws Exception {
+    X509Certificate expired = createExpiredSelfSignedCertificate();
+
+    PKIXCertPathBuilderResult result =
+        buildTrustedCertPath(List.of(expired), Set.of(expired), emptySet());
+
+    UaException e =
+        assertThrows(
+            UaException.class,
+            () ->
+                validateTrustedCertPath(
+                    result.getCertPath(),
+                    result.getTrustAnchor(),
+                    emptySet(),
+                    Set.of(ValidationCheck.VALIDITY),
+                    true));
+
+    assertEquals(StatusCodes.Bad_CertificateTimeInvalid, e.getStatusCode().value());
+  }
+
   @Test
   public void testBuildTrustedCertPath_LeafSelfSigned() throws Exception {
     List<X509Certificate> certificateChain = List.of(leafSelfSigned);
@@ -269,6 +311,8 @@ public class CertificateValidationUtilTest {
     }
   }
 
+  // A revocation established by an available CRL is enforced even under the default policy, which
+  // tolerates missing CRLs but never ignores one that is present (Part 4 §6.1.3).
   @Test
   public void testBuildAndValidate_LeafIntermediateSigned_Revoked() {
     // chain: leaf
@@ -298,14 +342,14 @@ public class CertificateValidationUtilTest {
                     pathBuilderResult.getCertPath(),
                     pathBuilderResult.getTrustAnchor(),
                     x509CRLS,
-                    EnumSet.of(ValidationCheck.REVOCATION),
+                    ValidationCheck.NO_OPTIONAL_CHECKS,
                     true);
 
                 validateTrustedCertPath(
                     pathBuilderResult.getCertPath(),
                     pathBuilderResult.getTrustAnchor(),
                     x509CRLS,
-                    EnumSet.of(ValidationCheck.REVOCATION),
+                    ValidationCheck.NO_OPTIONAL_CHECKS,
                     false);
               });
 
@@ -337,14 +381,14 @@ public class CertificateValidationUtilTest {
                     pathBuilderResult.getCertPath(),
                     pathBuilderResult.getTrustAnchor(),
                     x509CRLS,
-                    EnumSet.of(ValidationCheck.REVOCATION),
+                    ValidationCheck.NO_OPTIONAL_CHECKS,
                     true);
 
                 validateTrustedCertPath(
                     pathBuilderResult.getCertPath(),
                     pathBuilderResult.getTrustAnchor(),
                     x509CRLS,
-                    EnumSet.of(ValidationCheck.REVOCATION),
+                    ValidationCheck.NO_OPTIONAL_CHECKS,
                     false);
               });
 
@@ -431,14 +475,14 @@ public class CertificateValidationUtilTest {
                     pathBuilderResult.getCertPath(),
                     pathBuilderResult.getTrustAnchor(),
                     x509CRLS,
-                    EnumSet.of(ValidationCheck.REVOCATION),
+                    ValidationCheck.NO_OPTIONAL_CHECKS,
                     true);
 
                 CertificateValidationUtil.validateTrustedCertPath(
                     pathBuilderResult.getCertPath(),
                     pathBuilderResult.getTrustAnchor(),
                     x509CRLS,
-                    EnumSet.of(ValidationCheck.REVOCATION),
+                    ValidationCheck.NO_OPTIONAL_CHECKS,
                     false);
               });
 
@@ -547,11 +591,12 @@ public class CertificateValidationUtilTest {
   /**
    * A Global Discovery Server certificate group that offers more than one certificate type issues
    * one CA per type, all under the group's single configured subject name, and publishes a CRL for
-   * each. The trust list a client pulls then holds several same-named CAs, and PKIX selects a CRL
-   * by issuer name alone.
+   * each. The trust list a client pulls then holds several same-named CAs, and PKIX chooses
+   * candidate CRLs by issuer name.
    */
-  @Test
-  void revocationResolvesWhenSeveralCasShareASubjectName() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void revocationResolvesWhenSeveralCasShareASubjectName(boolean requireCrls) throws Exception {
     String sharedSubject = "Plant Default CA";
 
     KeyPair issuingCaKeyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
@@ -593,13 +638,18 @@ public class CertificateValidationUtilTest {
         pathBuilderResult.getCertPath(),
         pathBuilderResult.getTrustAnchor(),
         crls,
-        EnumSet.of(ValidationCheck.REVOCATION, ValidationCheck.REVOCATION_LISTS),
+        revocationPolicy(requireCrls),
         true);
   }
 
-  /** The revoking CRL must still be honored when a same-named CA's CRL is alongside it. */
-  @Test
-  void revocationIsDetectedWhenSeveralCasShareASubjectName() throws Exception {
+  /**
+   * The revoking CRL must still be honored when a same-named CA's CRL is alongside it. This matters
+   * most when unknown status is tolerated: handed both CRLs unfiltered, PKIX reports the status as
+   * unknown, and the tolerated unknown status would hide the revocation.
+   */
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void revocationIsDetectedWhenSeveralCasShareASubjectName(boolean requireCrls) throws Exception {
     String sharedSubject = "Plant Default CA";
 
     KeyPair issuingCaKeyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
@@ -643,10 +693,16 @@ public class CertificateValidationUtilTest {
                     pathBuilderResult.getCertPath(),
                     pathBuilderResult.getTrustAnchor(),
                     crls,
-                    EnumSet.of(ValidationCheck.REVOCATION, ValidationCheck.REVOCATION_LISTS),
+                    revocationPolicy(requireCrls),
                     true));
 
     assertEquals(new StatusCode(StatusCodes.Bad_CertificateRevoked), e.getStatusCode());
+  }
+
+  private static Set<ValidationCheck> revocationPolicy(boolean requireCrls) {
+    return requireCrls
+        ? Set.of(ValidationCheck.REVOCATION_LISTS)
+        : ValidationCheck.NO_OPTIONAL_CHECKS;
   }
 
   private static X509Certificate createSharedNameCa(KeyPair keyPair, String commonName)
@@ -683,13 +739,32 @@ public class CertificateValidationUtilTest {
     return builder.build();
   }
 
+  private static X509Certificate createExpiredSelfSignedCertificate() throws Exception {
+    KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    long now = System.currentTimeMillis();
+
+    return createCertificateWithKeys(
+        keyPair.getPublic(),
+        keyPair.getPrivate(),
+        new Date(now - 2 * ONE_DAY_MS),
+        new Date(now - ONE_DAY_MS));
+  }
+
   private static X509Certificate createCertificateWithKeys(
       PublicKey publicKey, PrivateKey privateKey) throws Exception {
 
+    return createCertificateWithKeys(
+        publicKey,
+        privateKey,
+        new Date(System.currentTimeMillis() - ONE_DAY_MS),
+        new Date(System.currentTimeMillis() + 365 * ONE_DAY_MS));
+  }
+
+  private static X509Certificate createCertificateWithKeys(
+      PublicKey publicKey, PrivateKey privateKey, Date notBefore, Date notAfter) throws Exception {
+
     X500Name subject = new X500Name("CN=Test Certificate");
     BigInteger serialNumber = BigInteger.valueOf(System.currentTimeMillis());
-    Date notBefore = new Date(System.currentTimeMillis() - 86400000);
-    Date notAfter = new Date(System.currentTimeMillis() + 31536000000L);
 
     SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfo.getInstance(publicKey.getEncoded());
 

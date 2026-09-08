@@ -45,11 +45,37 @@ public final class CrlTestUtil {
   public static X509CRL generateCrl(
       X509Certificate issuer, PrivateKey issuerKey, X509Certificate... revoked) throws Exception {
 
+    return generateCrl(
+        issuer, issuerKey, new Date(), new Date(System.currentTimeMillis() + 60_000), revoked);
+  }
+
+  /**
+   * Generate a CRL issued by {@code issuer} with an explicit validity window.
+   *
+   * <p>Use this to produce CRLs that are expired or not yet valid. The JDK's PKIX revocation
+   * checker allows 15 minutes of clock skew, so offset the window by more than that.
+   *
+   * @param issuer the issuing certificate.
+   * @param issuerKey the private key matching {@code issuer}.
+   * @param thisUpdate the CRL's thisUpdate time.
+   * @param nextUpdate the CRL's nextUpdate time.
+   * @param revoked the certificates to list as revoked; may be empty.
+   * @return a signed {@link X509CRL}.
+   * @throws Exception if building or signing the CRL fails.
+   */
+  public static X509CRL generateCrl(
+      X509Certificate issuer,
+      PrivateKey issuerKey,
+      Date thisUpdate,
+      Date nextUpdate,
+      X509Certificate... revoked)
+      throws Exception {
+
     var builder =
         new X509v2CRLBuilder(
-            X500Name.getInstance(issuer.getSubjectX500Principal().getEncoded()), new Date());
+            X500Name.getInstance(issuer.getSubjectX500Principal().getEncoded()), thisUpdate);
 
-    builder.setNextUpdate(new Date(System.currentTimeMillis() + 60_000));
+    builder.setNextUpdate(nextUpdate);
 
     // Real CAs identify their signing key on the CRL, and PKIX uses it to choose a signer when
     // more than one certificate carries the issuer name.

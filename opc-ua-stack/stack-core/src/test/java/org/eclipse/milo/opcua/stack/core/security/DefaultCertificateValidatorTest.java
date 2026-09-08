@@ -10,12 +10,16 @@
 
 package org.eclipse.milo.opcua.stack.core.security;
 
+import static org.eclipse.milo.opcua.stack.core.util.validation.TestCertificateGenerator.ALIAS_CA_INTERMEDIATE;
+import static org.eclipse.milo.opcua.stack.core.util.validation.TestCertificateGenerator.ALIAS_CA_ROOT;
+import static org.eclipse.milo.opcua.stack.core.util.validation.TestCertificateGenerator.ALIAS_LEAF_INTERMEDIATE_SIGNED;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
 import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
 import java.util.List;
@@ -25,17 +29,39 @@ import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.cert.CertIOException;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.util.CrlTestUtil;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
 import org.eclipse.milo.opcua.stack.core.util.validation.CaSignedCertificateBuilder;
+import org.eclipse.milo.opcua.stack.core.util.validation.TestCertificateGenerator;
+import org.eclipse.milo.opcua.stack.core.util.validation.TestCertificateGenerator.TestCertificates;
 import org.eclipse.milo.opcua.stack.core.util.validation.ValidationCheck;
 import org.jspecify.annotations.NullMarked;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @NullMarked
 class DefaultCertificateValidatorTest {
+
+  // A CA-signed chain shared by the revocation tests: leaf issued by the intermediate, which is
+  // issued by the root. None of those tests mutate the certificates.
+  private static X509Certificate caRoot;
+  private static X509Certificate caIntermediate;
+  private static X509Certificate caSignedLeaf;
+  private static PrivateKey caIntermediateKey;
+
+  @BeforeAll
+  static void generateCaSignedChain() throws Exception {
+    TestCertificates certificates = TestCertificateGenerator.generateAll();
+
+    caRoot = certificates.getCertificate(ALIAS_CA_ROOT);
+    caIntermediate = certificates.getCertificate(ALIAS_CA_INTERMEDIATE);
+    caSignedLeaf = certificates.getCertificate(ALIAS_LEAF_INTERMEDIATE_SIGNED);
+    caIntermediateKey = certificates.getPrivateKey(ALIAS_CA_INTERMEDIATE);
+  }
 
   @Test
   void defaultClientValidatorCanUseProfileAwareEccUsageChecks() throws Exception {
@@ -276,6 +302,71 @@ class DefaultCertificateValidatorTest {
     assertEquals(1, trustListManager.snapshotReads.get());
   }
 
+  // The convenience constructors select NO_OPTIONAL_CHECKS. Part 4 §6.1.3 lets the missing-CRL
+  // error be suppressed, so a CA-signed chain must validate with no CRL in the trust list.
+  @Test
+  void defaultClientValidatorAcceptsCaSignedChainWithoutCrls() {
+    var validator =
+        new DefaultClientCertificateValidator(caTrustList(), new MemoryCertificateQuarantine());
+
+    assertDoesNotThrow(() -> validator.validateCertificateChain(List.of(caSignedLeaf), null, null));
+  }
+
+  // A revocation established by a CRL may not be suppressed (Part 4 §6.1.3), so the default
+  // validators enforce a CRL that is present without any revocation check being opted into.
+  @Test
+  void defaultClientValidatorRejectsRevokedCertificateWithoutOptingIntoRevocationChecks()
+      throws Exception {
+    MemoryTrustListManager trustListManager = caTrustList();
+    trustListManager.setTrustedCrls(List.of(crlRevoking(caSignedLeaf)));
+    var validator =
+        new DefaultClientCertificateValidator(trustListManager, new MemoryCertificateQuarantine());
+
+    UaException e =
+        assertThrows(
+            UaException.class,
+            () -> validator.validateCertificateChain(List.of(caSignedLeaf), null, null));
+
+    assertEquals(StatusCodes.Bad_CertificateRevoked, e.getStatusCode().value());
+  }
+
+  // Servers report a revoked peer with the less informative Bad_SecurityChecksFailed.
+  @Test
+  void defaultServerValidatorRejectsRevokedCertificateWithoutOptingIntoRevocationChecks()
+      throws Exception {
+    MemoryTrustListManager trustListManager = caTrustList();
+    trustListManager.setTrustedCrls(List.of(crlRevoking(caSignedLeaf)));
+    var validator =
+        new DefaultServerCertificateValidator(trustListManager, new MemoryCertificateQuarantine());
+
+    UaException e =
+        assertThrows(
+            UaException.class,
+            () -> validator.validateCertificateChain(List.of(caSignedLeaf), null, null));
+
+    assertEquals(StatusCodes.Bad_SecurityChecksFailed, e.getStatusCode().value());
+  }
+
+  // Each validation reads the trust list's current snapshot, so a CRL published after a peer was
+  // accepted revokes that peer on its next validation without recreating the validator.
+  @Test
+  void crlAddedToTrustListRevokesCertificateOnSubsequentValidation() throws Exception {
+    MemoryTrustListManager trustListManager = caTrustList();
+    var validator =
+        new DefaultClientCertificateValidator(trustListManager, new MemoryCertificateQuarantine());
+
+    assertDoesNotThrow(() -> validator.validateCertificateChain(List.of(caSignedLeaf), null, null));
+
+    trustListManager.setTrustedCrls(List.of(crlRevoking(caSignedLeaf)));
+
+    UaException e =
+        assertThrows(
+            UaException.class,
+            () -> validator.validateCertificateChain(List.of(caSignedLeaf), null, null));
+
+    assertEquals(StatusCodes.Bad_CertificateRevoked, e.getStatusCode().value());
+  }
+
   private static X509Certificate createMinimalEccCertificate() throws Exception {
     KeyPair keyPair = SelfSignedCertificateGenerator.generateNistP256KeyPair();
 
@@ -429,4 +520,17 @@ class DefaultCertificateValidatorTest {
   }
 
   private record CertificateChain(X509Certificate certificate, X509Certificate issuerCertificate) {}
+
+  /** A trust list that trusts the root and can build a path through the intermediate. */
+  private static MemoryTrustListManager caTrustList() {
+    MemoryTrustListManager trustListManager = new MemoryTrustListManager();
+    trustListManager.addTrustedCertificate(caRoot);
+    trustListManager.addIssuerCertificate(caIntermediate);
+    return trustListManager;
+  }
+
+  /** A CRL from the leaf's issuer listing {@code revoked}. */
+  private static X509CRL crlRevoking(X509Certificate... revoked) throws Exception {
+    return CrlTestUtil.generateCrl(caIntermediate, caIntermediateKey, revoked);
+  }
 }
