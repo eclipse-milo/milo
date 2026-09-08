@@ -14,10 +14,12 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.time.Duration;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
@@ -200,6 +202,52 @@ public class EventContentFilterTest {
 
       assertTrue(elementResult.getStatusCode().isGood());
       assertTrue(elementResult.getOperandStatusCodes()[0].isGood());
+    }
+  }
+
+  @Nested
+  class ElementOperandEvaluation {
+
+    // Each element is evaluated at most once per event. A chain in which every element references
+    // the next one twice would otherwise require 2^n evaluations; And only short-circuits on
+    // FALSE, so a TRUE-terminated chain forces both operands at every level.
+    @Test
+    void sharedElementIsEvaluatedOncePerEvent() {
+      int chainLength = 48;
+      ContentFilterElement[] elements = new ContentFilterElement[chainLength];
+
+      for (int i = 0; i < chainLength - 1; i++) {
+        elements[i] = element(FilterOperator.And, elementOperand(i + 1), elementOperand(i + 1));
+      }
+      elements[chainLength - 1] = element(FilterOperator.Equals, literal(1), literal(1));
+
+      boolean result =
+          assertTimeoutPreemptively(
+              Duration.ofSeconds(10),
+              () ->
+                  EventContentFilter.evaluate(
+                      filterContext(), new ContentFilter(elements), mock(BaseEventTypeNode.class)));
+
+      assertTrue(result);
+    }
+
+    // The evaluation result cache must not defeat cycle detection, which happens while the
+    // referenced element is still on the evaluation path and not yet cached.
+    @Test
+    void cyclicElementOperandFailsEvaluationWithBadFilterOperandInvalid() {
+      ContentFilterElement[] elements = {
+        element(FilterOperator.And, elementOperand(1), literal(true)),
+        element(FilterOperator.Not, elementOperand(0))
+      };
+
+      UaException e =
+          assertThrows(
+              UaException.class,
+              () ->
+                  EventContentFilter.evaluate(
+                      filterContext(), new ContentFilter(elements), mock(BaseEventTypeNode.class)));
+
+      assertEquals(StatusCodes.Bad_FilterOperandInvalid, e.getStatusCode().value());
     }
   }
 
