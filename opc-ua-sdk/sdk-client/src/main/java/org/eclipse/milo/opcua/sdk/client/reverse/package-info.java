@@ -101,6 +101,11 @@
  * consumes one pre-claimed connection directly, installs the standard client UASC pipeline, and
  * then lets the Session FSM create and maintain the Session as it would for outbound TCP.
  *
+ * <p>Failed attempts retain the shared UASC pipeline's handshake phase when reported to channel
+ * observers, including when the peer closes the socket without an error response. SecureChannel
+ * establishment failures can trigger endpoint refresh on secured clients with a resolver; failures
+ * before SecureChannel establishment do not.
+ *
  * <p>Shutdown fences listener installation, including a startup still in application bootstrap
  * customization. A selector owns only its pending claim: cancelling or exceptionally completing the
  * registration future removes the selector, and a claim that races that completion closes its

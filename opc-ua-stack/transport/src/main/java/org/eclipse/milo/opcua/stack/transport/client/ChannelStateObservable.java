@@ -39,7 +39,10 @@ public interface ChannelStateObservable {
    */
   void removeTransitionListener(TransitionListener listener);
 
-  /** Callback notified when a client transport gains or loses a usable channel. */
+  /**
+   * Callback notified when a client transport gains or loses a usable channel, and when an attempt
+   * to establish one fails.
+   */
   @FunctionalInterface
   interface TransitionListener {
 
@@ -50,5 +53,21 @@ public interface ChannelStateObservable {
      *     the current channel leaves service.
      */
     void onStateTransition(boolean connected);
+
+    /**
+     * Invoked when a connection attempt fails before a channel becomes ready for service.
+     *
+     * <p>The transport keeps reconnecting on its own schedule; this callback lets the application
+     * react to the cause, for example by refreshing cached discovery information after a security
+     * failure, before the next attempt reads {@link ClientApplicationContext#getEndpoint()}.
+     *
+     * <p>Failures during SecureChannel establishment must include a {@link
+     * SecureChannelHandshakeException} in the cause chain. Transport connection and
+     * Hello/Acknowledge failures must not use that marker. This lets callers refresh discovery
+     * without depending on particular server status codes.
+     *
+     * @param failure the cause of the failed attempt, including the server status when available.
+     */
+    default void onConnectFailure(Throwable failure) {}
   }
 }

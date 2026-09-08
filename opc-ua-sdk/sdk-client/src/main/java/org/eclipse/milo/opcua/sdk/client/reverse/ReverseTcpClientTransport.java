@@ -27,9 +27,11 @@ import org.eclipse.milo.opcua.stack.transport.client.AbstractUascClientTransport
 import org.eclipse.milo.opcua.stack.transport.client.ChannelStateObservable;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.client.CurrentChannelProvider;
+import org.eclipse.milo.opcua.stack.transport.client.SecureChannelHandshakeException;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientChannelInitializer;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportConfig;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.ClientSecureChannel;
+import org.eclipse.milo.opcua.stack.transport.client.uasc.UascClientMessageHandler;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -530,10 +532,16 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
         .addListener(
             future -> {
               if (!handshakeFuture.isDone()) {
-                handshakeFuture.completeExceptionally(
+                var failure =
                     new UaException(
                         StatusCodes.Bad_ConnectionClosed,
-                        "reverse-connect channel closed before handshake completed"));
+                        "reverse-connect channel closed before handshake completed");
+                // Netty completes closeFuture before firing channelInactive. If the OPN handler
+                // is installed, preserve its phase marker here before it can report the closure.
+                handshakeFuture.completeExceptionally(
+                    channel.pipeline().get(UascClientMessageHandler.class) != null
+                        ? new SecureChannelHandshakeException(failure)
+                        : failure);
               }
             });
 
@@ -578,6 +586,7 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
 
                   targetFuture.completeExceptionally(failure);
                   channel.close();
+                  notifyConnectFailure(failure);
 
                   if (nextFuture != null) {
                     registerForNextChannel(nextFuture);
@@ -704,6 +713,16 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
     }
 
     channelFuture = CompletableFuture.failedFuture(failure);
+  }
+
+  private void notifyConnectFailure(Throwable failure) {
+    for (ChannelStateObservable.TransitionListener listener : transitionListeners) {
+      try {
+        listener.onConnectFailure(failure);
+      } catch (Throwable t) {
+        logger.warn("Channel connect failure listener failed.", t);
+      }
+    }
   }
 
   private void drainTransitionNotifications() {

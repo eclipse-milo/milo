@@ -35,13 +35,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.channel.messages.AcknowledgeMessage;
+import org.eclipse.milo.opcua.stack.core.channel.messages.ErrorMessage;
 import org.eclipse.milo.opcua.stack.core.channel.messages.HelloMessage;
 import org.eclipse.milo.opcua.stack.core.channel.messages.MessageType;
 import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageDecoder;
+import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageEncoder;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
@@ -59,12 +64,50 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
+import org.eclipse.milo.opcua.stack.transport.client.SecureChannelHandshakeException;
+import org.eclipse.milo.opcua.stack.transport.client.uasc.ClientSecureChannel;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.InboundUascResponseHandler.DelegatingUascResponseHandler;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.UascClientAcknowledgeHandler;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.UascResponseHandler;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class OpcTcpClientChannelInitializerTest {
+
+  // Identical wire errors must retain the handshake phase so only OPN failures prompt discovery.
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void marksErrorOnlyAfterAcknowledge(boolean acknowledged) throws Exception {
+    var channel = new EmbeddedChannel();
+    var wheelTimer = new HashedWheelTimer();
+    var handshake = new CompletableFuture<ClientSecureChannel>();
+    try {
+      OpcTcpClientChannelInitializer.initializeOutboundChannel(
+          channel,
+          newClientConfig(wheelTimer),
+          newClientApplicationContext("opc.tcp://localhost:12685/milo"),
+          NoopResponseHandler.INSTANCE,
+          new AtomicLong(1)::getAndIncrement,
+          handshake);
+      if (acknowledged) {
+        channel.writeInbound(
+            TcpMessageEncoder.encode(new AcknowledgeMessage(0, 65535, 65535, 0, 0)));
+        channel.runPendingTasks();
+      }
+      channel.writeInbound(
+          TcpMessageEncoder.encode(new ErrorMessage(StatusCodes.Bad_UnexpectedError, "rejected")));
+      ExecutionException failure =
+          assertThrows(ExecutionException.class, () -> handshake.get(2, TimeUnit.SECONDS));
+      assertEquals(acknowledged, failure.getCause() instanceof SecureChannelHandshakeException);
+      assertEquals(
+          StatusCodes.Bad_UnexpectedError,
+          UaException.extractStatusCode(failure).orElseThrow().value());
+    } finally {
+      channel.finishAndReleaseAll();
+      wheelTimer.stop();
+    }
+  }
 
   @Test
   void outboundInitializerUsesApplicationEndpointUrl() throws Exception {

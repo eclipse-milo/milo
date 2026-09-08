@@ -49,6 +49,8 @@ import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfig;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.channel.messages.AcknowledgeMessage;
+import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageEncoder;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
@@ -58,12 +60,17 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
+import org.eclipse.milo.opcua.stack.transport.client.ChannelStateObservable;
+import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
+import org.eclipse.milo.opcua.stack.transport.client.SecureChannelHandshakeException;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportConfig;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.ClientSecureChannel;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.UascClientAcknowledgeHandler;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class ReverseTcpClientTransportTest {
 
@@ -422,6 +429,73 @@ class ReverseTcpClientTransportTest {
       channel.finishAndReleaseAll();
       timer.stop();
     }
+  }
+
+  // A socket close must preserve the OPN phase for endpoint refresh, while earlier closes must
+  // still settle connect without suggesting stale discovery data.
+  @ParameterizedTest
+  @EnumSource(HandshakeClosePhase.class)
+  void silentCloseReportsHandshakePhase(HandshakeClosePhase phase) throws Exception {
+    var channel = new EmbeddedChannel();
+    var timer = new HashedWheelTimer();
+    var transport =
+        new ReverseTcpClientTransport(
+            OpcTcpClientTransportConfig.newBuilder()
+                .setExecutor(executor())
+                .setScheduledExecutor(scheduledExecutor())
+                .setWheelTimer(timer)
+                .build(),
+            newConnection(channel));
+    var client = new OpcUaClient(clientConfig(), transport);
+    var reportedFailure = new CompletableFuture<Throwable>();
+    transport.addTransitionListener(
+        new ChannelStateObservable.TransitionListener() {
+          @Override
+          public void onStateTransition(boolean connected) {}
+
+          @Override
+          public void onConnectFailure(Throwable failure) {
+            reportedFailure.complete(failure);
+          }
+        });
+    try {
+      CompletableFuture<?> connected =
+          transport.connect(
+              (ClientApplicationContext)
+                  declaredField(OpcUaClient.class, "applicationContext").get(client));
+      if (phase != HandshakeClosePhase.BEFORE_INITIALIZATION) {
+        channel.runPendingTasks();
+      }
+      if (phase == HandshakeClosePhase.WAITING_FOR_OPEN_SECURE_CHANNEL) {
+        channel.writeInbound(
+            TcpMessageEncoder.encode(new AcknowledgeMessage(0, 65535, 65535, 0, 0)));
+        channel.runPendingTasks();
+      }
+
+      // EmbeddedChannel.close() drains pending tasks first, which would initialize the pipeline
+      // before the BEFORE_INITIALIZATION case can close the socket.
+      channel.pipeline().close();
+      channel.runPendingTasks();
+
+      Throwable failure = reportedFailure.get(5, TimeUnit.SECONDS);
+      assertEquals(
+          phase == HandshakeClosePhase.WAITING_FOR_OPEN_SECURE_CHANNEL,
+          failure instanceof SecureChannelHandshakeException);
+      assertEquals(
+          StatusCodes.Bad_ConnectionClosed,
+          UaException.extractStatusCode(failure).orElseThrow().value());
+      assertTerminalConnectionClosed(connected);
+    } finally {
+      transport.disconnect().get(5, TimeUnit.SECONDS);
+      channel.finishAndReleaseAll();
+      timer.stop();
+    }
+  }
+
+  enum HandshakeClosePhase {
+    BEFORE_INITIALIZATION,
+    WAITING_FOR_ACKNOWLEDGE,
+    WAITING_FOR_OPEN_SECURE_CHANNEL
   }
 
   private OpcTcpClientTransportConfig transportConfig() {

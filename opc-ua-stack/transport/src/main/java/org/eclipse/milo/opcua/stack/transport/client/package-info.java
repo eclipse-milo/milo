@@ -50,5 +50,14 @@
  * response or failure has been consumed. Caller continuations should return promptly because this
  * fallback may run on an I/O or timer thread. Publish responses pass through a dedicated {@code
  * ExecutionQueue} that preserves their order across normal dispatch and rejection fallback.
+ *
+ * <p>Each connection attempt reads {@link ClientApplicationContext#getEndpoint()} afresh, and
+ * transports that implement {@link ChannelStateObservable} report failed attempts through {@link
+ * ChannelStateObservable.TransitionListener#onConnectFailure}. Failures during SecureChannel
+ * establishment carry a {@link SecureChannelHandshakeException}, including local validation errors,
+ * server errors, timeouts, and connection closure during that phase. TCP and Hello/Acknowledge
+ * failures do not carry this marker. The SDK uses this boundary to refresh discovery without
+ * relying on server status codes; the next attempt reads the updated endpoint. Transports have no
+ * dependency on SDK discovery, and an established channel's certificate binding never changes.
  */
 package org.eclipse.milo.opcua.stack.transport.client;
