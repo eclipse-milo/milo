@@ -34,6 +34,7 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.FilterOperator;
 import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilterElement;
 import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilterElementResult;
+import org.eclipse.milo.opcua.stack.core.types.structured.ElementOperand;
 import org.eclipse.milo.opcua.stack.core.types.structured.EventFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.EventFilterResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.FilterOperand;
@@ -42,6 +43,8 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 public class EventContentFilterTest {
 
@@ -154,6 +157,52 @@ public class EventContentFilterTest {
     }
   }
 
+  @Nested
+  class ElementOperandValidation {
+
+    /**
+     * Part 4 §7.7.4.2: an ElementOperand index is valid only if it is greater than the index of the
+     * element it is part of and it references an existing element.
+     */
+    @ParameterizedTest(name = "element {0} referencing element {1}")
+    @CsvSource({"0, 0", "1, 0", "1, 1", "0, 2", "1, 2"})
+    void backwardSelfOrOutOfRangeElementOperandIsRejected(int elementIndex, int referencedIndex)
+        throws Exception {
+
+      ContentFilterElement[] elements = new ContentFilterElement[2];
+      elements[elementIndex] = element(FilterOperator.Not, elementOperand(referencedIndex));
+      elements[1 - elementIndex] = element(FilterOperator.IsNull, literal(null));
+
+      EventFilterResult result =
+          EventContentFilter.validate(filterContext(), eventFilter(elements));
+
+      ContentFilterElementResult elementResult =
+          result.getWhereClauseResult().getElementResults()[elementIndex];
+
+      assertEquals(
+          StatusCodes.Bad_FilterOperandInvalid,
+          elementResult.getOperandStatusCodes()[0].value(),
+          "operand status code");
+    }
+
+    @Test
+    void forwardElementOperandIsAccepted() throws Exception {
+      ContentFilterElement[] elements = {
+        element(FilterOperator.Not, elementOperand(1)),
+        element(FilterOperator.IsNull, literal(null))
+      };
+
+      EventFilterResult result =
+          EventContentFilter.validate(filterContext(), eventFilter(elements));
+
+      ContentFilterElementResult elementResult =
+          result.getWhereClauseResult().getElementResults()[0];
+
+      assertTrue(elementResult.getStatusCode().isGood());
+      assertTrue(elementResult.getOperandStatusCodes()[0].isGood());
+    }
+  }
+
   private static FilterContext filterContext() {
     OpcUaServer server = mock(OpcUaServer.class);
     when(server.getStaticEncodingContext()).thenReturn(DefaultEncodingContext.INSTANCE);
@@ -188,5 +237,9 @@ public class EventContentFilterTest {
 
   private static LiteralOperand literal(Object value) {
     return new LiteralOperand(new Variant(value));
+  }
+
+  private static ElementOperand elementOperand(int index) {
+    return new ElementOperand(uint(index));
   }
 }

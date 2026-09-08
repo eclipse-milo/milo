@@ -202,16 +202,21 @@ public class EventContentFilter {
       return new ContentFilterResult(new ContentFilterElementResult[0], new DiagnosticInfo[0]);
     }
 
-    ContentFilterElementResult[] elementResults =
-        Arrays.stream(filterElements)
-            .map(e -> validateFilterElement(context, e))
-            .toArray(ContentFilterElementResult[]::new);
+    var elementResults = new ContentFilterElementResult[filterElements.length];
+
+    for (int i = 0; i < filterElements.length; i++) {
+      elementResults[i] =
+          validateFilterElement(context, filterElements[i], i, filterElements.length);
+    }
 
     return new ContentFilterResult(elementResults, new DiagnosticInfo[0]);
   }
 
   private static ContentFilterElementResult validateFilterElement(
-      @NonNull FilterContext context, @NonNull ContentFilterElement filterElement) {
+      @NonNull FilterContext context,
+      @NonNull ContentFilterElement filterElement,
+      int elementIndex,
+      int elementCount) {
 
     FilterOperator filterOperator = filterElement.getFilterOperator();
 
@@ -253,8 +258,9 @@ public class EventContentFilter {
           } catch (ValidationException e) {
             operandStatusCodes[i] = e.getStatusCode();
           }
-        } else if (operand instanceof ElementOperand) {
-          operandStatusCodes[i] = StatusCode.GOOD;
+        } else if (operand instanceof ElementOperand elementOperand) {
+          operandStatusCodes[i] =
+              validateElementOperand(elementOperand, elementIndex, elementCount);
         } else if (operand instanceof LiteralOperand) {
           operandStatusCodes[i] = StatusCode.GOOD;
         } else {
@@ -277,6 +283,22 @@ public class EventContentFilter {
 
     return new ContentFilterElementResult(
         operatorStatus, operandStatusCodes, new DiagnosticInfo[0]);
+  }
+
+  /**
+   * Part 4 §7.7.4.2: an ElementOperand index is valid only if it is greater than the index of the
+   * element it is part of and it does not reference a non-existent element.
+   */
+  private static StatusCode validateElementOperand(
+      ElementOperand operand, int elementIndex, int elementCount) {
+
+    UInteger index = operand.getIndex();
+
+    if (index == null || index.longValue() <= elementIndex || index.longValue() >= elementCount) {
+      return new StatusCode(StatusCodes.Bad_FilterOperandInvalid);
+    }
+
+    return StatusCode.GOOD;
   }
 
   public static Variant[] select(
