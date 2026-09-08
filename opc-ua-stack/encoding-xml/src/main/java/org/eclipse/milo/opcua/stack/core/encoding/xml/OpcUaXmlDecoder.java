@@ -415,7 +415,7 @@ public class OpcUaXmlDecoder implements UaDecoder, AutoCloseable {
       try {
         long code = 0L;
 
-        Node codeNode = currentNode.getFirstChild();
+        Node codeNode = firstElementChild(currentNode);
 
         if (codeNode != null) {
           code = DatatypeConverter.parseUnsignedInt(codeNode.getTextContent());
