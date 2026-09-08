@@ -22,6 +22,7 @@ import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -102,20 +103,26 @@ class DefaultCertificateValidatorTest {
   @Test
   void defaultClientValidatorRejectsX25519CertificateForCurve25519Profile() throws Exception {
     CertificateChain certificateChain = createX25519CertificateChain();
+    // This fixture has no CRL; allow unknown revocation status to reach the compatibility check.
+    Set<ValidationCheck> validationChecks = EnumSet.copyOf(ValidationCheck.ALL_OPTIONAL_CHECKS);
+    validationChecks.remove(ValidationCheck.REVOCATION_LISTS);
     DefaultClientCertificateValidator validator =
         new DefaultClientCertificateValidator(
             trustListManager(certificateChain.issuerCertificate()),
-            ValidationCheck.ALL_OPTIONAL_CHECKS,
+            validationChecks,
             new MemoryCertificateQuarantine());
 
-    assertThrows(
-        UaException.class,
-        () ->
-            validator.validateCertificateChain(
-                List.of(certificateChain.certificate(), certificateChain.issuerCertificate()),
-                null,
-                null,
-                SecurityPolicy.ECC_curve25519_ChaChaPoly.getProfile()));
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                validator.validateCertificateChain(
+                    List.of(certificateChain.certificate(), certificateChain.issuerCertificate()),
+                    null,
+                    null,
+                    SecurityPolicy.ECC_curve25519_ChaChaPoly.getProfile()));
+
+    assertEquals(StatusCodes.Bad_CertificateUseNotAllowed, exception.getStatusCode().getValue());
   }
 
   // Curve448 has the same certificate/key-agreement split: Ed448 authenticates the application, and
@@ -123,20 +130,26 @@ class DefaultCertificateValidatorTest {
   @Test
   void defaultClientValidatorRejectsX448CertificateForCurve448Profile() throws Exception {
     CertificateChain certificateChain = createX448CertificateChain();
+    // This fixture has no CRL; allow unknown revocation status to reach the compatibility check.
+    Set<ValidationCheck> validationChecks = EnumSet.copyOf(ValidationCheck.ALL_OPTIONAL_CHECKS);
+    validationChecks.remove(ValidationCheck.REVOCATION_LISTS);
     DefaultClientCertificateValidator validator =
         new DefaultClientCertificateValidator(
             trustListManager(certificateChain.issuerCertificate()),
-            ValidationCheck.ALL_OPTIONAL_CHECKS,
+            validationChecks,
             new MemoryCertificateQuarantine());
 
-    assertThrows(
-        UaException.class,
-        () ->
-            validator.validateCertificateChain(
-                List.of(certificateChain.certificate(), certificateChain.issuerCertificate()),
-                null,
-                null,
-                SecurityPolicy.ECC_curve448_ChaChaPoly.getProfile()));
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                validator.validateCertificateChain(
+                    List.of(certificateChain.certificate(), certificateChain.issuerCertificate()),
+                    null,
+                    null,
+                    SecurityPolicy.ECC_curve448_ChaChaPoly.getProfile()));
+
+    assertEquals(StatusCodes.Bad_CertificateUseNotAllowed, exception.getStatusCode().getValue());
   }
 
   @Test
