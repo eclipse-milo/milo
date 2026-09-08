@@ -34,7 +34,8 @@ public enum ValidationCheck {
    * <p>The trust anchor is a trusted self-signed application certificate, or the root CA of a
    * trusted path. Certificates issued by a CA are outside this check's control: the PKIX path
    * builder enforces their validity period unconditionally, and an expired one fails path
-   * construction whether or not this check is present.
+   * construction with {@code Bad_CertificateTimeInvalid} (or {@code
+   * Bad_CertificateIssuerTimeInvalid} for an issuer) whether or not this check is present.
    */
   VALIDITY,
 

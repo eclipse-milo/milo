@@ -239,6 +239,41 @@ public class CertificateValidationUtilTest {
     assertEquals(StatusCodes.Bad_CertificateTimeInvalid, e.getStatusCode().value());
   }
 
+  // Suppression stops at the trust anchor. The JDK checks the validity period of every certificate
+  // inside a path while building it and offers no way to relax that, so an expired CA-issued
+  // certificate never reaches the VALIDITY decision: path construction rejects it first, and the
+  // failure is reported with the validity status code from Part 4 §6.1.3.
+  @Test
+  void expiredCaIssuedCertificateIsRejectedWhilePathIsBuilt() throws Exception {
+    long now = System.currentTimeMillis();
+    X509Certificate expiredLeaf =
+        new CaSignedCertificateBuilder(
+                SelfSignedCertificateGenerator.generateRsaKeyPair(2048),
+                caIntermediate,
+                testCertificates.getPrivateKey(ALIAS_CA_INTERMEDIATE))
+            .setCommonName("Test Expired Leaf")
+            .setOrganization("Eclipse Milo")
+            .setApplicationUri("urn:eclipse:milo:test:expired-leaf")
+            .setValidity(new Date(now - 2 * ONE_DAY_MS), new Date(now - ONE_DAY_MS))
+            .setIsCa(false)
+            .setKeyUsage(
+                KeyUsage.digitalSignature
+                    | KeyUsage.nonRepudiation
+                    | KeyUsage.keyEncipherment
+                    | KeyUsage.dataEncipherment)
+            .setExtendedKeyUsage(
+                List.of(KeyPurposeId.id_kp_serverAuth, KeyPurposeId.id_kp_clientAuth))
+            .build();
+
+    UaException e =
+        assertThrows(
+            UaException.class,
+            () ->
+                buildTrustedCertPath(List.of(expiredLeaf), Set.of(caIntermediate), Set.of(caRoot)));
+
+    assertEquals(StatusCodes.Bad_CertificateTimeInvalid, e.getStatusCode().value());
+  }
+
   @Test
   public void testBuildTrustedCertPath_LeafSelfSigned() throws Exception {
     List<X509Certificate> certificateChain = List.of(leafSelfSigned);

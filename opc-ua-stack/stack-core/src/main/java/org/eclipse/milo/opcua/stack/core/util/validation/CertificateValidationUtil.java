@@ -610,6 +610,13 @@ public class CertificateValidationUtil {
 
       return (PKIXCertPathBuilderResult) builder.build(builderParams);
     } catch (GeneralSecurityException e) {
+      // The builder rejects a certificate outside its validity period without saying which rule
+      // failed. Report the validity status code when that is the cause so the peer can tell a
+      // renewal is needed.
+      for (int i = 0; i < certificateChain.size(); i++) {
+        checkValidity(certificateChain.get(i), i == 0);
+      }
+
       throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
     }
   }
