@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.stack.transport.client;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
 import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
@@ -63,4 +64,26 @@ public interface OpcClientTransport {
    *     UaResponseMessageType} or completes exceptionally if an error occurred.
    */
   CompletableFuture<UaResponseMessageType> sendRequestMessage(UaRequestMessageType requestMessage);
+
+  /**
+   * Build a channel-bound request once the channel is available and send it.
+   *
+   * <p>Transports with a channel binding invoke {@code requestSupplier} only after their channel is
+   * established, so security inputs read while building (e.g. {@link #getChannelThumbprint()}) are
+   * fresh. The default builds immediately and sends via {@link
+   * #sendRequestMessage(UaRequestMessageType)}, retaining that method's request timeout.
+   *
+   * @param requestSupplier builds the request using the established channel's security inputs.
+   * @param channelTimeoutMillis the maximum wait for a channel, or zero for no deadline. Once the
+   *     request is built, its header supplies the response timeout.
+   * @return the response future.
+   */
+  default CompletableFuture<UaResponseMessageType> sendRequestMessage(
+      Callable<UaRequestMessageType> requestSupplier, long channelTimeoutMillis) {
+    try {
+      return sendRequestMessage(requestSupplier.call());
+    } catch (Exception e) {
+      return CompletableFuture.failedFuture(e);
+    }
+  }
 }

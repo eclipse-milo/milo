@@ -37,14 +37,19 @@ import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
+import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -186,6 +191,46 @@ public class OpcTcpClientTransport extends AbstractUascClientTransport
 
   public ChannelFsm getChannelFsm() {
     return channelFsm;
+  }
+
+  /**
+   * Get the most recently established SecureChannel, including its immutable certificate bindings.
+   *
+   * @return the established channel, or empty before the first handshake or after disconnect.
+   */
+  public Optional<ClientSecureChannel> getSecureChannel() {
+    return Optional.ofNullable(secureChannel);
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * <p>The request is built only after the ChannelFsm's channel future completes, which happens
+   * after the handshake publishes the new channel's certificate and thumbprint, so a channel-bound
+   * signature never covers a dead channel during a reconnect.
+   */
+  @Override
+  public CompletableFuture<UaResponseMessageType> sendRequestMessage(
+      Callable<UaRequestMessageType> requestSupplier, long channelTimeoutMillis) {
+    CompletableFuture<Channel> channelReady = getChannelFsm().getChannel().copy();
+    if (channelTimeoutMillis > 0) {
+      channelReady.orTimeout(channelTimeoutMillis, TimeUnit.MILLISECONDS);
+    }
+    return channelReady
+        .exceptionallyCompose(
+            error ->
+                CompletableFuture.failedFuture(
+                    error instanceof TimeoutException
+                        ? new UaException(StatusCodes.Bad_Timeout, "timed out waiting for channel")
+                        : error))
+        .thenCompose(
+            channel -> {
+              try {
+                return sendRequestMessage(requestSupplier.call(), channel);
+              } catch (Exception e) {
+                return CompletableFuture.failedFuture(e);
+              }
+            });
   }
 
   @Override

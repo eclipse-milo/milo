@@ -24,5 +24,10 @@
  * <p>Initializers participate in Session activation. They must complete before operations waiting
  * for an active Session can proceed. Cleanup during initialization must therefore avoid waiting on
  * work that itself needs an active Session.
+ *
+ * <p>A Session retains its creation endpoint and application certificates. Reactivation keeps the
+ * Session's original server certificate and client nonce, but uses the replacement channel
+ * certificate and thumbprint for enhanced-policy signature inputs. Channel-bound requests are built
+ * only once the transport's channel is ready, so their signatures never cover a dead channel.
  */
 package org.eclipse.milo.opcua.sdk.client.session;
