@@ -583,10 +583,13 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
         Files.setPosixFilePermissions(temporary, Files.getPosixFilePermissions(file));
       }
 
-      try (var output = Files.newOutputStream(temporary)) {
+      try (var output = new FileOutputStream(temporary.toFile())) {
         for (X509CRL crl : crls) {
           output.write(crl.getEncoded());
         }
+        // Force the surviving CRLs to stable storage before the rename publishes the file, so a
+        // crash cannot leave a truncated bundle in place of the original.
+        output.getFD().sync();
       }
 
       try {
