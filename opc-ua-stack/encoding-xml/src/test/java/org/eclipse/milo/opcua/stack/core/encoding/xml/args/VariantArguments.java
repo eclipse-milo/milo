@@ -1577,7 +1577,7 @@ public class VariantArguments {
             </Test>
             """),
 
-        // ExtensionObject matrix (2D)
+        // A 2x2 null ExtensionObject Matrix still has four encoded elements.
         Arguments.of(
             Variant.ofMatrix(
                 Matrix.ofExtensionObject(new ExtensionObject[][] {{null, null}, {null, null}})),
@@ -1590,6 +1590,10 @@ public class VariantArguments {
                     <uax:Int32>2</uax:Int32>
                   </uax:Dimensions>
                   <uax:Elements>
+                    <uax:ExtensionObject xsi:nil="true" />
+                    <uax:ExtensionObject xsi:nil="true" />
+                    <uax:ExtensionObject xsi:nil="true" />
+                    <uax:ExtensionObject xsi:nil="true" />
                   </uax:Elements>
                 </uax:Matrix>
               </uax:Value>

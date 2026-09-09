@@ -686,7 +686,8 @@ public class OpcUaBinaryEncoder implements UaEncoder {
     if (structure) {
       UaStructuredType struct = (UaStructuredType) value;
 
-      ExtensionObject extensionObject = ExtensionObject.encode(context, struct);
+      ExtensionObject extensionObject =
+          struct != null ? ExtensionObject.encode(context, struct) : null;
 
       encodeBuiltinType(typeId, extensionObject);
     } else if (enumeration) {

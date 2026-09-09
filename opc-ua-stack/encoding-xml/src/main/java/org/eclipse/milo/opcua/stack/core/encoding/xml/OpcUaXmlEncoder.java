@@ -530,8 +530,13 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
   @Override
   public void encodeExtensionObject(String field, ExtensionObject value)
       throws UaSerializationException {
+    encodeExtensionObjectValue(field, value, false);
+  }
 
-    if (beginField(field, value == null, true)) {
+  private void encodeExtensionObjectValue(
+      String field, ExtensionObject value, boolean isArrayElement) throws UaSerializationException {
+
+    if (beginField(field, value == null, true, isArrayElement)) {
       namespaceStack.push(Namespaces.OPC_UA_XSD);
       try {
         if (value == null || value.isNull()) {
@@ -710,8 +715,10 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
               for (int i = 0; i < array.length; i++) {
                 UaStructuredType structValue = array[i];
                 xos[i] =
-                    ExtensionObject.encode(
-                        context, structValue, OpcUaDefaultXmlEncoding.getInstance());
+                    structValue != null
+                        ? ExtensionObject.encode(
+                            context, structValue, OpcUaDefaultXmlEncoding.getInstance())
+                        : null;
               }
               encodeBuiltinTypeArrayValue(xos, OpcUaDataType.ExtensionObject);
             }
@@ -1493,7 +1500,7 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
 
         assert value != null;
         for (ExtensionObject v : value) {
-          encodeExtensionObject("ExtensionObject", v);
+          encodeExtensionObjectValue("ExtensionObject", v, true);
         }
       } finally {
         namespaceStack.pop();
@@ -1832,7 +1839,7 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
             case ExtensionObject -> {
               if (elements instanceof ExtensionObject[] array) {
                 for (ExtensionObject element : array) {
-                  encodeExtensionObject("ExtensionObject", element);
+                  encodeExtensionObjectValue("ExtensionObject", element, true);
                 }
               }
             }
@@ -1939,7 +1946,9 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
         value.transform(
             e -> {
               UaStructuredType struct = (UaStructuredType) e;
-              return ExtensionObject.encode(context, struct, OpcUaDefaultXmlEncoding.getInstance());
+              return struct != null
+                  ? ExtensionObject.encode(context, struct, OpcUaDefaultXmlEncoding.getInstance())
+                  : null;
             },
             ExtensionObject.class,
             OpcUaDataType.ExtensionObject);

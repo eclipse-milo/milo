@@ -19,5 +19,11 @@
  * <p>Variants identify their contained builtin type from the XML element name. Matrix decoding
  * validates dimensions, element types, and element counts for both Variants and directly decoded
  * matrices. Structured values are delegated to the codecs registered in the context.
+ *
+ * <p>Structures inside Variants are carried as ExtensionObjects. Null elements of typed structure
+ * arrays and Matrices use an {@code xsi:nil} ExtensionObject element; they are not passed to a
+ * structure codec. Decoding retains these positions as null-valued ExtensionObjects. Matrices
+ * passed to the Variant encoder need explicit data type metadata when their first element cannot
+ * identify the structure type.
  */
 package org.eclipse.milo.opcua.stack.core.encoding.xml;
