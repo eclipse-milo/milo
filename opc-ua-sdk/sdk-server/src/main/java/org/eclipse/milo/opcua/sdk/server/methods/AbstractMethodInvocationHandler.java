@@ -16,6 +16,7 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
+import org.eclipse.milo.opcua.sdk.core.ValueRanks;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.sdk.server.AccessContext;
@@ -34,9 +35,12 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodResult;
+import org.eclipse.milo.opcua.stack.core.util.ArrayUtil;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A partial implementation of {@link MethodInvocationHandler} that handles checking the Executable
@@ -81,9 +85,16 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
         Variant variant = inputArgumentValues[i];
         Object value = variant.value();
 
-        boolean dataTypeMatch = true;
+        if (value instanceof Matrix matrix && matrix.isNull()) {
+          // A null Matrix is just a null value; deliver it as one.
+          inputArgumentValues[i] = Variant.NULL_VALUE;
+          value = null;
+        }
 
-        if (value != null) {
+        // Check the shape first; it is cheap and avoids decoding elements of a mismatched value.
+        boolean dataTypeMatch = shapeMatches(argument, value);
+
+        if (dataTypeMatch && value != null) {
           NodeId argDataTypeId = argument.getDataType();
 
           DataTypeTree dataTypeTree = node.getNodeContext().getServer().getDataTypeTree();
@@ -94,8 +105,7 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
           if (argIsStructType) {
             try {
               if (value instanceof ExtensionObject xo) {
-                UaStructuredType decoded =
-                    xo.decode(node.getNodeContext().getServer().getStaticEncodingContext());
+                UaStructuredType decoded = decodeStructure(xo);
 
                 dataTypeMatch = structureTypeMatches(dataTypeTree, argDataTypeId, decoded);
 
@@ -105,23 +115,10 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
                   inputArgumentValues[i] = new Variant(decoded);
                 }
               } else if (value instanceof ExtensionObject[] xos) {
-                var decodedElements = new UaStructuredType[xos.length];
+                UaStructuredType[] decodedElements =
+                    decodeMatchingStructures(dataTypeTree, argDataTypeId, xos);
 
-                for (int j = 0; dataTypeMatch && j < xos.length; j++) {
-                  ExtensionObject xo = xos[j];
-
-                  if (xo == null || xo.isNull()) {
-                    // A struct array with null elements has no typed representation.
-                    dataTypeMatch = false;
-                  } else {
-                    UaStructuredType decoded =
-                        xo.decode(node.getNodeContext().getServer().getStaticEncodingContext());
-
-                    dataTypeMatch = structureTypeMatches(dataTypeTree, argDataTypeId, decoded);
-
-                    decodedElements[j] = decoded;
-                  }
-                }
+                dataTypeMatch = decodedElements != null;
 
                 if (dataTypeMatch) {
                   // Substitute a correctly-typed array of the decoded values, so that e.g. an
@@ -131,26 +128,10 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
                 }
               } else if (value instanceof UaStructuredType structValue) {
                 dataTypeMatch = structureTypeMatches(dataTypeTree, argDataTypeId, structValue);
-              } else if (value instanceof UaStructuredType[] structValues) {
-                for (int j = 0; dataTypeMatch && j < structValues.length; j++) {
-                  UaStructuredType structValue = structValues[j];
-
-                  dataTypeMatch =
-                      structValue != null
-                          && structureTypeMatches(dataTypeTree, argDataTypeId, structValue);
-                }
-              } else if (value instanceof Matrix) {
-                // TODO decoding a Matrix of ExtensionObject into its struct elements is not
-                //  supported; accept it only if the DataType ids already match exactly.
-                NodeId valueDataTypeId =
-                    variant
-                        .getDataTypeId()
-                        .flatMap(xni -> xni.toNodeId(node.getNodeContext().getNamespaceTable()))
-                        .orElse(NodeId.NULL_VALUE);
-
-                dataTypeMatch = argDataTypeId.equals(valueDataTypeId);
               } else {
-                dataTypeMatch = false;
+                // Validate each element without changing the value passed to subclasses.
+                dataTypeMatch =
+                    structureElementsMatch(dataTypeTree, argDataTypeId, elementsOf(value));
               }
             } catch (UaSerializationException e) {
               dataTypeMatch = false;
@@ -163,32 +144,9 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
                     .orElse(NodeId.NULL_VALUE);
 
             if (!argDataTypeId.equals(valueDataTypeId)) {
-              dataTypeMatch = dataTypeTree.isAssignable(argDataTypeId, value.getClass());
+              Class<?> elementType = ArrayUtil.getBoxedType(elementsOf(value));
+              dataTypeMatch = dataTypeTree.isAssignable(argDataTypeId, elementType);
             }
-          }
-        }
-
-        int valueRank = argument.getValueRank();
-
-        if (valueRank == -1) {
-          // scalar
-          if (value != null && (value.getClass().isArray() || value instanceof Matrix)) {
-            dataTypeMatch = false;
-          }
-        } else if (valueRank == 1) {
-          // one dimension
-          if (value != null && !value.getClass().isArray()) {
-            dataTypeMatch = false;
-          }
-        } else if (valueRank == 0) {
-          // one or more dimension
-          if (value != null && !(value.getClass().isArray() || value instanceof Matrix)) {
-            dataTypeMatch = false;
-          }
-        } else if (valueRank > 1) {
-          // matrix (2+ dimensions)
-          if (value != null && !(value instanceof Matrix)) {
-            dataTypeMatch = false;
           }
         }
 
@@ -244,6 +202,96 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
     }
   }
 
+  /** The flat elements of a Matrix, or {@code value} itself for any other value. */
+  private static @Nullable Object elementsOf(@Nullable Object value) {
+    return value instanceof Matrix matrix ? matrix.getElements() : value;
+  }
+
+  // Part 3, 8.6: ArrayDimensions specifies maxima; zero means unknown.
+  private static boolean shapeMatches(Argument argument, @Nullable Object value) {
+    if (value == null) {
+      return true;
+    }
+
+    // ByteString and String have scalar semantics, i.e. rank -1.
+    int rank =
+        value instanceof Matrix matrix ? matrix.getValueRank() : ArrayUtil.getValueRank(value);
+    int valueRank = argument.getValueRank();
+    boolean rankMatches =
+        switch (valueRank) {
+          case ValueRanks.ScalarOrOneDimension -> rank == ValueRanks.Scalar || rank == 1;
+          case ValueRanks.Any -> true;
+          case ValueRanks.Scalar -> rank == ValueRanks.Scalar;
+          case ValueRanks.OneOrMoreDimensions -> rank >= 1;
+          default -> valueRank > 0 && rank == valueRank;
+        };
+    if (!rankMatches) {
+      return false;
+    }
+
+    UInteger[] maxima = argument.getArrayDimensions();
+    if (valueRank > 0 && maxima != null && maxima.length > 0) {
+      int[] dimensions =
+          value instanceof Matrix matrix ? matrix.getDimensions() : ArrayUtil.getDimensions(value);
+      if (maxima.length != dimensions.length) {
+        return false;
+      }
+      for (int i = 0; i < dimensions.length; i++) {
+        long maximum = maxima[i].longValue();
+        if (maximum != 0 && dimensions[i] > maximum) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  private @Nullable UaStructuredType decodeStructure(@Nullable ExtensionObject xo) {
+    if (xo == null || xo.isNull()) {
+      return null;
+    }
+    return xo.decode(node.getNodeContext().getServer().getStaticEncodingContext());
+  }
+
+  /**
+   * Decode each element of {@code xos} and check it against the Argument's DataType, stopping at
+   * the first mismatch.
+   *
+   * @return the decoded elements, or {@code null} if any element does not match.
+   */
+  private UaStructuredType @Nullable [] decodeMatchingStructures(
+      DataTypeTree dataTypeTree, NodeId argDataTypeId, ExtensionObject[] xos) {
+
+    var decodedElements = new UaStructuredType[xos.length];
+
+    for (int j = 0; j < xos.length; j++) {
+      decodedElements[j] = decodeStructure(xos[j]);
+
+      if (!structureTypeMatches(dataTypeTree, argDataTypeId, decodedElements[j])) {
+        return null;
+      }
+    }
+
+    return decodedElements;
+  }
+
+  /**
+   * Check that every element of a structure array matches the Argument's DataType. Null elements
+   * match; {@link ExtensionObject} elements are decoded first. Any other value does not match.
+   */
+  private boolean structureElementsMatch(
+      DataTypeTree dataTypeTree, NodeId argDataTypeId, @Nullable Object elements) {
+
+    if (elements instanceof ExtensionObject[] xos) {
+      return decodeMatchingStructures(dataTypeTree, argDataTypeId, xos) != null;
+    } else if (elements instanceof UaStructuredType[] structs) {
+      return Arrays.stream(structs)
+          .allMatch(s -> structureTypeMatches(dataTypeTree, argDataTypeId, s));
+    } else {
+      return false;
+    }
+  }
+
   /**
    * Check that a structure value's DataType matches the DataType of the {@link Argument} it was
    * supplied for.
@@ -257,7 +305,11 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
    * @return {@code true} if {@code structValue}'s DataType matches the Argument's DataType.
    */
   private boolean structureTypeMatches(
-      DataTypeTree dataTypeTree, NodeId argDataTypeId, UaStructuredType structValue) {
+      DataTypeTree dataTypeTree, NodeId argDataTypeId, @Nullable UaStructuredType structValue) {
+
+    if (structValue == null) {
+      return true;
+    }
 
     NodeId valueDataTypeId =
         structValue
@@ -333,7 +385,9 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
    *     verified to be of the type specified by its {@link Argument}. Values for arguments with a
    *     structured DataType carry the decoded {@link UaStructuredType} value (or, for array
    *     arguments, an array of the DataType's registered class, e.g. {@code XVType[]}) rather than
-   *     the raw {@link ExtensionObject}(s) received in the request.
+   *     the raw {@link ExtensionObject}(s) received in the request. A null ExtensionObject, whether
+   *     scalar or an array element, is delivered as {@code null}. Matrix arguments retain their
+   *     original representation; their elements are decoded only for validation.
    * @return this output values matching this Method's output arguments, if any.
    * @throws UaException if invocation has failed for some reason.
    */

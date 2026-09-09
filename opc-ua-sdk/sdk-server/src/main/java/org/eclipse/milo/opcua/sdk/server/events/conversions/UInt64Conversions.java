@@ -43,26 +43,14 @@ final class UInt64Conversions {
     }
   }
 
-  @Nullable
+  @NonNull
   static Double uInt64ToDouble(@NonNull ULong ul) {
-    long l = ul.longValue();
-
-    if (Long.compareUnsigned(l, (long) Double.MAX_VALUE) <= 0) {
-      return ul.doubleValue();
-    } else {
-      return null;
-    }
+    return ul.doubleValue();
   }
 
-  @Nullable
+  @NonNull
   static Float uInt64ToFloat(@NonNull ULong ul) {
-    long l = ul.longValue();
-
-    if (Long.compareUnsigned(l, (long) Float.MAX_VALUE) <= 0) {
-      return ul.floatValue();
-    } else {
-      return null;
-    }
+    return ul.floatValue();
   }
 
   @Nullable

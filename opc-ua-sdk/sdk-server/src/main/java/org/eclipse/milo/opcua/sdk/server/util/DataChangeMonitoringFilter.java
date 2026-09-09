@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.sdk.server.util;
 
 import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.Objects;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
@@ -208,6 +209,11 @@ public class DataChangeMonitoringFilter {
     }
 
     if (last instanceof Matrix lastMatrix && current instanceof Matrix currentMatrix) {
+      // Dimension changes must be reported regardless of the numeric deadband.
+      if (!Arrays.equals(lastMatrix.getDimensions(), currentMatrix.getDimensions())) {
+        return true;
+      }
+
       Object lastElements = lastMatrix.getElements();
       Object currentElements = currentMatrix.getElements();
 

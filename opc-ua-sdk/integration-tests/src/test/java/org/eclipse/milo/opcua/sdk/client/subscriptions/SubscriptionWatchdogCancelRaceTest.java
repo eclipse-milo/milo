@@ -89,6 +89,8 @@ public class SubscriptionWatchdogCancelRaceTest {
 
   private static final long THREAD_TIMEOUT_MILLIS = 10_000;
 
+  private static final long SESSION_ACTIVE_TIMEOUT_MILLIS = 10_000;
+
   /**
    * A cancel that lands while a re-arm is in flight must still win: the watchdog was cancelled, so
    * nothing may fire afterwards.
@@ -416,6 +418,17 @@ public class SubscriptionWatchdogCancelRaceTest {
   /**
    * A running Server whose Publish requests are all parked — no Publish response may re-arm the
    * watchdog behind the test's back — plus a client driven by a {@link GateScheduledExecutor}.
+   *
+   * <p>The client is not handed over until its {@code onSessionActive} callbacks have run. {@code
+   * connect()} returns when the Session future completes, which {@code SessionFsmFactory} does in a
+   * task submitted before the callback fan-out, and until the {@code PublishingManager} has been
+   * told the Session is Active it reports Publish traffic as suspended — and {@code
+   * resetWatchdogTimer()} returns without scheduling anything while it is. Every test here calls
+   * {@code resetWatchdogTimer()} directly and waits for it to reach {@code schedule()}, so a re-arm
+   * that lands in that window never trips the gate. The {@code PublishingManager} registers its
+   * listener in the {@code OpcUaClient} constructor, so it runs before the fixture's in the same
+   * fan-out task, and on a first activation its recovery completes inline; once the fixture's
+   * listener has run, publishing is no longer suspended.
    */
   private static final class Fixture implements AutoCloseable {
 
@@ -441,7 +454,21 @@ public class SubscriptionWatchdogCancelRaceTest {
               server,
               transportConfig -> transportConfig.setScheduledExecutor(gate),
               cfg -> cfg.setRequestTimeout(uint(60_000)));
+
+      var sessionActive = new CountDownLatch(1);
+      client.addSessionActivityListener(
+          new SessionActivityListener() {
+            @Override
+            public void onSessionActive(UaSession session) {
+              sessionActive.countDown();
+            }
+          });
+
       client.connect();
+
+      assertTrue(
+          sessionActive.await(SESSION_ACTIVE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS),
+          "onSessionActive callbacks did not run after connect()");
     }
 
     /**
