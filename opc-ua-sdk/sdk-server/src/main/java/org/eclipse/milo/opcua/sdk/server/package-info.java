@@ -86,5 +86,11 @@
  * owned by the transport package, and request handling is delegated to service-set implementations.
  * Code added to this package should preserve those boundaries and keep endpoint validation aligned
  * with the certificates and security policies that the transport layer can actually serve.
+ *
+ * <p>Sessions retain the server certificate and key pair they were created with, separately from
+ * the current channel configuration. When a retained Session moves to a replacement SecureChannel,
+ * application signatures still include that original certificate. Enhanced signatures also include
+ * the replacement channel's certificate and thumbprint. A certificate rotation can remove
+ * old-thumbprint lookup without rewriting the security information of retained Sessions.
  */
 package org.eclipse.milo.opcua.sdk.server;

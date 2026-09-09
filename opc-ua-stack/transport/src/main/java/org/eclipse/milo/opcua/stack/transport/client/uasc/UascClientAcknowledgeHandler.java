@@ -35,6 +35,7 @@ import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageEncoder;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
+import org.eclipse.milo.opcua.stack.transport.client.SecureChannelHandshakeException;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.InboundUascResponseHandler.DelegatingUascResponseHandler;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -67,6 +68,7 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
   private final Supplier<String> endpointUrlSupplier;
   private final Supplier<Long> requestIdSupplier;
   private final CompletableFuture<ClientSecureChannel> handshakeFuture;
+  private boolean secureChannelHandshakeStarted;
   private final boolean sendHelloWhenAddedToActiveChannel;
 
   private @Nullable ChannelHandlerContext handlerContext;
@@ -200,6 +202,13 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
     }
   }
 
+  private void failHandshake(Throwable cause) {
+    // This handler remains in the pipeline until OPN succeeds, so it can still receive ERRs and
+    // decoding failures after handing off to the SecureChannel handler.
+    handshakeFuture.completeExceptionally(
+        secureChannelHandshakeStarted ? new SecureChannelHandshakeException(cause) : cause);
+  }
+
   @Override
   public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
     logger.error(
@@ -211,7 +220,7 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
     // If the handshake hasn't completed yet this cause will be more
     // accurate than the generic "connection closed" exception that
     // channelInactive() will use.
-    handshakeFuture.completeExceptionally(cause);
+    failHandshake(cause);
 
     ctx.close();
   }
@@ -253,7 +262,7 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
         .newTimeout(
             timeout -> {
               if (!timeout.isCancelled()) {
-                handshakeFuture.completeExceptionally(
+                failHandshake(
                     new UaException(StatusCodes.Bad_Timeout, "timed out waiting for acknowledge"));
                 ctx.close();
               }
@@ -299,8 +308,7 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
   private void onAcknowledge(ChannelHandlerContext ctx, ByteBuf buffer) {
     if (helloTimeout != null && !helloTimeout.cancel()) {
       helloTimeout = null;
-      handshakeFuture.completeExceptionally(
-          new UaException(StatusCodes.Bad_Timeout, "timed out waiting for acknowledge"));
+      failHandshake(new UaException(StatusCodes.Bad_Timeout, "timed out waiting for acknowledge"));
       ctx.close();
       return;
     }
@@ -352,6 +360,7 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
     ctx.executor()
         .execute(
             () -> {
+              secureChannelHandshakeStarted = true;
               var messageHandler =
                   new UascClientMessageHandler(
                       config,
@@ -382,7 +391,7 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
       logger.error(
           "[remote={}] received error message: {}", ctx.channel().remoteAddress(), errorMessage);
 
-      handshakeFuture.completeExceptionally(new UaException(statusCode, errorMessage.getReason()));
+      failHandshake(new UaException(statusCode, errorMessage.getReason()));
 
       ctx.fireUserEventTriggered(errorMessage);
     } catch (UaException e) {
@@ -392,7 +401,7 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
           e.getMessage(),
           e);
 
-      handshakeFuture.completeExceptionally(e);
+      failHandshake(e);
     } finally {
       ctx.close();
     }

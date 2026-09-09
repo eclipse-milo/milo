@@ -94,6 +94,7 @@ public class Session {
   private volatile ScheduledFuture<?> checkTimeoutFuture;
 
   private volatile EndpointDescription endpoint;
+  private final SessionServerCertificate originalServerCertificate;
   private volatile long secureChannelId;
   private volatile SecurityConfiguration securityConfiguration;
   private volatile InetAddress clientAddress;
@@ -134,6 +135,7 @@ public class Session {
     this.secureChannelId = secureChannelId;
     this.securityConfiguration = securityConfiguration;
     this.endpoint = endpoint;
+    originalServerCertificate = SessionServerCertificate.of(endpoint, securityConfiguration);
 
     sessionDiagnostics = new SessionDiagnostics(this);
     sessionSecurityDiagnostics = new SessionSecurityDiagnostics(this);
@@ -153,6 +155,19 @@ public class Session {
 
   public SecurityConfiguration getSecurityConfiguration() {
     return securityConfiguration;
+  }
+
+  /**
+   * Get the server application certificate this Session was created with.
+   *
+   * <p>Unlike {@link #getSecurityConfiguration()}, which follows the Session onto a replacement
+   * SecureChannel, this never changes: ActivateSession signatures and encrypted token secrets are
+   * bound to it for the life of the Session.
+   *
+   * @return the CreateSession server certificate and its key material.
+   */
+  public SessionServerCertificate getOriginalServerCertificate() {
+    return originalServerCertificate;
   }
 
   public EndpointDescription getEndpoint() {

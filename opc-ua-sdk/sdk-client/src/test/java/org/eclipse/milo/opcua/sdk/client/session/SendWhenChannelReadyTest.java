@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.client.session;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -93,7 +94,8 @@ class SendWhenChannelReadyTest {
             () -> {
               thumbprintAtBuild.set(transport.getChannelThumbprint());
               return readRequest();
-            });
+            },
+            5000);
 
     // The handshake has not completed, so the request must not have been built or sent yet.
     assertNull(thumbprintAtBuild.get());
@@ -115,7 +117,7 @@ class SendWhenChannelReadyTest {
     ReadRequest request = readRequest();
 
     CompletableFuture<UaResponseMessageType> responseFuture =
-        SessionFsmFactory.sendWhenChannelReady(transport, () -> request);
+        SessionFsmFactory.sendWhenChannelReady(transport, () -> request, 5000);
 
     responseFuture.get(5, TimeUnit.SECONDS);
 
@@ -134,13 +136,99 @@ class SendWhenChannelReadyTest {
             transport,
             () -> {
               throw failure;
-            });
+            },
+            5000);
 
     ExecutionException e =
         assertThrows(ExecutionException.class, () -> responseFuture.get(5, TimeUnit.SECONDS));
 
     assertSame(failure, e.getCause());
     assertEquals(0, transport.sentRequests.size());
+  }
+
+  // A channel-bound signature must fail with its channel if it closes during construction;
+  // looking up another channel after construction would send a stale signature on the replacement.
+  @Test
+  void channelClosingDuringBuildDoesNotSendRequestOnReplacement() throws Exception {
+    var original = new EmbeddedChannel();
+    var replacement = new EmbeddedChannel();
+    var handshakeFuture = new CompletableFuture<Channel>();
+    var connectInvoked = new CountDownLatch(1);
+    ChannelFsm channelFsm = newTcpTransport(handshakeFuture, connectInvoked).getChannelFsm();
+    var transport =
+        new OpcTcpClientTransport(
+            OpcTcpClientTransportConfig.newBuilder().setExecutor(executor).build()) {
+          @Override
+          public ChannelFsm getChannelFsm() {
+            return channelFsm;
+          }
+
+          @Override
+          protected CompletableFuture<Channel> getChannel() {
+            return CompletableFuture.completedFuture(replacement);
+          }
+        };
+
+    try {
+      channelFsm.connect();
+      assertTrue(connectInvoked.await(5, TimeUnit.SECONDS));
+      handshakeFuture.complete(original);
+
+      CompletableFuture<UaResponseMessageType> response =
+          SessionFsmFactory.sendWhenChannelReady(
+              transport,
+              () -> {
+                original.close();
+                return readRequest();
+              },
+              5000);
+
+      assertThrows(ExecutionException.class, () -> response.get(5, TimeUnit.SECONDS));
+      assertNull(replacement.readOutbound(), "the replacement must not carry the old signature");
+    } finally {
+      original.finishAndReleaseAll();
+      replacement.finishAndReleaseAll();
+    }
+  }
+
+  // Waiting for a reconnect must remain bounded, and an expired operation must not create a
+  // Session later when the channel finally arrives. The shared channel future must stay usable.
+  @Test
+  void channelTimeoutPreventsLateRequestWithoutFailingSharedChannel() throws Exception {
+    var channelReady = new CompletableFuture<Channel>();
+    var connectInvoked = new CountDownLatch(1);
+    TestTcpTransport transport = newTcpTransport(channelReady, connectInvoked);
+    CompletableFuture<Channel> connection = transport.getChannelFsm().connect();
+    assertTrue(connectInvoked.await(5, TimeUnit.SECONDS));
+    var built = new CompletableFuture<Void>();
+
+    CompletableFuture<UaResponseMessageType> response =
+        SessionFsmFactory.sendWhenChannelReady(
+            transport,
+            () -> {
+              built.complete(null);
+              return readRequest();
+            },
+            50);
+
+    ExecutionException failure =
+        assertThrows(ExecutionException.class, () -> response.get(5, TimeUnit.SECONDS));
+    assertEquals(
+        StatusCodes.Bad_Timeout,
+        UaException.extract(failure).orElseThrow().getStatusCode().value());
+    assertFalse(channelReady.isDone(), "a request timeout must not fail the shared channel future");
+
+    var channel = new EmbeddedChannel();
+    try {
+      channelReady.complete(channel);
+      assertSame(channel, connection.get(5, TimeUnit.SECONDS));
+      // Drain the executor so any channel-ready continuation has had a chance to run.
+      executor.submit(() -> {}).get(5, TimeUnit.SECONDS);
+      assertFalse(built.isDone(), "the expired request must not be built when the channel arrives");
+      assertEquals(0, transport.sentRequests.size());
+    } finally {
+      channel.finishAndReleaseAll();
+    }
   }
 
   private TestTcpTransport newTcpTransport(
@@ -221,8 +309,8 @@ class SendWhenChannelReadyTest {
     }
 
     @Override
-    public CompletableFuture<UaResponseMessageType> sendRequestMessage(
-        UaRequestMessageType requestMessage) {
+    protected CompletableFuture<UaResponseMessageType> sendRequestMessage(
+        UaRequestMessageType requestMessage, Channel channel) {
 
       sentRequests.add(requestMessage);
       return CompletableFuture.completedFuture(new ReadResponse(null, null, null));

@@ -263,33 +263,34 @@ public class DiscoveryClient {
   public static CompletableFuture<List<EndpointDescription>> getEndpoints(
       String endpointUrl, Consumer<OpcTcpClientTransportConfigBuilder> customizer) {
 
-    String scheme = EndpointUtil.getScheme(endpointUrl);
-
     String profileUri;
-
-    switch (Objects.requireNonNullElse(scheme, "").toLowerCase()) {
-      case "opc.tcp":
-        profileUri = Stack.TCP_UASC_UABINARY_TRANSPORT_URI;
-        break;
-
-      case "http":
-      case "https":
-      case "opc.http":
-      case "opc.https":
-        profileUri = Stack.HTTPS_UABINARY_TRANSPORT_URI;
-        break;
-
-      case "opc.ws":
-      case "opc.wss":
-        profileUri = Stack.WSS_UASC_UABINARY_TRANSPORT_URI;
-        break;
-
-      default:
-        return failedFuture(
-            new UaException(StatusCodes.Bad_InternalError, "unsupported protocol: " + scheme));
+    try {
+      profileUri = transportProfileUri(endpointUrl);
+    } catch (UaException e) {
+      return failedFuture(e);
     }
 
     return getEndpoints(endpointUrl, profileUri, customizer);
+  }
+
+  /**
+   * Map the scheme of {@code endpointUrl} to the transport profile URI that GetEndpoints results
+   * are filtered by.
+   *
+   * @param endpointUrl the endpoint URL whose scheme selects the profile.
+   * @return the transport profile URI.
+   * @throws UaException if the scheme is not supported.
+   */
+  static String transportProfileUri(String endpointUrl) throws UaException {
+    String scheme = EndpointUtil.getScheme(endpointUrl);
+
+    return switch (Objects.requireNonNullElse(scheme, "").toLowerCase()) {
+      case "opc.tcp" -> Stack.TCP_UASC_UABINARY_TRANSPORT_URI;
+      case "http", "https", "opc.http", "opc.https" -> Stack.HTTPS_UABINARY_TRANSPORT_URI;
+      case "opc.ws", "opc.wss" -> Stack.WSS_UASC_UABINARY_TRANSPORT_URI;
+      default ->
+          throw new UaException(StatusCodes.Bad_InternalError, "unsupported protocol: " + scheme);
+    };
   }
 
   private static CompletableFuture<List<EndpointDescription>> getEndpoints(

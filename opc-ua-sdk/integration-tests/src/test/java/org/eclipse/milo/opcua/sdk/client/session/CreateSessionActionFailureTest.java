@@ -11,9 +11,11 @@
 package org.eclipse.milo.opcua.sdk.client.session;
 
 import static org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig.USER_TOKEN_POLICY_ANONYMOUS;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -23,12 +25,16 @@ import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfigBuilder;
 import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
+import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
+import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
+import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransport;
+import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransportConfig;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -85,17 +91,54 @@ class CreateSessionActionFailureTest {
     assertOpenSessionFails(config(null), null);
   }
 
+  // A transport can throw before returning its future, for example when its executor rejects
+  // channel acquisition. The FSM still needs a failure event to leave Creating.
+  @Test
+  void synchronousTransportFailureDoesNotStrandSessionCreation() throws Exception {
+    var failure = new IllegalStateException("transport unavailable");
+    var transport =
+        new OpcTcpClientTransport(OpcTcpClientTransportConfig.newBuilder().build()) {
+          @Override
+          public CompletableFuture<UaResponseMessageType> sendRequestMessage(
+              Callable<UaRequestMessageType> requestSupplier, long channelTimeoutMillis) {
+            throw failure;
+          }
+        };
+
+    assertOpenSessionFails(new OpcUaClient(config(null).build(), transport), failure);
+  }
+
   /**
    * Opens a Session against a client that cannot get as far as sending the CreateSessionRequest,
    * and asserts that the failure reaches the caller instead of stranding it.
    *
-   * @param expectedCause the Throwable the caller must be completed with, or {@code null} to accept
-   *     any.
+   * @param expectedCause the Throwable the caller must be completed with, or {@code null} to expect
+   *     a {@link NullPointerException} from the missing server description.
    */
   private static void assertOpenSessionFails(
       OpcUaClientConfigBuilder config, Throwable expectedCause) throws Exception {
 
-    OpcUaClient client = OpcUaClient.create(config.build());
+    // These cases test request construction after channel readiness, without network I/O.
+    var transport =
+        new OpcTcpClientTransport(OpcTcpClientTransportConfig.newBuilder().build()) {
+          @Override
+          public CompletableFuture<UaResponseMessageType> sendRequestMessage(
+              Callable<UaRequestMessageType> requestSupplier, long channelTimeoutMillis) {
+            try {
+              requestSupplier.call();
+              return CompletableFuture.failedFuture(
+                  new AssertionError("request construction should have failed"));
+            } catch (Exception e) {
+              return CompletableFuture.failedFuture(e);
+            }
+          }
+        };
+
+    assertOpenSessionFails(new OpcUaClient(config.build(), transport), expectedCause);
+  }
+
+  private static void assertOpenSessionFails(OpcUaClient client, Throwable expectedCause)
+      throws Exception {
     SessionFsm sessionFsm = client.getSessionFsm();
 
     try {
@@ -110,10 +153,12 @@ class CreateSessionActionFailureTest {
 
       if (expectedCause != null) {
         assertSame(expectedCause, ex.getCause());
+      } else {
+        assertInstanceOf(NullPointerException.class, ex.getCause());
       }
     } finally {
       // Stop the CreatingWait -> Creating retry loop that a failed CreateSession starts.
-      sessionFsm.closeSession();
+      sessionFsm.closeSession().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
     }
   }
 

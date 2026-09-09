@@ -165,8 +165,7 @@ public final class SecurityConfiguration {
     return channelThumbprint;
   }
 
-  private static ByteString getCertificateBytes(@Nullable X509Certificate certificate)
-      throws UaException {
+  static ByteString getCertificateBytes(@Nullable X509Certificate certificate) throws UaException {
 
     if (certificate == null) {
       return ByteString.NULL_VALUE;
@@ -179,8 +178,8 @@ public final class SecurityConfiguration {
     }
   }
 
-  private static ByteString getCertificateChainBytes(
-      @Nullable List<X509Certificate> certificateChain) throws UaException {
+  static ByteString getCertificateChainBytes(@Nullable List<X509Certificate> certificateChain)
+      throws UaException {
 
     if (certificateChain == null) {
       return ByteString.NULL_VALUE;

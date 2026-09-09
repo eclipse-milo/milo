@@ -74,6 +74,7 @@ import org.eclipse.milo.opcua.stack.core.util.BufferUtil;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
+import org.eclipse.milo.opcua.stack.transport.client.SecureChannelHandshakeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -153,6 +154,10 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
         });
   }
 
+  private void failHandshake(Throwable cause) {
+    handshakeFuture.completeExceptionally(new SecureChannelHandshakeException(cause));
+  }
+
   @Override
   public void channelInactive(ChannelHandlerContext ctx) throws Exception {
     releaseChunkBuffers();
@@ -163,7 +168,7 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
 
     UaException exception = new UaException(StatusCodes.Bad_ConnectionClosed, "connection closed");
 
-    handshakeFuture.completeExceptionally(exception);
+    failHandshake(exception);
 
     super.channelInactive(ctx);
   }
@@ -181,7 +186,7 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
     // If the handshake hasn't completed yet this cause will be more
     // accurate than the generic "connection closed" exception that
     // channelInactive() will use.
-    handshakeFuture.completeExceptionally(cause);
+    failHandshake(cause);
 
     ctx.close();
   }
@@ -213,7 +218,7 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
             .newTimeout(
                 timeout -> {
                   if (!timeout.isCancelled()) {
-                    handshakeFuture.completeExceptionally(
+                    failHandshake(
                         new UaException(
                             StatusCodes.Bad_Timeout, "timed out waiting for secure channel"));
                     ctx.close();
@@ -381,7 +386,7 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
       } else {
         logger.warn("timed out waiting for secure channel");
 
-        handshakeFuture.completeExceptionally(
+        failHandshake(
             new UaException(StatusCodes.Bad_Timeout, "timed out waiting for secure channel"));
         ctx.close();
         return;
@@ -467,7 +472,7 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
                   ? (ServiceFault) responseMessage
                   : new ServiceFault(responseMessage.getResponseHeader());
 
-          handshakeFuture.completeExceptionally(new UaServiceFaultException(serviceFault));
+          failHandshake(new UaServiceFaultException(serviceFault));
           ctx.close();
         }
       } catch (MessageAbortException e) {
@@ -475,13 +480,13 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
       } catch (MessageDecodeException e) {
         logger.error("Error decoding asymmetric message", e);
 
-        handshakeFuture.completeExceptionally(e);
+        failHandshake(e);
 
         ctx.close();
       } catch (Exception e) {
         logger.error("Error decoding OpenSecureChannelResponse", e);
 
-        handshakeFuture.completeExceptionally(e);
+        failHandshake(e);
 
         ctx.close();
       } finally {
@@ -607,7 +612,7 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
 
       logger.error("[remote={}] errorMessage={}", ctx.channel().remoteAddress(), errorMessage);
 
-      handshakeFuture.completeExceptionally(new UaException(statusCode, errorMessage.getReason()));
+      failHandshake(new UaException(statusCode, errorMessage.getReason()));
 
       ctx.fireUserEventTriggered(errorMessage);
     } catch (UaException e) {
@@ -617,7 +622,7 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
           e.getMessage(),
           e);
 
-      handshakeFuture.completeExceptionally(e);
+      failHandshake(e);
     } finally {
       ctx.close();
     }
@@ -733,7 +738,7 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
     } catch (UaException e) {
       logger.error("Error preparing OpenSecureChannelRequest: {}", e.getStatusCode(), e);
 
-      handshakeFuture.completeExceptionally(e);
+      failHandshake(e);
       ctx.close();
     } finally {
       messageBuffer.release();
@@ -823,11 +828,11 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
       secureChannel.setChannelId(0);
     } catch (MessageEncodeException e) {
       logger.error("Error encoding {}: {}", request, e.getMessage(), e);
-      handshakeFuture.completeExceptionally(e);
+      failHandshake(e);
       ctx.close();
     } catch (UaSerializationException e) {
       logger.error("Error serializing {}: {}", request, e.getMessage(), e);
-      handshakeFuture.completeExceptionally(e);
+      failHandshake(e);
       ctx.close();
     } finally {
       messageBuffer.release();

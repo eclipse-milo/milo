@@ -176,8 +176,8 @@ public class ReactivateSessionEscalationTest {
     }
 
     @Override
-    public CompletableFuture<UaResponseMessageType> sendRequestMessage(
-        UaRequestMessageType requestMessage) {
+    protected CompletableFuture<UaResponseMessageType> sendRequestMessage(
+        UaRequestMessageType requestMessage, Channel channel) {
 
       if (requestMessage instanceof CreateSessionRequest) {
         createSessionRequests.incrementAndGet();
@@ -195,7 +195,7 @@ public class ReactivateSessionEscalationTest {
         return future;
       }
 
-      return super.sendRequestMessage(requestMessage);
+      return super.sendRequestMessage(requestMessage, channel);
     }
   }
 

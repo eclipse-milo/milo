@@ -17,6 +17,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.SignedSoftwareCertificate;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -34,6 +35,8 @@ public class OpcUaSession extends ConcurrentHashMap<String, Object> implements U
   private final double sessionTimeout;
   private final UInteger maxRequestSize;
   private final ByteString serverCertificate;
+  private final @Nullable EndpointDescription endpoint;
+  private final @Nullable ByteString clientCertificate;
   private final SignedSoftwareCertificate[] serverSoftwareCertificates;
 
   public OpcUaSession(
@@ -45,6 +48,35 @@ public class OpcUaSession extends ConcurrentHashMap<String, Object> implements U
       ByteString serverCertificate,
       SignedSoftwareCertificate[] serverSoftwareCertificates) {
 
+    this(
+        authToken,
+        sessionId,
+        sessionName,
+        sessionTimeout,
+        maxRequestSize,
+        serverCertificate,
+        serverSoftwareCertificates,
+        null,
+        null);
+  }
+
+  /**
+   * Create a Session retaining the endpoint and client certificate used at creation.
+   *
+   * <p>These security inputs remain unchanged when reactivating on a replacement channel.
+   */
+  public OpcUaSession(
+      NodeId authToken,
+      NodeId sessionId,
+      String sessionName,
+      double sessionTimeout,
+      UInteger maxRequestSize,
+      ByteString serverCertificate,
+      SignedSoftwareCertificate[] serverSoftwareCertificates,
+      @Nullable EndpointDescription endpoint,
+      @Nullable ByteString clientCertificate) {
+    this.endpoint = endpoint;
+    this.clientCertificate = clientCertificate;
     this.authToken = authToken;
     this.sessionId = sessionId;
     this.sessionName = sessionName;
@@ -82,6 +114,24 @@ public class OpcUaSession extends ConcurrentHashMap<String, Object> implements U
   @Override
   public SignedSoftwareCertificate[] getServerSoftwareCertificates() {
     return serverSoftwareCertificates;
+  }
+
+  /**
+   * Get the endpoint originally used to create this Session.
+   *
+   * @return the original endpoint, or empty for a manually constructed Session without metadata.
+   */
+  public Optional<EndpointDescription> getEndpoint() {
+    return Optional.ofNullable(endpoint);
+  }
+
+  /**
+   * Get the application certificate originally used by the client for this Session.
+   *
+   * @return the original certificate, or empty for a manually constructed Session without metadata.
+   */
+  public Optional<ByteString> getClientCertificate() {
+    return Optional.ofNullable(clientCertificate);
   }
 
   @Override

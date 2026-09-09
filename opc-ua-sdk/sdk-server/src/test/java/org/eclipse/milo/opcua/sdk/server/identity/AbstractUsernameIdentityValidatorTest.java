@@ -36,6 +36,7 @@ import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfigLimits;
 import org.eclipse.milo.opcua.sdk.server.SecurityConfiguration;
 import org.eclipse.milo.opcua.sdk.server.Session;
+import org.eclipse.milo.opcua.sdk.server.SessionServerCertificate;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity.UsernameIdentity;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -817,13 +818,17 @@ class AbstractUsernameIdentityValidatorTest {
     when(endpoint.getServerCertificate()).thenReturn(ByteString.of(rsaCertificate.getEncoded()));
 
     Session session = mock(Session.class);
+    SecurityConfiguration securityConfiguration =
+        new SecurityConfiguration(
+            securityPolicy, MessageSecurityMode.SignAndEncrypt, null, null, null, null, null);
     when(session.getEndpoint()).thenReturn(endpoint);
     when(session.getLastNonce()).thenReturn(SERVER_NONCE);
     when(session.getServer()).thenReturn(server);
-    when(session.getSecurityConfiguration())
-        .thenReturn(
-            new SecurityConfiguration(
-                securityPolicy, MessageSecurityMode.SignAndEncrypt, null, null, null, null, null));
+    when(session.getSecurityConfiguration()).thenReturn(securityConfiguration);
+    // Built before the stubbing call: of() reads the endpoint mock.
+    SessionServerCertificate originalServerCertificate =
+        SessionServerCertificate.of(endpoint, securityConfiguration);
+    when(session.getOriginalServerCertificate()).thenReturn(originalServerCertificate);
     return session;
   }
 
