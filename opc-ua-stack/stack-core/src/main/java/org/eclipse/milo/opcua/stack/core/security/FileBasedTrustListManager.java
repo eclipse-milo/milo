@@ -20,9 +20,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
@@ -36,6 +38,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,6 +51,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.WatchKeyRunner;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -227,7 +231,7 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
       Set<X509CRL> toDelete = Sets.difference(oldSet, this.issuerCrls);
 
       toWrite.forEach(crl -> writeCrlToDir(crl, issuerCrlDir));
-      toDelete.forEach(crl -> deleteCrlFromDir(crl, issuerCrlDir));
+      deleteCrlsFromDir(toDelete, issuerCrlDir);
     } finally {
       readWriteLock.writeLock().unlock();
     }
@@ -246,7 +250,7 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
       Set<X509CRL> toDelete = Sets.difference(oldSet, this.trustedCrls);
 
       toWrite.forEach(crl -> writeCrlToDir(crl, trustedCrlDir));
-      toDelete.forEach(crl -> deleteCrlFromDir(crl, trustedCrlDir));
+      deleteCrlsFromDir(toDelete, trustedCrlDir);
     } finally {
       readWriteLock.writeLock().unlock();
     }
@@ -265,7 +269,7 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
       Set<X509Certificate> toDelete = Sets.difference(oldSet, this.issuerCertificates);
 
       toWrite.forEach(cert -> writeCertificateToDir(cert, issuerCertsDir));
-      toDelete.forEach(cert -> deleteCertificateFromDir(cert, issuerCertsDir));
+      deleteCertificatesFromDir(thumbprints(toDelete), issuerCertsDir);
     } finally {
       readWriteLock.writeLock().unlock();
     }
@@ -284,7 +288,7 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
       Set<X509Certificate> toDelete = Sets.difference(oldSet, this.trustedCertificates);
 
       toWrite.forEach(cert -> writeCertificateToDir(cert, trustedCertsDir));
-      toDelete.forEach(cert -> deleteCertificateFromDir(cert, trustedCertsDir));
+      deleteCertificatesFromDir(thumbprints(toDelete), trustedCertsDir);
     } finally {
       readWriteLock.writeLock().unlock();
     }
@@ -318,7 +322,7 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
   public boolean removeIssuerCertificate(ByteString thumbprint) {
     readWriteLock.writeLock().lock();
     try {
-      deleteCertificateFromDir(thumbprint, issuerCertsDir);
+      deleteCertificatesFromDir(Set.of(thumbprint), issuerCertsDir);
 
       return remove(thumbprint, issuerCertificates);
     } finally {
@@ -330,7 +334,7 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
   public boolean removeTrustedCertificate(ByteString thumbprint) {
     readWriteLock.writeLock().lock();
     try {
-      deleteCertificateFromDir(thumbprint, trustedCertsDir);
+      deleteCertificatesFromDir(Set.of(thumbprint), trustedCertsDir);
 
       return remove(thumbprint, trustedCertificates);
     } finally {
@@ -339,14 +343,23 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
   }
 
   private static boolean remove(ByteString thumbprint, Set<X509Certificate> certificates) {
-    return certificates.removeIf(
-        certificate -> {
-          try {
-            return CertificateUtil.thumbprint(certificate).equals(thumbprint);
-          } catch (UaException ignored) {
-            return false;
-          }
-        });
+    return certificates.removeIf(certificate -> thumbprint.equals(thumbprintOf(certificate)));
+  }
+
+  private static Set<ByteString> thumbprints(Set<X509Certificate> certificates) {
+    return certificates.stream()
+        .map(FileBasedTrustListManager::thumbprintOf)
+        .filter(Objects::nonNull)
+        .collect(Collectors.toSet());
+  }
+
+  private static @Nullable ByteString thumbprintOf(X509Certificate certificate) {
+    try {
+      return CertificateUtil.thumbprint(certificate);
+    } catch (UaException e) {
+      LOGGER.warn("Error computing certificate thumbprint", e);
+      return null;
+    }
   }
 
   @Override
@@ -470,26 +483,37 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
     }
   }
 
-  private static void deleteCertificateFromDir(X509Certificate certificate, Path path) {
-    try {
-      deleteCertificateFromDir(ByteString.of(sha1(certificate.getEncoded())), path);
-    } catch (Exception e) {
-      LOGGER.error("Error deleting certificate", e);
+  /**
+   * Delete every file in {@code directory} that decodes to a certificate whose thumbprint is in
+   * {@code thumbprints}.
+   *
+   * <p>Files are matched by their decoded contents rather than by name, so certificates that were
+   * imported under an arbitrary filename, or written by an older version of Milo, are found too.
+   */
+  private static void deleteCertificatesFromDir(Set<ByteString> thumbprints, Path directory) {
+    if (thumbprints.isEmpty()) {
+      return;
     }
-  }
 
-  private static void deleteCertificateFromDir(ByteString thumbprint, Path path) {
-    try {
-      String filename = String.format("%s.der", ByteBufUtil.hexDump(thumbprint.bytesOrEmpty()));
-      File file = path.resolve(filename).toFile();
+    try (var files = Files.list(directory)) {
+      for (Path file : files.toList()) {
+        boolean matches =
+            decodeCertificateFile(file)
+                .map(certificate -> thumbprints.contains(thumbprintOf(certificate)))
+                .orElse(false);
 
-      if (file.exists()) {
-        Files.delete(file.toPath());
+        if (matches) {
+          try {
+            Files.delete(file);
 
-        LOGGER.debug("Deleted certificate: {}", file.getAbsolutePath());
+            LOGGER.debug("Deleted certificate: {}", file.toAbsolutePath());
+          } catch (IOException e) {
+            LOGGER.error("Error deleting certificate: {}", file, e);
+          }
+        }
       }
-    } catch (Exception e) {
-      LOGGER.error("Error deleting certificate", e);
+    } catch (IOException e) {
+      LOGGER.error("Error listing certificate directory: {}", directory, e);
     }
   }
 
@@ -510,26 +534,69 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
     }
   }
 
-  private static void deleteCrlFromDir(X509CRL crl, Path path) {
-    try {
-      deleteCrlFromDir(ByteString.of(sha1(crl.getEncoded())), path);
-    } catch (Exception e) {
-      LOGGER.error("Error deleting CRL", e);
+  /**
+   * Remove every CRL in {@code removed} from the files in {@code directory}.
+   *
+   * <p>Files are matched by their decoded contents rather than by name. A file that contains only
+   * removed CRLs is deleted; a file that also contains other CRLs is rewritten without the removed
+   * ones.
+   */
+  private static void deleteCrlsFromDir(Set<X509CRL> removed, Path directory) {
+    if (removed.isEmpty()) {
+      return;
+    }
+
+    try (var files = Files.list(directory)) {
+      for (Path file : files.toList()) {
+        List<X509CRL> contents = decodeCrlFile(file).orElse(List.of());
+        List<X509CRL> retained = contents.stream().filter(crl -> !removed.contains(crl)).toList();
+
+        if (retained.size() == contents.size()) {
+          continue;
+        }
+
+        try {
+          if (retained.isEmpty()) {
+            Files.delete(file);
+
+            LOGGER.debug("Deleted CRL: {}", file.toAbsolutePath());
+          } else {
+            replaceCrlFile(file, retained);
+
+            LOGGER.debug("Removed CRLs from bundle: {}", file.toAbsolutePath());
+          }
+        } catch (Exception e) {
+          LOGGER.error("Error removing CRLs from file: {}", file, e);
+        }
+      }
+    } catch (IOException e) {
+      LOGGER.error("Error listing CRL directory: {}", directory, e);
     }
   }
 
-  private static void deleteCrlFromDir(ByteString thumbprint, Path path) {
+  private static void replaceCrlFile(Path file, List<X509CRL> crls) throws Exception {
+    // Write the surviving CRLs to a temporary file first so a failure part way through cannot
+    // destroy the unrelated CRLs the bundle also contains.
+    Path temporary = Files.createTempFile(file.getParent(), ".crl-", ".tmp");
     try {
-      String filename = String.format("%s.crl", ByteBufUtil.hexDump(thumbprint.bytesOrEmpty()));
-      File file = path.resolve(filename).toFile();
-
-      if (file.exists()) {
-        Files.delete(file.toPath());
-
-        LOGGER.debug("Deleted CRL: {}", file.getAbsolutePath());
+      if (file.getFileSystem().supportedFileAttributeViews().contains("posix")) {
+        Files.setPosixFilePermissions(temporary, Files.getPosixFilePermissions(file));
       }
-    } catch (Exception e) {
-      LOGGER.error("Error deleting CRL", e);
+
+      try (var output = Files.newOutputStream(temporary)) {
+        for (X509CRL crl : crls) {
+          output.write(crl.getEncoded());
+        }
+      }
+
+      try {
+        Files.move(
+            temporary, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+      } catch (AtomicMoveNotSupportedException e) {
+        Files.move(temporary, file, StandardCopyOption.REPLACE_EXISTING);
+      }
+    } finally {
+      Files.deleteIfExists(temporary);
     }
   }
 
