@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.stack.core.types.builtin;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Array;
@@ -23,12 +24,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
+import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
+import org.eclipse.milo.opcua.stack.core.types.structured.Range;
 import org.eclipse.milo.opcua.stack.core.types.structured.ThreeDVector;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class MatrixTest {
   private final int[][] primitiveInt2d = {{1, 2}, {3, 4}};
@@ -76,6 +81,94 @@ class MatrixTest {
     assertEquals(OpcUaDataType.String, transformed.getDataType().orElseThrow());
     assertEquals(
         OpcUaDataType.String.getNodeId().expanded(), transformed.getDataTypeId().orElseThrow());
+  }
+
+  // The declared interface must accommodate nulls and different structured implementations (#1957).
+  @ParameterizedTest
+  @MethodSource("structuredTransformResults")
+  void transformUsesDeclaredComponentType(UaStructuredType[] results, boolean explicitDataTypeId) {
+    Integer[] indices = Stream.iterate(0, i -> i + 1).limit(results.length).toArray(Integer[]::new);
+    int[] dimensions = {1, results.length};
+    Matrix input = new Matrix(indices, dimensions);
+    ExpandedNodeId dataTypeId = OpcUaDataType.ExtensionObject.getNodeId().expanded();
+
+    Matrix transformed =
+        explicitDataTypeId
+            ? input.transform(
+                i -> results[(Integer) i],
+                UaStructuredType.class,
+                OpcUaDataType.ExtensionObject,
+                dataTypeId)
+            : input.transform(
+                i -> results[(Integer) i], UaStructuredType.class, OpcUaDataType.ExtensionObject);
+
+    assertEquals(UaStructuredType[].class, transformed.getElements().getClass());
+    assertArrayEquals(results, (UaStructuredType[]) transformed.getElements());
+    assertArrayEquals(dimensions, transformed.getDimensions());
+    assertEquals(OpcUaDataType.ExtensionObject, transformed.getDataType().orElseThrow());
+    if (explicitDataTypeId) {
+      assertEquals(dataTypeId, transformed.getDataTypeId().orElseThrow());
+    }
+  }
+
+  private static Stream<Arguments> structuredTransformResults() {
+    Argument argument = new Argument(null, null, -1, null, null);
+    Range range = new Range(0.0, 1.0);
+    return Stream.of(
+            new UaStructuredType[0],
+            new UaStructuredType[] {null, range},
+            new UaStructuredType[] {null, null},
+            new UaStructuredType[] {argument, range},
+            new UaStructuredType[] {range, null},
+            new UaStructuredType[] {range, range})
+        .flatMap(results -> Stream.of(Arguments.of(results, false), Arguments.of(results, true)));
+  }
+
+  // Even the first result must be checked against the declared type, rather than defining it.
+  @ParameterizedTest
+  @ValueSource(ints = {1, 2})
+  void transformRejectsResultsIncompatibleWithDeclaredType(int incompatibleIndex) {
+    Matrix input = new Matrix(new Integer[] {1, 2}, new int[] {1, 2});
+
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            input.transform(
+                i -> (Integer) i >= incompatibleIndex ? "invalid" : i,
+                Integer.class,
+                OpcUaDataType.Int32));
+  }
+
+  // Explicit primitive component types must also be honored for nonempty transformations.
+  @Test
+  void transformUsesDeclaredPrimitiveComponentType() {
+    Matrix input = new Matrix(new Integer[] {1, 2}, new int[] {1, 2});
+
+    Matrix transformed = input.transform(i -> (Integer) i + 1, int.class, OpcUaDataType.Int32);
+
+    assertArrayEquals(new int[] {2, 3}, (int[]) transformed.getElements());
+    assertArrayEquals(new int[] {1, 2}, transformed.getDimensions());
+  }
+
+  @Test
+  void inferredTransformRejectsNullFirstResult() {
+    Matrix input = new Matrix(new Integer[] {1, 2}, new int[] {1, 2});
+
+    assertThrows(NullPointerException.class, () -> input.transform(i -> null));
+  }
+
+  @Test
+  void inferredTransformRejectsResultsIncompatibleWithFirstResult() {
+    Matrix input = new Matrix(new Integer[] {1, 2}, new int[] {1, 2});
+
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            input.transform(
+                i ->
+                    (Integer) i == 1
+                        ? new Range(0.0, 1.0)
+                        : new Argument(null, null, -1, null, null)));
   }
 
   @Test
