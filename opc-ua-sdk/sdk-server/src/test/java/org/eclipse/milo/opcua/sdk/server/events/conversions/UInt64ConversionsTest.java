@@ -48,14 +48,25 @@ public class UInt64ConversionsTest extends AbstractConversionTest<ULong> {
 
       case Double:
         {
-          ULong dMax = ulong((long) Double.MAX_VALUE);
-          return new Conversion[] {c(ulong(0), (0d)), c(dMax, dMax.doubleValue())};
+          // ulong(Long.MIN_VALUE) is 2^63, the first value with the sign bit set, and ULong.MAX is
+          // 2^64-1; neither is representable exactly, so the expected values are the nearest
+          // double.
+          return new Conversion[] {
+            c(ulong(0), 0d),
+            c(ulong(Long.MAX_VALUE), 9.223372036854776E18),
+            c(ulong(Long.MIN_VALUE), 9.223372036854776E18),
+            c(ULong.MAX, 1.8446744073709552E19)
+          };
         }
 
       case Float:
         {
-          ULong fMax = ulong((long) Float.MAX_VALUE);
-          return new Conversion[] {c(ulong(0), 0f), c(fMax, fMax.floatValue())};
+          return new Conversion[] {
+            c(ulong(0), 0f),
+            c(ulong(Long.MAX_VALUE), 9.223372E18f),
+            c(ulong(Long.MIN_VALUE), 9.223372E18f),
+            c(ULong.MAX, 1.8446744E19f)
+          };
         }
 
       case Int16:
