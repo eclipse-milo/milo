@@ -37,6 +37,10 @@ public interface OpcUaClientConfig {
   /**
    * Get the endpoint to connect to.
    *
+   * <p>When an {@link #getEndpointResolver() EndpointResolver} is configured, the client may later
+   * connect with a refreshed description of this same endpoint, for example after the server's
+   * application certificate has been replaced. The configuration itself is immutable.
+   *
    * @return the {@link EndpointDescription} to connect to.
    */
   EndpointDescription getEndpoint();
@@ -52,6 +56,16 @@ public interface OpcUaClientConfig {
    * @see #isSessionEndpointValidationEnabled()
    */
   List<EndpointDescription> getDiscoveryEndpoints();
+
+  /**
+   * Get the resolver used to refresh {@link #getEndpoint()} after SecureChannel establishment fails
+   * on a secured endpoint.
+   *
+   * @return the refresh strategy, or empty to always connect with the configured endpoint.
+   */
+  default Optional<EndpointResolver> getEndpointResolver() {
+    return Optional.empty();
+  }
 
   /**
    * Get the {@link CertificateGroup} holding this client's identity and trust material.
@@ -242,6 +256,7 @@ public interface OpcUaClientConfig {
 
     builder.setEndpoint(config.getEndpoint());
     builder.setDiscoveryEndpoints(new ArrayList<>(config.getDiscoveryEndpoints()));
+    config.getEndpointResolver().ifPresent(builder::setEndpointResolver);
     config.getCertificateGroup().ifPresent(builder::setCertificateGroup);
     builder.setCertificateIdentitySelector(config.getCertificateIdentitySelector());
     builder.setCertificateTypeId(config.getCertificateTypeId().orElse(null));

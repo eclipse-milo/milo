@@ -14,6 +14,7 @@ import static java.util.Objects.requireNonNullElse;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.SessionInitializer;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -169,6 +170,7 @@ import org.eclipse.milo.opcua.stack.core.util.ManifestUtil;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.eclipse.milo.opcua.stack.core.util.NonBlockingLazy;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
+import org.eclipse.milo.opcua.stack.transport.client.ChannelStateObservable;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransport;
@@ -424,23 +426,29 @@ public class OpcUaClient {
       throws UaException {
 
     try {
-      List<EndpointDescription> endpoints =
-          DiscoveryClient.getEndpoints(endpointUrl, configureTransport).get();
-
-      EndpointDescription endpoint =
-          selectEndpoint
-              .apply(endpoints)
-              .orElseThrow(
-                  () ->
-                      new UaException(StatusCodes.Bad_ConfigurationError, "no endpoint selected"));
-
       OpcTcpClientTransportConfigBuilder transportConfigBuilder =
           OpcTcpClientTransportConfig.newBuilder();
       configureTransport.accept(transportConfigBuilder);
+      OpcTcpClientTransportConfig transportConfig = transportConfigBuilder.build();
+
+      // Discovery was previously bounded only by the transport's connect and acknowledge timeouts
+      // plus the 60 s GetEndpoints request timeout; keep that budget rather than a fixed deadline.
+      Duration discoveryTimeout =
+          Duration.ofMillis(
+              transportConfig.getConnectTimeout().longValue()
+                  + transportConfig.getAcknowledgeTimeout().longValue()
+                  + 60_000L);
+      EndpointResolver resolver =
+          EndpointResolver.create(
+              endpointUrl, selectEndpoint, configureTransport, discoveryTimeout);
+      EndpointConfiguration resolved = resolver.resolve().get();
+      List<EndpointDescription> endpoints = resolved.discoveryEndpoints();
+      EndpointDescription endpoint = resolved.endpoint();
 
       OpcUaClientConfigBuilder clientConfigBuilder = OpcUaClientConfig.builder();
       clientConfigBuilder.setEndpoint(endpoint);
       clientConfigBuilder.setDiscoveryEndpoints(endpoints);
+      clientConfigBuilder.setEndpointResolver(resolver);
       // Set up the discovery endpoints in case the user enables this, but default to false for
       // backwards compatibility.
       clientConfigBuilder.setSessionEndpointValidationEnabled(false);
@@ -449,7 +457,7 @@ public class OpcUaClient {
 
       OpcUaClientConfig clientConfig = clientConfigBuilder.build();
 
-      var transport = new OpcTcpClientTransport(transportConfigBuilder.build());
+      var transport = new OpcTcpClientTransport(transportConfig);
 
       return new OpcUaClient(clientConfig, transport);
     } catch (ExecutionException e) {
@@ -518,6 +526,7 @@ public class OpcUaClient {
   private final OpcUaClientConfig config;
 
   private final OpcClientTransport transport;
+  private final EndpointRefresh endpointRefresh;
   private final Object certificateIdentityLock = new Object();
   private final Map<SecurityPolicyProfile, Optional<CertificateIdentity>>
       selectedCertificateIdentities = new HashMap<>();
@@ -525,6 +534,10 @@ public class OpcUaClient {
   public OpcUaClient(OpcUaClientConfig config, OpcClientTransport transport) {
     this.config = config;
     this.transport = transport;
+    endpointRefresh =
+        new EndpointRefresh(
+            new EndpointConfiguration(config.getEndpoint(), config.getDiscoveryEndpoints()),
+            config.getEndpointResolver().orElse(null));
 
     staticEncodingContext =
         new EncodingContext() {
@@ -558,7 +571,7 @@ public class OpcUaClient {
         new ClientApplicationContext() {
           @Override
           public EndpointDescription getEndpoint() {
-            return config.getEndpoint();
+            return endpointRefresh.current().endpoint();
           }
 
           @Override
@@ -589,7 +602,25 @@ public class OpcUaClient {
           }
         };
 
-    sessionFsm = SessionFsmFactory.newSessionFsm(this);
+    sessionFsm = SessionFsmFactory.newSessionFsm(this, endpointRefresh::current);
+
+    // Transports that report failed connection attempts let the client refresh its endpoint after
+    // a server certificate rotation; the transport's next attempt then reads the refreshed one.
+    if (config.getEndpointResolver().isPresent()
+        && transport instanceof ChannelStateObservable observable) {
+      observable.addTransitionListener(
+          new ChannelStateObservable.TransitionListener() {
+            @Override
+            public void onStateTransition(boolean connected) {
+              if (connected) endpointRefresh.onConnected();
+            }
+
+            @Override
+            public void onConnectFailure(Throwable failure) {
+              endpointRefresh.onConnectFailure(failure);
+            }
+          });
+    }
 
     sessionFsm.addInitializer(this::initializeNamespaceAndServerTables);
 
@@ -769,6 +800,7 @@ public class OpcUaClient {
    *     or completes exceptionally if an error occurs.
    */
   public CompletableFuture<OpcUaClient> connectAsync() {
+    endpointRefresh.start();
     // Discard any identities cached during a prior connection so a rotated CertificateManager
     // entry is presented on this attempt.
     clearCertificateIdentities();
@@ -810,6 +842,7 @@ public class OpcUaClient {
    *     disconnecting the transport are swallowed.
    */
   public CompletableFuture<OpcUaClient> disconnectAsync() {
+    endpointRefresh.stop();
     CompletableFuture<Unit> closeSession =
         sessionFsm.closeSession().exceptionally(ex -> Unit.VALUE);
 

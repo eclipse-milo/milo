@@ -25,9 +25,10 @@
  * for an active Session can proceed. Cleanup during initialization must therefore avoid waiting on
  * work that itself needs an active Session.
  *
- * <p>A Session retains its creation endpoint and application certificates. Reactivation keeps the
- * Session's original server certificate and client nonce, but uses the replacement channel
- * certificate and thumbprint for enhanced-policy signature inputs. Channel-bound requests are built
- * only once the transport's channel is ready, so their signatures never cover a dead channel.
+ * <p>A Session retains its creation endpoint and application certificates. Resolver updates apply
+ * to replacement channels and new Sessions. Reactivation keeps the Session's original server
+ * certificate and client nonce, but uses the replacement channel certificate and thumbprint for
+ * enhanced-policy signature inputs. CreateSession captures the selected endpoint and discovery list
+ * together after channel establishment so endpoint comparisons use one resolution result.
  */
 package org.eclipse.milo.opcua.sdk.client.session;

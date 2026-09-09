@@ -51,6 +51,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.client.*;
@@ -147,6 +148,23 @@ public class SessionFsmFactory {
   private SessionFsmFactory() {}
 
   public static SessionFsm newSessionFsm(OpcUaClient client) {
+    return newSessionFsm(
+        client,
+        () ->
+            new EndpointConfiguration(
+                client.getConfig().getEndpoint(), client.getConfig().getDiscoveryEndpoints()));
+  }
+
+  /**
+   * Create a {@link SessionFsm} whose CreateSession reads its endpoint from {@code endpoints}.
+   *
+   * @param client the client the FSM manages a Session for.
+   * @param endpoints supplies the endpoint and discovery list to create Sessions with. It is read
+   *     once the channel is ready, so a description refreshed while reconnecting is used.
+   * @return the new {@link SessionFsm}.
+   */
+  public static SessionFsm newSessionFsm(
+      OpcUaClient client, Supplier<EndpointConfiguration> endpoints) {
     Long instanceId = INSTANCE_ID.incrementAndGet();
 
     FsmBuilder<State, Event> builder =
@@ -156,7 +174,7 @@ public class SessionFsmFactory {
             client.getTransport().getConfig().getExecutor(),
             instanceId);
 
-    configureSessionFsm(builder, client);
+    configureSessionFsm(builder, client, endpoints);
 
     Fsm<State, Event> fsm = builder.build(State.Inactive);
 
@@ -165,10 +183,11 @@ public class SessionFsmFactory {
     return new SessionFsm(fsm, client.getTransport().getConfig().getExecutor());
   }
 
-  private static void configureSessionFsm(FsmBuilder<State, Event> fb, OpcUaClient client) {
+  private static void configureSessionFsm(
+      FsmBuilder<State, Event> fb, OpcUaClient client, Supplier<EndpointConfiguration> endpoints) {
     configureInactiveState(fb, client);
     configureCreatingWaitState(fb, client);
-    configureCreatingState(fb, client);
+    configureCreatingState(fb, client, endpoints);
     configureActivatingState(fb, client);
     configureTransferringState(fb, client);
     configureInitializingState(fb, client);
@@ -303,7 +322,8 @@ public class SessionFsmFactory {
         .execute(SessionFsmFactory::handleOpenSessionEvent);
   }
 
-  private static void configureCreatingState(FsmBuilder<State, Event> fb, OpcUaClient client) {
+  private static void configureCreatingState(
+      FsmBuilder<State, Event> fb, OpcUaClient client, Supplier<EndpointConfiguration> endpoints) {
     /* Transitions */
 
     fb.when(State.Creating).on(Event.CreateSessionSuccess.class).transitionTo(State.Activating);
@@ -331,7 +351,7 @@ public class SessionFsmFactory {
               handleOpenSessionEvent(ctx);
 
               //noinspection Duplicates
-              createSession(ctx, client)
+              createSession(ctx, client, endpoints)
                   .whenComplete(
                       (csr, ex) -> {
                         if (csr != null) {
@@ -359,7 +379,7 @@ public class SessionFsmFactory {
         .execute(
             ctx -> {
               //noinspection Duplicates
-              createSession(ctx, client)
+              createSession(ctx, client, endpoints)
                   .whenComplete(
                       (csr, ex) -> {
                         if (csr != null) {
@@ -1299,7 +1319,7 @@ public class SessionFsmFactory {
 
   /** The inputs of one CreateSession attempt, captured when the request is built. */
   private record CreateSessionAttempt(
-      EndpointDescription endpoint,
+      EndpointConfiguration endpoints,
       SecurityPolicy securityPolicy,
       ByteString clientNonce,
       ByteString clientCertificate,
@@ -1307,10 +1327,10 @@ public class SessionFsmFactory {
 
   @SuppressWarnings("Duplicates")
   private static CompletableFuture<CreateSessionResponse> createSession(
-      FsmContext<State, Event> ctx, OpcUaClient client) {
+      FsmContext<State, Event> ctx, OpcUaClient client, Supplier<EndpointConfiguration> endpoints) {
 
-    // The request is built once the channel is ready, so its inputs are captured together and
-    // verified against the same attempt.
+    // The request is built once the channel is ready, so the endpoint it captures is the one the
+    // channel was established with, even if a refresh replaced it while reconnecting.
     var attempt = new AtomicReference<CreateSessionAttempt>();
 
     try {
@@ -1318,8 +1338,7 @@ public class SessionFsmFactory {
           .getTransport()
           .sendRequestMessage(
               () -> {
-                CreateSessionAttempt built =
-                    buildCreateSession(ctx, client, client.getConfig().getEndpoint());
+                CreateSessionAttempt built = buildCreateSession(ctx, client, endpoints.get());
                 attempt.set(built);
                 return built.request();
               },
@@ -1332,9 +1351,10 @@ public class SessionFsmFactory {
   }
 
   private static CreateSessionAttempt buildCreateSession(
-      FsmContext<State, Event> ctx, OpcUaClient client, EndpointDescription endpoint)
+      FsmContext<State, Event> ctx, OpcUaClient client, EndpointConfiguration endpointConfiguration)
       throws Exception {
 
+    EndpointDescription endpoint = endpointConfiguration.endpoint();
     KEY_CREATE_SESSION_ENDPOINT.set(ctx, endpoint);
     SecurityPolicy securityPolicy = SecurityPolicy.fromUri(endpoint.getSecurityPolicyUri());
     Optional<CertificateIdentity> certificateIdentity =
@@ -1404,13 +1424,14 @@ public class SessionFsmFactory {
     }
 
     return new CreateSessionAttempt(
-        endpoint, securityPolicy, clientNonce, clientCertificate, request);
+        endpointConfiguration, securityPolicy, clientNonce, clientCertificate, request);
   }
 
   private static CompletableFuture<CreateSessionResponse> verifyCreateSessionResponse(
       OpcUaClient client, CreateSessionAttempt attempt, CreateSessionResponse response) {
 
-    EndpointDescription endpoint = attempt.endpoint();
+    EndpointConfiguration endpointConfiguration = attempt.endpoints();
+    EndpointDescription endpoint = endpointConfiguration.endpoint();
     SecurityPolicy securityPolicy = attempt.securityPolicy();
     ByteString clientNonce = attempt.clientNonce();
     ByteString clientCertificate = attempt.clientCertificate();
@@ -1466,7 +1487,7 @@ public class SessionFsmFactory {
       if (client.getConfig().isSessionEndpointValidationEnabled()) {
         validateSessionEndpoints(
             endpoint.getTransportProfileUri(),
-            client.getConfig().getDiscoveryEndpoints(),
+            endpointConfiguration.discoveryEndpoints(),
             List.of(
                 Objects.requireNonNullElse(
                     response.getServerEndpoints(), new EndpointDescription[0])));

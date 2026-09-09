@@ -37,7 +37,8 @@ import org.jspecify.annotations.Nullable;
 public class OpcUaClientConfigBuilder {
 
   private EndpointDescription endpoint;
-  private List<EndpointDescription> discoveryEndpoints;
+  private List<EndpointDescription> discoveryEndpoints = List.of();
+  private @Nullable EndpointResolver endpointResolver;
   private @Nullable CertificateGroup certificateGroup;
   private @Nullable KeyPair identityKeyPair;
   private X509Certificate @Nullable [] identityCertificateChain;
@@ -158,6 +159,32 @@ public class OpcUaClientConfigBuilder {
 
   public OpcUaClientConfigBuilder setEndpoint(EndpointDescription endpoint) {
     this.endpoint = endpoint;
+    return this;
+  }
+
+  /**
+   * Refresh the endpoint after SecureChannel establishment fails on a secured endpoint, so the
+   * client can recover when the server's application certificate changes.
+   *
+   * <p>The trigger is any failure between a successful Hello/Acknowledge exchange and a ready
+   * channel, not just certificate errors: a rejected client certificate, an OPN timeout, or a
+   * server that closes the connection all qualify. A client that cannot connect for another reason
+   * therefore issues GetEndpoints on each qualifying failure, immediately after {@code connect()}
+   * or a working connection and then at the resolver's cooldown, which doubles once (about every 60
+   * s by default) while the failures continue. Clients without a resolver never issue discovery
+   * traffic after {@code connect()}.
+   *
+   * <p>The resolver reruns the application's discovery and selection; use {@link
+   * EndpointResolver#create} for bounded TCP discovery. A refresh must select the same endpoint as
+   * {@link #setEndpoint}: same URL (including any host override), server URI, transport, security
+   * policy, mode and user token policies. Only the server certificate is expected to differ; any
+   * other difference is rejected and the client keeps the endpoint it has.
+   *
+   * @param endpointResolver the asynchronous discovery and selection strategy.
+   * @return this builder.
+   */
+  public OpcUaClientConfigBuilder setEndpointResolver(EndpointResolver endpointResolver) {
+    this.endpointResolver = endpointResolver;
     return this;
   }
 
@@ -310,6 +337,7 @@ public class OpcUaClientConfigBuilder {
     return new OpcUaClientConfigImpl(
         endpoint,
         discoveryEndpoints,
+        endpointResolver,
         effectiveCertificateGroup,
         certificateIdentitySelector,
         certificateTypeId,
@@ -336,6 +364,7 @@ public class OpcUaClientConfigBuilder {
 
     private final EndpointDescription endpoint;
     private final List<EndpointDescription> discoveryEndpoints;
+    private final @Nullable EndpointResolver endpointResolver;
     private final @Nullable CertificateGroup certificateGroup;
     private final CertificateIdentitySelector certificateIdentitySelector;
     private final @Nullable NodeId certificateTypeId;
@@ -361,6 +390,7 @@ public class OpcUaClientConfigBuilder {
     OpcUaClientConfigImpl(
         EndpointDescription endpoint,
         List<EndpointDescription> discoveryEndpoints,
+        @Nullable EndpointResolver endpointResolver,
         @Nullable CertificateGroup certificateGroup,
         CertificateIdentitySelector certificateIdentitySelector,
         @Nullable NodeId certificateTypeId,
@@ -384,6 +414,7 @@ public class OpcUaClientConfigBuilder {
 
       this.endpoint = endpoint;
       this.discoveryEndpoints = discoveryEndpoints;
+      this.endpointResolver = endpointResolver;
       this.certificateGroup = certificateGroup;
       this.certificateIdentitySelector = certificateIdentitySelector;
       this.certificateTypeId = certificateTypeId;
@@ -409,6 +440,11 @@ public class OpcUaClientConfigBuilder {
     @Override
     public EndpointDescription getEndpoint() {
       return endpoint;
+    }
+
+    @Override
+    public Optional<EndpointResolver> getEndpointResolver() {
+      return Optional.ofNullable(endpointResolver);
     }
 
     @Override

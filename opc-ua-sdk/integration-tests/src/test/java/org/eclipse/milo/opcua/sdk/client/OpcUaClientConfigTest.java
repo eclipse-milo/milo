@@ -116,6 +116,7 @@ public class OpcUaClientConfigTest {
 
     OpcUaClientConfig copy = OpcUaClientConfig.copy(original).build();
 
+    assertEquals(original.getEndpoint(), copy.getEndpoint());
     assertEquals(original.getSessionName(), copy.getSessionName());
     assertEquals(original.getSessionTimeout(), copy.getSessionTimeout());
     assertEquals(original.getMaxResponseMessageSize(), copy.getMaxResponseMessageSize());
