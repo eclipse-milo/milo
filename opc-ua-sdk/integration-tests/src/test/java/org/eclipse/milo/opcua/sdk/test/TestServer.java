@@ -17,14 +17,12 @@ import static org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig.USER_TOKEN_POL
 import java.io.File;
 import java.nio.file.Files;
 import java.security.KeyPair;
-import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
@@ -60,11 +58,6 @@ import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransportCo
 public final class TestServer {
 
   private static TestCertificateMaterial certificateMaterial;
-
-  static {
-    // Required for SecurityPolicy.Aes256_Sha256_RsaPss
-    Security.addProvider(new BouncyCastleProvider());
-  }
 
   private final OpcUaServer opcUaServer;
   private final X509Certificate clientCertificate;

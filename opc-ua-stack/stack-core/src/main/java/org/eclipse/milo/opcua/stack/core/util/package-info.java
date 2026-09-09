@@ -15,6 +15,14 @@
  * coordination. The calling transport or SDK retains authority over protocol validation and
  * resource lifecycles; utility objects do not own its channels, sessions, or executor shutdown.
  *
+ * <p>{@link org.eclipse.milo.opcua.stack.core.util.CipherFactory} and {@link
+ * org.eclipse.milo.opcua.stack.core.util.SignatureFactory} create initialized RSA JCA operations
+ * with the algorithm parameters shared by SecureChannel, session signatures, and user-token
+ * protection; {@link org.eclipse.milo.opcua.stack.core.util.SignatureUtil} builds on the signature
+ * factory. RSA operations use configured JCA provider order; explicit PSS and OAEP parameters keep
+ * the wire format consistent across providers. Callers retain authority over mapping cryptographic
+ * failures to protocol status codes.
+ *
  * <p>{@link org.eclipse.milo.opcua.stack.core.util.ExecutionQueue} serializes callbacks by default
  * and can permit an explicit number of concurrent workers. It retains queued tasks when executor
  * dispatch throws a runtime exception by running the worker on the submitting thread. Pausing stops

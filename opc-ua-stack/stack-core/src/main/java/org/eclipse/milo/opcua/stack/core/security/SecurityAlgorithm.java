@@ -12,10 +12,16 @@ package org.eclipse.milo.opcua.stack.core.security;
 
 import java.security.MessageDigest;
 import java.security.Signature;
+import java.security.spec.AlgorithmParameterSpec;
+import java.security.spec.MGF1ParameterSpec;
+import java.security.spec.PSSParameterSpec;
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
+import javax.crypto.spec.OAEPParameterSpec;
+import javax.crypto.spec.PSource;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.jspecify.annotations.Nullable;
 
 public enum SecurityAlgorithm {
   None("", ""),
@@ -44,31 +50,30 @@ public enum SecurityAlgorithm {
   /**
    * Asymmetric Signature; transformation to be used with {@link Signature#getInstance(String)}.
    *
-   * <p>Requires Bouncy Castle installed as a Security Provider.
+   * <p>Requires the explicit PSS parameters from {@link #getAlgorithmParameterSpec()}.
    */
-  RsaSha256Pss("http://opcfoundation.org/UA/security/rsa-pss-sha2-256", "SHA256withRSA/PSS"),
+  RsaSha256Pss("http://opcfoundation.org/UA/security/rsa-pss-sha2-256", "RSASSA-PSS"),
 
   /** Asymmetric Encryption; transformation to be used with {@link Cipher#getInstance(String)}. */
   Rsa15("http://www.w3.org/2001/04/xmlenc#rsa-1_5", "RSA/ECB/PKCS1Padding"),
 
-  /** Asymmetric Encryption; transformation to be used with {@link Cipher#getInstance(String)}. */
+  /**
+   * Asymmetric Encryption; transformation to be used with {@link Cipher#getInstance(String)}.
+   *
+   * <p>{@link #getAlgorithmParameterSpec()} returns the JDK default OAEP parameters (SHA-1 for both
+   * the digest and MGF1), pinned explicitly so provider defaults cannot change the wire format.
+   */
   RsaOaepSha1("http://www.w3.org/2001/04/xmlenc#rsa-oaep", "RSA/ECB/OAEPWithSHA-1AndMGF1Padding"),
 
   /**
    * Asymmetric Encryption; transformation to be used with {@link Cipher#getInstance(String)}.
    *
-   * <p>Important note: the transformation used is "RSA/ECB/OAEPWithSHA256AndMGF1Padding" as opposed
-   * to "RSA/ECB/OAEPWithSHA-256AndMGF1Padding".
-   *
-   * <p>While similar, the former is provided by Bouncy Castle whereas the latter is provided by
-   * SunJCE.
-   *
-   * <p>This is important because the BC version uses SHA256 in the padding while the SunJCE version
-   * uses Sha1.
+   * <p>Requires the explicit OAEP parameters from {@link #getAlgorithmParameterSpec()} so both the
+   * digest and MGF1 use SHA-256 regardless of provider defaults.
    */
   RsaOaepSha256(
       "http://opcfoundation.org/UA/security/rsa-oaep-sha2-256",
-      "RSA/ECB/OAEPWithSHA256AndMGF1Padding"),
+      "RSA/ECB/OAEPWithSHA-256AndMGF1Padding"),
 
   /** Asymmetric Key Wrap */
   KwRsa15("http://www.w3.org/2001/04/xmlenc#rsa-1_5", ""),
@@ -97,6 +102,13 @@ public enum SecurityAlgorithm {
    */
   Sha384("http://www.w3.org/2001/04/xmldsig-more#sha384", "SHA-384");
 
+  private static final PSSParameterSpec PSS_SHA256 =
+      new PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 32, 1);
+
+  private static final OAEPParameterSpec OAEP_SHA256 =
+      new OAEPParameterSpec(
+          "SHA-256", "MGF1", MGF1ParameterSpec.SHA256, PSource.PSpecified.DEFAULT);
+
   private final String uri;
   private final String transformation;
 
@@ -117,6 +129,26 @@ public enum SecurityAlgorithm {
    */
   public String getTransformation() {
     return transformation;
+  }
+
+  /**
+   * Returns the parameters required by this algorithm, or {@code null} if none are needed.
+   *
+   * <p>RSA-PSS uses SHA-256, MGF1/SHA-256, a 32-byte salt, and trailer field 1. RSA-OAEP uses the
+   * named digest for both OAEP and MGF1, with an empty label. Callers creating JCA operations
+   * directly must apply these parameters when initializing a cipher or configuring a signature;
+   * {@link org.eclipse.milo.opcua.stack.core.util.SignatureFactory} and {@link
+   * org.eclipse.milo.opcua.stack.core.util.CipherFactory} do this.
+   *
+   * @return the algorithm parameters, or {@code null} if none are needed.
+   */
+  public @Nullable AlgorithmParameterSpec getAlgorithmParameterSpec() {
+    return switch (this) {
+      case RsaSha256Pss -> PSS_SHA256;
+      case RsaOaepSha256 -> OAEP_SHA256;
+      case RsaOaepSha1 -> OAEPParameterSpec.DEFAULT;
+      default -> null;
+    };
   }
 
   public static SecurityAlgorithm fromUri(String securityAlgorithmUri) throws UaException {

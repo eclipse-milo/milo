@@ -43,7 +43,9 @@ import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.KeyAgree
 import org.eclipse.milo.opcua.stack.core.security.SecurityProviderResolver;
 import org.eclipse.milo.opcua.stack.core.security.SecurityProviderResolver.ProviderProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.util.CipherFactory;
 import org.eclipse.milo.opcua.stack.core.util.PShaUtil;
+import org.eclipse.milo.opcua.stack.core.util.SignatureFactory;
 import org.eclipse.milo.opcua.stack.core.util.SignatureUtil;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -427,9 +429,8 @@ final class SecureChannelStrategies {
 
       try {
         Signature signature =
-            Signature.getInstance(profile.asymmetricSignatureAlgorithm().getTransformation());
-
-        signature.initVerify(certificate);
+            SignatureFactory.createForVerification(
+                profile.asymmetricSignatureAlgorithm(), certificate);
 
         for (ByteBuffer signedByteBuffer : signedBytes) {
           signature.update(signedByteBuffer);
@@ -438,12 +439,12 @@ final class SecureChannelStrategies {
         if (!signature.verify(signatureBytes)) {
           throw new UaException(StatusCodes.Bad_SecurityChecksFailed, "could not verify signature");
         }
-      } catch (java.security.NoSuchAlgorithmException e) {
-        throw new UaException(StatusCodes.Bad_InternalError, e);
       } catch (SignatureException e) {
         throw new UaException(StatusCodes.Bad_ApplicationSignatureInvalid, e);
       } catch (InvalidKeyException e) {
         throw new UaException(StatusCodes.Bad_CertificateInvalid, e);
+      } catch (GeneralSecurityException e) {
+        throw new UaException(StatusCodes.Bad_InternalError, e);
       }
     }
 
@@ -1616,10 +1617,8 @@ final class SecureChannelStrategies {
         throws UaException {
 
       try {
-        Cipher cipher =
-            Cipher.getInstance(profile.asymmetricEncryptionAlgorithm().getTransformation());
-        cipher.init(Cipher.ENCRYPT_MODE, remoteCertificate.getPublicKey());
-        return cipher;
+        return CipherFactory.createForEncryption(
+            profile.asymmetricEncryptionAlgorithm(), remoteCertificate.getPublicKey());
       } catch (GeneralSecurityException e) {
         throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
       }
@@ -1630,10 +1629,8 @@ final class SecureChannelStrategies {
         throws UaException {
 
       try {
-        Cipher cipher =
-            Cipher.getInstance(profile.asymmetricEncryptionAlgorithm().getTransformation());
-        cipher.init(Cipher.DECRYPT_MODE, privateKey);
-        return cipher;
+        return CipherFactory.createForDecryption(
+            profile.asymmetricEncryptionAlgorithm(), privateKey);
       } catch (GeneralSecurityException e) {
         throw new UaException(StatusCodes.Bad_InternalError, e);
       }

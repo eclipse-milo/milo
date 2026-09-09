@@ -22,6 +22,12 @@
  * org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfiles} instead of hard-coding policy
  * switches.
  *
+ * <p>Legacy RSA policies, including {@code Aes256_Sha256_RsaPss}, work with the built-in JDK 17
+ * providers without registering Bouncy Castle. {@link
+ * org.eclipse.milo.opcua.stack.core.security.SecurityAlgorithm} supplies explicit PSS and OAEP
+ * parameters so configured JCA providers produce the same wire format. Bouncy Castle libraries
+ * remain in use for certificate utilities and enhanced policies that need them.
+ *
  * <h2>Current enhanced profile families</h2>
  *
  * <p>Current ECC policies split authentication, key agreement, and chunk protection into separate
