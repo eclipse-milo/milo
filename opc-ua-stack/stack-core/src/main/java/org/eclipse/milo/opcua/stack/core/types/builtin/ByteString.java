@@ -22,6 +22,9 @@ public record ByteString(byte @Nullable [] bytes) {
 
   public static final ByteString NULL_VALUE = new ByteString(null);
 
+  /** The hash of an empty array, which is also the hash of a null ByteString. */
+  private static final int NULL_OR_EMPTY_HASH_CODE = Arrays.hashCode(new byte[0]);
+
   public int length() {
     return bytes != null ? bytes.length : 0;
   }
@@ -88,7 +91,9 @@ public record ByteString(byte @Nullable [] bytes) {
 
   @Override
   public int hashCode() {
-    return Arrays.hashCode(bytes);
+    // equals() considers a null and an empty ByteString equal, but Arrays.hashCode() returns 0 for
+    // null and 1 for an empty array, so hash a null ByteString as if it were empty.
+    return bytes != null ? Arrays.hashCode(bytes) : NULL_OR_EMPTY_HASH_CODE;
   }
 
   @Override
