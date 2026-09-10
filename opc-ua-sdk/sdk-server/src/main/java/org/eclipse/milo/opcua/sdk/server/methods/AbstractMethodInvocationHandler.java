@@ -43,9 +43,11 @@ import org.eclipse.milo.opcua.stack.core.util.ArrayUtil;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A partial implementation of {@link MethodInvocationHandler} that handles checking the Executable
- * and UserExecutable attributes as well as validating the supplied input values against the input
- * {@link Argument}s.
+ * A partial implementation of {@link MethodInvocationHandler} that validates input argument counts,
+ * shapes and data types before invoking application code.
+ *
+ * <p>Callers are responsible for access checks. Normal server Method dispatch applies the
+ * configured access controller before invoking this handler.
  */
 public abstract class AbstractMethodInvocationHandler implements MethodInvocationHandler {
 
@@ -102,7 +104,15 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
           boolean argIsStructType =
               NodeIds.Structure.equals(argDataTypeId) || dataTypeTree.isStructType(argDataTypeId);
 
-          if (argIsStructType) {
+          if (dataTypeTree.getBackingClass(argDataTypeId) == Variant.class) {
+            // Variant-backed declarations accept payload types, not just the wrapper class.
+            // Check Matrix elements without replacing the original representation.
+            try {
+              Variant.of(elementsOf(value));
+            } catch (IllegalArgumentException | ClassCastException e) {
+              dataTypeMatch = false;
+            }
+          } else if (argIsStructType) {
             try {
               if (value instanceof ExtensionObject xo) {
                 UaStructuredType decoded = decodeStructure(xo);
@@ -377,8 +387,8 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
   /**
    * Invoke this method and return the values for its output arguments, if any.
    *
-   * <p>The Executable and UserExecutable attributes have already been checked to ensure this method
-   * is allowed to execute.
+   * <p>Input arguments have already passed shape, data type and application value validation.
+   * Callers remain responsible for access checks.
    *
    * @param invocationContext the {@link InvocationContext}.
    * @param inputValues the user-supplied values for the input arguments. Each value has been
