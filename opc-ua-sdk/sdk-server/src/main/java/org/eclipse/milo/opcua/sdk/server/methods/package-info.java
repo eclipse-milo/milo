@@ -24,7 +24,9 @@
  * checks. Structure declarations validate decoded type identities using the server's data type tree
  * and encoding context. Their scalar and array inputs are delivered as decoded structures; Matrix
  * inputs retain their original representation. Variant-backed inputs also retain their payload
- * representation. A null Matrix is delivered as a null value for any declaration.
+ * representation. A null Matrix is delivered as a null value for any declaration. An empty value
+ * for a declaration of ValueRank 2 or greater is delivered as an empty Matrix of the declared rank,
+ * since the wire form of an empty value carries no dimensions.
  *
  * <p>Validation uses a copy of the request's argument array, so substitutions do not modify the
  * request. Implementations add value constraints through {@code validateInputArgumentValues} and

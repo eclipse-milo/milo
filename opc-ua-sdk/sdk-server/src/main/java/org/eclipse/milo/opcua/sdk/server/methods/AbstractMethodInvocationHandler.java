@@ -161,6 +161,7 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
         }
 
         if (dataTypeMatch) {
+          inputArgumentValues[i] = restoreMatrixRank(argument, inputArgumentValues[i]);
           inputDataTypeCheckResults[i] = StatusCode.GOOD;
         } else {
           inputDataTypeCheckResults[i] = new StatusCode(StatusCodes.Bad_TypeMismatch);
@@ -227,20 +228,23 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
     int rank =
         value instanceof Matrix matrix ? matrix.getValueRank() : ArrayUtil.getValueRank(value);
     int valueRank = argument.getValueRank();
+    boolean emptyArray = isEmptyArray(value);
     boolean rankMatches =
         switch (valueRank) {
           case ValueRanks.ScalarOrOneDimension -> rank == ValueRanks.Scalar || rank == 1;
           case ValueRanks.Any -> true;
           case ValueRanks.Scalar -> rank == ValueRanks.Scalar;
           case ValueRanks.OneOrMoreDimensions -> rank >= 1;
-          default -> valueRank > 0 && rank == valueRank;
+          default -> valueRank > 0 && (rank == valueRank || emptyArray);
         };
     if (!rankMatches) {
       return false;
     }
 
     UInteger[] maxima = argument.getArrayDimensions();
-    if (valueRank > 0 && maxima != null && maxima.length > 0) {
+    // An empty array has no element to exceed a maximum, and its single dimension does not line up
+    // with the dimensions declared for a higher rank.
+    if (valueRank > 0 && !emptyArray && maxima != null && maxima.length > 0) {
       int[] dimensions =
           value instanceof Matrix matrix ? matrix.getDimensions() : ArrayUtil.getDimensions(value);
       if (maxima.length != dimensions.length) {
@@ -254,6 +258,36 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
       }
     }
     return true;
+  }
+
+  /**
+   * Whether {@code value} is a zero-length one-dimensional array, the form an empty value of any
+   * rank arrives in.
+   *
+   * <p>OPC 10000-6, 5.2.2.16 and 5.3.1.17 carry an empty Matrix as an empty array with no
+   * ArrayDimensions, so an empty value has no rank of its own on the wire.
+   */
+  private static boolean isEmptyArray(@Nullable Object value) {
+    return value != null && ArrayUtil.getValueRank(value) == 1 && Array.getLength(value) == 0;
+  }
+
+  /**
+   * Give an empty value supplied for an Argument of ValueRank 2 or greater the Matrix
+   * representation its declared rank calls for, with a zero length in every dimension.
+   *
+   * @param argument the {@link Argument} the value was supplied for.
+   * @param variant the value supplied for {@code argument}.
+   * @return {@code variant}, or an empty {@link Matrix} of the Argument's declared rank.
+   */
+  private static Variant restoreMatrixRank(Argument argument, Variant variant) {
+    int valueRank = argument.getValueRank();
+    Object value = variant.value();
+
+    if (valueRank >= 2 && isEmptyArray(value)) {
+      return new Variant(new Matrix(value, new int[valueRank]));
+    } else {
+      return variant;
+    }
   }
 
   private @Nullable UaStructuredType decodeStructure(@Nullable ExtensionObject xo) {
@@ -397,7 +431,9 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
    *     arguments, an array of the DataType's registered class, e.g. {@code XVType[]}) rather than
    *     the raw {@link ExtensionObject}(s) received in the request. A null ExtensionObject, whether
    *     scalar or an array element, is delivered as {@code null}. Matrix arguments retain their
-   *     original representation; their elements are decoded only for validation.
+   *     original representation; their elements are decoded only for validation. An empty value for
+   *     an argument of ValueRank 2 or greater is delivered as an empty {@link Matrix} of the
+   *     declared rank, because its wire form carries no dimensions.
    * @return this output values matching this Method's output arguments, if any.
    * @throws UaException if invocation has failed for some reason.
    */
