@@ -16,7 +16,6 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Signature;
-import java.security.SignatureException;
 import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,11 +41,8 @@ public class SignatureUtil {
       SecurityAlgorithm securityAlgorithm, PrivateKey privateKey, ByteBuffer... buffers)
       throws UaException {
 
-    String transformation = securityAlgorithm.getTransformation();
-
     try {
-      Signature signature = Signature.getInstance(transformation);
-      signature.initSign(privateKey);
+      Signature signature = SignatureFactory.createForSigning(securityAlgorithm, privateKey);
 
       for (ByteBuffer buffer : buffers) {
         signature.update(buffer);
@@ -76,18 +72,16 @@ public class SignatureUtil {
       throws UaException {
 
     try {
-      Signature signature = Signature.getInstance(algorithm.getTransformation());
-      signature.initVerify(certificate);
-
+      Signature signature = SignatureFactory.createForVerification(algorithm, certificate);
       signature.update(dataBytes);
 
       if (!signature.verify(signatureBytes)) {
         throw new UaException(StatusCodes.Bad_SecurityChecksFailed, "could not verify signature");
       }
-    } catch (NoSuchAlgorithmException | SignatureException e) {
-      throw new UaException(StatusCodes.Bad_InternalError, e);
     } catch (InvalidKeyException e) {
       throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
+    } catch (GeneralSecurityException e) {
+      throw new UaException(StatusCodes.Bad_InternalError, e);
     }
   }
 

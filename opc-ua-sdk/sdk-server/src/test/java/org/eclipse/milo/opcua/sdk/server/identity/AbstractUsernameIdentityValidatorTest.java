@@ -53,6 +53,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.SignatureData;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserNameIdentityToken;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
+import org.eclipse.milo.opcua.stack.core.util.CipherFactory;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
 import org.jspecify.annotations.Nullable;
@@ -862,8 +863,7 @@ class AbstractUsernameIdentityValidatorTest {
 
   private static byte[] encrypt(SecurityPolicy securityPolicy, byte[] plainText) throws Exception {
     SecurityAlgorithm algorithm = securityPolicy.getAsymmetricEncryptionAlgorithm();
-    Cipher cipher = Cipher.getInstance(algorithm.getTransformation());
-    cipher.init(Cipher.ENCRYPT_MODE, rsaCertificate.getPublicKey());
+    Cipher cipher = CipherFactory.createForEncryption(algorithm, rsaCertificate.getPublicKey());
     return cipher.doFinal(plainText);
   }
 

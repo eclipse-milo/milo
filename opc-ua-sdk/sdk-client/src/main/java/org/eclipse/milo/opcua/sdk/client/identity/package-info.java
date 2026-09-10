@@ -40,6 +40,11 @@
  * material. Certificate-token providers may use ECC or RSA-DH security policies, but they must not
  * request username-secret key negotiation.
  *
+ * <p>Legacy RSA username-token encryption uses the shared stack {@link
+ * org.eclipse.milo.opcua.stack.core.util.CipherFactory}. The selected token policy supplies
+ * explicit OAEP parameters, independently of the channel's policy and the configured JCA provider's
+ * defaults.
+ *
  * <h2>Extension guidance</h2>
  *
  * <p>Custom providers should keep policy selection and token construction aligned. If a provider

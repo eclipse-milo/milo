@@ -45,6 +45,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned;
 import org.eclipse.milo.opcua.stack.core.types.structured.EphemeralKeyType;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.HkdfUtil;
+import org.eclipse.milo.opcua.stack.core.util.SignatureFactory;
 import org.eclipse.milo.opcua.stack.core.util.SignatureUtil;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -885,8 +886,8 @@ public final class EccEncryptedSecret {
       throws UaException {
     try {
       if (profile.authAxis() == SecurityPolicyProfile.AuthAxis.RSA_PKCS1_SHA256) {
-        Signature verifier = Signature.getInstance(SecurityAlgorithm.RsaSha256.getTransformation());
-        verifier.initVerify(publicKey);
+        Signature verifier =
+            SignatureFactory.createForVerification(SecurityAlgorithm.RsaSha256, publicKey);
         verifier.update(data);
 
         if (!verifier.verify(signature)) {

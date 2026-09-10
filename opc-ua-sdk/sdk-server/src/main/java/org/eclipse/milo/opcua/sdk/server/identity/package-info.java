@@ -33,6 +33,11 @@
  * signature before calling application authentication; the channel restrictions for encrypted
  * username or issued-token secrets do not apply to certificate tokens.
  *
+ * <p>Legacy RSA username-token decryption uses the shared stack {@link
+ * org.eclipse.milo.opcua.stack.core.util.CipherFactory}. The selected token policy supplies
+ * explicit OAEP parameters, independently of the channel's policy and the configured JCA provider's
+ * defaults.
+ *
  * <h2>Extension guidance</h2>
  *
  * <p>Applications usually extend the abstract validators and implement only the final credential

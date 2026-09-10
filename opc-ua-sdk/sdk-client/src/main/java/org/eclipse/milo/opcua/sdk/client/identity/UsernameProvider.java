@@ -46,6 +46,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.SignatureData;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserNameIdentityToken;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
+import org.eclipse.milo.opcua.stack.core.util.CipherFactory;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
 import org.slf4j.Logger;
@@ -553,10 +554,8 @@ public class UsernameProvider implements IdentityProvider {
     assert (serverCertificate != null);
 
     try {
-      String transformation = securityPolicy.getAsymmetricEncryptionAlgorithm().getTransformation();
-      Cipher cipher = Cipher.getInstance(transformation);
-      cipher.init(Cipher.ENCRYPT_MODE, serverCertificate.getPublicKey());
-      return cipher;
+      return CipherFactory.createForEncryption(
+          securityPolicy.getAsymmetricEncryptionAlgorithm(), serverCertificate.getPublicKey());
     } catch (GeneralSecurityException e) {
       throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
     }

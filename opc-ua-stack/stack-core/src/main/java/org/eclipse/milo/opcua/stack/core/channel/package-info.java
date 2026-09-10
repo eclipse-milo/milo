@@ -41,6 +41,12 @@
  * the negotiated client/server nonces into directional symmetric keys. Chunk protection then uses
  * those keys to sign, verify, pad, encrypt, or decrypt ordinary service chunks.
  *
+ * <p>RSA authentication and asymmetric encryption apply the explicit parameters from {@link
+ * org.eclipse.milo.opcua.stack.core.security.SecurityAlgorithm}. Cipher creation is shared with
+ * username-token protection through {@link org.eclipse.milo.opcua.stack.core.util.CipherFactory},
+ * and signature creation is shared with session authentication through {@link
+ * org.eclipse.milo.opcua.stack.core.util.SignatureFactory}.
+ *
  * <p>Existing RSA policies use RSA signatures, RSA-nonce P_SHA key derivation, RSA asymmetric
  * OpenSecureChannel encryption, and CBC/HMAC symmetric chunks. ECC and RSA-DH OpenSecureChannel
  * policies carry ephemeral public keys in the nonce fields and keep the first OpenSecureChannel

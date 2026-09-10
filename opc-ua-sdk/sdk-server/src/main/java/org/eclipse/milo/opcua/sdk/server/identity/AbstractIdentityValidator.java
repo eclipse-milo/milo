@@ -36,6 +36,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.UserNameIdentityToken;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.core.types.structured.X509IdentityToken;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
+import org.eclipse.milo.opcua.stack.core.util.CipherFactory;
 import org.eclipse.milo.opcua.stack.core.util.DigestUtil;
 
 public abstract class AbstractIdentityValidator implements IdentityValidator {
@@ -222,10 +223,7 @@ public abstract class AbstractIdentityValidator implements IdentityValidator {
 
   private Cipher getCipher(SecurityAlgorithm algorithm, KeyPair keyPair) throws UaException {
     try {
-      String transformation = algorithm.getTransformation();
-      Cipher cipher = Cipher.getInstance(transformation);
-      cipher.init(Cipher.DECRYPT_MODE, keyPair.getPrivate());
-      return cipher;
+      return CipherFactory.createForDecryption(algorithm, keyPair.getPrivate());
     } catch (GeneralSecurityException e) {
       throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
     }
