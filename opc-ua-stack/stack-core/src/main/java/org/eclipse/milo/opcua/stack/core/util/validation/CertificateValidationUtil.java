@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.stack.core.util.validation;
 import com.google.common.base.Preconditions;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.URI;
 import java.net.UnknownHostException;
 import java.security.AlgorithmParameters;
 import java.security.GeneralSecurityException;
@@ -37,6 +38,7 @@ import java.security.cert.PKIXBuilderParameters;
 import java.security.cert.PKIXCertPathBuilderResult;
 import java.security.cert.PKIXParameters;
 import java.security.cert.PKIXRevocationChecker;
+import java.security.cert.PKIXRevocationChecker.Option;
 import java.security.cert.TrustAnchor;
 import java.security.cert.X509CRL;
 import java.security.cert.X509CertSelector;
@@ -48,6 +50,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -71,6 +74,12 @@ import org.slf4j.LoggerFactory;
 public class CertificateValidationUtil {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CertificateValidationUtil.class);
+
+  /**
+   * Placeholder OCSP responder that keeps the JDK revocation checker from reading the {@code
+   * ocsp.responderURL} security property. Never contacted: the checker is configured for CRLs only.
+   */
+  private static final URI UNUSED_OCSP_RESPONDER = URI.create("urn:eclipse:milo:ocsp:unused");
 
   private static final String KEY_USAGE_OID = "2.5.29.15";
   private static final String EXTENDED_KEY_USAGE_OID = "2.5.29.37";
@@ -188,6 +197,9 @@ public class CertificateValidationUtil {
    *
    * <p>Each certificate is checked for validity, key usage, and revocation status. Whether a failed
    * check ultimately results in a thrown exception depends on the set of {@link ValidationCheck}s.
+   * A revocation established by an applicable CRL is always enforced; {@link
+   * ValidationCheck#REVOCATION_LISTS} decides whether an unknown revocation status is rejected or
+   * tolerated and logged.
    *
    * <p>The function is meant to be used in conjunction with {@link #buildTrustedCertPath(List,
    * Collection, Collection)}, the result of which contains a {@link CertPath} and {@link
@@ -197,9 +209,9 @@ public class CertificateValidationUtil {
    *     anchor.
    * @param trustAnchor a {@link TrustAnchor} containing the root of trust for the path being
    *     validated.
-   * @param crls a collection of {@link X509CRL}s. Every CA certificate in the trusted path except
-   *     the leaf should have a CRL, though whether that's enforced or not depends on {@link
-   *     ValidationCheck#REVOCATION_LISTS} being present.
+   * @param crls the {@link X509CRL}s available for revocation checking, normally the trust list's
+   *     CRLs. CRLs are evaluated by the JDK's PKIX revocation checker, which may fall back to a
+   *     distribution point named in a certificate when these CRLs do not cover its issuer.
    * @param validationChecks the set of {@link ValidationCheck}s to enforce.
    * @param endEntityIsClient {@code true} if the end-entity is a client, {@code false} if it is a
    *     server.
@@ -224,7 +236,8 @@ public class CertificateValidationUtil {
    *     anchor.
    * @param trustAnchor a {@link TrustAnchor} containing the root of trust for the path being
    *     validated.
-   * @param crls a collection of {@link X509CRL}s.
+   * @param crls the {@link X509CRL}s available for revocation checking, normally the trust list's
+   *     CRLs.
    * @param validationChecks the set of {@link ValidationCheck}s to enforce.
    * @param endEntityIsClient {@code true} if the end-entity is a client, {@code false} if it is a
    *     server.
@@ -249,132 +262,195 @@ public class CertificateValidationUtil {
 
     if (!anchorIsEndEntity) {
       // anchorCert is an issuer; validate the rest of the certPath
-      try {
-        CertPathValidator certPathValidator = CertPathValidator.getInstance("PKIX", "SUN");
+      List<CertPathValidatorException> unknownRevocationStatus =
+          validateIssuedCertPath(
+              certPath,
+              trustAnchor,
+              crls,
+              validationChecks,
+              endEntityIsClient,
+              securityPolicyProfile);
 
-        PKIXParameters parameters = new PKIXParameters(Set.of(trustAnchor));
+      for (CertPathValidatorException e : unknownRevocationStatus) {
+        X509Certificate certificate =
+            (X509Certificate) certPath.getCertificates().get(e.getIndex());
 
-        // The SUN PKIX validator verifies each link's signature using the default JCA providers,
-        // which cannot handle Brainpool curves. Route signature verification to Bouncy Castle when
-        // any certificate in the path uses such a curve, leaving the SUN validation flow (usage and
-        // revocation checkers) otherwise unchanged.
-        List<X509Certificate> pathCertificates = new ArrayList<>();
-        certPath.getCertificates().stream()
-            .map(X509Certificate.class::cast)
-            .forEach(pathCertificates::add);
-        configureSignatureProvider(parameters, pathCertificates, List.of(anchorCert));
-
-        parameters.addCertPathChecker(
-            new OpcUaCertificateUsageChecker(
-                certPath, validationChecks, endEntityIsClient, securityPolicyProfile));
-
-        try {
-          // Try to add our own custom revocation checker that can
-          // optionally suppress failures to locate the CRLs or allow
-          // certificates even if they've been revoked.
-
-          parameters.setRevocationEnabled(true);
-
-          Collection<X509CRL> applicableCrls =
-              selectApplicableCrls(crls, pathCertificates, anchorCert);
-
-          if (!applicableCrls.isEmpty()) {
-            parameters.addCertStore(
-                CertStore.getInstance(
-                    "Collection", new CollectionCertStoreParameters(applicableCrls)));
-          }
-
-          parameters.addCertPathChecker(
-              new OpcUaCertificateRevocationChecker(
-                  certPath, trustAnchor, parameters, validationChecks));
-        } catch (Exception e) {
-          // Couldn't add our custom revocation checker, so use the
-          // default one. It's not as fine-grained as ours - it's
-          // either enabled or it isn't, and CRL location is allowed
-          // to fail, regardless of the REVOCATION_LIST_FOUND check.
-
-          if (validationChecks.contains(ValidationCheck.REVOCATION)) {
-            parameters.setRevocationEnabled(true);
-
-            PKIXRevocationChecker pkixRevocationChecker =
-                (PKIXRevocationChecker) certPathValidator.getRevocationChecker();
-
-            pkixRevocationChecker.setOptions(
-                Set.of(
-                    PKIXRevocationChecker.Option.NO_FALLBACK,
-                    PKIXRevocationChecker.Option.PREFER_CRLS,
-                    PKIXRevocationChecker.Option.SOFT_FAIL));
-
-            // Configuring the checker is not enough; it only takes effect once it's part of the
-            // parameters. Without this the default revocation checker runs instead, and its
-            // stricter options fail the whole path when a CRL can't be located.
-            parameters.addCertPathChecker(pkixRevocationChecker);
-          } else {
-            parameters.setRevocationEnabled(false);
-          }
-
-          LOGGER.warn(
-              "Failed to add custom revocation checker; "
-                  + "REVOCATION_LIST_FOUND check will be ignored.");
-        }
-
-        certPathValidator.validate(certPath, parameters);
-      } catch (CertPathValidatorException e) {
-        CertPath path = e.getCertPath();
-        CertPathValidatorException.Reason reason = e.getReason();
-
-        int failedAtIndex = e.getIndex();
-
-        if (failedAtIndex < 0) {
-          throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
-        } else {
-          X509Certificate failed = (X509Certificate) path.getCertificates().get(failedAtIndex);
-
-          LOGGER.debug(
-              "cert path validation failed at index={} reason={}, certificate={}",
-              failedAtIndex,
-              reason,
-              failed.getSubjectX500Principal().getName());
-
-          if (reason == BasicReason.REVOKED) {
-            if (failedAtIndex == 0) {
-              throw new UaException(StatusCodes.Bad_CertificateRevoked, e);
-            } else {
-              throw new UaException(StatusCodes.Bad_CertificateIssuerRevoked, e);
-            }
-          } else if (reason == BasicReason.UNDETERMINED_REVOCATION_STATUS) {
-            if (failedAtIndex == 0) {
-              throw new UaException(StatusCodes.Bad_CertificateRevocationUnknown, e);
-            } else {
-              throw new UaException(StatusCodes.Bad_CertificateIssuerRevocationUnknown, e);
-            }
-          } else if (reason == BasicReason.EXPIRED || reason == BasicReason.NOT_YET_VALID) {
-            if (failedAtIndex == 0) {
-              throw new UaException(StatusCodes.Bad_CertificateTimeInvalid, e);
-            } else {
-              throw new UaException(StatusCodes.Bad_CertificateIssuerTimeInvalid, e);
-            }
-          } else {
-            throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
-          }
-        }
-      } catch (GeneralSecurityException e) {
-        throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
+        LOGGER.warn(
+            "check suppressed: revocation status unknown for certificate '{}' issued by '{}': {}",
+            certificate.getSubjectX500Principal().getName(),
+            certificate.getIssuerX500Principal().getName(),
+            e.getMessage());
       }
     }
+  }
+
+  /**
+   * Validates a non-empty {@code certPath} whose {@code trustAnchor} is an issuer of the end-entity
+   * certificate, including revocation checking against {@code crls}.
+   *
+   * <p>A revocation established by an applicable CRL always fails validation. When {@link
+   * ValidationCheck#REVOCATION_LISTS} is absent, a certificate whose revocation status cannot be
+   * established does not fail validation; the reason is returned instead so the caller can report
+   * it.
+   *
+   * @return the revocation checks that were tolerated because status could not be established, in
+   *     ascending order of {@link CertPathValidatorException#getIndex()}; empty when status was
+   *     established for every certificate or {@link ValidationCheck#REVOCATION_LISTS} is present.
+   * @throws UaException if validation failed.
+   */
+  static List<CertPathValidatorException> validateIssuedCertPath(
+      CertPath certPath,
+      TrustAnchor trustAnchor,
+      Collection<X509CRL> crls,
+      Set<ValidationCheck> validationChecks,
+      boolean endEntityIsClient,
+      @Nullable SecurityPolicyProfile securityPolicyProfile)
+      throws UaException {
+
+    X509Certificate anchorCert = trustAnchor.getTrustedCert();
+
+    try {
+      CertPathValidator certPathValidator = CertPathValidator.getInstance("PKIX", "SUN");
+
+      PKIXParameters parameters = new PKIXParameters(Set.of(trustAnchor));
+
+      // The SUN PKIX validator verifies each link's signature using the default JCA providers,
+      // which cannot handle Brainpool curves. Route signature verification to Bouncy Castle when
+      // any certificate in the path uses such a curve, leaving the SUN validation flow (usage and
+      // revocation checkers) otherwise unchanged.
+      List<X509Certificate> pathCertificates = new ArrayList<>();
+      certPath.getCertificates().stream()
+          .map(X509Certificate.class::cast)
+          .forEach(pathCertificates::add);
+      configureSignatureProvider(parameters, pathCertificates, List.of(anchorCert));
+
+      parameters.addCertPathChecker(
+          new OpcUaCertificateUsageChecker(
+              certPath, validationChecks, endEntityIsClient, securityPolicyProfile));
+
+      Collection<X509CRL> applicableCrls = selectApplicableCrls(crls, pathCertificates, anchorCert);
+
+      if (!applicableCrls.isEmpty()) {
+        parameters.addCertStore(
+            CertStore.getInstance("Collection", new CollectionCertStoreParameters(applicableCrls)));
+      }
+
+      PKIXRevocationChecker revocationChecker =
+          configureRevocationChecker(certPathValidator, parameters, anchorCert, validationChecks);
+
+      certPathValidator.validate(certPath, parameters);
+
+      return revocationChecker.getSoftFailExceptions();
+    } catch (CertPathValidatorException e) {
+      CertPath path = e.getCertPath();
+      CertPathValidatorException.Reason reason = e.getReason();
+
+      int failedAtIndex = e.getIndex();
+
+      if (failedAtIndex < 0) {
+        throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
+      } else {
+        X509Certificate failed = (X509Certificate) path.getCertificates().get(failedAtIndex);
+
+        LOGGER.debug(
+            "cert path validation failed at index={} reason={}, certificate={}",
+            failedAtIndex,
+            reason,
+            failed.getSubjectX500Principal().getName());
+
+        if (reason == BasicReason.REVOKED) {
+          if (failedAtIndex == 0) {
+            throw new UaException(StatusCodes.Bad_CertificateRevoked, e);
+          } else {
+            throw new UaException(StatusCodes.Bad_CertificateIssuerRevoked, e);
+          }
+        } else if (reason == BasicReason.UNDETERMINED_REVOCATION_STATUS) {
+          if (failedAtIndex == 0) {
+            throw new UaException(StatusCodes.Bad_CertificateRevocationUnknown, e);
+          } else {
+            throw new UaException(StatusCodes.Bad_CertificateIssuerRevocationUnknown, e);
+          }
+        } else if (reason == BasicReason.EXPIRED || reason == BasicReason.NOT_YET_VALID) {
+          if (failedAtIndex == 0) {
+            throw new UaException(StatusCodes.Bad_CertificateTimeInvalid, e);
+          } else {
+            throw new UaException(StatusCodes.Bad_CertificateIssuerTimeInvalid, e);
+          }
+        } else {
+          throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
+        }
+      }
+    } catch (GeneralSecurityException e) {
+      throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
+    }
+  }
+
+  /**
+   * Adds the JDK's PKIX revocation checker to {@code parameters}, configured to evaluate the CRLs
+   * in the parameters' cert stores and nothing else, and returns that checker.
+   *
+   * <p>The checker never consults OCSP and is isolated from the JVM-wide {@code ocsp.*} security
+   * properties. When {@link ValidationCheck#REVOCATION_LISTS} is absent, the checker tolerates an
+   * unknown revocation status and records why it could not be established.
+   *
+   * @return the configured checker; its {@link PKIXRevocationChecker#getSoftFailExceptions()}
+   *     reports the tolerated failures once validation has run.
+   */
+  private static PKIXRevocationChecker configureRevocationChecker(
+      CertPathValidator certPathValidator,
+      PKIXParameters parameters,
+      X509Certificate anchorCert,
+      Set<ValidationCheck> validationChecks) {
+
+    // Disable the provider's automatic revocation checking, whose options come from JDK security
+    // properties, so only the explicitly configured checker added below runs.
+    parameters.setRevocationEnabled(false);
+
+    PKIXRevocationChecker revocationChecker =
+        (PKIXRevocationChecker) certPathValidator.getRevocationChecker();
+
+    EnumSet<Option> options = EnumSet.of(Option.PREFER_CRLS, Option.NO_FALLBACK);
+
+    if (!validationChecks.contains(ValidationCheck.REVOCATION_LISTS)) {
+      // SOFT_FAIL tolerates any result other than a confirmed revocation: a missing CRL, but also
+      // one that is expired, not yet valid, or signed by the wrong key. None of those establish a
+      // status, so the tolerated failures are reported to the caller rather than dropped.
+      options.add(Option.SOFT_FAIL);
+    }
+
+    revocationChecker.setOptions(options);
+
+    // The JDK initializes its checker from the global ocsp.* security properties even in CRL-only
+    // mode: it parses ocsp.responderURL, and it looks a responder named by
+    // ocsp.responderCertSubjectName (or the issuer/serial pair) up among this validation's trust
+    // anchors and cert stores. Either step fails the whole validation when another component in
+    // the JVM has set those properties for its own use. Values supplied through the public API
+    // take precedence over the properties. OCSP is never consulted with PREFER_CRLS and
+    // NO_FALLBACK, so the responder set here is never used; it exists only to keep unrelated OCSP
+    // configuration out of CRL validation. If OCSP is ever enabled for this checker, this override
+    // must be revisited.
+    revocationChecker.setOcspResponder(UNUSED_OCSP_RESPONDER);
+    revocationChecker.setOcspResponderCert(anchorCert);
+
+    // PKIXParameters clones the checker, but the JDK's implementation shares its list of tolerated
+    // failures with its clones, so the instance returned here sees what validation recorded.
+    // CertificateRevocationTest.ToleratedFailureReporting guards that assumption.
+    parameters.addCertPathChecker(revocationChecker);
+
+    return revocationChecker;
   }
 
   /**
    * Removes CRLs that share an issuer name with a certificate in the path but were signed by a
    * different key.
    *
-   * <p>PKIX selects a CRL by issuer name alone. That is ambiguous whenever a trust list holds
+   * <p>PKIX chooses candidate CRLs by issuer name. That is ambiguous whenever a trust list holds
    * several CA certificates with the same subject name, which a Global Discovery Server produces as
    * a matter of course: a certificate group that offers more than one certificate type issues one
    * CA per type, all under the group's single configured subject name, and publishes a CRL for
-   * each. Handed more than one candidate, PKIX reports {@link
-   * BasicReason#UNDETERMINED_REVOCATION_STATUS} instead of trying each in turn, so the whole path
-   * fails even though the right CRL was present.
+   * each. Handed a same-named CRL signed by a different key alongside the right one, PKIX can lose
+   * the usable CRL: it reports {@link BasicReason#UNDETERMINED_REVOCATION_STATUS} when status is
+   * required, and can accept a revoked certificate when unknown status is tolerated.
    *
    * <p>A CRL whose issuer name matches nothing in the path is left alone; it belongs to some other
    * path and is not ours to judge.
@@ -534,6 +610,8 @@ public class CertificateValidationUtil {
 
       return (PKIXCertPathBuilderResult) builder.build(builderParams);
     } catch (GeneralSecurityException e) {
+      // Presented certificates are only path candidates. Their validity cannot establish why
+      // construction failed, so preserve the builder's failure instead of guessing from the list.
       throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
     }
   }

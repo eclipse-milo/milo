@@ -147,6 +147,13 @@
  * without closing its resources, so the application must coordinate final closure with any lookups
  * already in progress.
  *
+ * <p>{@link org.eclipse.milo.opcua.stack.core.security.DefaultServerCertificateValidator} owns the
+ * server's public certificate-error mapping. Failure to establish a trusted path is reported as
+ * {@code Bad_SecurityChecksFailed}, even when the underlying path builder reports a validity error.
+ * Revoked certificates and unavailable revocation information use the same public status. Detailed
+ * causes remain in the validator's debug log. Validity errors found after trust is established
+ * remain specific; client validation retains detailed certificate errors.
+ *
  * <h2>Runtime boundaries</h2>
  *
  * <p>Endpoint advertisement and SecureChannel creation should combine certificate availability,

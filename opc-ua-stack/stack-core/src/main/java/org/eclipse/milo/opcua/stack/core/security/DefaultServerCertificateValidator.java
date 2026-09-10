@@ -96,19 +96,11 @@ public class DefaultServerCertificateValidator implements CertificateValidator {
     } catch (UaException e) {
       certificateChain.forEach(certificateQuarantine::addRejectedCertificate);
 
-      long statusCode = e.getStatusCode().value();
-
       LOGGER.debug("validateCertificateChain failed, underlying status: {}", e.getStatusCode(), e);
 
-      if (statusCode == StatusCodes.Bad_CertificateUntrusted) {
-        // servers need to report a less informative StatusCode if the
-        // certificate was not trusted, either explicitly or because it
-        // or one if its issuers was revoked.
-
-        throw new UaException(StatusCodes.Bad_SecurityChecksFailed);
-      } else {
-        throw new UaException(e.getStatusCode());
-      }
+      // Part 4 §6.1.3 and Part 6 §6.7.7 require a generic error until trust is established.
+      // In particular, path building can fail with a validity error for an untrusted certificate.
+      throw new UaException(StatusCodes.Bad_SecurityChecksFailed);
     }
 
     try {
@@ -134,10 +126,11 @@ public class DefaultServerCertificateValidator implements CertificateValidator {
       LOGGER.debug("validateCertificateChain failed, underlying status: {}", e.getStatusCode(), e);
 
       if (statusCode == StatusCodes.Bad_CertificateRevoked
-          || statusCode == StatusCodes.Bad_CertificateIssuerRevoked) {
-        // servers need to report a less informative StatusCode if the
-        // certificate was not trusted, either explicitly or because it
-        // or one if its issuers was revoked.
+          || statusCode == StatusCodes.Bad_CertificateIssuerRevoked
+          || statusCode == StatusCodes.Bad_CertificateRevocationUnknown
+          || statusCode == StatusCodes.Bad_CertificateIssuerRevocationUnknown) {
+        // Part 4 §6.1.3 requires masking established revocation and recommends the same
+        // public status when revocation information is unavailable.
 
         throw new UaException(StatusCodes.Bad_SecurityChecksFailed);
       } else {
