@@ -953,7 +953,8 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
     }
   }
 
-  private void encodeVariantBodyValue(Object value, TypeHint typeHint, int typeId) {
+  private void encodeVariantBodyValue(Object value, TypeHint typeHint, int typeId)
+      throws IOException {
     switch (typeHint) {
       case BUILTIN:
         {
@@ -969,8 +970,13 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
       case STRUCT:
         {
           UaStructuredType struct = (UaStructuredType) value;
-          ExtensionObject xo = ExtensionObject.encode(encodingContext, struct);
-          encodeBuiltinTypeValue(null, typeId, xo);
+          if (struct == null) {
+            // Part 6, 5.4.5: null array elements are JSON null in both encoding modes.
+            jsonWriter.nullValue();
+          } else {
+            ExtensionObject xo = ExtensionObject.encode(encodingContext, struct);
+            encodeBuiltinTypeValue(null, typeId, xo);
+          }
           break;
         }
       case OPTION_SET:
