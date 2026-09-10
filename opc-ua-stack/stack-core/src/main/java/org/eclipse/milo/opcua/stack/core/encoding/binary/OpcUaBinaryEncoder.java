@@ -654,15 +654,15 @@ public class OpcUaBinaryEncoder implements UaEncoder {
 
           // OPC 10000-6, 5.2.2.16: ArrayDimensions is only present when there are at least two
           // dimensions and every dimension is greater than 0, and ArrayLength is 0 when any
-          // dimension is not. Anything else is written as a one-dimensional array.
-          boolean allPositive = allDimensionsPositive(dimensions);
-          boolean encodeDimensions = dimensions.length > 1 && allPositive;
+          // dimension is not. An empty Matrix is therefore written as an empty one-dimensional
+          // array; a Matrix with elements must have at least two positive dimensions.
+          boolean encodeDimensions = dimensions.length > 1 && allDimensionsPositive(dimensions);
 
-          if (!allPositive && length != 0) {
+          if (!encodeDimensions && length != 0) {
             throw new UaSerializationException(
                 StatusCodes.Bad_EncodingError,
                 String.format(
-                    "matrix has %s elements but a dimension <= 0 (dimensions=%s)",
+                    "matrix has %s elements but invalid dimensions %s",
                     length, Arrays.toString(dimensions)));
           }
 

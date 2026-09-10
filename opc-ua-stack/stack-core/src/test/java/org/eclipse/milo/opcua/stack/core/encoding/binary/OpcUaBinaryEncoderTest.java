@@ -355,7 +355,7 @@ public class OpcUaBinaryEncoderTest {
   // its element type, without the dimensions bit or the ArrayDimensions field.
   //
   // A Matrix with fewer than two dimensions cannot be constructed while assertions are enabled, so
-  // the rank half of the condition is not covered here.
+  // the rank half of the condition is not covered here or in the rejection test below.
   @ParameterizedTest(name = "{0}")
   @MethodSource("matrixVariantEncodings")
   void encodeVariantOfMatrixWritesDimensionsOnlyWhenAllArePositive(
@@ -368,8 +368,8 @@ public class OpcUaBinaryEncoderTest {
   // The empty-array form carries no dimensions, so a peer (and this decoder) sees a
   // one-dimensional empty array of the element type rather than a Matrix.
   // The Matrix constructors only assert consistency, so a Matrix can carry elements alongside a
-  // dimension of 0. The empty-array form would silently drop those elements; reject the value
-  // instead.
+  // dimension of 0. The empty-array form would silently drop those elements, and no other wire
+  // form can represent the value; reject it instead.
   @Test
   void encodeVariantOfMatrixWithElementsAndNonpositiveDimensionReportsEncodingError() {
     Matrix matrix = new Matrix(new Integer[] {1, 2}, new int[] {0, 2});
