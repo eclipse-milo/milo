@@ -25,6 +25,7 @@ import static org.eclipse.milo.opcua.stack.core.util.validation.TestCertificateG
 import static org.eclipse.milo.opcua.stack.core.util.validation.TestCertificateGenerator.ALIAS_YES_KEY_USAGE_YES_CA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -34,6 +35,7 @@ import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Security;
+import java.security.cert.CertPathBuilderException;
 import java.security.cert.PKIXCertPathBuilderResult;
 import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
@@ -241,8 +243,8 @@ public class CertificateValidationUtilTest {
 
   // Suppression stops at the trust anchor. The JDK checks the validity period of every certificate
   // inside a path while building it and offers no way to relax that, so an expired CA-issued
-  // certificate never reaches the VALIDITY decision: path construction rejects it first, and the
-  // failure is reported with the validity status code from Part 4 §6.1.3.
+  // certificate never reaches the VALIDITY decision. Preserve the path-building failure because
+  // the builder does not establish that validity is the only reason no path could be built.
   @Test
   void expiredCaIssuedCertificateIsRejectedWhilePathIsBuilt() throws Exception {
     long now = System.currentTimeMillis();
@@ -271,7 +273,8 @@ public class CertificateValidationUtilTest {
             () ->
                 buildTrustedCertPath(List.of(expiredLeaf), Set.of(caIntermediate), Set.of(caRoot)));
 
-    assertEquals(StatusCodes.Bad_CertificateTimeInvalid, e.getStatusCode().value());
+    assertEquals(StatusCodes.Bad_SecurityChecksFailed, e.getStatusCode().value());
+    assertInstanceOf(CertPathBuilderException.class, e.getCause());
   }
 
   @Test

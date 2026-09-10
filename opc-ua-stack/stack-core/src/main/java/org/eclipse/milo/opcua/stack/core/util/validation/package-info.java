@@ -46,6 +46,11 @@
  * validation checks are consulted. Relaxing that would require a Milo-owned path validator, which
  * this package deliberately does not provide.
  *
+ * <p>Path-building failures report {@code Bad_SecurityChecksFailed} and retain the original
+ * security exception as their cause. The presented chain contains candidates, so an expired or
+ * not-yet-valid certificate in that list does not establish why path construction failed. Specific
+ * validity errors are reported only when checking certificates in an established trusted path.
+ *
  * <p>Signature verification uses Bouncy Castle for Brainpool keys that the default JCA providers
  * cannot handle. CRL selection and path validation must use compatible providers so a provider
  * limitation cannot discard revocation information.

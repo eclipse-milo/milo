@@ -15,12 +15,14 @@ import static org.eclipse.milo.opcua.stack.core.util.validation.TestCertificateG
 import static org.eclipse.milo.opcua.stack.core.util.validation.TestCertificateGenerator.ALIAS_LEAF_INTERMEDIATE_SIGNED;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
+import java.security.cert.CertPathBuilderException;
 import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
@@ -395,6 +397,34 @@ class DefaultCertificateValidatorTest {
     assertEquals(StatusCodes.Bad_CertificateRevoked, e.getStatusCode().value());
   }
 
+  // A peer can append unrelated certificates. Their validity must not hide a missing issuer or
+  // discard the original path-building cause reported to the client application.
+  @ParameterizedTest
+  @CsvSource({"-2, -1", "1, 2"})
+  void defaultClientValidatorPreservesPathFailureWithUnrelatedInvalidCertificate(
+      int notBeforeDays, int notAfterDays) throws Exception {
+    X509Certificate unrelated = createSelfSignedCertificate(notBeforeDays, notAfterDays);
+    var validator =
+        new DefaultClientCertificateValidator(
+            trustListManager(caRoot),
+            ValidationCheck.NO_OPTIONAL_CHECKS,
+            new MemoryCertificateQuarantine());
+
+    UaException baseline =
+        assertThrows(
+            UaException.class,
+            () -> validator.validateCertificateChain(List.of(caSignedLeaf), null, null));
+    UaException withUnrelatedCertificate =
+        assertThrows(
+            UaException.class,
+            () -> validator.validateCertificateChain(List.of(caSignedLeaf, unrelated), null, null));
+
+    assertEquals(StatusCodes.Bad_SecurityChecksFailed, baseline.getStatusCode().value());
+    assertInstanceOf(CertPathBuilderException.class, baseline.getCause());
+    assertEquals(baseline.getStatusCode(), withUnrelatedCertificate.getStatusCode());
+    assertInstanceOf(CertPathBuilderException.class, withUnrelatedCertificate.getCause());
+  }
+
   // Part 4 §6.1.3 and CTT 033: a path-building failure must not expose an untrusted peer's
   // validity status. Part 6 §6.7.7 requires trust to be checked first.
   @ParameterizedTest
@@ -419,11 +449,16 @@ class DefaultCertificateValidatorTest {
   // Once trust is established, preserve the specific validity errors expected by CTT 007/008.
   @ParameterizedTest
   @CsvSource({"-2, -1", "1, 2"})
-  void defaultServerValidatorPreservesTrustedCertificateValidity(
-      int notBeforeDays, int notAfterDays) throws Exception {
+  void defaultValidatorsPreserveTrustedCertificateValidity(int notBeforeDays, int notAfterDays)
+      throws Exception {
     X509Certificate certificate = createSelfSignedCertificate(notBeforeDays, notAfterDays);
     var validator =
         new DefaultServerCertificateValidator(
+            trustListManager(certificate),
+            Set.of(ValidationCheck.VALIDITY),
+            new MemoryCertificateQuarantine());
+    var clientValidator =
+        new DefaultClientCertificateValidator(
             trustListManager(certificate),
             Set.of(ValidationCheck.VALIDITY),
             new MemoryCertificateQuarantine());
@@ -434,6 +469,13 @@ class DefaultCertificateValidatorTest {
             () -> validator.validateCertificateChain(List.of(certificate), null, null));
 
     assertEquals(StatusCodes.Bad_CertificateTimeInvalid, e.getStatusCode().value());
+
+    UaException clientError =
+        assertThrows(
+            UaException.class,
+            () -> clientValidator.validateCertificateChain(List.of(certificate), null, null));
+
+    assertEquals(StatusCodes.Bad_CertificateTimeInvalid, clientError.getStatusCode().value());
   }
 
   // The JDK rejects an expired CA-issued leaf during path construction. A trusted issuer alone
