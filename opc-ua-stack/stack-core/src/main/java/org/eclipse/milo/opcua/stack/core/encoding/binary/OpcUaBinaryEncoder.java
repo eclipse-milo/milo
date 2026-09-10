@@ -649,11 +649,24 @@ public class OpcUaBinaryEncoder implements UaEncoder {
           }
         } else {
           int[] dimensions = ((Matrix) value).getDimensions();
-
-          buffer.writeByte(typeId | 0xC0);
-
           Object elements = ((Matrix) value).getElements();
           int length = Array.getLength(elements);
+
+          // OPC 10000-6, 5.2.2.16: ArrayDimensions is only present when there are at least two
+          // dimensions and every dimension is greater than 0, and ArrayLength is 0 when any
+          // dimension is not. An empty Matrix is therefore written as an empty one-dimensional
+          // array; a Matrix with elements must have at least two positive dimensions.
+          boolean encodeDimensions = dimensions.length > 1 && allDimensionsPositive(dimensions);
+
+          if (!encodeDimensions && length != 0) {
+            throw new UaSerializationException(
+                StatusCodes.Bad_EncodingError,
+                String.format(
+                    "matrix has %s elements but invalid dimensions %s",
+                    length, Arrays.toString(dimensions)));
+          }
+
+          buffer.writeByte(typeId | (encodeDimensions ? 0xC0 : 0x80));
           buffer.writeIntLE(length);
 
           if (isPlainBuiltinArray(typeId, elements)) {
@@ -666,9 +679,11 @@ public class OpcUaBinaryEncoder implements UaEncoder {
             }
           }
 
-          encodeInt32(dimensions.length);
-          for (int dimension : dimensions) {
-            encodeInt32(dimension);
+          if (encodeDimensions) {
+            encodeInt32(dimensions.length);
+            for (int dimension : dimensions) {
+              encodeInt32(dimension);
+            }
           }
         }
       } else {
@@ -800,6 +815,13 @@ public class OpcUaBinaryEncoder implements UaEncoder {
     return componentType != null
         && (componentType == OpcUaDataType.getBackingClass(typeId)
             || componentType == OpcUaDataType.getPrimitiveBackingClass(typeId));
+  }
+
+  private static boolean allDimensionsPositive(int[] dimensions) {
+    for (int dimension : dimensions) {
+      if (dimension <= 0) return false;
+    }
+    return true;
   }
 
   /**
