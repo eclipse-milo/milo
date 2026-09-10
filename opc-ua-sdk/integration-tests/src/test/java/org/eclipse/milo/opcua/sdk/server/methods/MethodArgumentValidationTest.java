@@ -13,11 +13,13 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -174,7 +176,8 @@ class MethodArgumentValidationTest extends AbstractClientServerTest {
                 baseValue(2, new Matrix(new XVType[] {null, xv}, new int[] {1, 2})),
                 baseValue(2, new Matrix(new UaStructuredType[] {null, xv}, new int[] {1, 2})),
                 // Local only: Part 6 5.2.2.16 encodes an empty Matrix as an empty array with no
-                // dimensions, so the wire form arrives as a one-dimensional empty array.
+                // dimensions, so the wire form arrives as a one-dimensional empty array and is
+                // delivered as a Matrix of the declared rank rather than the payload sent.
                 baseValue(2, new Matrix(new String[0], new int[] {0, 2})),
                 baseValue(2, new Matrix(new XVType[0], new int[] {0, 2})),
                 baseValue(-1, Matrix.ofNull())))
@@ -351,6 +354,7 @@ class MethodArgumentValidationTest extends AbstractClientServerTest {
     return Stream.of(
         shape(-1, 1, true),
         shape(-1, new Integer[] {1}, false),
+        shape(-1, new Integer[0], false),
         shape(1, 1, false),
         shape(1, new Integer[0], true),
         shape(1, new Matrix(new Integer[] {1, 2}, new int[] {1, 2}), false),
@@ -369,6 +373,8 @@ class MethodArgumentValidationTest extends AbstractClientServerTest {
         shape(2, new Matrix(new Integer[] {1, 2}, new int[] {1, 2}), true),
         shape(3, new Matrix(new Integer[] {1, 2}, new int[] {1, 2}), false),
         shape(3, new Matrix(new Integer[] {1, 2}, new int[] {1, 1, 2}), true),
+        shape(2, new Matrix(new Integer[0], new int[] {0, 2}), true),
+        shape(3, new Matrix(new Integer[0], new int[] {0, 1, 2}), true),
         shape(-1, null, true),
         shape(1, null, true),
         shape(2, null, true),
@@ -381,6 +387,11 @@ class MethodArgumentValidationTest extends AbstractClientServerTest {
         shape(1, new UInteger[] {uint(2)}, new Integer[] {1, 2}, true),
         shape(1, new UInteger[] {uint(1)}, new Integer[] {1, 2}, false),
         shape(1, new UInteger[] {UInteger.MAX}, new Integer[] {1, 2}, true),
+        shape(
+            2,
+            new UInteger[] {uint(1), uint(1)},
+            new Matrix(new Integer[0], new int[] {0, 2}),
+            true),
         shape(
             2,
             new UInteger[] {uint(0), uint(2)},
@@ -430,6 +441,7 @@ class MethodArgumentValidationTest extends AbstractClientServerTest {
         new Case(NodeIds.Structure, 1, null, new UaStructuredType[] {xv, vector}, true),
         new Case(NodeIds.Vector, -1, null, vector, true),
         new Case(NodeIds.XVType, 2, null, new Matrix(new XVType[] {xv}, new int[] {1, 1}), true),
+        new Case(NodeIds.XVType, 2, null, new Matrix(new XVType[0], new int[] {0, 2}), true),
         new Case(
             NodeIds.Structure,
             2,
@@ -490,8 +502,41 @@ class MethodArgumentValidationTest extends AbstractClientServerTest {
             true));
   }
 
-  private void assertValidation(Case c) {
-    assertValidation(c, wireValue(c.value));
+  // Part 6 5.2.2.16: an empty Matrix is encoded as an empty array with no ArrayDimensions, so the
+  // declared rank is the only thing left to restore the Matrix a rank-n argument takes. A handler
+  // must not have to tell an empty value apart by its Java type.
+  @TestFactory
+  Stream<DynamicTest> deliversEmptyWireValueAsMatrixOfDeclaredRank() {
+    return Stream.of(
+            new Case(NodeIds.Int32, 2, null, new Matrix(new Integer[0], new int[] {0, 2}), true),
+            new Case(NodeIds.Int32, 3, null, new Matrix(new Integer[0], new int[] {0, 1, 2}), true),
+            new Case(NodeIds.XVType, 2, null, new Matrix(new XVType[0], new int[] {0, 2}), true),
+            new Case(
+                NodeIds.BaseDataType, 2, null, new Matrix(new String[0], new int[] {0, 2}), true))
+        .map(
+            c ->
+                DynamicTest.dynamicTest(
+                    c.toString(),
+                    () -> {
+                      RecordingHandler handler = assertValidation(c);
+
+                      Matrix delivered =
+                          assertInstanceOf(Matrix.class, handler.received[0].value());
+
+                      assertArrayEquals(
+                          new int[c.rank],
+                          delivered.getDimensions(),
+                          "a zero length in every declared dimension");
+                      assertEquals(
+                          ((Matrix) c.value).getElementType().orElseThrow(),
+                          delivered.getElementType().orElseThrow(),
+                          "element type");
+                      assertEquals(0, Array.getLength(delivered.getElements()));
+                    }));
+  }
+
+  private RecordingHandler assertValidation(Case c) {
+    return assertValidation(c, wireValue(c.value));
   }
 
   private RecordingHandler assertValidation(Case c, Variant input) {
