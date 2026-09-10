@@ -16,6 +16,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -40,6 +41,7 @@ import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
@@ -298,6 +300,47 @@ public class AttributeWriterTest extends AbstractClientServerTest {
     assertEquals(StatusCode.GOOD, statusCode);
   }
 
+  // Part 6 5.2.2.16: an empty Matrix is written as an empty array with no ArrayDimensions, so a
+  // conforming client's empty value for a rank-2 Variable arrives with no rank of its own. Storing
+  // it as a Matrix keeps the node's value consistent with its declared ValueRank.
+  @Test
+  void writeEmptyArrayToMatrixVariableStoresMatrixOfDeclaredRank() {
+    UaServerNode node = getManagedNode("Int32Matrix");
+
+    StatusCode statusCode =
+        AttributeWriter.writeAttribute(
+            AccessContext.INTERNAL,
+            node,
+            AttributeId.Value,
+            DataValue.valueOnly(new Variant(new Integer[0])),
+            null);
+
+    assertEquals(StatusCode.GOOD, statusCode);
+
+    DataValue stored = (DataValue) node.getAttribute(AccessContext.INTERNAL, AttributeId.Value);
+    Matrix matrix = assertInstanceOf(Matrix.class, stored.value().value());
+
+    assertArrayEquals(new int[] {0, 0}, matrix.getDimensions());
+    assertEquals(0, ((Integer[]) matrix.getElements()).length);
+  }
+
+  // Control for the case above: only an empty value carries no rank, so a populated
+  // one-dimensional array must still be rejected for ValueRank 2.
+  @Test
+  void rejectNonEmptyOneDimensionalArrayForMatrixVariable() {
+    UaServerNode node = getManagedNode("Int32Matrix");
+
+    StatusCode statusCode =
+        AttributeWriter.writeAttribute(
+            AccessContext.INTERNAL,
+            node,
+            AttributeId.Value,
+            DataValue.valueOnly(new Variant(new Integer[] {1, 2})),
+            null);
+
+    assertEquals(new StatusCode(StatusCodes.Bad_TypeMismatch), statusCode);
+  }
+
   @Test
   void writeValue_VariableNode_SuccessAndFailure() throws Exception {
     StatusCode ok =
@@ -481,6 +524,19 @@ public class AttributeWriterTest extends AbstractClientServerTest {
                 b.setDataType(NodeIds.Byte);
                 b.setValueRank(ValueRanks.OneDimension);
                 b.setArrayDimensions(new UInteger[] {UInteger.valueOf(0)});
+                b.setAccessLevel(AccessLevel.READ_WRITE);
+                b.setUserAccessLevel(AccessLevel.READ_WRITE);
+                return b.buildAndAdd();
+              });
+
+          UaVariableNode.build(
+              context,
+              b -> {
+                b.setNodeId(new NodeId(2, "Int32Matrix"));
+                b.setBrowseName(new QualifiedName(2, "Int32Matrix"));
+                b.setDisplayName(LocalizedText.english("Int32Matrix"));
+                b.setDataType(NodeIds.Int32);
+                b.setValueRank(2);
                 b.setAccessLevel(AccessLevel.READ_WRITE);
                 b.setUserAccessLevel(AccessLevel.READ_WRITE);
                 return b.buildAndAdd();

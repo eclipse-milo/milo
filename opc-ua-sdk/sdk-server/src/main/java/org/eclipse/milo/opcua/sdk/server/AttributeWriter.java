@@ -189,7 +189,7 @@ public class AttributeWriter {
         }
 
         if (valueRank > 0) {
-          validateArrayType(valueRank, arrayDimensions, value);
+          value = validateArrayType(valueRank, arrayDimensions, value);
         }
       } catch (UaException e) {
         return e.getStatusCode();
@@ -424,13 +424,23 @@ public class AttributeWriter {
     return value;
   }
 
-  private static void validateArrayType(
+  /**
+   * Check a written value against the declared ValueRank and ArrayDimensions of a Variable or
+   * VariableType.
+   *
+   * @param valueRank the declared ValueRank.
+   * @param arrayDimensions the declared ArrayDimensions, which are maxima.
+   * @param value the value to check.
+   * @return {@code value}, or the equivalent value to store in its place.
+   * @throws UaException if the value does not match the declared shape.
+   */
+  private static DataValue validateArrayType(
       Integer valueRank, UInteger[] arrayDimensions, DataValue value) throws UaException {
 
     Variant variant = value.value();
 
     Object o = variant.value();
-    if (o == null) return;
+    if (o == null) return value;
 
     if (o instanceof Matrix matrix) {
       o = matrix.nestedArrayValue();
@@ -473,6 +483,18 @@ public class AttributeWriter {
         int[] valueDimensions = ArrayUtil.getDimensions(o);
 
         if (valueDimensions.length != valueRank) {
+          // OPC 10000-6, 5.2.2.16 and 5.3.1.17 carry an empty Matrix as an empty array with no
+          // ArrayDimensions, so an empty value arrives with no rank of its own. Accept it and
+          // store the Matrix the declared rank calls for, with a zero length in every dimension.
+          // The declared maxima are not checked: an empty value has no element to exceed them.
+          if (valueDimensions.length == 1 && valueDimensions[0] == 0) {
+            return new DataValue(
+                new Variant(new Matrix(o, new int[valueRank])),
+                value.statusCode(),
+                value.sourceTime(),
+                value.serverTime());
+          }
+
           throw new UaException(StatusCodes.Bad_TypeMismatch);
         }
 
@@ -501,5 +523,7 @@ public class AttributeWriter {
         }
         break;
     }
+
+    return value;
   }
 }
