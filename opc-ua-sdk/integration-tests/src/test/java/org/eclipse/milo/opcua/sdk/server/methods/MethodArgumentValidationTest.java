@@ -173,7 +173,8 @@ class MethodArgumentValidationTest extends AbstractClientServerTest {
                 baseValue(1, new UaStructuredType[] {null, xv}),
                 baseValue(2, new Matrix(new XVType[] {null, xv}, new int[] {1, 2})),
                 baseValue(2, new Matrix(new UaStructuredType[] {null, xv}, new int[] {1, 2})),
-                // Local shape validation does not establish a wire encoding for empty Matrices.
+                // Local only: Part 6 5.2.2.16 encodes an empty Matrix as an empty array with no
+                // dimensions, so the wire form arrives as a one-dimensional empty array.
                 baseValue(2, new Matrix(new String[0], new int[] {0, 2})),
                 baseValue(2, new Matrix(new XVType[0], new int[] {0, 2})),
                 baseValue(-1, Matrix.ofNull())))
@@ -368,7 +369,6 @@ class MethodArgumentValidationTest extends AbstractClientServerTest {
         shape(2, new Matrix(new Integer[] {1, 2}, new int[] {1, 2}), true),
         shape(3, new Matrix(new Integer[] {1, 2}, new int[] {1, 2}), false),
         shape(3, new Matrix(new Integer[] {1, 2}, new int[] {1, 1, 2}), true),
-        shape(2, new Matrix(new Integer[0], new int[] {0, 2}), true),
         shape(-1, null, true),
         shape(1, null, true),
         shape(2, null, true),
@@ -430,7 +430,6 @@ class MethodArgumentValidationTest extends AbstractClientServerTest {
         new Case(NodeIds.Structure, 1, null, new UaStructuredType[] {xv, vector}, true),
         new Case(NodeIds.Vector, -1, null, vector, true),
         new Case(NodeIds.XVType, 2, null, new Matrix(new XVType[] {xv}, new int[] {1, 1}), true),
-        new Case(NodeIds.XVType, 2, null, new Matrix(new XVType[0], new int[] {0, 2}), true),
         new Case(
             NodeIds.Structure,
             2,

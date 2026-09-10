@@ -650,6 +650,15 @@ public class OpcUaBinaryEncoder implements UaEncoder {
         } else {
           int[] dimensions = ((Matrix) value).getDimensions();
 
+          if (!allDimensionsPositive(dimensions)) {
+            // OPC 10000-6, 5.2.2.16: ArrayDimensions is only present when every dimension is
+            // greater than 0, and ArrayLength is 0 when any dimension is not. Write an empty
+            // one-dimensional array of the element type instead of a Matrix.
+            buffer.writeByte(typeId | 0x80);
+            buffer.writeIntLE(0);
+            return;
+          }
+
           buffer.writeByte(typeId | 0xC0);
 
           Object elements = ((Matrix) value).getElements();
@@ -800,6 +809,13 @@ public class OpcUaBinaryEncoder implements UaEncoder {
     return componentType != null
         && (componentType == OpcUaDataType.getBackingClass(typeId)
             || componentType == OpcUaDataType.getPrimitiveBackingClass(typeId));
+  }
+
+  private static boolean allDimensionsPositive(int[] dimensions) {
+    for (int dimension : dimensions) {
+      if (dimension <= 0) return false;
+    }
+    return true;
   }
 
   /**

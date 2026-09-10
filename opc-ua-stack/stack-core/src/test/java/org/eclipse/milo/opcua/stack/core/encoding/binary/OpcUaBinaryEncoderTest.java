@@ -17,7 +17,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
+import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
@@ -29,6 +31,9 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelType;
 import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class OpcUaBinaryEncoderTest {
 
@@ -300,6 +305,74 @@ public class OpcUaBinaryEncoderTest {
         matrix,
         decodedMatrix.transform(
             v -> ((ExtensionObject) v).decode(DefaultEncodingContext.INSTANCE)));
+  }
+
+  static Stream<Arguments> matrixVariantEncodings() {
+    return Stream.of(
+        // Empty Matrices: mask has only the array bit, ArrayLength is 0, no ArrayDimensions.
+        Arguments.of(
+            "empty structure Matrix, zero first dimension",
+            new Matrix(new XVType[0], new int[] {0, 2}),
+            "9600000000"),
+        Arguments.of(
+            "empty Int32 Matrix, zero last dimension",
+            new Matrix(new Integer[0], new int[] {2, 0}),
+            "8600000000"),
+        Arguments.of(
+            "empty primitive Int32 Matrix, zero middle dimension",
+            new Matrix(new int[0], new int[] {2, 0, 3}),
+            "8600000000"),
+        Arguments.of(
+            "empty String Matrix, negative dimension",
+            new Matrix(new String[0], new int[] {-1, 2}),
+            "8c00000000"),
+        Arguments.of(
+            "empty enumeration Matrix encodes as Int32",
+            new Matrix(new ApplicationType[0], new int[] {0, 1}),
+            "8600000000"),
+        Arguments.of(
+            "empty option set Matrix encodes as Byte",
+            new Matrix(new AccessLevelType[0], new int[] {2, -3}),
+            "8300000000"),
+        // Nonempty Matrices keep the dimensions bit and the ArrayDimensions field.
+        Arguments.of(
+            "2x2 Int32 Matrix keeps dimensions",
+            Matrix.ofInt32(new Integer[][] {{1, 2}, {3, 4}}),
+            "c6"
+                + "04000000"
+                + "01000000020000000300000004000000"
+                + "02000000"
+                + "0200000002000000"),
+        Arguments.of(
+            "1x2 Int32 Matrix keeps a dimension of length 1",
+            Matrix.ofInt32(new Integer[][] {{1, 2}}),
+            "c6" + "02000000" + "0100000002000000" + "02000000" + "0100000002000000"));
+  }
+
+  // OPC 10000-6, 5.2.2.16, Table 26: ArrayDimensions is present only when there are at least two
+  // dimensions and every dimension is greater than 0, and ArrayLength is 0 when any dimension is
+  // not. A Matrix with a zero or negative dimension must therefore encode as a plain empty array of
+  // its element type, without the dimensions bit or the ArrayDimensions field.
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("matrixVariantEncodings")
+  void encodeVariantOfMatrixWritesDimensionsOnlyWhenAllArePositive(
+      String description, Matrix matrix, String expectedHex) {
+    encoder.encodeVariant(new Variant(matrix));
+
+    assertEquals(expectedHex, ByteBufUtil.hexDump(buffer), description);
+  }
+
+  // The empty-array form carries no dimensions, so a peer (and this decoder) sees a
+  // one-dimensional empty array of the element type rather than a Matrix.
+  @Test
+  void encodeVariantOfEmptyMatrixDecodesAsEmptyArray() {
+    encoder.encodeVariant(new Variant(new Matrix(new XVType[0], new int[] {0, 2})));
+
+    var decoder = new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE).setBuffer(buffer);
+    Variant decoded = decoder.decodeVariant();
+
+    assertArrayEquals(new ExtensionObject[0], (ExtensionObject[]) decoded.value());
+    assertEquals(0, buffer.readableBytes(), "decoder consumed the whole encoding");
   }
 
   @Test
