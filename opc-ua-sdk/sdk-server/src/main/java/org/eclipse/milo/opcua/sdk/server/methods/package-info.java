@@ -33,5 +33,17 @@
  * report individual failures with {@link
  * org.eclipse.milo.opcua.sdk.server.methods.InvalidArgumentException}. The invocation context
  * preserves the calling session, object and Method node.
+ *
+ * <p>Legacy callbacks require every input and return Good with their output array. Complete
+ * synchronous callbacks override {@code invokeResult}; {@code getRequiredInputArgumentCount}
+ * receives the call's snapshotted metadata and can permit an optional suffix. Omission shortens the
+ * supplied array; a supplied null retains its position. Complete results can preserve Uncertain
+ * outputs, while Bad outcomes have none. Invalid result combinations become Bad_InternalError.
+ *
+ * <p>When dispatched through the Call service, the invocation context exposes one request-local
+ * {@link org.eclipse.milo.opcua.sdk.server.DiagnosticsContext}. Handlers intern diagnostic strings
+ * there and return argument diagnostics indexed by supplied input position. The service filters
+ * fields using ReturnDiagnostics and assembles a compact response-wide StringTable after all
+ * address-space groups finish. This does not add service or per-operation diagnostic producers.
  */
 package org.eclipse.milo.opcua.sdk.server.methods;

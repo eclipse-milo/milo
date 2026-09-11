@@ -1,0 +1,19 @@
+package org.eclipse.milo.compatibility;
+
+import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
+
+public final class LegacyMethodHandler extends AbstractMethodInvocationHandler {
+  public LegacyMethodHandler(UaMethodNode node) { super(node); }
+  public Argument[] getInputArguments() { return new Argument[0]; }
+  public Argument[] getOutputArguments() {
+    return new Argument[] {new Argument("Message", NodeIds.String, -1, null, LocalizedText.NULL_VALUE)};
+  }
+  protected Variant[] invoke(InvocationContext context, Variant[] values) {
+    return new Variant[] {new Variant("legacy")};
+  }
+}
