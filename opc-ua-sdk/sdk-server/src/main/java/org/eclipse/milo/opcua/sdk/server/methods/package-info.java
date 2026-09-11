@@ -33,5 +33,30 @@
  * report individual failures with {@link
  * org.eclipse.milo.opcua.sdk.server.methods.InvalidArgumentException}. The invocation context
  * preserves the calling session, object and Method node.
+ *
+ * <p>Legacy callbacks require every input and return Good with their output array. Complete
+ * synchronous callbacks override {@code invokeResult}; {@code getRequiredInputArgumentCount}
+ * receives the call's snapshotted metadata and can permit an optional suffix. Omission shortens the
+ * supplied array; a supplied null retains its position. Complete results can preserve Uncertain
+ * outputs, while Bad outcomes have none. Invalid result combinations become Bad_InternalError.
+ *
+ * <p>When dispatched through the Call service, the invocation context exposes one request-local
+ * {@link org.eclipse.milo.opcua.sdk.server.DiagnosticsContext}. Handlers intern diagnostic strings
+ * there and return argument diagnostics indexed by supplied input position. The service filters
+ * fields using ReturnDiagnostics and assembles a compact response-wide StringTable after all
+ * address-space groups finish. This does not add service or per-operation diagnostic producers.
+ *
+ * <p>{@link org.eclipse.milo.opcua.sdk.server.methods.MethodBindings} owns explicit application
+ * registrations for Methods shared by several Objects. One dispatcher per Method selects by the
+ * invocation ObjectId and invokes application code outside its lifecycle lock. Each {@link
+ * org.eclipse.milo.opcua.sdk.server.methods.MethodBinding} token owns only its registration;
+ * closing a replaced token cannot remove the replacement. The last registration restores the
+ * captured fallback only while the registry still owns the Method handler. External raw replacement
+ * takes precedence, and another registry cannot chain its dispatcher around an active one.
+ *
+ * <p>Applications close tokens or remove ObjectId registrations before deleting owner nodes, and
+ * close the registry on namespace shutdown. Cleanup does not delete nodes, cancel callbacks or wait
+ * for selected invocations. A callback selected before cleanup can complete afterward. Actual Call
+ * dispatch continues to enforce Method ownership, ConditionManager precedence and session access.
  */
 package org.eclipse.milo.opcua.sdk.server.methods;

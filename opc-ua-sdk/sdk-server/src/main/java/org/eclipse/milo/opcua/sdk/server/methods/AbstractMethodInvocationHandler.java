@@ -20,12 +20,15 @@ import org.eclipse.milo.opcua.sdk.core.ValueRanks;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.sdk.server.AccessContext;
+import org.eclipse.milo.opcua.sdk.server.AddressSpace.CallContext;
+import org.eclipse.milo.opcua.sdk.server.DiagnosticsContext;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.DataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
@@ -72,17 +75,22 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
       Variant[] inputArgumentValues =
           requireNonNullElse(request.getInputArguments(), new Variant[0]).clone();
 
-      if (inputArgumentValues.length < getInputArguments().length) {
+      Argument[] inputArguments = getInputArguments().clone();
+      int requiredCount = getRequiredInputArgumentCount(inputArguments.clone());
+      if (requiredCount < 0 || requiredCount > inputArguments.length) {
+        throw new UaException(StatusCodes.Bad_InternalError, "Invalid required input count");
+      }
+      if (inputArgumentValues.length < requiredCount) {
         throw new UaException(StatusCodes.Bad_ArgumentsMissing);
       }
-      if (inputArgumentValues.length > getInputArguments().length) {
+      if (inputArgumentValues.length > inputArguments.length) {
         throw new UaException(StatusCodes.Bad_TooManyArguments);
       }
 
       StatusCode[] inputDataTypeCheckResults = new StatusCode[inputArgumentValues.length];
 
       for (int i = 0; i < inputArgumentValues.length; i++) {
-        Argument argument = getInputArguments()[i];
+        Argument argument = inputArguments[i];
 
         Variant variant = inputArgumentValues[i];
         Object value = variant.value();
@@ -195,22 +203,54 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
             public Optional<Session> getSession() {
               return accessContext.getSession();
             }
+
+            @Override
+            public Optional<DiagnosticsContext<CallMethodRequest>> getCallDiagnostics() {
+              return accessContext instanceof CallContext callContext
+                  ? Optional.of(callContext.getDiagnosticsContext())
+                  : Optional.empty();
+            }
           };
 
-      Variant[] outputValues = invoke(invocationContext, inputArgumentValues);
-
-      return new CallMethodResult(
-          StatusCode.GOOD, new StatusCode[0], new DiagnosticInfo[0], outputValues);
+      return checkedResult(
+          invokeResult(invocationContext, inputArgumentValues), inputArgumentValues.length);
     } catch (InvalidArgumentException e) {
       return new CallMethodResult(
           e.getStatusCode(),
           e.getInputArgumentResults(),
           e.getInputArgumentDiagnosticInfos(),
           new Variant[0]);
-    } catch (UaException e) {
+    } catch (UaException | UaRuntimeException e) {
       return new CallMethodResult(
           e.getStatusCode(), new StatusCode[0], new DiagnosticInfo[0], new Variant[0]);
     }
+  }
+
+  private static CallMethodResult checkedResult(@Nullable CallMethodResult result, int inputCount)
+      throws UaException {
+    if (result == null || result.getStatusCode() == null) {
+      throw new UaException(StatusCodes.Bad_InternalError, "Null Method result or status");
+    }
+    StatusCode status = result.getStatusCode();
+    StatusCode[] arguments =
+        requireNonNullElse(result.getInputArgumentResults(), new StatusCode[0]);
+    DiagnosticInfo[] diagnostics =
+        requireNonNullElse(result.getInputArgumentDiagnosticInfos(), new DiagnosticInfo[0]);
+    Variant[] outputs = requireNonNullElse(result.getOutputArguments(), new Variant[0]);
+    if ((status.isGood() && !status.equals(StatusCode.GOOD))
+        || (status.isBad() && outputs.length != 0)
+        || (arguments.length != 0
+            && (!status.equals(new StatusCode(StatusCodes.Bad_InvalidArgument))
+                || arguments.length != inputCount))
+        || (diagnostics.length != 0 && diagnostics.length != inputCount)
+        || Arrays.stream(arguments).anyMatch(Objects::isNull)) {
+      throw new UaException(StatusCodes.Bad_InternalError, "Invalid Method result");
+    }
+    return new CallMethodResult(
+        status,
+        arguments.clone(),
+        diagnostics.clone(),
+        result.getOutputArguments() == null ? null : outputs.clone());
   }
 
   /** The flat elements of a Matrix, or {@code value} itself for any other value. */
@@ -419,6 +459,42 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
   public abstract Argument[] getOutputArguments();
 
   /**
+   * Get the number of required inputs preceding the optional suffix.
+   *
+   * <p>The default requires every declared input. Override this together with effective input
+   * metadata to accept omitted trailing inputs. Supplied null values still occupy an input
+   * position. An invalid count fails the call with {@code Bad_InternalError} before application
+   * invocation.
+   *
+   * @param inputArguments a defensive copy of this call's snapshotted input metadata.
+   * @return a count between zero and the number of declared inputs, inclusive.
+   */
+  protected int getRequiredInputArgumentCount(Argument[] inputArguments) {
+    return inputArguments.length;
+  }
+
+  /**
+   * Invoke this Method with validated supplied inputs and return its complete synchronous outcome.
+   *
+   * <p>The default invokes the legacy output callback and reports Good. Override this hook to
+   * return Uncertain with outputs or Bad with no outputs. Input results are permitted only with
+   * Bad_InvalidArgument and must match the supplied input count; argument diagnostics are empty or
+   * match that count. Good subcodes, null results and invalid combinations become
+   * Bad_InternalError. Input arrays are never padded for omitted optional arguments.
+   *
+   * @param context the invocation and optional request diagnostics context.
+   * @param suppliedValues the supplied inputs, validated and decoded as described by {@link
+   *     #invoke(InvocationContext, Variant[])}.
+   * @return the complete result; returned arrays are copied before delivery.
+   * @throws UaException if invocation fails; the operation returns its status without outputs.
+   */
+  protected CallMethodResult invokeResult(InvocationContext context, Variant[] suppliedValues)
+      throws UaException {
+    return new CallMethodResult(
+        StatusCode.GOOD, new StatusCode[0], new DiagnosticInfo[0], invoke(context, suppliedValues));
+  }
+
+  /**
    * Invoke this method and return the values for its output arguments, if any.
    *
    * <p>Input arguments have already passed shape, data type and application value validation.
@@ -437,8 +513,10 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
    * @return this output values matching this Method's output arguments, if any.
    * @throws UaException if invocation has failed for some reason.
    */
-  protected abstract Variant[] invoke(InvocationContext invocationContext, Variant[] inputValues)
-      throws UaException;
+  protected Variant[] invoke(InvocationContext invocationContext, Variant[] inputValues)
+      throws UaException {
+    throw new UaException(StatusCodes.Bad_NotImplemented);
+  }
 
   /**
    * Validate the input values against the expected input arguments.
@@ -460,6 +538,15 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
    * AbstractMethodInvocationHandler}.
    */
   public interface InvocationContext extends AccessContext {
+
+    /**
+     * Get the request-wide Call diagnostics context, when invoked through the Call service.
+     *
+     * @return the context used to intern diagnostic strings, or empty for independent invocations.
+     */
+    default Optional<DiagnosticsContext<CallMethodRequest>> getCallDiagnostics() {
+      return Optional.empty();
+    }
 
     /**
      * Get the {@link OpcUaServer} instance.

@@ -20,5 +20,10 @@
  * org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode#compareAndSetInvocationHandler} so cleanup
  * cannot remove a handler installed later. A call that already obtained the old handler may finish
  * after replacement; changing the handler controls subsequent dispatch.
+ *
+ * <p>Object and ObjectType Method lookup follows forward HasComponent references and their
+ * registered subtypes, including HasOrderedComponent. The same rule resolves Method declarations on
+ * an object's type hierarchy. Organizes references provide navigation and do not establish
+ * invocation ownership. Update the server's reference type tree after adding reference types.
  */
 package org.eclipse.milo.opcua.sdk.server.nodes;

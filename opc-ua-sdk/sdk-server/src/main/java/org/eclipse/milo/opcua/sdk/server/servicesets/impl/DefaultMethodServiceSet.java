@@ -12,10 +12,12 @@ package org.eclipse.milo.opcua.sdk.server.servicesets.impl;
 
 import static org.eclipse.milo.opcua.sdk.core.util.GroupMapCollate.groupMapCollate;
 import static org.eclipse.milo.opcua.sdk.server.servicesets.AbstractServiceSet.createResponseHeader;
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.CallContext;
 import org.eclipse.milo.opcua.sdk.server.DiagnosticsContext;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
@@ -24,6 +26,7 @@ import org.eclipse.milo.opcua.sdk.server.servicesets.MethodServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodResult;
@@ -74,6 +77,14 @@ public class DefaultMethodServiceSet implements MethodServiceSet {
     Map<CallMethodRequest, AccessResult> accessResults =
         server.getAccessController().checkCallAccess(session, methodsToCall);
 
+    EncodingLimits encodingLimits =
+        Objects.requireNonNullElse(server.getConfig().getEncodingLimits(), EncodingLimits.DEFAULT);
+    var diagnosticsContext =
+        new DiagnosticsContext<CallMethodRequest>(
+            Objects.requireNonNullElse(request.getRequestHeader().getReturnDiagnostics(), uint(0)),
+            encodingLimits,
+            server.getConfig().getLimits().getMaxStringLength());
+
     List<CallMethodResult> results =
         groupMapCollate(
             methodsToCall,
@@ -84,8 +95,6 @@ public class DefaultMethodServiceSet implements MethodServiceSet {
                     var result = new CallMethodResult(denied.statusCode(), null, null, null);
                     return Collections.nCopies(group.size(), result);
                   } else {
-                    var diagnosticsContext = new DiagnosticsContext<CallMethodRequest>();
-
                     var callContext =
                         new CallContext(
                             server,
@@ -101,7 +110,23 @@ public class DefaultMethodServiceSet implements MethodServiceSet {
 
     ResponseHeader header = createResponseHeader(request);
 
+    MethodDiagnostics.Normalized normalized =
+        MethodDiagnostics.normalize(
+            diagnosticsContext.getReturnDiagnostics(),
+            methodsToCall,
+            results,
+            diagnosticsContext.getStringTable(),
+            encodingLimits);
+    header =
+        new ResponseHeader(
+            header.getTimestamp(),
+            header.getRequestHandle(),
+            header.getServiceResult(),
+            null,
+            normalized.stringTable(),
+            header.getAdditionalHeader());
+
     return new CallResponse(
-        header, results.toArray(CallMethodResult[]::new), new DiagnosticInfo[0]);
+        header, normalized.results().toArray(CallMethodResult[]::new), new DiagnosticInfo[0]);
   }
 }
