@@ -269,5 +269,5 @@ public class VariableTypeTreeBuilder {
       DataValue value,
       NodeId dataType,
       Integer valueRank,
-      @Nullable UInteger[] arrayDimensions) {}
+      UInteger @Nullable [] arrayDimensions) {}
 }

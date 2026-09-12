@@ -35,7 +35,7 @@ public interface CertificateValidator {
   void validateCertificateChain(
       List<X509Certificate> certificateChain,
       @Nullable String applicationUri,
-      @Nullable String[] validHostnames)
+      String @Nullable [] validHostnames)
       throws UaException;
 
   /**
@@ -59,7 +59,7 @@ public interface CertificateValidator {
   default void validateCertificateChain(
       List<X509Certificate> certificateChain,
       @Nullable String applicationUri,
-      @Nullable String[] validHostnames,
+      String @Nullable [] validHostnames,
       @Nullable SecurityPolicyProfile securityPolicyProfile)
       throws UaException {
 
@@ -89,7 +89,7 @@ public interface CertificateValidator {
     public void validateCertificateChain(
         List<X509Certificate> certificateChain,
         @Nullable String applicationUri,
-        @Nullable String[] validHostnames,
+        String @Nullable [] validHostnames,
         @Nullable SecurityPolicyProfile securityPolicyProfile) {
 
       // Skip validation entirely, including certificate/profile compatibility checks. The default

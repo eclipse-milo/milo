@@ -300,8 +300,7 @@ public class UaMethodNode extends UaNode implements MethodNode {
    * @return the value of the InputArguments Property, if it exists.
    * @see MethodNodeProperties#InputArguments
    */
-  @Nullable
-  public Argument[] getInputArguments() {
+  public Argument @Nullable [] getInputArguments() {
     return getProperty(MethodNodeProperties.InputArguments).orElse(null);
   }
 
@@ -311,8 +310,7 @@ public class UaMethodNode extends UaNode implements MethodNode {
    * @return the value of the OutputArguments Property, if it exists.
    * @see MethodNodeProperties#OutputArguments
    */
-  @Nullable
-  public Argument[] getOutputArguments() {
+  public Argument @Nullable [] getOutputArguments() {
     return getProperty(MethodNodeProperties.OutputArguments).orElse(null);
   }
 

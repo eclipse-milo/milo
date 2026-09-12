@@ -176,9 +176,9 @@ public final class MethodBindings implements AutoCloseable {
   }
 
   private static boolean argumentsDiffer(
-      @Nullable Argument @Nullable [] actual, @Nullable Argument @Nullable [] expected) {
-    @Nullable Argument[] left = actual == null ? new Argument[0] : actual;
-    @Nullable Argument[] right = expected == null ? new Argument[0] : expected;
+      Argument @Nullable [] actual, Argument @Nullable [] expected) {
+    Argument[] left = actual == null ? new Argument[0] : actual;
+    Argument[] right = expected == null ? new Argument[0] : expected;
     if (left.length != right.length) return true;
     for (int i = 0; i < left.length; i++) {
       if (!sameArgument(left[i], right[i])) return true;

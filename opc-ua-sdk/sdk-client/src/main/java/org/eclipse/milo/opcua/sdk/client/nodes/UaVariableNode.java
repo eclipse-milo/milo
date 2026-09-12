@@ -442,8 +442,7 @@ public class UaVariableNode extends UaNode implements VariableNode {
    * @return the {@link UInteger} array read from the server.
    * @throws UaException if a service- or operation-level error occurs.
    */
-  @Nullable
-  public UInteger[] readArrayDimensions() throws UaException {
+  public UInteger @Nullable [] readArrayDimensions() throws UaException {
     DataValue value = readAttribute(AttributeId.ArrayDimensions);
     StatusCode statusCode = value.statusCode();
 

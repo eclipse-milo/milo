@@ -433,12 +433,11 @@ public class Session {
     return sessionName;
   }
 
-  @Nullable
-  public String[] getLocaleIds() {
+  public String @Nullable [] getLocaleIds() {
     return localeIds;
   }
 
-  public void setLocaleIds(@Nullable String[] localeIds) {
+  public void setLocaleIds(String @Nullable [] localeIds) {
     this.localeIds = localeIds;
   }
 
