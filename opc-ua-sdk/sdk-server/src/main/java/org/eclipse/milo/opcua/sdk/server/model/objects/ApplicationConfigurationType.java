@@ -19,6 +19,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * @see <a
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.14">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.14</a>
+ * @see com.digitalpetri.opcua.uanodeset.runtime.members
  */
 public interface ApplicationConfigurationType extends ServerConfigurationType {
   QualifiedProperty<String> APPLICATION_URI =
@@ -61,220 +62,84 @@ public interface ApplicationConfigurationType extends ServerConfigurationType {
           -1,
           Boolean.class);
 
-  /**
-   * Gets the existing member's local value without checking its quality. A null value is valid; an
-   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
-   * timestamps.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @return the value, which may be null on a present member
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
-   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
-   *     representation
-   */
+  /** Gets the existing node's local value. */
   @Nullable String getApplicationUri();
 
-  /**
-   * Sets the existing member's local value. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @param value the value to store; null is permitted
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
-   */
+  /** Sets the existing node's local value. */
   void setApplicationUri(@Nullable String value);
 
   /**
-   * Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   * Returns the required node.
    *
-   * @return the existing member
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the required node.
    */
   PropertyType getApplicationUriNode();
 
-  /**
-   * Gets the existing member's local value without checking its quality. A null value is valid; an
-   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
-   * timestamps.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @return the value, which may be null on a present member
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
-   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
-   *     representation
-   */
+  /** Gets the existing node's local value. */
   @Nullable String getProductUri();
 
-  /**
-   * Sets the existing member's local value. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @param value the value to store; null is permitted
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
-   */
+  /** Sets the existing node's local value. */
   void setProductUri(@Nullable String value);
 
   /**
-   * Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   * Returns the required node.
    *
-   * @return the existing member
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the required node.
    */
   PropertyType getProductUriNode();
 
-  /**
-   * Gets the existing member's local value without checking its quality. A null value is valid; an
-   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
-   * timestamps.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @return the value, which may be null on a present member
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
-   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
-   *     representation
-   */
+  /** Gets the existing node's local value. */
   @Nullable ApplicationType getApplicationType();
 
-  /**
-   * Sets the existing member's local value. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @param value the value to store; null is permitted
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
-   */
+  /** Sets the existing node's local value. */
   void setApplicationType(@Nullable ApplicationType value);
 
   /**
-   * Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   * Returns the required node.
    *
-   * @return the existing member
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the required node.
    */
   PropertyType getApplicationTypeNode();
 
-  /**
-   * Gets the existing member's local value without checking its quality. A null value is valid; an
-   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
-   * timestamps.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @return the value, which may be null on a present member
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
-   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
-   *     representation
-   */
+  /** Gets the existing node's local value. */
   @Nullable Boolean getEnabled();
 
-  /**
-   * Sets the existing member's local value. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @param value the value to store; null is permitted
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
-   */
+  /** Sets the existing node's local value. */
   void setEnabled(@Nullable Boolean value);
 
   /**
-   * Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   * Returns the required node.
    *
-   * @return the existing member
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the required node.
    */
   PropertyType getEnabledNode();
 
-  /**
-   * Gets the existing member's local value without checking its quality. A null value is valid; an
-   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
-   * timestamps.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @return the value, which may be null on a present member
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
-   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
-   *     representation
-   */
+  /** Gets the existing node's local value. */
   @Nullable Boolean getIsNonUaApplication();
 
-  /**
-   * Sets the existing member's local value. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @param value the value to store; null is permitted
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
-   */
+  /** Sets the existing node's local value. */
   void setIsNonUaApplication(@Nullable Boolean value);
 
   /**
-   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
-   * absence. Resolution does not create a UA node. A reference can change after lookup.
+   * Returns the node, or null if absent.
    *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the node, or null if absent.
    */
   @Nullable PropertyType getIsNonUaApplicationNode();
 
   /**
-   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
-   * absence. Resolution does not create a UA node. A reference can change after lookup.
+   * Returns the node, or null if absent.
    *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the node, or null if absent.
    */
   @Nullable KeyCredentialConfigurationFolderType getKeyCredentialsNode();
 
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part12/9.7.3
    *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. A reference can change after lookup.
+   * <p>Returns the node, or null if absent.
    *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the node, or null if absent.
    */
   @Nullable AuthorizationServicesConfigurationFolderType getAuthorizationServicesNode();
 }

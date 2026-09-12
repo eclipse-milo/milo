@@ -10,18 +10,15 @@
 
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
+import com.digitalpetri.opcua.uanodeset.runtime.client.ClientMembers;
 import com.digitalpetri.opcua.uanodeset.runtime.client.ClientViews;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
+import com.digitalpetri.opcua.uanodeset.runtime.members.MemberDeclaration;
 import java.util.Objects;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyTypeNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -40,9 +37,6 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ExceptionDeviationFormat;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
-import org.eclipse.milo.opcua.stack.core.types.structured.BrowsePath;
-import org.eclipse.milo.opcua.stack.core.types.structured.RelativePath;
-import org.eclipse.milo.opcua.stack.core.types.structured.RelativePathElement;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.util.ArrayUtil;
 import org.jspecify.annotations.Nullable;
@@ -115,21 +109,7 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
 
   @Override
   public @Nullable Boolean readStepped() throws UaException {
-    try {
-      return readSteppedAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(readSteppedAsync(), false);
   }
 
   @Override
@@ -199,240 +179,23 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
 
   @Override
   public PropertyTypeNode getSteppedNode() throws UaException {
-    try {
-      return getSteppedNodeAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(getSteppedNodeAsync(), false);
   }
 
   @Override
   public CompletableFuture<? extends PropertyTypeNode> getSteppedNodeAsync() {
-    CompletableFuture<PropertyTypeNode> result = new CompletableFuture<>();
-    try {
-      CompletableFuture<NodeId> lookup = CompletableFuture.completedFuture(getNodeId());
-      CompletableFuture<UaNode> hop0 =
-          lookup.thenCompose(
-              parent -> {
-                NodeId parentId = parent;
-                if (result.isCancelled()) {
-                  return CompletableFuture.failedFuture(new CancellationException());
-                }
-                if (parentId == null) {
-                  return CompletableFuture.completedFuture(null);
-                }
-                CompletableFuture<Void> namespaceReady;
-                if (client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/") == null
-                    || client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/")
-                        == null) {
-                  namespaceReady = client.readNamespaceTableAsync().thenApply(ignored -> null);
-                } else {
-                  namespaceReady = CompletableFuture.completedFuture(null);
-                }
-                return namespaceReady.thenCompose(
-                    ignored -> {
-                      if (result.isCancelled()) {
-                        return CompletableFuture.failedFuture(new CancellationException());
-                      }
-                      var namespaceIndex =
-                          client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/");
-                      var referenceId =
-                          ExpandedNodeId.parse("i=46").toNodeId(client.getNamespaceTable());
-                      if (namespaceIndex == null || referenceId.isEmpty()) {
-                        return CompletableFuture.failedFuture(
-                            new UaException(
-                                StatusCodes.Bad_NodeIdInvalid,
-                                "http://opcfoundation.org/UA/:Stepped (declaration i=2323, owner"
-                                    + " i=2318) on "
-                                    + getNodeId()));
-                      }
-                      var browsePath =
-                          new BrowsePath(
-                              parentId,
-                              new RelativePath(
-                                  new RelativePathElement[] {
-                                    new RelativePathElement(
-                                        referenceId.orElseThrow(),
-                                        false,
-                                        true,
-                                        new QualifiedName(namespaceIndex, "Stepped"))
-                                  }));
-                      return client
-                          .translateBrowsePathsAsync(List.of(browsePath))
-                          .thenCompose(
-                              response -> {
-                                if (result.isCancelled()) {
-                                  return CompletableFuture.failedFuture(
-                                      new CancellationException());
-                                }
-                                var results = response == null ? null : response.getResults();
-                                if (results == null
-                                    || results.length != 1
-                                    || results[0] == null
-                                    || results[0].getStatusCode() == null) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:Stepped (declaration"
-                                              + " i=2323, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                var operation = results[0];
-                                if (operation.getStatusCode().getValue()
-                                    == StatusCodes.Bad_NoMatch) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_NotFound,
-                                          "http://opcfoundation.org/UA/:Stepped (declaration"
-                                              + " i=2323, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                if (!operation.getStatusCode().isGood()) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          operation.getStatusCode(),
-                                          "http://opcfoundation.org/UA/:Stepped (declaration"
-                                              + " i=2323, owner i=2318)"));
-                                }
-                                var targets = operation.getTargets();
-                                if (targets == null || targets.length == 0) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:Stepped (declaration"
-                                              + " i=2323, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                var identities = new ArrayList<CompletableFuture<NodeId>>();
-                                for (var target : targets) {
-                                  if (target == null
-                                      || target.getTargetId() == null
-                                      || target.getRemainingPathIndex() == null
-                                      || target.getRemainingPathIndex().longValue()
-                                          != 0xffffffffL) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_UnexpectedError,
-                                            "http://opcfoundation.org/UA/:Stepped (declaration"
-                                                + " i=2323, owner i=2318) on "
-                                                + getNodeId()));
-                                  }
-                                  if (!target.getTargetId().isLocal()) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_NotSupported,
-                                            "http://opcfoundation.org/UA/:Stepped (declaration"
-                                                + " i=2323, owner i=2318) on "
-                                                + getNodeId()));
-                                  }
-                                  if (result.isCancelled()) {
-                                    return CompletableFuture.failedFuture(
-                                        new CancellationException());
-                                  }
-                                  var localTarget =
-                                      target.getTargetId().toNodeId(client.getNamespaceTable());
-                                  if (localTarget.isPresent()) {
-                                    identities.add(
-                                        CompletableFuture.completedFuture(
-                                            localTarget.orElseThrow()));
-                                  } else {
-                                    identities.add(
-                                        client
-                                            .readNamespaceTableAsync()
-                                            .thenCompose(
-                                                namespaceTable -> {
-                                                  var resolvedTarget =
-                                                      target.getTargetId().toNodeId(namespaceTable);
-                                                  if (resolvedTarget.isEmpty()) {
-                                                    return CompletableFuture.failedFuture(
-                                                        new UaException(
-                                                            StatusCodes.Bad_NodeIdInvalid,
-                                                            "http://opcfoundation.org/UA/:Stepped"
-                                                                + " (declaration i=2323, owner"
-                                                                + " i=2318) on "
-                                                                + getNodeId()));
-                                                  }
-                                                  return CompletableFuture.completedFuture(
-                                                      resolvedTarget.orElseThrow());
-                                                }));
-                                  }
-                                }
-                                return CompletableFuture.allOf(
-                                        identities.toArray(CompletableFuture[]::new))
-                                    .thenCompose(
-                                        ready -> {
-                                          if (result.isCancelled()) {
-                                            return CompletableFuture.failedFuture(
-                                                new CancellationException());
-                                          }
-                                          var unique = new LinkedHashSet<NodeId>();
-                                          identities.forEach(
-                                              identity -> unique.add(identity.join()));
-                                          if (unique.stream().anyMatch(NodeId::isNull)) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_NodeIdInvalid,
-                                                    "http://opcfoundation.org/UA/:Stepped"
-                                                        + " (declaration i=2323, owner i=2318) on "
-                                                        + getNodeId()));
-                                          }
-                                          if (unique.size() != 1) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_TooManyMatches,
-                                                    "http://opcfoundation.org/UA/:Stepped"
-                                                        + " (declaration i=2323, owner i=2318) on "
-                                                        + getNodeId()));
-                                          }
-                                          return client
-                                              .getAddressSpace()
-                                              .getNodeAsync(unique.iterator().next())
-                                              .thenCompose(
-                                                  node -> {
-                                                    if (node == null
-                                                        || node.getNodeClass()
-                                                            != NodeClass.Variable) {
-                                                      return CompletableFuture.failedFuture(
-                                                          new UaException(
-                                                              StatusCodes.Bad_NodeClassInvalid,
-                                                              "http://opcfoundation.org/UA/:Stepped"
-                                                                  + " (declaration i=2323, owner"
-                                                                  + " i=2318) on "
-                                                                  + getNodeId()));
-                                                    }
-                                                    return CompletableFuture.completedFuture(node);
-                                                  });
-                                        });
-                              });
-                    });
-              });
-      hop0.whenComplete(
-          (node, failure) -> {
-            if (failure != null) {
-              result.completeExceptionally(failure);
-            } else if (node != null && !(node instanceof PropertyTypeNode)) {
-              result.completeExceptionally(
-                  new UaException(
-                      StatusCodes.Bad_TypeMismatch,
-                      "http://opcfoundation.org/UA/:Stepped (declaration i=2323, owner i=2318)"));
-            } else {
-              result.complete((PropertyTypeNode) node);
-            }
-          });
-    } catch (Exception e) {
-      result.completeExceptionally(e);
-    }
-    return result;
+    return ClientMembers.lookup(
+        client,
+        getNodeId(),
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "Stepped",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            false,
+            "http://opcfoundation.org/UA/:Stepped (declaration i=2323, owner i=2318)"));
   }
 
   @Override
@@ -463,21 +226,7 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
 
   @Override
   public @Nullable String readDefinition() throws UaException {
-    try {
-      return readDefinitionAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(readDefinitionAsync(), false);
   }
 
   @Override
@@ -547,236 +296,23 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
 
   @Override
   public @Nullable PropertyTypeNode getDefinitionNode() throws UaException {
-    try {
-      return getDefinitionNodeAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(getDefinitionNodeAsync(), false);
   }
 
   @Override
   public CompletableFuture<? extends @Nullable PropertyTypeNode> getDefinitionNodeAsync() {
-    CompletableFuture<PropertyTypeNode> result = new CompletableFuture<>();
-    try {
-      CompletableFuture<NodeId> lookup = CompletableFuture.completedFuture(getNodeId());
-      CompletableFuture<UaNode> hop0 =
-          lookup.thenCompose(
-              parent -> {
-                NodeId parentId = parent;
-                if (result.isCancelled()) {
-                  return CompletableFuture.failedFuture(new CancellationException());
-                }
-                if (parentId == null) {
-                  return CompletableFuture.completedFuture(null);
-                }
-                CompletableFuture<Void> namespaceReady;
-                if (client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/") == null
-                    || client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/")
-                        == null) {
-                  namespaceReady = client.readNamespaceTableAsync().thenApply(ignored -> null);
-                } else {
-                  namespaceReady = CompletableFuture.completedFuture(null);
-                }
-                return namespaceReady.thenCompose(
-                    ignored -> {
-                      if (result.isCancelled()) {
-                        return CompletableFuture.failedFuture(new CancellationException());
-                      }
-                      var namespaceIndex =
-                          client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/");
-                      var referenceId =
-                          ExpandedNodeId.parse("i=46").toNodeId(client.getNamespaceTable());
-                      if (namespaceIndex == null || referenceId.isEmpty()) {
-                        return CompletableFuture.failedFuture(
-                            new UaException(
-                                StatusCodes.Bad_NodeIdInvalid,
-                                "http://opcfoundation.org/UA/:Definition (declaration i=2324, owner"
-                                    + " i=2318) on "
-                                    + getNodeId()));
-                      }
-                      var browsePath =
-                          new BrowsePath(
-                              parentId,
-                              new RelativePath(
-                                  new RelativePathElement[] {
-                                    new RelativePathElement(
-                                        referenceId.orElseThrow(),
-                                        false,
-                                        true,
-                                        new QualifiedName(namespaceIndex, "Definition"))
-                                  }));
-                      return client
-                          .translateBrowsePathsAsync(List.of(browsePath))
-                          .thenCompose(
-                              response -> {
-                                if (result.isCancelled()) {
-                                  return CompletableFuture.failedFuture(
-                                      new CancellationException());
-                                }
-                                var results = response == null ? null : response.getResults();
-                                if (results == null
-                                    || results.length != 1
-                                    || results[0] == null
-                                    || results[0].getStatusCode() == null) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:Definition (declaration"
-                                              + " i=2324, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                var operation = results[0];
-                                if (operation.getStatusCode().getValue()
-                                    == StatusCodes.Bad_NoMatch) {
-                                  return CompletableFuture.completedFuture(null);
-                                }
-                                if (!operation.getStatusCode().isGood()) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          operation.getStatusCode(),
-                                          "http://opcfoundation.org/UA/:Definition (declaration"
-                                              + " i=2324, owner i=2318)"));
-                                }
-                                var targets = operation.getTargets();
-                                if (targets == null || targets.length == 0) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:Definition (declaration"
-                                              + " i=2324, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                var identities = new ArrayList<CompletableFuture<NodeId>>();
-                                for (var target : targets) {
-                                  if (target == null
-                                      || target.getTargetId() == null
-                                      || target.getRemainingPathIndex() == null
-                                      || target.getRemainingPathIndex().longValue()
-                                          != 0xffffffffL) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_UnexpectedError,
-                                            "http://opcfoundation.org/UA/:Definition (declaration"
-                                                + " i=2324, owner i=2318) on "
-                                                + getNodeId()));
-                                  }
-                                  if (!target.getTargetId().isLocal()) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_NotSupported,
-                                            "http://opcfoundation.org/UA/:Definition (declaration"
-                                                + " i=2324, owner i=2318) on "
-                                                + getNodeId()));
-                                  }
-                                  if (result.isCancelled()) {
-                                    return CompletableFuture.failedFuture(
-                                        new CancellationException());
-                                  }
-                                  var localTarget =
-                                      target.getTargetId().toNodeId(client.getNamespaceTable());
-                                  if (localTarget.isPresent()) {
-                                    identities.add(
-                                        CompletableFuture.completedFuture(
-                                            localTarget.orElseThrow()));
-                                  } else {
-                                    identities.add(
-                                        client
-                                            .readNamespaceTableAsync()
-                                            .thenCompose(
-                                                namespaceTable -> {
-                                                  var resolvedTarget =
-                                                      target.getTargetId().toNodeId(namespaceTable);
-                                                  if (resolvedTarget.isEmpty()) {
-                                                    return CompletableFuture.failedFuture(
-                                                        new UaException(
-                                                            StatusCodes.Bad_NodeIdInvalid,
-                                                            "http://opcfoundation.org/UA/:Definition"
-                                                                + " (declaration i=2324, owner"
-                                                                + " i=2318) on "
-                                                                + getNodeId()));
-                                                  }
-                                                  return CompletableFuture.completedFuture(
-                                                      resolvedTarget.orElseThrow());
-                                                }));
-                                  }
-                                }
-                                return CompletableFuture.allOf(
-                                        identities.toArray(CompletableFuture[]::new))
-                                    .thenCompose(
-                                        ready -> {
-                                          if (result.isCancelled()) {
-                                            return CompletableFuture.failedFuture(
-                                                new CancellationException());
-                                          }
-                                          var unique = new LinkedHashSet<NodeId>();
-                                          identities.forEach(
-                                              identity -> unique.add(identity.join()));
-                                          if (unique.stream().anyMatch(NodeId::isNull)) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_NodeIdInvalid,
-                                                    "http://opcfoundation.org/UA/:Definition"
-                                                        + " (declaration i=2324, owner i=2318) on "
-                                                        + getNodeId()));
-                                          }
-                                          if (unique.size() != 1) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_TooManyMatches,
-                                                    "http://opcfoundation.org/UA/:Definition"
-                                                        + " (declaration i=2324, owner i=2318) on "
-                                                        + getNodeId()));
-                                          }
-                                          return client
-                                              .getAddressSpace()
-                                              .getNodeAsync(unique.iterator().next())
-                                              .thenCompose(
-                                                  node -> {
-                                                    if (node == null
-                                                        || node.getNodeClass()
-                                                            != NodeClass.Variable) {
-                                                      return CompletableFuture.failedFuture(
-                                                          new UaException(
-                                                              StatusCodes.Bad_NodeClassInvalid,
-                                                              "http://opcfoundation.org/UA/:Definition"
-                                                                  + " (declaration i=2324, owner"
-                                                                  + " i=2318) on "
-                                                                  + getNodeId()));
-                                                    }
-                                                    return CompletableFuture.completedFuture(node);
-                                                  });
-                                        });
-                              });
-                    });
-              });
-      hop0.whenComplete(
-          (node, failure) -> {
-            if (failure != null) {
-              result.completeExceptionally(failure);
-            } else if (node != null && !(node instanceof PropertyTypeNode)) {
-              result.completeExceptionally(
-                  new UaException(
-                      StatusCodes.Bad_TypeMismatch,
-                      "http://opcfoundation.org/UA/:Definition (declaration i=2324, owner"
-                          + " i=2318)"));
-            } else {
-              result.complete((PropertyTypeNode) node);
-            }
-          });
-    } catch (Exception e) {
-      result.completeExceptionally(e);
-    }
-    return result;
+    return ClientMembers.lookup(
+        client,
+        getNodeId(),
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "Definition",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            true,
+            "http://opcfoundation.org/UA/:Definition (declaration i=2324, owner i=2318)"));
   }
 
   @Override
@@ -807,21 +343,7 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
 
   @Override
   public @Nullable Double readMaxTimeInterval() throws UaException {
-    try {
-      return readMaxTimeIntervalAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(readMaxTimeIntervalAsync(), false);
   }
 
   @Override
@@ -891,236 +413,23 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
 
   @Override
   public @Nullable PropertyTypeNode getMaxTimeIntervalNode() throws UaException {
-    try {
-      return getMaxTimeIntervalNodeAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(getMaxTimeIntervalNodeAsync(), false);
   }
 
   @Override
   public CompletableFuture<? extends @Nullable PropertyTypeNode> getMaxTimeIntervalNodeAsync() {
-    CompletableFuture<PropertyTypeNode> result = new CompletableFuture<>();
-    try {
-      CompletableFuture<NodeId> lookup = CompletableFuture.completedFuture(getNodeId());
-      CompletableFuture<UaNode> hop0 =
-          lookup.thenCompose(
-              parent -> {
-                NodeId parentId = parent;
-                if (result.isCancelled()) {
-                  return CompletableFuture.failedFuture(new CancellationException());
-                }
-                if (parentId == null) {
-                  return CompletableFuture.completedFuture(null);
-                }
-                CompletableFuture<Void> namespaceReady;
-                if (client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/") == null
-                    || client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/")
-                        == null) {
-                  namespaceReady = client.readNamespaceTableAsync().thenApply(ignored -> null);
-                } else {
-                  namespaceReady = CompletableFuture.completedFuture(null);
-                }
-                return namespaceReady.thenCompose(
-                    ignored -> {
-                      if (result.isCancelled()) {
-                        return CompletableFuture.failedFuture(new CancellationException());
-                      }
-                      var namespaceIndex =
-                          client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/");
-                      var referenceId =
-                          ExpandedNodeId.parse("i=46").toNodeId(client.getNamespaceTable());
-                      if (namespaceIndex == null || referenceId.isEmpty()) {
-                        return CompletableFuture.failedFuture(
-                            new UaException(
-                                StatusCodes.Bad_NodeIdInvalid,
-                                "http://opcfoundation.org/UA/:MaxTimeInterval (declaration i=2325,"
-                                    + " owner i=2318) on "
-                                    + getNodeId()));
-                      }
-                      var browsePath =
-                          new BrowsePath(
-                              parentId,
-                              new RelativePath(
-                                  new RelativePathElement[] {
-                                    new RelativePathElement(
-                                        referenceId.orElseThrow(),
-                                        false,
-                                        true,
-                                        new QualifiedName(namespaceIndex, "MaxTimeInterval"))
-                                  }));
-                      return client
-                          .translateBrowsePathsAsync(List.of(browsePath))
-                          .thenCompose(
-                              response -> {
-                                if (result.isCancelled()) {
-                                  return CompletableFuture.failedFuture(
-                                      new CancellationException());
-                                }
-                                var results = response == null ? null : response.getResults();
-                                if (results == null
-                                    || results.length != 1
-                                    || results[0] == null
-                                    || results[0].getStatusCode() == null) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:MaxTimeInterval"
-                                              + " (declaration i=2325, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                var operation = results[0];
-                                if (operation.getStatusCode().getValue()
-                                    == StatusCodes.Bad_NoMatch) {
-                                  return CompletableFuture.completedFuture(null);
-                                }
-                                if (!operation.getStatusCode().isGood()) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          operation.getStatusCode(),
-                                          "http://opcfoundation.org/UA/:MaxTimeInterval"
-                                              + " (declaration i=2325, owner i=2318)"));
-                                }
-                                var targets = operation.getTargets();
-                                if (targets == null || targets.length == 0) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:MaxTimeInterval"
-                                              + " (declaration i=2325, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                var identities = new ArrayList<CompletableFuture<NodeId>>();
-                                for (var target : targets) {
-                                  if (target == null
-                                      || target.getTargetId() == null
-                                      || target.getRemainingPathIndex() == null
-                                      || target.getRemainingPathIndex().longValue()
-                                          != 0xffffffffL) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_UnexpectedError,
-                                            "http://opcfoundation.org/UA/:MaxTimeInterval"
-                                                + " (declaration i=2325, owner i=2318) on "
-                                                + getNodeId()));
-                                  }
-                                  if (!target.getTargetId().isLocal()) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_NotSupported,
-                                            "http://opcfoundation.org/UA/:MaxTimeInterval"
-                                                + " (declaration i=2325, owner i=2318) on "
-                                                + getNodeId()));
-                                  }
-                                  if (result.isCancelled()) {
-                                    return CompletableFuture.failedFuture(
-                                        new CancellationException());
-                                  }
-                                  var localTarget =
-                                      target.getTargetId().toNodeId(client.getNamespaceTable());
-                                  if (localTarget.isPresent()) {
-                                    identities.add(
-                                        CompletableFuture.completedFuture(
-                                            localTarget.orElseThrow()));
-                                  } else {
-                                    identities.add(
-                                        client
-                                            .readNamespaceTableAsync()
-                                            .thenCompose(
-                                                namespaceTable -> {
-                                                  var resolvedTarget =
-                                                      target.getTargetId().toNodeId(namespaceTable);
-                                                  if (resolvedTarget.isEmpty()) {
-                                                    return CompletableFuture.failedFuture(
-                                                        new UaException(
-                                                            StatusCodes.Bad_NodeIdInvalid,
-                                                            "http://opcfoundation.org/UA/:MaxTimeInterval"
-                                                                + " (declaration i=2325, owner"
-                                                                + " i=2318) on "
-                                                                + getNodeId()));
-                                                  }
-                                                  return CompletableFuture.completedFuture(
-                                                      resolvedTarget.orElseThrow());
-                                                }));
-                                  }
-                                }
-                                return CompletableFuture.allOf(
-                                        identities.toArray(CompletableFuture[]::new))
-                                    .thenCompose(
-                                        ready -> {
-                                          if (result.isCancelled()) {
-                                            return CompletableFuture.failedFuture(
-                                                new CancellationException());
-                                          }
-                                          var unique = new LinkedHashSet<NodeId>();
-                                          identities.forEach(
-                                              identity -> unique.add(identity.join()));
-                                          if (unique.stream().anyMatch(NodeId::isNull)) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_NodeIdInvalid,
-                                                    "http://opcfoundation.org/UA/:MaxTimeInterval"
-                                                        + " (declaration i=2325, owner i=2318) on "
-                                                        + getNodeId()));
-                                          }
-                                          if (unique.size() != 1) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_TooManyMatches,
-                                                    "http://opcfoundation.org/UA/:MaxTimeInterval"
-                                                        + " (declaration i=2325, owner i=2318) on "
-                                                        + getNodeId()));
-                                          }
-                                          return client
-                                              .getAddressSpace()
-                                              .getNodeAsync(unique.iterator().next())
-                                              .thenCompose(
-                                                  node -> {
-                                                    if (node == null
-                                                        || node.getNodeClass()
-                                                            != NodeClass.Variable) {
-                                                      return CompletableFuture.failedFuture(
-                                                          new UaException(
-                                                              StatusCodes.Bad_NodeClassInvalid,
-                                                              "http://opcfoundation.org/UA/:MaxTimeInterval"
-                                                                  + " (declaration i=2325, owner"
-                                                                  + " i=2318) on "
-                                                                  + getNodeId()));
-                                                    }
-                                                    return CompletableFuture.completedFuture(node);
-                                                  });
-                                        });
-                              });
-                    });
-              });
-      hop0.whenComplete(
-          (node, failure) -> {
-            if (failure != null) {
-              result.completeExceptionally(failure);
-            } else if (node != null && !(node instanceof PropertyTypeNode)) {
-              result.completeExceptionally(
-                  new UaException(
-                      StatusCodes.Bad_TypeMismatch,
-                      "http://opcfoundation.org/UA/:MaxTimeInterval (declaration i=2325, owner"
-                          + " i=2318)"));
-            } else {
-              result.complete((PropertyTypeNode) node);
-            }
-          });
-    } catch (Exception e) {
-      result.completeExceptionally(e);
-    }
-    return result;
+    return ClientMembers.lookup(
+        client,
+        getNodeId(),
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "MaxTimeInterval",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            true,
+            "http://opcfoundation.org/UA/:MaxTimeInterval (declaration i=2325, owner i=2318)"));
   }
 
   @Override
@@ -1151,21 +460,7 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
 
   @Override
   public @Nullable Double readMinTimeInterval() throws UaException {
-    try {
-      return readMinTimeIntervalAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(readMinTimeIntervalAsync(), false);
   }
 
   @Override
@@ -1235,236 +530,23 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
 
   @Override
   public @Nullable PropertyTypeNode getMinTimeIntervalNode() throws UaException {
-    try {
-      return getMinTimeIntervalNodeAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(getMinTimeIntervalNodeAsync(), false);
   }
 
   @Override
   public CompletableFuture<? extends @Nullable PropertyTypeNode> getMinTimeIntervalNodeAsync() {
-    CompletableFuture<PropertyTypeNode> result = new CompletableFuture<>();
-    try {
-      CompletableFuture<NodeId> lookup = CompletableFuture.completedFuture(getNodeId());
-      CompletableFuture<UaNode> hop0 =
-          lookup.thenCompose(
-              parent -> {
-                NodeId parentId = parent;
-                if (result.isCancelled()) {
-                  return CompletableFuture.failedFuture(new CancellationException());
-                }
-                if (parentId == null) {
-                  return CompletableFuture.completedFuture(null);
-                }
-                CompletableFuture<Void> namespaceReady;
-                if (client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/") == null
-                    || client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/")
-                        == null) {
-                  namespaceReady = client.readNamespaceTableAsync().thenApply(ignored -> null);
-                } else {
-                  namespaceReady = CompletableFuture.completedFuture(null);
-                }
-                return namespaceReady.thenCompose(
-                    ignored -> {
-                      if (result.isCancelled()) {
-                        return CompletableFuture.failedFuture(new CancellationException());
-                      }
-                      var namespaceIndex =
-                          client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/");
-                      var referenceId =
-                          ExpandedNodeId.parse("i=46").toNodeId(client.getNamespaceTable());
-                      if (namespaceIndex == null || referenceId.isEmpty()) {
-                        return CompletableFuture.failedFuture(
-                            new UaException(
-                                StatusCodes.Bad_NodeIdInvalid,
-                                "http://opcfoundation.org/UA/:MinTimeInterval (declaration i=2326,"
-                                    + " owner i=2318) on "
-                                    + getNodeId()));
-                      }
-                      var browsePath =
-                          new BrowsePath(
-                              parentId,
-                              new RelativePath(
-                                  new RelativePathElement[] {
-                                    new RelativePathElement(
-                                        referenceId.orElseThrow(),
-                                        false,
-                                        true,
-                                        new QualifiedName(namespaceIndex, "MinTimeInterval"))
-                                  }));
-                      return client
-                          .translateBrowsePathsAsync(List.of(browsePath))
-                          .thenCompose(
-                              response -> {
-                                if (result.isCancelled()) {
-                                  return CompletableFuture.failedFuture(
-                                      new CancellationException());
-                                }
-                                var results = response == null ? null : response.getResults();
-                                if (results == null
-                                    || results.length != 1
-                                    || results[0] == null
-                                    || results[0].getStatusCode() == null) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:MinTimeInterval"
-                                              + " (declaration i=2326, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                var operation = results[0];
-                                if (operation.getStatusCode().getValue()
-                                    == StatusCodes.Bad_NoMatch) {
-                                  return CompletableFuture.completedFuture(null);
-                                }
-                                if (!operation.getStatusCode().isGood()) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          operation.getStatusCode(),
-                                          "http://opcfoundation.org/UA/:MinTimeInterval"
-                                              + " (declaration i=2326, owner i=2318)"));
-                                }
-                                var targets = operation.getTargets();
-                                if (targets == null || targets.length == 0) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:MinTimeInterval"
-                                              + " (declaration i=2326, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                var identities = new ArrayList<CompletableFuture<NodeId>>();
-                                for (var target : targets) {
-                                  if (target == null
-                                      || target.getTargetId() == null
-                                      || target.getRemainingPathIndex() == null
-                                      || target.getRemainingPathIndex().longValue()
-                                          != 0xffffffffL) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_UnexpectedError,
-                                            "http://opcfoundation.org/UA/:MinTimeInterval"
-                                                + " (declaration i=2326, owner i=2318) on "
-                                                + getNodeId()));
-                                  }
-                                  if (!target.getTargetId().isLocal()) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_NotSupported,
-                                            "http://opcfoundation.org/UA/:MinTimeInterval"
-                                                + " (declaration i=2326, owner i=2318) on "
-                                                + getNodeId()));
-                                  }
-                                  if (result.isCancelled()) {
-                                    return CompletableFuture.failedFuture(
-                                        new CancellationException());
-                                  }
-                                  var localTarget =
-                                      target.getTargetId().toNodeId(client.getNamespaceTable());
-                                  if (localTarget.isPresent()) {
-                                    identities.add(
-                                        CompletableFuture.completedFuture(
-                                            localTarget.orElseThrow()));
-                                  } else {
-                                    identities.add(
-                                        client
-                                            .readNamespaceTableAsync()
-                                            .thenCompose(
-                                                namespaceTable -> {
-                                                  var resolvedTarget =
-                                                      target.getTargetId().toNodeId(namespaceTable);
-                                                  if (resolvedTarget.isEmpty()) {
-                                                    return CompletableFuture.failedFuture(
-                                                        new UaException(
-                                                            StatusCodes.Bad_NodeIdInvalid,
-                                                            "http://opcfoundation.org/UA/:MinTimeInterval"
-                                                                + " (declaration i=2326, owner"
-                                                                + " i=2318) on "
-                                                                + getNodeId()));
-                                                  }
-                                                  return CompletableFuture.completedFuture(
-                                                      resolvedTarget.orElseThrow());
-                                                }));
-                                  }
-                                }
-                                return CompletableFuture.allOf(
-                                        identities.toArray(CompletableFuture[]::new))
-                                    .thenCompose(
-                                        ready -> {
-                                          if (result.isCancelled()) {
-                                            return CompletableFuture.failedFuture(
-                                                new CancellationException());
-                                          }
-                                          var unique = new LinkedHashSet<NodeId>();
-                                          identities.forEach(
-                                              identity -> unique.add(identity.join()));
-                                          if (unique.stream().anyMatch(NodeId::isNull)) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_NodeIdInvalid,
-                                                    "http://opcfoundation.org/UA/:MinTimeInterval"
-                                                        + " (declaration i=2326, owner i=2318) on "
-                                                        + getNodeId()));
-                                          }
-                                          if (unique.size() != 1) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_TooManyMatches,
-                                                    "http://opcfoundation.org/UA/:MinTimeInterval"
-                                                        + " (declaration i=2326, owner i=2318) on "
-                                                        + getNodeId()));
-                                          }
-                                          return client
-                                              .getAddressSpace()
-                                              .getNodeAsync(unique.iterator().next())
-                                              .thenCompose(
-                                                  node -> {
-                                                    if (node == null
-                                                        || node.getNodeClass()
-                                                            != NodeClass.Variable) {
-                                                      return CompletableFuture.failedFuture(
-                                                          new UaException(
-                                                              StatusCodes.Bad_NodeClassInvalid,
-                                                              "http://opcfoundation.org/UA/:MinTimeInterval"
-                                                                  + " (declaration i=2326, owner"
-                                                                  + " i=2318) on "
-                                                                  + getNodeId()));
-                                                    }
-                                                    return CompletableFuture.completedFuture(node);
-                                                  });
-                                        });
-                              });
-                    });
-              });
-      hop0.whenComplete(
-          (node, failure) -> {
-            if (failure != null) {
-              result.completeExceptionally(failure);
-            } else if (node != null && !(node instanceof PropertyTypeNode)) {
-              result.completeExceptionally(
-                  new UaException(
-                      StatusCodes.Bad_TypeMismatch,
-                      "http://opcfoundation.org/UA/:MinTimeInterval (declaration i=2326, owner"
-                          + " i=2318)"));
-            } else {
-              result.complete((PropertyTypeNode) node);
-            }
-          });
-    } catch (Exception e) {
-      result.completeExceptionally(e);
-    }
-    return result;
+    return ClientMembers.lookup(
+        client,
+        getNodeId(),
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "MinTimeInterval",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            true,
+            "http://opcfoundation.org/UA/:MinTimeInterval (declaration i=2326, owner i=2318)"));
   }
 
   @Override
@@ -1495,21 +577,7 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
 
   @Override
   public @Nullable Double readExceptionDeviation() throws UaException {
-    try {
-      return readExceptionDeviationAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(readExceptionDeviationAsync(), false);
   }
 
   @Override
@@ -1580,236 +648,23 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
 
   @Override
   public @Nullable PropertyTypeNode getExceptionDeviationNode() throws UaException {
-    try {
-      return getExceptionDeviationNodeAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(getExceptionDeviationNodeAsync(), false);
   }
 
   @Override
   public CompletableFuture<? extends @Nullable PropertyTypeNode> getExceptionDeviationNodeAsync() {
-    CompletableFuture<PropertyTypeNode> result = new CompletableFuture<>();
-    try {
-      CompletableFuture<NodeId> lookup = CompletableFuture.completedFuture(getNodeId());
-      CompletableFuture<UaNode> hop0 =
-          lookup.thenCompose(
-              parent -> {
-                NodeId parentId = parent;
-                if (result.isCancelled()) {
-                  return CompletableFuture.failedFuture(new CancellationException());
-                }
-                if (parentId == null) {
-                  return CompletableFuture.completedFuture(null);
-                }
-                CompletableFuture<Void> namespaceReady;
-                if (client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/") == null
-                    || client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/")
-                        == null) {
-                  namespaceReady = client.readNamespaceTableAsync().thenApply(ignored -> null);
-                } else {
-                  namespaceReady = CompletableFuture.completedFuture(null);
-                }
-                return namespaceReady.thenCompose(
-                    ignored -> {
-                      if (result.isCancelled()) {
-                        return CompletableFuture.failedFuture(new CancellationException());
-                      }
-                      var namespaceIndex =
-                          client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/");
-                      var referenceId =
-                          ExpandedNodeId.parse("i=46").toNodeId(client.getNamespaceTable());
-                      if (namespaceIndex == null || referenceId.isEmpty()) {
-                        return CompletableFuture.failedFuture(
-                            new UaException(
-                                StatusCodes.Bad_NodeIdInvalid,
-                                "http://opcfoundation.org/UA/:ExceptionDeviation (declaration"
-                                    + " i=2327, owner i=2318) on "
-                                    + getNodeId()));
-                      }
-                      var browsePath =
-                          new BrowsePath(
-                              parentId,
-                              new RelativePath(
-                                  new RelativePathElement[] {
-                                    new RelativePathElement(
-                                        referenceId.orElseThrow(),
-                                        false,
-                                        true,
-                                        new QualifiedName(namespaceIndex, "ExceptionDeviation"))
-                                  }));
-                      return client
-                          .translateBrowsePathsAsync(List.of(browsePath))
-                          .thenCompose(
-                              response -> {
-                                if (result.isCancelled()) {
-                                  return CompletableFuture.failedFuture(
-                                      new CancellationException());
-                                }
-                                var results = response == null ? null : response.getResults();
-                                if (results == null
-                                    || results.length != 1
-                                    || results[0] == null
-                                    || results[0].getStatusCode() == null) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:ExceptionDeviation"
-                                              + " (declaration i=2327, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                var operation = results[0];
-                                if (operation.getStatusCode().getValue()
-                                    == StatusCodes.Bad_NoMatch) {
-                                  return CompletableFuture.completedFuture(null);
-                                }
-                                if (!operation.getStatusCode().isGood()) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          operation.getStatusCode(),
-                                          "http://opcfoundation.org/UA/:ExceptionDeviation"
-                                              + " (declaration i=2327, owner i=2318)"));
-                                }
-                                var targets = operation.getTargets();
-                                if (targets == null || targets.length == 0) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:ExceptionDeviation"
-                                              + " (declaration i=2327, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                var identities = new ArrayList<CompletableFuture<NodeId>>();
-                                for (var target : targets) {
-                                  if (target == null
-                                      || target.getTargetId() == null
-                                      || target.getRemainingPathIndex() == null
-                                      || target.getRemainingPathIndex().longValue()
-                                          != 0xffffffffL) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_UnexpectedError,
-                                            "http://opcfoundation.org/UA/:ExceptionDeviation"
-                                                + " (declaration i=2327, owner i=2318) on "
-                                                + getNodeId()));
-                                  }
-                                  if (!target.getTargetId().isLocal()) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_NotSupported,
-                                            "http://opcfoundation.org/UA/:ExceptionDeviation"
-                                                + " (declaration i=2327, owner i=2318) on "
-                                                + getNodeId()));
-                                  }
-                                  if (result.isCancelled()) {
-                                    return CompletableFuture.failedFuture(
-                                        new CancellationException());
-                                  }
-                                  var localTarget =
-                                      target.getTargetId().toNodeId(client.getNamespaceTable());
-                                  if (localTarget.isPresent()) {
-                                    identities.add(
-                                        CompletableFuture.completedFuture(
-                                            localTarget.orElseThrow()));
-                                  } else {
-                                    identities.add(
-                                        client
-                                            .readNamespaceTableAsync()
-                                            .thenCompose(
-                                                namespaceTable -> {
-                                                  var resolvedTarget =
-                                                      target.getTargetId().toNodeId(namespaceTable);
-                                                  if (resolvedTarget.isEmpty()) {
-                                                    return CompletableFuture.failedFuture(
-                                                        new UaException(
-                                                            StatusCodes.Bad_NodeIdInvalid,
-                                                            "http://opcfoundation.org/UA/:ExceptionDeviation"
-                                                                + " (declaration i=2327, owner"
-                                                                + " i=2318) on "
-                                                                + getNodeId()));
-                                                  }
-                                                  return CompletableFuture.completedFuture(
-                                                      resolvedTarget.orElseThrow());
-                                                }));
-                                  }
-                                }
-                                return CompletableFuture.allOf(
-                                        identities.toArray(CompletableFuture[]::new))
-                                    .thenCompose(
-                                        ready -> {
-                                          if (result.isCancelled()) {
-                                            return CompletableFuture.failedFuture(
-                                                new CancellationException());
-                                          }
-                                          var unique = new LinkedHashSet<NodeId>();
-                                          identities.forEach(
-                                              identity -> unique.add(identity.join()));
-                                          if (unique.stream().anyMatch(NodeId::isNull)) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_NodeIdInvalid,
-                                                    "http://opcfoundation.org/UA/:ExceptionDeviation"
-                                                        + " (declaration i=2327, owner i=2318) on "
-                                                        + getNodeId()));
-                                          }
-                                          if (unique.size() != 1) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_TooManyMatches,
-                                                    "http://opcfoundation.org/UA/:ExceptionDeviation"
-                                                        + " (declaration i=2327, owner i=2318) on "
-                                                        + getNodeId()));
-                                          }
-                                          return client
-                                              .getAddressSpace()
-                                              .getNodeAsync(unique.iterator().next())
-                                              .thenCompose(
-                                                  node -> {
-                                                    if (node == null
-                                                        || node.getNodeClass()
-                                                            != NodeClass.Variable) {
-                                                      return CompletableFuture.failedFuture(
-                                                          new UaException(
-                                                              StatusCodes.Bad_NodeClassInvalid,
-                                                              "http://opcfoundation.org/UA/:ExceptionDeviation"
-                                                                  + " (declaration i=2327, owner"
-                                                                  + " i=2318) on "
-                                                                  + getNodeId()));
-                                                    }
-                                                    return CompletableFuture.completedFuture(node);
-                                                  });
-                                        });
-                              });
-                    });
-              });
-      hop0.whenComplete(
-          (node, failure) -> {
-            if (failure != null) {
-              result.completeExceptionally(failure);
-            } else if (node != null && !(node instanceof PropertyTypeNode)) {
-              result.completeExceptionally(
-                  new UaException(
-                      StatusCodes.Bad_TypeMismatch,
-                      "http://opcfoundation.org/UA/:ExceptionDeviation (declaration i=2327, owner"
-                          + " i=2318)"));
-            } else {
-              result.complete((PropertyTypeNode) node);
-            }
-          });
-    } catch (Exception e) {
-      result.completeExceptionally(e);
-    }
-    return result;
+    return ClientMembers.lookup(
+        client,
+        getNodeId(),
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "ExceptionDeviation",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            true,
+            "http://opcfoundation.org/UA/:ExceptionDeviation (declaration i=2327, owner i=2318)"));
   }
 
   @Override
@@ -1882,21 +737,7 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
 
   @Override
   public @Nullable ExceptionDeviationFormat readExceptionDeviationFormat() throws UaException {
-    try {
-      return readExceptionDeviationFormatAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(readExceptionDeviationFormatAsync(), false);
   }
 
   @Override
@@ -2011,238 +852,25 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
 
   @Override
   public @Nullable PropertyTypeNode getExceptionDeviationFormatNode() throws UaException {
-    try {
-      return getExceptionDeviationFormatNodeAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(getExceptionDeviationFormatNodeAsync(), false);
   }
 
   @Override
   public CompletableFuture<? extends @Nullable PropertyTypeNode>
       getExceptionDeviationFormatNodeAsync() {
-    CompletableFuture<PropertyTypeNode> result = new CompletableFuture<>();
-    try {
-      CompletableFuture<NodeId> lookup = CompletableFuture.completedFuture(getNodeId());
-      CompletableFuture<UaNode> hop0 =
-          lookup.thenCompose(
-              parent -> {
-                NodeId parentId = parent;
-                if (result.isCancelled()) {
-                  return CompletableFuture.failedFuture(new CancellationException());
-                }
-                if (parentId == null) {
-                  return CompletableFuture.completedFuture(null);
-                }
-                CompletableFuture<Void> namespaceReady;
-                if (client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/") == null
-                    || client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/")
-                        == null) {
-                  namespaceReady = client.readNamespaceTableAsync().thenApply(ignored -> null);
-                } else {
-                  namespaceReady = CompletableFuture.completedFuture(null);
-                }
-                return namespaceReady.thenCompose(
-                    ignored -> {
-                      if (result.isCancelled()) {
-                        return CompletableFuture.failedFuture(new CancellationException());
-                      }
-                      var namespaceIndex =
-                          client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/");
-                      var referenceId =
-                          ExpandedNodeId.parse("i=46").toNodeId(client.getNamespaceTable());
-                      if (namespaceIndex == null || referenceId.isEmpty()) {
-                        return CompletableFuture.failedFuture(
-                            new UaException(
-                                StatusCodes.Bad_NodeIdInvalid,
-                                "http://opcfoundation.org/UA/:ExceptionDeviationFormat (declaration"
-                                    + " i=2328, owner i=2318) on "
-                                    + getNodeId()));
-                      }
-                      var browsePath =
-                          new BrowsePath(
-                              parentId,
-                              new RelativePath(
-                                  new RelativePathElement[] {
-                                    new RelativePathElement(
-                                        referenceId.orElseThrow(),
-                                        false,
-                                        true,
-                                        new QualifiedName(
-                                            namespaceIndex, "ExceptionDeviationFormat"))
-                                  }));
-                      return client
-                          .translateBrowsePathsAsync(List.of(browsePath))
-                          .thenCompose(
-                              response -> {
-                                if (result.isCancelled()) {
-                                  return CompletableFuture.failedFuture(
-                                      new CancellationException());
-                                }
-                                var results = response == null ? null : response.getResults();
-                                if (results == null
-                                    || results.length != 1
-                                    || results[0] == null
-                                    || results[0].getStatusCode() == null) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:ExceptionDeviationFormat"
-                                              + " (declaration i=2328, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                var operation = results[0];
-                                if (operation.getStatusCode().getValue()
-                                    == StatusCodes.Bad_NoMatch) {
-                                  return CompletableFuture.completedFuture(null);
-                                }
-                                if (!operation.getStatusCode().isGood()) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          operation.getStatusCode(),
-                                          "http://opcfoundation.org/UA/:ExceptionDeviationFormat"
-                                              + " (declaration i=2328, owner i=2318)"));
-                                }
-                                var targets = operation.getTargets();
-                                if (targets == null || targets.length == 0) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:ExceptionDeviationFormat"
-                                              + " (declaration i=2328, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                var identities = new ArrayList<CompletableFuture<NodeId>>();
-                                for (var target : targets) {
-                                  if (target == null
-                                      || target.getTargetId() == null
-                                      || target.getRemainingPathIndex() == null
-                                      || target.getRemainingPathIndex().longValue()
-                                          != 0xffffffffL) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_UnexpectedError,
-                                            "http://opcfoundation.org/UA/:ExceptionDeviationFormat"
-                                                + " (declaration i=2328, owner i=2318) on "
-                                                + getNodeId()));
-                                  }
-                                  if (!target.getTargetId().isLocal()) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_NotSupported,
-                                            "http://opcfoundation.org/UA/:ExceptionDeviationFormat"
-                                                + " (declaration i=2328, owner i=2318) on "
-                                                + getNodeId()));
-                                  }
-                                  if (result.isCancelled()) {
-                                    return CompletableFuture.failedFuture(
-                                        new CancellationException());
-                                  }
-                                  var localTarget =
-                                      target.getTargetId().toNodeId(client.getNamespaceTable());
-                                  if (localTarget.isPresent()) {
-                                    identities.add(
-                                        CompletableFuture.completedFuture(
-                                            localTarget.orElseThrow()));
-                                  } else {
-                                    identities.add(
-                                        client
-                                            .readNamespaceTableAsync()
-                                            .thenCompose(
-                                                namespaceTable -> {
-                                                  var resolvedTarget =
-                                                      target.getTargetId().toNodeId(namespaceTable);
-                                                  if (resolvedTarget.isEmpty()) {
-                                                    return CompletableFuture.failedFuture(
-                                                        new UaException(
-                                                            StatusCodes.Bad_NodeIdInvalid,
-                                                            "http://opcfoundation.org/UA/:ExceptionDeviationFormat"
-                                                                + " (declaration i=2328, owner"
-                                                                + " i=2318) on "
-                                                                + getNodeId()));
-                                                  }
-                                                  return CompletableFuture.completedFuture(
-                                                      resolvedTarget.orElseThrow());
-                                                }));
-                                  }
-                                }
-                                return CompletableFuture.allOf(
-                                        identities.toArray(CompletableFuture[]::new))
-                                    .thenCompose(
-                                        ready -> {
-                                          if (result.isCancelled()) {
-                                            return CompletableFuture.failedFuture(
-                                                new CancellationException());
-                                          }
-                                          var unique = new LinkedHashSet<NodeId>();
-                                          identities.forEach(
-                                              identity -> unique.add(identity.join()));
-                                          if (unique.stream().anyMatch(NodeId::isNull)) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_NodeIdInvalid,
-                                                    "http://opcfoundation.org/UA/:ExceptionDeviationFormat"
-                                                        + " (declaration i=2328, owner i=2318) on "
-                                                        + getNodeId()));
-                                          }
-                                          if (unique.size() != 1) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_TooManyMatches,
-                                                    "http://opcfoundation.org/UA/:ExceptionDeviationFormat"
-                                                        + " (declaration i=2328, owner i=2318) on "
-                                                        + getNodeId()));
-                                          }
-                                          return client
-                                              .getAddressSpace()
-                                              .getNodeAsync(unique.iterator().next())
-                                              .thenCompose(
-                                                  node -> {
-                                                    if (node == null
-                                                        || node.getNodeClass()
-                                                            != NodeClass.Variable) {
-                                                      return CompletableFuture.failedFuture(
-                                                          new UaException(
-                                                              StatusCodes.Bad_NodeClassInvalid,
-                                                              "http://opcfoundation.org/UA/:ExceptionDeviationFormat"
-                                                                  + " (declaration i=2328, owner"
-                                                                  + " i=2318) on "
-                                                                  + getNodeId()));
-                                                    }
-                                                    return CompletableFuture.completedFuture(node);
-                                                  });
-                                        });
-                              });
-                    });
-              });
-      hop0.whenComplete(
-          (node, failure) -> {
-            if (failure != null) {
-              result.completeExceptionally(failure);
-            } else if (node != null && !(node instanceof PropertyTypeNode)) {
-              result.completeExceptionally(
-                  new UaException(
-                      StatusCodes.Bad_TypeMismatch,
-                      "http://opcfoundation.org/UA/:ExceptionDeviationFormat (declaration i=2328,"
-                          + " owner i=2318)"));
-            } else {
-              result.complete((PropertyTypeNode) node);
-            }
-          });
-    } catch (Exception e) {
-      result.completeExceptionally(e);
-    }
-    return result;
+    return ClientMembers.lookup(
+        client,
+        getNodeId(),
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "ExceptionDeviationFormat",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            true,
+            "http://opcfoundation.org/UA/:ExceptionDeviationFormat (declaration i=2328, owner"
+                + " i=2318)"));
   }
 
   @Override
@@ -2273,21 +901,7 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
 
   @Override
   public @Nullable DateTime readStartOfArchive() throws UaException {
-    try {
-      return readStartOfArchiveAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(readStartOfArchiveAsync(), false);
   }
 
   @Override
@@ -2357,236 +971,23 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
 
   @Override
   public @Nullable PropertyTypeNode getStartOfArchiveNode() throws UaException {
-    try {
-      return getStartOfArchiveNodeAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(getStartOfArchiveNodeAsync(), false);
   }
 
   @Override
   public CompletableFuture<? extends @Nullable PropertyTypeNode> getStartOfArchiveNodeAsync() {
-    CompletableFuture<PropertyTypeNode> result = new CompletableFuture<>();
-    try {
-      CompletableFuture<NodeId> lookup = CompletableFuture.completedFuture(getNodeId());
-      CompletableFuture<UaNode> hop0 =
-          lookup.thenCompose(
-              parent -> {
-                NodeId parentId = parent;
-                if (result.isCancelled()) {
-                  return CompletableFuture.failedFuture(new CancellationException());
-                }
-                if (parentId == null) {
-                  return CompletableFuture.completedFuture(null);
-                }
-                CompletableFuture<Void> namespaceReady;
-                if (client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/") == null
-                    || client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/")
-                        == null) {
-                  namespaceReady = client.readNamespaceTableAsync().thenApply(ignored -> null);
-                } else {
-                  namespaceReady = CompletableFuture.completedFuture(null);
-                }
-                return namespaceReady.thenCompose(
-                    ignored -> {
-                      if (result.isCancelled()) {
-                        return CompletableFuture.failedFuture(new CancellationException());
-                      }
-                      var namespaceIndex =
-                          client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/");
-                      var referenceId =
-                          ExpandedNodeId.parse("i=46").toNodeId(client.getNamespaceTable());
-                      if (namespaceIndex == null || referenceId.isEmpty()) {
-                        return CompletableFuture.failedFuture(
-                            new UaException(
-                                StatusCodes.Bad_NodeIdInvalid,
-                                "http://opcfoundation.org/UA/:StartOfArchive (declaration i=11499,"
-                                    + " owner i=2318) on "
-                                    + getNodeId()));
-                      }
-                      var browsePath =
-                          new BrowsePath(
-                              parentId,
-                              new RelativePath(
-                                  new RelativePathElement[] {
-                                    new RelativePathElement(
-                                        referenceId.orElseThrow(),
-                                        false,
-                                        true,
-                                        new QualifiedName(namespaceIndex, "StartOfArchive"))
-                                  }));
-                      return client
-                          .translateBrowsePathsAsync(List.of(browsePath))
-                          .thenCompose(
-                              response -> {
-                                if (result.isCancelled()) {
-                                  return CompletableFuture.failedFuture(
-                                      new CancellationException());
-                                }
-                                var results = response == null ? null : response.getResults();
-                                if (results == null
-                                    || results.length != 1
-                                    || results[0] == null
-                                    || results[0].getStatusCode() == null) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:StartOfArchive (declaration"
-                                              + " i=11499, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                var operation = results[0];
-                                if (operation.getStatusCode().getValue()
-                                    == StatusCodes.Bad_NoMatch) {
-                                  return CompletableFuture.completedFuture(null);
-                                }
-                                if (!operation.getStatusCode().isGood()) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          operation.getStatusCode(),
-                                          "http://opcfoundation.org/UA/:StartOfArchive (declaration"
-                                              + " i=11499, owner i=2318)"));
-                                }
-                                var targets = operation.getTargets();
-                                if (targets == null || targets.length == 0) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:StartOfArchive (declaration"
-                                              + " i=11499, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                var identities = new ArrayList<CompletableFuture<NodeId>>();
-                                for (var target : targets) {
-                                  if (target == null
-                                      || target.getTargetId() == null
-                                      || target.getRemainingPathIndex() == null
-                                      || target.getRemainingPathIndex().longValue()
-                                          != 0xffffffffL) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_UnexpectedError,
-                                            "http://opcfoundation.org/UA/:StartOfArchive"
-                                                + " (declaration i=11499, owner i=2318) on "
-                                                + getNodeId()));
-                                  }
-                                  if (!target.getTargetId().isLocal()) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_NotSupported,
-                                            "http://opcfoundation.org/UA/:StartOfArchive"
-                                                + " (declaration i=11499, owner i=2318) on "
-                                                + getNodeId()));
-                                  }
-                                  if (result.isCancelled()) {
-                                    return CompletableFuture.failedFuture(
-                                        new CancellationException());
-                                  }
-                                  var localTarget =
-                                      target.getTargetId().toNodeId(client.getNamespaceTable());
-                                  if (localTarget.isPresent()) {
-                                    identities.add(
-                                        CompletableFuture.completedFuture(
-                                            localTarget.orElseThrow()));
-                                  } else {
-                                    identities.add(
-                                        client
-                                            .readNamespaceTableAsync()
-                                            .thenCompose(
-                                                namespaceTable -> {
-                                                  var resolvedTarget =
-                                                      target.getTargetId().toNodeId(namespaceTable);
-                                                  if (resolvedTarget.isEmpty()) {
-                                                    return CompletableFuture.failedFuture(
-                                                        new UaException(
-                                                            StatusCodes.Bad_NodeIdInvalid,
-                                                            "http://opcfoundation.org/UA/:StartOfArchive"
-                                                                + " (declaration i=11499, owner"
-                                                                + " i=2318) on "
-                                                                + getNodeId()));
-                                                  }
-                                                  return CompletableFuture.completedFuture(
-                                                      resolvedTarget.orElseThrow());
-                                                }));
-                                  }
-                                }
-                                return CompletableFuture.allOf(
-                                        identities.toArray(CompletableFuture[]::new))
-                                    .thenCompose(
-                                        ready -> {
-                                          if (result.isCancelled()) {
-                                            return CompletableFuture.failedFuture(
-                                                new CancellationException());
-                                          }
-                                          var unique = new LinkedHashSet<NodeId>();
-                                          identities.forEach(
-                                              identity -> unique.add(identity.join()));
-                                          if (unique.stream().anyMatch(NodeId::isNull)) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_NodeIdInvalid,
-                                                    "http://opcfoundation.org/UA/:StartOfArchive"
-                                                        + " (declaration i=11499, owner i=2318) on "
-                                                        + getNodeId()));
-                                          }
-                                          if (unique.size() != 1) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_TooManyMatches,
-                                                    "http://opcfoundation.org/UA/:StartOfArchive"
-                                                        + " (declaration i=11499, owner i=2318) on "
-                                                        + getNodeId()));
-                                          }
-                                          return client
-                                              .getAddressSpace()
-                                              .getNodeAsync(unique.iterator().next())
-                                              .thenCompose(
-                                                  node -> {
-                                                    if (node == null
-                                                        || node.getNodeClass()
-                                                            != NodeClass.Variable) {
-                                                      return CompletableFuture.failedFuture(
-                                                          new UaException(
-                                                              StatusCodes.Bad_NodeClassInvalid,
-                                                              "http://opcfoundation.org/UA/:StartOfArchive"
-                                                                  + " (declaration i=11499, owner"
-                                                                  + " i=2318) on "
-                                                                  + getNodeId()));
-                                                    }
-                                                    return CompletableFuture.completedFuture(node);
-                                                  });
-                                        });
-                              });
-                    });
-              });
-      hop0.whenComplete(
-          (node, failure) -> {
-            if (failure != null) {
-              result.completeExceptionally(failure);
-            } else if (node != null && !(node instanceof PropertyTypeNode)) {
-              result.completeExceptionally(
-                  new UaException(
-                      StatusCodes.Bad_TypeMismatch,
-                      "http://opcfoundation.org/UA/:StartOfArchive (declaration i=11499, owner"
-                          + " i=2318)"));
-            } else {
-              result.complete((PropertyTypeNode) node);
-            }
-          });
-    } catch (Exception e) {
-      result.completeExceptionally(e);
-    }
-    return result;
+    return ClientMembers.lookup(
+        client,
+        getNodeId(),
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "StartOfArchive",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            true,
+            "http://opcfoundation.org/UA/:StartOfArchive (declaration i=11499, owner i=2318)"));
   }
 
   @Override
@@ -2617,21 +1018,7 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
 
   @Override
   public @Nullable DateTime readStartOfOnlineArchive() throws UaException {
-    try {
-      return readStartOfOnlineArchiveAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(readStartOfOnlineArchiveAsync(), false);
   }
 
   @Override
@@ -2702,237 +1089,25 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
 
   @Override
   public @Nullable PropertyTypeNode getStartOfOnlineArchiveNode() throws UaException {
-    try {
-      return getStartOfOnlineArchiveNodeAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(getStartOfOnlineArchiveNodeAsync(), false);
   }
 
   @Override
   public CompletableFuture<? extends @Nullable PropertyTypeNode>
       getStartOfOnlineArchiveNodeAsync() {
-    CompletableFuture<PropertyTypeNode> result = new CompletableFuture<>();
-    try {
-      CompletableFuture<NodeId> lookup = CompletableFuture.completedFuture(getNodeId());
-      CompletableFuture<UaNode> hop0 =
-          lookup.thenCompose(
-              parent -> {
-                NodeId parentId = parent;
-                if (result.isCancelled()) {
-                  return CompletableFuture.failedFuture(new CancellationException());
-                }
-                if (parentId == null) {
-                  return CompletableFuture.completedFuture(null);
-                }
-                CompletableFuture<Void> namespaceReady;
-                if (client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/") == null
-                    || client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/")
-                        == null) {
-                  namespaceReady = client.readNamespaceTableAsync().thenApply(ignored -> null);
-                } else {
-                  namespaceReady = CompletableFuture.completedFuture(null);
-                }
-                return namespaceReady.thenCompose(
-                    ignored -> {
-                      if (result.isCancelled()) {
-                        return CompletableFuture.failedFuture(new CancellationException());
-                      }
-                      var namespaceIndex =
-                          client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/");
-                      var referenceId =
-                          ExpandedNodeId.parse("i=46").toNodeId(client.getNamespaceTable());
-                      if (namespaceIndex == null || referenceId.isEmpty()) {
-                        return CompletableFuture.failedFuture(
-                            new UaException(
-                                StatusCodes.Bad_NodeIdInvalid,
-                                "http://opcfoundation.org/UA/:StartOfOnlineArchive (declaration"
-                                    + " i=11500, owner i=2318) on "
-                                    + getNodeId()));
-                      }
-                      var browsePath =
-                          new BrowsePath(
-                              parentId,
-                              new RelativePath(
-                                  new RelativePathElement[] {
-                                    new RelativePathElement(
-                                        referenceId.orElseThrow(),
-                                        false,
-                                        true,
-                                        new QualifiedName(namespaceIndex, "StartOfOnlineArchive"))
-                                  }));
-                      return client
-                          .translateBrowsePathsAsync(List.of(browsePath))
-                          .thenCompose(
-                              response -> {
-                                if (result.isCancelled()) {
-                                  return CompletableFuture.failedFuture(
-                                      new CancellationException());
-                                }
-                                var results = response == null ? null : response.getResults();
-                                if (results == null
-                                    || results.length != 1
-                                    || results[0] == null
-                                    || results[0].getStatusCode() == null) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:StartOfOnlineArchive"
-                                              + " (declaration i=11500, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                var operation = results[0];
-                                if (operation.getStatusCode().getValue()
-                                    == StatusCodes.Bad_NoMatch) {
-                                  return CompletableFuture.completedFuture(null);
-                                }
-                                if (!operation.getStatusCode().isGood()) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          operation.getStatusCode(),
-                                          "http://opcfoundation.org/UA/:StartOfOnlineArchive"
-                                              + " (declaration i=11500, owner i=2318)"));
-                                }
-                                var targets = operation.getTargets();
-                                if (targets == null || targets.length == 0) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:StartOfOnlineArchive"
-                                              + " (declaration i=11500, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                var identities = new ArrayList<CompletableFuture<NodeId>>();
-                                for (var target : targets) {
-                                  if (target == null
-                                      || target.getTargetId() == null
-                                      || target.getRemainingPathIndex() == null
-                                      || target.getRemainingPathIndex().longValue()
-                                          != 0xffffffffL) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_UnexpectedError,
-                                            "http://opcfoundation.org/UA/:StartOfOnlineArchive"
-                                                + " (declaration i=11500, owner i=2318) on "
-                                                + getNodeId()));
-                                  }
-                                  if (!target.getTargetId().isLocal()) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_NotSupported,
-                                            "http://opcfoundation.org/UA/:StartOfOnlineArchive"
-                                                + " (declaration i=11500, owner i=2318) on "
-                                                + getNodeId()));
-                                  }
-                                  if (result.isCancelled()) {
-                                    return CompletableFuture.failedFuture(
-                                        new CancellationException());
-                                  }
-                                  var localTarget =
-                                      target.getTargetId().toNodeId(client.getNamespaceTable());
-                                  if (localTarget.isPresent()) {
-                                    identities.add(
-                                        CompletableFuture.completedFuture(
-                                            localTarget.orElseThrow()));
-                                  } else {
-                                    identities.add(
-                                        client
-                                            .readNamespaceTableAsync()
-                                            .thenCompose(
-                                                namespaceTable -> {
-                                                  var resolvedTarget =
-                                                      target.getTargetId().toNodeId(namespaceTable);
-                                                  if (resolvedTarget.isEmpty()) {
-                                                    return CompletableFuture.failedFuture(
-                                                        new UaException(
-                                                            StatusCodes.Bad_NodeIdInvalid,
-                                                            "http://opcfoundation.org/UA/:StartOfOnlineArchive"
-                                                                + " (declaration i=11500, owner"
-                                                                + " i=2318) on "
-                                                                + getNodeId()));
-                                                  }
-                                                  return CompletableFuture.completedFuture(
-                                                      resolvedTarget.orElseThrow());
-                                                }));
-                                  }
-                                }
-                                return CompletableFuture.allOf(
-                                        identities.toArray(CompletableFuture[]::new))
-                                    .thenCompose(
-                                        ready -> {
-                                          if (result.isCancelled()) {
-                                            return CompletableFuture.failedFuture(
-                                                new CancellationException());
-                                          }
-                                          var unique = new LinkedHashSet<NodeId>();
-                                          identities.forEach(
-                                              identity -> unique.add(identity.join()));
-                                          if (unique.stream().anyMatch(NodeId::isNull)) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_NodeIdInvalid,
-                                                    "http://opcfoundation.org/UA/:StartOfOnlineArchive"
-                                                        + " (declaration i=11500, owner i=2318) on "
-                                                        + getNodeId()));
-                                          }
-                                          if (unique.size() != 1) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_TooManyMatches,
-                                                    "http://opcfoundation.org/UA/:StartOfOnlineArchive"
-                                                        + " (declaration i=11500, owner i=2318) on "
-                                                        + getNodeId()));
-                                          }
-                                          return client
-                                              .getAddressSpace()
-                                              .getNodeAsync(unique.iterator().next())
-                                              .thenCompose(
-                                                  node -> {
-                                                    if (node == null
-                                                        || node.getNodeClass()
-                                                            != NodeClass.Variable) {
-                                                      return CompletableFuture.failedFuture(
-                                                          new UaException(
-                                                              StatusCodes.Bad_NodeClassInvalid,
-                                                              "http://opcfoundation.org/UA/:StartOfOnlineArchive"
-                                                                  + " (declaration i=11500, owner"
-                                                                  + " i=2318) on "
-                                                                  + getNodeId()));
-                                                    }
-                                                    return CompletableFuture.completedFuture(node);
-                                                  });
-                                        });
-                              });
-                    });
-              });
-      hop0.whenComplete(
-          (node, failure) -> {
-            if (failure != null) {
-              result.completeExceptionally(failure);
-            } else if (node != null && !(node instanceof PropertyTypeNode)) {
-              result.completeExceptionally(
-                  new UaException(
-                      StatusCodes.Bad_TypeMismatch,
-                      "http://opcfoundation.org/UA/:StartOfOnlineArchive (declaration i=11500,"
-                          + " owner i=2318)"));
-            } else {
-              result.complete((PropertyTypeNode) node);
-            }
-          });
-    } catch (Exception e) {
-      result.completeExceptionally(e);
-    }
-    return result;
+    return ClientMembers.lookup(
+        client,
+        getNodeId(),
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "StartOfOnlineArchive",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            true,
+            "http://opcfoundation.org/UA/:StartOfOnlineArchive (declaration i=11500, owner"
+                + " i=2318)"));
   }
 
   @Override
@@ -2963,21 +1138,7 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
 
   @Override
   public @Nullable Boolean readServerTimestampSupported() throws UaException {
-    try {
-      return readServerTimestampSupportedAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(readServerTimestampSupportedAsync(), false);
   }
 
   @Override
@@ -3048,238 +1209,25 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
 
   @Override
   public @Nullable PropertyTypeNode getServerTimestampSupportedNode() throws UaException {
-    try {
-      return getServerTimestampSupportedNodeAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(getServerTimestampSupportedNodeAsync(), false);
   }
 
   @Override
   public CompletableFuture<? extends @Nullable PropertyTypeNode>
       getServerTimestampSupportedNodeAsync() {
-    CompletableFuture<PropertyTypeNode> result = new CompletableFuture<>();
-    try {
-      CompletableFuture<NodeId> lookup = CompletableFuture.completedFuture(getNodeId());
-      CompletableFuture<UaNode> hop0 =
-          lookup.thenCompose(
-              parent -> {
-                NodeId parentId = parent;
-                if (result.isCancelled()) {
-                  return CompletableFuture.failedFuture(new CancellationException());
-                }
-                if (parentId == null) {
-                  return CompletableFuture.completedFuture(null);
-                }
-                CompletableFuture<Void> namespaceReady;
-                if (client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/") == null
-                    || client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/")
-                        == null) {
-                  namespaceReady = client.readNamespaceTableAsync().thenApply(ignored -> null);
-                } else {
-                  namespaceReady = CompletableFuture.completedFuture(null);
-                }
-                return namespaceReady.thenCompose(
-                    ignored -> {
-                      if (result.isCancelled()) {
-                        return CompletableFuture.failedFuture(new CancellationException());
-                      }
-                      var namespaceIndex =
-                          client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/");
-                      var referenceId =
-                          ExpandedNodeId.parse("i=46").toNodeId(client.getNamespaceTable());
-                      if (namespaceIndex == null || referenceId.isEmpty()) {
-                        return CompletableFuture.failedFuture(
-                            new UaException(
-                                StatusCodes.Bad_NodeIdInvalid,
-                                "http://opcfoundation.org/UA/:ServerTimestampSupported (declaration"
-                                    + " i=19092, owner i=2318) on "
-                                    + getNodeId()));
-                      }
-                      var browsePath =
-                          new BrowsePath(
-                              parentId,
-                              new RelativePath(
-                                  new RelativePathElement[] {
-                                    new RelativePathElement(
-                                        referenceId.orElseThrow(),
-                                        false,
-                                        true,
-                                        new QualifiedName(
-                                            namespaceIndex, "ServerTimestampSupported"))
-                                  }));
-                      return client
-                          .translateBrowsePathsAsync(List.of(browsePath))
-                          .thenCompose(
-                              response -> {
-                                if (result.isCancelled()) {
-                                  return CompletableFuture.failedFuture(
-                                      new CancellationException());
-                                }
-                                var results = response == null ? null : response.getResults();
-                                if (results == null
-                                    || results.length != 1
-                                    || results[0] == null
-                                    || results[0].getStatusCode() == null) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:ServerTimestampSupported"
-                                              + " (declaration i=19092, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                var operation = results[0];
-                                if (operation.getStatusCode().getValue()
-                                    == StatusCodes.Bad_NoMatch) {
-                                  return CompletableFuture.completedFuture(null);
-                                }
-                                if (!operation.getStatusCode().isGood()) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          operation.getStatusCode(),
-                                          "http://opcfoundation.org/UA/:ServerTimestampSupported"
-                                              + " (declaration i=19092, owner i=2318)"));
-                                }
-                                var targets = operation.getTargets();
-                                if (targets == null || targets.length == 0) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:ServerTimestampSupported"
-                                              + " (declaration i=19092, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                var identities = new ArrayList<CompletableFuture<NodeId>>();
-                                for (var target : targets) {
-                                  if (target == null
-                                      || target.getTargetId() == null
-                                      || target.getRemainingPathIndex() == null
-                                      || target.getRemainingPathIndex().longValue()
-                                          != 0xffffffffL) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_UnexpectedError,
-                                            "http://opcfoundation.org/UA/:ServerTimestampSupported"
-                                                + " (declaration i=19092, owner i=2318) on "
-                                                + getNodeId()));
-                                  }
-                                  if (!target.getTargetId().isLocal()) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_NotSupported,
-                                            "http://opcfoundation.org/UA/:ServerTimestampSupported"
-                                                + " (declaration i=19092, owner i=2318) on "
-                                                + getNodeId()));
-                                  }
-                                  if (result.isCancelled()) {
-                                    return CompletableFuture.failedFuture(
-                                        new CancellationException());
-                                  }
-                                  var localTarget =
-                                      target.getTargetId().toNodeId(client.getNamespaceTable());
-                                  if (localTarget.isPresent()) {
-                                    identities.add(
-                                        CompletableFuture.completedFuture(
-                                            localTarget.orElseThrow()));
-                                  } else {
-                                    identities.add(
-                                        client
-                                            .readNamespaceTableAsync()
-                                            .thenCompose(
-                                                namespaceTable -> {
-                                                  var resolvedTarget =
-                                                      target.getTargetId().toNodeId(namespaceTable);
-                                                  if (resolvedTarget.isEmpty()) {
-                                                    return CompletableFuture.failedFuture(
-                                                        new UaException(
-                                                            StatusCodes.Bad_NodeIdInvalid,
-                                                            "http://opcfoundation.org/UA/:ServerTimestampSupported"
-                                                                + " (declaration i=19092, owner"
-                                                                + " i=2318) on "
-                                                                + getNodeId()));
-                                                  }
-                                                  return CompletableFuture.completedFuture(
-                                                      resolvedTarget.orElseThrow());
-                                                }));
-                                  }
-                                }
-                                return CompletableFuture.allOf(
-                                        identities.toArray(CompletableFuture[]::new))
-                                    .thenCompose(
-                                        ready -> {
-                                          if (result.isCancelled()) {
-                                            return CompletableFuture.failedFuture(
-                                                new CancellationException());
-                                          }
-                                          var unique = new LinkedHashSet<NodeId>();
-                                          identities.forEach(
-                                              identity -> unique.add(identity.join()));
-                                          if (unique.stream().anyMatch(NodeId::isNull)) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_NodeIdInvalid,
-                                                    "http://opcfoundation.org/UA/:ServerTimestampSupported"
-                                                        + " (declaration i=19092, owner i=2318) on "
-                                                        + getNodeId()));
-                                          }
-                                          if (unique.size() != 1) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_TooManyMatches,
-                                                    "http://opcfoundation.org/UA/:ServerTimestampSupported"
-                                                        + " (declaration i=19092, owner i=2318) on "
-                                                        + getNodeId()));
-                                          }
-                                          return client
-                                              .getAddressSpace()
-                                              .getNodeAsync(unique.iterator().next())
-                                              .thenCompose(
-                                                  node -> {
-                                                    if (node == null
-                                                        || node.getNodeClass()
-                                                            != NodeClass.Variable) {
-                                                      return CompletableFuture.failedFuture(
-                                                          new UaException(
-                                                              StatusCodes.Bad_NodeClassInvalid,
-                                                              "http://opcfoundation.org/UA/:ServerTimestampSupported"
-                                                                  + " (declaration i=19092, owner"
-                                                                  + " i=2318) on "
-                                                                  + getNodeId()));
-                                                    }
-                                                    return CompletableFuture.completedFuture(node);
-                                                  });
-                                        });
-                              });
-                    });
-              });
-      hop0.whenComplete(
-          (node, failure) -> {
-            if (failure != null) {
-              result.completeExceptionally(failure);
-            } else if (node != null && !(node instanceof PropertyTypeNode)) {
-              result.completeExceptionally(
-                  new UaException(
-                      StatusCodes.Bad_TypeMismatch,
-                      "http://opcfoundation.org/UA/:ServerTimestampSupported (declaration i=19092,"
-                          + " owner i=2318)"));
-            } else {
-              result.complete((PropertyTypeNode) node);
-            }
-          });
-    } catch (Exception e) {
-      result.completeExceptionally(e);
-    }
-    return result;
+    return ClientMembers.lookup(
+        client,
+        getNodeId(),
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "ServerTimestampSupported",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            true,
+            "http://opcfoundation.org/UA/:ServerTimestampSupported (declaration i=19092, owner"
+                + " i=2318)"));
   }
 
   @Override
@@ -3310,21 +1258,7 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
 
   @Override
   public @Nullable Double readMaxTimeStoredValues() throws UaException {
-    try {
-      return readMaxTimeStoredValuesAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(readMaxTimeStoredValuesAsync(), false);
   }
 
   @Override
@@ -3395,236 +1329,24 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
 
   @Override
   public @Nullable PropertyTypeNode getMaxTimeStoredValuesNode() throws UaException {
-    try {
-      return getMaxTimeStoredValuesNodeAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(getMaxTimeStoredValuesNodeAsync(), false);
   }
 
   @Override
   public CompletableFuture<? extends @Nullable PropertyTypeNode> getMaxTimeStoredValuesNodeAsync() {
-    CompletableFuture<PropertyTypeNode> result = new CompletableFuture<>();
-    try {
-      CompletableFuture<NodeId> lookup = CompletableFuture.completedFuture(getNodeId());
-      CompletableFuture<UaNode> hop0 =
-          lookup.thenCompose(
-              parent -> {
-                NodeId parentId = parent;
-                if (result.isCancelled()) {
-                  return CompletableFuture.failedFuture(new CancellationException());
-                }
-                if (parentId == null) {
-                  return CompletableFuture.completedFuture(null);
-                }
-                CompletableFuture<Void> namespaceReady;
-                if (client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/") == null
-                    || client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/")
-                        == null) {
-                  namespaceReady = client.readNamespaceTableAsync().thenApply(ignored -> null);
-                } else {
-                  namespaceReady = CompletableFuture.completedFuture(null);
-                }
-                return namespaceReady.thenCompose(
-                    ignored -> {
-                      if (result.isCancelled()) {
-                        return CompletableFuture.failedFuture(new CancellationException());
-                      }
-                      var namespaceIndex =
-                          client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/");
-                      var referenceId =
-                          ExpandedNodeId.parse("i=46").toNodeId(client.getNamespaceTable());
-                      if (namespaceIndex == null || referenceId.isEmpty()) {
-                        return CompletableFuture.failedFuture(
-                            new UaException(
-                                StatusCodes.Bad_NodeIdInvalid,
-                                "http://opcfoundation.org/UA/:MaxTimeStoredValues (declaration"
-                                    + " i=32619, owner i=2318) on "
-                                    + getNodeId()));
-                      }
-                      var browsePath =
-                          new BrowsePath(
-                              parentId,
-                              new RelativePath(
-                                  new RelativePathElement[] {
-                                    new RelativePathElement(
-                                        referenceId.orElseThrow(),
-                                        false,
-                                        true,
-                                        new QualifiedName(namespaceIndex, "MaxTimeStoredValues"))
-                                  }));
-                      return client
-                          .translateBrowsePathsAsync(List.of(browsePath))
-                          .thenCompose(
-                              response -> {
-                                if (result.isCancelled()) {
-                                  return CompletableFuture.failedFuture(
-                                      new CancellationException());
-                                }
-                                var results = response == null ? null : response.getResults();
-                                if (results == null
-                                    || results.length != 1
-                                    || results[0] == null
-                                    || results[0].getStatusCode() == null) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:MaxTimeStoredValues"
-                                              + " (declaration i=32619, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                var operation = results[0];
-                                if (operation.getStatusCode().getValue()
-                                    == StatusCodes.Bad_NoMatch) {
-                                  return CompletableFuture.completedFuture(null);
-                                }
-                                if (!operation.getStatusCode().isGood()) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          operation.getStatusCode(),
-                                          "http://opcfoundation.org/UA/:MaxTimeStoredValues"
-                                              + " (declaration i=32619, owner i=2318)"));
-                                }
-                                var targets = operation.getTargets();
-                                if (targets == null || targets.length == 0) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:MaxTimeStoredValues"
-                                              + " (declaration i=32619, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                var identities = new ArrayList<CompletableFuture<NodeId>>();
-                                for (var target : targets) {
-                                  if (target == null
-                                      || target.getTargetId() == null
-                                      || target.getRemainingPathIndex() == null
-                                      || target.getRemainingPathIndex().longValue()
-                                          != 0xffffffffL) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_UnexpectedError,
-                                            "http://opcfoundation.org/UA/:MaxTimeStoredValues"
-                                                + " (declaration i=32619, owner i=2318) on "
-                                                + getNodeId()));
-                                  }
-                                  if (!target.getTargetId().isLocal()) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_NotSupported,
-                                            "http://opcfoundation.org/UA/:MaxTimeStoredValues"
-                                                + " (declaration i=32619, owner i=2318) on "
-                                                + getNodeId()));
-                                  }
-                                  if (result.isCancelled()) {
-                                    return CompletableFuture.failedFuture(
-                                        new CancellationException());
-                                  }
-                                  var localTarget =
-                                      target.getTargetId().toNodeId(client.getNamespaceTable());
-                                  if (localTarget.isPresent()) {
-                                    identities.add(
-                                        CompletableFuture.completedFuture(
-                                            localTarget.orElseThrow()));
-                                  } else {
-                                    identities.add(
-                                        client
-                                            .readNamespaceTableAsync()
-                                            .thenCompose(
-                                                namespaceTable -> {
-                                                  var resolvedTarget =
-                                                      target.getTargetId().toNodeId(namespaceTable);
-                                                  if (resolvedTarget.isEmpty()) {
-                                                    return CompletableFuture.failedFuture(
-                                                        new UaException(
-                                                            StatusCodes.Bad_NodeIdInvalid,
-                                                            "http://opcfoundation.org/UA/:MaxTimeStoredValues"
-                                                                + " (declaration i=32619, owner"
-                                                                + " i=2318) on "
-                                                                + getNodeId()));
-                                                  }
-                                                  return CompletableFuture.completedFuture(
-                                                      resolvedTarget.orElseThrow());
-                                                }));
-                                  }
-                                }
-                                return CompletableFuture.allOf(
-                                        identities.toArray(CompletableFuture[]::new))
-                                    .thenCompose(
-                                        ready -> {
-                                          if (result.isCancelled()) {
-                                            return CompletableFuture.failedFuture(
-                                                new CancellationException());
-                                          }
-                                          var unique = new LinkedHashSet<NodeId>();
-                                          identities.forEach(
-                                              identity -> unique.add(identity.join()));
-                                          if (unique.stream().anyMatch(NodeId::isNull)) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_NodeIdInvalid,
-                                                    "http://opcfoundation.org/UA/:MaxTimeStoredValues"
-                                                        + " (declaration i=32619, owner i=2318) on "
-                                                        + getNodeId()));
-                                          }
-                                          if (unique.size() != 1) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_TooManyMatches,
-                                                    "http://opcfoundation.org/UA/:MaxTimeStoredValues"
-                                                        + " (declaration i=32619, owner i=2318) on "
-                                                        + getNodeId()));
-                                          }
-                                          return client
-                                              .getAddressSpace()
-                                              .getNodeAsync(unique.iterator().next())
-                                              .thenCompose(
-                                                  node -> {
-                                                    if (node == null
-                                                        || node.getNodeClass()
-                                                            != NodeClass.Variable) {
-                                                      return CompletableFuture.failedFuture(
-                                                          new UaException(
-                                                              StatusCodes.Bad_NodeClassInvalid,
-                                                              "http://opcfoundation.org/UA/:MaxTimeStoredValues"
-                                                                  + " (declaration i=32619, owner"
-                                                                  + " i=2318) on "
-                                                                  + getNodeId()));
-                                                    }
-                                                    return CompletableFuture.completedFuture(node);
-                                                  });
-                                        });
-                              });
-                    });
-              });
-      hop0.whenComplete(
-          (node, failure) -> {
-            if (failure != null) {
-              result.completeExceptionally(failure);
-            } else if (node != null && !(node instanceof PropertyTypeNode)) {
-              result.completeExceptionally(
-                  new UaException(
-                      StatusCodes.Bad_TypeMismatch,
-                      "http://opcfoundation.org/UA/:MaxTimeStoredValues (declaration i=32619, owner"
-                          + " i=2318)"));
-            } else {
-              result.complete((PropertyTypeNode) node);
-            }
-          });
-    } catch (Exception e) {
-      result.completeExceptionally(e);
-    }
-    return result;
+    return ClientMembers.lookup(
+        client,
+        getNodeId(),
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "MaxTimeStoredValues",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            true,
+            "http://opcfoundation.org/UA/:MaxTimeStoredValues (declaration i=32619, owner"
+                + " i=2318)"));
   }
 
   @Override
@@ -3655,21 +1377,7 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
 
   @Override
   public @Nullable UInteger readMaxCountStoredValues() throws UaException {
-    try {
-      return readMaxCountStoredValuesAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(readMaxCountStoredValuesAsync(), false);
   }
 
   @Override
@@ -3740,710 +1448,68 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
 
   @Override
   public @Nullable PropertyTypeNode getMaxCountStoredValuesNode() throws UaException {
-    try {
-      return getMaxCountStoredValuesNodeAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(getMaxCountStoredValuesNodeAsync(), false);
   }
 
   @Override
   public CompletableFuture<? extends @Nullable PropertyTypeNode>
       getMaxCountStoredValuesNodeAsync() {
-    CompletableFuture<PropertyTypeNode> result = new CompletableFuture<>();
-    try {
-      CompletableFuture<NodeId> lookup = CompletableFuture.completedFuture(getNodeId());
-      CompletableFuture<UaNode> hop0 =
-          lookup.thenCompose(
-              parent -> {
-                NodeId parentId = parent;
-                if (result.isCancelled()) {
-                  return CompletableFuture.failedFuture(new CancellationException());
-                }
-                if (parentId == null) {
-                  return CompletableFuture.completedFuture(null);
-                }
-                CompletableFuture<Void> namespaceReady;
-                if (client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/") == null
-                    || client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/")
-                        == null) {
-                  namespaceReady = client.readNamespaceTableAsync().thenApply(ignored -> null);
-                } else {
-                  namespaceReady = CompletableFuture.completedFuture(null);
-                }
-                return namespaceReady.thenCompose(
-                    ignored -> {
-                      if (result.isCancelled()) {
-                        return CompletableFuture.failedFuture(new CancellationException());
-                      }
-                      var namespaceIndex =
-                          client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/");
-                      var referenceId =
-                          ExpandedNodeId.parse("i=46").toNodeId(client.getNamespaceTable());
-                      if (namespaceIndex == null || referenceId.isEmpty()) {
-                        return CompletableFuture.failedFuture(
-                            new UaException(
-                                StatusCodes.Bad_NodeIdInvalid,
-                                "http://opcfoundation.org/UA/:MaxCountStoredValues (declaration"
-                                    + " i=32620, owner i=2318) on "
-                                    + getNodeId()));
-                      }
-                      var browsePath =
-                          new BrowsePath(
-                              parentId,
-                              new RelativePath(
-                                  new RelativePathElement[] {
-                                    new RelativePathElement(
-                                        referenceId.orElseThrow(),
-                                        false,
-                                        true,
-                                        new QualifiedName(namespaceIndex, "MaxCountStoredValues"))
-                                  }));
-                      return client
-                          .translateBrowsePathsAsync(List.of(browsePath))
-                          .thenCompose(
-                              response -> {
-                                if (result.isCancelled()) {
-                                  return CompletableFuture.failedFuture(
-                                      new CancellationException());
-                                }
-                                var results = response == null ? null : response.getResults();
-                                if (results == null
-                                    || results.length != 1
-                                    || results[0] == null
-                                    || results[0].getStatusCode() == null) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:MaxCountStoredValues"
-                                              + " (declaration i=32620, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                var operation = results[0];
-                                if (operation.getStatusCode().getValue()
-                                    == StatusCodes.Bad_NoMatch) {
-                                  return CompletableFuture.completedFuture(null);
-                                }
-                                if (!operation.getStatusCode().isGood()) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          operation.getStatusCode(),
-                                          "http://opcfoundation.org/UA/:MaxCountStoredValues"
-                                              + " (declaration i=32620, owner i=2318)"));
-                                }
-                                var targets = operation.getTargets();
-                                if (targets == null || targets.length == 0) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:MaxCountStoredValues"
-                                              + " (declaration i=32620, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                var identities = new ArrayList<CompletableFuture<NodeId>>();
-                                for (var target : targets) {
-                                  if (target == null
-                                      || target.getTargetId() == null
-                                      || target.getRemainingPathIndex() == null
-                                      || target.getRemainingPathIndex().longValue()
-                                          != 0xffffffffL) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_UnexpectedError,
-                                            "http://opcfoundation.org/UA/:MaxCountStoredValues"
-                                                + " (declaration i=32620, owner i=2318) on "
-                                                + getNodeId()));
-                                  }
-                                  if (!target.getTargetId().isLocal()) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_NotSupported,
-                                            "http://opcfoundation.org/UA/:MaxCountStoredValues"
-                                                + " (declaration i=32620, owner i=2318) on "
-                                                + getNodeId()));
-                                  }
-                                  if (result.isCancelled()) {
-                                    return CompletableFuture.failedFuture(
-                                        new CancellationException());
-                                  }
-                                  var localTarget =
-                                      target.getTargetId().toNodeId(client.getNamespaceTable());
-                                  if (localTarget.isPresent()) {
-                                    identities.add(
-                                        CompletableFuture.completedFuture(
-                                            localTarget.orElseThrow()));
-                                  } else {
-                                    identities.add(
-                                        client
-                                            .readNamespaceTableAsync()
-                                            .thenCompose(
-                                                namespaceTable -> {
-                                                  var resolvedTarget =
-                                                      target.getTargetId().toNodeId(namespaceTable);
-                                                  if (resolvedTarget.isEmpty()) {
-                                                    return CompletableFuture.failedFuture(
-                                                        new UaException(
-                                                            StatusCodes.Bad_NodeIdInvalid,
-                                                            "http://opcfoundation.org/UA/:MaxCountStoredValues"
-                                                                + " (declaration i=32620, owner"
-                                                                + " i=2318) on "
-                                                                + getNodeId()));
-                                                  }
-                                                  return CompletableFuture.completedFuture(
-                                                      resolvedTarget.orElseThrow());
-                                                }));
-                                  }
-                                }
-                                return CompletableFuture.allOf(
-                                        identities.toArray(CompletableFuture[]::new))
-                                    .thenCompose(
-                                        ready -> {
-                                          if (result.isCancelled()) {
-                                            return CompletableFuture.failedFuture(
-                                                new CancellationException());
-                                          }
-                                          var unique = new LinkedHashSet<NodeId>();
-                                          identities.forEach(
-                                              identity -> unique.add(identity.join()));
-                                          if (unique.stream().anyMatch(NodeId::isNull)) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_NodeIdInvalid,
-                                                    "http://opcfoundation.org/UA/:MaxCountStoredValues"
-                                                        + " (declaration i=32620, owner i=2318) on "
-                                                        + getNodeId()));
-                                          }
-                                          if (unique.size() != 1) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_TooManyMatches,
-                                                    "http://opcfoundation.org/UA/:MaxCountStoredValues"
-                                                        + " (declaration i=32620, owner i=2318) on "
-                                                        + getNodeId()));
-                                          }
-                                          return client
-                                              .getAddressSpace()
-                                              .getNodeAsync(unique.iterator().next())
-                                              .thenCompose(
-                                                  node -> {
-                                                    if (node == null
-                                                        || node.getNodeClass()
-                                                            != NodeClass.Variable) {
-                                                      return CompletableFuture.failedFuture(
-                                                          new UaException(
-                                                              StatusCodes.Bad_NodeClassInvalid,
-                                                              "http://opcfoundation.org/UA/:MaxCountStoredValues"
-                                                                  + " (declaration i=32620, owner"
-                                                                  + " i=2318) on "
-                                                                  + getNodeId()));
-                                                    }
-                                                    return CompletableFuture.completedFuture(node);
-                                                  });
-                                        });
-                              });
-                    });
-              });
-      hop0.whenComplete(
-          (node, failure) -> {
-            if (failure != null) {
-              result.completeExceptionally(failure);
-            } else if (node != null && !(node instanceof PropertyTypeNode)) {
-              result.completeExceptionally(
-                  new UaException(
-                      StatusCodes.Bad_TypeMismatch,
-                      "http://opcfoundation.org/UA/:MaxCountStoredValues (declaration i=32620,"
-                          + " owner i=2318)"));
-            } else {
-              result.complete((PropertyTypeNode) node);
-            }
-          });
-    } catch (Exception e) {
-      result.completeExceptionally(e);
-    }
-    return result;
+    return ClientMembers.lookup(
+        client,
+        getNodeId(),
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "MaxCountStoredValues",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            true,
+            "http://opcfoundation.org/UA/:MaxCountStoredValues (declaration i=32620, owner"
+                + " i=2318)"));
   }
 
   @Override
   public AggregateConfigurationTypeNode getAggregateConfigurationNode() throws UaException {
-    try {
-      return getAggregateConfigurationNodeAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(getAggregateConfigurationNodeAsync(), false);
   }
 
   @Override
   public CompletableFuture<? extends AggregateConfigurationTypeNode>
       getAggregateConfigurationNodeAsync() {
-    CompletableFuture<AggregateConfigurationTypeNode> result = new CompletableFuture<>();
-    try {
-      CompletableFuture<NodeId> lookup = CompletableFuture.completedFuture(getNodeId());
-      CompletableFuture<UaNode> hop0 =
-          lookup.thenCompose(
-              parent -> {
-                NodeId parentId = parent;
-                if (result.isCancelled()) {
-                  return CompletableFuture.failedFuture(new CancellationException());
-                }
-                if (parentId == null) {
-                  return CompletableFuture.completedFuture(null);
-                }
-                CompletableFuture<Void> namespaceReady;
-                if (client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/") == null
-                    || client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/")
-                        == null) {
-                  namespaceReady = client.readNamespaceTableAsync().thenApply(ignored -> null);
-                } else {
-                  namespaceReady = CompletableFuture.completedFuture(null);
-                }
-                return namespaceReady.thenCompose(
-                    ignored -> {
-                      if (result.isCancelled()) {
-                        return CompletableFuture.failedFuture(new CancellationException());
-                      }
-                      var namespaceIndex =
-                          client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/");
-                      var referenceId =
-                          ExpandedNodeId.parse("i=47").toNodeId(client.getNamespaceTable());
-                      if (namespaceIndex == null || referenceId.isEmpty()) {
-                        return CompletableFuture.failedFuture(
-                            new UaException(
-                                StatusCodes.Bad_NodeIdInvalid,
-                                "http://opcfoundation.org/UA/:AggregateConfiguration (declaration"
-                                    + " i=3059, owner i=2318) on "
-                                    + getNodeId()));
-                      }
-                      var browsePath =
-                          new BrowsePath(
-                              parentId,
-                              new RelativePath(
-                                  new RelativePathElement[] {
-                                    new RelativePathElement(
-                                        referenceId.orElseThrow(),
-                                        false,
-                                        true,
-                                        new QualifiedName(namespaceIndex, "AggregateConfiguration"))
-                                  }));
-                      return client
-                          .translateBrowsePathsAsync(List.of(browsePath))
-                          .thenCompose(
-                              response -> {
-                                if (result.isCancelled()) {
-                                  return CompletableFuture.failedFuture(
-                                      new CancellationException());
-                                }
-                                var results = response == null ? null : response.getResults();
-                                if (results == null
-                                    || results.length != 1
-                                    || results[0] == null
-                                    || results[0].getStatusCode() == null) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:AggregateConfiguration"
-                                              + " (declaration i=3059, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                var operation = results[0];
-                                if (operation.getStatusCode().getValue()
-                                    == StatusCodes.Bad_NoMatch) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_NotFound,
-                                          "http://opcfoundation.org/UA/:AggregateConfiguration"
-                                              + " (declaration i=3059, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                if (!operation.getStatusCode().isGood()) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          operation.getStatusCode(),
-                                          "http://opcfoundation.org/UA/:AggregateConfiguration"
-                                              + " (declaration i=3059, owner i=2318)"));
-                                }
-                                var targets = operation.getTargets();
-                                if (targets == null || targets.length == 0) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:AggregateConfiguration"
-                                              + " (declaration i=3059, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                var identities = new ArrayList<CompletableFuture<NodeId>>();
-                                for (var target : targets) {
-                                  if (target == null
-                                      || target.getTargetId() == null
-                                      || target.getRemainingPathIndex() == null
-                                      || target.getRemainingPathIndex().longValue()
-                                          != 0xffffffffL) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_UnexpectedError,
-                                            "http://opcfoundation.org/UA/:AggregateConfiguration"
-                                                + " (declaration i=3059, owner i=2318) on "
-                                                + getNodeId()));
-                                  }
-                                  if (!target.getTargetId().isLocal()) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_NotSupported,
-                                            "http://opcfoundation.org/UA/:AggregateConfiguration"
-                                                + " (declaration i=3059, owner i=2318) on "
-                                                + getNodeId()));
-                                  }
-                                  if (result.isCancelled()) {
-                                    return CompletableFuture.failedFuture(
-                                        new CancellationException());
-                                  }
-                                  var localTarget =
-                                      target.getTargetId().toNodeId(client.getNamespaceTable());
-                                  if (localTarget.isPresent()) {
-                                    identities.add(
-                                        CompletableFuture.completedFuture(
-                                            localTarget.orElseThrow()));
-                                  } else {
-                                    identities.add(
-                                        client
-                                            .readNamespaceTableAsync()
-                                            .thenCompose(
-                                                namespaceTable -> {
-                                                  var resolvedTarget =
-                                                      target.getTargetId().toNodeId(namespaceTable);
-                                                  if (resolvedTarget.isEmpty()) {
-                                                    return CompletableFuture.failedFuture(
-                                                        new UaException(
-                                                            StatusCodes.Bad_NodeIdInvalid,
-                                                            "http://opcfoundation.org/UA/:AggregateConfiguration"
-                                                                + " (declaration i=3059, owner"
-                                                                + " i=2318) on "
-                                                                + getNodeId()));
-                                                  }
-                                                  return CompletableFuture.completedFuture(
-                                                      resolvedTarget.orElseThrow());
-                                                }));
-                                  }
-                                }
-                                return CompletableFuture.allOf(
-                                        identities.toArray(CompletableFuture[]::new))
-                                    .thenCompose(
-                                        ready -> {
-                                          if (result.isCancelled()) {
-                                            return CompletableFuture.failedFuture(
-                                                new CancellationException());
-                                          }
-                                          var unique = new LinkedHashSet<NodeId>();
-                                          identities.forEach(
-                                              identity -> unique.add(identity.join()));
-                                          if (unique.stream().anyMatch(NodeId::isNull)) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_NodeIdInvalid,
-                                                    "http://opcfoundation.org/UA/:AggregateConfiguration"
-                                                        + " (declaration i=3059, owner i=2318) on "
-                                                        + getNodeId()));
-                                          }
-                                          if (unique.size() != 1) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_TooManyMatches,
-                                                    "http://opcfoundation.org/UA/:AggregateConfiguration"
-                                                        + " (declaration i=3059, owner i=2318) on "
-                                                        + getNodeId()));
-                                          }
-                                          return client
-                                              .getAddressSpace()
-                                              .getNodeAsync(unique.iterator().next())
-                                              .thenCompose(
-                                                  node -> {
-                                                    if (node == null
-                                                        || node.getNodeClass()
-                                                            != NodeClass.Object) {
-                                                      return CompletableFuture.failedFuture(
-                                                          new UaException(
-                                                              StatusCodes.Bad_NodeClassInvalid,
-                                                              "http://opcfoundation.org/UA/:AggregateConfiguration"
-                                                                  + " (declaration i=3059, owner"
-                                                                  + " i=2318) on "
-                                                                  + getNodeId()));
-                                                    }
-                                                    return CompletableFuture.completedFuture(node);
-                                                  });
-                                        });
-                              });
-                    });
-              });
-      hop0.whenComplete(
-          (node, failure) -> {
-            if (failure != null) {
-              result.completeExceptionally(failure);
-            } else if (node != null && !(node instanceof AggregateConfigurationTypeNode)) {
-              result.completeExceptionally(
-                  new UaException(
-                      StatusCodes.Bad_TypeMismatch,
-                      "http://opcfoundation.org/UA/:AggregateConfiguration (declaration i=3059,"
-                          + " owner i=2318)"));
-            } else {
-              result.complete((AggregateConfigurationTypeNode) node);
-            }
-          });
-    } catch (Exception e) {
-      result.completeExceptionally(e);
-    }
-    return result;
+    return ClientMembers.lookup(
+        client,
+        getNodeId(),
+        AggregateConfigurationTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "AggregateConfiguration",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Object,
+            false,
+            "http://opcfoundation.org/UA/:AggregateConfiguration (declaration i=3059, owner"
+                + " i=2318)"));
   }
 
   @Override
   public @Nullable FolderTypeNode getAggregateFunctionsNode() throws UaException {
-    try {
-      return getAggregateFunctionsNodeAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(getAggregateFunctionsNodeAsync(), false);
   }
 
   @Override
   public CompletableFuture<? extends @Nullable FolderTypeNode> getAggregateFunctionsNodeAsync() {
-    CompletableFuture<FolderTypeNode> result = new CompletableFuture<>();
-    try {
-      CompletableFuture<NodeId> lookup = CompletableFuture.completedFuture(getNodeId());
-      CompletableFuture<UaNode> hop0 =
-          lookup.thenCompose(
-              parent -> {
-                NodeId parentId = parent;
-                if (result.isCancelled()) {
-                  return CompletableFuture.failedFuture(new CancellationException());
-                }
-                if (parentId == null) {
-                  return CompletableFuture.completedFuture(null);
-                }
-                CompletableFuture<Void> namespaceReady;
-                if (client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/") == null
-                    || client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/")
-                        == null) {
-                  namespaceReady = client.readNamespaceTableAsync().thenApply(ignored -> null);
-                } else {
-                  namespaceReady = CompletableFuture.completedFuture(null);
-                }
-                return namespaceReady.thenCompose(
-                    ignored -> {
-                      if (result.isCancelled()) {
-                        return CompletableFuture.failedFuture(new CancellationException());
-                      }
-                      var namespaceIndex =
-                          client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/");
-                      var referenceId =
-                          ExpandedNodeId.parse("i=47").toNodeId(client.getNamespaceTable());
-                      if (namespaceIndex == null || referenceId.isEmpty()) {
-                        return CompletableFuture.failedFuture(
-                            new UaException(
-                                StatusCodes.Bad_NodeIdInvalid,
-                                "http://opcfoundation.org/UA/:AggregateFunctions (declaration"
-                                    + " i=11876, owner i=2318) on "
-                                    + getNodeId()));
-                      }
-                      var browsePath =
-                          new BrowsePath(
-                              parentId,
-                              new RelativePath(
-                                  new RelativePathElement[] {
-                                    new RelativePathElement(
-                                        referenceId.orElseThrow(),
-                                        false,
-                                        true,
-                                        new QualifiedName(namespaceIndex, "AggregateFunctions"))
-                                  }));
-                      return client
-                          .translateBrowsePathsAsync(List.of(browsePath))
-                          .thenCompose(
-                              response -> {
-                                if (result.isCancelled()) {
-                                  return CompletableFuture.failedFuture(
-                                      new CancellationException());
-                                }
-                                var results = response == null ? null : response.getResults();
-                                if (results == null
-                                    || results.length != 1
-                                    || results[0] == null
-                                    || results[0].getStatusCode() == null) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:AggregateFunctions"
-                                              + " (declaration i=11876, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                var operation = results[0];
-                                if (operation.getStatusCode().getValue()
-                                    == StatusCodes.Bad_NoMatch) {
-                                  return CompletableFuture.completedFuture(null);
-                                }
-                                if (!operation.getStatusCode().isGood()) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          operation.getStatusCode(),
-                                          "http://opcfoundation.org/UA/:AggregateFunctions"
-                                              + " (declaration i=11876, owner i=2318)"));
-                                }
-                                var targets = operation.getTargets();
-                                if (targets == null || targets.length == 0) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:AggregateFunctions"
-                                              + " (declaration i=11876, owner i=2318) on "
-                                              + getNodeId()));
-                                }
-                                var identities = new ArrayList<CompletableFuture<NodeId>>();
-                                for (var target : targets) {
-                                  if (target == null
-                                      || target.getTargetId() == null
-                                      || target.getRemainingPathIndex() == null
-                                      || target.getRemainingPathIndex().longValue()
-                                          != 0xffffffffL) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_UnexpectedError,
-                                            "http://opcfoundation.org/UA/:AggregateFunctions"
-                                                + " (declaration i=11876, owner i=2318) on "
-                                                + getNodeId()));
-                                  }
-                                  if (!target.getTargetId().isLocal()) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_NotSupported,
-                                            "http://opcfoundation.org/UA/:AggregateFunctions"
-                                                + " (declaration i=11876, owner i=2318) on "
-                                                + getNodeId()));
-                                  }
-                                  if (result.isCancelled()) {
-                                    return CompletableFuture.failedFuture(
-                                        new CancellationException());
-                                  }
-                                  var localTarget =
-                                      target.getTargetId().toNodeId(client.getNamespaceTable());
-                                  if (localTarget.isPresent()) {
-                                    identities.add(
-                                        CompletableFuture.completedFuture(
-                                            localTarget.orElseThrow()));
-                                  } else {
-                                    identities.add(
-                                        client
-                                            .readNamespaceTableAsync()
-                                            .thenCompose(
-                                                namespaceTable -> {
-                                                  var resolvedTarget =
-                                                      target.getTargetId().toNodeId(namespaceTable);
-                                                  if (resolvedTarget.isEmpty()) {
-                                                    return CompletableFuture.failedFuture(
-                                                        new UaException(
-                                                            StatusCodes.Bad_NodeIdInvalid,
-                                                            "http://opcfoundation.org/UA/:AggregateFunctions"
-                                                                + " (declaration i=11876, owner"
-                                                                + " i=2318) on "
-                                                                + getNodeId()));
-                                                  }
-                                                  return CompletableFuture.completedFuture(
-                                                      resolvedTarget.orElseThrow());
-                                                }));
-                                  }
-                                }
-                                return CompletableFuture.allOf(
-                                        identities.toArray(CompletableFuture[]::new))
-                                    .thenCompose(
-                                        ready -> {
-                                          if (result.isCancelled()) {
-                                            return CompletableFuture.failedFuture(
-                                                new CancellationException());
-                                          }
-                                          var unique = new LinkedHashSet<NodeId>();
-                                          identities.forEach(
-                                              identity -> unique.add(identity.join()));
-                                          if (unique.stream().anyMatch(NodeId::isNull)) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_NodeIdInvalid,
-                                                    "http://opcfoundation.org/UA/:AggregateFunctions"
-                                                        + " (declaration i=11876, owner i=2318) on "
-                                                        + getNodeId()));
-                                          }
-                                          if (unique.size() != 1) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_TooManyMatches,
-                                                    "http://opcfoundation.org/UA/:AggregateFunctions"
-                                                        + " (declaration i=11876, owner i=2318) on "
-                                                        + getNodeId()));
-                                          }
-                                          return client
-                                              .getAddressSpace()
-                                              .getNodeAsync(unique.iterator().next())
-                                              .thenCompose(
-                                                  node -> {
-                                                    if (node == null
-                                                        || node.getNodeClass()
-                                                            != NodeClass.Object) {
-                                                      return CompletableFuture.failedFuture(
-                                                          new UaException(
-                                                              StatusCodes.Bad_NodeClassInvalid,
-                                                              "http://opcfoundation.org/UA/:AggregateFunctions"
-                                                                  + " (declaration i=11876, owner"
-                                                                  + " i=2318) on "
-                                                                  + getNodeId()));
-                                                    }
-                                                    return CompletableFuture.completedFuture(node);
-                                                  });
-                                        });
-                              });
-                    });
-              });
-      hop0.whenComplete(
-          (node, failure) -> {
-            if (failure != null) {
-              result.completeExceptionally(failure);
-            } else if (node != null && !(node instanceof FolderTypeNode)) {
-              result.completeExceptionally(
-                  new UaException(
-                      StatusCodes.Bad_TypeMismatch,
-                      "http://opcfoundation.org/UA/:AggregateFunctions (declaration i=11876, owner"
-                          + " i=2318)"));
-            } else {
-              result.complete((FolderTypeNode) node);
-            }
-          });
-    } catch (Exception e) {
-      result.completeExceptionally(e);
-    }
-    return result;
+    return ClientMembers.lookup(
+        client,
+        getNodeId(),
+        FolderTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "AggregateFunctions",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Object,
+            true,
+            "http://opcfoundation.org/UA/:AggregateFunctions (declaration i=11876, owner i=2318)"));
   }
 }

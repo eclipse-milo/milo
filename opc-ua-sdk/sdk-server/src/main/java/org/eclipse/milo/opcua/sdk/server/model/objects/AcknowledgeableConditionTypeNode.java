@@ -10,22 +10,17 @@
 
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
+import com.digitalpetri.opcua.uanodeset.runtime.members.MemberDeclaration;
+import com.digitalpetri.opcua.uanodeset.runtime.server.ServerMembers;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.Objects;
 import java.util.Optional;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
-import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.methods.InvalidArgumentException;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodBinding;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodBindings;
-import org.eclipse.milo.opcua.sdk.server.model.methods.AcknowledgeableConditionTypeAcknowledgeDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.AcknowledgeableConditionTypeAcknowledgeHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.AcknowledgeableConditionTypeConfirmDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.AcknowledgeableConditionTypeConfirmHandler;
 import org.eclipse.milo.opcua.sdk.server.model.variables.TwoStateVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -120,107 +115,17 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
 
   @Override
   public TwoStateVariableTypeNode getEnabledStateNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:EnabledState (declaration i=9073, owner i=2881)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "EnabledState");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:EnabledState (declaration"
-                    + " i=9073, owner i=2881) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:EnabledState (declaration i=9073, owner i=2881)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:EnabledState (declaration i=9073, owner i=2881)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:EnabledState (declaration i=9073, owner i=2881)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:EnabledState (declaration i=9073, owner i=2881)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:EnabledState (declaration i=9073, owner i=2881)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Variable) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:EnabledState (declaration i=9073, owner i=2881)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof TwoStateVariableTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:EnabledState (declaration i=9073, owner i=2881)"
-              + " on "
-              + getNodeId());
-    }
-    return (TwoStateVariableTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        TwoStateVariableTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "EnabledState",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Variable,
+            false,
+            "http://opcfoundation.org/UA/:EnabledState (declaration i=9073, owner i=2881)"));
   }
 
   @Override
@@ -251,107 +156,17 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
 
   @Override
   public TwoStateVariableTypeNode getAckedStateNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:AckedState (declaration i=9093, owner i=2881)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "AckedState");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:AckedState (declaration"
-                    + " i=9093, owner i=2881) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:AckedState (declaration i=9093, owner i=2881)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:AckedState (declaration i=9093, owner i=2881)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:AckedState (declaration i=9093, owner i=2881)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:AckedState (declaration i=9093, owner i=2881)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:AckedState (declaration i=9093, owner i=2881)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Variable) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:AckedState (declaration i=9093, owner i=2881)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof TwoStateVariableTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:AckedState (declaration i=9093, owner i=2881)"
-              + " on "
-              + getNodeId());
-    }
-    return (TwoStateVariableTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        TwoStateVariableTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "AckedState",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Variable,
+            false,
+            "http://opcfoundation.org/UA/:AckedState (declaration i=9093, owner i=2881)"));
   }
 
   @Override
@@ -382,103 +197,17 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
 
   @Override
   public @Nullable TwoStateVariableTypeNode getConfirmedStateNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:ConfirmedState (declaration i=9102, owner i=2881)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "ConfirmedState");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:ConfirmedState (declaration"
-                    + " i=9102, owner i=2881) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:ConfirmedState (declaration i=9102, owner i=2881)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:ConfirmedState (declaration i=9102, owner i=2881)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:ConfirmedState (declaration i=9102, owner i=2881)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        return null;
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:ConfirmedState (declaration i=9102, owner i=2881)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Variable) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:ConfirmedState (declaration i=9102, owner i=2881)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof TwoStateVariableTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:ConfirmedState (declaration i=9102, owner i=2881)"
-              + " on "
-              + getNodeId());
-    }
-    return (TwoStateVariableTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        TwoStateVariableTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "ConfirmedState",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Variable,
+            true,
+            "http://opcfoundation.org/UA/:ConfirmedState (declaration i=9102, owner i=2881)"));
   }
 
   @Override
@@ -509,112 +238,22 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
 
   @Override
   public UaMethodNode getAcknowledgeMethodNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:Acknowledge (declaration i=9111, owner i=2881)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "Acknowledge");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:Acknowledge (declaration"
-                    + " i=9111, owner i=2881) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:Acknowledge (declaration i=9111, owner i=2881)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:Acknowledge (declaration i=9111, owner i=2881)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:Acknowledge (declaration i=9111, owner i=2881)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:Acknowledge (declaration i=9111, owner i=2881)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:Acknowledge (declaration i=9111, owner i=2881)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Method) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:Acknowledge (declaration i=9111, owner i=2881)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof UaMethodNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:Acknowledge (declaration i=9111, owner i=2881)"
-              + " on "
-              + getNodeId());
-    }
-    return (UaMethodNode) parent;
+    return ServerMembers.lookup(
+        this,
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "Acknowledge",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            false,
+            "http://opcfoundation.org/UA/:Acknowledge (declaration i=9111, owner i=2881)"));
   }
 
   @Override
   public MethodBinding bindAcknowledge(
-      MethodBindings bindings, AcknowledgeableConditionTypeAcknowledgeHandler handler)
+      MethodBindings bindings, AcknowledgeableConditionType.AcknowledgeHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -625,7 +264,7 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -660,7 +299,10 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -770,7 +412,7 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
 
   @Override
   public MethodBinding bindAcknowledgeDetailed(
-      MethodBindings bindings, AcknowledgeableConditionTypeAcknowledgeDetailedHandler handler)
+      MethodBindings bindings, AcknowledgeableConditionType.AcknowledgeDetailedHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -781,7 +423,7 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -816,7 +458,10 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -937,108 +582,22 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
 
   @Override
   public @Nullable UaMethodNode getConfirmMethodNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:Confirm (declaration i=9113, owner i=2881)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "Confirm");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:Confirm (declaration i=9113,"
-                    + " owner i=2881) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:Confirm (declaration i=9113, owner i=2881)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:Confirm (declaration i=9113, owner i=2881)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:Confirm (declaration i=9113, owner i=2881)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        return null;
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:Confirm (declaration i=9113, owner i=2881)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Method) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:Confirm (declaration i=9113, owner i=2881)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof UaMethodNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:Confirm (declaration i=9113, owner i=2881)"
-              + " on "
-              + getNodeId());
-    }
-    return (UaMethodNode) parent;
+    return ServerMembers.lookup(
+        this,
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "Confirm",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            true,
+            "http://opcfoundation.org/UA/:Confirm (declaration i=9113, owner i=2881)"));
   }
 
   @Override
   public MethodBinding bindConfirm(
-      MethodBindings bindings, AcknowledgeableConditionTypeConfirmHandler handler)
+      MethodBindings bindings, AcknowledgeableConditionType.ConfirmHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -1049,7 +608,7 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -1084,7 +643,10 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -1194,7 +756,7 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
 
   @Override
   public MethodBinding bindConfirmDetailed(
-      MethodBindings bindings, AcknowledgeableConditionTypeConfirmDetailedHandler handler)
+      MethodBindings bindings, AcknowledgeableConditionType.ConfirmDetailedHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -1205,7 +767,7 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -1240,7 +802,10 @@ public class AcknowledgeableConditionTypeNode extends ConditionTypeNode
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);

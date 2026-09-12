@@ -10,22 +10,17 @@
 
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
+import com.digitalpetri.opcua.uanodeset.runtime.members.MemberDeclaration;
+import com.digitalpetri.opcua.uanodeset.runtime.server.ServerMembers;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.Objects;
 import java.util.Optional;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
-import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.methods.InvalidArgumentException;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodBinding;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodBindings;
-import org.eclipse.milo.opcua.sdk.server.model.methods.SecurityGroupTypeForceKeyRotationDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.SecurityGroupTypeForceKeyRotationHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.SecurityGroupTypeInvalidateKeysDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.SecurityGroupTypeInvalidateKeysHandler;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -116,107 +111,17 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
 
   @Override
   public PropertyTypeNode getSecurityGroupIdNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:SecurityGroupId (declaration i=15472, owner i=15471)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "SecurityGroupId");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:SecurityGroupId (declaration"
-                    + " i=15472, owner i=15471) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:SecurityGroupId (declaration i=15472, owner i=15471)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:SecurityGroupId (declaration i=15472, owner i=15471)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:SecurityGroupId (declaration i=15472, owner i=15471)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:SecurityGroupId (declaration i=15472, owner i=15471)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:SecurityGroupId (declaration i=15472, owner i=15471)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Variable) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:SecurityGroupId (declaration i=15472, owner i=15471)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof PropertyTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:SecurityGroupId (declaration i=15472, owner i=15471)"
-              + " on "
-              + getNodeId());
-    }
-    return (PropertyTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "SecurityGroupId",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            false,
+            "http://opcfoundation.org/UA/:SecurityGroupId (declaration i=15472, owner i=15471)"));
   }
 
   @Override
@@ -247,107 +152,17 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
 
   @Override
   public PropertyTypeNode getKeyLifetimeNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:KeyLifetime (declaration i=15046, owner i=15471)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "KeyLifetime");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:KeyLifetime (declaration"
-                    + " i=15046, owner i=15471) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:KeyLifetime (declaration i=15046, owner i=15471)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:KeyLifetime (declaration i=15046, owner i=15471)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:KeyLifetime (declaration i=15046, owner i=15471)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:KeyLifetime (declaration i=15046, owner i=15471)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:KeyLifetime (declaration i=15046, owner i=15471)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Variable) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:KeyLifetime (declaration i=15046, owner i=15471)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof PropertyTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:KeyLifetime (declaration i=15046, owner i=15471)"
-              + " on "
-              + getNodeId());
-    }
-    return (PropertyTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "KeyLifetime",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            false,
+            "http://opcfoundation.org/UA/:KeyLifetime (declaration i=15046, owner i=15471)"));
   }
 
   @Override
@@ -378,107 +193,17 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
 
   @Override
   public PropertyTypeNode getSecurityPolicyUriNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:SecurityPolicyUri (declaration i=15047, owner i=15471)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "SecurityPolicyUri");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:SecurityPolicyUri (declaration"
-                    + " i=15047, owner i=15471) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:SecurityPolicyUri (declaration i=15047, owner i=15471)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:SecurityPolicyUri (declaration i=15047, owner i=15471)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:SecurityPolicyUri (declaration i=15047, owner i=15471)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:SecurityPolicyUri (declaration i=15047, owner i=15471)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:SecurityPolicyUri (declaration i=15047, owner i=15471)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Variable) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:SecurityPolicyUri (declaration i=15047, owner i=15471)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof PropertyTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:SecurityPolicyUri (declaration i=15047, owner i=15471)"
-              + " on "
-              + getNodeId());
-    }
-    return (PropertyTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "SecurityPolicyUri",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            false,
+            "http://opcfoundation.org/UA/:SecurityPolicyUri (declaration i=15047, owner i=15471)"));
   }
 
   @Override
@@ -509,107 +234,17 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
 
   @Override
   public PropertyTypeNode getMaxFutureKeyCountNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:MaxFutureKeyCount (declaration i=15048, owner i=15471)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "MaxFutureKeyCount");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:MaxFutureKeyCount (declaration"
-                    + " i=15048, owner i=15471) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:MaxFutureKeyCount (declaration i=15048, owner i=15471)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:MaxFutureKeyCount (declaration i=15048, owner i=15471)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:MaxFutureKeyCount (declaration i=15048, owner i=15471)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:MaxFutureKeyCount (declaration i=15048, owner i=15471)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:MaxFutureKeyCount (declaration i=15048, owner i=15471)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Variable) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:MaxFutureKeyCount (declaration i=15048, owner i=15471)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof PropertyTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:MaxFutureKeyCount (declaration i=15048, owner i=15471)"
-              + " on "
-              + getNodeId());
-    }
-    return (PropertyTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "MaxFutureKeyCount",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            false,
+            "http://opcfoundation.org/UA/:MaxFutureKeyCount (declaration i=15048, owner i=15471)"));
   }
 
   @Override
@@ -640,107 +275,17 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
 
   @Override
   public PropertyTypeNode getMaxPastKeyCountNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:MaxPastKeyCount (declaration i=15056, owner i=15471)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "MaxPastKeyCount");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:MaxPastKeyCount (declaration"
-                    + " i=15056, owner i=15471) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:MaxPastKeyCount (declaration i=15056, owner i=15471)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:MaxPastKeyCount (declaration i=15056, owner i=15471)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:MaxPastKeyCount (declaration i=15056, owner i=15471)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:MaxPastKeyCount (declaration i=15056, owner i=15471)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:MaxPastKeyCount (declaration i=15056, owner i=15471)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Variable) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:MaxPastKeyCount (declaration i=15056, owner i=15471)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof PropertyTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:MaxPastKeyCount (declaration i=15056, owner i=15471)"
-              + " on "
-              + getNodeId());
-    }
-    return (PropertyTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "MaxPastKeyCount",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            false,
+            "http://opcfoundation.org/UA/:MaxPastKeyCount (declaration i=15056, owner i=15471)"));
   }
 
   @Override
@@ -771,108 +316,22 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
 
   @Override
   public @Nullable UaMethodNode getInvalidateKeysMethodNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:InvalidateKeys (declaration i=25624, owner i=15471)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "InvalidateKeys");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:InvalidateKeys (declaration"
-                    + " i=25624, owner i=15471) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:InvalidateKeys (declaration i=25624, owner i=15471)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:InvalidateKeys (declaration i=25624, owner i=15471)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:InvalidateKeys (declaration i=25624, owner i=15471)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        return null;
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:InvalidateKeys (declaration i=25624, owner i=15471)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Method) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:InvalidateKeys (declaration i=25624, owner i=15471)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof UaMethodNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:InvalidateKeys (declaration i=25624, owner i=15471)"
-              + " on "
-              + getNodeId());
-    }
-    return (UaMethodNode) parent;
+    return ServerMembers.lookup(
+        this,
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "InvalidateKeys",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            true,
+            "http://opcfoundation.org/UA/:InvalidateKeys (declaration i=25624, owner i=15471)"));
   }
 
   @Override
   public MethodBinding bindInvalidateKeys(
-      MethodBindings bindings, SecurityGroupTypeInvalidateKeysHandler handler) throws UaException {
+      MethodBindings bindings, SecurityGroupType.InvalidateKeysHandler handler) throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
     UaMethodNode methodNode = getInvalidateKeysMethodNode();
@@ -882,7 +341,7 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {};
@@ -900,7 +359,10 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -922,7 +384,7 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
 
   @Override
   public MethodBinding bindInvalidateKeysDetailed(
-      MethodBindings bindings, SecurityGroupTypeInvalidateKeysDetailedHandler handler)
+      MethodBindings bindings, SecurityGroupType.InvalidateKeysDetailedHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -933,7 +395,7 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {};
@@ -951,7 +413,10 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -984,108 +449,22 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
 
   @Override
   public @Nullable UaMethodNode getForceKeyRotationMethodNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:ForceKeyRotation (declaration i=25625, owner i=15471)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "ForceKeyRotation");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:ForceKeyRotation (declaration"
-                    + " i=25625, owner i=15471) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:ForceKeyRotation (declaration i=25625, owner i=15471)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:ForceKeyRotation (declaration i=25625, owner i=15471)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:ForceKeyRotation (declaration i=25625, owner i=15471)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        return null;
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:ForceKeyRotation (declaration i=25625, owner i=15471)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Method) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:ForceKeyRotation (declaration i=25625, owner i=15471)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof UaMethodNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:ForceKeyRotation (declaration i=25625, owner i=15471)"
-              + " on "
-              + getNodeId());
-    }
-    return (UaMethodNode) parent;
+    return ServerMembers.lookup(
+        this,
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "ForceKeyRotation",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            true,
+            "http://opcfoundation.org/UA/:ForceKeyRotation (declaration i=25625, owner i=15471)"));
   }
 
   @Override
   public MethodBinding bindForceKeyRotation(
-      MethodBindings bindings, SecurityGroupTypeForceKeyRotationHandler handler)
+      MethodBindings bindings, SecurityGroupType.ForceKeyRotationHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -1096,7 +475,7 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {};
@@ -1114,7 +493,10 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -1136,7 +518,7 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
 
   @Override
   public MethodBinding bindForceKeyRotationDetailed(
-      MethodBindings bindings, SecurityGroupTypeForceKeyRotationDetailedHandler handler)
+      MethodBindings bindings, SecurityGroupType.ForceKeyRotationDetailedHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -1147,7 +529,7 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {};
@@ -1165,7 +547,10 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);

@@ -13,5 +13,6 @@ package org.eclipse.milo.opcua.sdk.server.model.objects;
 /**
  * @see <a
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.4/#7.8.4.15">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.4/#7.8.4.15</a>
+ * @see com.digitalpetri.opcua.uanodeset.runtime.members
  */
 public interface EccCurve25519ApplicationCertificateType extends EccApplicationCertificateType {}

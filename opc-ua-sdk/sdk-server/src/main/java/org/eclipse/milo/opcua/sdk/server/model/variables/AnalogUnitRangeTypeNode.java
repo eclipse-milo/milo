@@ -10,17 +10,17 @@
 
 package org.eclipse.milo.opcua.sdk.server.model.variables;
 
-import java.util.LinkedHashMap;
+import com.digitalpetri.opcua.uanodeset.runtime.members.MemberDeclaration;
+import com.digitalpetri.opcua.uanodeset.runtime.server.ServerMembers;
+import com.digitalpetri.opcua.uanodeset.runtime.server.ServerPropertyValues;
 import java.util.Optional;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -126,107 +126,17 @@ public class AnalogUnitRangeTypeNode extends AnalogItemTypeNode implements Analo
 
   @Override
   public PropertyTypeNode getEngineeringUnitsNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:EngineeringUnits (declaration i=17575, owner i=17570)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "EngineeringUnits");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:EngineeringUnits (declaration"
-                    + " i=17575, owner i=17570) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:EngineeringUnits (declaration i=17575, owner i=17570)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:EngineeringUnits (declaration i=17575, owner i=17570)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:EngineeringUnits (declaration i=17575, owner i=17570)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:EngineeringUnits (declaration i=17575, owner i=17570)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:EngineeringUnits (declaration i=17575, owner i=17570)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Variable) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:EngineeringUnits (declaration i=17575, owner i=17570)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof PropertyTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:EngineeringUnits (declaration i=17575, owner i=17570)"
-              + " on "
-              + getNodeId());
-    }
-    return (PropertyTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "EngineeringUnits",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            false,
+            "http://opcfoundation.org/UA/:EngineeringUnits (declaration i=17575, owner i=17570)"));
   }
 
   @Override
@@ -239,19 +149,12 @@ public class AnalogUnitRangeTypeNode extends AnalogItemTypeNode implements Analo
               + " on "
               + getNodeId());
     }
-    Object decoded =
-        ExtensionObject.decodeValue(
-            getNodeContext().getServer().getStaticEncodingContext(),
-            node.getValue().getValue().getValue());
-    if (decoded == null) {
-      return null;
-    }
-    if (!(decoded instanceof EUInformation)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:EngineeringUnits (declaration i=17575, owner i=17570)");
-    }
-    return (EUInformation) decoded;
+    return ServerPropertyValues.decode(
+        getNodeContext().getServer().getStaticEncodingContext(),
+        node.getValue().getValue().getValue(),
+        EUInformation.class,
+        EUInformation.class,
+        "http://opcfoundation.org/UA/:EngineeringUnits (declaration i=17575, owner i=17570)");
   }
 
   @Override

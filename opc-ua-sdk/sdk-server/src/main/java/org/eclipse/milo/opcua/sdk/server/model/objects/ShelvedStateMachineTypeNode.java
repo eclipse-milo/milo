@@ -10,30 +10,17 @@
 
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
+import com.digitalpetri.opcua.uanodeset.runtime.members.MemberDeclaration;
+import com.digitalpetri.opcua.uanodeset.runtime.server.ServerMembers;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.Objects;
 import java.util.Optional;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
-import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.methods.InvalidArgumentException;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodBinding;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodBindings;
-import org.eclipse.milo.opcua.sdk.server.model.methods.ShelvedStateMachineTypeOneShotShelve2DetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.ShelvedStateMachineTypeOneShotShelve2Handler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.ShelvedStateMachineTypeOneShotShelveDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.ShelvedStateMachineTypeOneShotShelveHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.ShelvedStateMachineTypeTimedShelve2DetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.ShelvedStateMachineTypeTimedShelve2Handler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.ShelvedStateMachineTypeTimedShelveDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.ShelvedStateMachineTypeTimedShelveHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.ShelvedStateMachineTypeUnshelve2DetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.ShelvedStateMachineTypeUnshelve2Handler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.ShelvedStateMachineTypeUnshelveDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.ShelvedStateMachineTypeUnshelveHandler;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -127,107 +114,17 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
 
   @Override
   public PropertyTypeNode getUnshelveTimeNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:UnshelveTime (declaration i=9115, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "UnshelveTime");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:UnshelveTime (declaration"
-                    + " i=9115, owner i=2929) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:UnshelveTime (declaration i=9115, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:UnshelveTime (declaration i=9115, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:UnshelveTime (declaration i=9115, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:UnshelveTime (declaration i=9115, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:UnshelveTime (declaration i=9115, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Variable) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:UnshelveTime (declaration i=9115, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof PropertyTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:UnshelveTime (declaration i=9115, owner i=2929)"
-              + " on "
-              + getNodeId());
-    }
-    return (PropertyTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "UnshelveTime",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            false,
+            "http://opcfoundation.org/UA/:UnshelveTime (declaration i=9115, owner i=2929)"));
   }
 
   @Override
@@ -258,1057 +155,163 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
 
   @Override
   public StateTypeNode getUnshelvedNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:Unshelved (declaration i=2930, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "Unshelved");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:Unshelved (declaration i=2930,"
-                    + " owner i=2929) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:Unshelved (declaration i=2930, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:Unshelved (declaration i=2930, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:Unshelved (declaration i=2930, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:Unshelved (declaration i=2930, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:Unshelved (declaration i=2930, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Object) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:Unshelved (declaration i=2930, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof StateTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:Unshelved (declaration i=2930, owner i=2929)"
-              + " on "
-              + getNodeId());
-    }
-    return (StateTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        StateTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "Unshelved",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Object,
+            false,
+            "http://opcfoundation.org/UA/:Unshelved (declaration i=2930, owner i=2929)"));
   }
 
   @Override
   public StateTypeNode getTimedShelvedNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:TimedShelved (declaration i=2932, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "TimedShelved");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:TimedShelved (declaration"
-                    + " i=2932, owner i=2929) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:TimedShelved (declaration i=2932, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:TimedShelved (declaration i=2932, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:TimedShelved (declaration i=2932, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:TimedShelved (declaration i=2932, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:TimedShelved (declaration i=2932, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Object) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:TimedShelved (declaration i=2932, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof StateTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:TimedShelved (declaration i=2932, owner i=2929)"
-              + " on "
-              + getNodeId());
-    }
-    return (StateTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        StateTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "TimedShelved",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Object,
+            false,
+            "http://opcfoundation.org/UA/:TimedShelved (declaration i=2932, owner i=2929)"));
   }
 
   @Override
   public StateTypeNode getOneShotShelvedNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:OneShotShelved (declaration i=2933, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "OneShotShelved");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:OneShotShelved (declaration"
-                    + " i=2933, owner i=2929) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:OneShotShelved (declaration i=2933, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:OneShotShelved (declaration i=2933, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:OneShotShelved (declaration i=2933, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:OneShotShelved (declaration i=2933, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:OneShotShelved (declaration i=2933, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Object) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:OneShotShelved (declaration i=2933, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof StateTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:OneShotShelved (declaration i=2933, owner i=2929)"
-              + " on "
-              + getNodeId());
-    }
-    return (StateTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        StateTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "OneShotShelved",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Object,
+            false,
+            "http://opcfoundation.org/UA/:OneShotShelved (declaration i=2933, owner i=2929)"));
   }
 
   @Override
   public TransitionTypeNode getUnshelvedToTimedShelvedNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
+    return ServerMembers.lookup(
+        this,
+        TransitionTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "UnshelvedToTimedShelved",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Object,
+            false,
             "http://opcfoundation.org/UA/:UnshelvedToTimedShelved (declaration i=2935, owner"
-                + " i=2929) on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "UnshelvedToTimedShelved");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:UnshelvedToTimedShelved"
-                    + " (declaration i=2935, owner i=2929) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:UnshelvedToTimedShelved (declaration i=2935, owner"
-                  + " i=2929) on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:UnshelvedToTimedShelved (declaration i=2935, owner"
-                  + " i=2929) on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:UnshelvedToTimedShelved (declaration i=2935, owner"
-                  + " i=2929) on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:UnshelvedToTimedShelved (declaration i=2935, owner"
-                + " i=2929) on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:UnshelvedToTimedShelved (declaration i=2935, owner"
-                + " i=2929) on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Object) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:UnshelvedToTimedShelved (declaration i=2935, owner"
-                + " i=2929) on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof TransitionTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:UnshelvedToTimedShelved (declaration i=2935, owner i=2929)"
-              + " on "
-              + getNodeId());
-    }
-    return (TransitionTypeNode) parent;
+                + " i=2929)"));
   }
 
   @Override
   public TransitionTypeNode getUnshelvedToOneShotShelvedNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
+    return ServerMembers.lookup(
+        this,
+        TransitionTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "UnshelvedToOneShotShelved",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Object,
+            false,
             "http://opcfoundation.org/UA/:UnshelvedToOneShotShelved (declaration i=2936, owner"
-                + " i=2929) on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "UnshelvedToOneShotShelved");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:UnshelvedToOneShotShelved"
-                    + " (declaration i=2936, owner i=2929) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:UnshelvedToOneShotShelved (declaration i=2936, owner"
-                  + " i=2929) on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:UnshelvedToOneShotShelved (declaration i=2936, owner"
-                  + " i=2929) on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:UnshelvedToOneShotShelved (declaration i=2936, owner"
-                  + " i=2929) on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:UnshelvedToOneShotShelved (declaration i=2936, owner"
-                + " i=2929) on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:UnshelvedToOneShotShelved (declaration i=2936, owner"
-                + " i=2929) on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Object) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:UnshelvedToOneShotShelved (declaration i=2936, owner"
-                + " i=2929) on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof TransitionTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:UnshelvedToOneShotShelved (declaration i=2936, owner"
-              + " i=2929) on "
-              + getNodeId());
-    }
-    return (TransitionTypeNode) parent;
+                + " i=2929)"));
   }
 
   @Override
   public TransitionTypeNode getTimedShelvedToUnshelvedNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
+    return ServerMembers.lookup(
+        this,
+        TransitionTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "TimedShelvedToUnshelved",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Object,
+            false,
             "http://opcfoundation.org/UA/:TimedShelvedToUnshelved (declaration i=2940, owner"
-                + " i=2929) on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "TimedShelvedToUnshelved");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:TimedShelvedToUnshelved"
-                    + " (declaration i=2940, owner i=2929) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:TimedShelvedToUnshelved (declaration i=2940, owner"
-                  + " i=2929) on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:TimedShelvedToUnshelved (declaration i=2940, owner"
-                  + " i=2929) on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:TimedShelvedToUnshelved (declaration i=2940, owner"
-                  + " i=2929) on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:TimedShelvedToUnshelved (declaration i=2940, owner"
-                + " i=2929) on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:TimedShelvedToUnshelved (declaration i=2940, owner"
-                + " i=2929) on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Object) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:TimedShelvedToUnshelved (declaration i=2940, owner"
-                + " i=2929) on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof TransitionTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:TimedShelvedToUnshelved (declaration i=2940, owner i=2929)"
-              + " on "
-              + getNodeId());
-    }
-    return (TransitionTypeNode) parent;
+                + " i=2929)"));
   }
 
   @Override
   public TransitionTypeNode getTimedShelvedToOneShotShelvedNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
+    return ServerMembers.lookup(
+        this,
+        TransitionTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "TimedShelvedToOneShotShelved",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Object,
+            false,
             "http://opcfoundation.org/UA/:TimedShelvedToOneShotShelved (declaration i=2942, owner"
-                + " i=2929) on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "TimedShelvedToOneShotShelved");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:TimedShelvedToOneShotShelved"
-                    + " (declaration i=2942, owner i=2929) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:TimedShelvedToOneShotShelved (declaration i=2942, owner"
-                  + " i=2929) on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:TimedShelvedToOneShotShelved (declaration i=2942, owner"
-                  + " i=2929) on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:TimedShelvedToOneShotShelved (declaration i=2942, owner"
-                  + " i=2929) on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:TimedShelvedToOneShotShelved (declaration i=2942, owner"
-                + " i=2929) on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:TimedShelvedToOneShotShelved (declaration i=2942, owner"
-                + " i=2929) on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Object) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:TimedShelvedToOneShotShelved (declaration i=2942, owner"
-                + " i=2929) on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof TransitionTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:TimedShelvedToOneShotShelved (declaration i=2942, owner"
-              + " i=2929) on "
-              + getNodeId());
-    }
-    return (TransitionTypeNode) parent;
+                + " i=2929)"));
   }
 
   @Override
   public TransitionTypeNode getOneShotShelvedToUnshelvedNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
+    return ServerMembers.lookup(
+        this,
+        TransitionTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "OneShotShelvedToUnshelved",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Object,
+            false,
             "http://opcfoundation.org/UA/:OneShotShelvedToUnshelved (declaration i=2943, owner"
-                + " i=2929) on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "OneShotShelvedToUnshelved");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:OneShotShelvedToUnshelved"
-                    + " (declaration i=2943, owner i=2929) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:OneShotShelvedToUnshelved (declaration i=2943, owner"
-                  + " i=2929) on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:OneShotShelvedToUnshelved (declaration i=2943, owner"
-                  + " i=2929) on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:OneShotShelvedToUnshelved (declaration i=2943, owner"
-                  + " i=2929) on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:OneShotShelvedToUnshelved (declaration i=2943, owner"
-                + " i=2929) on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:OneShotShelvedToUnshelved (declaration i=2943, owner"
-                + " i=2929) on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Object) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:OneShotShelvedToUnshelved (declaration i=2943, owner"
-                + " i=2929) on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof TransitionTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:OneShotShelvedToUnshelved (declaration i=2943, owner"
-              + " i=2929) on "
-              + getNodeId());
-    }
-    return (TransitionTypeNode) parent;
+                + " i=2929)"));
   }
 
   @Override
   public TransitionTypeNode getOneShotShelvedToTimedShelvedNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
+    return ServerMembers.lookup(
+        this,
+        TransitionTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "OneShotShelvedToTimedShelved",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Object,
+            false,
             "http://opcfoundation.org/UA/:OneShotShelvedToTimedShelved (declaration i=2945, owner"
-                + " i=2929) on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "OneShotShelvedToTimedShelved");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:OneShotShelvedToTimedShelved"
-                    + " (declaration i=2945, owner i=2929) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:OneShotShelvedToTimedShelved (declaration i=2945, owner"
-                  + " i=2929) on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:OneShotShelvedToTimedShelved (declaration i=2945, owner"
-                  + " i=2929) on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:OneShotShelvedToTimedShelved (declaration i=2945, owner"
-                  + " i=2929) on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:OneShotShelvedToTimedShelved (declaration i=2945, owner"
-                + " i=2929) on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:OneShotShelvedToTimedShelved (declaration i=2945, owner"
-                + " i=2929) on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Object) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:OneShotShelvedToTimedShelved (declaration i=2945, owner"
-                + " i=2929) on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof TransitionTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:OneShotShelvedToTimedShelved (declaration i=2945, owner"
-              + " i=2929) on "
-              + getNodeId());
-    }
-    return (TransitionTypeNode) parent;
+                + " i=2929)"));
   }
 
   @Override
   public UaMethodNode getTimedShelveMethodNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:TimedShelve (declaration i=2949, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "TimedShelve");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:TimedShelve (declaration"
-                    + " i=2949, owner i=2929) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:TimedShelve (declaration i=2949, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:TimedShelve (declaration i=2949, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:TimedShelve (declaration i=2949, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:TimedShelve (declaration i=2949, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:TimedShelve (declaration i=2949, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Method) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:TimedShelve (declaration i=2949, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof UaMethodNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:TimedShelve (declaration i=2949, owner i=2929)"
-              + " on "
-              + getNodeId());
-    }
-    return (UaMethodNode) parent;
+    return ServerMembers.lookup(
+        this,
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "TimedShelve",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            false,
+            "http://opcfoundation.org/UA/:TimedShelve (declaration i=2949, owner i=2929)"));
   }
 
   @Override
   public MethodBinding bindTimedShelve(
-      MethodBindings bindings, ShelvedStateMachineTypeTimedShelveHandler handler)
+      MethodBindings bindings, ShelvedStateMachineType.TimedShelveHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -1319,7 +322,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -1346,7 +349,10 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -1412,7 +418,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
 
   @Override
   public MethodBinding bindTimedShelveDetailed(
-      MethodBindings bindings, ShelvedStateMachineTypeTimedShelveDetailedHandler handler)
+      MethodBindings bindings, ShelvedStateMachineType.TimedShelveDetailedHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -1423,7 +429,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -1450,7 +456,10 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -1527,108 +536,22 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
 
   @Override
   public @Nullable UaMethodNode getTimedShelve2MethodNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:TimedShelve2 (declaration i=24756, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "TimedShelve2");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:TimedShelve2 (declaration"
-                    + " i=24756, owner i=2929) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:TimedShelve2 (declaration i=24756, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:TimedShelve2 (declaration i=24756, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:TimedShelve2 (declaration i=24756, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        return null;
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:TimedShelve2 (declaration i=24756, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Method) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:TimedShelve2 (declaration i=24756, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof UaMethodNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:TimedShelve2 (declaration i=24756, owner i=2929)"
-              + " on "
-              + getNodeId());
-    }
-    return (UaMethodNode) parent;
+    return ServerMembers.lookup(
+        this,
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "TimedShelve2",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            true,
+            "http://opcfoundation.org/UA/:TimedShelve2 (declaration i=24756, owner i=2929)"));
   }
 
   @Override
   public MethodBinding bindTimedShelve2(
-      MethodBindings bindings, ShelvedStateMachineTypeTimedShelve2Handler handler)
+      MethodBindings bindings, ShelvedStateMachineType.TimedShelve2Handler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -1639,7 +562,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -1674,7 +597,10 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -1784,7 +710,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
 
   @Override
   public MethodBinding bindTimedShelve2Detailed(
-      MethodBindings bindings, ShelvedStateMachineTypeTimedShelve2DetailedHandler handler)
+      MethodBindings bindings, ShelvedStateMachineType.TimedShelve2DetailedHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -1795,7 +721,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -1830,7 +756,10 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -1951,112 +880,22 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
 
   @Override
   public UaMethodNode getUnshelveMethodNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:Unshelve (declaration i=2947, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "Unshelve");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:Unshelve (declaration i=2947,"
-                    + " owner i=2929) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:Unshelve (declaration i=2947, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:Unshelve (declaration i=2947, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:Unshelve (declaration i=2947, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:Unshelve (declaration i=2947, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:Unshelve (declaration i=2947, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Method) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:Unshelve (declaration i=2947, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof UaMethodNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:Unshelve (declaration i=2947, owner i=2929)"
-              + " on "
-              + getNodeId());
-    }
-    return (UaMethodNode) parent;
+    return ServerMembers.lookup(
+        this,
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "Unshelve",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            false,
+            "http://opcfoundation.org/UA/:Unshelve (declaration i=2947, owner i=2929)"));
   }
 
   @Override
   public MethodBinding bindUnshelve(
-      MethodBindings bindings, ShelvedStateMachineTypeUnshelveHandler handler) throws UaException {
+      MethodBindings bindings, ShelvedStateMachineType.UnshelveHandler handler) throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
     UaMethodNode methodNode = getUnshelveMethodNode();
@@ -2066,7 +905,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {};
@@ -2084,7 +923,10 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -2106,7 +948,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
 
   @Override
   public MethodBinding bindUnshelveDetailed(
-      MethodBindings bindings, ShelvedStateMachineTypeUnshelveDetailedHandler handler)
+      MethodBindings bindings, ShelvedStateMachineType.UnshelveDetailedHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -2117,7 +959,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {};
@@ -2135,7 +977,10 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -2168,108 +1013,23 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
 
   @Override
   public @Nullable UaMethodNode getUnshelve2MethodNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:Unshelve2 (declaration i=24758, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "Unshelve2");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:Unshelve2 (declaration"
-                    + " i=24758, owner i=2929) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:Unshelve2 (declaration i=24758, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:Unshelve2 (declaration i=24758, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:Unshelve2 (declaration i=24758, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        return null;
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:Unshelve2 (declaration i=24758, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Method) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:Unshelve2 (declaration i=24758, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof UaMethodNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:Unshelve2 (declaration i=24758, owner i=2929)"
-              + " on "
-              + getNodeId());
-    }
-    return (UaMethodNode) parent;
+    return ServerMembers.lookup(
+        this,
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "Unshelve2",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            true,
+            "http://opcfoundation.org/UA/:Unshelve2 (declaration i=24758, owner i=2929)"));
   }
 
   @Override
   public MethodBinding bindUnshelve2(
-      MethodBindings bindings, ShelvedStateMachineTypeUnshelve2Handler handler) throws UaException {
+      MethodBindings bindings, ShelvedStateMachineType.Unshelve2Handler handler)
+      throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
     UaMethodNode methodNode = getUnshelve2MethodNode();
@@ -2279,7 +1039,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -2306,7 +1066,10 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -2372,7 +1135,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
 
   @Override
   public MethodBinding bindUnshelve2Detailed(
-      MethodBindings bindings, ShelvedStateMachineTypeUnshelve2DetailedHandler handler)
+      MethodBindings bindings, ShelvedStateMachineType.Unshelve2DetailedHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -2383,7 +1146,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -2410,7 +1173,10 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -2487,112 +1253,22 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
 
   @Override
   public UaMethodNode getOneShotShelveMethodNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:OneShotShelve (declaration i=2948, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "OneShotShelve");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:OneShotShelve (declaration"
-                    + " i=2948, owner i=2929) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:OneShotShelve (declaration i=2948, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:OneShotShelve (declaration i=2948, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:OneShotShelve (declaration i=2948, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:OneShotShelve (declaration i=2948, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:OneShotShelve (declaration i=2948, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Method) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:OneShotShelve (declaration i=2948, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof UaMethodNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:OneShotShelve (declaration i=2948, owner i=2929)"
-              + " on "
-              + getNodeId());
-    }
-    return (UaMethodNode) parent;
+    return ServerMembers.lookup(
+        this,
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "OneShotShelve",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            false,
+            "http://opcfoundation.org/UA/:OneShotShelve (declaration i=2948, owner i=2929)"));
   }
 
   @Override
   public MethodBinding bindOneShotShelve(
-      MethodBindings bindings, ShelvedStateMachineTypeOneShotShelveHandler handler)
+      MethodBindings bindings, ShelvedStateMachineType.OneShotShelveHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -2603,7 +1279,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {};
@@ -2621,7 +1297,10 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -2643,7 +1322,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
 
   @Override
   public MethodBinding bindOneShotShelveDetailed(
-      MethodBindings bindings, ShelvedStateMachineTypeOneShotShelveDetailedHandler handler)
+      MethodBindings bindings, ShelvedStateMachineType.OneShotShelveDetailedHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -2654,7 +1333,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {};
@@ -2672,7 +1351,10 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -2705,108 +1387,22 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
 
   @Override
   public @Nullable UaMethodNode getOneShotShelve2MethodNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:OneShotShelve2 (declaration i=24760, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "OneShotShelve2");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:OneShotShelve2 (declaration"
-                    + " i=24760, owner i=2929) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:OneShotShelve2 (declaration i=24760, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:OneShotShelve2 (declaration i=24760, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:OneShotShelve2 (declaration i=24760, owner i=2929)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        return null;
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:OneShotShelve2 (declaration i=24760, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Method) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:OneShotShelve2 (declaration i=24760, owner i=2929)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof UaMethodNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:OneShotShelve2 (declaration i=24760, owner i=2929)"
-              + " on "
-              + getNodeId());
-    }
-    return (UaMethodNode) parent;
+    return ServerMembers.lookup(
+        this,
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "OneShotShelve2",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            true,
+            "http://opcfoundation.org/UA/:OneShotShelve2 (declaration i=24760, owner i=2929)"));
   }
 
   @Override
   public MethodBinding bindOneShotShelve2(
-      MethodBindings bindings, ShelvedStateMachineTypeOneShotShelve2Handler handler)
+      MethodBindings bindings, ShelvedStateMachineType.OneShotShelve2Handler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -2817,7 +1413,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -2844,7 +1440,10 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -2910,7 +1509,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
 
   @Override
   public MethodBinding bindOneShotShelve2Detailed(
-      MethodBindings bindings, ShelvedStateMachineTypeOneShotShelve2DetailedHandler handler)
+      MethodBindings bindings, ShelvedStateMachineType.OneShotShelve2DetailedHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -2921,7 +1520,7 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -2948,7 +1547,10 @@ public class ShelvedStateMachineTypeNode extends FiniteStateMachineTypeNode
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);

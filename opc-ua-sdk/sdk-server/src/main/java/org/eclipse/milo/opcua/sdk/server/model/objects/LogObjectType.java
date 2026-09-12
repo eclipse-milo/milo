@@ -10,25 +10,26 @@
 
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
+import com.digitalpetri.opcua.uanodeset.runtime.methods.MethodHandlerResult;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.sdk.core.model.methods.LogObjectTypeGetRecordsOutputs;
 import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodBinding;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodBindings;
-import org.eclipse.milo.opcua.sdk.server.model.methods.LogObjectTypeGetRecordsDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.LogObjectTypeGetRecordsHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.LogObjectTypeReleaseContinuationPointDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.LogObjectTypeReleaseContinuationPointHandler;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyType;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.structured.LogRecordMask;
 import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part26/5.2">https://reference.opcfoundation.org/v105/Core/docs/Part26/5.2</a>
+ * @see com.digitalpetri.opcua.uanodeset.runtime.members
  */
 public interface LogObjectType extends BaseObjectType {
   QualifiedProperty<UInteger> MAX_RECORDS =
@@ -55,238 +56,161 @@ public interface LogObjectType extends BaseObjectType {
           -1,
           UShort.class);
 
-  /**
-   * Gets the existing member's local value without checking its quality. A null value is valid; an
-   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
-   * timestamps.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @return the value, which may be null on a present member
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
-   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
-   *     representation
-   */
+  /** Gets the existing node's local value. */
   @Nullable UInteger getMaxRecords();
 
-  /**
-   * Sets the existing member's local value. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @param value the value to store; null is permitted
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
-   */
+  /** Sets the existing node's local value. */
   void setMaxRecords(@Nullable UInteger value);
 
   /**
-   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
-   * absence. Resolution does not create a UA node. A reference can change after lookup.
+   * Returns the node, or null if absent.
    *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the node, or null if absent.
    */
   @Nullable PropertyType getMaxRecordsNode();
 
-  /**
-   * Gets the existing member's local value without checking its quality. A null value is valid; an
-   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
-   * timestamps.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @return the value, which may be null on a present member
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
-   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
-   *     representation
-   */
+  /** Gets the existing node's local value. */
   @Nullable Double getMaxStorageDuration();
 
-  /**
-   * Sets the existing member's local value. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @param value the value to store; null is permitted
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
-   */
+  /** Sets the existing node's local value. */
   void setMaxStorageDuration(@Nullable Double value);
 
   /**
-   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
-   * absence. Resolution does not create a UA node. A reference can change after lookup.
+   * Returns the node, or null if absent.
    *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the node, or null if absent.
    */
   @Nullable PropertyType getMaxStorageDurationNode();
 
-  /**
-   * Gets the existing member's local value without checking its quality. A null value is valid; an
-   * absent node fails with Bad_NotFound. Use the node's raw DataValue to inspect quality and
-   * timestamps.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @return the value, which may be null on a present member
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
-   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
-   *     representation
-   */
+  /** Gets the existing node's local value. */
   @Nullable UShort getMinimumSeverity();
 
-  /**
-   * Sets the existing member's local value. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @param value the value to store; null is permitted
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
-   */
+  /** Sets the existing node's local value. */
   void setMinimumSeverity(@Nullable UShort value);
 
   /**
-   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
-   * absence. Resolution does not create a UA node. A reference can change after lookup.
+   * Returns the node, or null if absent.
    *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the node, or null if absent.
    */
   @Nullable PropertyType getMinimumSeverityNode();
 
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part26/5.3
    *
-   * <p>Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   * <p>Returns the required node.
    *
-   * @return the existing member
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the required node.
    */
   MethodNode getGetRecordsMethodNode();
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part26/5.3
+   * https://reference.opcfoundation.org/v105/Core/docs/Part26/5.3 Binds a synchronous callback for
+   * this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
-  MethodBinding bindGetRecords(MethodBindings bindings, LogObjectTypeGetRecordsHandler handler)
+  MethodBinding bindGetRecords(MethodBindings bindings, GetRecordsHandler handler)
       throws UaException;
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part26/5.3
+   * https://reference.opcfoundation.org/v105/Core/docs/Part26/5.3 Binds a synchronous callback for
+   * this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
-  MethodBinding bindGetRecordsDetailed(
-      MethodBindings bindings, LogObjectTypeGetRecordsDetailedHandler handler) throws UaException;
+  MethodBinding bindGetRecordsDetailed(MethodBindings bindings, GetRecordsDetailedHandler handler)
+      throws UaException;
 
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part26/5.4
    *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. A reference can change after lookup.
+   * <p>Returns the node, or null if absent.
    *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the node, or null if absent.
    */
   @Nullable MethodNode getReleaseContinuationPointMethodNode();
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part26/5.4
+   * https://reference.opcfoundation.org/v105/Core/docs/Part26/5.4 Binds a synchronous callback for
+   * this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
   MethodBinding bindReleaseContinuationPoint(
-      MethodBindings bindings, LogObjectTypeReleaseContinuationPointHandler handler)
-      throws UaException;
+      MethodBindings bindings, ReleaseContinuationPointHandler handler) throws UaException;
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part26/5.4
+   * https://reference.opcfoundation.org/v105/Core/docs/Part26/5.4 Binds a synchronous callback for
+   * this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
   MethodBinding bindReleaseContinuationPointDetailed(
-      MethodBindings bindings, LogObjectTypeReleaseContinuationPointDetailedHandler handler)
-      throws UaException;
+      MethodBindings bindings, ReleaseContinuationPointDetailedHandler handler) throws UaException;
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part26/5.3 */
+  @FunctionalInterface
+  interface GetRecordsHandler {
+    /**
+     * @return a non-null container holding all output values
+     * @throws UaException for an operation failure
+     */
+    LogObjectTypeGetRecordsOutputs invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable DateTime startTime,
+        @Nullable DateTime endTime,
+        @Nullable UInteger maxReturnRecords,
+        @Nullable UShort minimumSeverity,
+        @Nullable LogRecordMask requestMask,
+        @Nullable ByteString continuationPointIn)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part26/5.3 */
+  @FunctionalInterface
+  interface GetRecordsDetailedHandler {
+    /**
+     * @return a non-null complete operation outcome
+     * @throws UaException for an operation failure
+     */
+    MethodHandlerResult<LogObjectTypeGetRecordsOutputs> invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable DateTime startTime,
+        @Nullable DateTime endTime,
+        @Nullable UInteger maxReturnRecords,
+        @Nullable UShort minimumSeverity,
+        @Nullable LogRecordMask requestMask,
+        @Nullable ByteString continuationPointIn)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part26/5.4 */
+  @FunctionalInterface
+  interface ReleaseContinuationPointHandler {
+    /**
+     * @throws UaException for an operation failure
+     */
+    void invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable ByteString continuationPointIn)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part26/5.4 */
+  @FunctionalInterface
+  interface ReleaseContinuationPointDetailedHandler {
+    /**
+     * @return a non-null complete operation outcome
+     * @throws UaException for an operation failure
+     */
+    MethodHandlerResult<@Nullable Void> invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable ByteString continuationPointIn)
+        throws UaException;
+  }
 }

@@ -10,30 +10,18 @@
 
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
+import com.digitalpetri.opcua.uanodeset.runtime.members.MemberDeclaration;
+import com.digitalpetri.opcua.uanodeset.runtime.server.ServerMembers;
+import com.digitalpetri.opcua.uanodeset.runtime.server.ServerPropertyValues;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.Objects;
 import java.util.Optional;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
-import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.methods.InvalidArgumentException;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodBinding;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodBindings;
-import org.eclipse.milo.opcua.sdk.server.model.methods.RoleTypeAddApplicationDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.RoleTypeAddApplicationHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.RoleTypeAddEndpointDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.RoleTypeAddEndpointHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.RoleTypeAddIdentityDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.RoleTypeAddIdentityHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.RoleTypeRemoveApplicationDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.RoleTypeRemoveApplicationHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.RoleTypeRemoveEndpointDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.RoleTypeRemoveEndpointHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.RoleTypeRemoveIdentityDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.RoleTypeRemoveIdentityHandler;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -43,7 +31,6 @@ import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -129,107 +116,17 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
   @Override
   public PropertyTypeNode getIdentitiesNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:Identities (declaration i=16173, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "Identities");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:Identities (declaration"
-                    + " i=16173, owner i=15620) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:Identities (declaration i=16173, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:Identities (declaration i=16173, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:Identities (declaration i=16173, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:Identities (declaration i=16173, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:Identities (declaration i=16173, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Variable) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:Identities (declaration i=16173, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof PropertyTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:Identities (declaration i=16173, owner i=15620)"
-              + " on "
-              + getNodeId());
-    }
-    return (PropertyTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "Identities",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            false,
+            "http://opcfoundation.org/UA/:Identities (declaration i=16173, owner i=15620)"));
   }
 
   @Override
@@ -242,28 +139,12 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
               + " on "
               + getNodeId());
     }
-    Object decoded =
-        ExtensionObject.decodeValue(
-            getNodeContext().getServer().getStaticEncodingContext(),
-            node.getValue().getValue().getValue());
-    if (decoded == null) {
-      return null;
-    }
-    if (!(decoded instanceof Object[] elements)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:Identities (declaration i=16173, owner i=15620)");
-    }
-    IdentityMappingRuleType[] typed = new IdentityMappingRuleType[elements.length];
-    for (int i = 0; i < elements.length; i++) {
-      if (elements[i] != null && !(elements[i] instanceof IdentityMappingRuleType)) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TypeMismatch,
-            "http://opcfoundation.org/UA/:Identities (declaration i=16173, owner i=15620)");
-      }
-      typed[i] = (IdentityMappingRuleType) elements[i];
-    }
-    return typed;
+    return ServerPropertyValues.decode(
+        getNodeContext().getServer().getStaticEncodingContext(),
+        node.getValue().getValue().getValue(),
+        IdentityMappingRuleType[].class,
+        IdentityMappingRuleType.class,
+        "http://opcfoundation.org/UA/:Identities (declaration i=16173, owner i=15620)");
   }
 
   @Override
@@ -281,103 +162,18 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
   @Override
   public @Nullable PropertyTypeNode getApplicationsExcludeNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:ApplicationsExclude (declaration i=15410, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "ApplicationsExclude");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:ApplicationsExclude"
-                    + " (declaration i=15410, owner i=15620) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:ApplicationsExclude (declaration i=15410, owner"
-                  + " i=15620) on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:ApplicationsExclude (declaration i=15410, owner"
-                  + " i=15620) on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:ApplicationsExclude (declaration i=15410, owner"
-                  + " i=15620) on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        return null;
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:ApplicationsExclude (declaration i=15410, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Variable) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:ApplicationsExclude (declaration i=15410, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof PropertyTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:ApplicationsExclude (declaration i=15410, owner i=15620)"
-              + " on "
-              + getNodeId());
-    }
-    return (PropertyTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "ApplicationsExclude",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            true,
+            "http://opcfoundation.org/UA/:ApplicationsExclude (declaration i=15410, owner"
+                + " i=15620)"));
   }
 
   @Override
@@ -408,103 +204,17 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
   @Override
   public @Nullable PropertyTypeNode getApplicationsNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:Applications (declaration i=16174, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "Applications");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:Applications (declaration"
-                    + " i=16174, owner i=15620) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:Applications (declaration i=16174, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:Applications (declaration i=16174, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:Applications (declaration i=16174, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        return null;
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:Applications (declaration i=16174, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Variable) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:Applications (declaration i=16174, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof PropertyTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:Applications (declaration i=16174, owner i=15620)"
-              + " on "
-              + getNodeId());
-    }
-    return (PropertyTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "Applications",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            true,
+            "http://opcfoundation.org/UA/:Applications (declaration i=16174, owner i=15620)"));
   }
 
   @Override
@@ -535,103 +245,17 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
   @Override
   public @Nullable PropertyTypeNode getEndpointsExcludeNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:EndpointsExclude (declaration i=15411, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "EndpointsExclude");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:EndpointsExclude (declaration"
-                    + " i=15411, owner i=15620) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:EndpointsExclude (declaration i=15411, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:EndpointsExclude (declaration i=15411, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:EndpointsExclude (declaration i=15411, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        return null;
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:EndpointsExclude (declaration i=15411, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Variable) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:EndpointsExclude (declaration i=15411, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof PropertyTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:EndpointsExclude (declaration i=15411, owner i=15620)"
-              + " on "
-              + getNodeId());
-    }
-    return (PropertyTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "EndpointsExclude",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            true,
+            "http://opcfoundation.org/UA/:EndpointsExclude (declaration i=15411, owner i=15620)"));
   }
 
   @Override
@@ -662,103 +286,17 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
   @Override
   public @Nullable PropertyTypeNode getEndpointsNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:Endpoints (declaration i=16175, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "Endpoints");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:Endpoints (declaration"
-                    + " i=16175, owner i=15620) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:Endpoints (declaration i=16175, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:Endpoints (declaration i=16175, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:Endpoints (declaration i=16175, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        return null;
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:Endpoints (declaration i=16175, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Variable) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:Endpoints (declaration i=16175, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof PropertyTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:Endpoints (declaration i=16175, owner i=15620)"
-              + " on "
-              + getNodeId());
-    }
-    return (PropertyTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "Endpoints",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            true,
+            "http://opcfoundation.org/UA/:Endpoints (declaration i=16175, owner i=15620)"));
   }
 
   @Override
@@ -771,28 +309,12 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
               + " on "
               + getNodeId());
     }
-    Object decoded =
-        ExtensionObject.decodeValue(
-            getNodeContext().getServer().getStaticEncodingContext(),
-            node.getValue().getValue().getValue());
-    if (decoded == null) {
-      return null;
-    }
-    if (!(decoded instanceof Object[] elements)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:Endpoints (declaration i=16175, owner i=15620)");
-    }
-    EndpointType[] typed = new EndpointType[elements.length];
-    for (int i = 0; i < elements.length; i++) {
-      if (elements[i] != null && !(elements[i] instanceof EndpointType)) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TypeMismatch,
-            "http://opcfoundation.org/UA/:Endpoints (declaration i=16175, owner i=15620)");
-      }
-      typed[i] = (EndpointType) elements[i];
-    }
-    return typed;
+    return ServerPropertyValues.decode(
+        getNodeContext().getServer().getStaticEncodingContext(),
+        node.getValue().getValue().getValue(),
+        EndpointType[].class,
+        EndpointType.class,
+        "http://opcfoundation.org/UA/:Endpoints (declaration i=16175, owner i=15620)");
   }
 
   @Override
@@ -810,103 +332,18 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
   @Override
   public @Nullable PropertyTypeNode getCustomConfigurationNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:CustomConfiguration (declaration i=24139, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "CustomConfiguration");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:CustomConfiguration"
-                    + " (declaration i=24139, owner i=15620) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:CustomConfiguration (declaration i=24139, owner"
-                  + " i=15620) on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:CustomConfiguration (declaration i=24139, owner"
-                  + " i=15620) on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:CustomConfiguration (declaration i=24139, owner"
-                  + " i=15620) on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        return null;
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:CustomConfiguration (declaration i=24139, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Variable) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:CustomConfiguration (declaration i=24139, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof PropertyTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:CustomConfiguration (declaration i=24139, owner i=15620)"
-              + " on "
-              + getNodeId());
-    }
-    return (PropertyTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "CustomConfiguration",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            true,
+            "http://opcfoundation.org/UA/:CustomConfiguration (declaration i=24139, owner"
+                + " i=15620)"));
   }
 
   @Override
@@ -937,107 +374,21 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
   @Override
   public @Nullable UaMethodNode getAddIdentityMethodNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:AddIdentity (declaration i=15624, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "AddIdentity");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:AddIdentity (declaration"
-                    + " i=15624, owner i=15620) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:AddIdentity (declaration i=15624, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:AddIdentity (declaration i=15624, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:AddIdentity (declaration i=15624, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        return null;
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:AddIdentity (declaration i=15624, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Method) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:AddIdentity (declaration i=15624, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof UaMethodNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:AddIdentity (declaration i=15624, owner i=15620)"
-              + " on "
-              + getNodeId());
-    }
-    return (UaMethodNode) parent;
+    return ServerMembers.lookup(
+        this,
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "AddIdentity",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            true,
+            "http://opcfoundation.org/UA/:AddIdentity (declaration i=15624, owner i=15620)"));
   }
 
   @Override
-  public MethodBinding bindAddIdentity(MethodBindings bindings, RoleTypeAddIdentityHandler handler)
+  public MethodBinding bindAddIdentity(MethodBindings bindings, RoleType.AddIdentityHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -1048,7 +399,7 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -1075,7 +426,10 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -1141,7 +495,7 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
   @Override
   public MethodBinding bindAddIdentityDetailed(
-      MethodBindings bindings, RoleTypeAddIdentityDetailedHandler handler) throws UaException {
+      MethodBindings bindings, RoleType.AddIdentityDetailedHandler handler) throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
     UaMethodNode methodNode = getAddIdentityMethodNode();
@@ -1151,7 +505,7 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -1178,7 +532,10 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -1255,108 +612,22 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
   @Override
   public @Nullable UaMethodNode getRemoveIdentityMethodNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:RemoveIdentity (declaration i=15626, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "RemoveIdentity");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:RemoveIdentity (declaration"
-                    + " i=15626, owner i=15620) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:RemoveIdentity (declaration i=15626, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:RemoveIdentity (declaration i=15626, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:RemoveIdentity (declaration i=15626, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        return null;
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:RemoveIdentity (declaration i=15626, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Method) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:RemoveIdentity (declaration i=15626, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof UaMethodNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:RemoveIdentity (declaration i=15626, owner i=15620)"
-              + " on "
-              + getNodeId());
-    }
-    return (UaMethodNode) parent;
+    return ServerMembers.lookup(
+        this,
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "RemoveIdentity",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            true,
+            "http://opcfoundation.org/UA/:RemoveIdentity (declaration i=15626, owner i=15620)"));
   }
 
   @Override
   public MethodBinding bindRemoveIdentity(
-      MethodBindings bindings, RoleTypeRemoveIdentityHandler handler) throws UaException {
+      MethodBindings bindings, RoleType.RemoveIdentityHandler handler) throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
     UaMethodNode methodNode = getRemoveIdentityMethodNode();
@@ -1366,7 +637,7 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -1393,7 +664,10 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -1459,7 +733,7 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
   @Override
   public MethodBinding bindRemoveIdentityDetailed(
-      MethodBindings bindings, RoleTypeRemoveIdentityDetailedHandler handler) throws UaException {
+      MethodBindings bindings, RoleType.RemoveIdentityDetailedHandler handler) throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
     UaMethodNode methodNode = getRemoveIdentityMethodNode();
@@ -1469,7 +743,7 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -1496,7 +770,10 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -1573,108 +850,22 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
   @Override
   public @Nullable UaMethodNode getAddApplicationMethodNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:AddApplication (declaration i=16176, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "AddApplication");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:AddApplication (declaration"
-                    + " i=16176, owner i=15620) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:AddApplication (declaration i=16176, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:AddApplication (declaration i=16176, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:AddApplication (declaration i=16176, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        return null;
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:AddApplication (declaration i=16176, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Method) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:AddApplication (declaration i=16176, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof UaMethodNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:AddApplication (declaration i=16176, owner i=15620)"
-              + " on "
-              + getNodeId());
-    }
-    return (UaMethodNode) parent;
+    return ServerMembers.lookup(
+        this,
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "AddApplication",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            true,
+            "http://opcfoundation.org/UA/:AddApplication (declaration i=16176, owner i=15620)"));
   }
 
   @Override
   public MethodBinding bindAddApplication(
-      MethodBindings bindings, RoleTypeAddApplicationHandler handler) throws UaException {
+      MethodBindings bindings, RoleType.AddApplicationHandler handler) throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
     UaMethodNode methodNode = getAddApplicationMethodNode();
@@ -1684,7 +875,7 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -1711,7 +902,10 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -1777,7 +971,7 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
   @Override
   public MethodBinding bindAddApplicationDetailed(
-      MethodBindings bindings, RoleTypeAddApplicationDetailedHandler handler) throws UaException {
+      MethodBindings bindings, RoleType.AddApplicationDetailedHandler handler) throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
     UaMethodNode methodNode = getAddApplicationMethodNode();
@@ -1787,7 +981,7 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -1814,7 +1008,10 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -1891,108 +1088,22 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
   @Override
   public @Nullable UaMethodNode getRemoveApplicationMethodNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:RemoveApplication (declaration i=16178, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "RemoveApplication");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:RemoveApplication (declaration"
-                    + " i=16178, owner i=15620) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:RemoveApplication (declaration i=16178, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:RemoveApplication (declaration i=16178, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:RemoveApplication (declaration i=16178, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        return null;
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:RemoveApplication (declaration i=16178, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Method) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:RemoveApplication (declaration i=16178, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof UaMethodNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:RemoveApplication (declaration i=16178, owner i=15620)"
-              + " on "
-              + getNodeId());
-    }
-    return (UaMethodNode) parent;
+    return ServerMembers.lookup(
+        this,
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "RemoveApplication",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            true,
+            "http://opcfoundation.org/UA/:RemoveApplication (declaration i=16178, owner i=15620)"));
   }
 
   @Override
   public MethodBinding bindRemoveApplication(
-      MethodBindings bindings, RoleTypeRemoveApplicationHandler handler) throws UaException {
+      MethodBindings bindings, RoleType.RemoveApplicationHandler handler) throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
     UaMethodNode methodNode = getRemoveApplicationMethodNode();
@@ -2002,7 +1113,7 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -2029,7 +1140,10 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -2095,7 +1209,7 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
   @Override
   public MethodBinding bindRemoveApplicationDetailed(
-      MethodBindings bindings, RoleTypeRemoveApplicationDetailedHandler handler)
+      MethodBindings bindings, RoleType.RemoveApplicationDetailedHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -2106,7 +1220,7 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -2133,7 +1247,10 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -2210,107 +1327,21 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
   @Override
   public @Nullable UaMethodNode getAddEndpointMethodNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:AddEndpoint (declaration i=16180, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "AddEndpoint");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:AddEndpoint (declaration"
-                    + " i=16180, owner i=15620) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:AddEndpoint (declaration i=16180, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:AddEndpoint (declaration i=16180, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:AddEndpoint (declaration i=16180, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        return null;
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:AddEndpoint (declaration i=16180, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Method) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:AddEndpoint (declaration i=16180, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof UaMethodNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:AddEndpoint (declaration i=16180, owner i=15620)"
-              + " on "
-              + getNodeId());
-    }
-    return (UaMethodNode) parent;
+    return ServerMembers.lookup(
+        this,
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "AddEndpoint",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            true,
+            "http://opcfoundation.org/UA/:AddEndpoint (declaration i=16180, owner i=15620)"));
   }
 
   @Override
-  public MethodBinding bindAddEndpoint(MethodBindings bindings, RoleTypeAddEndpointHandler handler)
+  public MethodBinding bindAddEndpoint(MethodBindings bindings, RoleType.AddEndpointHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -2321,7 +1352,7 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -2348,7 +1379,10 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -2414,7 +1448,7 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
   @Override
   public MethodBinding bindAddEndpointDetailed(
-      MethodBindings bindings, RoleTypeAddEndpointDetailedHandler handler) throws UaException {
+      MethodBindings bindings, RoleType.AddEndpointDetailedHandler handler) throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
     UaMethodNode methodNode = getAddEndpointMethodNode();
@@ -2424,7 +1458,7 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -2451,7 +1485,10 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -2528,108 +1565,22 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
   @Override
   public @Nullable UaMethodNode getRemoveEndpointMethodNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:RemoveEndpoint (declaration i=16182, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "RemoveEndpoint");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:RemoveEndpoint (declaration"
-                    + " i=16182, owner i=15620) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:RemoveEndpoint (declaration i=16182, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:RemoveEndpoint (declaration i=16182, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:RemoveEndpoint (declaration i=16182, owner i=15620)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        return null;
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:RemoveEndpoint (declaration i=16182, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Method) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:RemoveEndpoint (declaration i=16182, owner i=15620)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof UaMethodNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:RemoveEndpoint (declaration i=16182, owner i=15620)"
-              + " on "
-              + getNodeId());
-    }
-    return (UaMethodNode) parent;
+    return ServerMembers.lookup(
+        this,
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "RemoveEndpoint",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            true,
+            "http://opcfoundation.org/UA/:RemoveEndpoint (declaration i=16182, owner i=15620)"));
   }
 
   @Override
   public MethodBinding bindRemoveEndpoint(
-      MethodBindings bindings, RoleTypeRemoveEndpointHandler handler) throws UaException {
+      MethodBindings bindings, RoleType.RemoveEndpointHandler handler) throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
     UaMethodNode methodNode = getRemoveEndpointMethodNode();
@@ -2639,7 +1590,7 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -2666,7 +1617,10 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -2732,7 +1686,7 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
   @Override
   public MethodBinding bindRemoveEndpointDetailed(
-      MethodBindings bindings, RoleTypeRemoveEndpointDetailedHandler handler) throws UaException {
+      MethodBindings bindings, RoleType.RemoveEndpointDetailedHandler handler) throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
     UaMethodNode methodNode = getRemoveEndpointMethodNode();
@@ -2742,7 +1696,7 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -2769,7 +1723,10 @@ public class RoleTypeNode extends BaseObjectTypeNode implements RoleType {
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);

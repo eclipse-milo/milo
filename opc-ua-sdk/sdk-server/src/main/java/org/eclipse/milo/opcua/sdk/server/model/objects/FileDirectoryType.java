@@ -10,259 +10,245 @@
 
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
+import com.digitalpetri.opcua.uanodeset.runtime.methods.MethodHandlerResult;
+import org.eclipse.milo.opcua.sdk.core.model.methods.FileDirectoryTypeCreateFileOutputs;
 import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodBinding;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodBindings;
-import org.eclipse.milo.opcua.sdk.server.model.methods.FileDirectoryTypeCreateDirectoryDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.FileDirectoryTypeCreateDirectoryHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.FileDirectoryTypeCreateFileDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.FileDirectoryTypeCreateFileHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.FileDirectoryTypeDeleteFileSystemObjectDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.FileDirectoryTypeDeleteFileSystemObjectHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.FileDirectoryTypeMoveOrCopyDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.FileDirectoryTypeMoveOrCopyHandler;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.1">https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.1</a>
+ * @see com.digitalpetri.opcua.uanodeset.runtime.members
  */
 public interface FileDirectoryType extends FolderType {
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.3
    *
-   * <p>Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   * <p>Returns the required node.
    *
-   * @return the existing member
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the required node.
    */
   MethodNode getCreateDirectoryMethodNode();
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.3
+   * https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.3 Binds a synchronous callback
+   * for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
-  MethodBinding bindCreateDirectory(
-      MethodBindings bindings, FileDirectoryTypeCreateDirectoryHandler handler) throws UaException;
+  MethodBinding bindCreateDirectory(MethodBindings bindings, CreateDirectoryHandler handler)
+      throws UaException;
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.3
+   * https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.3 Binds a synchronous callback
+   * for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
   MethodBinding bindCreateDirectoryDetailed(
-      MethodBindings bindings, FileDirectoryTypeCreateDirectoryDetailedHandler handler)
-      throws UaException;
+      MethodBindings bindings, CreateDirectoryDetailedHandler handler) throws UaException;
 
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.4
    *
-   * <p>Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   * <p>Returns the required node.
    *
-   * @return the existing member
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the required node.
    */
   MethodNode getCreateFileMethodNode();
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.4
+   * https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.4 Binds a synchronous callback
+   * for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
-  MethodBinding bindCreateFile(MethodBindings bindings, FileDirectoryTypeCreateFileHandler handler)
+  MethodBinding bindCreateFile(MethodBindings bindings, CreateFileHandler handler)
       throws UaException;
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.4
+   * https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.4 Binds a synchronous callback
+   * for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
-  MethodBinding bindCreateFileDetailed(
-      MethodBindings bindings, FileDirectoryTypeCreateFileDetailedHandler handler)
+  MethodBinding bindCreateFileDetailed(MethodBindings bindings, CreateFileDetailedHandler handler)
       throws UaException;
 
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.5
    *
-   * <p>Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   * <p>Returns the required node.
    *
-   * @return the existing member
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the required node.
    */
   MethodNode getDeleteFileSystemObjectMethodNode();
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.5
+   * https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.5 Binds a synchronous callback
+   * for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
   MethodBinding bindDeleteFileSystemObject(
-      MethodBindings bindings, FileDirectoryTypeDeleteFileSystemObjectHandler handler)
-      throws UaException;
+      MethodBindings bindings, DeleteFileSystemObjectHandler handler) throws UaException;
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.5
+   * https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.5 Binds a synchronous callback
+   * for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
   MethodBinding bindDeleteFileSystemObjectDetailed(
-      MethodBindings bindings, FileDirectoryTypeDeleteFileSystemObjectDetailedHandler handler)
-      throws UaException;
+      MethodBindings bindings, DeleteFileSystemObjectDetailedHandler handler) throws UaException;
 
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.6
    *
-   * <p>Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   * <p>Returns the required node.
    *
-   * @return the existing member
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the required node.
    */
   MethodNode getMoveOrCopyMethodNode();
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.6
+   * https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.6 Binds a synchronous callback
+   * for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
-  MethodBinding bindMoveOrCopy(MethodBindings bindings, FileDirectoryTypeMoveOrCopyHandler handler)
+  MethodBinding bindMoveOrCopy(MethodBindings bindings, MoveOrCopyHandler handler)
       throws UaException;
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.6
+   * https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.6 Binds a synchronous callback
+   * for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
-  MethodBinding bindMoveOrCopyDetailed(
-      MethodBindings bindings, FileDirectoryTypeMoveOrCopyDetailedHandler handler)
+  MethodBinding bindMoveOrCopyDetailed(MethodBindings bindings, MoveOrCopyDetailedHandler handler)
       throws UaException;
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.3 */
+  @FunctionalInterface
+  interface CreateDirectoryHandler {
+    /**
+     * @return the output value, including null
+     * @throws UaException for an operation failure
+     */
+    @Nullable NodeId invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable String directoryName)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.3 */
+  @FunctionalInterface
+  interface CreateDirectoryDetailedHandler {
+    /**
+     * @return a non-null complete operation outcome
+     * @throws UaException for an operation failure
+     */
+    MethodHandlerResult<@Nullable NodeId> invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable String directoryName)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.4 */
+  @FunctionalInterface
+  interface CreateFileHandler {
+    /**
+     * @return a non-null container holding all output values
+     * @throws UaException for an operation failure
+     */
+    FileDirectoryTypeCreateFileOutputs invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable String fileName,
+        @Nullable Boolean requestFileOpen)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.4 */
+  @FunctionalInterface
+  interface CreateFileDetailedHandler {
+    /**
+     * @return a non-null complete operation outcome
+     * @throws UaException for an operation failure
+     */
+    MethodHandlerResult<FileDirectoryTypeCreateFileOutputs> invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable String fileName,
+        @Nullable Boolean requestFileOpen)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.5 */
+  @FunctionalInterface
+  interface DeleteFileSystemObjectHandler {
+    /**
+     * @throws UaException for an operation failure
+     */
+    void invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable NodeId objectToDelete)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.5 */
+  @FunctionalInterface
+  interface DeleteFileSystemObjectDetailedHandler {
+    /**
+     * @return a non-null complete operation outcome
+     * @throws UaException for an operation failure
+     */
+    MethodHandlerResult<@Nullable Void> invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable NodeId objectToDelete)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.6 */
+  @FunctionalInterface
+  interface MoveOrCopyHandler {
+    /**
+     * @return the output value, including null
+     * @throws UaException for an operation failure
+     */
+    @Nullable NodeId invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable NodeId objectToMoveOrCopy,
+        @Nullable NodeId targetDirectory,
+        @Nullable Boolean createCopy,
+        @Nullable String newName)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part20/4.3.6 */
+  @FunctionalInterface
+  interface MoveOrCopyDetailedHandler {
+    /**
+     * @return a non-null complete operation outcome
+     * @throws UaException for an operation failure
+     */
+    MethodHandlerResult<@Nullable NodeId> invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable NodeId objectToMoveOrCopy,
+        @Nullable NodeId targetDirectory,
+        @Nullable Boolean createCopy,
+        @Nullable String newName)
+        throws UaException;
+  }
 }

@@ -10,134 +10,127 @@
 
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
+import com.digitalpetri.opcua.uanodeset.runtime.methods.MethodHandlerResult;
 import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodBinding;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodBindings;
-import org.eclipse.milo.opcua.sdk.server.model.methods.RoleSetTypeAddRoleDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.RoleSetTypeAddRoleHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.RoleSetTypeRemoveRoleDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.RoleSetTypeRemoveRoleHandler;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part18/4.2.1">https://reference.opcfoundation.org/v105/Core/docs/Part18/4.2.1</a>
+ * @see com.digitalpetri.opcua.uanodeset.runtime.members
  */
 public interface RoleSetType extends BaseObjectType {
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/4.2.2
    *
-   * <p>Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   * <p>Returns the required node.
    *
-   * @return the existing member
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the required node.
    */
   MethodNode getAddRoleMethodNode();
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part18/4.2.2
+   * https://reference.opcfoundation.org/v105/Core/docs/Part18/4.2.2 Binds a synchronous callback
+   * for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
-  MethodBinding bindAddRole(MethodBindings bindings, RoleSetTypeAddRoleHandler handler)
-      throws UaException;
+  MethodBinding bindAddRole(MethodBindings bindings, AddRoleHandler handler) throws UaException;
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part18/4.2.2
+   * https://reference.opcfoundation.org/v105/Core/docs/Part18/4.2.2 Binds a synchronous callback
+   * for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
-  MethodBinding bindAddRoleDetailed(
-      MethodBindings bindings, RoleSetTypeAddRoleDetailedHandler handler) throws UaException;
+  MethodBinding bindAddRoleDetailed(MethodBindings bindings, AddRoleDetailedHandler handler)
+      throws UaException;
 
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/4.2.3
    *
-   * <p>Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   * <p>Returns the required node.
    *
-   * @return the existing member
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the required node.
    */
   MethodNode getRemoveRoleMethodNode();
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part18/4.2.3
+   * https://reference.opcfoundation.org/v105/Core/docs/Part18/4.2.3 Binds a synchronous callback
+   * for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
-  MethodBinding bindRemoveRole(MethodBindings bindings, RoleSetTypeRemoveRoleHandler handler)
+  MethodBinding bindRemoveRole(MethodBindings bindings, RemoveRoleHandler handler)
       throws UaException;
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part18/4.2.3
+   * https://reference.opcfoundation.org/v105/Core/docs/Part18/4.2.3 Binds a synchronous callback
+   * for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
-  MethodBinding bindRemoveRoleDetailed(
-      MethodBindings bindings, RoleSetTypeRemoveRoleDetailedHandler handler) throws UaException;
+  MethodBinding bindRemoveRoleDetailed(MethodBindings bindings, RemoveRoleDetailedHandler handler)
+      throws UaException;
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part18/4.2.2 */
+  @FunctionalInterface
+  interface AddRoleHandler {
+    /**
+     * @return the output value, including null
+     * @throws UaException for an operation failure
+     */
+    @Nullable NodeId invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable String roleName,
+        @Nullable String namespaceUri)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part18/4.2.2 */
+  @FunctionalInterface
+  interface AddRoleDetailedHandler {
+    /**
+     * @return a non-null complete operation outcome
+     * @throws UaException for an operation failure
+     */
+    MethodHandlerResult<@Nullable NodeId> invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable String roleName,
+        @Nullable String namespaceUri)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part18/4.2.3 */
+  @FunctionalInterface
+  interface RemoveRoleHandler {
+    /**
+     * @throws UaException for an operation failure
+     */
+    void invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable NodeId roleNodeId)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part18/4.2.3 */
+  @FunctionalInterface
+  interface RemoveRoleDetailedHandler {
+    /**
+     * @return a non-null complete operation outcome
+     * @throws UaException for an operation failure
+     */
+    MethodHandlerResult<@Nullable Void> invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable NodeId roleNodeId)
+        throws UaException;
+  }
 }

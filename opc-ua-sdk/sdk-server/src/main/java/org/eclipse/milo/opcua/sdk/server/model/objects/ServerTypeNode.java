@@ -10,33 +10,23 @@
 
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
+import com.digitalpetri.opcua.uanodeset.runtime.members.MemberDeclaration;
+import com.digitalpetri.opcua.uanodeset.runtime.server.ServerMembers;
+import com.digitalpetri.opcua.uanodeset.runtime.server.ServerPropertyValues;
+import com.digitalpetri.opcua.uanodeset.runtime.values.NumericValues;
 import java.lang.reflect.Array;
-import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
 import java.util.Objects;
 import java.util.Optional;
 import org.eclipse.milo.opcua.sdk.core.model.methods.ServerTypeGetMonitoredItemsOutputs;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
-import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.methods.InvalidArgumentException;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodBinding;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodBindings;
-import org.eclipse.milo.opcua.sdk.server.model.methods.ServerTypeGetMonitoredItemsDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.ServerTypeGetMonitoredItemsHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.ServerTypeRequestServerStateChangeDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.ServerTypeRequestServerStateChangeHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.ServerTypeResendDataDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.ServerTypeResendDataHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.ServerTypeSetSubscriptionDurableDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.ServerTypeSetSubscriptionDurableHandler;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.ServerStatusTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
@@ -45,7 +35,6 @@ import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
-import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -55,13 +44,11 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UNumber;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ServerState;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
@@ -141,107 +128,17 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
 
   @Override
   public PropertyTypeNode getServerArrayNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:ServerArray (declaration i=2005, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "ServerArray");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:ServerArray (declaration"
-                    + " i=2005, owner i=2004) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:ServerArray (declaration i=2005, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:ServerArray (declaration i=2005, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:ServerArray (declaration i=2005, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:ServerArray (declaration i=2005, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:ServerArray (declaration i=2005, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Variable) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:ServerArray (declaration i=2005, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof PropertyTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:ServerArray (declaration i=2005, owner i=2004)"
-              + " on "
-              + getNodeId());
-    }
-    return (PropertyTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "ServerArray",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            false,
+            "http://opcfoundation.org/UA/:ServerArray (declaration i=2005, owner i=2004)"));
   }
 
   @Override
@@ -272,107 +169,17 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
 
   @Override
   public PropertyTypeNode getNamespaceArrayNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:NamespaceArray (declaration i=2006, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "NamespaceArray");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:NamespaceArray (declaration"
-                    + " i=2006, owner i=2004) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:NamespaceArray (declaration i=2006, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:NamespaceArray (declaration i=2006, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:NamespaceArray (declaration i=2006, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:NamespaceArray (declaration i=2006, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:NamespaceArray (declaration i=2006, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Variable) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:NamespaceArray (declaration i=2006, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof PropertyTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:NamespaceArray (declaration i=2006, owner i=2004)"
-              + " on "
-              + getNodeId());
-    }
-    return (PropertyTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "NamespaceArray",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            false,
+            "http://opcfoundation.org/UA/:NamespaceArray (declaration i=2006, owner i=2004)"));
   }
 
   @Override
@@ -403,103 +210,17 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
 
   @Override
   public @Nullable PropertyTypeNode getUrisVersionNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:UrisVersion (declaration i=15003, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "UrisVersion");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:UrisVersion (declaration"
-                    + " i=15003, owner i=2004) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:UrisVersion (declaration i=15003, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:UrisVersion (declaration i=15003, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:UrisVersion (declaration i=15003, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        return null;
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:UrisVersion (declaration i=15003, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Variable) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:UrisVersion (declaration i=15003, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof PropertyTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:UrisVersion (declaration i=15003, owner i=2004)"
-              + " on "
-              + getNodeId());
-    }
-    return (PropertyTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "UrisVersion",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            true,
+            "http://opcfoundation.org/UA/:UrisVersion (declaration i=15003, owner i=2004)"));
   }
 
   @Override
@@ -530,107 +251,17 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
 
   @Override
   public PropertyTypeNode getServiceLevelNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:ServiceLevel (declaration i=2008, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "ServiceLevel");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:ServiceLevel (declaration"
-                    + " i=2008, owner i=2004) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:ServiceLevel (declaration i=2008, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:ServiceLevel (declaration i=2008, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:ServiceLevel (declaration i=2008, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:ServiceLevel (declaration i=2008, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:ServiceLevel (declaration i=2008, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Variable) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:ServiceLevel (declaration i=2008, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof PropertyTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:ServiceLevel (declaration i=2008, owner i=2004)"
-              + " on "
-              + getNodeId());
-    }
-    return (PropertyTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "ServiceLevel",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            false,
+            "http://opcfoundation.org/UA/:ServiceLevel (declaration i=2008, owner i=2004)"));
   }
 
   @Override
@@ -661,107 +292,17 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
 
   @Override
   public PropertyTypeNode getAuditingNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:Auditing (declaration i=2742, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "Auditing");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:Auditing (declaration i=2742,"
-                    + " owner i=2004) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:Auditing (declaration i=2742, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:Auditing (declaration i=2742, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:Auditing (declaration i=2742, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:Auditing (declaration i=2742, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:Auditing (declaration i=2742, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Variable) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:Auditing (declaration i=2742, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof PropertyTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:Auditing (declaration i=2742, owner i=2004)"
-              + " on "
-              + getNodeId());
-    }
-    return (PropertyTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "Auditing",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            false,
+            "http://opcfoundation.org/UA/:Auditing (declaration i=2742, owner i=2004)"));
   }
 
   @Override
@@ -792,103 +333,18 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
 
   @Override
   public @Nullable PropertyTypeNode getEstimatedReturnTimeNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:EstimatedReturnTime (declaration i=12882, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "EstimatedReturnTime");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:EstimatedReturnTime"
-                    + " (declaration i=12882, owner i=2004) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:EstimatedReturnTime (declaration i=12882, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:EstimatedReturnTime (declaration i=12882, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:EstimatedReturnTime (declaration i=12882, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        return null;
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:EstimatedReturnTime (declaration i=12882, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Variable) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:EstimatedReturnTime (declaration i=12882, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof PropertyTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:EstimatedReturnTime (declaration i=12882, owner i=2004)"
-              + " on "
-              + getNodeId());
-    }
-    return (PropertyTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "EstimatedReturnTime",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            true,
+            "http://opcfoundation.org/UA/:EstimatedReturnTime (declaration i=12882, owner"
+                + " i=2004)"));
   }
 
   @Override
@@ -919,103 +375,17 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
 
   @Override
   public @Nullable PropertyTypeNode getLocalTimeNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=46").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:LocalTime (declaration i=17612, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "LocalTime");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:LocalTime (declaration"
-                    + " i=17612, owner i=2004) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:LocalTime (declaration i=17612, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:LocalTime (declaration i=17612, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:LocalTime (declaration i=17612, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        return null;
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:LocalTime (declaration i=17612, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Variable) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:LocalTime (declaration i=17612, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof PropertyTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:LocalTime (declaration i=17612, owner i=2004)"
-              + " on "
-              + getNodeId());
-    }
-    return (PropertyTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        PropertyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "LocalTime",
+            ExpandedNodeId.parse("i=46"),
+            true,
+            NodeClass.Variable,
+            true,
+            "http://opcfoundation.org/UA/:LocalTime (declaration i=17612, owner i=2004)"));
   }
 
   @Override
@@ -1028,19 +398,12 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
               + " on "
               + getNodeId());
     }
-    Object decoded =
-        ExtensionObject.decodeValue(
-            getNodeContext().getServer().getStaticEncodingContext(),
-            node.getValue().getValue().getValue());
-    if (decoded == null) {
-      return null;
-    }
-    if (!(decoded instanceof TimeZoneDataType)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:LocalTime (declaration i=17612, owner i=2004)");
-    }
-    return (TimeZoneDataType) decoded;
+    return ServerPropertyValues.decode(
+        getNodeContext().getServer().getStaticEncodingContext(),
+        node.getValue().getValue().getValue(),
+        TimeZoneDataType.class,
+        TimeZoneDataType.class,
+        "http://opcfoundation.org/UA/:LocalTime (declaration i=17612, owner i=2004)");
   }
 
   @Override
@@ -1058,107 +421,17 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
 
   @Override
   public ServerStatusTypeNode getServerStatusNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:ServerStatus (declaration i=2007, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "ServerStatus");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:ServerStatus (declaration"
-                    + " i=2007, owner i=2004) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:ServerStatus (declaration i=2007, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:ServerStatus (declaration i=2007, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:ServerStatus (declaration i=2007, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:ServerStatus (declaration i=2007, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:ServerStatus (declaration i=2007, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Variable) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:ServerStatus (declaration i=2007, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof ServerStatusTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:ServerStatus (declaration i=2007, owner i=2004)"
-              + " on "
-              + getNodeId());
-    }
-    return (ServerStatusTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        ServerStatusTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "ServerStatus",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Variable,
+            false,
+            "http://opcfoundation.org/UA/:ServerStatus (declaration i=2007, owner i=2004)"));
   }
 
   @Override
@@ -1189,629 +462,97 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
 
   @Override
   public ServerCapabilitiesTypeNode getServerCapabilitiesNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:ServerCapabilities (declaration i=2009, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "ServerCapabilities");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:ServerCapabilities"
-                    + " (declaration i=2009, owner i=2004) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:ServerCapabilities (declaration i=2009, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:ServerCapabilities (declaration i=2009, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:ServerCapabilities (declaration i=2009, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:ServerCapabilities (declaration i=2009, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:ServerCapabilities (declaration i=2009, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Object) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:ServerCapabilities (declaration i=2009, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof ServerCapabilitiesTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:ServerCapabilities (declaration i=2009, owner i=2004)"
-              + " on "
-              + getNodeId());
-    }
-    return (ServerCapabilitiesTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        ServerCapabilitiesTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "ServerCapabilities",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Object,
+            false,
+            "http://opcfoundation.org/UA/:ServerCapabilities (declaration i=2009, owner i=2004)"));
   }
 
   @Override
   public ServerDiagnosticsTypeNode getServerDiagnosticsNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:ServerDiagnostics (declaration i=2010, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "ServerDiagnostics");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:ServerDiagnostics (declaration"
-                    + " i=2010, owner i=2004) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:ServerDiagnostics (declaration i=2010, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:ServerDiagnostics (declaration i=2010, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:ServerDiagnostics (declaration i=2010, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:ServerDiagnostics (declaration i=2010, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:ServerDiagnostics (declaration i=2010, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Object) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:ServerDiagnostics (declaration i=2010, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof ServerDiagnosticsTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:ServerDiagnostics (declaration i=2010, owner i=2004)"
-              + " on "
-              + getNodeId());
-    }
-    return (ServerDiagnosticsTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        ServerDiagnosticsTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "ServerDiagnostics",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Object,
+            false,
+            "http://opcfoundation.org/UA/:ServerDiagnostics (declaration i=2010, owner i=2004)"));
   }
 
   @Override
   public VendorServerInfoTypeNode getVendorServerInfoNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:VendorServerInfo (declaration i=2011, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "VendorServerInfo");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:VendorServerInfo (declaration"
-                    + " i=2011, owner i=2004) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:VendorServerInfo (declaration i=2011, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:VendorServerInfo (declaration i=2011, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:VendorServerInfo (declaration i=2011, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:VendorServerInfo (declaration i=2011, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:VendorServerInfo (declaration i=2011, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Object) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:VendorServerInfo (declaration i=2011, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof VendorServerInfoTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:VendorServerInfo (declaration i=2011, owner i=2004)"
-              + " on "
-              + getNodeId());
-    }
-    return (VendorServerInfoTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        VendorServerInfoTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "VendorServerInfo",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Object,
+            false,
+            "http://opcfoundation.org/UA/:VendorServerInfo (declaration i=2011, owner i=2004)"));
   }
 
   @Override
   public ServerRedundancyTypeNode getServerRedundancyNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:ServerRedundancy (declaration i=2012, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "ServerRedundancy");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:ServerRedundancy (declaration"
-                    + " i=2012, owner i=2004) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:ServerRedundancy (declaration i=2012, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:ServerRedundancy (declaration i=2012, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:ServerRedundancy (declaration i=2012, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:ServerRedundancy (declaration i=2012, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:ServerRedundancy (declaration i=2012, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Object) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:ServerRedundancy (declaration i=2012, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof ServerRedundancyTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:ServerRedundancy (declaration i=2012, owner i=2004)"
-              + " on "
-              + getNodeId());
-    }
-    return (ServerRedundancyTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        ServerRedundancyTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "ServerRedundancy",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Object,
+            false,
+            "http://opcfoundation.org/UA/:ServerRedundancy (declaration i=2012, owner i=2004)"));
   }
 
   @Override
   public @Nullable NamespacesTypeNode getNamespacesNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:Namespaces (declaration i=11527, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "Namespaces");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:Namespaces (declaration"
-                    + " i=11527, owner i=2004) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:Namespaces (declaration i=11527, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:Namespaces (declaration i=11527, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:Namespaces (declaration i=11527, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        return null;
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:Namespaces (declaration i=11527, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Object) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:Namespaces (declaration i=11527, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof NamespacesTypeNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:Namespaces (declaration i=11527, owner i=2004)"
-              + " on "
-              + getNodeId());
-    }
-    return (NamespacesTypeNode) parent;
+    return ServerMembers.lookup(
+        this,
+        NamespacesTypeNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "Namespaces",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Object,
+            true,
+            "http://opcfoundation.org/UA/:Namespaces (declaration i=11527, owner i=2004)"));
   }
 
   @Override
   public @Nullable UaMethodNode getGetMonitoredItemsMethodNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:GetMonitoredItems (declaration i=11489, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "GetMonitoredItems");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:GetMonitoredItems (declaration"
-                    + " i=11489, owner i=2004) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:GetMonitoredItems (declaration i=11489, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:GetMonitoredItems (declaration i=11489, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:GetMonitoredItems (declaration i=11489, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        return null;
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:GetMonitoredItems (declaration i=11489, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Method) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:GetMonitoredItems (declaration i=11489, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof UaMethodNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:GetMonitoredItems (declaration i=11489, owner i=2004)"
-              + " on "
-              + getNodeId());
-    }
-    return (UaMethodNode) parent;
+    return ServerMembers.lookup(
+        this,
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "GetMonitoredItems",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            true,
+            "http://opcfoundation.org/UA/:GetMonitoredItems (declaration i=11489, owner i=2004)"));
   }
 
   @Override
   public MethodBinding bindGetMonitoredItems(
-      MethodBindings bindings, ServerTypeGetMonitoredItemsHandler handler) throws UaException {
+      MethodBindings bindings, ServerType.GetMonitoredItemsHandler handler) throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
     UaMethodNode methodNode = getGetMonitoredItemsMethodNode();
@@ -1821,7 +562,7 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -1865,7 +606,10 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -1950,68 +694,8 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
                               + " is unavailable in the effective type tree; resolved DataType: "
                               + argumentDataTypeId);
                     }
-                    Object numericElements =
-                        methodValue instanceof Matrix
-                            ? ((Matrix) methodValue).getElements()
-                            : methodValue;
-                    if (numericElements != null
-                        && numericElements.getClass().isArray()
-                        && (numericElements.getClass().getComponentType() == Number.class
-                            || numericElements.getClass().getComponentType() == UNumber.class)
-                        && (argumentDataTypeId.equals(NodeIds.Number)
-                            || dataTypeTree.isSubtypeOf(argumentDataTypeId, NodeIds.Number))) {
-                      Class<?> numericElementType = null;
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Object numericElement = Array.get(numericElements, numericIndex);
-                        if (numericElement != null) {
-                          if (numericElementType != null
-                              && numericElementType != numericElement.getClass()) {
-                            throw new UaException(
-                                StatusCodes.Bad_TypeMismatch,
-                                "An abstract numeric array requires one homogeneous wire element"
-                                    + " type");
-                          }
-                          numericElementType = numericElement.getClass();
-                        }
-                      }
-                      if (numericElementType == null) {
-                        numericElementType = dataTypeTree.getBackingClass(argumentDataTypeId);
-                      }
-                      if (numericElementType == Number.class
-                          || numericElementType == UNumber.class) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "An empty or all-null abstract numeric array requires a concretely"
-                                + " typed array");
-                      }
-                      Object numericArray =
-                          Array.newInstance(numericElementType, Array.getLength(numericElements));
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Array.set(
-                            numericArray, numericIndex, Array.get(numericElements, numericIndex));
-                      }
-                      if (methodValue instanceof Matrix) {
-                        methodValue =
-                            new Matrix(
-                                numericArray,
-                                ((Matrix) methodValue).getDimensions().clone(),
-                                ((Matrix) methodValue)
-                                    .getDataType()
-                                    .orElseThrow(
-                                        () ->
-                                            new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "A numeric Matrix requires an explicit wire"
-                                                    + " DataType")),
-                                ((Matrix) methodValue).getDataTypeId().orElse(null));
-                      } else {
-                        methodValue = numericArray;
-                      }
-                    }
+                    methodValue =
+                        NumericValues.normalize(methodValue, dataTypeTree, argumentDataTypeId);
                     if (methodValue != null) {
                       Object shapeElements =
                           methodValue instanceof Matrix
@@ -2232,97 +916,7 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
                   Object wireValue = convertedValue;
                   Object wireElements =
                       wireValue instanceof Matrix ? ((Matrix) wireValue).getElements() : wireValue;
-                  var numericWireValues = new ArrayDeque<Object[]>();
-                  var numericWirePath =
-                      Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());
-                  if (wireValue != null) {
-                    numericWireValues.push(new Object[] {wireValue, false});
-                  }
-                  while (!numericWireValues.isEmpty()) {
-                    Object[] numericWireFrame = numericWireValues.pop();
-                    Object numericWireValue = numericWireFrame[0];
-                    if ((Boolean) numericWireFrame[1]) {
-                      numericWirePath.remove(numericWireValue);
-                      continue;
-                    }
-                    while (numericWireValue instanceof Variant
-                        || numericWireValue instanceof DataValue) {
-                      if (numericWireValue instanceof DataValue) {
-                        if (((DataValue) numericWireValue).getValue() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a value wrapper; use Variant.NULL_VALUE for"
-                                  + " null");
-                        }
-                        if (((DataValue) numericWireValue).getStatusCode() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a StatusCode; use StatusCode.GOOD for Good");
-                        }
-                        numericWireValue = ((DataValue) numericWireValue).getValue();
-                      } else {
-                        numericWireValue = ((Variant) numericWireValue).getValue();
-                      }
-                    }
-                    if (numericWireValue instanceof Matrix) {
-                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                    }
-                    if (numericWireValue != null && numericWireValue.getClass().isArray()) {
-                      if (!numericWirePath.add(numericWireValue)) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "Cyclic Variant arrays cannot be encoded");
-                      }
-                      numericWireValues.push(new Object[] {numericWireValue, true});
-                      for (int numericWireIndex = 0;
-                          numericWireIndex < Array.getLength(numericWireValue);
-                          numericWireIndex++) {
-                        Object numericWireElement = Array.get(numericWireValue, numericWireIndex);
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Variant.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Variant wire array requires a wrapper for every element; use"
-                                  + " Variant.NULL_VALUE for null");
-                        }
-                        if (numericWireElement == null
-                            && (UaEnumeratedType.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue))
-                                || OptionSetUInteger.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "An enum or OptionSet wire array cannot encode a null element");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Boolean.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Boolean wire array cannot retain a null element; Milo encodes it"
-                                  + " as false");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == StatusCode.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A StatusCode wire array cannot retain a null element; Milo encodes"
-                                  + " it as Good");
-                        }
-                        if (numericWireElement == null
-                            && Number.class.isAssignableFrom(
-                                ArrayUtil.getBoxedType(numericWireValue))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A numeric wire array cannot retain a null element; Milo encodes it"
-                                  + " as zero");
-                        }
-                        if (numericWireElement instanceof Variant
-                            || numericWireElement instanceof DataValue) {
-                          numericWireValues.push(new Object[] {numericWireElement, false});
-                        }
-                      }
-                    }
-                  }
+                  NumericValues.requireEncodable(wireValue);
                   wireValue =
                       ExtensionObject.encodeValue(
                           context.getServer().getStaticEncodingContext(), wireValue);
@@ -2364,68 +958,8 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
                               + " is unavailable in the effective type tree; resolved DataType: "
                               + argumentDataTypeId);
                     }
-                    Object numericElements =
-                        methodValue instanceof Matrix
-                            ? ((Matrix) methodValue).getElements()
-                            : methodValue;
-                    if (numericElements != null
-                        && numericElements.getClass().isArray()
-                        && (numericElements.getClass().getComponentType() == Number.class
-                            || numericElements.getClass().getComponentType() == UNumber.class)
-                        && (argumentDataTypeId.equals(NodeIds.Number)
-                            || dataTypeTree.isSubtypeOf(argumentDataTypeId, NodeIds.Number))) {
-                      Class<?> numericElementType = null;
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Object numericElement = Array.get(numericElements, numericIndex);
-                        if (numericElement != null) {
-                          if (numericElementType != null
-                              && numericElementType != numericElement.getClass()) {
-                            throw new UaException(
-                                StatusCodes.Bad_TypeMismatch,
-                                "An abstract numeric array requires one homogeneous wire element"
-                                    + " type");
-                          }
-                          numericElementType = numericElement.getClass();
-                        }
-                      }
-                      if (numericElementType == null) {
-                        numericElementType = dataTypeTree.getBackingClass(argumentDataTypeId);
-                      }
-                      if (numericElementType == Number.class
-                          || numericElementType == UNumber.class) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "An empty or all-null abstract numeric array requires a concretely"
-                                + " typed array");
-                      }
-                      Object numericArray =
-                          Array.newInstance(numericElementType, Array.getLength(numericElements));
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Array.set(
-                            numericArray, numericIndex, Array.get(numericElements, numericIndex));
-                      }
-                      if (methodValue instanceof Matrix) {
-                        methodValue =
-                            new Matrix(
-                                numericArray,
-                                ((Matrix) methodValue).getDimensions().clone(),
-                                ((Matrix) methodValue)
-                                    .getDataType()
-                                    .orElseThrow(
-                                        () ->
-                                            new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "A numeric Matrix requires an explicit wire"
-                                                    + " DataType")),
-                                ((Matrix) methodValue).getDataTypeId().orElse(null));
-                      } else {
-                        methodValue = numericArray;
-                      }
-                    }
+                    methodValue =
+                        NumericValues.normalize(methodValue, dataTypeTree, argumentDataTypeId);
                     if (methodValue != null) {
                       Object shapeElements =
                           methodValue instanceof Matrix
@@ -2646,97 +1180,7 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
                   Object wireValue = convertedValue;
                   Object wireElements =
                       wireValue instanceof Matrix ? ((Matrix) wireValue).getElements() : wireValue;
-                  var numericWireValues = new ArrayDeque<Object[]>();
-                  var numericWirePath =
-                      Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());
-                  if (wireValue != null) {
-                    numericWireValues.push(new Object[] {wireValue, false});
-                  }
-                  while (!numericWireValues.isEmpty()) {
-                    Object[] numericWireFrame = numericWireValues.pop();
-                    Object numericWireValue = numericWireFrame[0];
-                    if ((Boolean) numericWireFrame[1]) {
-                      numericWirePath.remove(numericWireValue);
-                      continue;
-                    }
-                    while (numericWireValue instanceof Variant
-                        || numericWireValue instanceof DataValue) {
-                      if (numericWireValue instanceof DataValue) {
-                        if (((DataValue) numericWireValue).getValue() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a value wrapper; use Variant.NULL_VALUE for"
-                                  + " null");
-                        }
-                        if (((DataValue) numericWireValue).getStatusCode() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a StatusCode; use StatusCode.GOOD for Good");
-                        }
-                        numericWireValue = ((DataValue) numericWireValue).getValue();
-                      } else {
-                        numericWireValue = ((Variant) numericWireValue).getValue();
-                      }
-                    }
-                    if (numericWireValue instanceof Matrix) {
-                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                    }
-                    if (numericWireValue != null && numericWireValue.getClass().isArray()) {
-                      if (!numericWirePath.add(numericWireValue)) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "Cyclic Variant arrays cannot be encoded");
-                      }
-                      numericWireValues.push(new Object[] {numericWireValue, true});
-                      for (int numericWireIndex = 0;
-                          numericWireIndex < Array.getLength(numericWireValue);
-                          numericWireIndex++) {
-                        Object numericWireElement = Array.get(numericWireValue, numericWireIndex);
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Variant.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Variant wire array requires a wrapper for every element; use"
-                                  + " Variant.NULL_VALUE for null");
-                        }
-                        if (numericWireElement == null
-                            && (UaEnumeratedType.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue))
-                                || OptionSetUInteger.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "An enum or OptionSet wire array cannot encode a null element");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Boolean.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Boolean wire array cannot retain a null element; Milo encodes it"
-                                  + " as false");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == StatusCode.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A StatusCode wire array cannot retain a null element; Milo encodes"
-                                  + " it as Good");
-                        }
-                        if (numericWireElement == null
-                            && Number.class.isAssignableFrom(
-                                ArrayUtil.getBoxedType(numericWireValue))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A numeric wire array cannot retain a null element; Milo encodes it"
-                                  + " as zero");
-                        }
-                        if (numericWireElement instanceof Variant
-                            || numericWireElement instanceof DataValue) {
-                          numericWireValues.push(new Object[] {numericWireElement, false});
-                        }
-                      }
-                    }
-                  }
+                  NumericValues.requireEncodable(wireValue);
                   wireValue =
                       ExtensionObject.encodeValue(
                           context.getServer().getStaticEncodingContext(), wireValue);
@@ -2767,7 +1211,7 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
 
   @Override
   public MethodBinding bindGetMonitoredItemsDetailed(
-      MethodBindings bindings, ServerTypeGetMonitoredItemsDetailedHandler handler)
+      MethodBindings bindings, ServerType.GetMonitoredItemsDetailedHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -2778,7 +1222,7 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -2822,7 +1266,10 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -2919,68 +1366,8 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
                               + " is unavailable in the effective type tree; resolved DataType: "
                               + argumentDataTypeId);
                     }
-                    Object numericElements =
-                        methodValue instanceof Matrix
-                            ? ((Matrix) methodValue).getElements()
-                            : methodValue;
-                    if (numericElements != null
-                        && numericElements.getClass().isArray()
-                        && (numericElements.getClass().getComponentType() == Number.class
-                            || numericElements.getClass().getComponentType() == UNumber.class)
-                        && (argumentDataTypeId.equals(NodeIds.Number)
-                            || dataTypeTree.isSubtypeOf(argumentDataTypeId, NodeIds.Number))) {
-                      Class<?> numericElementType = null;
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Object numericElement = Array.get(numericElements, numericIndex);
-                        if (numericElement != null) {
-                          if (numericElementType != null
-                              && numericElementType != numericElement.getClass()) {
-                            throw new UaException(
-                                StatusCodes.Bad_TypeMismatch,
-                                "An abstract numeric array requires one homogeneous wire element"
-                                    + " type");
-                          }
-                          numericElementType = numericElement.getClass();
-                        }
-                      }
-                      if (numericElementType == null) {
-                        numericElementType = dataTypeTree.getBackingClass(argumentDataTypeId);
-                      }
-                      if (numericElementType == Number.class
-                          || numericElementType == UNumber.class) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "An empty or all-null abstract numeric array requires a concretely"
-                                + " typed array");
-                      }
-                      Object numericArray =
-                          Array.newInstance(numericElementType, Array.getLength(numericElements));
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Array.set(
-                            numericArray, numericIndex, Array.get(numericElements, numericIndex));
-                      }
-                      if (methodValue instanceof Matrix) {
-                        methodValue =
-                            new Matrix(
-                                numericArray,
-                                ((Matrix) methodValue).getDimensions().clone(),
-                                ((Matrix) methodValue)
-                                    .getDataType()
-                                    .orElseThrow(
-                                        () ->
-                                            new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "A numeric Matrix requires an explicit wire"
-                                                    + " DataType")),
-                                ((Matrix) methodValue).getDataTypeId().orElse(null));
-                      } else {
-                        methodValue = numericArray;
-                      }
-                    }
+                    methodValue =
+                        NumericValues.normalize(methodValue, dataTypeTree, argumentDataTypeId);
                     if (methodValue != null) {
                       Object shapeElements =
                           methodValue instanceof Matrix
@@ -3201,97 +1588,7 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
                   Object wireValue = convertedValue;
                   Object wireElements =
                       wireValue instanceof Matrix ? ((Matrix) wireValue).getElements() : wireValue;
-                  var numericWireValues = new ArrayDeque<Object[]>();
-                  var numericWirePath =
-                      Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());
-                  if (wireValue != null) {
-                    numericWireValues.push(new Object[] {wireValue, false});
-                  }
-                  while (!numericWireValues.isEmpty()) {
-                    Object[] numericWireFrame = numericWireValues.pop();
-                    Object numericWireValue = numericWireFrame[0];
-                    if ((Boolean) numericWireFrame[1]) {
-                      numericWirePath.remove(numericWireValue);
-                      continue;
-                    }
-                    while (numericWireValue instanceof Variant
-                        || numericWireValue instanceof DataValue) {
-                      if (numericWireValue instanceof DataValue) {
-                        if (((DataValue) numericWireValue).getValue() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a value wrapper; use Variant.NULL_VALUE for"
-                                  + " null");
-                        }
-                        if (((DataValue) numericWireValue).getStatusCode() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a StatusCode; use StatusCode.GOOD for Good");
-                        }
-                        numericWireValue = ((DataValue) numericWireValue).getValue();
-                      } else {
-                        numericWireValue = ((Variant) numericWireValue).getValue();
-                      }
-                    }
-                    if (numericWireValue instanceof Matrix) {
-                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                    }
-                    if (numericWireValue != null && numericWireValue.getClass().isArray()) {
-                      if (!numericWirePath.add(numericWireValue)) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "Cyclic Variant arrays cannot be encoded");
-                      }
-                      numericWireValues.push(new Object[] {numericWireValue, true});
-                      for (int numericWireIndex = 0;
-                          numericWireIndex < Array.getLength(numericWireValue);
-                          numericWireIndex++) {
-                        Object numericWireElement = Array.get(numericWireValue, numericWireIndex);
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Variant.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Variant wire array requires a wrapper for every element; use"
-                                  + " Variant.NULL_VALUE for null");
-                        }
-                        if (numericWireElement == null
-                            && (UaEnumeratedType.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue))
-                                || OptionSetUInteger.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "An enum or OptionSet wire array cannot encode a null element");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Boolean.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Boolean wire array cannot retain a null element; Milo encodes it"
-                                  + " as false");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == StatusCode.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A StatusCode wire array cannot retain a null element; Milo encodes"
-                                  + " it as Good");
-                        }
-                        if (numericWireElement == null
-                            && Number.class.isAssignableFrom(
-                                ArrayUtil.getBoxedType(numericWireValue))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A numeric wire array cannot retain a null element; Milo encodes it"
-                                  + " as zero");
-                        }
-                        if (numericWireElement instanceof Variant
-                            || numericWireElement instanceof DataValue) {
-                          numericWireValues.push(new Object[] {numericWireElement, false});
-                        }
-                      }
-                    }
-                  }
+                  NumericValues.requireEncodable(wireValue);
                   wireValue =
                       ExtensionObject.encodeValue(
                           context.getServer().getStaticEncodingContext(), wireValue);
@@ -3333,68 +1630,8 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
                               + " is unavailable in the effective type tree; resolved DataType: "
                               + argumentDataTypeId);
                     }
-                    Object numericElements =
-                        methodValue instanceof Matrix
-                            ? ((Matrix) methodValue).getElements()
-                            : methodValue;
-                    if (numericElements != null
-                        && numericElements.getClass().isArray()
-                        && (numericElements.getClass().getComponentType() == Number.class
-                            || numericElements.getClass().getComponentType() == UNumber.class)
-                        && (argumentDataTypeId.equals(NodeIds.Number)
-                            || dataTypeTree.isSubtypeOf(argumentDataTypeId, NodeIds.Number))) {
-                      Class<?> numericElementType = null;
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Object numericElement = Array.get(numericElements, numericIndex);
-                        if (numericElement != null) {
-                          if (numericElementType != null
-                              && numericElementType != numericElement.getClass()) {
-                            throw new UaException(
-                                StatusCodes.Bad_TypeMismatch,
-                                "An abstract numeric array requires one homogeneous wire element"
-                                    + " type");
-                          }
-                          numericElementType = numericElement.getClass();
-                        }
-                      }
-                      if (numericElementType == null) {
-                        numericElementType = dataTypeTree.getBackingClass(argumentDataTypeId);
-                      }
-                      if (numericElementType == Number.class
-                          || numericElementType == UNumber.class) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "An empty or all-null abstract numeric array requires a concretely"
-                                + " typed array");
-                      }
-                      Object numericArray =
-                          Array.newInstance(numericElementType, Array.getLength(numericElements));
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Array.set(
-                            numericArray, numericIndex, Array.get(numericElements, numericIndex));
-                      }
-                      if (methodValue instanceof Matrix) {
-                        methodValue =
-                            new Matrix(
-                                numericArray,
-                                ((Matrix) methodValue).getDimensions().clone(),
-                                ((Matrix) methodValue)
-                                    .getDataType()
-                                    .orElseThrow(
-                                        () ->
-                                            new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "A numeric Matrix requires an explicit wire"
-                                                    + " DataType")),
-                                ((Matrix) methodValue).getDataTypeId().orElse(null));
-                      } else {
-                        methodValue = numericArray;
-                      }
-                    }
+                    methodValue =
+                        NumericValues.normalize(methodValue, dataTypeTree, argumentDataTypeId);
                     if (methodValue != null) {
                       Object shapeElements =
                           methodValue instanceof Matrix
@@ -3615,97 +1852,7 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
                   Object wireValue = convertedValue;
                   Object wireElements =
                       wireValue instanceof Matrix ? ((Matrix) wireValue).getElements() : wireValue;
-                  var numericWireValues = new ArrayDeque<Object[]>();
-                  var numericWirePath =
-                      Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());
-                  if (wireValue != null) {
-                    numericWireValues.push(new Object[] {wireValue, false});
-                  }
-                  while (!numericWireValues.isEmpty()) {
-                    Object[] numericWireFrame = numericWireValues.pop();
-                    Object numericWireValue = numericWireFrame[0];
-                    if ((Boolean) numericWireFrame[1]) {
-                      numericWirePath.remove(numericWireValue);
-                      continue;
-                    }
-                    while (numericWireValue instanceof Variant
-                        || numericWireValue instanceof DataValue) {
-                      if (numericWireValue instanceof DataValue) {
-                        if (((DataValue) numericWireValue).getValue() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a value wrapper; use Variant.NULL_VALUE for"
-                                  + " null");
-                        }
-                        if (((DataValue) numericWireValue).getStatusCode() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a StatusCode; use StatusCode.GOOD for Good");
-                        }
-                        numericWireValue = ((DataValue) numericWireValue).getValue();
-                      } else {
-                        numericWireValue = ((Variant) numericWireValue).getValue();
-                      }
-                    }
-                    if (numericWireValue instanceof Matrix) {
-                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                    }
-                    if (numericWireValue != null && numericWireValue.getClass().isArray()) {
-                      if (!numericWirePath.add(numericWireValue)) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "Cyclic Variant arrays cannot be encoded");
-                      }
-                      numericWireValues.push(new Object[] {numericWireValue, true});
-                      for (int numericWireIndex = 0;
-                          numericWireIndex < Array.getLength(numericWireValue);
-                          numericWireIndex++) {
-                        Object numericWireElement = Array.get(numericWireValue, numericWireIndex);
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Variant.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Variant wire array requires a wrapper for every element; use"
-                                  + " Variant.NULL_VALUE for null");
-                        }
-                        if (numericWireElement == null
-                            && (UaEnumeratedType.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue))
-                                || OptionSetUInteger.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "An enum or OptionSet wire array cannot encode a null element");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Boolean.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Boolean wire array cannot retain a null element; Milo encodes it"
-                                  + " as false");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == StatusCode.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A StatusCode wire array cannot retain a null element; Milo encodes"
-                                  + " it as Good");
-                        }
-                        if (numericWireElement == null
-                            && Number.class.isAssignableFrom(
-                                ArrayUtil.getBoxedType(numericWireValue))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A numeric wire array cannot retain a null element; Milo encodes it"
-                                  + " as zero");
-                        }
-                        if (numericWireElement instanceof Variant
-                            || numericWireElement instanceof DataValue) {
-                          numericWireValues.push(new Object[] {numericWireElement, false});
-                        }
-                      }
-                    }
-                  }
+                  NumericValues.requireEncodable(wireValue);
                   wireValue =
                       ExtensionObject.encodeValue(
                           context.getServer().getStaticEncodingContext(), wireValue);
@@ -3736,107 +1883,21 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
 
   @Override
   public @Nullable UaMethodNode getResendDataMethodNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:ResendData (declaration i=12871, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "ResendData");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:ResendData (declaration"
-                    + " i=12871, owner i=2004) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:ResendData (declaration i=12871, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:ResendData (declaration i=12871, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:ResendData (declaration i=12871, owner i=2004)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        return null;
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:ResendData (declaration i=12871, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Method) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:ResendData (declaration i=12871, owner i=2004)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof UaMethodNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:ResendData (declaration i=12871, owner i=2004)"
-              + " on "
-              + getNodeId());
-    }
-    return (UaMethodNode) parent;
+    return ServerMembers.lookup(
+        this,
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "ResendData",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            true,
+            "http://opcfoundation.org/UA/:ResendData (declaration i=12871, owner i=2004)"));
   }
 
   @Override
-  public MethodBinding bindResendData(MethodBindings bindings, ServerTypeResendDataHandler handler)
+  public MethodBinding bindResendData(MethodBindings bindings, ServerType.ResendDataHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -3847,7 +1908,7 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -3874,7 +1935,10 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -3940,7 +2004,7 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
 
   @Override
   public MethodBinding bindResendDataDetailed(
-      MethodBindings bindings, ServerTypeResendDataDetailedHandler handler) throws UaException {
+      MethodBindings bindings, ServerType.ResendDataDetailedHandler handler) throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
     UaMethodNode methodNode = getResendDataMethodNode();
@@ -3950,7 +2014,7 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -3977,7 +2041,10 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -4054,108 +2121,24 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
 
   @Override
   public @Nullable UaMethodNode getSetSubscriptionDurableMethodNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
+    return ServerMembers.lookup(
+        this,
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "SetSubscriptionDurable",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            true,
             "http://opcfoundation.org/UA/:SetSubscriptionDurable (declaration i=12746, owner"
-                + " i=2004) on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "SetSubscriptionDurable");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:SetSubscriptionDurable"
-                    + " (declaration i=12746, owner i=2004) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:SetSubscriptionDurable (declaration i=12746, owner"
-                  + " i=2004) on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:SetSubscriptionDurable (declaration i=12746, owner"
-                  + " i=2004) on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:SetSubscriptionDurable (declaration i=12746, owner"
-                  + " i=2004) on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        return null;
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:SetSubscriptionDurable (declaration i=12746, owner"
-                + " i=2004) on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Method) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:SetSubscriptionDurable (declaration i=12746, owner"
-                + " i=2004) on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof UaMethodNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:SetSubscriptionDurable (declaration i=12746, owner i=2004)"
-              + " on "
-              + getNodeId());
-    }
-    return (UaMethodNode) parent;
+                + " i=2004)"));
   }
 
   @Override
   public MethodBinding bindSetSubscriptionDurable(
-      MethodBindings bindings, ServerTypeSetSubscriptionDurableHandler handler) throws UaException {
+      MethodBindings bindings, ServerType.SetSubscriptionDurableHandler handler)
+      throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
     UaMethodNode methodNode = getSetSubscriptionDurableMethodNode();
@@ -4165,7 +2148,7 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -4209,7 +2192,10 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -4334,68 +2320,8 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
                               + " DataType: "
                               + argumentDataTypeId);
                     }
-                    Object numericElements =
-                        methodValue instanceof Matrix
-                            ? ((Matrix) methodValue).getElements()
-                            : methodValue;
-                    if (numericElements != null
-                        && numericElements.getClass().isArray()
-                        && (numericElements.getClass().getComponentType() == Number.class
-                            || numericElements.getClass().getComponentType() == UNumber.class)
-                        && (argumentDataTypeId.equals(NodeIds.Number)
-                            || dataTypeTree.isSubtypeOf(argumentDataTypeId, NodeIds.Number))) {
-                      Class<?> numericElementType = null;
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Object numericElement = Array.get(numericElements, numericIndex);
-                        if (numericElement != null) {
-                          if (numericElementType != null
-                              && numericElementType != numericElement.getClass()) {
-                            throw new UaException(
-                                StatusCodes.Bad_TypeMismatch,
-                                "An abstract numeric array requires one homogeneous wire element"
-                                    + " type");
-                          }
-                          numericElementType = numericElement.getClass();
-                        }
-                      }
-                      if (numericElementType == null) {
-                        numericElementType = dataTypeTree.getBackingClass(argumentDataTypeId);
-                      }
-                      if (numericElementType == Number.class
-                          || numericElementType == UNumber.class) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "An empty or all-null abstract numeric array requires a concretely"
-                                + " typed array");
-                      }
-                      Object numericArray =
-                          Array.newInstance(numericElementType, Array.getLength(numericElements));
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Array.set(
-                            numericArray, numericIndex, Array.get(numericElements, numericIndex));
-                      }
-                      if (methodValue instanceof Matrix) {
-                        methodValue =
-                            new Matrix(
-                                numericArray,
-                                ((Matrix) methodValue).getDimensions().clone(),
-                                ((Matrix) methodValue)
-                                    .getDataType()
-                                    .orElseThrow(
-                                        () ->
-                                            new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "A numeric Matrix requires an explicit wire"
-                                                    + " DataType")),
-                                ((Matrix) methodValue).getDataTypeId().orElse(null));
-                      } else {
-                        methodValue = numericArray;
-                      }
-                    }
+                    methodValue =
+                        NumericValues.normalize(methodValue, dataTypeTree, argumentDataTypeId);
                     if (methodValue != null) {
                       Object shapeElements =
                           methodValue instanceof Matrix
@@ -4586,97 +2512,7 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
                   Object wireValue = convertedValue;
                   Object wireElements =
                       wireValue instanceof Matrix ? ((Matrix) wireValue).getElements() : wireValue;
-                  var numericWireValues = new ArrayDeque<Object[]>();
-                  var numericWirePath =
-                      Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());
-                  if (wireValue != null) {
-                    numericWireValues.push(new Object[] {wireValue, false});
-                  }
-                  while (!numericWireValues.isEmpty()) {
-                    Object[] numericWireFrame = numericWireValues.pop();
-                    Object numericWireValue = numericWireFrame[0];
-                    if ((Boolean) numericWireFrame[1]) {
-                      numericWirePath.remove(numericWireValue);
-                      continue;
-                    }
-                    while (numericWireValue instanceof Variant
-                        || numericWireValue instanceof DataValue) {
-                      if (numericWireValue instanceof DataValue) {
-                        if (((DataValue) numericWireValue).getValue() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a value wrapper; use Variant.NULL_VALUE for"
-                                  + " null");
-                        }
-                        if (((DataValue) numericWireValue).getStatusCode() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a StatusCode; use StatusCode.GOOD for Good");
-                        }
-                        numericWireValue = ((DataValue) numericWireValue).getValue();
-                      } else {
-                        numericWireValue = ((Variant) numericWireValue).getValue();
-                      }
-                    }
-                    if (numericWireValue instanceof Matrix) {
-                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                    }
-                    if (numericWireValue != null && numericWireValue.getClass().isArray()) {
-                      if (!numericWirePath.add(numericWireValue)) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "Cyclic Variant arrays cannot be encoded");
-                      }
-                      numericWireValues.push(new Object[] {numericWireValue, true});
-                      for (int numericWireIndex = 0;
-                          numericWireIndex < Array.getLength(numericWireValue);
-                          numericWireIndex++) {
-                        Object numericWireElement = Array.get(numericWireValue, numericWireIndex);
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Variant.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Variant wire array requires a wrapper for every element; use"
-                                  + " Variant.NULL_VALUE for null");
-                        }
-                        if (numericWireElement == null
-                            && (UaEnumeratedType.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue))
-                                || OptionSetUInteger.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "An enum or OptionSet wire array cannot encode a null element");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Boolean.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Boolean wire array cannot retain a null element; Milo encodes it"
-                                  + " as false");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == StatusCode.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A StatusCode wire array cannot retain a null element; Milo encodes"
-                                  + " it as Good");
-                        }
-                        if (numericWireElement == null
-                            && Number.class.isAssignableFrom(
-                                ArrayUtil.getBoxedType(numericWireValue))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A numeric wire array cannot retain a null element; Milo encodes it"
-                                  + " as zero");
-                        }
-                        if (numericWireElement instanceof Variant
-                            || numericWireElement instanceof DataValue) {
-                          numericWireValues.push(new Object[] {numericWireElement, false});
-                        }
-                      }
-                    }
-                  }
+                  NumericValues.requireEncodable(wireValue);
                   wireValue =
                       ExtensionObject.encodeValue(
                           context.getServer().getStaticEncodingContext(), wireValue);
@@ -4707,7 +2543,7 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
 
   @Override
   public MethodBinding bindSetSubscriptionDurableDetailed(
-      MethodBindings bindings, ServerTypeSetSubscriptionDurableDetailedHandler handler)
+      MethodBindings bindings, ServerType.SetSubscriptionDurableDetailedHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -4718,7 +2554,7 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -4762,7 +2598,10 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -4899,68 +2738,8 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
                               + " DataType: "
                               + argumentDataTypeId);
                     }
-                    Object numericElements =
-                        methodValue instanceof Matrix
-                            ? ((Matrix) methodValue).getElements()
-                            : methodValue;
-                    if (numericElements != null
-                        && numericElements.getClass().isArray()
-                        && (numericElements.getClass().getComponentType() == Number.class
-                            || numericElements.getClass().getComponentType() == UNumber.class)
-                        && (argumentDataTypeId.equals(NodeIds.Number)
-                            || dataTypeTree.isSubtypeOf(argumentDataTypeId, NodeIds.Number))) {
-                      Class<?> numericElementType = null;
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Object numericElement = Array.get(numericElements, numericIndex);
-                        if (numericElement != null) {
-                          if (numericElementType != null
-                              && numericElementType != numericElement.getClass()) {
-                            throw new UaException(
-                                StatusCodes.Bad_TypeMismatch,
-                                "An abstract numeric array requires one homogeneous wire element"
-                                    + " type");
-                          }
-                          numericElementType = numericElement.getClass();
-                        }
-                      }
-                      if (numericElementType == null) {
-                        numericElementType = dataTypeTree.getBackingClass(argumentDataTypeId);
-                      }
-                      if (numericElementType == Number.class
-                          || numericElementType == UNumber.class) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "An empty or all-null abstract numeric array requires a concretely"
-                                + " typed array");
-                      }
-                      Object numericArray =
-                          Array.newInstance(numericElementType, Array.getLength(numericElements));
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Array.set(
-                            numericArray, numericIndex, Array.get(numericElements, numericIndex));
-                      }
-                      if (methodValue instanceof Matrix) {
-                        methodValue =
-                            new Matrix(
-                                numericArray,
-                                ((Matrix) methodValue).getDimensions().clone(),
-                                ((Matrix) methodValue)
-                                    .getDataType()
-                                    .orElseThrow(
-                                        () ->
-                                            new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "A numeric Matrix requires an explicit wire"
-                                                    + " DataType")),
-                                ((Matrix) methodValue).getDataTypeId().orElse(null));
-                      } else {
-                        methodValue = numericArray;
-                      }
-                    }
+                    methodValue =
+                        NumericValues.normalize(methodValue, dataTypeTree, argumentDataTypeId);
                     if (methodValue != null) {
                       Object shapeElements =
                           methodValue instanceof Matrix
@@ -5151,97 +2930,7 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
                   Object wireValue = convertedValue;
                   Object wireElements =
                       wireValue instanceof Matrix ? ((Matrix) wireValue).getElements() : wireValue;
-                  var numericWireValues = new ArrayDeque<Object[]>();
-                  var numericWirePath =
-                      Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());
-                  if (wireValue != null) {
-                    numericWireValues.push(new Object[] {wireValue, false});
-                  }
-                  while (!numericWireValues.isEmpty()) {
-                    Object[] numericWireFrame = numericWireValues.pop();
-                    Object numericWireValue = numericWireFrame[0];
-                    if ((Boolean) numericWireFrame[1]) {
-                      numericWirePath.remove(numericWireValue);
-                      continue;
-                    }
-                    while (numericWireValue instanceof Variant
-                        || numericWireValue instanceof DataValue) {
-                      if (numericWireValue instanceof DataValue) {
-                        if (((DataValue) numericWireValue).getValue() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a value wrapper; use Variant.NULL_VALUE for"
-                                  + " null");
-                        }
-                        if (((DataValue) numericWireValue).getStatusCode() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a StatusCode; use StatusCode.GOOD for Good");
-                        }
-                        numericWireValue = ((DataValue) numericWireValue).getValue();
-                      } else {
-                        numericWireValue = ((Variant) numericWireValue).getValue();
-                      }
-                    }
-                    if (numericWireValue instanceof Matrix) {
-                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                    }
-                    if (numericWireValue != null && numericWireValue.getClass().isArray()) {
-                      if (!numericWirePath.add(numericWireValue)) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "Cyclic Variant arrays cannot be encoded");
-                      }
-                      numericWireValues.push(new Object[] {numericWireValue, true});
-                      for (int numericWireIndex = 0;
-                          numericWireIndex < Array.getLength(numericWireValue);
-                          numericWireIndex++) {
-                        Object numericWireElement = Array.get(numericWireValue, numericWireIndex);
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Variant.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Variant wire array requires a wrapper for every element; use"
-                                  + " Variant.NULL_VALUE for null");
-                        }
-                        if (numericWireElement == null
-                            && (UaEnumeratedType.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue))
-                                || OptionSetUInteger.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "An enum or OptionSet wire array cannot encode a null element");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Boolean.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Boolean wire array cannot retain a null element; Milo encodes it"
-                                  + " as false");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == StatusCode.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A StatusCode wire array cannot retain a null element; Milo encodes"
-                                  + " it as Good");
-                        }
-                        if (numericWireElement == null
-                            && Number.class.isAssignableFrom(
-                                ArrayUtil.getBoxedType(numericWireValue))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A numeric wire array cannot retain a null element; Milo encodes it"
-                                  + " as zero");
-                        }
-                        if (numericWireElement instanceof Variant
-                            || numericWireElement instanceof DataValue) {
-                          numericWireValues.push(new Object[] {numericWireElement, false});
-                        }
-                      }
-                    }
-                  }
+                  NumericValues.requireEncodable(wireValue);
                   wireValue =
                       ExtensionObject.encodeValue(
                           context.getServer().getStaticEncodingContext(), wireValue);
@@ -5272,108 +2961,23 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
 
   @Override
   public @Nullable UaMethodNode getRequestServerStateChangeMethodNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
+    return ServerMembers.lookup(
+        this,
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "RequestServerStateChange",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            true,
             "http://opcfoundation.org/UA/:RequestServerStateChange (declaration i=12883, owner"
-                + " i=2004) on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "RequestServerStateChange");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:RequestServerStateChange"
-                    + " (declaration i=12883, owner i=2004) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:RequestServerStateChange (declaration i=12883, owner"
-                  + " i=2004) on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:RequestServerStateChange (declaration i=12883, owner"
-                  + " i=2004) on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:RequestServerStateChange (declaration i=12883, owner"
-                  + " i=2004) on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        return null;
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:RequestServerStateChange (declaration i=12883, owner"
-                + " i=2004) on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Method) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:RequestServerStateChange (declaration i=12883, owner"
-                + " i=2004) on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof UaMethodNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:RequestServerStateChange (declaration i=12883, owner"
-              + " i=2004) on "
-              + getNodeId());
-    }
-    return (UaMethodNode) parent;
+                + " i=2004)"));
   }
 
   @Override
   public MethodBinding bindRequestServerStateChange(
-      MethodBindings bindings, ServerTypeRequestServerStateChangeHandler handler)
+      MethodBindings bindings, ServerType.RequestServerStateChangeHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -5384,7 +2988,7 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -5443,7 +3047,10 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -5775,7 +3382,7 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
 
   @Override
   public MethodBinding bindRequestServerStateChangeDetailed(
-      MethodBindings bindings, ServerTypeRequestServerStateChangeDetailedHandler handler)
+      MethodBindings bindings, ServerType.RequestServerStateChangeDetailedHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -5786,7 +3393,7 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -5845,7 +3452,10 @@ public class ServerTypeNode extends BaseObjectTypeNode implements ServerType {
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);

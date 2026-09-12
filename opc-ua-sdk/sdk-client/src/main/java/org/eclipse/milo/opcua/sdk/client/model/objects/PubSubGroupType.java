@@ -25,6 +25,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * @see <a
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.2">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.6/#9.1.6.2</a>
+ * @see com.digitalpetri.opcua.uanodeset.runtime.members
  */
 public interface PubSubGroupType extends BaseObjectType {
   QualifiedProperty<MessageSecurityMode> SECURITY_MODE =
@@ -67,631 +68,181 @@ public interface PubSubGroupType extends BaseObjectType {
           1,
           KeyValuePair[].class);
 
-  /**
-   * Gets the existing member's local value without checking its quality. A null value is valid; an
-   * absent node fails with Bad_NotFound. Lookup may perform service I/O; the value is not read
-   * remotely. Use the node's raw DataValue to inspect quality and timestamps.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @return the value, which may be null on a present member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
-   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
-   *     representation
-   */
+  /** Gets the existing node's local value. */
   @Nullable MessageSecurityMode getSecurityMode() throws UaException;
 
-  /**
-   * Sets the existing member's local value. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
-   * This does not send a Write service request.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @param value the value to store; null is permitted
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
-   */
+  /** Sets the existing node's local value. */
   void setSecurityMode(@Nullable MessageSecurityMode value) throws UaException;
 
-  /**
-   * Reads the existing member's value remotely. Only Good status is accepted, including Good
-   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
-   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
-   * node's raw readValue to retain quality, timestamps and unconverted values.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @return the value, which may be null on a present member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails; non-Good operation status also fails
-   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
-   *     representation
-   */
+  /** Reads the value remotely; requires Good status. */
   @Nullable MessageSecurityMode readSecurityMode() throws UaException;
 
-  /**
-   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
-   * local value.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @param value the value to store; null is permitted
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails; non-Good operation status also fails
-   */
+  /** Writes the value remotely. */
   void writeSecurityMode(@Nullable MessageSecurityMode value) throws UaException;
 
-  /**
-   * Reads the existing member's value remotely. Only Good status is accepted, including Good
-   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
-   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
-   * node's raw readValue to retain quality, timestamps and unconverted values.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the value, which may be null on a present member
-   */
+  /** Reads the value remotely; requires Good status. */
   CompletableFuture<? extends @Nullable MessageSecurityMode> readSecurityModeAsync();
 
-  /**
-   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
-   * local value.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @param value the value to store; null is permitted
-   * @return a nonnull future completing with the Write operation status, including non-Good
-   *     statuses
-   */
+  /** Writes the value remotely. */
   CompletableFuture<StatusCode> writeSecurityModeAsync(@Nullable MessageSecurityMode value);
 
   /**
-   * Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * Returns the required node.
    *
-   * @return the existing member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
+   * @return the required node.
    */
   PropertyType getSecurityModeNode() throws UaException;
 
   /**
-   * Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * Returns the required node.
    *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the existing member
+   * @return a future completing with the required node.
    */
   CompletableFuture<? extends PropertyType> getSecurityModeNodeAsync();
 
-  /**
-   * Gets the existing member's local value without checking its quality. A null value is valid; an
-   * absent node fails with Bad_NotFound. Lookup may perform service I/O; the value is not read
-   * remotely. Use the node's raw DataValue to inspect quality and timestamps.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @return the value, which may be null on a present member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
-   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
-   *     representation
-   */
+  /** Gets the existing node's local value. */
   @Nullable String getSecurityGroupId() throws UaException;
 
-  /**
-   * Sets the existing member's local value. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
-   * This does not send a Write service request.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @param value the value to store; null is permitted
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
-   */
+  /** Sets the existing node's local value. */
   void setSecurityGroupId(@Nullable String value) throws UaException;
 
-  /**
-   * Reads the existing member's value remotely. Only Good status is accepted, including Good
-   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
-   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
-   * node's raw readValue to retain quality, timestamps and unconverted values.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @return the value, which may be null on a present member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails; non-Good operation status also fails
-   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
-   *     representation
-   */
+  /** Reads the value remotely; requires Good status. */
   @Nullable String readSecurityGroupId() throws UaException;
 
-  /**
-   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
-   * local value.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @param value the value to store; null is permitted
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails; non-Good operation status also fails
-   */
+  /** Writes the value remotely. */
   void writeSecurityGroupId(@Nullable String value) throws UaException;
 
-  /**
-   * Reads the existing member's value remotely. Only Good status is accepted, including Good
-   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
-   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
-   * node's raw readValue to retain quality, timestamps and unconverted values.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the value, which may be null on a present member
-   */
+  /** Reads the value remotely; requires Good status. */
   CompletableFuture<? extends @Nullable String> readSecurityGroupIdAsync();
 
-  /**
-   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
-   * local value.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @param value the value to store; null is permitted
-   * @return a nonnull future completing with the Write operation status, including non-Good
-   *     statuses
-   */
+  /** Writes the value remotely. */
   CompletableFuture<StatusCode> writeSecurityGroupIdAsync(@Nullable String value);
 
   /**
-   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
-   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * Returns the node, or null if absent.
    *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
+   * @return the node, or null if absent.
    */
   @Nullable PropertyType getSecurityGroupIdNode() throws UaException;
 
   /**
-   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
-   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * Returns the node, or null if absent.
    *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the existing member, or null for confirmed absence
+   * @return a future completing with the node, or null if absent.
    */
   CompletableFuture<? extends @Nullable PropertyType> getSecurityGroupIdNodeAsync();
 
-  /**
-   * Gets the existing member's local value without checking its quality. A null value is valid; an
-   * absent node fails with Bad_NotFound. Lookup may perform service I/O; the value is not read
-   * remotely. Use the node's raw DataValue to inspect quality and timestamps.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @return the value, which may be null on a present member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
-   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
-   *     representation
-   */
+  /** Gets the existing node's local value. */
   @Nullable EndpointDescription @Nullable [] getSecurityKeyServices() throws UaException;
 
-  /**
-   * Sets the existing member's local value. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
-   * This does not send a Write service request.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @param value the value to store; null is permitted
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
-   */
+  /** Sets the existing node's local value. */
   void setSecurityKeyServices(@Nullable EndpointDescription @Nullable [] value) throws UaException;
 
-  /**
-   * Reads the existing member's value remotely. Only Good status is accepted, including Good
-   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
-   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
-   * node's raw readValue to retain quality, timestamps and unconverted values.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @return the value, which may be null on a present member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails; non-Good operation status also fails
-   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
-   *     representation
-   */
+  /** Reads the value remotely; requires Good status. */
   @Nullable EndpointDescription @Nullable [] readSecurityKeyServices() throws UaException;
 
-  /**
-   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
-   * local value.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @param value the value to store; null is permitted
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails; non-Good operation status also fails
-   */
+  /** Writes the value remotely. */
   void writeSecurityKeyServices(@Nullable EndpointDescription @Nullable [] value)
       throws UaException;
 
-  /**
-   * Reads the existing member's value remotely. Only Good status is accepted, including Good
-   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
-   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
-   * node's raw readValue to retain quality, timestamps and unconverted values.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the value, which may be null on a present member
-   */
+  /** Reads the value remotely; requires Good status. */
   CompletableFuture<? extends @Nullable EndpointDescription @Nullable []>
       readSecurityKeyServicesAsync();
 
-  /**
-   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
-   * local value.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @param value the value to store; null is permitted
-   * @return a nonnull future completing with the Write operation status, including non-Good
-   *     statuses
-   */
+  /** Writes the value remotely. */
   CompletableFuture<StatusCode> writeSecurityKeyServicesAsync(
       @Nullable EndpointDescription @Nullable [] value);
 
   /**
-   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
-   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * Returns the node, or null if absent.
    *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
+   * @return the node, or null if absent.
    */
   @Nullable PropertyType getSecurityKeyServicesNode() throws UaException;
 
   /**
-   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
-   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * Returns the node, or null if absent.
    *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the existing member, or null for confirmed absence
+   * @return a future completing with the node, or null if absent.
    */
   CompletableFuture<? extends @Nullable PropertyType> getSecurityKeyServicesNodeAsync();
 
-  /**
-   * Gets the existing member's local value without checking its quality. A null value is valid; an
-   * absent node fails with Bad_NotFound. Lookup may perform service I/O; the value is not read
-   * remotely. Use the node's raw DataValue to inspect quality and timestamps.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @return the value, which may be null on a present member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
-   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
-   *     representation
-   */
+  /** Gets the existing node's local value. */
   @Nullable UInteger getMaxNetworkMessageSize() throws UaException;
 
-  /**
-   * Sets the existing member's local value. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
-   * This does not send a Write service request.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @param value the value to store; null is permitted
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
-   */
+  /** Sets the existing node's local value. */
   void setMaxNetworkMessageSize(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Reads the existing member's value remotely. Only Good status is accepted, including Good
-   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
-   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
-   * node's raw readValue to retain quality, timestamps and unconverted values.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @return the value, which may be null on a present member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails; non-Good operation status also fails
-   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
-   *     representation
-   */
+  /** Reads the value remotely; requires Good status. */
   @Nullable UInteger readMaxNetworkMessageSize() throws UaException;
 
-  /**
-   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
-   * local value.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @param value the value to store; null is permitted
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails; non-Good operation status also fails
-   */
+  /** Writes the value remotely. */
   void writeMaxNetworkMessageSize(@Nullable UInteger value) throws UaException;
 
-  /**
-   * Reads the existing member's value remotely. Only Good status is accepted, including Good
-   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
-   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
-   * node's raw readValue to retain quality, timestamps and unconverted values.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the value, which may be null on a present member
-   */
+  /** Reads the value remotely; requires Good status. */
   CompletableFuture<? extends @Nullable UInteger> readMaxNetworkMessageSizeAsync();
 
-  /**
-   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
-   * local value.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @param value the value to store; null is permitted
-   * @return a nonnull future completing with the Write operation status, including non-Good
-   *     statuses
-   */
+  /** Writes the value remotely. */
   CompletableFuture<StatusCode> writeMaxNetworkMessageSizeAsync(@Nullable UInteger value);
 
   /**
-   * Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * Returns the required node.
    *
-   * @return the existing member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
+   * @return the required node.
    */
   PropertyType getMaxNetworkMessageSizeNode() throws UaException;
 
   /**
-   * Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * Returns the required node.
    *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the existing member
+   * @return a future completing with the required node.
    */
   CompletableFuture<? extends PropertyType> getMaxNetworkMessageSizeNodeAsync();
 
-  /**
-   * Gets the existing member's local value without checking its quality. A null value is valid; an
-   * absent node fails with Bad_NotFound. Lookup may perform service I/O; the value is not read
-   * remotely. Use the node's raw DataValue to inspect quality and timestamps.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @return the value, which may be null on a present member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
-   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
-   *     representation
-   */
+  /** Gets the existing node's local value. */
   @Nullable KeyValuePair @Nullable [] getGroupProperties() throws UaException;
 
-  /**
-   * Sets the existing member's local value. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
-   * This does not send a Write service request.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @param value the value to store; null is permitted
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
-   */
+  /** Sets the existing node's local value. */
   void setGroupProperties(@Nullable KeyValuePair @Nullable [] value) throws UaException;
 
-  /**
-   * Reads the existing member's value remotely. Only Good status is accepted, including Good
-   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
-   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
-   * node's raw readValue to retain quality, timestamps and unconverted values.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @return the value, which may be null on a present member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails; non-Good operation status also fails
-   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
-   *     representation
-   */
+  /** Reads the value remotely; requires Good status. */
   @Nullable KeyValuePair @Nullable [] readGroupProperties() throws UaException;
 
-  /**
-   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
-   * local value.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @param value the value to store; null is permitted
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails; non-Good operation status also fails
-   */
+  /** Writes the value remotely. */
   void writeGroupProperties(@Nullable KeyValuePair @Nullable [] value) throws UaException;
 
-  /**
-   * Reads the existing member's value remotely. Only Good status is accepted, including Good
-   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
-   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
-   * node's raw readValue to retain quality, timestamps and unconverted values.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the value, which may be null on a present member
-   */
+  /** Reads the value remotely; requires Good status. */
   CompletableFuture<? extends @Nullable KeyValuePair @Nullable []> readGroupPropertiesAsync();
 
-  /**
-   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
-   * local value.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @param value the value to store; null is permitted
-   * @return a nonnull future completing with the Write operation status, including non-Good
-   *     statuses
-   */
+  /** Writes the value remotely. */
   CompletableFuture<StatusCode> writeGroupPropertiesAsync(
       @Nullable KeyValuePair @Nullable [] value);
 
   /**
-   * Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * Returns the required node.
    *
-   * @return the existing member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
+   * @return the required node.
    */
   PropertyType getGroupPropertiesNode() throws UaException;
 
   /**
-   * Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * Returns the required node.
    *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the existing member
+   * @return a future completing with the required node.
    */
   CompletableFuture<? extends PropertyType> getGroupPropertiesNodeAsync();
 
   /**
-   * Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * Returns the required node.
    *
-   * @return the existing member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
+   * @return the required node.
    */
   PubSubStatusType getStatusNode() throws UaException;
 
   /**
-   * Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * Returns the required node.
    *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the existing member
+   * @return a future completing with the required node.
    */
   CompletableFuture<? extends PubSubStatusType> getStatusNodeAsync();
 }

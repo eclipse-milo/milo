@@ -10,4 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
+/**
+ * @see com.digitalpetri.opcua.uanodeset.runtime.members
+ */
 public interface DataTypeSystemType extends BaseObjectType {}

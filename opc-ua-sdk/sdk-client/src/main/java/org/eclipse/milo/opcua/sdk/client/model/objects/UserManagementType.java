@@ -30,6 +30,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * @see <a
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.1">https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.1</a>
+ * @see com.digitalpetri.opcua.uanodeset.runtime.members
  */
 public interface UserManagementType extends BaseObjectType {
   QualifiedProperty<UserManagementDataType[]> USERS =
@@ -64,497 +65,141 @@ public interface UserManagementType extends BaseObjectType {
           -1,
           LocalizedText.class);
 
-  /**
-   * Gets the existing member's local value without checking its quality. A null value is valid; an
-   * absent node fails with Bad_NotFound. Lookup may perform service I/O; the value is not read
-   * remotely. Use the node's raw DataValue to inspect quality and timestamps.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @return the value, which may be null on a present member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
-   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
-   *     representation
-   */
+  /** Gets the existing node's local value. */
   @Nullable UserManagementDataType @Nullable [] getUsers() throws UaException;
 
-  /**
-   * Sets the existing member's local value. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
-   * This does not send a Write service request.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @param value the value to store; null is permitted
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
-   */
+  /** Sets the existing node's local value. */
   void setUsers(@Nullable UserManagementDataType @Nullable [] value) throws UaException;
 
-  /**
-   * Reads the existing member's value remotely. Only Good status is accepted, including Good
-   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
-   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
-   * node's raw readValue to retain quality, timestamps and unconverted values.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @return the value, which may be null on a present member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails; non-Good operation status also fails
-   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
-   *     representation
-   */
+  /** Reads the value remotely; requires Good status. */
   @Nullable UserManagementDataType @Nullable [] readUsers() throws UaException;
 
-  /**
-   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
-   * local value.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @param value the value to store; null is permitted
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails; non-Good operation status also fails
-   */
+  /** Writes the value remotely. */
   void writeUsers(@Nullable UserManagementDataType @Nullable [] value) throws UaException;
 
-  /**
-   * Reads the existing member's value remotely. Only Good status is accepted, including Good
-   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
-   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
-   * node's raw readValue to retain quality, timestamps and unconverted values.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the value, which may be null on a present member
-   */
+  /** Reads the value remotely; requires Good status. */
   CompletableFuture<? extends @Nullable UserManagementDataType @Nullable []> readUsersAsync();
 
-  /**
-   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
-   * local value.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @param value the value to store; null is permitted
-   * @return a nonnull future completing with the Write operation status, including non-Good
-   *     statuses
-   */
+  /** Writes the value remotely. */
   CompletableFuture<StatusCode> writeUsersAsync(
       @Nullable UserManagementDataType @Nullable [] value);
 
   /**
-   * Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * Returns the required node.
    *
-   * @return the existing member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
+   * @return the required node.
    */
   PropertyType getUsersNode() throws UaException;
 
   /**
-   * Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * Returns the required node.
    *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the existing member
+   * @return a future completing with the required node.
    */
   CompletableFuture<? extends PropertyType> getUsersNodeAsync();
 
-  /**
-   * Gets the existing member's local value without checking its quality. A null value is valid; an
-   * absent node fails with Bad_NotFound. Lookup may perform service I/O; the value is not read
-   * remotely. Use the node's raw DataValue to inspect quality and timestamps.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @return the value, which may be null on a present member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
-   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
-   *     representation
-   */
+  /** Gets the existing node's local value. */
   @Nullable Range getPasswordLength() throws UaException;
 
-  /**
-   * Sets the existing member's local value. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
-   * This does not send a Write service request.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @param value the value to store; null is permitted
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
-   */
+  /** Sets the existing node's local value. */
   void setPasswordLength(@Nullable Range value) throws UaException;
 
-  /**
-   * Reads the existing member's value remotely. Only Good status is accepted, including Good
-   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
-   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
-   * node's raw readValue to retain quality, timestamps and unconverted values.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @return the value, which may be null on a present member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails; non-Good operation status also fails
-   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
-   *     representation
-   */
+  /** Reads the value remotely; requires Good status. */
   @Nullable Range readPasswordLength() throws UaException;
 
-  /**
-   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
-   * local value.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @param value the value to store; null is permitted
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails; non-Good operation status also fails
-   */
+  /** Writes the value remotely. */
   void writePasswordLength(@Nullable Range value) throws UaException;
 
-  /**
-   * Reads the existing member's value remotely. Only Good status is accepted, including Good
-   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
-   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
-   * node's raw readValue to retain quality, timestamps and unconverted values.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the value, which may be null on a present member
-   */
+  /** Reads the value remotely; requires Good status. */
   CompletableFuture<? extends @Nullable Range> readPasswordLengthAsync();
 
-  /**
-   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
-   * local value.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @param value the value to store; null is permitted
-   * @return a nonnull future completing with the Write operation status, including non-Good
-   *     statuses
-   */
+  /** Writes the value remotely. */
   CompletableFuture<StatusCode> writePasswordLengthAsync(@Nullable Range value);
 
   /**
-   * Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * Returns the required node.
    *
-   * @return the existing member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
+   * @return the required node.
    */
   PropertyType getPasswordLengthNode() throws UaException;
 
   /**
-   * Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * Returns the required node.
    *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the existing member
+   * @return a future completing with the required node.
    */
   CompletableFuture<? extends PropertyType> getPasswordLengthNodeAsync();
 
-  /**
-   * Gets the existing member's local value without checking its quality. A null value is valid; an
-   * absent node fails with Bad_NotFound. Lookup may perform service I/O; the value is not read
-   * remotely. Use the node's raw DataValue to inspect quality and timestamps.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @return the value, which may be null on a present member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
-   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
-   *     representation
-   */
+  /** Gets the existing node's local value. */
   @Nullable PasswordOptionsMask getPasswordOptions() throws UaException;
 
-  /**
-   * Sets the existing member's local value. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
-   * This does not send a Write service request.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @param value the value to store; null is permitted
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
-   */
+  /** Sets the existing node's local value. */
   void setPasswordOptions(@Nullable PasswordOptionsMask value) throws UaException;
 
-  /**
-   * Reads the existing member's value remotely. Only Good status is accepted, including Good
-   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
-   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
-   * node's raw readValue to retain quality, timestamps and unconverted values.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @return the value, which may be null on a present member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails; non-Good operation status also fails
-   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
-   *     representation
-   */
+  /** Reads the value remotely; requires Good status. */
   @Nullable PasswordOptionsMask readPasswordOptions() throws UaException;
 
-  /**
-   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
-   * local value.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @param value the value to store; null is permitted
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails; non-Good operation status also fails
-   */
+  /** Writes the value remotely. */
   void writePasswordOptions(@Nullable PasswordOptionsMask value) throws UaException;
 
-  /**
-   * Reads the existing member's value remotely. Only Good status is accepted, including Good
-   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
-   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
-   * node's raw readValue to retain quality, timestamps and unconverted values.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the value, which may be null on a present member
-   */
+  /** Reads the value remotely; requires Good status. */
   CompletableFuture<? extends @Nullable PasswordOptionsMask> readPasswordOptionsAsync();
 
-  /**
-   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
-   * local value.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @param value the value to store; null is permitted
-   * @return a nonnull future completing with the Write operation status, including non-Good
-   *     statuses
-   */
+  /** Writes the value remotely. */
   CompletableFuture<StatusCode> writePasswordOptionsAsync(@Nullable PasswordOptionsMask value);
 
   /**
-   * Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * Returns the required node.
    *
-   * @return the existing member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
+   * @return the required node.
    */
   PropertyType getPasswordOptionsNode() throws UaException;
 
   /**
-   * Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * Returns the required node.
    *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the existing member
+   * @return a future completing with the required node.
    */
   CompletableFuture<? extends PropertyType> getPasswordOptionsNodeAsync();
 
-  /**
-   * Gets the existing member's local value without checking its quality. A null value is valid; an
-   * absent node fails with Bad_NotFound. Lookup may perform service I/O; the value is not read
-   * remotely. Use the node's raw DataValue to inspect quality and timestamps.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @return the value, which may be null on a present member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
-   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
-   *     representation
-   */
+  /** Gets the existing node's local value. */
   @Nullable LocalizedText getPasswordRestrictions() throws UaException;
 
-  /**
-   * Sets the existing member's local value. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or mutation. This does not create nodes or silently skip writes.
-   * This does not send a Write service request.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @param value the value to store; null is permitted
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
-   */
+  /** Sets the existing node's local value. */
   void setPasswordRestrictions(@Nullable LocalizedText value) throws UaException;
 
-  /**
-   * Reads the existing member's value remotely. Only Good status is accepted, including Good
-   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
-   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
-   * node's raw readValue to retain quality, timestamps and unconverted values.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @return the value, which may be null on a present member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails; non-Good operation status also fails
-   * @throws ClassCastException if a plain payload cast encounters an incompatible Java
-   *     representation
-   */
+  /** Reads the value remotely; requires Good status. */
   @Nullable LocalizedText readPasswordRestrictions() throws UaException;
 
-  /**
-   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
-   * local value.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * @param value the value to store; null is permitted
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails; non-Good operation status also fails
-   */
+  /** Writes the value remotely. */
   void writePasswordRestrictions(@Nullable LocalizedText value) throws UaException;
 
-  /**
-   * Reads the existing member's value remotely. Only Good status is accepted, including Good
-   * subcodes; Uncertain and Bad statuses fail before conversion. A Good null value is valid. An
-   * absent node fails with Bad_NotFound. This does not update the wrapper's local value. Use the
-   * node's raw readValue to retain quality, timestamps and unconverted values.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the value, which may be null on a present member
-   */
+  /** Reads the value remotely; requires Good status. */
   CompletableFuture<? extends @Nullable LocalizedText> readPasswordRestrictionsAsync();
 
-  /**
-   * Writes the existing member's value remotely. A null value is valid. An absent node fails with
-   * Bad_NotFound before conversion or Write. This does not create nodes or update the wrapper's
-   * local value.
-   *
-   * <p>Concrete enum conversions reject unknown numbers with Bad_OutOfRange. Structured decoding
-   * and existing rank/type checks retain their failures.
-   *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @param value the value to store; null is permitted
-   * @return a nonnull future completing with the Write operation status, including non-Good
-   *     statuses
-   */
+  /** Writes the value remotely. */
   CompletableFuture<StatusCode> writePasswordRestrictionsAsync(@Nullable LocalizedText value);
 
   /**
-   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
-   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * Returns the node, or null if absent.
    *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
+   * @return the node, or null if absent.
    */
   @Nullable PropertyType getPasswordRestrictionsNode() throws UaException;
 
   /**
-   * Resolves the optional member by its namespace-qualified path. Returns null only for confirmed
-   * absence. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * Returns the node, or null if absent.
    *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the existing member, or null for confirmed absence
+   * @return a future completing with the node, or null if absent.
    */
   CompletableFuture<? extends @Nullable PropertyType> getPasswordRestrictionsNodeAsync();
 
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.5
    *
-   * <p>Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * <p>Returns the required node.
    *
-   * @return the existing member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
+   * @return the required node.
    */
   @NullMarked
   UaMethodNode getAddUserMethodNode() throws UaException;
@@ -562,15 +207,9 @@ public interface UserManagementType extends BaseObjectType {
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.5
    *
-   * <p>Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * <p>Returns the required node.
    *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the existing member
+   * @return a future completing with the required node.
    */
   @NullMarked
   CompletableFuture<? extends UaMethodNode> getAddUserMethodNodeAsync();
@@ -579,21 +218,8 @@ public interface UserManagementType extends BaseObjectType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.5
    *
    * <p>Invokes <code>AddUser</code> on this node's ObjectId using the effective Method contract.
+   * Requires Good operation status.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param userName ; the supplied payload may be null.
-   * @param password ; the supplied payload may be null.
-   * @param userConfiguration ; the supplied payload may be null.
-   * @param description ; the supplied payload may be null.
    * @throws UaException if lookup, input validation, transport, service, operation status or output
    *     conversion fails.
    */
@@ -609,22 +235,8 @@ public interface UserManagementType extends BaseObjectType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.5
    *
    * <p>Invokes <code>AddUser</code> on this node's ObjectId using the effective Method contract.
+   * Requires Good operation status.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param userName ; the supplied payload may be null.
-   * @param password ; the supplied payload may be null.
-   * @param userConfiguration ; the supplied payload may be null.
-   * @param description ; the supplied payload may be null.
    * @return a future whose successful payload is null.
    */
   @NullMarked
@@ -638,21 +250,8 @@ public interface UserManagementType extends BaseObjectType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.5
    *
    * <p>Invokes <code>AddUser</code> on this node's ObjectId using the effective Method contract.
+   * Retains the operation status, diagnostics and outputs.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param userName ; the supplied payload may be null.
-   * @param password ; the supplied payload may be null.
-   * @param userConfiguration ; the supplied payload may be null.
-   * @param description ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    * @throws UaException if lookup, input validation, transport, service or response envelope
    *     validation fails.
@@ -669,22 +268,9 @@ public interface UserManagementType extends BaseObjectType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.5
    *
    * <p>Invokes <code>AddUser</code> on this node's ObjectId using the effective Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
+   * Retains the operation status, diagnostics and outputs.
    *
    * @param options request-wide diagnostics options for this Call only.
-   * @param userName ; the supplied payload may be null.
-   * @param password ; the supplied payload may be null.
-   * @param userConfiguration ; the supplied payload may be null.
-   * @param description ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    * @throws UaException if lookup, input validation, transport, service or response envelope
    *     validation fails.
@@ -703,22 +289,8 @@ public interface UserManagementType extends BaseObjectType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.5
    *
    * <p>Invokes <code>AddUser</code> on this node's ObjectId using the effective Method contract.
+   * Retains the operation status, diagnostics and outputs.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param userName ; the supplied payload may be null.
-   * @param password ; the supplied payload may be null.
-   * @param userConfiguration ; the supplied payload may be null.
-   * @param description ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    */
   @NullMarked
@@ -732,23 +304,9 @@ public interface UserManagementType extends BaseObjectType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.5
    *
    * <p>Invokes <code>AddUser</code> on this node's ObjectId using the effective Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
+   * Retains the operation status, diagnostics and outputs.
    *
    * @param options request-wide diagnostics options for this Call only.
-   * @param userName ; the supplied payload may be null.
-   * @param password ; the supplied payload may be null.
-   * @param userConfiguration ; the supplied payload may be null.
-   * @param description ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    * @throws NullPointerException if a required options or presence object is null (exceptional
    *     completion).
@@ -764,13 +322,9 @@ public interface UserManagementType extends BaseObjectType {
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.6
    *
-   * <p>Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * <p>Returns the required node.
    *
-   * @return the existing member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
+   * @return the required node.
    */
   @NullMarked
   UaMethodNode getModifyUserMethodNode() throws UaException;
@@ -778,15 +332,9 @@ public interface UserManagementType extends BaseObjectType {
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.6
    *
-   * <p>Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * <p>Returns the required node.
    *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the existing member
+   * @return a future completing with the required node.
    */
   @NullMarked
   CompletableFuture<? extends UaMethodNode> getModifyUserMethodNodeAsync();
@@ -795,24 +343,8 @@ public interface UserManagementType extends BaseObjectType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.6
    *
    * <p>Invokes <code>ModifyUser</code> on this node's ObjectId using the effective Method contract.
+   * Requires Good operation status.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param userName ; the supplied payload may be null.
-   * @param modifyPassword ; the supplied payload may be null.
-   * @param password ; the supplied payload may be null.
-   * @param modifyUserConfiguration ; the supplied payload may be null.
-   * @param userConfiguration ; the supplied payload may be null.
-   * @param modifyDescription ; the supplied payload may be null.
-   * @param description ; the supplied payload may be null.
    * @throws UaException if lookup, input validation, transport, service, operation status or output
    *     conversion fails.
    */
@@ -831,25 +363,8 @@ public interface UserManagementType extends BaseObjectType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.6
    *
    * <p>Invokes <code>ModifyUser</code> on this node's ObjectId using the effective Method contract.
+   * Requires Good operation status.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param userName ; the supplied payload may be null.
-   * @param modifyPassword ; the supplied payload may be null.
-   * @param password ; the supplied payload may be null.
-   * @param modifyUserConfiguration ; the supplied payload may be null.
-   * @param userConfiguration ; the supplied payload may be null.
-   * @param modifyDescription ; the supplied payload may be null.
-   * @param description ; the supplied payload may be null.
    * @return a future whose successful payload is null.
    */
   @NullMarked
@@ -866,24 +381,8 @@ public interface UserManagementType extends BaseObjectType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.6
    *
    * <p>Invokes <code>ModifyUser</code> on this node's ObjectId using the effective Method contract.
+   * Retains the operation status, diagnostics and outputs.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param userName ; the supplied payload may be null.
-   * @param modifyPassword ; the supplied payload may be null.
-   * @param password ; the supplied payload may be null.
-   * @param modifyUserConfiguration ; the supplied payload may be null.
-   * @param userConfiguration ; the supplied payload may be null.
-   * @param modifyDescription ; the supplied payload may be null.
-   * @param description ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    * @throws UaException if lookup, input validation, transport, service or response envelope
    *     validation fails.
@@ -903,25 +402,9 @@ public interface UserManagementType extends BaseObjectType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.6
    *
    * <p>Invokes <code>ModifyUser</code> on this node's ObjectId using the effective Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
+   * Retains the operation status, diagnostics and outputs.
    *
    * @param options request-wide diagnostics options for this Call only.
-   * @param userName ; the supplied payload may be null.
-   * @param modifyPassword ; the supplied payload may be null.
-   * @param password ; the supplied payload may be null.
-   * @param modifyUserConfiguration ; the supplied payload may be null.
-   * @param userConfiguration ; the supplied payload may be null.
-   * @param modifyDescription ; the supplied payload may be null.
-   * @param description ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    * @throws UaException if lookup, input validation, transport, service or response envelope
    *     validation fails.
@@ -943,25 +426,8 @@ public interface UserManagementType extends BaseObjectType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.6
    *
    * <p>Invokes <code>ModifyUser</code> on this node's ObjectId using the effective Method contract.
+   * Retains the operation status, diagnostics and outputs.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param userName ; the supplied payload may be null.
-   * @param modifyPassword ; the supplied payload may be null.
-   * @param password ; the supplied payload may be null.
-   * @param modifyUserConfiguration ; the supplied payload may be null.
-   * @param userConfiguration ; the supplied payload may be null.
-   * @param modifyDescription ; the supplied payload may be null.
-   * @param description ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    */
   @NullMarked
@@ -979,26 +445,9 @@ public interface UserManagementType extends BaseObjectType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.6
    *
    * <p>Invokes <code>ModifyUser</code> on this node's ObjectId using the effective Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
+   * Retains the operation status, diagnostics and outputs.
    *
    * @param options request-wide diagnostics options for this Call only.
-   * @param userName ; the supplied payload may be null.
-   * @param modifyPassword ; the supplied payload may be null.
-   * @param password ; the supplied payload may be null.
-   * @param modifyUserConfiguration ; the supplied payload may be null.
-   * @param userConfiguration ; the supplied payload may be null.
-   * @param modifyDescription ; the supplied payload may be null.
-   * @param description ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    * @throws NullPointerException if a required options or presence object is null (exceptional
    *     completion).
@@ -1018,13 +467,9 @@ public interface UserManagementType extends BaseObjectType {
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.7
    *
-   * <p>Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * <p>Returns the required node.
    *
-   * @return the existing member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
+   * @return the required node.
    */
   @NullMarked
   UaMethodNode getRemoveUserMethodNode() throws UaException;
@@ -1032,15 +477,9 @@ public interface UserManagementType extends BaseObjectType {
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.7
    *
-   * <p>Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * <p>Returns the required node.
    *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the existing member
+   * @return a future completing with the required node.
    */
   @NullMarked
   CompletableFuture<? extends UaMethodNode> getRemoveUserMethodNodeAsync();
@@ -1049,18 +488,8 @@ public interface UserManagementType extends BaseObjectType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.7
    *
    * <p>Invokes <code>RemoveUser</code> on this node's ObjectId using the effective Method contract.
+   * Requires Good operation status.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param userName ; the supplied payload may be null.
    * @throws UaException if lookup, input validation, transport, service, operation status or output
    *     conversion fails.
    */
@@ -1071,19 +500,8 @@ public interface UserManagementType extends BaseObjectType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.7
    *
    * <p>Invokes <code>RemoveUser</code> on this node's ObjectId using the effective Method contract.
+   * Requires Good operation status.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param userName ; the supplied payload may be null.
    * @return a future whose successful payload is null.
    */
   @NullMarked
@@ -1093,18 +511,8 @@ public interface UserManagementType extends BaseObjectType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.7
    *
    * <p>Invokes <code>RemoveUser</code> on this node's ObjectId using the effective Method contract.
+   * Retains the operation status, diagnostics and outputs.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param userName ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    * @throws UaException if lookup, input validation, transport, service or response envelope
    *     validation fails.
@@ -1117,19 +525,9 @@ public interface UserManagementType extends BaseObjectType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.7
    *
    * <p>Invokes <code>RemoveUser</code> on this node's ObjectId using the effective Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
+   * Retains the operation status, diagnostics and outputs.
    *
    * @param options request-wide diagnostics options for this Call only.
-   * @param userName ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    * @throws UaException if lookup, input validation, transport, service or response envelope
    *     validation fails.
@@ -1143,19 +541,8 @@ public interface UserManagementType extends BaseObjectType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.7
    *
    * <p>Invokes <code>RemoveUser</code> on this node's ObjectId using the effective Method contract.
+   * Retains the operation status, diagnostics and outputs.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param userName ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    */
   @NullMarked
@@ -1166,20 +553,9 @@ public interface UserManagementType extends BaseObjectType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.7
    *
    * <p>Invokes <code>RemoveUser</code> on this node's ObjectId using the effective Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
+   * Retains the operation status, diagnostics and outputs.
    *
    * @param options request-wide diagnostics options for this Call only.
-   * @param userName ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    * @throws NullPointerException if a required options or presence object is null (exceptional
    *     completion).
@@ -1191,13 +567,9 @@ public interface UserManagementType extends BaseObjectType {
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.8
    *
-   * <p>Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * <p>Returns the required node.
    *
-   * @return the existing member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
+   * @return the required node.
    */
   @NullMarked
   UaMethodNode getChangePasswordMethodNode() throws UaException;
@@ -1205,15 +577,9 @@ public interface UserManagementType extends BaseObjectType {
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.8
    *
-   * <p>Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * <p>Returns the required node.
    *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the existing member
+   * @return a future completing with the required node.
    */
   @NullMarked
   CompletableFuture<? extends UaMethodNode> getChangePasswordMethodNodeAsync();
@@ -1222,20 +588,8 @@ public interface UserManagementType extends BaseObjectType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.8
    *
    * <p>Invokes <code>ChangePassword</code> on this node's ObjectId using the effective Method
-   * contract.
+   * contract. Requires Good operation status.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param oldPassword ; the supplied payload may be null.
-   * @param newPassword ; the supplied payload may be null.
    * @throws UaException if lookup, input validation, transport, service, operation status or output
    *     conversion fails.
    */
@@ -1247,21 +601,8 @@ public interface UserManagementType extends BaseObjectType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.8
    *
    * <p>Invokes <code>ChangePassword</code> on this node's ObjectId using the effective Method
-   * contract.
+   * contract. Requires Good operation status.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param oldPassword ; the supplied payload may be null.
-   * @param newPassword ; the supplied payload may be null.
    * @return a future whose successful payload is null.
    */
   @NullMarked
@@ -1272,20 +613,8 @@ public interface UserManagementType extends BaseObjectType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.8
    *
    * <p>Invokes <code>ChangePassword</code> on this node's ObjectId using the effective Method
-   * contract.
+   * contract. Retains the operation status, diagnostics and outputs.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param oldPassword ; the supplied payload may be null.
-   * @param newPassword ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    * @throws UaException if lookup, input validation, transport, service or response envelope
    *     validation fails.
@@ -1298,21 +627,9 @@ public interface UserManagementType extends BaseObjectType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.8
    *
    * <p>Invokes <code>ChangePassword</code> on this node's ObjectId using the effective Method
-   * contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
+   * contract. Retains the operation status, diagnostics and outputs.
    *
    * @param options request-wide diagnostics options for this Call only.
-   * @param oldPassword ; the supplied payload may be null.
-   * @param newPassword ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    * @throws UaException if lookup, input validation, transport, service or response envelope
    *     validation fails.
@@ -1327,21 +644,8 @@ public interface UserManagementType extends BaseObjectType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.8
    *
    * <p>Invokes <code>ChangePassword</code> on this node's ObjectId using the effective Method
-   * contract.
+   * contract. Retains the operation status, diagnostics and outputs.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param oldPassword ; the supplied payload may be null.
-   * @param newPassword ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    */
   @NullMarked
@@ -1352,22 +656,9 @@ public interface UserManagementType extends BaseObjectType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part18/5.2.8
    *
    * <p>Invokes <code>ChangePassword</code> on this node's ObjectId using the effective Method
-   * contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
+   * contract. Retains the operation status, diagnostics and outputs.
    *
    * @param options request-wide diagnostics options for this Call only.
-   * @param oldPassword ; the supplied payload may be null.
-   * @param newPassword ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    * @throws NullPointerException if a required options or presence object is null (exceptional
    *     completion).

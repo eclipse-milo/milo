@@ -10,449 +10,438 @@
 
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
+import com.digitalpetri.opcua.uanodeset.runtime.methods.MethodHandlerResult;
+import org.eclipse.milo.opcua.sdk.core.model.methods.DataSetFolderTypeAddPublishedDataItemsOutputs;
+import org.eclipse.milo.opcua.sdk.core.model.methods.DataSetFolderTypeAddPublishedDataItemsTemplateOutputs;
+import org.eclipse.milo.opcua.sdk.core.model.methods.DataSetFolderTypeAddPublishedEventsOutputs;
 import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodBinding;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodBindings;
-import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeAddDataSetFolderDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeAddDataSetFolderHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeAddPublishedDataItemsDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeAddPublishedDataItemsHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeAddPublishedDataItemsTemplateDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeAddPublishedDataItemsTemplateHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeAddPublishedEventsDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeAddPublishedEventsHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeAddPublishedEventsTemplateDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeAddPublishedEventsTemplateHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeRemoveDataSetFolderDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeRemoveDataSetFolderHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeRemovePublishedDataSetDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.DataSetFolderTypeRemovePublishedDataSetHandler;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilter;
+import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldFlags;
+import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.PublishedVariableDataType;
+import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
 import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.1</a>
+ * @see com.digitalpetri.opcua.uanodeset.runtime.members
  */
 public interface DataSetFolderType extends FolderType {
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.2
    *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. A reference can change after lookup.
+   * <p>Returns the node, or null if absent.
    *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the node, or null if absent.
    */
   @Nullable MethodNode getAddPublishedDataItemsMethodNode();
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.2
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.2 Binds a synchronous
+   * callback for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
   MethodBinding bindAddPublishedDataItems(
-      MethodBindings bindings, DataSetFolderTypeAddPublishedDataItemsHandler handler)
-      throws UaException;
+      MethodBindings bindings, AddPublishedDataItemsHandler handler) throws UaException;
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.2
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.2 Binds a synchronous
+   * callback for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
   MethodBinding bindAddPublishedDataItemsDetailed(
-      MethodBindings bindings, DataSetFolderTypeAddPublishedDataItemsDetailedHandler handler)
-      throws UaException;
+      MethodBindings bindings, AddPublishedDataItemsDetailedHandler handler) throws UaException;
 
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.3
    *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. A reference can change after lookup.
+   * <p>Returns the node, or null if absent.
    *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the node, or null if absent.
    */
   @Nullable MethodNode getAddPublishedEventsMethodNode();
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.3
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.3 Binds a synchronous
+   * callback for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
-  MethodBinding bindAddPublishedEvents(
-      MethodBindings bindings, DataSetFolderTypeAddPublishedEventsHandler handler)
+  MethodBinding bindAddPublishedEvents(MethodBindings bindings, AddPublishedEventsHandler handler)
       throws UaException;
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.3
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.3 Binds a synchronous
+   * callback for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
   MethodBinding bindAddPublishedEventsDetailed(
-      MethodBindings bindings, DataSetFolderTypeAddPublishedEventsDetailedHandler handler)
-      throws UaException;
+      MethodBindings bindings, AddPublishedEventsDetailedHandler handler) throws UaException;
 
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.4
    *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. A reference can change after lookup.
+   * <p>Returns the node, or null if absent.
    *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the node, or null if absent.
    */
   @Nullable MethodNode getAddPublishedDataItemsTemplateMethodNode();
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.4
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.4 Binds a synchronous
+   * callback for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
   MethodBinding bindAddPublishedDataItemsTemplate(
-      MethodBindings bindings, DataSetFolderTypeAddPublishedDataItemsTemplateHandler handler)
-      throws UaException;
+      MethodBindings bindings, AddPublishedDataItemsTemplateHandler handler) throws UaException;
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.4
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.4 Binds a synchronous
+   * callback for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
   MethodBinding bindAddPublishedDataItemsTemplateDetailed(
-      MethodBindings bindings,
-      DataSetFolderTypeAddPublishedDataItemsTemplateDetailedHandler handler)
+      MethodBindings bindings, AddPublishedDataItemsTemplateDetailedHandler handler)
       throws UaException;
 
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.5
    *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. A reference can change after lookup.
+   * <p>Returns the node, or null if absent.
    *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the node, or null if absent.
    */
   @Nullable MethodNode getAddPublishedEventsTemplateMethodNode();
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.5
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.5 Binds a synchronous
+   * callback for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
   MethodBinding bindAddPublishedEventsTemplate(
-      MethodBindings bindings, DataSetFolderTypeAddPublishedEventsTemplateHandler handler)
-      throws UaException;
+      MethodBindings bindings, AddPublishedEventsTemplateHandler handler) throws UaException;
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.5
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.5 Binds a synchronous
+   * callback for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
   MethodBinding bindAddPublishedEventsTemplateDetailed(
-      MethodBindings bindings, DataSetFolderTypeAddPublishedEventsTemplateDetailedHandler handler)
+      MethodBindings bindings, AddPublishedEventsTemplateDetailedHandler handler)
       throws UaException;
 
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.6
    *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. A reference can change after lookup.
+   * <p>Returns the node, or null if absent.
    *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the node, or null if absent.
    */
   @Nullable MethodNode getRemovePublishedDataSetMethodNode();
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.6
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.6 Binds a synchronous
+   * callback for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
   MethodBinding bindRemovePublishedDataSet(
-      MethodBindings bindings, DataSetFolderTypeRemovePublishedDataSetHandler handler)
-      throws UaException;
+      MethodBindings bindings, RemovePublishedDataSetHandler handler) throws UaException;
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.6
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.6 Binds a synchronous
+   * callback for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
   MethodBinding bindRemovePublishedDataSetDetailed(
-      MethodBindings bindings, DataSetFolderTypeRemovePublishedDataSetDetailedHandler handler)
-      throws UaException;
+      MethodBindings bindings, RemovePublishedDataSetDetailedHandler handler) throws UaException;
 
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.7
    *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. A reference can change after lookup.
+   * <p>Returns the node, or null if absent.
    *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the node, or null if absent.
    */
   @Nullable MethodNode getAddDataSetFolderMethodNode();
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.7
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.7 Binds a synchronous
+   * callback for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
-  MethodBinding bindAddDataSetFolder(
-      MethodBindings bindings, DataSetFolderTypeAddDataSetFolderHandler handler) throws UaException;
+  MethodBinding bindAddDataSetFolder(MethodBindings bindings, AddDataSetFolderHandler handler)
+      throws UaException;
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.7
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.7 Binds a synchronous
+   * callback for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
   MethodBinding bindAddDataSetFolderDetailed(
-      MethodBindings bindings, DataSetFolderTypeAddDataSetFolderDetailedHandler handler)
-      throws UaException;
+      MethodBindings bindings, AddDataSetFolderDetailedHandler handler) throws UaException;
 
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.8
    *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. A reference can change after lookup.
+   * <p>Returns the node, or null if absent.
    *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the node, or null if absent.
    */
   @Nullable MethodNode getRemoveDataSetFolderMethodNode();
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.8
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.8 Binds a synchronous
+   * callback for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
-  MethodBinding bindRemoveDataSetFolder(
-      MethodBindings bindings, DataSetFolderTypeRemoveDataSetFolderHandler handler)
+  MethodBinding bindRemoveDataSetFolder(MethodBindings bindings, RemoveDataSetFolderHandler handler)
       throws UaException;
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.8
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.8 Binds a synchronous
+   * callback for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
   MethodBinding bindRemoveDataSetFolderDetailed(
-      MethodBindings bindings, DataSetFolderTypeRemoveDataSetFolderDetailedHandler handler)
-      throws UaException;
+      MethodBindings bindings, RemoveDataSetFolderDetailedHandler handler) throws UaException;
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.2 */
+  @FunctionalInterface
+  interface AddPublishedDataItemsHandler {
+    /**
+     * @return a non-null container holding all output values
+     * @throws UaException for an operation failure
+     */
+    DataSetFolderTypeAddPublishedDataItemsOutputs invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable String name,
+        @Nullable String @Nullable [] fieldNameAliases,
+        @Nullable DataSetFieldFlags @Nullable [] fieldFlags,
+        @Nullable PublishedVariableDataType @Nullable [] variablesToAdd)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.2 */
+  @FunctionalInterface
+  interface AddPublishedDataItemsDetailedHandler {
+    /**
+     * @return a non-null complete operation outcome
+     * @throws UaException for an operation failure
+     */
+    MethodHandlerResult<DataSetFolderTypeAddPublishedDataItemsOutputs> invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable String name,
+        @Nullable String @Nullable [] fieldNameAliases,
+        @Nullable DataSetFieldFlags @Nullable [] fieldFlags,
+        @Nullable PublishedVariableDataType @Nullable [] variablesToAdd)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.3 */
+  @FunctionalInterface
+  interface AddPublishedEventsHandler {
+    /**
+     * @return a non-null container holding all output values
+     * @throws UaException for an operation failure
+     */
+    DataSetFolderTypeAddPublishedEventsOutputs invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable String name,
+        @Nullable NodeId eventNotifier,
+        @Nullable String @Nullable [] fieldNameAliases,
+        @Nullable DataSetFieldFlags @Nullable [] fieldFlags,
+        @Nullable SimpleAttributeOperand @Nullable [] selectedFields,
+        @Nullable ContentFilter filter)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.3 */
+  @FunctionalInterface
+  interface AddPublishedEventsDetailedHandler {
+    /**
+     * @return a non-null complete operation outcome
+     * @throws UaException for an operation failure
+     */
+    MethodHandlerResult<DataSetFolderTypeAddPublishedEventsOutputs> invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable String name,
+        @Nullable NodeId eventNotifier,
+        @Nullable String @Nullable [] fieldNameAliases,
+        @Nullable DataSetFieldFlags @Nullable [] fieldFlags,
+        @Nullable SimpleAttributeOperand @Nullable [] selectedFields,
+        @Nullable ContentFilter filter)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.4 */
+  @FunctionalInterface
+  interface AddPublishedDataItemsTemplateHandler {
+    /**
+     * @return a non-null container holding all output values
+     * @throws UaException for an operation failure
+     */
+    DataSetFolderTypeAddPublishedDataItemsTemplateOutputs invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable String name,
+        @Nullable DataSetMetaDataType dataSetMetaData,
+        @Nullable PublishedVariableDataType @Nullable [] variablesToAdd)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.4 */
+  @FunctionalInterface
+  interface AddPublishedDataItemsTemplateDetailedHandler {
+    /**
+     * @return a non-null complete operation outcome
+     * @throws UaException for an operation failure
+     */
+    MethodHandlerResult<DataSetFolderTypeAddPublishedDataItemsTemplateOutputs> invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable String name,
+        @Nullable DataSetMetaDataType dataSetMetaData,
+        @Nullable PublishedVariableDataType @Nullable [] variablesToAdd)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.5 */
+  @FunctionalInterface
+  interface AddPublishedEventsTemplateHandler {
+    /**
+     * @return the output value, including null
+     * @throws UaException for an operation failure
+     */
+    @Nullable NodeId invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable String name,
+        @Nullable DataSetMetaDataType dataSetMetaData,
+        @Nullable NodeId eventNotifier,
+        @Nullable SimpleAttributeOperand @Nullable [] selectedFields,
+        @Nullable ContentFilter filter)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.5 */
+  @FunctionalInterface
+  interface AddPublishedEventsTemplateDetailedHandler {
+    /**
+     * @return a non-null complete operation outcome
+     * @throws UaException for an operation failure
+     */
+    MethodHandlerResult<@Nullable NodeId> invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable String name,
+        @Nullable DataSetMetaDataType dataSetMetaData,
+        @Nullable NodeId eventNotifier,
+        @Nullable SimpleAttributeOperand @Nullable [] selectedFields,
+        @Nullable ContentFilter filter)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.6 */
+  @FunctionalInterface
+  interface RemovePublishedDataSetHandler {
+    /**
+     * @throws UaException for an operation failure
+     */
+    void invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable NodeId dataSetNodeId)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.6 */
+  @FunctionalInterface
+  interface RemovePublishedDataSetDetailedHandler {
+    /**
+     * @return a non-null complete operation outcome
+     * @throws UaException for an operation failure
+     */
+    MethodHandlerResult<@Nullable Void> invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable NodeId dataSetNodeId)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.7 */
+  @FunctionalInterface
+  interface AddDataSetFolderHandler {
+    /**
+     * @return the output value, including null
+     * @throws UaException for an operation failure
+     */
+    @Nullable NodeId invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable String name)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.7 */
+  @FunctionalInterface
+  interface AddDataSetFolderDetailedHandler {
+    /**
+     * @return a non-null complete operation outcome
+     * @throws UaException for an operation failure
+     */
+    MethodHandlerResult<@Nullable NodeId> invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable String name)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.8 */
+  @FunctionalInterface
+  interface RemoveDataSetFolderHandler {
+    /**
+     * @throws UaException for an operation failure
+     */
+    void invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable NodeId dataSetFolderNodeId)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.8 */
+  @FunctionalInterface
+  interface RemoveDataSetFolderDetailedHandler {
+    /**
+     * @return a non-null complete operation outcome
+     * @throws UaException for an operation failure
+     */
+    MethodHandlerResult<@Nullable Void> invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable NodeId dataSetFolderNodeId)
+        throws UaException;
+  }
 }

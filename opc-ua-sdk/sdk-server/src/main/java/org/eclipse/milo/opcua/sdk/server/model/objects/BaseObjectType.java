@@ -15,5 +15,6 @@ import org.eclipse.milo.opcua.sdk.core.nodes.ObjectNode;
 /**
  * @see <a
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.2">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.2</a>
+ * @see com.digitalpetri.opcua.uanodeset.runtime.members
  */
 public interface BaseObjectType extends ObjectNode {}

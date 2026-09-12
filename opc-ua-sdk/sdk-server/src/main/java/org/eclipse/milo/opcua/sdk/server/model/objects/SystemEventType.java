@@ -13,5 +13,6 @@ package org.eclipse.milo.opcua.sdk.server.model.objects;
 /**
  * @see <a
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.28">https://reference.opcfoundation.org/v105/Core/docs/Part5/6.4.28</a>
+ * @see com.digitalpetri.opcua.uanodeset.runtime.members
  */
 public interface SystemEventType extends BaseEventType {}

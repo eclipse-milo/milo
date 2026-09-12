@@ -13,5 +13,6 @@ package org.eclipse.milo.opcua.sdk.client.model.objects;
 /**
  * @see <a
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part26/6.4">https://reference.opcfoundation.org/v105/Core/docs/Part26/6.4</a>
+ * @see com.digitalpetri.opcua.uanodeset.runtime.members
  */
 public interface LogOverflowEventType extends BaseEventType {}

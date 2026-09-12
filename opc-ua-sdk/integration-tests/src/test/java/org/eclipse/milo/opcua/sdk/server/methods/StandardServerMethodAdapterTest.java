@@ -20,6 +20,7 @@ import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfigBuilder;
 import org.eclipse.milo.opcua.sdk.client.identity.UsernameProvider;
+import org.eclipse.milo.opcua.sdk.client.model.objects.ServerType;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaSubscription;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
 import org.eclipse.milo.opcua.sdk.test.TestClient;
@@ -80,6 +81,14 @@ class StandardServerMethodAdapterTest extends AbstractClientServerTest {
       assertArrayEquals(
           new UInteger[0],
           assertInstanceOf(UInteger[].class, result.getOutputArguments()[1].value()));
+
+      // The generated convenience must preserve the same typed empty arrays after shared decoding.
+      ServerType serverNode =
+          assertInstanceOf(ServerType.class, client.getAddressSpace().getNode(NodeIds.Server));
+      var outputs =
+          serverNode.callGetMonitoredItems(subscription.getSubscriptionId().orElseThrow());
+      assertArrayEquals(new UInteger[0], outputs.serverHandles());
+      assertArrayEquals(new UInteger[0], outputs.clientHandles());
     } finally {
       subscription.delete();
     }

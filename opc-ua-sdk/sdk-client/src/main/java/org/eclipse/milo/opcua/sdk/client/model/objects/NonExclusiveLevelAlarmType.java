@@ -13,5 +13,6 @@ package org.eclipse.milo.opcua.sdk.client.model.objects;
 /**
  * @see <a
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.21/#5.8.21.2">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.8.21/#5.8.21.2</a>
+ * @see com.digitalpetri.opcua.uanodeset.runtime.members
  */
 public interface NonExclusiveLevelAlarmType extends NonExclusiveLimitAlarmType {}

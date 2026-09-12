@@ -10,265 +10,247 @@
 
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
+import com.digitalpetri.opcua.uanodeset.runtime.methods.MethodHandlerResult;
 import org.eclipse.milo.opcua.sdk.core.nodes.MethodNode;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodBinding;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodBindings;
-import org.eclipse.milo.opcua.sdk.server.model.methods.PubSubKeyPushTargetFolderTypeAddPushTargetDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.PubSubKeyPushTargetFolderTypeAddPushTargetFolderDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.PubSubKeyPushTargetFolderTypeAddPushTargetFolderHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.PubSubKeyPushTargetFolderTypeAddPushTargetHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.PubSubKeyPushTargetFolderTypeRemovePushTargetDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.PubSubKeyPushTargetFolderTypeRemovePushTargetFolderDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.PubSubKeyPushTargetFolderTypeRemovePushTargetFolderHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.PubSubKeyPushTargetFolderTypeRemovePushTargetHandler;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.jspecify.annotations.Nullable;
 
 /**
  * @see <a
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.1</a>
+ * @see com.digitalpetri.opcua.uanodeset.runtime.members
  */
 public interface PubSubKeyPushTargetFolderType extends FolderType {
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.2
    *
-   * <p>Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   * <p>Returns the required node.
    *
-   * @return the existing member
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the required node.
    */
   MethodNode getAddPushTargetMethodNode();
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.2
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.2 Binds a synchronous callback
+   * for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
-  MethodBinding bindAddPushTarget(
-      MethodBindings bindings, PubSubKeyPushTargetFolderTypeAddPushTargetHandler handler)
+  MethodBinding bindAddPushTarget(MethodBindings bindings, AddPushTargetHandler handler)
       throws UaException;
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.2
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.2 Binds a synchronous callback
+   * for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
   MethodBinding bindAddPushTargetDetailed(
-      MethodBindings bindings, PubSubKeyPushTargetFolderTypeAddPushTargetDetailedHandler handler)
-      throws UaException;
+      MethodBindings bindings, AddPushTargetDetailedHandler handler) throws UaException;
 
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.3
    *
-   * <p>Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. A reference can change after lookup.
+   * <p>Returns the required node.
    *
-   * @return the existing member
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the required node.
    */
   MethodNode getRemovePushTargetMethodNode();
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.3
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.3 Binds a synchronous callback
+   * for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
-  MethodBinding bindRemovePushTarget(
-      MethodBindings bindings, PubSubKeyPushTargetFolderTypeRemovePushTargetHandler handler)
+  MethodBinding bindRemovePushTarget(MethodBindings bindings, RemovePushTargetHandler handler)
       throws UaException;
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.3
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.3 Binds a synchronous callback
+   * for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
   MethodBinding bindRemovePushTargetDetailed(
-      MethodBindings bindings, PubSubKeyPushTargetFolderTypeRemovePushTargetDetailedHandler handler)
-      throws UaException;
+      MethodBindings bindings, RemovePushTargetDetailedHandler handler) throws UaException;
 
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.4
    *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. A reference can change after lookup.
+   * <p>Returns the node, or null if absent.
    *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the node, or null if absent.
    */
   @Nullable MethodNode getAddPushTargetFolderMethodNode();
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.4
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.4 Binds a synchronous callback
+   * for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
-  MethodBinding bindAddPushTargetFolder(
-      MethodBindings bindings, PubSubKeyPushTargetFolderTypeAddPushTargetFolderHandler handler)
+  MethodBinding bindAddPushTargetFolder(MethodBindings bindings, AddPushTargetFolderHandler handler)
       throws UaException;
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.4
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.4 Binds a synchronous callback
+   * for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
   MethodBinding bindAddPushTargetFolderDetailed(
-      MethodBindings bindings,
-      PubSubKeyPushTargetFolderTypeAddPushTargetFolderDetailedHandler handler)
-      throws UaException;
+      MethodBindings bindings, AddPushTargetFolderDetailedHandler handler) throws UaException;
 
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.5
    *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. A reference can change after lookup.
+   * <p>Returns the node, or null if absent.
    *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaRuntimeException if a required node is absent,
-   *     resolution fails, or a checked conversion fails
+   * @return the node, or null if absent.
    */
   @Nullable MethodNode getRemovePushTargetFolderMethodNode();
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.5
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.5 Binds a synchronous callback
+   * for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
   MethodBinding bindRemovePushTargetFolder(
-      MethodBindings bindings, PubSubKeyPushTargetFolderTypeRemovePushTargetFolderHandler handler)
-      throws UaException;
+      MethodBindings bindings, RemovePushTargetFolderHandler handler) throws UaException;
 
   /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.5
+   * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.5 Binds a synchronous callback
+   * for this ObjectId. Close the returned token to unbind.
    *
-   * <p>Binds a synchronous callback for this ObjectId through the supplied registry. The Method
-   * must already exist and have compatible effective metadata; binding does not create nodes or
-   * rewrite argument properties. Replacing this ObjectId does not replace another owner's
-   * registration.
-   *
-   * <p>The returned token owns only this registration. Closing a stale token cannot remove its
-   * replacement. Cleanup is non-draining: an already selected callback may finish. External raw
-   * handler replacement is authoritative. An observed displacement prevents further binds through
-   * that registry.
-   *
-   * @return an explicit registration lifetime
-   * @throws UaException if the Method is absent, ownership or metadata validation fails, or a
-   *     preempting ConditionManager makes binding unsupported
-   * @throws UaRuntimeException if strict local lookup fails
-   * @throws IllegalStateException if the registry is closed, displaced, or another registry owns
-   *     the Method
+   * @see MethodBindings
    */
   MethodBinding bindRemovePushTargetFolderDetailed(
-      MethodBindings bindings,
-      PubSubKeyPushTargetFolderTypeRemovePushTargetFolderDetailedHandler handler)
-      throws UaException;
+      MethodBindings bindings, RemovePushTargetFolderDetailedHandler handler) throws UaException;
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.2 */
+  @FunctionalInterface
+  interface AddPushTargetHandler {
+    /**
+     * @return the output value, including null
+     * @throws UaException for an operation failure
+     */
+    @Nullable NodeId invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable String applicationUri,
+        @Nullable String endpointUrl,
+        @Nullable String securityPolicyUri,
+        @Nullable UserTokenPolicy userTokenType,
+        @Nullable UShort requestedKeyCount,
+        @Nullable Double retryInterval)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.2 */
+  @FunctionalInterface
+  interface AddPushTargetDetailedHandler {
+    /**
+     * @return a non-null complete operation outcome
+     * @throws UaException for an operation failure
+     */
+    MethodHandlerResult<@Nullable NodeId> invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable String applicationUri,
+        @Nullable String endpointUrl,
+        @Nullable String securityPolicyUri,
+        @Nullable UserTokenPolicy userTokenType,
+        @Nullable UShort requestedKeyCount,
+        @Nullable Double retryInterval)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.3 */
+  @FunctionalInterface
+  interface RemovePushTargetHandler {
+    /**
+     * @throws UaException for an operation failure
+     */
+    void invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable NodeId pushTargetId)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.3 */
+  @FunctionalInterface
+  interface RemovePushTargetDetailedHandler {
+    /**
+     * @return a non-null complete operation outcome
+     * @throws UaException for an operation failure
+     */
+    MethodHandlerResult<@Nullable Void> invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable NodeId pushTargetId)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.4 */
+  @FunctionalInterface
+  interface AddPushTargetFolderHandler {
+    /**
+     * @return the output value, including null
+     * @throws UaException for an operation failure
+     */
+    @Nullable NodeId invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable String name)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.4 */
+  @FunctionalInterface
+  interface AddPushTargetFolderDetailedHandler {
+    /**
+     * @return a non-null complete operation outcome
+     * @throws UaException for an operation failure
+     */
+    MethodHandlerResult<@Nullable NodeId> invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable String name)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.5 */
+  @FunctionalInterface
+  interface RemovePushTargetFolderHandler {
+    /**
+     * @throws UaException for an operation failure
+     */
+    void invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable NodeId pushTargetFolderNodeId)
+        throws UaException;
+  }
+
+  /** https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.5 */
+  @FunctionalInterface
+  interface RemovePushTargetFolderDetailedHandler {
+    /**
+     * @return a non-null complete operation outcome
+     * @throws UaException for an operation failure
+     */
+    MethodHandlerResult<@Nullable Void> invoke(
+        org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext
+            context,
+        @Nullable NodeId pushTargetFolderNodeId)
+        throws UaException;
+  }
 }

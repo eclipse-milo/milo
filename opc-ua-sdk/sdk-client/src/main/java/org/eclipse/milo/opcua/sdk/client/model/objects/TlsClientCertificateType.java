@@ -13,5 +13,6 @@ package org.eclipse.milo.opcua.sdk.client.model.objects;
 /**
  * @see <a
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.4/#7.8.4.7">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.8.4/#7.8.4.7</a>
+ * @see com.digitalpetri.opcua.uanodeset.runtime.members
  */
 public interface TlsClientCertificateType extends TlsCertificateType {}

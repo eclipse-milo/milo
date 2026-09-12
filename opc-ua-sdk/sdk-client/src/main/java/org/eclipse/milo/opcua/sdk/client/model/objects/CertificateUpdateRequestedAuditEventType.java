@@ -13,5 +13,6 @@ package org.eclipse.milo.opcua.sdk.client.model.objects;
 /**
  * @see <a
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.26">https://reference.opcfoundation.org/v105/Core/docs/Part12/7.10.26</a>
+ * @see com.digitalpetri.opcua.uanodeset.runtime.members
  */
 public interface CertificateUpdateRequestedAuditEventType extends AuditUpdateMethodEventType {}

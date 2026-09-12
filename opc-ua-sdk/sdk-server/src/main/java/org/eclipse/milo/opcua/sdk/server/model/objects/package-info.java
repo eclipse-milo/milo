@@ -22,6 +22,10 @@
  * actual backing state and validate effective type, rank and dimensions before mutation. A
  * HasInterface reference does not change the applying concrete type's Java inheritance.
  *
+ * <p>Method handlers are nested in their declaring ObjectType interfaces. Callbacks execute
+ * synchronously and return their outputs; detailed callbacks also return status and diagnostics.
+ * Generated Bad outcomes have no wire outputs.
+ *
  * <p>Method binding uses an explicitly supplied registry and lifetime token. Closing a view closes
  * its observation context, not separately owned bindings. Shared generated behavior belongs in the
  * generator; regenerate the standard model after changing it.

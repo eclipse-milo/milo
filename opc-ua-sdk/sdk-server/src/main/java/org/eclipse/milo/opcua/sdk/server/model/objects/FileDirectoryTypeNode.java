@@ -10,31 +10,20 @@
 
 package org.eclipse.milo.opcua.sdk.server.model.objects;
 
+import com.digitalpetri.opcua.uanodeset.runtime.members.MemberDeclaration;
+import com.digitalpetri.opcua.uanodeset.runtime.server.ServerMembers;
+import com.digitalpetri.opcua.uanodeset.runtime.values.NumericValues;
 import java.lang.reflect.Array;
-import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
 import java.util.Objects;
 import java.util.Optional;
 import org.eclipse.milo.opcua.sdk.core.model.methods.FileDirectoryTypeCreateFileOutputs;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
-import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.methods.InvalidArgumentException;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodBinding;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodBindings;
-import org.eclipse.milo.opcua.sdk.server.model.methods.FileDirectoryTypeCreateDirectoryDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.FileDirectoryTypeCreateDirectoryHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.FileDirectoryTypeCreateFileDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.FileDirectoryTypeCreateFileHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.FileDirectoryTypeDeleteFileSystemObjectDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.FileDirectoryTypeDeleteFileSystemObjectHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.FileDirectoryTypeMoveOrCopyDetailedHandler;
-import org.eclipse.milo.opcua.sdk.server.model.methods.FileDirectoryTypeMoveOrCopyHandler;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
@@ -43,22 +32,18 @@ import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
-import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.OptionSetUInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UNumber;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
@@ -135,112 +120,23 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
 
   @Override
   public UaMethodNode getCreateDirectoryMethodNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:CreateDirectory (declaration i=13387, owner i=13353)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "CreateDirectory");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:CreateDirectory (declaration"
-                    + " i=13387, owner i=13353) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:CreateDirectory (declaration i=13387, owner i=13353)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:CreateDirectory (declaration i=13387, owner i=13353)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:CreateDirectory (declaration i=13387, owner i=13353)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:CreateDirectory (declaration i=13387, owner i=13353)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:CreateDirectory (declaration i=13387, owner i=13353)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Method) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:CreateDirectory (declaration i=13387, owner i=13353)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof UaMethodNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:CreateDirectory (declaration i=13387, owner i=13353)"
-              + " on "
-              + getNodeId());
-    }
-    return (UaMethodNode) parent;
+    return ServerMembers.lookup(
+        this,
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "CreateDirectory",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            false,
+            "http://opcfoundation.org/UA/:CreateDirectory (declaration i=13387, owner i=13353)"));
   }
 
   @Override
   public MethodBinding bindCreateDirectory(
-      MethodBindings bindings, FileDirectoryTypeCreateDirectoryHandler handler) throws UaException {
+      MethodBindings bindings, FileDirectoryType.CreateDirectoryHandler handler)
+      throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
     UaMethodNode methodNode = getCreateDirectoryMethodNode();
@@ -250,7 +146,7 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -286,7 +182,10 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -367,68 +266,8 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
                               + " DataType: "
                               + argumentDataTypeId);
                     }
-                    Object numericElements =
-                        methodValue instanceof Matrix
-                            ? ((Matrix) methodValue).getElements()
-                            : methodValue;
-                    if (numericElements != null
-                        && numericElements.getClass().isArray()
-                        && (numericElements.getClass().getComponentType() == Number.class
-                            || numericElements.getClass().getComponentType() == UNumber.class)
-                        && (argumentDataTypeId.equals(NodeIds.Number)
-                            || dataTypeTree.isSubtypeOf(argumentDataTypeId, NodeIds.Number))) {
-                      Class<?> numericElementType = null;
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Object numericElement = Array.get(numericElements, numericIndex);
-                        if (numericElement != null) {
-                          if (numericElementType != null
-                              && numericElementType != numericElement.getClass()) {
-                            throw new UaException(
-                                StatusCodes.Bad_TypeMismatch,
-                                "An abstract numeric array requires one homogeneous wire element"
-                                    + " type");
-                          }
-                          numericElementType = numericElement.getClass();
-                        }
-                      }
-                      if (numericElementType == null) {
-                        numericElementType = dataTypeTree.getBackingClass(argumentDataTypeId);
-                      }
-                      if (numericElementType == Number.class
-                          || numericElementType == UNumber.class) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "An empty or all-null abstract numeric array requires a concretely"
-                                + " typed array");
-                      }
-                      Object numericArray =
-                          Array.newInstance(numericElementType, Array.getLength(numericElements));
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Array.set(
-                            numericArray, numericIndex, Array.get(numericElements, numericIndex));
-                      }
-                      if (methodValue instanceof Matrix) {
-                        methodValue =
-                            new Matrix(
-                                numericArray,
-                                ((Matrix) methodValue).getDimensions().clone(),
-                                ((Matrix) methodValue)
-                                    .getDataType()
-                                    .orElseThrow(
-                                        () ->
-                                            new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "A numeric Matrix requires an explicit wire"
-                                                    + " DataType")),
-                                ((Matrix) methodValue).getDataTypeId().orElse(null));
-                      } else {
-                        methodValue = numericArray;
-                      }
-                    }
+                    methodValue =
+                        NumericValues.normalize(methodValue, dataTypeTree, argumentDataTypeId);
                     if (methodValue != null) {
                       Object shapeElements =
                           methodValue instanceof Matrix
@@ -619,97 +458,7 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
                   Object wireValue = convertedValue;
                   Object wireElements =
                       wireValue instanceof Matrix ? ((Matrix) wireValue).getElements() : wireValue;
-                  var numericWireValues = new ArrayDeque<Object[]>();
-                  var numericWirePath =
-                      Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());
-                  if (wireValue != null) {
-                    numericWireValues.push(new Object[] {wireValue, false});
-                  }
-                  while (!numericWireValues.isEmpty()) {
-                    Object[] numericWireFrame = numericWireValues.pop();
-                    Object numericWireValue = numericWireFrame[0];
-                    if ((Boolean) numericWireFrame[1]) {
-                      numericWirePath.remove(numericWireValue);
-                      continue;
-                    }
-                    while (numericWireValue instanceof Variant
-                        || numericWireValue instanceof DataValue) {
-                      if (numericWireValue instanceof DataValue) {
-                        if (((DataValue) numericWireValue).getValue() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a value wrapper; use Variant.NULL_VALUE for"
-                                  + " null");
-                        }
-                        if (((DataValue) numericWireValue).getStatusCode() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a StatusCode; use StatusCode.GOOD for Good");
-                        }
-                        numericWireValue = ((DataValue) numericWireValue).getValue();
-                      } else {
-                        numericWireValue = ((Variant) numericWireValue).getValue();
-                      }
-                    }
-                    if (numericWireValue instanceof Matrix) {
-                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                    }
-                    if (numericWireValue != null && numericWireValue.getClass().isArray()) {
-                      if (!numericWirePath.add(numericWireValue)) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "Cyclic Variant arrays cannot be encoded");
-                      }
-                      numericWireValues.push(new Object[] {numericWireValue, true});
-                      for (int numericWireIndex = 0;
-                          numericWireIndex < Array.getLength(numericWireValue);
-                          numericWireIndex++) {
-                        Object numericWireElement = Array.get(numericWireValue, numericWireIndex);
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Variant.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Variant wire array requires a wrapper for every element; use"
-                                  + " Variant.NULL_VALUE for null");
-                        }
-                        if (numericWireElement == null
-                            && (UaEnumeratedType.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue))
-                                || OptionSetUInteger.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "An enum or OptionSet wire array cannot encode a null element");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Boolean.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Boolean wire array cannot retain a null element; Milo encodes it"
-                                  + " as false");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == StatusCode.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A StatusCode wire array cannot retain a null element; Milo encodes"
-                                  + " it as Good");
-                        }
-                        if (numericWireElement == null
-                            && Number.class.isAssignableFrom(
-                                ArrayUtil.getBoxedType(numericWireValue))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A numeric wire array cannot retain a null element; Milo encodes it"
-                                  + " as zero");
-                        }
-                        if (numericWireElement instanceof Variant
-                            || numericWireElement instanceof DataValue) {
-                          numericWireValues.push(new Object[] {numericWireElement, false});
-                        }
-                      }
-                    }
-                  }
+                  NumericValues.requireEncodable(wireValue);
                   wireValue =
                       ExtensionObject.encodeValue(
                           context.getServer().getStaticEncodingContext(), wireValue);
@@ -740,7 +489,7 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
 
   @Override
   public MethodBinding bindCreateDirectoryDetailed(
-      MethodBindings bindings, FileDirectoryTypeCreateDirectoryDetailedHandler handler)
+      MethodBindings bindings, FileDirectoryType.CreateDirectoryDetailedHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -751,7 +500,7 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -787,7 +536,10 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -880,68 +632,8 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
                               + " DataType: "
                               + argumentDataTypeId);
                     }
-                    Object numericElements =
-                        methodValue instanceof Matrix
-                            ? ((Matrix) methodValue).getElements()
-                            : methodValue;
-                    if (numericElements != null
-                        && numericElements.getClass().isArray()
-                        && (numericElements.getClass().getComponentType() == Number.class
-                            || numericElements.getClass().getComponentType() == UNumber.class)
-                        && (argumentDataTypeId.equals(NodeIds.Number)
-                            || dataTypeTree.isSubtypeOf(argumentDataTypeId, NodeIds.Number))) {
-                      Class<?> numericElementType = null;
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Object numericElement = Array.get(numericElements, numericIndex);
-                        if (numericElement != null) {
-                          if (numericElementType != null
-                              && numericElementType != numericElement.getClass()) {
-                            throw new UaException(
-                                StatusCodes.Bad_TypeMismatch,
-                                "An abstract numeric array requires one homogeneous wire element"
-                                    + " type");
-                          }
-                          numericElementType = numericElement.getClass();
-                        }
-                      }
-                      if (numericElementType == null) {
-                        numericElementType = dataTypeTree.getBackingClass(argumentDataTypeId);
-                      }
-                      if (numericElementType == Number.class
-                          || numericElementType == UNumber.class) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "An empty or all-null abstract numeric array requires a concretely"
-                                + " typed array");
-                      }
-                      Object numericArray =
-                          Array.newInstance(numericElementType, Array.getLength(numericElements));
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Array.set(
-                            numericArray, numericIndex, Array.get(numericElements, numericIndex));
-                      }
-                      if (methodValue instanceof Matrix) {
-                        methodValue =
-                            new Matrix(
-                                numericArray,
-                                ((Matrix) methodValue).getDimensions().clone(),
-                                ((Matrix) methodValue)
-                                    .getDataType()
-                                    .orElseThrow(
-                                        () ->
-                                            new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "A numeric Matrix requires an explicit wire"
-                                                    + " DataType")),
-                                ((Matrix) methodValue).getDataTypeId().orElse(null));
-                      } else {
-                        methodValue = numericArray;
-                      }
-                    }
+                    methodValue =
+                        NumericValues.normalize(methodValue, dataTypeTree, argumentDataTypeId);
                     if (methodValue != null) {
                       Object shapeElements =
                           methodValue instanceof Matrix
@@ -1132,97 +824,7 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
                   Object wireValue = convertedValue;
                   Object wireElements =
                       wireValue instanceof Matrix ? ((Matrix) wireValue).getElements() : wireValue;
-                  var numericWireValues = new ArrayDeque<Object[]>();
-                  var numericWirePath =
-                      Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());
-                  if (wireValue != null) {
-                    numericWireValues.push(new Object[] {wireValue, false});
-                  }
-                  while (!numericWireValues.isEmpty()) {
-                    Object[] numericWireFrame = numericWireValues.pop();
-                    Object numericWireValue = numericWireFrame[0];
-                    if ((Boolean) numericWireFrame[1]) {
-                      numericWirePath.remove(numericWireValue);
-                      continue;
-                    }
-                    while (numericWireValue instanceof Variant
-                        || numericWireValue instanceof DataValue) {
-                      if (numericWireValue instanceof DataValue) {
-                        if (((DataValue) numericWireValue).getValue() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a value wrapper; use Variant.NULL_VALUE for"
-                                  + " null");
-                        }
-                        if (((DataValue) numericWireValue).getStatusCode() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a StatusCode; use StatusCode.GOOD for Good");
-                        }
-                        numericWireValue = ((DataValue) numericWireValue).getValue();
-                      } else {
-                        numericWireValue = ((Variant) numericWireValue).getValue();
-                      }
-                    }
-                    if (numericWireValue instanceof Matrix) {
-                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                    }
-                    if (numericWireValue != null && numericWireValue.getClass().isArray()) {
-                      if (!numericWirePath.add(numericWireValue)) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "Cyclic Variant arrays cannot be encoded");
-                      }
-                      numericWireValues.push(new Object[] {numericWireValue, true});
-                      for (int numericWireIndex = 0;
-                          numericWireIndex < Array.getLength(numericWireValue);
-                          numericWireIndex++) {
-                        Object numericWireElement = Array.get(numericWireValue, numericWireIndex);
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Variant.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Variant wire array requires a wrapper for every element; use"
-                                  + " Variant.NULL_VALUE for null");
-                        }
-                        if (numericWireElement == null
-                            && (UaEnumeratedType.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue))
-                                || OptionSetUInteger.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "An enum or OptionSet wire array cannot encode a null element");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Boolean.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Boolean wire array cannot retain a null element; Milo encodes it"
-                                  + " as false");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == StatusCode.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A StatusCode wire array cannot retain a null element; Milo encodes"
-                                  + " it as Good");
-                        }
-                        if (numericWireElement == null
-                            && Number.class.isAssignableFrom(
-                                ArrayUtil.getBoxedType(numericWireValue))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A numeric wire array cannot retain a null element; Milo encodes it"
-                                  + " as zero");
-                        }
-                        if (numericWireElement instanceof Variant
-                            || numericWireElement instanceof DataValue) {
-                          numericWireValues.push(new Object[] {numericWireElement, false});
-                        }
-                      }
-                    }
-                  }
+                  NumericValues.requireEncodable(wireValue);
                   wireValue =
                       ExtensionObject.encodeValue(
                           context.getServer().getStaticEncodingContext(), wireValue);
@@ -1253,112 +855,22 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
 
   @Override
   public UaMethodNode getCreateFileMethodNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:CreateFile (declaration i=13390, owner i=13353)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "CreateFile");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:CreateFile (declaration"
-                    + " i=13390, owner i=13353) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:CreateFile (declaration i=13390, owner i=13353)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:CreateFile (declaration i=13390, owner i=13353)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:CreateFile (declaration i=13390, owner i=13353)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:CreateFile (declaration i=13390, owner i=13353)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:CreateFile (declaration i=13390, owner i=13353)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Method) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:CreateFile (declaration i=13390, owner i=13353)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof UaMethodNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:CreateFile (declaration i=13390, owner i=13353)"
-              + " on "
-              + getNodeId());
-    }
-    return (UaMethodNode) parent;
+    return ServerMembers.lookup(
+        this,
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "CreateFile",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            false,
+            "http://opcfoundation.org/UA/:CreateFile (declaration i=13390, owner i=13353)"));
   }
 
   @Override
   public MethodBinding bindCreateFile(
-      MethodBindings bindings, FileDirectoryTypeCreateFileHandler handler) throws UaException {
+      MethodBindings bindings, FileDirectoryType.CreateFileHandler handler) throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
     UaMethodNode methodNode = getCreateFileMethodNode();
@@ -1368,7 +880,7 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -1420,7 +932,10 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -1550,68 +1065,8 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
                               + " is unavailable in the effective type tree; resolved DataType: "
                               + argumentDataTypeId);
                     }
-                    Object numericElements =
-                        methodValue instanceof Matrix
-                            ? ((Matrix) methodValue).getElements()
-                            : methodValue;
-                    if (numericElements != null
-                        && numericElements.getClass().isArray()
-                        && (numericElements.getClass().getComponentType() == Number.class
-                            || numericElements.getClass().getComponentType() == UNumber.class)
-                        && (argumentDataTypeId.equals(NodeIds.Number)
-                            || dataTypeTree.isSubtypeOf(argumentDataTypeId, NodeIds.Number))) {
-                      Class<?> numericElementType = null;
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Object numericElement = Array.get(numericElements, numericIndex);
-                        if (numericElement != null) {
-                          if (numericElementType != null
-                              && numericElementType != numericElement.getClass()) {
-                            throw new UaException(
-                                StatusCodes.Bad_TypeMismatch,
-                                "An abstract numeric array requires one homogeneous wire element"
-                                    + " type");
-                          }
-                          numericElementType = numericElement.getClass();
-                        }
-                      }
-                      if (numericElementType == null) {
-                        numericElementType = dataTypeTree.getBackingClass(argumentDataTypeId);
-                      }
-                      if (numericElementType == Number.class
-                          || numericElementType == UNumber.class) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "An empty or all-null abstract numeric array requires a concretely"
-                                + " typed array");
-                      }
-                      Object numericArray =
-                          Array.newInstance(numericElementType, Array.getLength(numericElements));
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Array.set(
-                            numericArray, numericIndex, Array.get(numericElements, numericIndex));
-                      }
-                      if (methodValue instanceof Matrix) {
-                        methodValue =
-                            new Matrix(
-                                numericArray,
-                                ((Matrix) methodValue).getDimensions().clone(),
-                                ((Matrix) methodValue)
-                                    .getDataType()
-                                    .orElseThrow(
-                                        () ->
-                                            new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "A numeric Matrix requires an explicit wire"
-                                                    + " DataType")),
-                                ((Matrix) methodValue).getDataTypeId().orElse(null));
-                      } else {
-                        methodValue = numericArray;
-                      }
-                    }
+                    methodValue =
+                        NumericValues.normalize(methodValue, dataTypeTree, argumentDataTypeId);
                     if (methodValue != null) {
                       Object shapeElements =
                           methodValue instanceof Matrix
@@ -1802,97 +1257,7 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
                   Object wireValue = convertedValue;
                   Object wireElements =
                       wireValue instanceof Matrix ? ((Matrix) wireValue).getElements() : wireValue;
-                  var numericWireValues = new ArrayDeque<Object[]>();
-                  var numericWirePath =
-                      Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());
-                  if (wireValue != null) {
-                    numericWireValues.push(new Object[] {wireValue, false});
-                  }
-                  while (!numericWireValues.isEmpty()) {
-                    Object[] numericWireFrame = numericWireValues.pop();
-                    Object numericWireValue = numericWireFrame[0];
-                    if ((Boolean) numericWireFrame[1]) {
-                      numericWirePath.remove(numericWireValue);
-                      continue;
-                    }
-                    while (numericWireValue instanceof Variant
-                        || numericWireValue instanceof DataValue) {
-                      if (numericWireValue instanceof DataValue) {
-                        if (((DataValue) numericWireValue).getValue() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a value wrapper; use Variant.NULL_VALUE for"
-                                  + " null");
-                        }
-                        if (((DataValue) numericWireValue).getStatusCode() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a StatusCode; use StatusCode.GOOD for Good");
-                        }
-                        numericWireValue = ((DataValue) numericWireValue).getValue();
-                      } else {
-                        numericWireValue = ((Variant) numericWireValue).getValue();
-                      }
-                    }
-                    if (numericWireValue instanceof Matrix) {
-                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                    }
-                    if (numericWireValue != null && numericWireValue.getClass().isArray()) {
-                      if (!numericWirePath.add(numericWireValue)) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "Cyclic Variant arrays cannot be encoded");
-                      }
-                      numericWireValues.push(new Object[] {numericWireValue, true});
-                      for (int numericWireIndex = 0;
-                          numericWireIndex < Array.getLength(numericWireValue);
-                          numericWireIndex++) {
-                        Object numericWireElement = Array.get(numericWireValue, numericWireIndex);
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Variant.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Variant wire array requires a wrapper for every element; use"
-                                  + " Variant.NULL_VALUE for null");
-                        }
-                        if (numericWireElement == null
-                            && (UaEnumeratedType.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue))
-                                || OptionSetUInteger.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "An enum or OptionSet wire array cannot encode a null element");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Boolean.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Boolean wire array cannot retain a null element; Milo encodes it"
-                                  + " as false");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == StatusCode.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A StatusCode wire array cannot retain a null element; Milo encodes"
-                                  + " it as Good");
-                        }
-                        if (numericWireElement == null
-                            && Number.class.isAssignableFrom(
-                                ArrayUtil.getBoxedType(numericWireValue))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A numeric wire array cannot retain a null element; Milo encodes it"
-                                  + " as zero");
-                        }
-                        if (numericWireElement instanceof Variant
-                            || numericWireElement instanceof DataValue) {
-                          numericWireValues.push(new Object[] {numericWireElement, false});
-                        }
-                      }
-                    }
-                  }
+                  NumericValues.requireEncodable(wireValue);
                   wireValue =
                       ExtensionObject.encodeValue(
                           context.getServer().getStaticEncodingContext(), wireValue);
@@ -1934,68 +1299,8 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
                               + " unavailable in the effective type tree; resolved DataType: "
                               + argumentDataTypeId);
                     }
-                    Object numericElements =
-                        methodValue instanceof Matrix
-                            ? ((Matrix) methodValue).getElements()
-                            : methodValue;
-                    if (numericElements != null
-                        && numericElements.getClass().isArray()
-                        && (numericElements.getClass().getComponentType() == Number.class
-                            || numericElements.getClass().getComponentType() == UNumber.class)
-                        && (argumentDataTypeId.equals(NodeIds.Number)
-                            || dataTypeTree.isSubtypeOf(argumentDataTypeId, NodeIds.Number))) {
-                      Class<?> numericElementType = null;
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Object numericElement = Array.get(numericElements, numericIndex);
-                        if (numericElement != null) {
-                          if (numericElementType != null
-                              && numericElementType != numericElement.getClass()) {
-                            throw new UaException(
-                                StatusCodes.Bad_TypeMismatch,
-                                "An abstract numeric array requires one homogeneous wire element"
-                                    + " type");
-                          }
-                          numericElementType = numericElement.getClass();
-                        }
-                      }
-                      if (numericElementType == null) {
-                        numericElementType = dataTypeTree.getBackingClass(argumentDataTypeId);
-                      }
-                      if (numericElementType == Number.class
-                          || numericElementType == UNumber.class) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "An empty or all-null abstract numeric array requires a concretely"
-                                + " typed array");
-                      }
-                      Object numericArray =
-                          Array.newInstance(numericElementType, Array.getLength(numericElements));
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Array.set(
-                            numericArray, numericIndex, Array.get(numericElements, numericIndex));
-                      }
-                      if (methodValue instanceof Matrix) {
-                        methodValue =
-                            new Matrix(
-                                numericArray,
-                                ((Matrix) methodValue).getDimensions().clone(),
-                                ((Matrix) methodValue)
-                                    .getDataType()
-                                    .orElseThrow(
-                                        () ->
-                                            new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "A numeric Matrix requires an explicit wire"
-                                                    + " DataType")),
-                                ((Matrix) methodValue).getDataTypeId().orElse(null));
-                      } else {
-                        methodValue = numericArray;
-                      }
-                    }
+                    methodValue =
+                        NumericValues.normalize(methodValue, dataTypeTree, argumentDataTypeId);
                     if (methodValue != null) {
                       Object shapeElements =
                           methodValue instanceof Matrix
@@ -2186,97 +1491,7 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
                   Object wireValue = convertedValue;
                   Object wireElements =
                       wireValue instanceof Matrix ? ((Matrix) wireValue).getElements() : wireValue;
-                  var numericWireValues = new ArrayDeque<Object[]>();
-                  var numericWirePath =
-                      Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());
-                  if (wireValue != null) {
-                    numericWireValues.push(new Object[] {wireValue, false});
-                  }
-                  while (!numericWireValues.isEmpty()) {
-                    Object[] numericWireFrame = numericWireValues.pop();
-                    Object numericWireValue = numericWireFrame[0];
-                    if ((Boolean) numericWireFrame[1]) {
-                      numericWirePath.remove(numericWireValue);
-                      continue;
-                    }
-                    while (numericWireValue instanceof Variant
-                        || numericWireValue instanceof DataValue) {
-                      if (numericWireValue instanceof DataValue) {
-                        if (((DataValue) numericWireValue).getValue() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a value wrapper; use Variant.NULL_VALUE for"
-                                  + " null");
-                        }
-                        if (((DataValue) numericWireValue).getStatusCode() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a StatusCode; use StatusCode.GOOD for Good");
-                        }
-                        numericWireValue = ((DataValue) numericWireValue).getValue();
-                      } else {
-                        numericWireValue = ((Variant) numericWireValue).getValue();
-                      }
-                    }
-                    if (numericWireValue instanceof Matrix) {
-                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                    }
-                    if (numericWireValue != null && numericWireValue.getClass().isArray()) {
-                      if (!numericWirePath.add(numericWireValue)) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "Cyclic Variant arrays cannot be encoded");
-                      }
-                      numericWireValues.push(new Object[] {numericWireValue, true});
-                      for (int numericWireIndex = 0;
-                          numericWireIndex < Array.getLength(numericWireValue);
-                          numericWireIndex++) {
-                        Object numericWireElement = Array.get(numericWireValue, numericWireIndex);
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Variant.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Variant wire array requires a wrapper for every element; use"
-                                  + " Variant.NULL_VALUE for null");
-                        }
-                        if (numericWireElement == null
-                            && (UaEnumeratedType.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue))
-                                || OptionSetUInteger.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "An enum or OptionSet wire array cannot encode a null element");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Boolean.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Boolean wire array cannot retain a null element; Milo encodes it"
-                                  + " as false");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == StatusCode.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A StatusCode wire array cannot retain a null element; Milo encodes"
-                                  + " it as Good");
-                        }
-                        if (numericWireElement == null
-                            && Number.class.isAssignableFrom(
-                                ArrayUtil.getBoxedType(numericWireValue))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A numeric wire array cannot retain a null element; Milo encodes it"
-                                  + " as zero");
-                        }
-                        if (numericWireElement instanceof Variant
-                            || numericWireElement instanceof DataValue) {
-                          numericWireValues.push(new Object[] {numericWireElement, false});
-                        }
-                      }
-                    }
-                  }
+                  NumericValues.requireEncodable(wireValue);
                   wireValue =
                       ExtensionObject.encodeValue(
                           context.getServer().getStaticEncodingContext(), wireValue);
@@ -2307,7 +1522,7 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
 
   @Override
   public MethodBinding bindCreateFileDetailed(
-      MethodBindings bindings, FileDirectoryTypeCreateFileDetailedHandler handler)
+      MethodBindings bindings, FileDirectoryType.CreateFileDetailedHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -2318,7 +1533,7 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -2370,7 +1585,10 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -2511,68 +1729,8 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
                               + " is unavailable in the effective type tree; resolved DataType: "
                               + argumentDataTypeId);
                     }
-                    Object numericElements =
-                        methodValue instanceof Matrix
-                            ? ((Matrix) methodValue).getElements()
-                            : methodValue;
-                    if (numericElements != null
-                        && numericElements.getClass().isArray()
-                        && (numericElements.getClass().getComponentType() == Number.class
-                            || numericElements.getClass().getComponentType() == UNumber.class)
-                        && (argumentDataTypeId.equals(NodeIds.Number)
-                            || dataTypeTree.isSubtypeOf(argumentDataTypeId, NodeIds.Number))) {
-                      Class<?> numericElementType = null;
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Object numericElement = Array.get(numericElements, numericIndex);
-                        if (numericElement != null) {
-                          if (numericElementType != null
-                              && numericElementType != numericElement.getClass()) {
-                            throw new UaException(
-                                StatusCodes.Bad_TypeMismatch,
-                                "An abstract numeric array requires one homogeneous wire element"
-                                    + " type");
-                          }
-                          numericElementType = numericElement.getClass();
-                        }
-                      }
-                      if (numericElementType == null) {
-                        numericElementType = dataTypeTree.getBackingClass(argumentDataTypeId);
-                      }
-                      if (numericElementType == Number.class
-                          || numericElementType == UNumber.class) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "An empty or all-null abstract numeric array requires a concretely"
-                                + " typed array");
-                      }
-                      Object numericArray =
-                          Array.newInstance(numericElementType, Array.getLength(numericElements));
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Array.set(
-                            numericArray, numericIndex, Array.get(numericElements, numericIndex));
-                      }
-                      if (methodValue instanceof Matrix) {
-                        methodValue =
-                            new Matrix(
-                                numericArray,
-                                ((Matrix) methodValue).getDimensions().clone(),
-                                ((Matrix) methodValue)
-                                    .getDataType()
-                                    .orElseThrow(
-                                        () ->
-                                            new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "A numeric Matrix requires an explicit wire"
-                                                    + " DataType")),
-                                ((Matrix) methodValue).getDataTypeId().orElse(null));
-                      } else {
-                        methodValue = numericArray;
-                      }
-                    }
+                    methodValue =
+                        NumericValues.normalize(methodValue, dataTypeTree, argumentDataTypeId);
                     if (methodValue != null) {
                       Object shapeElements =
                           methodValue instanceof Matrix
@@ -2763,97 +1921,7 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
                   Object wireValue = convertedValue;
                   Object wireElements =
                       wireValue instanceof Matrix ? ((Matrix) wireValue).getElements() : wireValue;
-                  var numericWireValues = new ArrayDeque<Object[]>();
-                  var numericWirePath =
-                      Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());
-                  if (wireValue != null) {
-                    numericWireValues.push(new Object[] {wireValue, false});
-                  }
-                  while (!numericWireValues.isEmpty()) {
-                    Object[] numericWireFrame = numericWireValues.pop();
-                    Object numericWireValue = numericWireFrame[0];
-                    if ((Boolean) numericWireFrame[1]) {
-                      numericWirePath.remove(numericWireValue);
-                      continue;
-                    }
-                    while (numericWireValue instanceof Variant
-                        || numericWireValue instanceof DataValue) {
-                      if (numericWireValue instanceof DataValue) {
-                        if (((DataValue) numericWireValue).getValue() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a value wrapper; use Variant.NULL_VALUE for"
-                                  + " null");
-                        }
-                        if (((DataValue) numericWireValue).getStatusCode() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a StatusCode; use StatusCode.GOOD for Good");
-                        }
-                        numericWireValue = ((DataValue) numericWireValue).getValue();
-                      } else {
-                        numericWireValue = ((Variant) numericWireValue).getValue();
-                      }
-                    }
-                    if (numericWireValue instanceof Matrix) {
-                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                    }
-                    if (numericWireValue != null && numericWireValue.getClass().isArray()) {
-                      if (!numericWirePath.add(numericWireValue)) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "Cyclic Variant arrays cannot be encoded");
-                      }
-                      numericWireValues.push(new Object[] {numericWireValue, true});
-                      for (int numericWireIndex = 0;
-                          numericWireIndex < Array.getLength(numericWireValue);
-                          numericWireIndex++) {
-                        Object numericWireElement = Array.get(numericWireValue, numericWireIndex);
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Variant.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Variant wire array requires a wrapper for every element; use"
-                                  + " Variant.NULL_VALUE for null");
-                        }
-                        if (numericWireElement == null
-                            && (UaEnumeratedType.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue))
-                                || OptionSetUInteger.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "An enum or OptionSet wire array cannot encode a null element");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Boolean.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Boolean wire array cannot retain a null element; Milo encodes it"
-                                  + " as false");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == StatusCode.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A StatusCode wire array cannot retain a null element; Milo encodes"
-                                  + " it as Good");
-                        }
-                        if (numericWireElement == null
-                            && Number.class.isAssignableFrom(
-                                ArrayUtil.getBoxedType(numericWireValue))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A numeric wire array cannot retain a null element; Milo encodes it"
-                                  + " as zero");
-                        }
-                        if (numericWireElement instanceof Variant
-                            || numericWireElement instanceof DataValue) {
-                          numericWireValues.push(new Object[] {numericWireElement, false});
-                        }
-                      }
-                    }
-                  }
+                  NumericValues.requireEncodable(wireValue);
                   wireValue =
                       ExtensionObject.encodeValue(
                           context.getServer().getStaticEncodingContext(), wireValue);
@@ -2895,68 +1963,8 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
                               + " unavailable in the effective type tree; resolved DataType: "
                               + argumentDataTypeId);
                     }
-                    Object numericElements =
-                        methodValue instanceof Matrix
-                            ? ((Matrix) methodValue).getElements()
-                            : methodValue;
-                    if (numericElements != null
-                        && numericElements.getClass().isArray()
-                        && (numericElements.getClass().getComponentType() == Number.class
-                            || numericElements.getClass().getComponentType() == UNumber.class)
-                        && (argumentDataTypeId.equals(NodeIds.Number)
-                            || dataTypeTree.isSubtypeOf(argumentDataTypeId, NodeIds.Number))) {
-                      Class<?> numericElementType = null;
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Object numericElement = Array.get(numericElements, numericIndex);
-                        if (numericElement != null) {
-                          if (numericElementType != null
-                              && numericElementType != numericElement.getClass()) {
-                            throw new UaException(
-                                StatusCodes.Bad_TypeMismatch,
-                                "An abstract numeric array requires one homogeneous wire element"
-                                    + " type");
-                          }
-                          numericElementType = numericElement.getClass();
-                        }
-                      }
-                      if (numericElementType == null) {
-                        numericElementType = dataTypeTree.getBackingClass(argumentDataTypeId);
-                      }
-                      if (numericElementType == Number.class
-                          || numericElementType == UNumber.class) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "An empty or all-null abstract numeric array requires a concretely"
-                                + " typed array");
-                      }
-                      Object numericArray =
-                          Array.newInstance(numericElementType, Array.getLength(numericElements));
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Array.set(
-                            numericArray, numericIndex, Array.get(numericElements, numericIndex));
-                      }
-                      if (methodValue instanceof Matrix) {
-                        methodValue =
-                            new Matrix(
-                                numericArray,
-                                ((Matrix) methodValue).getDimensions().clone(),
-                                ((Matrix) methodValue)
-                                    .getDataType()
-                                    .orElseThrow(
-                                        () ->
-                                            new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "A numeric Matrix requires an explicit wire"
-                                                    + " DataType")),
-                                ((Matrix) methodValue).getDataTypeId().orElse(null));
-                      } else {
-                        methodValue = numericArray;
-                      }
-                    }
+                    methodValue =
+                        NumericValues.normalize(methodValue, dataTypeTree, argumentDataTypeId);
                     if (methodValue != null) {
                       Object shapeElements =
                           methodValue instanceof Matrix
@@ -3147,97 +2155,7 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
                   Object wireValue = convertedValue;
                   Object wireElements =
                       wireValue instanceof Matrix ? ((Matrix) wireValue).getElements() : wireValue;
-                  var numericWireValues = new ArrayDeque<Object[]>();
-                  var numericWirePath =
-                      Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());
-                  if (wireValue != null) {
-                    numericWireValues.push(new Object[] {wireValue, false});
-                  }
-                  while (!numericWireValues.isEmpty()) {
-                    Object[] numericWireFrame = numericWireValues.pop();
-                    Object numericWireValue = numericWireFrame[0];
-                    if ((Boolean) numericWireFrame[1]) {
-                      numericWirePath.remove(numericWireValue);
-                      continue;
-                    }
-                    while (numericWireValue instanceof Variant
-                        || numericWireValue instanceof DataValue) {
-                      if (numericWireValue instanceof DataValue) {
-                        if (((DataValue) numericWireValue).getValue() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a value wrapper; use Variant.NULL_VALUE for"
-                                  + " null");
-                        }
-                        if (((DataValue) numericWireValue).getStatusCode() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a StatusCode; use StatusCode.GOOD for Good");
-                        }
-                        numericWireValue = ((DataValue) numericWireValue).getValue();
-                      } else {
-                        numericWireValue = ((Variant) numericWireValue).getValue();
-                      }
-                    }
-                    if (numericWireValue instanceof Matrix) {
-                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                    }
-                    if (numericWireValue != null && numericWireValue.getClass().isArray()) {
-                      if (!numericWirePath.add(numericWireValue)) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "Cyclic Variant arrays cannot be encoded");
-                      }
-                      numericWireValues.push(new Object[] {numericWireValue, true});
-                      for (int numericWireIndex = 0;
-                          numericWireIndex < Array.getLength(numericWireValue);
-                          numericWireIndex++) {
-                        Object numericWireElement = Array.get(numericWireValue, numericWireIndex);
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Variant.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Variant wire array requires a wrapper for every element; use"
-                                  + " Variant.NULL_VALUE for null");
-                        }
-                        if (numericWireElement == null
-                            && (UaEnumeratedType.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue))
-                                || OptionSetUInteger.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "An enum or OptionSet wire array cannot encode a null element");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Boolean.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Boolean wire array cannot retain a null element; Milo encodes it"
-                                  + " as false");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == StatusCode.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A StatusCode wire array cannot retain a null element; Milo encodes"
-                                  + " it as Good");
-                        }
-                        if (numericWireElement == null
-                            && Number.class.isAssignableFrom(
-                                ArrayUtil.getBoxedType(numericWireValue))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A numeric wire array cannot retain a null element; Milo encodes it"
-                                  + " as zero");
-                        }
-                        if (numericWireElement instanceof Variant
-                            || numericWireElement instanceof DataValue) {
-                          numericWireValues.push(new Object[] {numericWireElement, false});
-                        }
-                      }
-                    }
-                  }
+                  NumericValues.requireEncodable(wireValue);
                   wireValue =
                       ExtensionObject.encodeValue(
                           context.getServer().getStaticEncodingContext(), wireValue);
@@ -3268,112 +2186,22 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
 
   @Override
   public UaMethodNode getDeleteFileSystemObjectMethodNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:Delete (declaration i=13393, owner i=13353)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "Delete");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:Delete (declaration i=13393,"
-                    + " owner i=13353) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:Delete (declaration i=13393, owner i=13353)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:Delete (declaration i=13393, owner i=13353)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:Delete (declaration i=13393, owner i=13353)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:Delete (declaration i=13393, owner i=13353)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:Delete (declaration i=13393, owner i=13353)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Method) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:Delete (declaration i=13393, owner i=13353)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof UaMethodNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:Delete (declaration i=13393, owner i=13353)"
-              + " on "
-              + getNodeId());
-    }
-    return (UaMethodNode) parent;
+    return ServerMembers.lookup(
+        this,
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "Delete",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            false,
+            "http://opcfoundation.org/UA/:Delete (declaration i=13393, owner i=13353)"));
   }
 
   @Override
   public MethodBinding bindDeleteFileSystemObject(
-      MethodBindings bindings, FileDirectoryTypeDeleteFileSystemObjectHandler handler)
+      MethodBindings bindings, FileDirectoryType.DeleteFileSystemObjectHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -3384,7 +2212,7 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -3411,7 +2239,10 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -3477,7 +2308,7 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
 
   @Override
   public MethodBinding bindDeleteFileSystemObjectDetailed(
-      MethodBindings bindings, FileDirectoryTypeDeleteFileSystemObjectDetailedHandler handler)
+      MethodBindings bindings, FileDirectoryType.DeleteFileSystemObjectDetailedHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -3488,7 +2319,7 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -3515,7 +2346,10 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -3592,112 +2426,22 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
 
   @Override
   public UaMethodNode getMoveOrCopyMethodNode() {
-    UaNode parent = this;
-    {
-      var namespaceTable = parent.getNodeContext().getNamespaceTable();
-      var namespaceIndex = namespaceTable.getIndex("http://opcfoundation.org/UA/");
-      var referenceId = ExpandedNodeId.parse("i=47").toNodeId(namespaceTable);
-      if (namespaceIndex == null || referenceId.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeIdInvalid,
-            "http://opcfoundation.org/UA/:MoveOrCopy (declaration i=13395, owner i=13353)"
-                + " on "
-                + getNodeId());
-      }
-      var browseName = new QualifiedName(namespaceIndex, "MoveOrCopy");
-      var matches = new LinkedHashMap<NodeId, UaNode>();
-      for (var reference : parent.getReferences()) {
-        if (!reference.isForward()) {
-          continue;
-        }
-        if (!reference.getReferenceTypeId().equals(referenceId.orElseThrow())) {
-          var referenceTypeTree = parent.getNodeContext().getServer().getReferenceTypeTree();
-          if (!referenceTypeTree.containsType(reference.getReferenceTypeId())) {
-            throw new UaRuntimeException(
-                StatusCodes.Bad_NodeIdUnknown,
-                "Unavailable ReferenceType "
-                    + reference.getReferenceTypeId()
-                    + " while resolving http://opcfoundation.org/UA/:MoveOrCopy (declaration"
-                    + " i=13395, owner i=13353) on "
-                    + getNodeId());
-          }
-          if (!(referenceTypeTree.isSubtypeOf(
-              reference.getReferenceTypeId(), referenceId.orElseThrow()))) {
-            continue;
-          }
-        }
-        if (!reference.getTargetNodeId().isLocal()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NotSupported,
-              "http://opcfoundation.org/UA/:MoveOrCopy (declaration i=13395, owner i=13353)"
-                  + " on "
-                  + getNodeId());
-        }
-        var targetId = reference.getTargetNodeId().toNodeId(namespaceTable);
-        if (targetId.isEmpty()) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdInvalid,
-              "http://opcfoundation.org/UA/:MoveOrCopy (declaration i=13395, owner i=13353)"
-                  + " on "
-                  + getNodeId());
-        }
-        var local = parent.getNodeManager().getNode(targetId.orElseThrow());
-        var target =
-            local.isPresent()
-                ? local.orElseThrow()
-                : parent
-                    .getNodeContext()
-                    .getServer()
-                    .getAddressSpaceManager()
-                    .getManagedNode(targetId.orElseThrow())
-                    .orElse(null);
-        if (target == null) {
-          throw new UaRuntimeException(
-              StatusCodes.Bad_NodeIdUnknown,
-              "http://opcfoundation.org/UA/:MoveOrCopy (declaration i=13395, owner i=13353)"
-                  + " on "
-                  + getNodeId());
-        }
-        if (browseName.equals(target.getBrowseName())) {
-          matches.put(target.getNodeId(), target);
-        }
-      }
-      if (matches.isEmpty()) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NotFound,
-            "http://opcfoundation.org/UA/:MoveOrCopy (declaration i=13395, owner i=13353)"
-                + " on "
-                + getNodeId());
-      }
-      if (matches.size() > 1) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_TooManyMatches,
-            "http://opcfoundation.org/UA/:MoveOrCopy (declaration i=13395, owner i=13353)"
-                + " on "
-                + getNodeId());
-      }
-      parent = matches.values().iterator().next();
-      if (parent.getNodeClass() != NodeClass.Method) {
-        throw new UaRuntimeException(
-            StatusCodes.Bad_NodeClassInvalid,
-            "http://opcfoundation.org/UA/:MoveOrCopy (declaration i=13395, owner i=13353)"
-                + " on "
-                + getNodeId());
-      }
-    }
-    if (!(parent instanceof UaMethodNode)) {
-      throw new UaRuntimeException(
-          StatusCodes.Bad_TypeMismatch,
-          "http://opcfoundation.org/UA/:MoveOrCopy (declaration i=13395, owner i=13353)"
-              + " on "
-              + getNodeId());
-    }
-    return (UaMethodNode) parent;
+    return ServerMembers.lookup(
+        this,
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "MoveOrCopy",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            false,
+            "http://opcfoundation.org/UA/:MoveOrCopy (declaration i=13395, owner i=13353)"));
   }
 
   @Override
   public MethodBinding bindMoveOrCopy(
-      MethodBindings bindings, FileDirectoryTypeMoveOrCopyHandler handler) throws UaException {
+      MethodBindings bindings, FileDirectoryType.MoveOrCopyHandler handler) throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
     UaMethodNode methodNode = getMoveOrCopyMethodNode();
@@ -3707,7 +2451,7 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -3767,7 +2511,10 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -3981,68 +2728,8 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
                               + " unavailable in the effective type tree; resolved DataType: "
                               + argumentDataTypeId);
                     }
-                    Object numericElements =
-                        methodValue instanceof Matrix
-                            ? ((Matrix) methodValue).getElements()
-                            : methodValue;
-                    if (numericElements != null
-                        && numericElements.getClass().isArray()
-                        && (numericElements.getClass().getComponentType() == Number.class
-                            || numericElements.getClass().getComponentType() == UNumber.class)
-                        && (argumentDataTypeId.equals(NodeIds.Number)
-                            || dataTypeTree.isSubtypeOf(argumentDataTypeId, NodeIds.Number))) {
-                      Class<?> numericElementType = null;
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Object numericElement = Array.get(numericElements, numericIndex);
-                        if (numericElement != null) {
-                          if (numericElementType != null
-                              && numericElementType != numericElement.getClass()) {
-                            throw new UaException(
-                                StatusCodes.Bad_TypeMismatch,
-                                "An abstract numeric array requires one homogeneous wire element"
-                                    + " type");
-                          }
-                          numericElementType = numericElement.getClass();
-                        }
-                      }
-                      if (numericElementType == null) {
-                        numericElementType = dataTypeTree.getBackingClass(argumentDataTypeId);
-                      }
-                      if (numericElementType == Number.class
-                          || numericElementType == UNumber.class) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "An empty or all-null abstract numeric array requires a concretely"
-                                + " typed array");
-                      }
-                      Object numericArray =
-                          Array.newInstance(numericElementType, Array.getLength(numericElements));
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Array.set(
-                            numericArray, numericIndex, Array.get(numericElements, numericIndex));
-                      }
-                      if (methodValue instanceof Matrix) {
-                        methodValue =
-                            new Matrix(
-                                numericArray,
-                                ((Matrix) methodValue).getDimensions().clone(),
-                                ((Matrix) methodValue)
-                                    .getDataType()
-                                    .orElseThrow(
-                                        () ->
-                                            new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "A numeric Matrix requires an explicit wire"
-                                                    + " DataType")),
-                                ((Matrix) methodValue).getDataTypeId().orElse(null));
-                      } else {
-                        methodValue = numericArray;
-                      }
-                    }
+                    methodValue =
+                        NumericValues.normalize(methodValue, dataTypeTree, argumentDataTypeId);
                     if (methodValue != null) {
                       Object shapeElements =
                           methodValue instanceof Matrix
@@ -4233,97 +2920,7 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
                   Object wireValue = convertedValue;
                   Object wireElements =
                       wireValue instanceof Matrix ? ((Matrix) wireValue).getElements() : wireValue;
-                  var numericWireValues = new ArrayDeque<Object[]>();
-                  var numericWirePath =
-                      Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());
-                  if (wireValue != null) {
-                    numericWireValues.push(new Object[] {wireValue, false});
-                  }
-                  while (!numericWireValues.isEmpty()) {
-                    Object[] numericWireFrame = numericWireValues.pop();
-                    Object numericWireValue = numericWireFrame[0];
-                    if ((Boolean) numericWireFrame[1]) {
-                      numericWirePath.remove(numericWireValue);
-                      continue;
-                    }
-                    while (numericWireValue instanceof Variant
-                        || numericWireValue instanceof DataValue) {
-                      if (numericWireValue instanceof DataValue) {
-                        if (((DataValue) numericWireValue).getValue() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a value wrapper; use Variant.NULL_VALUE for"
-                                  + " null");
-                        }
-                        if (((DataValue) numericWireValue).getStatusCode() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a StatusCode; use StatusCode.GOOD for Good");
-                        }
-                        numericWireValue = ((DataValue) numericWireValue).getValue();
-                      } else {
-                        numericWireValue = ((Variant) numericWireValue).getValue();
-                      }
-                    }
-                    if (numericWireValue instanceof Matrix) {
-                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                    }
-                    if (numericWireValue != null && numericWireValue.getClass().isArray()) {
-                      if (!numericWirePath.add(numericWireValue)) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "Cyclic Variant arrays cannot be encoded");
-                      }
-                      numericWireValues.push(new Object[] {numericWireValue, true});
-                      for (int numericWireIndex = 0;
-                          numericWireIndex < Array.getLength(numericWireValue);
-                          numericWireIndex++) {
-                        Object numericWireElement = Array.get(numericWireValue, numericWireIndex);
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Variant.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Variant wire array requires a wrapper for every element; use"
-                                  + " Variant.NULL_VALUE for null");
-                        }
-                        if (numericWireElement == null
-                            && (UaEnumeratedType.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue))
-                                || OptionSetUInteger.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "An enum or OptionSet wire array cannot encode a null element");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Boolean.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Boolean wire array cannot retain a null element; Milo encodes it"
-                                  + " as false");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == StatusCode.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A StatusCode wire array cannot retain a null element; Milo encodes"
-                                  + " it as Good");
-                        }
-                        if (numericWireElement == null
-                            && Number.class.isAssignableFrom(
-                                ArrayUtil.getBoxedType(numericWireValue))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A numeric wire array cannot retain a null element; Milo encodes it"
-                                  + " as zero");
-                        }
-                        if (numericWireElement instanceof Variant
-                            || numericWireElement instanceof DataValue) {
-                          numericWireValues.push(new Object[] {numericWireElement, false});
-                        }
-                      }
-                    }
-                  }
+                  NumericValues.requireEncodable(wireValue);
                   wireValue =
                       ExtensionObject.encodeValue(
                           context.getServer().getStaticEncodingContext(), wireValue);
@@ -4354,7 +2951,7 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
 
   @Override
   public MethodBinding bindMoveOrCopyDetailed(
-      MethodBindings bindings, FileDirectoryTypeMoveOrCopyDetailedHandler handler)
+      MethodBindings bindings, FileDirectoryType.MoveOrCopyDetailedHandler handler)
       throws UaException {
     Objects.requireNonNull(bindings, "bindings");
     Objects.requireNonNull(handler, "handler");
@@ -4365,7 +2962,7 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
     return bindings.bind(
         this,
         methodNode,
-        new AbstractMethodInvocationHandler(methodNode) {
+        new org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler(methodNode) {
           @Override
           public Argument[] getInputArguments() {
             return new Argument[] {
@@ -4425,7 +3022,10 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
 
           @Override
           protected CallMethodResult invokeResult(
-              AbstractMethodInvocationHandler.InvocationContext context, Variant[] inputValues)
+              org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler
+                      .InvocationContext
+                  context,
+              Variant[] inputValues)
               throws UaException {
             StatusCode[] inputResults = new StatusCode[inputValues.length];
             Arrays.fill(inputResults, StatusCode.GOOD);
@@ -4651,68 +3251,8 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
                               + " unavailable in the effective type tree; resolved DataType: "
                               + argumentDataTypeId);
                     }
-                    Object numericElements =
-                        methodValue instanceof Matrix
-                            ? ((Matrix) methodValue).getElements()
-                            : methodValue;
-                    if (numericElements != null
-                        && numericElements.getClass().isArray()
-                        && (numericElements.getClass().getComponentType() == Number.class
-                            || numericElements.getClass().getComponentType() == UNumber.class)
-                        && (argumentDataTypeId.equals(NodeIds.Number)
-                            || dataTypeTree.isSubtypeOf(argumentDataTypeId, NodeIds.Number))) {
-                      Class<?> numericElementType = null;
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Object numericElement = Array.get(numericElements, numericIndex);
-                        if (numericElement != null) {
-                          if (numericElementType != null
-                              && numericElementType != numericElement.getClass()) {
-                            throw new UaException(
-                                StatusCodes.Bad_TypeMismatch,
-                                "An abstract numeric array requires one homogeneous wire element"
-                                    + " type");
-                          }
-                          numericElementType = numericElement.getClass();
-                        }
-                      }
-                      if (numericElementType == null) {
-                        numericElementType = dataTypeTree.getBackingClass(argumentDataTypeId);
-                      }
-                      if (numericElementType == Number.class
-                          || numericElementType == UNumber.class) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "An empty or all-null abstract numeric array requires a concretely"
-                                + " typed array");
-                      }
-                      Object numericArray =
-                          Array.newInstance(numericElementType, Array.getLength(numericElements));
-                      for (int numericIndex = 0;
-                          numericIndex < Array.getLength(numericElements);
-                          numericIndex++) {
-                        Array.set(
-                            numericArray, numericIndex, Array.get(numericElements, numericIndex));
-                      }
-                      if (methodValue instanceof Matrix) {
-                        methodValue =
-                            new Matrix(
-                                numericArray,
-                                ((Matrix) methodValue).getDimensions().clone(),
-                                ((Matrix) methodValue)
-                                    .getDataType()
-                                    .orElseThrow(
-                                        () ->
-                                            new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "A numeric Matrix requires an explicit wire"
-                                                    + " DataType")),
-                                ((Matrix) methodValue).getDataTypeId().orElse(null));
-                      } else {
-                        methodValue = numericArray;
-                      }
-                    }
+                    methodValue =
+                        NumericValues.normalize(methodValue, dataTypeTree, argumentDataTypeId);
                     if (methodValue != null) {
                       Object shapeElements =
                           methodValue instanceof Matrix
@@ -4903,97 +3443,7 @@ public class FileDirectoryTypeNode extends FolderTypeNode implements FileDirecto
                   Object wireValue = convertedValue;
                   Object wireElements =
                       wireValue instanceof Matrix ? ((Matrix) wireValue).getElements() : wireValue;
-                  var numericWireValues = new ArrayDeque<Object[]>();
-                  var numericWirePath =
-                      Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());
-                  if (wireValue != null) {
-                    numericWireValues.push(new Object[] {wireValue, false});
-                  }
-                  while (!numericWireValues.isEmpty()) {
-                    Object[] numericWireFrame = numericWireValues.pop();
-                    Object numericWireValue = numericWireFrame[0];
-                    if ((Boolean) numericWireFrame[1]) {
-                      numericWirePath.remove(numericWireValue);
-                      continue;
-                    }
-                    while (numericWireValue instanceof Variant
-                        || numericWireValue instanceof DataValue) {
-                      if (numericWireValue instanceof DataValue) {
-                        if (((DataValue) numericWireValue).getValue() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a value wrapper; use Variant.NULL_VALUE for"
-                                  + " null");
-                        }
-                        if (((DataValue) numericWireValue).getStatusCode() == null) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A DataValue requires a StatusCode; use StatusCode.GOOD for Good");
-                        }
-                        numericWireValue = ((DataValue) numericWireValue).getValue();
-                      } else {
-                        numericWireValue = ((Variant) numericWireValue).getValue();
-                      }
-                    }
-                    if (numericWireValue instanceof Matrix) {
-                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                    }
-                    if (numericWireValue != null && numericWireValue.getClass().isArray()) {
-                      if (!numericWirePath.add(numericWireValue)) {
-                        throw new UaException(
-                            StatusCodes.Bad_TypeMismatch,
-                            "Cyclic Variant arrays cannot be encoded");
-                      }
-                      numericWireValues.push(new Object[] {numericWireValue, true});
-                      for (int numericWireIndex = 0;
-                          numericWireIndex < Array.getLength(numericWireValue);
-                          numericWireIndex++) {
-                        Object numericWireElement = Array.get(numericWireValue, numericWireIndex);
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Variant.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Variant wire array requires a wrapper for every element; use"
-                                  + " Variant.NULL_VALUE for null");
-                        }
-                        if (numericWireElement == null
-                            && (UaEnumeratedType.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue))
-                                || OptionSetUInteger.class.isAssignableFrom(
-                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "An enum or OptionSet wire array cannot encode a null element");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == Boolean.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A Boolean wire array cannot retain a null element; Milo encodes it"
-                                  + " as false");
-                        }
-                        if (numericWireElement == null
-                            && ArrayUtil.getBoxedType(numericWireValue) == StatusCode.class) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A StatusCode wire array cannot retain a null element; Milo encodes"
-                                  + " it as Good");
-                        }
-                        if (numericWireElement == null
-                            && Number.class.isAssignableFrom(
-                                ArrayUtil.getBoxedType(numericWireValue))) {
-                          throw new UaException(
-                              StatusCodes.Bad_TypeMismatch,
-                              "A numeric wire array cannot retain a null element; Milo encodes it"
-                                  + " as zero");
-                        }
-                        if (numericWireElement instanceof Variant
-                            || numericWireElement instanceof DataValue) {
-                          numericWireValues.push(new Object[] {numericWireElement, false});
-                        }
-                      }
-                    }
-                  }
+                  NumericValues.requireEncodable(wireValue);
                   wireValue =
                       ExtensionObject.encodeValue(
                           context.getServer().getStaticEncodingContext(), wireValue);

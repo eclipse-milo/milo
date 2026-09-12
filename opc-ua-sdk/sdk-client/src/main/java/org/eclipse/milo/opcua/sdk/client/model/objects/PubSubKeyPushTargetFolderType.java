@@ -24,18 +24,15 @@ import org.jspecify.annotations.Nullable;
 /**
  * @see <a
  *     href="https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.1">https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.1</a>
+ * @see com.digitalpetri.opcua.uanodeset.runtime.members
  */
 public interface PubSubKeyPushTargetFolderType extends FolderType {
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.2
    *
-   * <p>Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * <p>Returns the required node.
    *
-   * @return the existing member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
+   * @return the required node.
    */
   @NullMarked
   UaMethodNode getAddPushTargetMethodNode() throws UaException;
@@ -43,15 +40,9 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.2
    *
-   * <p>Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * <p>Returns the required node.
    *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the existing member
+   * @return a future completing with the required node.
    */
   @NullMarked
   CompletableFuture<? extends UaMethodNode> getAddPushTargetMethodNodeAsync();
@@ -60,24 +51,8 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.2
    *
    * <p>Invokes <code>AddPushTarget</code> on this node's ObjectId using the effective Method
-   * contract.
+   * contract. Requires Good operation status.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param applicationUri ; the supplied payload may be null.
-   * @param endpointUrl ; the supplied payload may be null.
-   * @param securityPolicyUri ; the supplied payload may be null.
-   * @param userTokenType ; the supplied payload may be null.
-   * @param requestedKeyCount ; the supplied payload may be null.
-   * @param retryInterval ; the supplied payload may be null.
    * @return the output value or object, or its future; a single value may be null.
    * @throws UaException if lookup, input validation, transport, service, operation status or output
    *     conversion fails.
@@ -96,25 +71,8 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.2
    *
    * <p>Invokes <code>AddPushTarget</code> on this node's ObjectId using the effective Method
-   * contract.
+   * contract. Requires Good operation status.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param applicationUri ; the supplied payload may be null.
-   * @param endpointUrl ; the supplied payload may be null.
-   * @param securityPolicyUri ; the supplied payload may be null.
-   * @param userTokenType ; the supplied payload may be null.
-   * @param requestedKeyCount ; the supplied payload may be null.
-   * @param retryInterval ; the supplied payload may be null.
    * @return the output value or object, or its future; a single value may be null.
    */
   @NullMarked
@@ -130,24 +88,8 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.2
    *
    * <p>Invokes <code>AddPushTarget</code> on this node's ObjectId using the effective Method
-   * contract.
+   * contract. Retains the operation status, diagnostics and outputs.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param applicationUri ; the supplied payload may be null.
-   * @param endpointUrl ; the supplied payload may be null.
-   * @param securityPolicyUri ; the supplied payload may be null.
-   * @param userTokenType ; the supplied payload may be null.
-   * @param requestedKeyCount ; the supplied payload may be null.
-   * @param retryInterval ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    * @throws UaException if lookup, input validation, transport, service or response envelope
    *     validation fails.
@@ -166,25 +108,9 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.2
    *
    * <p>Invokes <code>AddPushTarget</code> on this node's ObjectId using the effective Method
-   * contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
+   * contract. Retains the operation status, diagnostics and outputs.
    *
    * @param options request-wide diagnostics options for this Call only.
-   * @param applicationUri ; the supplied payload may be null.
-   * @param endpointUrl ; the supplied payload may be null.
-   * @param securityPolicyUri ; the supplied payload may be null.
-   * @param userTokenType ; the supplied payload may be null.
-   * @param requestedKeyCount ; the supplied payload may be null.
-   * @param retryInterval ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    * @throws UaException if lookup, input validation, transport, service or response envelope
    *     validation fails.
@@ -205,25 +131,8 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.2
    *
    * <p>Invokes <code>AddPushTarget</code> on this node's ObjectId using the effective Method
-   * contract.
+   * contract. Retains the operation status, diagnostics and outputs.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param applicationUri ; the supplied payload may be null.
-   * @param endpointUrl ; the supplied payload may be null.
-   * @param securityPolicyUri ; the supplied payload may be null.
-   * @param userTokenType ; the supplied payload may be null.
-   * @param requestedKeyCount ; the supplied payload may be null.
-   * @param retryInterval ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    */
   @NullMarked
@@ -240,26 +149,9 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.2
    *
    * <p>Invokes <code>AddPushTarget</code> on this node's ObjectId using the effective Method
-   * contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
+   * contract. Retains the operation status, diagnostics and outputs.
    *
    * @param options request-wide diagnostics options for this Call only.
-   * @param applicationUri ; the supplied payload may be null.
-   * @param endpointUrl ; the supplied payload may be null.
-   * @param securityPolicyUri ; the supplied payload may be null.
-   * @param userTokenType ; the supplied payload may be null.
-   * @param requestedKeyCount ; the supplied payload may be null.
-   * @param retryInterval ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    * @throws NullPointerException if a required options or presence object is null (exceptional
    *     completion).
@@ -278,13 +170,9 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.3
    *
-   * <p>Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * <p>Returns the required node.
    *
-   * @return the existing member
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
+   * @return the required node.
    */
   @NullMarked
   UaMethodNode getRemovePushTargetMethodNode() throws UaException;
@@ -292,15 +180,9 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.3
    *
-   * <p>Resolves the required member by its namespace-qualified path. A missing member fails with
-   * Bad_NotFound. Resolution does not create a UA node. It can perform service I/O and construct or
-   * reuse a Java wrapper in Milo's address space cache. A reference can change after lookup.
+   * <p>Returns the required node.
    *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the existing member
+   * @return a future completing with the required node.
    */
   @NullMarked
   CompletableFuture<? extends UaMethodNode> getRemovePushTargetMethodNodeAsync();
@@ -309,19 +191,8 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.3
    *
    * <p>Invokes <code>RemovePushTarget</code> on this node's ObjectId using the effective Method
-   * contract.
+   * contract. Requires Good operation status.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param pushTargetId ; the supplied payload may be null.
    * @throws UaException if lookup, input validation, transport, service, operation status or output
    *     conversion fails.
    */
@@ -332,20 +203,8 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.3
    *
    * <p>Invokes <code>RemovePushTarget</code> on this node's ObjectId using the effective Method
-   * contract.
+   * contract. Requires Good operation status.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param pushTargetId ; the supplied payload may be null.
    * @return a future whose successful payload is null.
    */
   @NullMarked
@@ -356,19 +215,8 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.3
    *
    * <p>Invokes <code>RemovePushTarget</code> on this node's ObjectId using the effective Method
-   * contract.
+   * contract. Retains the operation status, diagnostics and outputs.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param pushTargetId ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    * @throws UaException if lookup, input validation, transport, service or response envelope
    *     validation fails.
@@ -381,20 +229,9 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.3
    *
    * <p>Invokes <code>RemovePushTarget</code> on this node's ObjectId using the effective Method
-   * contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
+   * contract. Retains the operation status, diagnostics and outputs.
    *
    * @param options request-wide diagnostics options for this Call only.
-   * @param pushTargetId ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    * @throws UaException if lookup, input validation, transport, service or response envelope
    *     validation fails.
@@ -408,20 +245,8 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.3
    *
    * <p>Invokes <code>RemovePushTarget</code> on this node's ObjectId using the effective Method
-   * contract.
+   * contract. Retains the operation status, diagnostics and outputs.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param pushTargetId ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    */
   @NullMarked
@@ -432,21 +257,9 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.3
    *
    * <p>Invokes <code>RemovePushTarget</code> on this node's ObjectId using the effective Method
-   * contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
+   * contract. Retains the operation status, diagnostics and outputs.
    *
    * @param options request-wide diagnostics options for this Call only.
-   * @param pushTargetId ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    * @throws NullPointerException if a required options or presence object is null (exceptional
    *     completion).
@@ -458,14 +271,9 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.4
    *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. It can perform service I/O and
-   * construct or reuse a Java wrapper in Milo's address space cache. A reference can change after
-   * lookup.
+   * <p>Returns the node, or null if absent.
    *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
+   * @return the node, or null if absent.
    */
   @NullMarked
   @Nullable UaMethodNode getAddPushTargetFolderMethodNode() throws UaException;
@@ -473,16 +281,9 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.4
    *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. It can perform service I/O and
-   * construct or reuse a Java wrapper in Milo's address space cache. A reference can change after
-   * lookup.
+   * <p>Returns the node, or null if absent.
    *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the existing member, or null for confirmed absence
+   * @return a future completing with the node, or null if absent.
    */
   @NullMarked
   CompletableFuture<? extends @Nullable UaMethodNode> getAddPushTargetFolderMethodNodeAsync();
@@ -491,19 +292,8 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.4
    *
    * <p>Invokes <code>AddPushTargetFolder</code> on this node's ObjectId using the effective Method
-   * contract.
+   * contract. Requires Good operation status.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param name ; the supplied payload may be null.
    * @return the output value or object, or its future; a single value may be null.
    * @throws UaException if lookup, input validation, transport, service, operation status or output
    *     conversion fails.
@@ -515,20 +305,8 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.4
    *
    * <p>Invokes <code>AddPushTargetFolder</code> on this node's ObjectId using the effective Method
-   * contract.
+   * contract. Requires Good operation status.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param name ; the supplied payload may be null.
    * @return the output value or object, or its future; a single value may be null.
    */
   @NullMarked
@@ -538,19 +316,8 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.4
    *
    * <p>Invokes <code>AddPushTargetFolder</code> on this node's ObjectId using the effective Method
-   * contract.
+   * contract. Retains the operation status, diagnostics and outputs.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param name ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    * @throws UaException if lookup, input validation, transport, service or response envelope
    *     validation fails.
@@ -563,20 +330,9 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.4
    *
    * <p>Invokes <code>AddPushTargetFolder</code> on this node's ObjectId using the effective Method
-   * contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
+   * contract. Retains the operation status, diagnostics and outputs.
    *
    * @param options request-wide diagnostics options for this Call only.
-   * @param name ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    * @throws UaException if lookup, input validation, transport, service or response envelope
    *     validation fails.
@@ -590,20 +346,8 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.4
    *
    * <p>Invokes <code>AddPushTargetFolder</code> on this node's ObjectId using the effective Method
-   * contract.
+   * contract. Retains the operation status, diagnostics and outputs.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param name ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    */
   @NullMarked
@@ -614,21 +358,9 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.4
    *
    * <p>Invokes <code>AddPushTargetFolder</code> on this node's ObjectId using the effective Method
-   * contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
+   * contract. Retains the operation status, diagnostics and outputs.
    *
    * @param options request-wide diagnostics options for this Call only.
-   * @param name ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    * @throws NullPointerException if a required options or presence object is null (exceptional
    *     completion).
@@ -640,14 +372,9 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.5
    *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. It can perform service I/O and
-   * construct or reuse a Java wrapper in Milo's address space cache. A reference can change after
-   * lookup.
+   * <p>Returns the node, or null if absent.
    *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
+   * @return the node, or null if absent.
    */
   @NullMarked
   @Nullable UaMethodNode getRemovePushTargetFolderMethodNode() throws UaException;
@@ -655,16 +382,9 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
   /**
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.5
    *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. It can perform service I/O and
-   * construct or reuse a Java wrapper in Milo's address space cache. A reference can change after
-   * lookup.
+   * <p>Returns the node, or null if absent.
    *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the existing member, or null for confirmed absence
+   * @return a future completing with the node, or null if absent.
    */
   @NullMarked
   CompletableFuture<? extends @Nullable UaMethodNode> getRemovePushTargetFolderMethodNodeAsync();
@@ -673,19 +393,8 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.5
    *
    * <p>Invokes <code>RemovePushTargetFolder</code> on this node's ObjectId using the effective
-   * Method contract.
+   * Method contract. Requires Good operation status.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param pushTargetFolderNodeId ; the supplied payload may be null.
    * @throws UaException if lookup, input validation, transport, service, operation status or output
    *     conversion fails.
    */
@@ -696,20 +405,8 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.5
    *
    * <p>Invokes <code>RemovePushTargetFolder</code> on this node's ObjectId using the effective
-   * Method contract.
+   * Method contract. Requires Good operation status.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param pushTargetFolderNodeId ; the supplied payload may be null.
    * @return a future whose successful payload is null.
    */
   @NullMarked
@@ -720,19 +417,8 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.5
    *
    * <p>Invokes <code>RemovePushTargetFolder</code> on this node's ObjectId using the effective
-   * Method contract.
+   * Method contract. Retains the operation status, diagnostics and outputs.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param pushTargetFolderNodeId ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    * @throws UaException if lookup, input validation, transport, service or response envelope
    *     validation fails.
@@ -745,20 +431,9 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.5
    *
    * <p>Invokes <code>RemovePushTargetFolder</code> on this node's ObjectId using the effective
-   * Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
+   * Method contract. Retains the operation status, diagnostics and outputs.
    *
    * @param options request-wide diagnostics options for this Call only.
-   * @param pushTargetFolderNodeId ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    * @throws UaException if lookup, input validation, transport, service or response envelope
    *     validation fails.
@@ -772,20 +447,8 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.5
    *
    * <p>Invokes <code>RemovePushTargetFolder</code> on this node's ObjectId using the effective
-   * Method contract.
+   * Method contract. Retains the operation status, diagnostics and outputs.
    *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param pushTargetFolderNodeId ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    */
   @NullMarked
@@ -796,21 +459,9 @@ public interface PubSubKeyPushTargetFolderType extends FolderType {
    * https://reference.opcfoundation.org/v105/Core/docs/Part14/8.7.5
    *
    * <p>Invokes <code>RemovePushTargetFolder</code> on this node's ObjectId using the effective
-   * Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
+   * Method contract. Retains the operation status, diagnostics and outputs.
    *
    * @param options request-wide diagnostics options for this Call only.
-   * @param pushTargetFolderNodeId ; the supplied payload may be null.
    * @return the detailed outcome, or its future.
    * @throws NullPointerException if a required options or presence object is null (exceptional
    *     completion).

@@ -11,24 +11,21 @@
 package org.eclipse.milo.opcua.sdk.client.model.objects;
 
 import com.digitalpetri.opcua.uanodeset.runtime.client.ClientDataTypes;
+import com.digitalpetri.opcua.uanodeset.runtime.client.ClientMembers;
 import com.digitalpetri.opcua.uanodeset.runtime.client.ClientViews;
+import com.digitalpetri.opcua.uanodeset.runtime.members.MemberDeclaration;
 import com.digitalpetri.opcua.uanodeset.runtime.methods.MethodCallOptions;
 import com.digitalpetri.opcua.uanodeset.runtime.methods.MethodCallResult;
+import com.digitalpetri.opcua.uanodeset.runtime.values.NumericValues;
 import java.lang.reflect.Array;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.core.model.methods.DataSetFolderTypeAddPublishedDataItemsOutputs;
 import org.eclipse.milo.opcua.sdk.core.model.methods.DataSetFolderTypeAddPublishedDataItemsTemplateOutputs;
 import org.eclipse.milo.opcua.sdk.core.model.methods.DataSetFolderTypeAddPublishedEventsOutputs;
@@ -39,9 +36,7 @@ import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
-import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
@@ -53,11 +48,9 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UNumber;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
-import org.eclipse.milo.opcua.stack.core.types.structured.BrowsePath;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallResponse;
@@ -66,8 +59,6 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetFieldFlags;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataSetMetaDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishedVariableDataType;
-import org.eclipse.milo.opcua.stack.core.types.structured.RelativePath;
-import org.eclipse.milo.opcua.stack.core.types.structured.RelativePathElement;
 import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SimpleAttributeOperand;
@@ -114,295 +105,31 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
     return ClientViews.forNode(node.client, node);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.2
-   *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. It can perform service I/O and
-   * construct or reuse a Java wrapper in Milo's address space cache. A reference can change after
-   * lookup.
-   *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
-   */
   @NullMarked
   @Override
   public @Nullable UaMethodNode getAddPublishedDataItemsMethodNode() throws UaException {
-    try {
-      return getAddPublishedDataItemsMethodNodeAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(getAddPublishedDataItemsMethodNodeAsync(), false);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.2
-   *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. It can perform service I/O and
-   * construct or reuse a Java wrapper in Milo's address space cache. A reference can change after
-   * lookup.
-   *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the existing member, or null for confirmed absence
-   */
   @NullMarked
   @Override
   public CompletableFuture<? extends @Nullable UaMethodNode>
       getAddPublishedDataItemsMethodNodeAsync() {
-    CompletableFuture<UaMethodNode> result = new CompletableFuture<>();
-    try {
-      CompletableFuture<NodeId> lookup = CompletableFuture.completedFuture(getNodeId());
-      CompletableFuture<UaNode> hop0 =
-          lookup.thenCompose(
-              parent -> {
-                NodeId parentId = parent;
-                if (result.isCancelled()) {
-                  return CompletableFuture.failedFuture(new CancellationException());
-                }
-                if (parentId == null) {
-                  return CompletableFuture.completedFuture(null);
-                }
-                CompletableFuture<Void> namespaceReady;
-                if (client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/") == null
-                    || client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/")
-                        == null) {
-                  namespaceReady = client.readNamespaceTableAsync().thenApply(ignored -> null);
-                } else {
-                  namespaceReady = CompletableFuture.completedFuture(null);
-                }
-                return namespaceReady.thenCompose(
-                    ignored -> {
-                      if (result.isCancelled()) {
-                        return CompletableFuture.failedFuture(new CancellationException());
-                      }
-                      var namespaceIndex =
-                          client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/");
-                      var referenceId =
-                          ExpandedNodeId.parse("i=47").toNodeId(client.getNamespaceTable());
-                      if (namespaceIndex == null || referenceId.isEmpty()) {
-                        return CompletableFuture.failedFuture(
-                            new UaException(
-                                StatusCodes.Bad_NodeIdInvalid,
-                                "http://opcfoundation.org/UA/:AddPublishedDataItems (declaration"
-                                    + " i=14493, owner i=14477) on "
-                                    + getNodeId()));
-                      }
-                      var browsePath =
-                          new BrowsePath(
-                              parentId,
-                              new RelativePath(
-                                  new RelativePathElement[] {
-                                    new RelativePathElement(
-                                        referenceId.orElseThrow(),
-                                        false,
-                                        true,
-                                        new QualifiedName(namespaceIndex, "AddPublishedDataItems"))
-                                  }));
-                      return client
-                          .translateBrowsePathsAsync(List.of(browsePath))
-                          .thenCompose(
-                              response -> {
-                                if (result.isCancelled()) {
-                                  return CompletableFuture.failedFuture(
-                                      new CancellationException());
-                                }
-                                var results = response == null ? null : response.getResults();
-                                if (results == null
-                                    || results.length != 1
-                                    || results[0] == null
-                                    || results[0].getStatusCode() == null) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:AddPublishedDataItems"
-                                              + " (declaration i=14493, owner i=14477) on "
-                                              + getNodeId()));
-                                }
-                                var operation = results[0];
-                                if (operation.getStatusCode().getValue()
-                                    == StatusCodes.Bad_NoMatch) {
-                                  return CompletableFuture.completedFuture(null);
-                                }
-                                if (!operation.getStatusCode().isGood()) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          operation.getStatusCode(),
-                                          "http://opcfoundation.org/UA/:AddPublishedDataItems"
-                                              + " (declaration i=14493, owner i=14477)"));
-                                }
-                                var targets = operation.getTargets();
-                                if (targets == null || targets.length == 0) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:AddPublishedDataItems"
-                                              + " (declaration i=14493, owner i=14477) on "
-                                              + getNodeId()));
-                                }
-                                var identities = new ArrayList<CompletableFuture<NodeId>>();
-                                for (var target : targets) {
-                                  if (target == null
-                                      || target.getTargetId() == null
-                                      || target.getRemainingPathIndex() == null
-                                      || target.getRemainingPathIndex().longValue()
-                                          != 0xffffffffL) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_UnexpectedError,
-                                            "http://opcfoundation.org/UA/:AddPublishedDataItems"
-                                                + " (declaration i=14493, owner i=14477) on "
-                                                + getNodeId()));
-                                  }
-                                  if (!target.getTargetId().isLocal()) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_NotSupported,
-                                            "http://opcfoundation.org/UA/:AddPublishedDataItems"
-                                                + " (declaration i=14493, owner i=14477) on "
-                                                + getNodeId()));
-                                  }
-                                  if (result.isCancelled()) {
-                                    return CompletableFuture.failedFuture(
-                                        new CancellationException());
-                                  }
-                                  var localTarget =
-                                      target.getTargetId().toNodeId(client.getNamespaceTable());
-                                  if (localTarget.isPresent()) {
-                                    identities.add(
-                                        CompletableFuture.completedFuture(
-                                            localTarget.orElseThrow()));
-                                  } else {
-                                    identities.add(
-                                        client
-                                            .readNamespaceTableAsync()
-                                            .thenCompose(
-                                                namespaceTable -> {
-                                                  var resolvedTarget =
-                                                      target.getTargetId().toNodeId(namespaceTable);
-                                                  if (resolvedTarget.isEmpty()) {
-                                                    return CompletableFuture.failedFuture(
-                                                        new UaException(
-                                                            StatusCodes.Bad_NodeIdInvalid,
-                                                            "http://opcfoundation.org/UA/:AddPublishedDataItems"
-                                                                + " (declaration i=14493, owner"
-                                                                + " i=14477) on "
-                                                                + getNodeId()));
-                                                  }
-                                                  return CompletableFuture.completedFuture(
-                                                      resolvedTarget.orElseThrow());
-                                                }));
-                                  }
-                                }
-                                return CompletableFuture.allOf(
-                                        identities.toArray(CompletableFuture[]::new))
-                                    .thenCompose(
-                                        ready -> {
-                                          if (result.isCancelled()) {
-                                            return CompletableFuture.failedFuture(
-                                                new CancellationException());
-                                          }
-                                          var unique = new LinkedHashSet<NodeId>();
-                                          identities.forEach(
-                                              identity -> unique.add(identity.join()));
-                                          if (unique.stream().anyMatch(NodeId::isNull)) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_NodeIdInvalid,
-                                                    "http://opcfoundation.org/UA/:AddPublishedDataItems"
-                                                        + " (declaration i=14493, owner i=14477) on"
-                                                        + " "
-                                                        + getNodeId()));
-                                          }
-                                          if (unique.size() != 1) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_TooManyMatches,
-                                                    "http://opcfoundation.org/UA/:AddPublishedDataItems"
-                                                        + " (declaration i=14493, owner i=14477) on"
-                                                        + " "
-                                                        + getNodeId()));
-                                          }
-                                          return client
-                                              .getAddressSpace()
-                                              .getNodeAsync(unique.iterator().next())
-                                              .thenCompose(
-                                                  node -> {
-                                                    if (node == null
-                                                        || node.getNodeClass()
-                                                            != NodeClass.Method) {
-                                                      return CompletableFuture.failedFuture(
-                                                          new UaException(
-                                                              StatusCodes.Bad_NodeClassInvalid,
-                                                              "http://opcfoundation.org/UA/:AddPublishedDataItems"
-                                                                  + " (declaration i=14493, owner"
-                                                                  + " i=14477) on "
-                                                                  + getNodeId()));
-                                                    }
-                                                    return CompletableFuture.completedFuture(node);
-                                                  });
-                                        });
-                              });
-                    });
-              });
-      hop0.whenComplete(
-          (node, failure) -> {
-            if (failure != null) {
-              result.completeExceptionally(failure);
-            } else if (node != null && !(node instanceof UaMethodNode)) {
-              result.completeExceptionally(
-                  new UaException(
-                      StatusCodes.Bad_TypeMismatch,
-                      "http://opcfoundation.org/UA/:AddPublishedDataItems (declaration i=14493,"
-                          + " owner i=14477)"));
-            } else {
-              result.complete((UaMethodNode) node);
-            }
-          });
-    } catch (Exception e) {
-      result.completeExceptionally(e);
-    }
-    return result;
+    return ClientMembers.lookup(
+        client,
+        getNodeId(),
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "AddPublishedDataItems",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            true,
+            "http://opcfoundation.org/UA/:AddPublishedDataItems (declaration i=14493, owner"
+                + " i=14477)"));
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.2
-   *
-   * <p>Invokes <code>AddPublishedDataItems</code> on this node's ObjectId using the effective
-   * Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param name ; the supplied payload may be null.
-   * @param fieldNameAliases ; the supplied payload may be null.
-   * @param fieldFlags ; the supplied payload may be null.
-   * @param variablesToAdd ; the supplied payload may be null.
-   * @return the output value or object, or its future; a single value may be null.
-   * @throws UaException if lookup, input validation, transport, service, operation status or output
-   *     conversion fails.
-   */
   @NullMarked
   @Override
   public DataSetFolderTypeAddPublishedDataItemsOutputs callAddPublishedDataItems(
@@ -415,29 +142,6 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
         .requireGood();
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.2
-   *
-   * <p>Invokes <code>AddPublishedDataItems</code> on this node's ObjectId using the effective
-   * Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param name ; the supplied payload may be null.
-   * @param fieldNameAliases ; the supplied payload may be null.
-   * @param fieldFlags ; the supplied payload may be null.
-   * @param variablesToAdd ; the supplied payload may be null.
-   * @return the output value or object, or its future; a single value may be null.
-   */
   @NullMarked
   @Override
   public CompletableFuture<? extends DataSetFolderTypeAddPublishedDataItemsOutputs>
@@ -471,30 +175,6 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
     return result;
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.2
-   *
-   * <p>Invokes <code>AddPublishedDataItems</code> on this node's ObjectId using the effective
-   * Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param name ; the supplied payload may be null.
-   * @param fieldNameAliases ; the supplied payload may be null.
-   * @param fieldFlags ; the supplied payload may be null.
-   * @param variablesToAdd ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   * @throws UaException if lookup, input validation, transport, service or response envelope
-   *     validation fails.
-   */
   @NullMarked
   @Override
   public MethodCallResult<? extends DataSetFolderTypeAddPublishedDataItemsOutputs>
@@ -508,32 +188,6 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
         MethodCallOptions.NONE, name, fieldNameAliases, fieldFlags, variablesToAdd);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.2
-   *
-   * <p>Invokes <code>AddPublishedDataItems</code> on this node's ObjectId using the effective
-   * Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param options request-wide diagnostics options for this Call only.
-   * @param name ; the supplied payload may be null.
-   * @param fieldNameAliases ; the supplied payload may be null.
-   * @param fieldFlags ; the supplied payload may be null.
-   * @param variablesToAdd ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   * @throws UaException if lookup, input validation, transport, service or response envelope
-   *     validation fails.
-   * @throws NullPointerException if a required options or presence object is null.
-   */
   @NullMarked
   @Override
   public MethodCallResult<? extends DataSetFolderTypeAddPublishedDataItemsOutputs>
@@ -545,50 +199,12 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
           @Nullable PublishedVariableDataType @Nullable [] variablesToAdd)
           throws UaException {
     Objects.requireNonNull(options, "options");
-    var awaitedMethod =
+    return ClientMembers.await(
         callAddPublishedDataItemsDetailedAsync(
-            options, name, fieldNameAliases, fieldFlags, variablesToAdd);
-    try {
-      return awaitedMethod.get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      awaitedMethod.cancel(false);
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+            options, name, fieldNameAliases, fieldFlags, variablesToAdd),
+        true);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.2
-   *
-   * <p>Invokes <code>AddPublishedDataItems</code> on this node's ObjectId using the effective
-   * Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param name ; the supplied payload may be null.
-   * @param fieldNameAliases ; the supplied payload may be null.
-   * @param fieldFlags ; the supplied payload may be null.
-   * @param variablesToAdd ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   */
   @NullMarked
   @Override
   public CompletableFuture<
@@ -602,32 +218,6 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
         MethodCallOptions.NONE, name, fieldNameAliases, fieldFlags, variablesToAdd);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.2
-   *
-   * <p>Invokes <code>AddPublishedDataItems</code> on this node's ObjectId using the effective
-   * Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param options request-wide diagnostics options for this Call only.
-   * @param name ; the supplied payload may be null.
-   * @param fieldNameAliases ; the supplied payload may be null.
-   * @param fieldFlags ; the supplied payload may be null.
-   * @param variablesToAdd ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   * @throws NullPointerException if a required options or presence object is null (exceptional
-   *     completion).
-   */
   @NullMarked
   @Override
   public CompletableFuture<
@@ -752,78 +342,9 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                               + " type tree; resolved DataType: "
                                               + argumentDataTypeId);
                                     }
-                                    Object numericElements =
-                                        methodValue instanceof Matrix
-                                            ? ((Matrix) methodValue).getElements()
-                                            : methodValue;
-                                    if (numericElements != null
-                                        && numericElements.getClass().isArray()
-                                        && (numericElements.getClass().getComponentType()
-                                                == Number.class
-                                            || numericElements.getClass().getComponentType()
-                                                == UNumber.class)
-                                        && (argumentDataTypeId.equals(NodeIds.Number)
-                                            || dataTypeTree_.isSubtypeOf(
-                                                argumentDataTypeId, NodeIds.Number))) {
-                                      Class<?> numericElementType = null;
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Object numericElement =
-                                            Array.get(numericElements, numericIndex);
-                                        if (numericElement != null) {
-                                          if (numericElementType != null
-                                              && numericElementType != numericElement.getClass()) {
-                                            throw new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "An abstract numeric array requires one homogeneous"
-                                                    + " wire element type");
-                                          }
-                                          numericElementType = numericElement.getClass();
-                                        }
-                                      }
-                                      if (numericElementType == null) {
-                                        numericElementType =
-                                            dataTypeTree_.getBackingClass(argumentDataTypeId);
-                                      }
-                                      if (numericElementType == Number.class
-                                          || numericElementType == UNumber.class) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "An empty or all-null abstract numeric array requires a"
-                                                + " concretely typed array");
-                                      }
-                                      Object numericArray =
-                                          Array.newInstance(
-                                              numericElementType, Array.getLength(numericElements));
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Array.set(
-                                            numericArray,
-                                            numericIndex,
-                                            Array.get(numericElements, numericIndex));
-                                      }
-                                      if (methodValue instanceof Matrix) {
-                                        methodValue =
-                                            new Matrix(
-                                                numericArray,
-                                                ((Matrix) methodValue).getDimensions().clone(),
-                                                ((Matrix) methodValue)
-                                                    .getDataType()
-                                                    .orElseThrow(
-                                                        () ->
-                                                            new UaException(
-                                                                StatusCodes.Bad_TypeMismatch,
-                                                                "A numeric Matrix requires an"
-                                                                    + " explicit wire DataType")),
-                                                ((Matrix) methodValue)
-                                                    .getDataTypeId()
-                                                    .orElse(null));
-                                      } else {
-                                        methodValue = numericArray;
-                                      }
-                                    }
+                                    methodValue =
+                                        NumericValues.normalize(
+                                            methodValue, dataTypeTree_, argumentDataTypeId);
                                     if (methodValue != null) {
                                       Object shapeElements =
                                           methodValue instanceof Matrix
@@ -1038,108 +559,7 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                       wireValue instanceof Matrix
                                           ? ((Matrix) wireValue).getElements()
                                           : wireValue;
-                                  var numericWireValues = new ArrayDeque<Object[]>();
-                                  var numericWirePath =
-                                      Collections.newSetFromMap(
-                                          new IdentityHashMap<Object, Boolean>());
-                                  if (wireValue != null) {
-                                    numericWireValues.push(new Object[] {wireValue, false});
-                                  }
-                                  while (!numericWireValues.isEmpty()) {
-                                    Object[] numericWireFrame = numericWireValues.pop();
-                                    Object numericWireValue = numericWireFrame[0];
-                                    if ((Boolean) numericWireFrame[1]) {
-                                      numericWirePath.remove(numericWireValue);
-                                      continue;
-                                    }
-                                    while (numericWireValue instanceof Variant
-                                        || numericWireValue instanceof DataValue) {
-                                      if (numericWireValue instanceof DataValue) {
-                                        if (((DataValue) numericWireValue).getValue() == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a value wrapper; use"
-                                                  + " Variant.NULL_VALUE for null");
-                                        }
-                                        if (((DataValue) numericWireValue).getStatusCode()
-                                            == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a StatusCode; use"
-                                                  + " StatusCode.GOOD for Good");
-                                        }
-                                        numericWireValue =
-                                            ((DataValue) numericWireValue).getValue();
-                                      } else {
-                                        numericWireValue = ((Variant) numericWireValue).getValue();
-                                      }
-                                    }
-                                    if (numericWireValue instanceof Matrix) {
-                                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                                    }
-                                    if (numericWireValue != null
-                                        && numericWireValue.getClass().isArray()) {
-                                      if (!numericWirePath.add(numericWireValue)) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "Cyclic Variant arrays cannot be encoded");
-                                      }
-                                      numericWireValues.push(new Object[] {numericWireValue, true});
-                                      for (int numericWireIndex = 0;
-                                          numericWireIndex < Array.getLength(numericWireValue);
-                                          numericWireIndex++) {
-                                        Object numericWireElement =
-                                            Array.get(numericWireValue, numericWireIndex);
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Variant.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Variant wire array requires a wrapper for every"
-                                                  + " element; use Variant.NULL_VALUE for null");
-                                        }
-                                        if (numericWireElement == null
-                                            && (UaEnumeratedType.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue))
-                                                || OptionSetUInteger.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "An enum or OptionSet wire array cannot encode a null"
-                                                  + " element");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Boolean.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Boolean wire array cannot retain a null element;"
-                                                  + " Milo encodes it as false");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == StatusCode.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A StatusCode wire array cannot retain a null"
-                                                  + " element; Milo encodes it as Good");
-                                        }
-                                        if (numericWireElement == null
-                                            && Number.class.isAssignableFrom(
-                                                ArrayUtil.getBoxedType(numericWireValue))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A numeric wire array cannot retain a null element;"
-                                                  + " Milo encodes it as zero");
-                                        }
-                                        if (numericWireElement instanceof Variant
-                                            || numericWireElement instanceof DataValue) {
-                                          numericWireValues.push(
-                                              new Object[] {numericWireElement, false});
-                                        }
-                                      }
-                                    }
-                                  }
+                                  NumericValues.requireEncodable(wireValue);
                                   wireValue =
                                       ExtensionObject.encodeValue(
                                           this.client.getStaticEncodingContext(), wireValue);
@@ -1190,78 +610,9 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                               + " effective type tree; resolved DataType: "
                                               + argumentDataTypeId);
                                     }
-                                    Object numericElements =
-                                        methodValue instanceof Matrix
-                                            ? ((Matrix) methodValue).getElements()
-                                            : methodValue;
-                                    if (numericElements != null
-                                        && numericElements.getClass().isArray()
-                                        && (numericElements.getClass().getComponentType()
-                                                == Number.class
-                                            || numericElements.getClass().getComponentType()
-                                                == UNumber.class)
-                                        && (argumentDataTypeId.equals(NodeIds.Number)
-                                            || dataTypeTree_.isSubtypeOf(
-                                                argumentDataTypeId, NodeIds.Number))) {
-                                      Class<?> numericElementType = null;
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Object numericElement =
-                                            Array.get(numericElements, numericIndex);
-                                        if (numericElement != null) {
-                                          if (numericElementType != null
-                                              && numericElementType != numericElement.getClass()) {
-                                            throw new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "An abstract numeric array requires one homogeneous"
-                                                    + " wire element type");
-                                          }
-                                          numericElementType = numericElement.getClass();
-                                        }
-                                      }
-                                      if (numericElementType == null) {
-                                        numericElementType =
-                                            dataTypeTree_.getBackingClass(argumentDataTypeId);
-                                      }
-                                      if (numericElementType == Number.class
-                                          || numericElementType == UNumber.class) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "An empty or all-null abstract numeric array requires a"
-                                                + " concretely typed array");
-                                      }
-                                      Object numericArray =
-                                          Array.newInstance(
-                                              numericElementType, Array.getLength(numericElements));
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Array.set(
-                                            numericArray,
-                                            numericIndex,
-                                            Array.get(numericElements, numericIndex));
-                                      }
-                                      if (methodValue instanceof Matrix) {
-                                        methodValue =
-                                            new Matrix(
-                                                numericArray,
-                                                ((Matrix) methodValue).getDimensions().clone(),
-                                                ((Matrix) methodValue)
-                                                    .getDataType()
-                                                    .orElseThrow(
-                                                        () ->
-                                                            new UaException(
-                                                                StatusCodes.Bad_TypeMismatch,
-                                                                "A numeric Matrix requires an"
-                                                                    + " explicit wire DataType")),
-                                                ((Matrix) methodValue)
-                                                    .getDataTypeId()
-                                                    .orElse(null));
-                                      } else {
-                                        methodValue = numericArray;
-                                      }
-                                    }
+                                    methodValue =
+                                        NumericValues.normalize(
+                                            methodValue, dataTypeTree_, argumentDataTypeId);
                                     if (methodValue != null) {
                                       Object shapeElements =
                                           methodValue instanceof Matrix
@@ -1509,108 +860,7 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                       wireValue instanceof Matrix
                                           ? ((Matrix) wireValue).getElements()
                                           : wireValue;
-                                  var numericWireValues = new ArrayDeque<Object[]>();
-                                  var numericWirePath =
-                                      Collections.newSetFromMap(
-                                          new IdentityHashMap<Object, Boolean>());
-                                  if (wireValue != null) {
-                                    numericWireValues.push(new Object[] {wireValue, false});
-                                  }
-                                  while (!numericWireValues.isEmpty()) {
-                                    Object[] numericWireFrame = numericWireValues.pop();
-                                    Object numericWireValue = numericWireFrame[0];
-                                    if ((Boolean) numericWireFrame[1]) {
-                                      numericWirePath.remove(numericWireValue);
-                                      continue;
-                                    }
-                                    while (numericWireValue instanceof Variant
-                                        || numericWireValue instanceof DataValue) {
-                                      if (numericWireValue instanceof DataValue) {
-                                        if (((DataValue) numericWireValue).getValue() == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a value wrapper; use"
-                                                  + " Variant.NULL_VALUE for null");
-                                        }
-                                        if (((DataValue) numericWireValue).getStatusCode()
-                                            == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a StatusCode; use"
-                                                  + " StatusCode.GOOD for Good");
-                                        }
-                                        numericWireValue =
-                                            ((DataValue) numericWireValue).getValue();
-                                      } else {
-                                        numericWireValue = ((Variant) numericWireValue).getValue();
-                                      }
-                                    }
-                                    if (numericWireValue instanceof Matrix) {
-                                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                                    }
-                                    if (numericWireValue != null
-                                        && numericWireValue.getClass().isArray()) {
-                                      if (!numericWirePath.add(numericWireValue)) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "Cyclic Variant arrays cannot be encoded");
-                                      }
-                                      numericWireValues.push(new Object[] {numericWireValue, true});
-                                      for (int numericWireIndex = 0;
-                                          numericWireIndex < Array.getLength(numericWireValue);
-                                          numericWireIndex++) {
-                                        Object numericWireElement =
-                                            Array.get(numericWireValue, numericWireIndex);
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Variant.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Variant wire array requires a wrapper for every"
-                                                  + " element; use Variant.NULL_VALUE for null");
-                                        }
-                                        if (numericWireElement == null
-                                            && (UaEnumeratedType.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue))
-                                                || OptionSetUInteger.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "An enum or OptionSet wire array cannot encode a null"
-                                                  + " element");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Boolean.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Boolean wire array cannot retain a null element;"
-                                                  + " Milo encodes it as false");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == StatusCode.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A StatusCode wire array cannot retain a null"
-                                                  + " element; Milo encodes it as Good");
-                                        }
-                                        if (numericWireElement == null
-                                            && Number.class.isAssignableFrom(
-                                                ArrayUtil.getBoxedType(numericWireValue))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A numeric wire array cannot retain a null element;"
-                                                  + " Milo encodes it as zero");
-                                        }
-                                        if (numericWireElement instanceof Variant
-                                            || numericWireElement instanceof DataValue) {
-                                          numericWireValues.push(
-                                              new Object[] {numericWireElement, false});
-                                        }
-                                      }
-                                    }
-                                  }
+                                  NumericValues.requireEncodable(wireValue);
                                   wireValue =
                                       ExtensionObject.encodeValue(
                                           this.client.getStaticEncodingContext(), wireValue);
@@ -1661,78 +911,9 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                               + " type tree; resolved DataType: "
                                               + argumentDataTypeId);
                                     }
-                                    Object numericElements =
-                                        methodValue instanceof Matrix
-                                            ? ((Matrix) methodValue).getElements()
-                                            : methodValue;
-                                    if (numericElements != null
-                                        && numericElements.getClass().isArray()
-                                        && (numericElements.getClass().getComponentType()
-                                                == Number.class
-                                            || numericElements.getClass().getComponentType()
-                                                == UNumber.class)
-                                        && (argumentDataTypeId.equals(NodeIds.Number)
-                                            || dataTypeTree_.isSubtypeOf(
-                                                argumentDataTypeId, NodeIds.Number))) {
-                                      Class<?> numericElementType = null;
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Object numericElement =
-                                            Array.get(numericElements, numericIndex);
-                                        if (numericElement != null) {
-                                          if (numericElementType != null
-                                              && numericElementType != numericElement.getClass()) {
-                                            throw new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "An abstract numeric array requires one homogeneous"
-                                                    + " wire element type");
-                                          }
-                                          numericElementType = numericElement.getClass();
-                                        }
-                                      }
-                                      if (numericElementType == null) {
-                                        numericElementType =
-                                            dataTypeTree_.getBackingClass(argumentDataTypeId);
-                                      }
-                                      if (numericElementType == Number.class
-                                          || numericElementType == UNumber.class) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "An empty or all-null abstract numeric array requires a"
-                                                + " concretely typed array");
-                                      }
-                                      Object numericArray =
-                                          Array.newInstance(
-                                              numericElementType, Array.getLength(numericElements));
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Array.set(
-                                            numericArray,
-                                            numericIndex,
-                                            Array.get(numericElements, numericIndex));
-                                      }
-                                      if (methodValue instanceof Matrix) {
-                                        methodValue =
-                                            new Matrix(
-                                                numericArray,
-                                                ((Matrix) methodValue).getDimensions().clone(),
-                                                ((Matrix) methodValue)
-                                                    .getDataType()
-                                                    .orElseThrow(
-                                                        () ->
-                                                            new UaException(
-                                                                StatusCodes.Bad_TypeMismatch,
-                                                                "A numeric Matrix requires an"
-                                                                    + " explicit wire DataType")),
-                                                ((Matrix) methodValue)
-                                                    .getDataTypeId()
-                                                    .orElse(null));
-                                      } else {
-                                        methodValue = numericArray;
-                                      }
-                                    }
+                                    methodValue =
+                                        NumericValues.normalize(
+                                            methodValue, dataTypeTree_, argumentDataTypeId);
                                     if (methodValue != null) {
                                       Object shapeElements =
                                           methodValue instanceof Matrix
@@ -1888,108 +1069,7 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                       }
                                     }
                                   }
-                                  var numericWireValues = new ArrayDeque<Object[]>();
-                                  var numericWirePath =
-                                      Collections.newSetFromMap(
-                                          new IdentityHashMap<Object, Boolean>());
-                                  if (wireValue != null) {
-                                    numericWireValues.push(new Object[] {wireValue, false});
-                                  }
-                                  while (!numericWireValues.isEmpty()) {
-                                    Object[] numericWireFrame = numericWireValues.pop();
-                                    Object numericWireValue = numericWireFrame[0];
-                                    if ((Boolean) numericWireFrame[1]) {
-                                      numericWirePath.remove(numericWireValue);
-                                      continue;
-                                    }
-                                    while (numericWireValue instanceof Variant
-                                        || numericWireValue instanceof DataValue) {
-                                      if (numericWireValue instanceof DataValue) {
-                                        if (((DataValue) numericWireValue).getValue() == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a value wrapper; use"
-                                                  + " Variant.NULL_VALUE for null");
-                                        }
-                                        if (((DataValue) numericWireValue).getStatusCode()
-                                            == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a StatusCode; use"
-                                                  + " StatusCode.GOOD for Good");
-                                        }
-                                        numericWireValue =
-                                            ((DataValue) numericWireValue).getValue();
-                                      } else {
-                                        numericWireValue = ((Variant) numericWireValue).getValue();
-                                      }
-                                    }
-                                    if (numericWireValue instanceof Matrix) {
-                                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                                    }
-                                    if (numericWireValue != null
-                                        && numericWireValue.getClass().isArray()) {
-                                      if (!numericWirePath.add(numericWireValue)) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "Cyclic Variant arrays cannot be encoded");
-                                      }
-                                      numericWireValues.push(new Object[] {numericWireValue, true});
-                                      for (int numericWireIndex = 0;
-                                          numericWireIndex < Array.getLength(numericWireValue);
-                                          numericWireIndex++) {
-                                        Object numericWireElement =
-                                            Array.get(numericWireValue, numericWireIndex);
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Variant.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Variant wire array requires a wrapper for every"
-                                                  + " element; use Variant.NULL_VALUE for null");
-                                        }
-                                        if (numericWireElement == null
-                                            && (UaEnumeratedType.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue))
-                                                || OptionSetUInteger.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "An enum or OptionSet wire array cannot encode a null"
-                                                  + " element");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Boolean.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Boolean wire array cannot retain a null element;"
-                                                  + " Milo encodes it as false");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == StatusCode.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A StatusCode wire array cannot retain a null"
-                                                  + " element; Milo encodes it as Good");
-                                        }
-                                        if (numericWireElement == null
-                                            && Number.class.isAssignableFrom(
-                                                ArrayUtil.getBoxedType(numericWireValue))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A numeric wire array cannot retain a null element;"
-                                                  + " Milo encodes it as zero");
-                                        }
-                                        if (numericWireElement instanceof Variant
-                                            || numericWireElement instanceof DataValue) {
-                                          numericWireValues.push(
-                                              new Object[] {numericWireElement, false});
-                                        }
-                                      }
-                                    }
-                                  }
+                                  NumericValues.requireEncodable(wireValue);
                                   wireValue =
                                       ExtensionObject.encodeValue(
                                           this.client.getStaticEncodingContext(), wireValue);
@@ -2040,78 +1120,9 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                               + " effective type tree; resolved DataType: "
                                               + argumentDataTypeId);
                                     }
-                                    Object numericElements =
-                                        methodValue instanceof Matrix
-                                            ? ((Matrix) methodValue).getElements()
-                                            : methodValue;
-                                    if (numericElements != null
-                                        && numericElements.getClass().isArray()
-                                        && (numericElements.getClass().getComponentType()
-                                                == Number.class
-                                            || numericElements.getClass().getComponentType()
-                                                == UNumber.class)
-                                        && (argumentDataTypeId.equals(NodeIds.Number)
-                                            || dataTypeTree_.isSubtypeOf(
-                                                argumentDataTypeId, NodeIds.Number))) {
-                                      Class<?> numericElementType = null;
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Object numericElement =
-                                            Array.get(numericElements, numericIndex);
-                                        if (numericElement != null) {
-                                          if (numericElementType != null
-                                              && numericElementType != numericElement.getClass()) {
-                                            throw new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "An abstract numeric array requires one homogeneous"
-                                                    + " wire element type");
-                                          }
-                                          numericElementType = numericElement.getClass();
-                                        }
-                                      }
-                                      if (numericElementType == null) {
-                                        numericElementType =
-                                            dataTypeTree_.getBackingClass(argumentDataTypeId);
-                                      }
-                                      if (numericElementType == Number.class
-                                          || numericElementType == UNumber.class) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "An empty or all-null abstract numeric array requires a"
-                                                + " concretely typed array");
-                                      }
-                                      Object numericArray =
-                                          Array.newInstance(
-                                              numericElementType, Array.getLength(numericElements));
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Array.set(
-                                            numericArray,
-                                            numericIndex,
-                                            Array.get(numericElements, numericIndex));
-                                      }
-                                      if (methodValue instanceof Matrix) {
-                                        methodValue =
-                                            new Matrix(
-                                                numericArray,
-                                                ((Matrix) methodValue).getDimensions().clone(),
-                                                ((Matrix) methodValue)
-                                                    .getDataType()
-                                                    .orElseThrow(
-                                                        () ->
-                                                            new UaException(
-                                                                StatusCodes.Bad_TypeMismatch,
-                                                                "A numeric Matrix requires an"
-                                                                    + " explicit wire DataType")),
-                                                ((Matrix) methodValue)
-                                                    .getDataTypeId()
-                                                    .orElse(null));
-                                      } else {
-                                        methodValue = numericArray;
-                                      }
-                                    }
+                                    methodValue =
+                                        NumericValues.normalize(
+                                            methodValue, dataTypeTree_, argumentDataTypeId);
                                     if (methodValue != null) {
                                       Object shapeElements =
                                           methodValue instanceof Matrix
@@ -2362,108 +1373,7 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                       wireValue instanceof Matrix
                                           ? ((Matrix) wireValue).getElements()
                                           : wireValue;
-                                  var numericWireValues = new ArrayDeque<Object[]>();
-                                  var numericWirePath =
-                                      Collections.newSetFromMap(
-                                          new IdentityHashMap<Object, Boolean>());
-                                  if (wireValue != null) {
-                                    numericWireValues.push(new Object[] {wireValue, false});
-                                  }
-                                  while (!numericWireValues.isEmpty()) {
-                                    Object[] numericWireFrame = numericWireValues.pop();
-                                    Object numericWireValue = numericWireFrame[0];
-                                    if ((Boolean) numericWireFrame[1]) {
-                                      numericWirePath.remove(numericWireValue);
-                                      continue;
-                                    }
-                                    while (numericWireValue instanceof Variant
-                                        || numericWireValue instanceof DataValue) {
-                                      if (numericWireValue instanceof DataValue) {
-                                        if (((DataValue) numericWireValue).getValue() == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a value wrapper; use"
-                                                  + " Variant.NULL_VALUE for null");
-                                        }
-                                        if (((DataValue) numericWireValue).getStatusCode()
-                                            == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a StatusCode; use"
-                                                  + " StatusCode.GOOD for Good");
-                                        }
-                                        numericWireValue =
-                                            ((DataValue) numericWireValue).getValue();
-                                      } else {
-                                        numericWireValue = ((Variant) numericWireValue).getValue();
-                                      }
-                                    }
-                                    if (numericWireValue instanceof Matrix) {
-                                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                                    }
-                                    if (numericWireValue != null
-                                        && numericWireValue.getClass().isArray()) {
-                                      if (!numericWirePath.add(numericWireValue)) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "Cyclic Variant arrays cannot be encoded");
-                                      }
-                                      numericWireValues.push(new Object[] {numericWireValue, true});
-                                      for (int numericWireIndex = 0;
-                                          numericWireIndex < Array.getLength(numericWireValue);
-                                          numericWireIndex++) {
-                                        Object numericWireElement =
-                                            Array.get(numericWireValue, numericWireIndex);
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Variant.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Variant wire array requires a wrapper for every"
-                                                  + " element; use Variant.NULL_VALUE for null");
-                                        }
-                                        if (numericWireElement == null
-                                            && (UaEnumeratedType.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue))
-                                                || OptionSetUInteger.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "An enum or OptionSet wire array cannot encode a null"
-                                                  + " element");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Boolean.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Boolean wire array cannot retain a null element;"
-                                                  + " Milo encodes it as false");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == StatusCode.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A StatusCode wire array cannot retain a null"
-                                                  + " element; Milo encodes it as Good");
-                                        }
-                                        if (numericWireElement == null
-                                            && Number.class.isAssignableFrom(
-                                                ArrayUtil.getBoxedType(numericWireValue))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A numeric wire array cannot retain a null element;"
-                                                  + " Milo encodes it as zero");
-                                        }
-                                        if (numericWireElement instanceof Variant
-                                            || numericWireElement instanceof DataValue) {
-                                          numericWireValues.push(
-                                              new Object[] {numericWireElement, false});
-                                        }
-                                      }
-                                    }
-                                  }
+                                  NumericValues.requireEncodable(wireValue);
                                   wireValue =
                                       ExtensionObject.encodeValue(
                                           this.client.getStaticEncodingContext(), wireValue);
@@ -2681,122 +1591,11 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                                                           + " DataType: "
                                                                           + argumentDataTypeId);
                                                                 }
-                                                                Object numericElements =
-                                                                    methodValue instanceof Matrix
-                                                                        ? ((Matrix) methodValue)
-                                                                            .getElements()
-                                                                        : methodValue;
-                                                                if (numericElements != null
-                                                                    && numericElements
-                                                                        .getClass()
-                                                                        .isArray()
-                                                                    && (numericElements
-                                                                                .getClass()
-                                                                                .getComponentType()
-                                                                            == Number.class
-                                                                        || numericElements
-                                                                                .getClass()
-                                                                                .getComponentType()
-                                                                            == UNumber.class)
-                                                                    && (argumentDataTypeId.equals(
-                                                                            NodeIds.Number)
-                                                                        || dataTypeTree_
-                                                                            .isSubtypeOf(
-                                                                                argumentDataTypeId,
-                                                                                NodeIds.Number))) {
-                                                                  Class<?> numericElementType =
-                                                                      null;
-                                                                  for (int numericIndex = 0;
-                                                                      numericIndex
-                                                                          < Array.getLength(
-                                                                              numericElements);
-                                                                      numericIndex++) {
-                                                                    Object numericElement =
-                                                                        Array.get(
-                                                                            numericElements,
-                                                                            numericIndex);
-                                                                    if (numericElement != null) {
-                                                                      if (numericElementType != null
-                                                                          && numericElementType
-                                                                              != numericElement
-                                                                                  .getClass()) {
-                                                                        throw new UaException(
-                                                                            StatusCodes
-                                                                                .Bad_TypeMismatch,
-                                                                            "An abstract numeric"
-                                                                                + " array requires"
-                                                                                + " one homogeneous"
-                                                                                + " wire element"
-                                                                                + " type");
-                                                                      }
-                                                                      numericElementType =
-                                                                          numericElement.getClass();
-                                                                    }
-                                                                  }
-                                                                  if (numericElementType == null) {
-                                                                    numericElementType =
-                                                                        dataTypeTree_
-                                                                            .getBackingClass(
-                                                                                argumentDataTypeId);
-                                                                  }
-                                                                  if (numericElementType
-                                                                          == Number.class
-                                                                      || numericElementType
-                                                                          == UNumber.class) {
-                                                                    throw new UaException(
-                                                                        StatusCodes
-                                                                            .Bad_TypeMismatch,
-                                                                        "An empty or all-null"
-                                                                            + " abstract numeric"
-                                                                            + " array requires a"
-                                                                            + " concretely typed"
-                                                                            + " array");
-                                                                  }
-                                                                  Object numericArray =
-                                                                      Array.newInstance(
-                                                                          numericElementType,
-                                                                          Array.getLength(
-                                                                              numericElements));
-                                                                  for (int numericIndex = 0;
-                                                                      numericIndex
-                                                                          < Array.getLength(
-                                                                              numericElements);
-                                                                      numericIndex++) {
-                                                                    Array.set(
-                                                                        numericArray,
-                                                                        numericIndex,
-                                                                        Array.get(
-                                                                            numericElements,
-                                                                            numericIndex));
-                                                                  }
-                                                                  if (methodValue
-                                                                      instanceof Matrix) {
-                                                                    methodValue =
-                                                                        new Matrix(
-                                                                            numericArray,
-                                                                            ((Matrix) methodValue)
-                                                                                .getDimensions()
-                                                                                .clone(),
-                                                                            ((Matrix) methodValue)
-                                                                                .getDataType()
-                                                                                .orElseThrow(
-                                                                                    () ->
-                                                                                        new UaException(
-                                                                                            StatusCodes
-                                                                                                .Bad_TypeMismatch,
-                                                                                            "A numeric"
-                                                                                                + " Matrix"
-                                                                                                + " requires"
-                                                                                                + " an explicit"
-                                                                                                + " wire"
-                                                                                                + " DataType")),
-                                                                            ((Matrix) methodValue)
-                                                                                .getDataTypeId()
-                                                                                .orElse(null));
-                                                                  } else {
-                                                                    methodValue = numericArray;
-                                                                  }
-                                                                }
+                                                                methodValue =
+                                                                    NumericValues.normalize(
+                                                                        methodValue,
+                                                                        dataTypeTree_,
+                                                                        argumentDataTypeId);
                                                                 if (methodValue != null) {
                                                                   Object shapeElements =
                                                                       methodValue instanceof Matrix
@@ -3200,122 +1999,11 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                                                           + " resolved DataType: "
                                                                           + argumentDataTypeId);
                                                                 }
-                                                                Object numericElements =
-                                                                    methodValue instanceof Matrix
-                                                                        ? ((Matrix) methodValue)
-                                                                            .getElements()
-                                                                        : methodValue;
-                                                                if (numericElements != null
-                                                                    && numericElements
-                                                                        .getClass()
-                                                                        .isArray()
-                                                                    && (numericElements
-                                                                                .getClass()
-                                                                                .getComponentType()
-                                                                            == Number.class
-                                                                        || numericElements
-                                                                                .getClass()
-                                                                                .getComponentType()
-                                                                            == UNumber.class)
-                                                                    && (argumentDataTypeId.equals(
-                                                                            NodeIds.Number)
-                                                                        || dataTypeTree_
-                                                                            .isSubtypeOf(
-                                                                                argumentDataTypeId,
-                                                                                NodeIds.Number))) {
-                                                                  Class<?> numericElementType =
-                                                                      null;
-                                                                  for (int numericIndex = 0;
-                                                                      numericIndex
-                                                                          < Array.getLength(
-                                                                              numericElements);
-                                                                      numericIndex++) {
-                                                                    Object numericElement =
-                                                                        Array.get(
-                                                                            numericElements,
-                                                                            numericIndex);
-                                                                    if (numericElement != null) {
-                                                                      if (numericElementType != null
-                                                                          && numericElementType
-                                                                              != numericElement
-                                                                                  .getClass()) {
-                                                                        throw new UaException(
-                                                                            StatusCodes
-                                                                                .Bad_TypeMismatch,
-                                                                            "An abstract numeric"
-                                                                                + " array requires"
-                                                                                + " one homogeneous"
-                                                                                + " wire element"
-                                                                                + " type");
-                                                                      }
-                                                                      numericElementType =
-                                                                          numericElement.getClass();
-                                                                    }
-                                                                  }
-                                                                  if (numericElementType == null) {
-                                                                    numericElementType =
-                                                                        dataTypeTree_
-                                                                            .getBackingClass(
-                                                                                argumentDataTypeId);
-                                                                  }
-                                                                  if (numericElementType
-                                                                          == Number.class
-                                                                      || numericElementType
-                                                                          == UNumber.class) {
-                                                                    throw new UaException(
-                                                                        StatusCodes
-                                                                            .Bad_TypeMismatch,
-                                                                        "An empty or all-null"
-                                                                            + " abstract numeric"
-                                                                            + " array requires a"
-                                                                            + " concretely typed"
-                                                                            + " array");
-                                                                  }
-                                                                  Object numericArray =
-                                                                      Array.newInstance(
-                                                                          numericElementType,
-                                                                          Array.getLength(
-                                                                              numericElements));
-                                                                  for (int numericIndex = 0;
-                                                                      numericIndex
-                                                                          < Array.getLength(
-                                                                              numericElements);
-                                                                      numericIndex++) {
-                                                                    Array.set(
-                                                                        numericArray,
-                                                                        numericIndex,
-                                                                        Array.get(
-                                                                            numericElements,
-                                                                            numericIndex));
-                                                                  }
-                                                                  if (methodValue
-                                                                      instanceof Matrix) {
-                                                                    methodValue =
-                                                                        new Matrix(
-                                                                            numericArray,
-                                                                            ((Matrix) methodValue)
-                                                                                .getDimensions()
-                                                                                .clone(),
-                                                                            ((Matrix) methodValue)
-                                                                                .getDataType()
-                                                                                .orElseThrow(
-                                                                                    () ->
-                                                                                        new UaException(
-                                                                                            StatusCodes
-                                                                                                .Bad_TypeMismatch,
-                                                                                            "A numeric"
-                                                                                                + " Matrix"
-                                                                                                + " requires"
-                                                                                                + " an explicit"
-                                                                                                + " wire"
-                                                                                                + " DataType")),
-                                                                            ((Matrix) methodValue)
-                                                                                .getDataTypeId()
-                                                                                .orElse(null));
-                                                                  } else {
-                                                                    methodValue = numericArray;
-                                                                  }
-                                                                }
+                                                                methodValue =
+                                                                    NumericValues.normalize(
+                                                                        methodValue,
+                                                                        dataTypeTree_,
+                                                                        argumentDataTypeId);
                                                                 if (methodValue != null) {
                                                                   Object shapeElements =
                                                                       methodValue instanceof Matrix
@@ -3720,122 +2408,11 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                                                           + " DataType: "
                                                                           + argumentDataTypeId);
                                                                 }
-                                                                Object numericElements =
-                                                                    methodValue instanceof Matrix
-                                                                        ? ((Matrix) methodValue)
-                                                                            .getElements()
-                                                                        : methodValue;
-                                                                if (numericElements != null
-                                                                    && numericElements
-                                                                        .getClass()
-                                                                        .isArray()
-                                                                    && (numericElements
-                                                                                .getClass()
-                                                                                .getComponentType()
-                                                                            == Number.class
-                                                                        || numericElements
-                                                                                .getClass()
-                                                                                .getComponentType()
-                                                                            == UNumber.class)
-                                                                    && (argumentDataTypeId.equals(
-                                                                            NodeIds.Number)
-                                                                        || dataTypeTree_
-                                                                            .isSubtypeOf(
-                                                                                argumentDataTypeId,
-                                                                                NodeIds.Number))) {
-                                                                  Class<?> numericElementType =
-                                                                      null;
-                                                                  for (int numericIndex = 0;
-                                                                      numericIndex
-                                                                          < Array.getLength(
-                                                                              numericElements);
-                                                                      numericIndex++) {
-                                                                    Object numericElement =
-                                                                        Array.get(
-                                                                            numericElements,
-                                                                            numericIndex);
-                                                                    if (numericElement != null) {
-                                                                      if (numericElementType != null
-                                                                          && numericElementType
-                                                                              != numericElement
-                                                                                  .getClass()) {
-                                                                        throw new UaException(
-                                                                            StatusCodes
-                                                                                .Bad_TypeMismatch,
-                                                                            "An abstract numeric"
-                                                                                + " array requires"
-                                                                                + " one homogeneous"
-                                                                                + " wire element"
-                                                                                + " type");
-                                                                      }
-                                                                      numericElementType =
-                                                                          numericElement.getClass();
-                                                                    }
-                                                                  }
-                                                                  if (numericElementType == null) {
-                                                                    numericElementType =
-                                                                        dataTypeTree_
-                                                                            .getBackingClass(
-                                                                                argumentDataTypeId);
-                                                                  }
-                                                                  if (numericElementType
-                                                                          == Number.class
-                                                                      || numericElementType
-                                                                          == UNumber.class) {
-                                                                    throw new UaException(
-                                                                        StatusCodes
-                                                                            .Bad_TypeMismatch,
-                                                                        "An empty or all-null"
-                                                                            + " abstract numeric"
-                                                                            + " array requires a"
-                                                                            + " concretely typed"
-                                                                            + " array");
-                                                                  }
-                                                                  Object numericArray =
-                                                                      Array.newInstance(
-                                                                          numericElementType,
-                                                                          Array.getLength(
-                                                                              numericElements));
-                                                                  for (int numericIndex = 0;
-                                                                      numericIndex
-                                                                          < Array.getLength(
-                                                                              numericElements);
-                                                                      numericIndex++) {
-                                                                    Array.set(
-                                                                        numericArray,
-                                                                        numericIndex,
-                                                                        Array.get(
-                                                                            numericElements,
-                                                                            numericIndex));
-                                                                  }
-                                                                  if (methodValue
-                                                                      instanceof Matrix) {
-                                                                    methodValue =
-                                                                        new Matrix(
-                                                                            numericArray,
-                                                                            ((Matrix) methodValue)
-                                                                                .getDimensions()
-                                                                                .clone(),
-                                                                            ((Matrix) methodValue)
-                                                                                .getDataType()
-                                                                                .orElseThrow(
-                                                                                    () ->
-                                                                                        new UaException(
-                                                                                            StatusCodes
-                                                                                                .Bad_TypeMismatch,
-                                                                                            "A numeric"
-                                                                                                + " Matrix"
-                                                                                                + " requires"
-                                                                                                + " an explicit"
-                                                                                                + " wire"
-                                                                                                + " DataType")),
-                                                                            ((Matrix) methodValue)
-                                                                                .getDataTypeId()
-                                                                                .orElse(null));
-                                                                  } else {
-                                                                    methodValue = numericArray;
-                                                                  }
-                                                                }
+                                                                methodValue =
+                                                                    NumericValues.normalize(
+                                                                        methodValue,
+                                                                        dataTypeTree_,
+                                                                        argumentDataTypeId);
                                                                 if (methodValue != null) {
                                                                   Object shapeElements =
                                                                       methodValue instanceof Matrix
@@ -4280,297 +2857,31 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
     return result;
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.3
-   *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. It can perform service I/O and
-   * construct or reuse a Java wrapper in Milo's address space cache. A reference can change after
-   * lookup.
-   *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
-   */
   @NullMarked
   @Override
   public @Nullable UaMethodNode getAddPublishedEventsMethodNode() throws UaException {
-    try {
-      return getAddPublishedEventsMethodNodeAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(getAddPublishedEventsMethodNodeAsync(), false);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.3
-   *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. It can perform service I/O and
-   * construct or reuse a Java wrapper in Milo's address space cache. A reference can change after
-   * lookup.
-   *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the existing member, or null for confirmed absence
-   */
   @NullMarked
   @Override
   public CompletableFuture<? extends @Nullable UaMethodNode>
       getAddPublishedEventsMethodNodeAsync() {
-    CompletableFuture<UaMethodNode> result = new CompletableFuture<>();
-    try {
-      CompletableFuture<NodeId> lookup = CompletableFuture.completedFuture(getNodeId());
-      CompletableFuture<UaNode> hop0 =
-          lookup.thenCompose(
-              parent -> {
-                NodeId parentId = parent;
-                if (result.isCancelled()) {
-                  return CompletableFuture.failedFuture(new CancellationException());
-                }
-                if (parentId == null) {
-                  return CompletableFuture.completedFuture(null);
-                }
-                CompletableFuture<Void> namespaceReady;
-                if (client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/") == null
-                    || client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/")
-                        == null) {
-                  namespaceReady = client.readNamespaceTableAsync().thenApply(ignored -> null);
-                } else {
-                  namespaceReady = CompletableFuture.completedFuture(null);
-                }
-                return namespaceReady.thenCompose(
-                    ignored -> {
-                      if (result.isCancelled()) {
-                        return CompletableFuture.failedFuture(new CancellationException());
-                      }
-                      var namespaceIndex =
-                          client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/");
-                      var referenceId =
-                          ExpandedNodeId.parse("i=47").toNodeId(client.getNamespaceTable());
-                      if (namespaceIndex == null || referenceId.isEmpty()) {
-                        return CompletableFuture.failedFuture(
-                            new UaException(
-                                StatusCodes.Bad_NodeIdInvalid,
-                                "http://opcfoundation.org/UA/:AddPublishedEvents (declaration"
-                                    + " i=14496, owner i=14477) on "
-                                    + getNodeId()));
-                      }
-                      var browsePath =
-                          new BrowsePath(
-                              parentId,
-                              new RelativePath(
-                                  new RelativePathElement[] {
-                                    new RelativePathElement(
-                                        referenceId.orElseThrow(),
-                                        false,
-                                        true,
-                                        new QualifiedName(namespaceIndex, "AddPublishedEvents"))
-                                  }));
-                      return client
-                          .translateBrowsePathsAsync(List.of(browsePath))
-                          .thenCompose(
-                              response -> {
-                                if (result.isCancelled()) {
-                                  return CompletableFuture.failedFuture(
-                                      new CancellationException());
-                                }
-                                var results = response == null ? null : response.getResults();
-                                if (results == null
-                                    || results.length != 1
-                                    || results[0] == null
-                                    || results[0].getStatusCode() == null) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:AddPublishedEvents"
-                                              + " (declaration i=14496, owner i=14477) on "
-                                              + getNodeId()));
-                                }
-                                var operation = results[0];
-                                if (operation.getStatusCode().getValue()
-                                    == StatusCodes.Bad_NoMatch) {
-                                  return CompletableFuture.completedFuture(null);
-                                }
-                                if (!operation.getStatusCode().isGood()) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          operation.getStatusCode(),
-                                          "http://opcfoundation.org/UA/:AddPublishedEvents"
-                                              + " (declaration i=14496, owner i=14477)"));
-                                }
-                                var targets = operation.getTargets();
-                                if (targets == null || targets.length == 0) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:AddPublishedEvents"
-                                              + " (declaration i=14496, owner i=14477) on "
-                                              + getNodeId()));
-                                }
-                                var identities = new ArrayList<CompletableFuture<NodeId>>();
-                                for (var target : targets) {
-                                  if (target == null
-                                      || target.getTargetId() == null
-                                      || target.getRemainingPathIndex() == null
-                                      || target.getRemainingPathIndex().longValue()
-                                          != 0xffffffffL) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_UnexpectedError,
-                                            "http://opcfoundation.org/UA/:AddPublishedEvents"
-                                                + " (declaration i=14496, owner i=14477) on "
-                                                + getNodeId()));
-                                  }
-                                  if (!target.getTargetId().isLocal()) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_NotSupported,
-                                            "http://opcfoundation.org/UA/:AddPublishedEvents"
-                                                + " (declaration i=14496, owner i=14477) on "
-                                                + getNodeId()));
-                                  }
-                                  if (result.isCancelled()) {
-                                    return CompletableFuture.failedFuture(
-                                        new CancellationException());
-                                  }
-                                  var localTarget =
-                                      target.getTargetId().toNodeId(client.getNamespaceTable());
-                                  if (localTarget.isPresent()) {
-                                    identities.add(
-                                        CompletableFuture.completedFuture(
-                                            localTarget.orElseThrow()));
-                                  } else {
-                                    identities.add(
-                                        client
-                                            .readNamespaceTableAsync()
-                                            .thenCompose(
-                                                namespaceTable -> {
-                                                  var resolvedTarget =
-                                                      target.getTargetId().toNodeId(namespaceTable);
-                                                  if (resolvedTarget.isEmpty()) {
-                                                    return CompletableFuture.failedFuture(
-                                                        new UaException(
-                                                            StatusCodes.Bad_NodeIdInvalid,
-                                                            "http://opcfoundation.org/UA/:AddPublishedEvents"
-                                                                + " (declaration i=14496, owner"
-                                                                + " i=14477) on "
-                                                                + getNodeId()));
-                                                  }
-                                                  return CompletableFuture.completedFuture(
-                                                      resolvedTarget.orElseThrow());
-                                                }));
-                                  }
-                                }
-                                return CompletableFuture.allOf(
-                                        identities.toArray(CompletableFuture[]::new))
-                                    .thenCompose(
-                                        ready -> {
-                                          if (result.isCancelled()) {
-                                            return CompletableFuture.failedFuture(
-                                                new CancellationException());
-                                          }
-                                          var unique = new LinkedHashSet<NodeId>();
-                                          identities.forEach(
-                                              identity -> unique.add(identity.join()));
-                                          if (unique.stream().anyMatch(NodeId::isNull)) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_NodeIdInvalid,
-                                                    "http://opcfoundation.org/UA/:AddPublishedEvents"
-                                                        + " (declaration i=14496, owner i=14477) on"
-                                                        + " "
-                                                        + getNodeId()));
-                                          }
-                                          if (unique.size() != 1) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_TooManyMatches,
-                                                    "http://opcfoundation.org/UA/:AddPublishedEvents"
-                                                        + " (declaration i=14496, owner i=14477) on"
-                                                        + " "
-                                                        + getNodeId()));
-                                          }
-                                          return client
-                                              .getAddressSpace()
-                                              .getNodeAsync(unique.iterator().next())
-                                              .thenCompose(
-                                                  node -> {
-                                                    if (node == null
-                                                        || node.getNodeClass()
-                                                            != NodeClass.Method) {
-                                                      return CompletableFuture.failedFuture(
-                                                          new UaException(
-                                                              StatusCodes.Bad_NodeClassInvalid,
-                                                              "http://opcfoundation.org/UA/:AddPublishedEvents"
-                                                                  + " (declaration i=14496, owner"
-                                                                  + " i=14477) on "
-                                                                  + getNodeId()));
-                                                    }
-                                                    return CompletableFuture.completedFuture(node);
-                                                  });
-                                        });
-                              });
-                    });
-              });
-      hop0.whenComplete(
-          (node, failure) -> {
-            if (failure != null) {
-              result.completeExceptionally(failure);
-            } else if (node != null && !(node instanceof UaMethodNode)) {
-              result.completeExceptionally(
-                  new UaException(
-                      StatusCodes.Bad_TypeMismatch,
-                      "http://opcfoundation.org/UA/:AddPublishedEvents (declaration i=14496, owner"
-                          + " i=14477)"));
-            } else {
-              result.complete((UaMethodNode) node);
-            }
-          });
-    } catch (Exception e) {
-      result.completeExceptionally(e);
-    }
-    return result;
+    return ClientMembers.lookup(
+        client,
+        getNodeId(),
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "AddPublishedEvents",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            true,
+            "http://opcfoundation.org/UA/:AddPublishedEvents (declaration i=14496, owner"
+                + " i=14477)"));
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.3
-   *
-   * <p>Invokes <code>AddPublishedEvents</code> on this node's ObjectId using the effective Method
-   * contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param name ; the supplied payload may be null.
-   * @param eventNotifier ; the supplied payload may be null.
-   * @param fieldNameAliases ; the supplied payload may be null.
-   * @param fieldFlags ; the supplied payload may be null.
-   * @param selectedFields ; the supplied payload may be null.
-   * @param filter ; the supplied payload may be null.
-   * @return the output value or object, or its future; a single value may be null.
-   * @throws UaException if lookup, input validation, transport, service, operation status or output
-   *     conversion fails.
-   */
   @NullMarked
   @Override
   public DataSetFolderTypeAddPublishedEventsOutputs callAddPublishedEvents(
@@ -4586,31 +2897,6 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
         .requireGood();
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.3
-   *
-   * <p>Invokes <code>AddPublishedEvents</code> on this node's ObjectId using the effective Method
-   * contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param name ; the supplied payload may be null.
-   * @param eventNotifier ; the supplied payload may be null.
-   * @param fieldNameAliases ; the supplied payload may be null.
-   * @param fieldFlags ; the supplied payload may be null.
-   * @param selectedFields ; the supplied payload may be null.
-   * @param filter ; the supplied payload may be null.
-   * @return the output value or object, or its future; a single value may be null.
-   */
   @NullMarked
   @Override
   public CompletableFuture<? extends DataSetFolderTypeAddPublishedEventsOutputs>
@@ -4647,32 +2933,6 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
     return result;
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.3
-   *
-   * <p>Invokes <code>AddPublishedEvents</code> on this node's ObjectId using the effective Method
-   * contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param name ; the supplied payload may be null.
-   * @param eventNotifier ; the supplied payload may be null.
-   * @param fieldNameAliases ; the supplied payload may be null.
-   * @param fieldFlags ; the supplied payload may be null.
-   * @param selectedFields ; the supplied payload may be null.
-   * @param filter ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   * @throws UaException if lookup, input validation, transport, service or response envelope
-   *     validation fails.
-   */
   @NullMarked
   @Override
   public MethodCallResult<? extends DataSetFolderTypeAddPublishedEventsOutputs>
@@ -4694,34 +2954,6 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
         filter);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.3
-   *
-   * <p>Invokes <code>AddPublishedEvents</code> on this node's ObjectId using the effective Method
-   * contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param options request-wide diagnostics options for this Call only.
-   * @param name ; the supplied payload may be null.
-   * @param eventNotifier ; the supplied payload may be null.
-   * @param fieldNameAliases ; the supplied payload may be null.
-   * @param fieldFlags ; the supplied payload may be null.
-   * @param selectedFields ; the supplied payload may be null.
-   * @param filter ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   * @throws UaException if lookup, input validation, transport, service or response envelope
-   *     validation fails.
-   * @throws NullPointerException if a required options or presence object is null.
-   */
   @NullMarked
   @Override
   public MethodCallResult<? extends DataSetFolderTypeAddPublishedEventsOutputs>
@@ -4735,52 +2967,12 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
           @Nullable ContentFilter filter)
           throws UaException {
     Objects.requireNonNull(options, "options");
-    var awaitedMethod =
+    return ClientMembers.await(
         callAddPublishedEventsDetailedAsync(
-            options, name, eventNotifier, fieldNameAliases, fieldFlags, selectedFields, filter);
-    try {
-      return awaitedMethod.get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      awaitedMethod.cancel(false);
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+            options, name, eventNotifier, fieldNameAliases, fieldFlags, selectedFields, filter),
+        true);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.3
-   *
-   * <p>Invokes <code>AddPublishedEvents</code> on this node's ObjectId using the effective Method
-   * contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param name ; the supplied payload may be null.
-   * @param eventNotifier ; the supplied payload may be null.
-   * @param fieldNameAliases ; the supplied payload may be null.
-   * @param fieldFlags ; the supplied payload may be null.
-   * @param selectedFields ; the supplied payload may be null.
-   * @param filter ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   */
   @NullMarked
   @Override
   public CompletableFuture<
@@ -4802,34 +2994,6 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
         filter);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.3
-   *
-   * <p>Invokes <code>AddPublishedEvents</code> on this node's ObjectId using the effective Method
-   * contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param options request-wide diagnostics options for this Call only.
-   * @param name ; the supplied payload may be null.
-   * @param eventNotifier ; the supplied payload may be null.
-   * @param fieldNameAliases ; the supplied payload may be null.
-   * @param fieldFlags ; the supplied payload may be null.
-   * @param selectedFields ; the supplied payload may be null.
-   * @param filter ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   * @throws NullPointerException if a required options or presence object is null (exceptional
-   *     completion).
-   */
   @NullMarked
   @Override
   public CompletableFuture<
@@ -4960,78 +3124,9 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                               + " type tree; resolved DataType: "
                                               + argumentDataTypeId);
                                     }
-                                    Object numericElements =
-                                        methodValue instanceof Matrix
-                                            ? ((Matrix) methodValue).getElements()
-                                            : methodValue;
-                                    if (numericElements != null
-                                        && numericElements.getClass().isArray()
-                                        && (numericElements.getClass().getComponentType()
-                                                == Number.class
-                                            || numericElements.getClass().getComponentType()
-                                                == UNumber.class)
-                                        && (argumentDataTypeId.equals(NodeIds.Number)
-                                            || dataTypeTree_.isSubtypeOf(
-                                                argumentDataTypeId, NodeIds.Number))) {
-                                      Class<?> numericElementType = null;
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Object numericElement =
-                                            Array.get(numericElements, numericIndex);
-                                        if (numericElement != null) {
-                                          if (numericElementType != null
-                                              && numericElementType != numericElement.getClass()) {
-                                            throw new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "An abstract numeric array requires one homogeneous"
-                                                    + " wire element type");
-                                          }
-                                          numericElementType = numericElement.getClass();
-                                        }
-                                      }
-                                      if (numericElementType == null) {
-                                        numericElementType =
-                                            dataTypeTree_.getBackingClass(argumentDataTypeId);
-                                      }
-                                      if (numericElementType == Number.class
-                                          || numericElementType == UNumber.class) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "An empty or all-null abstract numeric array requires a"
-                                                + " concretely typed array");
-                                      }
-                                      Object numericArray =
-                                          Array.newInstance(
-                                              numericElementType, Array.getLength(numericElements));
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Array.set(
-                                            numericArray,
-                                            numericIndex,
-                                            Array.get(numericElements, numericIndex));
-                                      }
-                                      if (methodValue instanceof Matrix) {
-                                        methodValue =
-                                            new Matrix(
-                                                numericArray,
-                                                ((Matrix) methodValue).getDimensions().clone(),
-                                                ((Matrix) methodValue)
-                                                    .getDataType()
-                                                    .orElseThrow(
-                                                        () ->
-                                                            new UaException(
-                                                                StatusCodes.Bad_TypeMismatch,
-                                                                "A numeric Matrix requires an"
-                                                                    + " explicit wire DataType")),
-                                                ((Matrix) methodValue)
-                                                    .getDataTypeId()
-                                                    .orElse(null));
-                                      } else {
-                                        methodValue = numericArray;
-                                      }
-                                    }
+                                    methodValue =
+                                        NumericValues.normalize(
+                                            methodValue, dataTypeTree_, argumentDataTypeId);
                                     if (methodValue != null) {
                                       Object shapeElements =
                                           methodValue instanceof Matrix
@@ -5246,108 +3341,7 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                       wireValue instanceof Matrix
                                           ? ((Matrix) wireValue).getElements()
                                           : wireValue;
-                                  var numericWireValues = new ArrayDeque<Object[]>();
-                                  var numericWirePath =
-                                      Collections.newSetFromMap(
-                                          new IdentityHashMap<Object, Boolean>());
-                                  if (wireValue != null) {
-                                    numericWireValues.push(new Object[] {wireValue, false});
-                                  }
-                                  while (!numericWireValues.isEmpty()) {
-                                    Object[] numericWireFrame = numericWireValues.pop();
-                                    Object numericWireValue = numericWireFrame[0];
-                                    if ((Boolean) numericWireFrame[1]) {
-                                      numericWirePath.remove(numericWireValue);
-                                      continue;
-                                    }
-                                    while (numericWireValue instanceof Variant
-                                        || numericWireValue instanceof DataValue) {
-                                      if (numericWireValue instanceof DataValue) {
-                                        if (((DataValue) numericWireValue).getValue() == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a value wrapper; use"
-                                                  + " Variant.NULL_VALUE for null");
-                                        }
-                                        if (((DataValue) numericWireValue).getStatusCode()
-                                            == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a StatusCode; use"
-                                                  + " StatusCode.GOOD for Good");
-                                        }
-                                        numericWireValue =
-                                            ((DataValue) numericWireValue).getValue();
-                                      } else {
-                                        numericWireValue = ((Variant) numericWireValue).getValue();
-                                      }
-                                    }
-                                    if (numericWireValue instanceof Matrix) {
-                                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                                    }
-                                    if (numericWireValue != null
-                                        && numericWireValue.getClass().isArray()) {
-                                      if (!numericWirePath.add(numericWireValue)) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "Cyclic Variant arrays cannot be encoded");
-                                      }
-                                      numericWireValues.push(new Object[] {numericWireValue, true});
-                                      for (int numericWireIndex = 0;
-                                          numericWireIndex < Array.getLength(numericWireValue);
-                                          numericWireIndex++) {
-                                        Object numericWireElement =
-                                            Array.get(numericWireValue, numericWireIndex);
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Variant.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Variant wire array requires a wrapper for every"
-                                                  + " element; use Variant.NULL_VALUE for null");
-                                        }
-                                        if (numericWireElement == null
-                                            && (UaEnumeratedType.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue))
-                                                || OptionSetUInteger.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "An enum or OptionSet wire array cannot encode a null"
-                                                  + " element");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Boolean.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Boolean wire array cannot retain a null element;"
-                                                  + " Milo encodes it as false");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == StatusCode.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A StatusCode wire array cannot retain a null"
-                                                  + " element; Milo encodes it as Good");
-                                        }
-                                        if (numericWireElement == null
-                                            && Number.class.isAssignableFrom(
-                                                ArrayUtil.getBoxedType(numericWireValue))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A numeric wire array cannot retain a null element;"
-                                                  + " Milo encodes it as zero");
-                                        }
-                                        if (numericWireElement instanceof Variant
-                                            || numericWireElement instanceof DataValue) {
-                                          numericWireValues.push(
-                                              new Object[] {numericWireElement, false});
-                                        }
-                                      }
-                                    }
-                                  }
+                                  NumericValues.requireEncodable(wireValue);
                                   wireValue =
                                       ExtensionObject.encodeValue(
                                           this.client.getStaticEncodingContext(), wireValue);
@@ -5398,78 +3392,9 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                               + " effective type tree; resolved DataType: "
                                               + argumentDataTypeId);
                                     }
-                                    Object numericElements =
-                                        methodValue instanceof Matrix
-                                            ? ((Matrix) methodValue).getElements()
-                                            : methodValue;
-                                    if (numericElements != null
-                                        && numericElements.getClass().isArray()
-                                        && (numericElements.getClass().getComponentType()
-                                                == Number.class
-                                            || numericElements.getClass().getComponentType()
-                                                == UNumber.class)
-                                        && (argumentDataTypeId.equals(NodeIds.Number)
-                                            || dataTypeTree_.isSubtypeOf(
-                                                argumentDataTypeId, NodeIds.Number))) {
-                                      Class<?> numericElementType = null;
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Object numericElement =
-                                            Array.get(numericElements, numericIndex);
-                                        if (numericElement != null) {
-                                          if (numericElementType != null
-                                              && numericElementType != numericElement.getClass()) {
-                                            throw new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "An abstract numeric array requires one homogeneous"
-                                                    + " wire element type");
-                                          }
-                                          numericElementType = numericElement.getClass();
-                                        }
-                                      }
-                                      if (numericElementType == null) {
-                                        numericElementType =
-                                            dataTypeTree_.getBackingClass(argumentDataTypeId);
-                                      }
-                                      if (numericElementType == Number.class
-                                          || numericElementType == UNumber.class) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "An empty or all-null abstract numeric array requires a"
-                                                + " concretely typed array");
-                                      }
-                                      Object numericArray =
-                                          Array.newInstance(
-                                              numericElementType, Array.getLength(numericElements));
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Array.set(
-                                            numericArray,
-                                            numericIndex,
-                                            Array.get(numericElements, numericIndex));
-                                      }
-                                      if (methodValue instanceof Matrix) {
-                                        methodValue =
-                                            new Matrix(
-                                                numericArray,
-                                                ((Matrix) methodValue).getDimensions().clone(),
-                                                ((Matrix) methodValue)
-                                                    .getDataType()
-                                                    .orElseThrow(
-                                                        () ->
-                                                            new UaException(
-                                                                StatusCodes.Bad_TypeMismatch,
-                                                                "A numeric Matrix requires an"
-                                                                    + " explicit wire DataType")),
-                                                ((Matrix) methodValue)
-                                                    .getDataTypeId()
-                                                    .orElse(null));
-                                      } else {
-                                        methodValue = numericArray;
-                                      }
-                                    }
+                                    methodValue =
+                                        NumericValues.normalize(
+                                            methodValue, dataTypeTree_, argumentDataTypeId);
                                     if (methodValue != null) {
                                       Object shapeElements =
                                           methodValue instanceof Matrix
@@ -5684,108 +3609,7 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                       wireValue instanceof Matrix
                                           ? ((Matrix) wireValue).getElements()
                                           : wireValue;
-                                  var numericWireValues = new ArrayDeque<Object[]>();
-                                  var numericWirePath =
-                                      Collections.newSetFromMap(
-                                          new IdentityHashMap<Object, Boolean>());
-                                  if (wireValue != null) {
-                                    numericWireValues.push(new Object[] {wireValue, false});
-                                  }
-                                  while (!numericWireValues.isEmpty()) {
-                                    Object[] numericWireFrame = numericWireValues.pop();
-                                    Object numericWireValue = numericWireFrame[0];
-                                    if ((Boolean) numericWireFrame[1]) {
-                                      numericWirePath.remove(numericWireValue);
-                                      continue;
-                                    }
-                                    while (numericWireValue instanceof Variant
-                                        || numericWireValue instanceof DataValue) {
-                                      if (numericWireValue instanceof DataValue) {
-                                        if (((DataValue) numericWireValue).getValue() == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a value wrapper; use"
-                                                  + " Variant.NULL_VALUE for null");
-                                        }
-                                        if (((DataValue) numericWireValue).getStatusCode()
-                                            == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a StatusCode; use"
-                                                  + " StatusCode.GOOD for Good");
-                                        }
-                                        numericWireValue =
-                                            ((DataValue) numericWireValue).getValue();
-                                      } else {
-                                        numericWireValue = ((Variant) numericWireValue).getValue();
-                                      }
-                                    }
-                                    if (numericWireValue instanceof Matrix) {
-                                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                                    }
-                                    if (numericWireValue != null
-                                        && numericWireValue.getClass().isArray()) {
-                                      if (!numericWirePath.add(numericWireValue)) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "Cyclic Variant arrays cannot be encoded");
-                                      }
-                                      numericWireValues.push(new Object[] {numericWireValue, true});
-                                      for (int numericWireIndex = 0;
-                                          numericWireIndex < Array.getLength(numericWireValue);
-                                          numericWireIndex++) {
-                                        Object numericWireElement =
-                                            Array.get(numericWireValue, numericWireIndex);
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Variant.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Variant wire array requires a wrapper for every"
-                                                  + " element; use Variant.NULL_VALUE for null");
-                                        }
-                                        if (numericWireElement == null
-                                            && (UaEnumeratedType.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue))
-                                                || OptionSetUInteger.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "An enum or OptionSet wire array cannot encode a null"
-                                                  + " element");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Boolean.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Boolean wire array cannot retain a null element;"
-                                                  + " Milo encodes it as false");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == StatusCode.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A StatusCode wire array cannot retain a null"
-                                                  + " element; Milo encodes it as Good");
-                                        }
-                                        if (numericWireElement == null
-                                            && Number.class.isAssignableFrom(
-                                                ArrayUtil.getBoxedType(numericWireValue))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A numeric wire array cannot retain a null element;"
-                                                  + " Milo encodes it as zero");
-                                        }
-                                        if (numericWireElement instanceof Variant
-                                            || numericWireElement instanceof DataValue) {
-                                          numericWireValues.push(
-                                              new Object[] {numericWireElement, false});
-                                        }
-                                      }
-                                    }
-                                  }
+                                  NumericValues.requireEncodable(wireValue);
                                   wireValue =
                                       ExtensionObject.encodeValue(
                                           this.client.getStaticEncodingContext(), wireValue);
@@ -5836,78 +3660,9 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                               + " effective type tree; resolved DataType: "
                                               + argumentDataTypeId);
                                     }
-                                    Object numericElements =
-                                        methodValue instanceof Matrix
-                                            ? ((Matrix) methodValue).getElements()
-                                            : methodValue;
-                                    if (numericElements != null
-                                        && numericElements.getClass().isArray()
-                                        && (numericElements.getClass().getComponentType()
-                                                == Number.class
-                                            || numericElements.getClass().getComponentType()
-                                                == UNumber.class)
-                                        && (argumentDataTypeId.equals(NodeIds.Number)
-                                            || dataTypeTree_.isSubtypeOf(
-                                                argumentDataTypeId, NodeIds.Number))) {
-                                      Class<?> numericElementType = null;
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Object numericElement =
-                                            Array.get(numericElements, numericIndex);
-                                        if (numericElement != null) {
-                                          if (numericElementType != null
-                                              && numericElementType != numericElement.getClass()) {
-                                            throw new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "An abstract numeric array requires one homogeneous"
-                                                    + " wire element type");
-                                          }
-                                          numericElementType = numericElement.getClass();
-                                        }
-                                      }
-                                      if (numericElementType == null) {
-                                        numericElementType =
-                                            dataTypeTree_.getBackingClass(argumentDataTypeId);
-                                      }
-                                      if (numericElementType == Number.class
-                                          || numericElementType == UNumber.class) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "An empty or all-null abstract numeric array requires a"
-                                                + " concretely typed array");
-                                      }
-                                      Object numericArray =
-                                          Array.newInstance(
-                                              numericElementType, Array.getLength(numericElements));
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Array.set(
-                                            numericArray,
-                                            numericIndex,
-                                            Array.get(numericElements, numericIndex));
-                                      }
-                                      if (methodValue instanceof Matrix) {
-                                        methodValue =
-                                            new Matrix(
-                                                numericArray,
-                                                ((Matrix) methodValue).getDimensions().clone(),
-                                                ((Matrix) methodValue)
-                                                    .getDataType()
-                                                    .orElseThrow(
-                                                        () ->
-                                                            new UaException(
-                                                                StatusCodes.Bad_TypeMismatch,
-                                                                "A numeric Matrix requires an"
-                                                                    + " explicit wire DataType")),
-                                                ((Matrix) methodValue)
-                                                    .getDataTypeId()
-                                                    .orElse(null));
-                                      } else {
-                                        methodValue = numericArray;
-                                      }
-                                    }
+                                    methodValue =
+                                        NumericValues.normalize(
+                                            methodValue, dataTypeTree_, argumentDataTypeId);
                                     if (methodValue != null) {
                                       Object shapeElements =
                                           methodValue instanceof Matrix
@@ -6155,108 +3910,7 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                       wireValue instanceof Matrix
                                           ? ((Matrix) wireValue).getElements()
                                           : wireValue;
-                                  var numericWireValues = new ArrayDeque<Object[]>();
-                                  var numericWirePath =
-                                      Collections.newSetFromMap(
-                                          new IdentityHashMap<Object, Boolean>());
-                                  if (wireValue != null) {
-                                    numericWireValues.push(new Object[] {wireValue, false});
-                                  }
-                                  while (!numericWireValues.isEmpty()) {
-                                    Object[] numericWireFrame = numericWireValues.pop();
-                                    Object numericWireValue = numericWireFrame[0];
-                                    if ((Boolean) numericWireFrame[1]) {
-                                      numericWirePath.remove(numericWireValue);
-                                      continue;
-                                    }
-                                    while (numericWireValue instanceof Variant
-                                        || numericWireValue instanceof DataValue) {
-                                      if (numericWireValue instanceof DataValue) {
-                                        if (((DataValue) numericWireValue).getValue() == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a value wrapper; use"
-                                                  + " Variant.NULL_VALUE for null");
-                                        }
-                                        if (((DataValue) numericWireValue).getStatusCode()
-                                            == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a StatusCode; use"
-                                                  + " StatusCode.GOOD for Good");
-                                        }
-                                        numericWireValue =
-                                            ((DataValue) numericWireValue).getValue();
-                                      } else {
-                                        numericWireValue = ((Variant) numericWireValue).getValue();
-                                      }
-                                    }
-                                    if (numericWireValue instanceof Matrix) {
-                                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                                    }
-                                    if (numericWireValue != null
-                                        && numericWireValue.getClass().isArray()) {
-                                      if (!numericWirePath.add(numericWireValue)) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "Cyclic Variant arrays cannot be encoded");
-                                      }
-                                      numericWireValues.push(new Object[] {numericWireValue, true});
-                                      for (int numericWireIndex = 0;
-                                          numericWireIndex < Array.getLength(numericWireValue);
-                                          numericWireIndex++) {
-                                        Object numericWireElement =
-                                            Array.get(numericWireValue, numericWireIndex);
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Variant.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Variant wire array requires a wrapper for every"
-                                                  + " element; use Variant.NULL_VALUE for null");
-                                        }
-                                        if (numericWireElement == null
-                                            && (UaEnumeratedType.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue))
-                                                || OptionSetUInteger.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "An enum or OptionSet wire array cannot encode a null"
-                                                  + " element");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Boolean.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Boolean wire array cannot retain a null element;"
-                                                  + " Milo encodes it as false");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == StatusCode.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A StatusCode wire array cannot retain a null"
-                                                  + " element; Milo encodes it as Good");
-                                        }
-                                        if (numericWireElement == null
-                                            && Number.class.isAssignableFrom(
-                                                ArrayUtil.getBoxedType(numericWireValue))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A numeric wire array cannot retain a null element;"
-                                                  + " Milo encodes it as zero");
-                                        }
-                                        if (numericWireElement instanceof Variant
-                                            || numericWireElement instanceof DataValue) {
-                                          numericWireValues.push(
-                                              new Object[] {numericWireElement, false});
-                                        }
-                                      }
-                                    }
-                                  }
+                                  NumericValues.requireEncodable(wireValue);
                                   wireValue =
                                       ExtensionObject.encodeValue(
                                           this.client.getStaticEncodingContext(), wireValue);
@@ -6307,78 +3961,9 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                               + " type tree; resolved DataType: "
                                               + argumentDataTypeId);
                                     }
-                                    Object numericElements =
-                                        methodValue instanceof Matrix
-                                            ? ((Matrix) methodValue).getElements()
-                                            : methodValue;
-                                    if (numericElements != null
-                                        && numericElements.getClass().isArray()
-                                        && (numericElements.getClass().getComponentType()
-                                                == Number.class
-                                            || numericElements.getClass().getComponentType()
-                                                == UNumber.class)
-                                        && (argumentDataTypeId.equals(NodeIds.Number)
-                                            || dataTypeTree_.isSubtypeOf(
-                                                argumentDataTypeId, NodeIds.Number))) {
-                                      Class<?> numericElementType = null;
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Object numericElement =
-                                            Array.get(numericElements, numericIndex);
-                                        if (numericElement != null) {
-                                          if (numericElementType != null
-                                              && numericElementType != numericElement.getClass()) {
-                                            throw new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "An abstract numeric array requires one homogeneous"
-                                                    + " wire element type");
-                                          }
-                                          numericElementType = numericElement.getClass();
-                                        }
-                                      }
-                                      if (numericElementType == null) {
-                                        numericElementType =
-                                            dataTypeTree_.getBackingClass(argumentDataTypeId);
-                                      }
-                                      if (numericElementType == Number.class
-                                          || numericElementType == UNumber.class) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "An empty or all-null abstract numeric array requires a"
-                                                + " concretely typed array");
-                                      }
-                                      Object numericArray =
-                                          Array.newInstance(
-                                              numericElementType, Array.getLength(numericElements));
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Array.set(
-                                            numericArray,
-                                            numericIndex,
-                                            Array.get(numericElements, numericIndex));
-                                      }
-                                      if (methodValue instanceof Matrix) {
-                                        methodValue =
-                                            new Matrix(
-                                                numericArray,
-                                                ((Matrix) methodValue).getDimensions().clone(),
-                                                ((Matrix) methodValue)
-                                                    .getDataType()
-                                                    .orElseThrow(
-                                                        () ->
-                                                            new UaException(
-                                                                StatusCodes.Bad_TypeMismatch,
-                                                                "A numeric Matrix requires an"
-                                                                    + " explicit wire DataType")),
-                                                ((Matrix) methodValue)
-                                                    .getDataTypeId()
-                                                    .orElse(null));
-                                      } else {
-                                        methodValue = numericArray;
-                                      }
-                                    }
+                                    methodValue =
+                                        NumericValues.normalize(
+                                            methodValue, dataTypeTree_, argumentDataTypeId);
                                     if (methodValue != null) {
                                       Object shapeElements =
                                           methodValue instanceof Matrix
@@ -6534,108 +4119,7 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                       }
                                     }
                                   }
-                                  var numericWireValues = new ArrayDeque<Object[]>();
-                                  var numericWirePath =
-                                      Collections.newSetFromMap(
-                                          new IdentityHashMap<Object, Boolean>());
-                                  if (wireValue != null) {
-                                    numericWireValues.push(new Object[] {wireValue, false});
-                                  }
-                                  while (!numericWireValues.isEmpty()) {
-                                    Object[] numericWireFrame = numericWireValues.pop();
-                                    Object numericWireValue = numericWireFrame[0];
-                                    if ((Boolean) numericWireFrame[1]) {
-                                      numericWirePath.remove(numericWireValue);
-                                      continue;
-                                    }
-                                    while (numericWireValue instanceof Variant
-                                        || numericWireValue instanceof DataValue) {
-                                      if (numericWireValue instanceof DataValue) {
-                                        if (((DataValue) numericWireValue).getValue() == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a value wrapper; use"
-                                                  + " Variant.NULL_VALUE for null");
-                                        }
-                                        if (((DataValue) numericWireValue).getStatusCode()
-                                            == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a StatusCode; use"
-                                                  + " StatusCode.GOOD for Good");
-                                        }
-                                        numericWireValue =
-                                            ((DataValue) numericWireValue).getValue();
-                                      } else {
-                                        numericWireValue = ((Variant) numericWireValue).getValue();
-                                      }
-                                    }
-                                    if (numericWireValue instanceof Matrix) {
-                                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                                    }
-                                    if (numericWireValue != null
-                                        && numericWireValue.getClass().isArray()) {
-                                      if (!numericWirePath.add(numericWireValue)) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "Cyclic Variant arrays cannot be encoded");
-                                      }
-                                      numericWireValues.push(new Object[] {numericWireValue, true});
-                                      for (int numericWireIndex = 0;
-                                          numericWireIndex < Array.getLength(numericWireValue);
-                                          numericWireIndex++) {
-                                        Object numericWireElement =
-                                            Array.get(numericWireValue, numericWireIndex);
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Variant.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Variant wire array requires a wrapper for every"
-                                                  + " element; use Variant.NULL_VALUE for null");
-                                        }
-                                        if (numericWireElement == null
-                                            && (UaEnumeratedType.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue))
-                                                || OptionSetUInteger.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "An enum or OptionSet wire array cannot encode a null"
-                                                  + " element");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Boolean.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Boolean wire array cannot retain a null element;"
-                                                  + " Milo encodes it as false");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == StatusCode.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A StatusCode wire array cannot retain a null"
-                                                  + " element; Milo encodes it as Good");
-                                        }
-                                        if (numericWireElement == null
-                                            && Number.class.isAssignableFrom(
-                                                ArrayUtil.getBoxedType(numericWireValue))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A numeric wire array cannot retain a null element;"
-                                                  + " Milo encodes it as zero");
-                                        }
-                                        if (numericWireElement instanceof Variant
-                                            || numericWireElement instanceof DataValue) {
-                                          numericWireValues.push(
-                                              new Object[] {numericWireElement, false});
-                                        }
-                                      }
-                                    }
-                                  }
+                                  NumericValues.requireEncodable(wireValue);
                                   wireValue =
                                       ExtensionObject.encodeValue(
                                           this.client.getStaticEncodingContext(), wireValue);
@@ -6686,78 +4170,9 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                               + " effective type tree; resolved DataType: "
                                               + argumentDataTypeId);
                                     }
-                                    Object numericElements =
-                                        methodValue instanceof Matrix
-                                            ? ((Matrix) methodValue).getElements()
-                                            : methodValue;
-                                    if (numericElements != null
-                                        && numericElements.getClass().isArray()
-                                        && (numericElements.getClass().getComponentType()
-                                                == Number.class
-                                            || numericElements.getClass().getComponentType()
-                                                == UNumber.class)
-                                        && (argumentDataTypeId.equals(NodeIds.Number)
-                                            || dataTypeTree_.isSubtypeOf(
-                                                argumentDataTypeId, NodeIds.Number))) {
-                                      Class<?> numericElementType = null;
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Object numericElement =
-                                            Array.get(numericElements, numericIndex);
-                                        if (numericElement != null) {
-                                          if (numericElementType != null
-                                              && numericElementType != numericElement.getClass()) {
-                                            throw new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "An abstract numeric array requires one homogeneous"
-                                                    + " wire element type");
-                                          }
-                                          numericElementType = numericElement.getClass();
-                                        }
-                                      }
-                                      if (numericElementType == null) {
-                                        numericElementType =
-                                            dataTypeTree_.getBackingClass(argumentDataTypeId);
-                                      }
-                                      if (numericElementType == Number.class
-                                          || numericElementType == UNumber.class) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "An empty or all-null abstract numeric array requires a"
-                                                + " concretely typed array");
-                                      }
-                                      Object numericArray =
-                                          Array.newInstance(
-                                              numericElementType, Array.getLength(numericElements));
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Array.set(
-                                            numericArray,
-                                            numericIndex,
-                                            Array.get(numericElements, numericIndex));
-                                      }
-                                      if (methodValue instanceof Matrix) {
-                                        methodValue =
-                                            new Matrix(
-                                                numericArray,
-                                                ((Matrix) methodValue).getDimensions().clone(),
-                                                ((Matrix) methodValue)
-                                                    .getDataType()
-                                                    .orElseThrow(
-                                                        () ->
-                                                            new UaException(
-                                                                StatusCodes.Bad_TypeMismatch,
-                                                                "A numeric Matrix requires an"
-                                                                    + " explicit wire DataType")),
-                                                ((Matrix) methodValue)
-                                                    .getDataTypeId()
-                                                    .orElse(null));
-                                      } else {
-                                        methodValue = numericArray;
-                                      }
-                                    }
+                                    methodValue =
+                                        NumericValues.normalize(
+                                            methodValue, dataTypeTree_, argumentDataTypeId);
                                     if (methodValue != null) {
                                       Object shapeElements =
                                           methodValue instanceof Matrix
@@ -7007,108 +4422,7 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                       wireValue instanceof Matrix
                                           ? ((Matrix) wireValue).getElements()
                                           : wireValue;
-                                  var numericWireValues = new ArrayDeque<Object[]>();
-                                  var numericWirePath =
-                                      Collections.newSetFromMap(
-                                          new IdentityHashMap<Object, Boolean>());
-                                  if (wireValue != null) {
-                                    numericWireValues.push(new Object[] {wireValue, false});
-                                  }
-                                  while (!numericWireValues.isEmpty()) {
-                                    Object[] numericWireFrame = numericWireValues.pop();
-                                    Object numericWireValue = numericWireFrame[0];
-                                    if ((Boolean) numericWireFrame[1]) {
-                                      numericWirePath.remove(numericWireValue);
-                                      continue;
-                                    }
-                                    while (numericWireValue instanceof Variant
-                                        || numericWireValue instanceof DataValue) {
-                                      if (numericWireValue instanceof DataValue) {
-                                        if (((DataValue) numericWireValue).getValue() == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a value wrapper; use"
-                                                  + " Variant.NULL_VALUE for null");
-                                        }
-                                        if (((DataValue) numericWireValue).getStatusCode()
-                                            == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a StatusCode; use"
-                                                  + " StatusCode.GOOD for Good");
-                                        }
-                                        numericWireValue =
-                                            ((DataValue) numericWireValue).getValue();
-                                      } else {
-                                        numericWireValue = ((Variant) numericWireValue).getValue();
-                                      }
-                                    }
-                                    if (numericWireValue instanceof Matrix) {
-                                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                                    }
-                                    if (numericWireValue != null
-                                        && numericWireValue.getClass().isArray()) {
-                                      if (!numericWirePath.add(numericWireValue)) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "Cyclic Variant arrays cannot be encoded");
-                                      }
-                                      numericWireValues.push(new Object[] {numericWireValue, true});
-                                      for (int numericWireIndex = 0;
-                                          numericWireIndex < Array.getLength(numericWireValue);
-                                          numericWireIndex++) {
-                                        Object numericWireElement =
-                                            Array.get(numericWireValue, numericWireIndex);
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Variant.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Variant wire array requires a wrapper for every"
-                                                  + " element; use Variant.NULL_VALUE for null");
-                                        }
-                                        if (numericWireElement == null
-                                            && (UaEnumeratedType.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue))
-                                                || OptionSetUInteger.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "An enum or OptionSet wire array cannot encode a null"
-                                                  + " element");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Boolean.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Boolean wire array cannot retain a null element;"
-                                                  + " Milo encodes it as false");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == StatusCode.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A StatusCode wire array cannot retain a null"
-                                                  + " element; Milo encodes it as Good");
-                                        }
-                                        if (numericWireElement == null
-                                            && Number.class.isAssignableFrom(
-                                                ArrayUtil.getBoxedType(numericWireValue))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A numeric wire array cannot retain a null element;"
-                                                  + " Milo encodes it as zero");
-                                        }
-                                        if (numericWireElement instanceof Variant
-                                            || numericWireElement instanceof DataValue) {
-                                          numericWireValues.push(
-                                              new Object[] {numericWireElement, false});
-                                        }
-                                      }
-                                    }
-                                  }
+                                  NumericValues.requireEncodable(wireValue);
                                   wireValue =
                                       ExtensionObject.encodeValue(
                                           this.client.getStaticEncodingContext(), wireValue);
@@ -7159,78 +4473,9 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                               + " type tree; resolved DataType: "
                                               + argumentDataTypeId);
                                     }
-                                    Object numericElements =
-                                        methodValue instanceof Matrix
-                                            ? ((Matrix) methodValue).getElements()
-                                            : methodValue;
-                                    if (numericElements != null
-                                        && numericElements.getClass().isArray()
-                                        && (numericElements.getClass().getComponentType()
-                                                == Number.class
-                                            || numericElements.getClass().getComponentType()
-                                                == UNumber.class)
-                                        && (argumentDataTypeId.equals(NodeIds.Number)
-                                            || dataTypeTree_.isSubtypeOf(
-                                                argumentDataTypeId, NodeIds.Number))) {
-                                      Class<?> numericElementType = null;
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Object numericElement =
-                                            Array.get(numericElements, numericIndex);
-                                        if (numericElement != null) {
-                                          if (numericElementType != null
-                                              && numericElementType != numericElement.getClass()) {
-                                            throw new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "An abstract numeric array requires one homogeneous"
-                                                    + " wire element type");
-                                          }
-                                          numericElementType = numericElement.getClass();
-                                        }
-                                      }
-                                      if (numericElementType == null) {
-                                        numericElementType =
-                                            dataTypeTree_.getBackingClass(argumentDataTypeId);
-                                      }
-                                      if (numericElementType == Number.class
-                                          || numericElementType == UNumber.class) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "An empty or all-null abstract numeric array requires a"
-                                                + " concretely typed array");
-                                      }
-                                      Object numericArray =
-                                          Array.newInstance(
-                                              numericElementType, Array.getLength(numericElements));
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Array.set(
-                                            numericArray,
-                                            numericIndex,
-                                            Array.get(numericElements, numericIndex));
-                                      }
-                                      if (methodValue instanceof Matrix) {
-                                        methodValue =
-                                            new Matrix(
-                                                numericArray,
-                                                ((Matrix) methodValue).getDimensions().clone(),
-                                                ((Matrix) methodValue)
-                                                    .getDataType()
-                                                    .orElseThrow(
-                                                        () ->
-                                                            new UaException(
-                                                                StatusCodes.Bad_TypeMismatch,
-                                                                "A numeric Matrix requires an"
-                                                                    + " explicit wire DataType")),
-                                                ((Matrix) methodValue)
-                                                    .getDataTypeId()
-                                                    .orElse(null));
-                                      } else {
-                                        methodValue = numericArray;
-                                      }
-                                    }
+                                    methodValue =
+                                        NumericValues.normalize(
+                                            methodValue, dataTypeTree_, argumentDataTypeId);
                                     if (methodValue != null) {
                                       Object shapeElements =
                                           methodValue instanceof Matrix
@@ -7445,108 +4690,7 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                       wireValue instanceof Matrix
                                           ? ((Matrix) wireValue).getElements()
                                           : wireValue;
-                                  var numericWireValues = new ArrayDeque<Object[]>();
-                                  var numericWirePath =
-                                      Collections.newSetFromMap(
-                                          new IdentityHashMap<Object, Boolean>());
-                                  if (wireValue != null) {
-                                    numericWireValues.push(new Object[] {wireValue, false});
-                                  }
-                                  while (!numericWireValues.isEmpty()) {
-                                    Object[] numericWireFrame = numericWireValues.pop();
-                                    Object numericWireValue = numericWireFrame[0];
-                                    if ((Boolean) numericWireFrame[1]) {
-                                      numericWirePath.remove(numericWireValue);
-                                      continue;
-                                    }
-                                    while (numericWireValue instanceof Variant
-                                        || numericWireValue instanceof DataValue) {
-                                      if (numericWireValue instanceof DataValue) {
-                                        if (((DataValue) numericWireValue).getValue() == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a value wrapper; use"
-                                                  + " Variant.NULL_VALUE for null");
-                                        }
-                                        if (((DataValue) numericWireValue).getStatusCode()
-                                            == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a StatusCode; use"
-                                                  + " StatusCode.GOOD for Good");
-                                        }
-                                        numericWireValue =
-                                            ((DataValue) numericWireValue).getValue();
-                                      } else {
-                                        numericWireValue = ((Variant) numericWireValue).getValue();
-                                      }
-                                    }
-                                    if (numericWireValue instanceof Matrix) {
-                                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                                    }
-                                    if (numericWireValue != null
-                                        && numericWireValue.getClass().isArray()) {
-                                      if (!numericWirePath.add(numericWireValue)) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "Cyclic Variant arrays cannot be encoded");
-                                      }
-                                      numericWireValues.push(new Object[] {numericWireValue, true});
-                                      for (int numericWireIndex = 0;
-                                          numericWireIndex < Array.getLength(numericWireValue);
-                                          numericWireIndex++) {
-                                        Object numericWireElement =
-                                            Array.get(numericWireValue, numericWireIndex);
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Variant.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Variant wire array requires a wrapper for every"
-                                                  + " element; use Variant.NULL_VALUE for null");
-                                        }
-                                        if (numericWireElement == null
-                                            && (UaEnumeratedType.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue))
-                                                || OptionSetUInteger.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "An enum or OptionSet wire array cannot encode a null"
-                                                  + " element");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Boolean.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Boolean wire array cannot retain a null element;"
-                                                  + " Milo encodes it as false");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == StatusCode.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A StatusCode wire array cannot retain a null"
-                                                  + " element; Milo encodes it as Good");
-                                        }
-                                        if (numericWireElement == null
-                                            && Number.class.isAssignableFrom(
-                                                ArrayUtil.getBoxedType(numericWireValue))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A numeric wire array cannot retain a null element;"
-                                                  + " Milo encodes it as zero");
-                                        }
-                                        if (numericWireElement instanceof Variant
-                                            || numericWireElement instanceof DataValue) {
-                                          numericWireValues.push(
-                                              new Object[] {numericWireElement, false});
-                                        }
-                                      }
-                                    }
-                                  }
+                                  NumericValues.requireEncodable(wireValue);
                                   wireValue =
                                       ExtensionObject.encodeValue(
                                           this.client.getStaticEncodingContext(), wireValue);
@@ -7764,122 +4908,11 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                                                           + " resolved DataType: "
                                                                           + argumentDataTypeId);
                                                                 }
-                                                                Object numericElements =
-                                                                    methodValue instanceof Matrix
-                                                                        ? ((Matrix) methodValue)
-                                                                            .getElements()
-                                                                        : methodValue;
-                                                                if (numericElements != null
-                                                                    && numericElements
-                                                                        .getClass()
-                                                                        .isArray()
-                                                                    && (numericElements
-                                                                                .getClass()
-                                                                                .getComponentType()
-                                                                            == Number.class
-                                                                        || numericElements
-                                                                                .getClass()
-                                                                                .getComponentType()
-                                                                            == UNumber.class)
-                                                                    && (argumentDataTypeId.equals(
-                                                                            NodeIds.Number)
-                                                                        || dataTypeTree_
-                                                                            .isSubtypeOf(
-                                                                                argumentDataTypeId,
-                                                                                NodeIds.Number))) {
-                                                                  Class<?> numericElementType =
-                                                                      null;
-                                                                  for (int numericIndex = 0;
-                                                                      numericIndex
-                                                                          < Array.getLength(
-                                                                              numericElements);
-                                                                      numericIndex++) {
-                                                                    Object numericElement =
-                                                                        Array.get(
-                                                                            numericElements,
-                                                                            numericIndex);
-                                                                    if (numericElement != null) {
-                                                                      if (numericElementType != null
-                                                                          && numericElementType
-                                                                              != numericElement
-                                                                                  .getClass()) {
-                                                                        throw new UaException(
-                                                                            StatusCodes
-                                                                                .Bad_TypeMismatch,
-                                                                            "An abstract numeric"
-                                                                                + " array requires"
-                                                                                + " one homogeneous"
-                                                                                + " wire element"
-                                                                                + " type");
-                                                                      }
-                                                                      numericElementType =
-                                                                          numericElement.getClass();
-                                                                    }
-                                                                  }
-                                                                  if (numericElementType == null) {
-                                                                    numericElementType =
-                                                                        dataTypeTree_
-                                                                            .getBackingClass(
-                                                                                argumentDataTypeId);
-                                                                  }
-                                                                  if (numericElementType
-                                                                          == Number.class
-                                                                      || numericElementType
-                                                                          == UNumber.class) {
-                                                                    throw new UaException(
-                                                                        StatusCodes
-                                                                            .Bad_TypeMismatch,
-                                                                        "An empty or all-null"
-                                                                            + " abstract numeric"
-                                                                            + " array requires a"
-                                                                            + " concretely typed"
-                                                                            + " array");
-                                                                  }
-                                                                  Object numericArray =
-                                                                      Array.newInstance(
-                                                                          numericElementType,
-                                                                          Array.getLength(
-                                                                              numericElements));
-                                                                  for (int numericIndex = 0;
-                                                                      numericIndex
-                                                                          < Array.getLength(
-                                                                              numericElements);
-                                                                      numericIndex++) {
-                                                                    Array.set(
-                                                                        numericArray,
-                                                                        numericIndex,
-                                                                        Array.get(
-                                                                            numericElements,
-                                                                            numericIndex));
-                                                                  }
-                                                                  if (methodValue
-                                                                      instanceof Matrix) {
-                                                                    methodValue =
-                                                                        new Matrix(
-                                                                            numericArray,
-                                                                            ((Matrix) methodValue)
-                                                                                .getDimensions()
-                                                                                .clone(),
-                                                                            ((Matrix) methodValue)
-                                                                                .getDataType()
-                                                                                .orElseThrow(
-                                                                                    () ->
-                                                                                        new UaException(
-                                                                                            StatusCodes
-                                                                                                .Bad_TypeMismatch,
-                                                                                            "A numeric"
-                                                                                                + " Matrix"
-                                                                                                + " requires"
-                                                                                                + " an explicit"
-                                                                                                + " wire"
-                                                                                                + " DataType")),
-                                                                            ((Matrix) methodValue)
-                                                                                .getDataTypeId()
-                                                                                .orElse(null));
-                                                                  } else {
-                                                                    methodValue = numericArray;
-                                                                  }
-                                                                }
+                                                                methodValue =
+                                                                    NumericValues.normalize(
+                                                                        methodValue,
+                                                                        dataTypeTree_,
+                                                                        argumentDataTypeId);
                                                                 if (methodValue != null) {
                                                                   Object shapeElements =
                                                                       methodValue instanceof Matrix
@@ -8284,122 +5317,11 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                                                           + " DataType: "
                                                                           + argumentDataTypeId);
                                                                 }
-                                                                Object numericElements =
-                                                                    methodValue instanceof Matrix
-                                                                        ? ((Matrix) methodValue)
-                                                                            .getElements()
-                                                                        : methodValue;
-                                                                if (numericElements != null
-                                                                    && numericElements
-                                                                        .getClass()
-                                                                        .isArray()
-                                                                    && (numericElements
-                                                                                .getClass()
-                                                                                .getComponentType()
-                                                                            == Number.class
-                                                                        || numericElements
-                                                                                .getClass()
-                                                                                .getComponentType()
-                                                                            == UNumber.class)
-                                                                    && (argumentDataTypeId.equals(
-                                                                            NodeIds.Number)
-                                                                        || dataTypeTree_
-                                                                            .isSubtypeOf(
-                                                                                argumentDataTypeId,
-                                                                                NodeIds.Number))) {
-                                                                  Class<?> numericElementType =
-                                                                      null;
-                                                                  for (int numericIndex = 0;
-                                                                      numericIndex
-                                                                          < Array.getLength(
-                                                                              numericElements);
-                                                                      numericIndex++) {
-                                                                    Object numericElement =
-                                                                        Array.get(
-                                                                            numericElements,
-                                                                            numericIndex);
-                                                                    if (numericElement != null) {
-                                                                      if (numericElementType != null
-                                                                          && numericElementType
-                                                                              != numericElement
-                                                                                  .getClass()) {
-                                                                        throw new UaException(
-                                                                            StatusCodes
-                                                                                .Bad_TypeMismatch,
-                                                                            "An abstract numeric"
-                                                                                + " array requires"
-                                                                                + " one homogeneous"
-                                                                                + " wire element"
-                                                                                + " type");
-                                                                      }
-                                                                      numericElementType =
-                                                                          numericElement.getClass();
-                                                                    }
-                                                                  }
-                                                                  if (numericElementType == null) {
-                                                                    numericElementType =
-                                                                        dataTypeTree_
-                                                                            .getBackingClass(
-                                                                                argumentDataTypeId);
-                                                                  }
-                                                                  if (numericElementType
-                                                                          == Number.class
-                                                                      || numericElementType
-                                                                          == UNumber.class) {
-                                                                    throw new UaException(
-                                                                        StatusCodes
-                                                                            .Bad_TypeMismatch,
-                                                                        "An empty or all-null"
-                                                                            + " abstract numeric"
-                                                                            + " array requires a"
-                                                                            + " concretely typed"
-                                                                            + " array");
-                                                                  }
-                                                                  Object numericArray =
-                                                                      Array.newInstance(
-                                                                          numericElementType,
-                                                                          Array.getLength(
-                                                                              numericElements));
-                                                                  for (int numericIndex = 0;
-                                                                      numericIndex
-                                                                          < Array.getLength(
-                                                                              numericElements);
-                                                                      numericIndex++) {
-                                                                    Array.set(
-                                                                        numericArray,
-                                                                        numericIndex,
-                                                                        Array.get(
-                                                                            numericElements,
-                                                                            numericIndex));
-                                                                  }
-                                                                  if (methodValue
-                                                                      instanceof Matrix) {
-                                                                    methodValue =
-                                                                        new Matrix(
-                                                                            numericArray,
-                                                                            ((Matrix) methodValue)
-                                                                                .getDimensions()
-                                                                                .clone(),
-                                                                            ((Matrix) methodValue)
-                                                                                .getDataType()
-                                                                                .orElseThrow(
-                                                                                    () ->
-                                                                                        new UaException(
-                                                                                            StatusCodes
-                                                                                                .Bad_TypeMismatch,
-                                                                                            "A numeric"
-                                                                                                + " Matrix"
-                                                                                                + " requires"
-                                                                                                + " an explicit"
-                                                                                                + " wire"
-                                                                                                + " DataType")),
-                                                                            ((Matrix) methodValue)
-                                                                                .getDataTypeId()
-                                                                                .orElse(null));
-                                                                  } else {
-                                                                    methodValue = numericArray;
-                                                                  }
-                                                                }
+                                                                methodValue =
+                                                                    NumericValues.normalize(
+                                                                        methodValue,
+                                                                        dataTypeTree_,
+                                                                        argumentDataTypeId);
                                                                 if (methodValue != null) {
                                                                   Object shapeElements =
                                                                       methodValue instanceof Matrix
@@ -8784,295 +5706,31 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
     return result;
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.4
-   *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. It can perform service I/O and
-   * construct or reuse a Java wrapper in Milo's address space cache. A reference can change after
-   * lookup.
-   *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
-   */
   @NullMarked
   @Override
   public @Nullable UaMethodNode getAddPublishedDataItemsTemplateMethodNode() throws UaException {
-    try {
-      return getAddPublishedDataItemsTemplateMethodNodeAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(getAddPublishedDataItemsTemplateMethodNodeAsync(), false);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.4
-   *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. It can perform service I/O and
-   * construct or reuse a Java wrapper in Milo's address space cache. A reference can change after
-   * lookup.
-   *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the existing member, or null for confirmed absence
-   */
   @NullMarked
   @Override
   public CompletableFuture<? extends @Nullable UaMethodNode>
       getAddPublishedDataItemsTemplateMethodNodeAsync() {
-    CompletableFuture<UaMethodNode> result = new CompletableFuture<>();
-    try {
-      CompletableFuture<NodeId> lookup = CompletableFuture.completedFuture(getNodeId());
-      CompletableFuture<UaNode> hop0 =
-          lookup.thenCompose(
-              parent -> {
-                NodeId parentId = parent;
-                if (result.isCancelled()) {
-                  return CompletableFuture.failedFuture(new CancellationException());
-                }
-                if (parentId == null) {
-                  return CompletableFuture.completedFuture(null);
-                }
-                CompletableFuture<Void> namespaceReady;
-                if (client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/") == null
-                    || client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/")
-                        == null) {
-                  namespaceReady = client.readNamespaceTableAsync().thenApply(ignored -> null);
-                } else {
-                  namespaceReady = CompletableFuture.completedFuture(null);
-                }
-                return namespaceReady.thenCompose(
-                    ignored -> {
-                      if (result.isCancelled()) {
-                        return CompletableFuture.failedFuture(new CancellationException());
-                      }
-                      var namespaceIndex =
-                          client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/");
-                      var referenceId =
-                          ExpandedNodeId.parse("i=47").toNodeId(client.getNamespaceTable());
-                      if (namespaceIndex == null || referenceId.isEmpty()) {
-                        return CompletableFuture.failedFuture(
-                            new UaException(
-                                StatusCodes.Bad_NodeIdInvalid,
-                                "http://opcfoundation.org/UA/:AddPublishedDataItemsTemplate"
-                                    + " (declaration i=16935, owner i=14477) on "
-                                    + getNodeId()));
-                      }
-                      var browsePath =
-                          new BrowsePath(
-                              parentId,
-                              new RelativePath(
-                                  new RelativePathElement[] {
-                                    new RelativePathElement(
-                                        referenceId.orElseThrow(),
-                                        false,
-                                        true,
-                                        new QualifiedName(
-                                            namespaceIndex, "AddPublishedDataItemsTemplate"))
-                                  }));
-                      return client
-                          .translateBrowsePathsAsync(List.of(browsePath))
-                          .thenCompose(
-                              response -> {
-                                if (result.isCancelled()) {
-                                  return CompletableFuture.failedFuture(
-                                      new CancellationException());
-                                }
-                                var results = response == null ? null : response.getResults();
-                                if (results == null
-                                    || results.length != 1
-                                    || results[0] == null
-                                    || results[0].getStatusCode() == null) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:AddPublishedDataItemsTemplate"
-                                              + " (declaration i=16935, owner i=14477) on "
-                                              + getNodeId()));
-                                }
-                                var operation = results[0];
-                                if (operation.getStatusCode().getValue()
-                                    == StatusCodes.Bad_NoMatch) {
-                                  return CompletableFuture.completedFuture(null);
-                                }
-                                if (!operation.getStatusCode().isGood()) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          operation.getStatusCode(),
-                                          "http://opcfoundation.org/UA/:AddPublishedDataItemsTemplate"
-                                              + " (declaration i=16935, owner i=14477)"));
-                                }
-                                var targets = operation.getTargets();
-                                if (targets == null || targets.length == 0) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:AddPublishedDataItemsTemplate"
-                                              + " (declaration i=16935, owner i=14477) on "
-                                              + getNodeId()));
-                                }
-                                var identities = new ArrayList<CompletableFuture<NodeId>>();
-                                for (var target : targets) {
-                                  if (target == null
-                                      || target.getTargetId() == null
-                                      || target.getRemainingPathIndex() == null
-                                      || target.getRemainingPathIndex().longValue()
-                                          != 0xffffffffL) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_UnexpectedError,
-                                            "http://opcfoundation.org/UA/:AddPublishedDataItemsTemplate"
-                                                + " (declaration i=16935, owner i=14477) on "
-                                                + getNodeId()));
-                                  }
-                                  if (!target.getTargetId().isLocal()) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_NotSupported,
-                                            "http://opcfoundation.org/UA/:AddPublishedDataItemsTemplate"
-                                                + " (declaration i=16935, owner i=14477) on "
-                                                + getNodeId()));
-                                  }
-                                  if (result.isCancelled()) {
-                                    return CompletableFuture.failedFuture(
-                                        new CancellationException());
-                                  }
-                                  var localTarget =
-                                      target.getTargetId().toNodeId(client.getNamespaceTable());
-                                  if (localTarget.isPresent()) {
-                                    identities.add(
-                                        CompletableFuture.completedFuture(
-                                            localTarget.orElseThrow()));
-                                  } else {
-                                    identities.add(
-                                        client
-                                            .readNamespaceTableAsync()
-                                            .thenCompose(
-                                                namespaceTable -> {
-                                                  var resolvedTarget =
-                                                      target.getTargetId().toNodeId(namespaceTable);
-                                                  if (resolvedTarget.isEmpty()) {
-                                                    return CompletableFuture.failedFuture(
-                                                        new UaException(
-                                                            StatusCodes.Bad_NodeIdInvalid,
-                                                            "http://opcfoundation.org/UA/:AddPublishedDataItemsTemplate"
-                                                                + " (declaration i=16935, owner"
-                                                                + " i=14477) on "
-                                                                + getNodeId()));
-                                                  }
-                                                  return CompletableFuture.completedFuture(
-                                                      resolvedTarget.orElseThrow());
-                                                }));
-                                  }
-                                }
-                                return CompletableFuture.allOf(
-                                        identities.toArray(CompletableFuture[]::new))
-                                    .thenCompose(
-                                        ready -> {
-                                          if (result.isCancelled()) {
-                                            return CompletableFuture.failedFuture(
-                                                new CancellationException());
-                                          }
-                                          var unique = new LinkedHashSet<NodeId>();
-                                          identities.forEach(
-                                              identity -> unique.add(identity.join()));
-                                          if (unique.stream().anyMatch(NodeId::isNull)) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_NodeIdInvalid,
-                                                    "http://opcfoundation.org/UA/:AddPublishedDataItemsTemplate"
-                                                        + " (declaration i=16935, owner i=14477) on"
-                                                        + " "
-                                                        + getNodeId()));
-                                          }
-                                          if (unique.size() != 1) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_TooManyMatches,
-                                                    "http://opcfoundation.org/UA/:AddPublishedDataItemsTemplate"
-                                                        + " (declaration i=16935, owner i=14477) on"
-                                                        + " "
-                                                        + getNodeId()));
-                                          }
-                                          return client
-                                              .getAddressSpace()
-                                              .getNodeAsync(unique.iterator().next())
-                                              .thenCompose(
-                                                  node -> {
-                                                    if (node == null
-                                                        || node.getNodeClass()
-                                                            != NodeClass.Method) {
-                                                      return CompletableFuture.failedFuture(
-                                                          new UaException(
-                                                              StatusCodes.Bad_NodeClassInvalid,
-                                                              "http://opcfoundation.org/UA/:AddPublishedDataItemsTemplate"
-                                                                  + " (declaration i=16935, owner"
-                                                                  + " i=14477) on "
-                                                                  + getNodeId()));
-                                                    }
-                                                    return CompletableFuture.completedFuture(node);
-                                                  });
-                                        });
-                              });
-                    });
-              });
-      hop0.whenComplete(
-          (node, failure) -> {
-            if (failure != null) {
-              result.completeExceptionally(failure);
-            } else if (node != null && !(node instanceof UaMethodNode)) {
-              result.completeExceptionally(
-                  new UaException(
-                      StatusCodes.Bad_TypeMismatch,
-                      "http://opcfoundation.org/UA/:AddPublishedDataItemsTemplate (declaration"
-                          + " i=16935, owner i=14477)"));
-            } else {
-              result.complete((UaMethodNode) node);
-            }
-          });
-    } catch (Exception e) {
-      result.completeExceptionally(e);
-    }
-    return result;
+    return ClientMembers.lookup(
+        client,
+        getNodeId(),
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "AddPublishedDataItemsTemplate",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            true,
+            "http://opcfoundation.org/UA/:AddPublishedDataItemsTemplate (declaration i=16935, owner"
+                + " i=14477)"));
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.4
-   *
-   * <p>Invokes <code>AddPublishedDataItemsTemplate</code> on this node's ObjectId using the
-   * effective Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param name ; the supplied payload may be null.
-   * @param dataSetMetaData ; the supplied payload may be null.
-   * @param variablesToAdd ; the supplied payload may be null.
-   * @return the output value or object, or its future; a single value may be null.
-   * @throws UaException if lookup, input validation, transport, service, operation status or output
-   *     conversion fails.
-   */
   @NullMarked
   @Override
   public DataSetFolderTypeAddPublishedDataItemsTemplateOutputs callAddPublishedDataItemsTemplate(
@@ -9084,28 +5742,6 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
         .requireGood();
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.4
-   *
-   * <p>Invokes <code>AddPublishedDataItemsTemplate</code> on this node's ObjectId using the
-   * effective Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param name ; the supplied payload may be null.
-   * @param dataSetMetaData ; the supplied payload may be null.
-   * @param variablesToAdd ; the supplied payload may be null.
-   * @return the output value or object, or its future; a single value may be null.
-   */
   @NullMarked
   @Override
   public CompletableFuture<? extends DataSetFolderTypeAddPublishedDataItemsTemplateOutputs>
@@ -9138,29 +5774,6 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
     return result;
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.4
-   *
-   * <p>Invokes <code>AddPublishedDataItemsTemplate</code> on this node's ObjectId using the
-   * effective Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param name ; the supplied payload may be null.
-   * @param dataSetMetaData ; the supplied payload may be null.
-   * @param variablesToAdd ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   * @throws UaException if lookup, input validation, transport, service or response envelope
-   *     validation fails.
-   */
   @NullMarked
   @Override
   public MethodCallResult<? extends DataSetFolderTypeAddPublishedDataItemsTemplateOutputs>
@@ -9173,31 +5786,6 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
         MethodCallOptions.NONE, name, dataSetMetaData, variablesToAdd);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.4
-   *
-   * <p>Invokes <code>AddPublishedDataItemsTemplate</code> on this node's ObjectId using the
-   * effective Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param options request-wide diagnostics options for this Call only.
-   * @param name ; the supplied payload may be null.
-   * @param dataSetMetaData ; the supplied payload may be null.
-   * @param variablesToAdd ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   * @throws UaException if lookup, input validation, transport, service or response envelope
-   *     validation fails.
-   * @throws NullPointerException if a required options or presence object is null.
-   */
   @NullMarked
   @Override
   public MethodCallResult<? extends DataSetFolderTypeAddPublishedDataItemsTemplateOutputs>
@@ -9208,49 +5796,12 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
           @Nullable PublishedVariableDataType @Nullable [] variablesToAdd)
           throws UaException {
     Objects.requireNonNull(options, "options");
-    var awaitedMethod =
+    return ClientMembers.await(
         callAddPublishedDataItemsTemplateDetailedAsync(
-            options, name, dataSetMetaData, variablesToAdd);
-    try {
-      return awaitedMethod.get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      awaitedMethod.cancel(false);
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+            options, name, dataSetMetaData, variablesToAdd),
+        true);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.4
-   *
-   * <p>Invokes <code>AddPublishedDataItemsTemplate</code> on this node's ObjectId using the
-   * effective Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param name ; the supplied payload may be null.
-   * @param dataSetMetaData ; the supplied payload may be null.
-   * @param variablesToAdd ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   */
   @NullMarked
   @Override
   public CompletableFuture<
@@ -9264,31 +5815,6 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
         MethodCallOptions.NONE, name, dataSetMetaData, variablesToAdd);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.4
-   *
-   * <p>Invokes <code>AddPublishedDataItemsTemplate</code> on this node's ObjectId using the
-   * effective Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param options request-wide diagnostics options for this Call only.
-   * @param name ; the supplied payload may be null.
-   * @param dataSetMetaData ; the supplied payload may be null.
-   * @param variablesToAdd ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   * @throws NullPointerException if a required options or presence object is null (exceptional
-   *     completion).
-   */
   @NullMarked
   @Override
   public CompletableFuture<
@@ -9417,81 +5943,9 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                                   + " effective type tree; resolved DataType: "
                                                   + argumentDataTypeId);
                                         }
-                                        Object numericElements =
-                                            methodValue instanceof Matrix
-                                                ? ((Matrix) methodValue).getElements()
-                                                : methodValue;
-                                        if (numericElements != null
-                                            && numericElements.getClass().isArray()
-                                            && (numericElements.getClass().getComponentType()
-                                                    == Number.class
-                                                || numericElements.getClass().getComponentType()
-                                                    == UNumber.class)
-                                            && (argumentDataTypeId.equals(NodeIds.Number)
-                                                || dataTypeTree_.isSubtypeOf(
-                                                    argumentDataTypeId, NodeIds.Number))) {
-                                          Class<?> numericElementType = null;
-                                          for (int numericIndex = 0;
-                                              numericIndex < Array.getLength(numericElements);
-                                              numericIndex++) {
-                                            Object numericElement =
-                                                Array.get(numericElements, numericIndex);
-                                            if (numericElement != null) {
-                                              if (numericElementType != null
-                                                  && numericElementType
-                                                      != numericElement.getClass()) {
-                                                throw new UaException(
-                                                    StatusCodes.Bad_TypeMismatch,
-                                                    "An abstract numeric array requires one"
-                                                        + " homogeneous wire element type");
-                                              }
-                                              numericElementType = numericElement.getClass();
-                                            }
-                                          }
-                                          if (numericElementType == null) {
-                                            numericElementType =
-                                                dataTypeTree_.getBackingClass(argumentDataTypeId);
-                                          }
-                                          if (numericElementType == Number.class
-                                              || numericElementType == UNumber.class) {
-                                            throw new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "An empty or all-null abstract numeric array"
-                                                    + " requires a concretely typed array");
-                                          }
-                                          Object numericArray =
-                                              Array.newInstance(
-                                                  numericElementType,
-                                                  Array.getLength(numericElements));
-                                          for (int numericIndex = 0;
-                                              numericIndex < Array.getLength(numericElements);
-                                              numericIndex++) {
-                                            Array.set(
-                                                numericArray,
-                                                numericIndex,
-                                                Array.get(numericElements, numericIndex));
-                                          }
-                                          if (methodValue instanceof Matrix) {
-                                            methodValue =
-                                                new Matrix(
-                                                    numericArray,
-                                                    ((Matrix) methodValue).getDimensions().clone(),
-                                                    ((Matrix) methodValue)
-                                                        .getDataType()
-                                                        .orElseThrow(
-                                                            () ->
-                                                                new UaException(
-                                                                    StatusCodes.Bad_TypeMismatch,
-                                                                    "A numeric Matrix requires an"
-                                                                        + " explicit wire"
-                                                                        + " DataType")),
-                                                    ((Matrix) methodValue)
-                                                        .getDataTypeId()
-                                                        .orElse(null));
-                                          } else {
-                                            methodValue = numericArray;
-                                          }
-                                        }
+                                        methodValue =
+                                            NumericValues.normalize(
+                                                methodValue, dataTypeTree_, argumentDataTypeId);
                                         if (methodValue != null) {
                                           Object shapeElements =
                                               methodValue instanceof Matrix
@@ -9714,113 +6168,7 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                           wireValue instanceof Matrix
                                               ? ((Matrix) wireValue).getElements()
                                               : wireValue;
-                                      var numericWireValues = new ArrayDeque<Object[]>();
-                                      var numericWirePath =
-                                          Collections.newSetFromMap(
-                                              new IdentityHashMap<Object, Boolean>());
-                                      if (wireValue != null) {
-                                        numericWireValues.push(new Object[] {wireValue, false});
-                                      }
-                                      while (!numericWireValues.isEmpty()) {
-                                        Object[] numericWireFrame = numericWireValues.pop();
-                                        Object numericWireValue = numericWireFrame[0];
-                                        if ((Boolean) numericWireFrame[1]) {
-                                          numericWirePath.remove(numericWireValue);
-                                          continue;
-                                        }
-                                        while (numericWireValue instanceof Variant
-                                            || numericWireValue instanceof DataValue) {
-                                          if (numericWireValue instanceof DataValue) {
-                                            if (((DataValue) numericWireValue).getValue() == null) {
-                                              throw new UaException(
-                                                  StatusCodes.Bad_TypeMismatch,
-                                                  "A DataValue requires a value wrapper; use"
-                                                      + " Variant.NULL_VALUE for null");
-                                            }
-                                            if (((DataValue) numericWireValue).getStatusCode()
-                                                == null) {
-                                              throw new UaException(
-                                                  StatusCodes.Bad_TypeMismatch,
-                                                  "A DataValue requires a StatusCode; use"
-                                                      + " StatusCode.GOOD for Good");
-                                            }
-                                            numericWireValue =
-                                                ((DataValue) numericWireValue).getValue();
-                                          } else {
-                                            numericWireValue =
-                                                ((Variant) numericWireValue).getValue();
-                                          }
-                                        }
-                                        if (numericWireValue instanceof Matrix) {
-                                          numericWireValue =
-                                              ((Matrix) numericWireValue).getElements();
-                                        }
-                                        if (numericWireValue != null
-                                            && numericWireValue.getClass().isArray()) {
-                                          if (!numericWirePath.add(numericWireValue)) {
-                                            throw new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "Cyclic Variant arrays cannot be encoded");
-                                          }
-                                          numericWireValues.push(
-                                              new Object[] {numericWireValue, true});
-                                          for (int numericWireIndex = 0;
-                                              numericWireIndex < Array.getLength(numericWireValue);
-                                              numericWireIndex++) {
-                                            Object numericWireElement =
-                                                Array.get(numericWireValue, numericWireIndex);
-                                            if (numericWireElement == null
-                                                && ArrayUtil.getBoxedType(numericWireValue)
-                                                    == Variant.class) {
-                                              throw new UaException(
-                                                  StatusCodes.Bad_TypeMismatch,
-                                                  "A Variant wire array requires a wrapper for"
-                                                      + " every element; use Variant.NULL_VALUE for"
-                                                      + " null");
-                                            }
-                                            if (numericWireElement == null
-                                                && (UaEnumeratedType.class.isAssignableFrom(
-                                                        ArrayUtil.getBoxedType(numericWireValue))
-                                                    || OptionSetUInteger.class.isAssignableFrom(
-                                                        ArrayUtil.getBoxedType(
-                                                            numericWireValue)))) {
-                                              throw new UaException(
-                                                  StatusCodes.Bad_TypeMismatch,
-                                                  "An enum or OptionSet wire array cannot encode a"
-                                                      + " null element");
-                                            }
-                                            if (numericWireElement == null
-                                                && ArrayUtil.getBoxedType(numericWireValue)
-                                                    == Boolean.class) {
-                                              throw new UaException(
-                                                  StatusCodes.Bad_TypeMismatch,
-                                                  "A Boolean wire array cannot retain a null"
-                                                      + " element; Milo encodes it as false");
-                                            }
-                                            if (numericWireElement == null
-                                                && ArrayUtil.getBoxedType(numericWireValue)
-                                                    == StatusCode.class) {
-                                              throw new UaException(
-                                                  StatusCodes.Bad_TypeMismatch,
-                                                  "A StatusCode wire array cannot retain a null"
-                                                      + " element; Milo encodes it as Good");
-                                            }
-                                            if (numericWireElement == null
-                                                && Number.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue))) {
-                                              throw new UaException(
-                                                  StatusCodes.Bad_TypeMismatch,
-                                                  "A numeric wire array cannot retain a null"
-                                                      + " element; Milo encodes it as zero");
-                                            }
-                                            if (numericWireElement instanceof Variant
-                                                || numericWireElement instanceof DataValue) {
-                                              numericWireValues.push(
-                                                  new Object[] {numericWireElement, false});
-                                            }
-                                          }
-                                        }
-                                      }
+                                      NumericValues.requireEncodable(wireValue);
                                       wireValue =
                                           ExtensionObject.encodeValue(
                                               this.client.getStaticEncodingContext(), wireValue);
@@ -9873,81 +6221,9 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                                   + " the effective type tree; resolved DataType: "
                                                   + argumentDataTypeId);
                                         }
-                                        Object numericElements =
-                                            methodValue instanceof Matrix
-                                                ? ((Matrix) methodValue).getElements()
-                                                : methodValue;
-                                        if (numericElements != null
-                                            && numericElements.getClass().isArray()
-                                            && (numericElements.getClass().getComponentType()
-                                                    == Number.class
-                                                || numericElements.getClass().getComponentType()
-                                                    == UNumber.class)
-                                            && (argumentDataTypeId.equals(NodeIds.Number)
-                                                || dataTypeTree_.isSubtypeOf(
-                                                    argumentDataTypeId, NodeIds.Number))) {
-                                          Class<?> numericElementType = null;
-                                          for (int numericIndex = 0;
-                                              numericIndex < Array.getLength(numericElements);
-                                              numericIndex++) {
-                                            Object numericElement =
-                                                Array.get(numericElements, numericIndex);
-                                            if (numericElement != null) {
-                                              if (numericElementType != null
-                                                  && numericElementType
-                                                      != numericElement.getClass()) {
-                                                throw new UaException(
-                                                    StatusCodes.Bad_TypeMismatch,
-                                                    "An abstract numeric array requires one"
-                                                        + " homogeneous wire element type");
-                                              }
-                                              numericElementType = numericElement.getClass();
-                                            }
-                                          }
-                                          if (numericElementType == null) {
-                                            numericElementType =
-                                                dataTypeTree_.getBackingClass(argumentDataTypeId);
-                                          }
-                                          if (numericElementType == Number.class
-                                              || numericElementType == UNumber.class) {
-                                            throw new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "An empty or all-null abstract numeric array"
-                                                    + " requires a concretely typed array");
-                                          }
-                                          Object numericArray =
-                                              Array.newInstance(
-                                                  numericElementType,
-                                                  Array.getLength(numericElements));
-                                          for (int numericIndex = 0;
-                                              numericIndex < Array.getLength(numericElements);
-                                              numericIndex++) {
-                                            Array.set(
-                                                numericArray,
-                                                numericIndex,
-                                                Array.get(numericElements, numericIndex));
-                                          }
-                                          if (methodValue instanceof Matrix) {
-                                            methodValue =
-                                                new Matrix(
-                                                    numericArray,
-                                                    ((Matrix) methodValue).getDimensions().clone(),
-                                                    ((Matrix) methodValue)
-                                                        .getDataType()
-                                                        .orElseThrow(
-                                                            () ->
-                                                                new UaException(
-                                                                    StatusCodes.Bad_TypeMismatch,
-                                                                    "A numeric Matrix requires an"
-                                                                        + " explicit wire"
-                                                                        + " DataType")),
-                                                    ((Matrix) methodValue)
-                                                        .getDataTypeId()
-                                                        .orElse(null));
-                                          } else {
-                                            methodValue = numericArray;
-                                          }
-                                        }
+                                        methodValue =
+                                            NumericValues.normalize(
+                                                methodValue, dataTypeTree_, argumentDataTypeId);
                                         if (methodValue != null) {
                                           Object shapeElements =
                                               methodValue instanceof Matrix
@@ -10170,113 +6446,7 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                           wireValue instanceof Matrix
                                               ? ((Matrix) wireValue).getElements()
                                               : wireValue;
-                                      var numericWireValues = new ArrayDeque<Object[]>();
-                                      var numericWirePath =
-                                          Collections.newSetFromMap(
-                                              new IdentityHashMap<Object, Boolean>());
-                                      if (wireValue != null) {
-                                        numericWireValues.push(new Object[] {wireValue, false});
-                                      }
-                                      while (!numericWireValues.isEmpty()) {
-                                        Object[] numericWireFrame = numericWireValues.pop();
-                                        Object numericWireValue = numericWireFrame[0];
-                                        if ((Boolean) numericWireFrame[1]) {
-                                          numericWirePath.remove(numericWireValue);
-                                          continue;
-                                        }
-                                        while (numericWireValue instanceof Variant
-                                            || numericWireValue instanceof DataValue) {
-                                          if (numericWireValue instanceof DataValue) {
-                                            if (((DataValue) numericWireValue).getValue() == null) {
-                                              throw new UaException(
-                                                  StatusCodes.Bad_TypeMismatch,
-                                                  "A DataValue requires a value wrapper; use"
-                                                      + " Variant.NULL_VALUE for null");
-                                            }
-                                            if (((DataValue) numericWireValue).getStatusCode()
-                                                == null) {
-                                              throw new UaException(
-                                                  StatusCodes.Bad_TypeMismatch,
-                                                  "A DataValue requires a StatusCode; use"
-                                                      + " StatusCode.GOOD for Good");
-                                            }
-                                            numericWireValue =
-                                                ((DataValue) numericWireValue).getValue();
-                                          } else {
-                                            numericWireValue =
-                                                ((Variant) numericWireValue).getValue();
-                                          }
-                                        }
-                                        if (numericWireValue instanceof Matrix) {
-                                          numericWireValue =
-                                              ((Matrix) numericWireValue).getElements();
-                                        }
-                                        if (numericWireValue != null
-                                            && numericWireValue.getClass().isArray()) {
-                                          if (!numericWirePath.add(numericWireValue)) {
-                                            throw new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "Cyclic Variant arrays cannot be encoded");
-                                          }
-                                          numericWireValues.push(
-                                              new Object[] {numericWireValue, true});
-                                          for (int numericWireIndex = 0;
-                                              numericWireIndex < Array.getLength(numericWireValue);
-                                              numericWireIndex++) {
-                                            Object numericWireElement =
-                                                Array.get(numericWireValue, numericWireIndex);
-                                            if (numericWireElement == null
-                                                && ArrayUtil.getBoxedType(numericWireValue)
-                                                    == Variant.class) {
-                                              throw new UaException(
-                                                  StatusCodes.Bad_TypeMismatch,
-                                                  "A Variant wire array requires a wrapper for"
-                                                      + " every element; use Variant.NULL_VALUE for"
-                                                      + " null");
-                                            }
-                                            if (numericWireElement == null
-                                                && (UaEnumeratedType.class.isAssignableFrom(
-                                                        ArrayUtil.getBoxedType(numericWireValue))
-                                                    || OptionSetUInteger.class.isAssignableFrom(
-                                                        ArrayUtil.getBoxedType(
-                                                            numericWireValue)))) {
-                                              throw new UaException(
-                                                  StatusCodes.Bad_TypeMismatch,
-                                                  "An enum or OptionSet wire array cannot encode a"
-                                                      + " null element");
-                                            }
-                                            if (numericWireElement == null
-                                                && ArrayUtil.getBoxedType(numericWireValue)
-                                                    == Boolean.class) {
-                                              throw new UaException(
-                                                  StatusCodes.Bad_TypeMismatch,
-                                                  "A Boolean wire array cannot retain a null"
-                                                      + " element; Milo encodes it as false");
-                                            }
-                                            if (numericWireElement == null
-                                                && ArrayUtil.getBoxedType(numericWireValue)
-                                                    == StatusCode.class) {
-                                              throw new UaException(
-                                                  StatusCodes.Bad_TypeMismatch,
-                                                  "A StatusCode wire array cannot retain a null"
-                                                      + " element; Milo encodes it as Good");
-                                            }
-                                            if (numericWireElement == null
-                                                && Number.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue))) {
-                                              throw new UaException(
-                                                  StatusCodes.Bad_TypeMismatch,
-                                                  "A numeric wire array cannot retain a null"
-                                                      + " element; Milo encodes it as zero");
-                                            }
-                                            if (numericWireElement instanceof Variant
-                                                || numericWireElement instanceof DataValue) {
-                                              numericWireValues.push(
-                                                  new Object[] {numericWireElement, false});
-                                            }
-                                          }
-                                        }
-                                      }
+                                      NumericValues.requireEncodable(wireValue);
                                       wireValue =
                                           ExtensionObject.encodeValue(
                                               this.client.getStaticEncodingContext(), wireValue);
@@ -10329,81 +6499,9 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                                   + " the effective type tree; resolved DataType: "
                                                   + argumentDataTypeId);
                                         }
-                                        Object numericElements =
-                                            methodValue instanceof Matrix
-                                                ? ((Matrix) methodValue).getElements()
-                                                : methodValue;
-                                        if (numericElements != null
-                                            && numericElements.getClass().isArray()
-                                            && (numericElements.getClass().getComponentType()
-                                                    == Number.class
-                                                || numericElements.getClass().getComponentType()
-                                                    == UNumber.class)
-                                            && (argumentDataTypeId.equals(NodeIds.Number)
-                                                || dataTypeTree_.isSubtypeOf(
-                                                    argumentDataTypeId, NodeIds.Number))) {
-                                          Class<?> numericElementType = null;
-                                          for (int numericIndex = 0;
-                                              numericIndex < Array.getLength(numericElements);
-                                              numericIndex++) {
-                                            Object numericElement =
-                                                Array.get(numericElements, numericIndex);
-                                            if (numericElement != null) {
-                                              if (numericElementType != null
-                                                  && numericElementType
-                                                      != numericElement.getClass()) {
-                                                throw new UaException(
-                                                    StatusCodes.Bad_TypeMismatch,
-                                                    "An abstract numeric array requires one"
-                                                        + " homogeneous wire element type");
-                                              }
-                                              numericElementType = numericElement.getClass();
-                                            }
-                                          }
-                                          if (numericElementType == null) {
-                                            numericElementType =
-                                                dataTypeTree_.getBackingClass(argumentDataTypeId);
-                                          }
-                                          if (numericElementType == Number.class
-                                              || numericElementType == UNumber.class) {
-                                            throw new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "An empty or all-null abstract numeric array"
-                                                    + " requires a concretely typed array");
-                                          }
-                                          Object numericArray =
-                                              Array.newInstance(
-                                                  numericElementType,
-                                                  Array.getLength(numericElements));
-                                          for (int numericIndex = 0;
-                                              numericIndex < Array.getLength(numericElements);
-                                              numericIndex++) {
-                                            Array.set(
-                                                numericArray,
-                                                numericIndex,
-                                                Array.get(numericElements, numericIndex));
-                                          }
-                                          if (methodValue instanceof Matrix) {
-                                            methodValue =
-                                                new Matrix(
-                                                    numericArray,
-                                                    ((Matrix) methodValue).getDimensions().clone(),
-                                                    ((Matrix) methodValue)
-                                                        .getDataType()
-                                                        .orElseThrow(
-                                                            () ->
-                                                                new UaException(
-                                                                    StatusCodes.Bad_TypeMismatch,
-                                                                    "A numeric Matrix requires an"
-                                                                        + " explicit wire"
-                                                                        + " DataType")),
-                                                    ((Matrix) methodValue)
-                                                        .getDataTypeId()
-                                                        .orElse(null));
-                                          } else {
-                                            methodValue = numericArray;
-                                          }
-                                        }
+                                        methodValue =
+                                            NumericValues.normalize(
+                                                methodValue, dataTypeTree_, argumentDataTypeId);
                                         if (methodValue != null) {
                                           Object shapeElements =
                                               methodValue instanceof Matrix
@@ -10664,113 +6762,7 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                           wireValue instanceof Matrix
                                               ? ((Matrix) wireValue).getElements()
                                               : wireValue;
-                                      var numericWireValues = new ArrayDeque<Object[]>();
-                                      var numericWirePath =
-                                          Collections.newSetFromMap(
-                                              new IdentityHashMap<Object, Boolean>());
-                                      if (wireValue != null) {
-                                        numericWireValues.push(new Object[] {wireValue, false});
-                                      }
-                                      while (!numericWireValues.isEmpty()) {
-                                        Object[] numericWireFrame = numericWireValues.pop();
-                                        Object numericWireValue = numericWireFrame[0];
-                                        if ((Boolean) numericWireFrame[1]) {
-                                          numericWirePath.remove(numericWireValue);
-                                          continue;
-                                        }
-                                        while (numericWireValue instanceof Variant
-                                            || numericWireValue instanceof DataValue) {
-                                          if (numericWireValue instanceof DataValue) {
-                                            if (((DataValue) numericWireValue).getValue() == null) {
-                                              throw new UaException(
-                                                  StatusCodes.Bad_TypeMismatch,
-                                                  "A DataValue requires a value wrapper; use"
-                                                      + " Variant.NULL_VALUE for null");
-                                            }
-                                            if (((DataValue) numericWireValue).getStatusCode()
-                                                == null) {
-                                              throw new UaException(
-                                                  StatusCodes.Bad_TypeMismatch,
-                                                  "A DataValue requires a StatusCode; use"
-                                                      + " StatusCode.GOOD for Good");
-                                            }
-                                            numericWireValue =
-                                                ((DataValue) numericWireValue).getValue();
-                                          } else {
-                                            numericWireValue =
-                                                ((Variant) numericWireValue).getValue();
-                                          }
-                                        }
-                                        if (numericWireValue instanceof Matrix) {
-                                          numericWireValue =
-                                              ((Matrix) numericWireValue).getElements();
-                                        }
-                                        if (numericWireValue != null
-                                            && numericWireValue.getClass().isArray()) {
-                                          if (!numericWirePath.add(numericWireValue)) {
-                                            throw new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "Cyclic Variant arrays cannot be encoded");
-                                          }
-                                          numericWireValues.push(
-                                              new Object[] {numericWireValue, true});
-                                          for (int numericWireIndex = 0;
-                                              numericWireIndex < Array.getLength(numericWireValue);
-                                              numericWireIndex++) {
-                                            Object numericWireElement =
-                                                Array.get(numericWireValue, numericWireIndex);
-                                            if (numericWireElement == null
-                                                && ArrayUtil.getBoxedType(numericWireValue)
-                                                    == Variant.class) {
-                                              throw new UaException(
-                                                  StatusCodes.Bad_TypeMismatch,
-                                                  "A Variant wire array requires a wrapper for"
-                                                      + " every element; use Variant.NULL_VALUE for"
-                                                      + " null");
-                                            }
-                                            if (numericWireElement == null
-                                                && (UaEnumeratedType.class.isAssignableFrom(
-                                                        ArrayUtil.getBoxedType(numericWireValue))
-                                                    || OptionSetUInteger.class.isAssignableFrom(
-                                                        ArrayUtil.getBoxedType(
-                                                            numericWireValue)))) {
-                                              throw new UaException(
-                                                  StatusCodes.Bad_TypeMismatch,
-                                                  "An enum or OptionSet wire array cannot encode a"
-                                                      + " null element");
-                                            }
-                                            if (numericWireElement == null
-                                                && ArrayUtil.getBoxedType(numericWireValue)
-                                                    == Boolean.class) {
-                                              throw new UaException(
-                                                  StatusCodes.Bad_TypeMismatch,
-                                                  "A Boolean wire array cannot retain a null"
-                                                      + " element; Milo encodes it as false");
-                                            }
-                                            if (numericWireElement == null
-                                                && ArrayUtil.getBoxedType(numericWireValue)
-                                                    == StatusCode.class) {
-                                              throw new UaException(
-                                                  StatusCodes.Bad_TypeMismatch,
-                                                  "A StatusCode wire array cannot retain a null"
-                                                      + " element; Milo encodes it as Good");
-                                            }
-                                            if (numericWireElement == null
-                                                && Number.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue))) {
-                                              throw new UaException(
-                                                  StatusCodes.Bad_TypeMismatch,
-                                                  "A numeric wire array cannot retain a null"
-                                                      + " element; Milo encodes it as zero");
-                                            }
-                                            if (numericWireElement instanceof Variant
-                                                || numericWireElement instanceof DataValue) {
-                                              numericWireValues.push(
-                                                  new Object[] {numericWireElement, false});
-                                            }
-                                          }
-                                        }
-                                      }
+                                      NumericValues.requireEncodable(wireValue);
                                       wireValue =
                                           ExtensionObject.encodeValue(
                                               this.client.getStaticEncodingContext(), wireValue);
@@ -11001,136 +6993,11 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                                                               + " DataType: "
                                                                               + argumentDataTypeId);
                                                                     }
-                                                                    Object numericElements =
-                                                                        methodValue
-                                                                                instanceof Matrix
-                                                                            ? ((Matrix) methodValue)
-                                                                                .getElements()
-                                                                            : methodValue;
-                                                                    if (numericElements != null
-                                                                        && numericElements
-                                                                            .getClass()
-                                                                            .isArray()
-                                                                        && (numericElements
-                                                                                    .getClass()
-                                                                                    .getComponentType()
-                                                                                == Number.class
-                                                                            || numericElements
-                                                                                    .getClass()
-                                                                                    .getComponentType()
-                                                                                == UNumber.class)
-                                                                        && (argumentDataTypeId
-                                                                                .equals(
-                                                                                    NodeIds.Number)
-                                                                            || dataTypeTree_
-                                                                                .isSubtypeOf(
-                                                                                    argumentDataTypeId,
-                                                                                    NodeIds
-                                                                                        .Number))) {
-                                                                      Class<?> numericElementType =
-                                                                          null;
-                                                                      for (int numericIndex = 0;
-                                                                          numericIndex
-                                                                              < Array.getLength(
-                                                                                  numericElements);
-                                                                          numericIndex++) {
-                                                                        Object numericElement =
-                                                                            Array.get(
-                                                                                numericElements,
-                                                                                numericIndex);
-                                                                        if (numericElement
-                                                                            != null) {
-                                                                          if (numericElementType
-                                                                                  != null
-                                                                              && numericElementType
-                                                                                  != numericElement
-                                                                                      .getClass()) {
-                                                                            throw new UaException(
-                                                                                StatusCodes
-                                                                                    .Bad_TypeMismatch,
-                                                                                "An abstract"
-                                                                                    + " numeric"
-                                                                                    + " array"
-                                                                                    + " requires"
-                                                                                    + " one homogeneous"
-                                                                                    + " wire"
-                                                                                    + " element"
-                                                                                    + " type");
-                                                                          }
-                                                                          numericElementType =
-                                                                              numericElement
-                                                                                  .getClass();
-                                                                        }
-                                                                      }
-                                                                      if (numericElementType
-                                                                          == null) {
-                                                                        numericElementType =
-                                                                            dataTypeTree_
-                                                                                .getBackingClass(
-                                                                                    argumentDataTypeId);
-                                                                      }
-                                                                      if (numericElementType
-                                                                              == Number.class
-                                                                          || numericElementType
-                                                                              == UNumber.class) {
-                                                                        throw new UaException(
-                                                                            StatusCodes
-                                                                                .Bad_TypeMismatch,
-                                                                            "An empty or all-null"
-                                                                                + " abstract"
-                                                                                + " numeric array"
-                                                                                + " requires a"
-                                                                                + " concretely"
-                                                                                + " typed array");
-                                                                      }
-                                                                      Object numericArray =
-                                                                          Array.newInstance(
-                                                                              numericElementType,
-                                                                              Array.getLength(
-                                                                                  numericElements));
-                                                                      for (int numericIndex = 0;
-                                                                          numericIndex
-                                                                              < Array.getLength(
-                                                                                  numericElements);
-                                                                          numericIndex++) {
-                                                                        Array.set(
-                                                                            numericArray,
-                                                                            numericIndex,
-                                                                            Array.get(
-                                                                                numericElements,
-                                                                                numericIndex));
-                                                                      }
-                                                                      if (methodValue
-                                                                          instanceof Matrix) {
-                                                                        methodValue =
-                                                                            new Matrix(
-                                                                                numericArray,
-                                                                                ((Matrix)
-                                                                                        methodValue)
-                                                                                    .getDimensions()
-                                                                                    .clone(),
-                                                                                ((Matrix)
-                                                                                        methodValue)
-                                                                                    .getDataType()
-                                                                                    .orElseThrow(
-                                                                                        () ->
-                                                                                            new UaException(
-                                                                                                StatusCodes
-                                                                                                    .Bad_TypeMismatch,
-                                                                                                "A numeric"
-                                                                                                    + " Matrix"
-                                                                                                    + " requires"
-                                                                                                    + " an explicit"
-                                                                                                    + " wire"
-                                                                                                    + " DataType")),
-                                                                                ((Matrix)
-                                                                                        methodValue)
-                                                                                    .getDataTypeId()
-                                                                                    .orElse(null));
-                                                                      } else {
-                                                                        methodValue = numericArray;
-                                                                      }
-                                                                    }
+                                                                    methodValue =
+                                                                        NumericValues.normalize(
+                                                                            methodValue,
+                                                                            dataTypeTree_,
+                                                                            argumentDataTypeId);
                                                                     if (methodValue != null) {
                                                                       Object shapeElements =
                                                                           methodValue
@@ -11574,136 +7441,11 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                                                               + " DataType: "
                                                                               + argumentDataTypeId);
                                                                     }
-                                                                    Object numericElements =
-                                                                        methodValue
-                                                                                instanceof Matrix
-                                                                            ? ((Matrix) methodValue)
-                                                                                .getElements()
-                                                                            : methodValue;
-                                                                    if (numericElements != null
-                                                                        && numericElements
-                                                                            .getClass()
-                                                                            .isArray()
-                                                                        && (numericElements
-                                                                                    .getClass()
-                                                                                    .getComponentType()
-                                                                                == Number.class
-                                                                            || numericElements
-                                                                                    .getClass()
-                                                                                    .getComponentType()
-                                                                                == UNumber.class)
-                                                                        && (argumentDataTypeId
-                                                                                .equals(
-                                                                                    NodeIds.Number)
-                                                                            || dataTypeTree_
-                                                                                .isSubtypeOf(
-                                                                                    argumentDataTypeId,
-                                                                                    NodeIds
-                                                                                        .Number))) {
-                                                                      Class<?> numericElementType =
-                                                                          null;
-                                                                      for (int numericIndex = 0;
-                                                                          numericIndex
-                                                                              < Array.getLength(
-                                                                                  numericElements);
-                                                                          numericIndex++) {
-                                                                        Object numericElement =
-                                                                            Array.get(
-                                                                                numericElements,
-                                                                                numericIndex);
-                                                                        if (numericElement
-                                                                            != null) {
-                                                                          if (numericElementType
-                                                                                  != null
-                                                                              && numericElementType
-                                                                                  != numericElement
-                                                                                      .getClass()) {
-                                                                            throw new UaException(
-                                                                                StatusCodes
-                                                                                    .Bad_TypeMismatch,
-                                                                                "An abstract"
-                                                                                    + " numeric"
-                                                                                    + " array"
-                                                                                    + " requires"
-                                                                                    + " one homogeneous"
-                                                                                    + " wire"
-                                                                                    + " element"
-                                                                                    + " type");
-                                                                          }
-                                                                          numericElementType =
-                                                                              numericElement
-                                                                                  .getClass();
-                                                                        }
-                                                                      }
-                                                                      if (numericElementType
-                                                                          == null) {
-                                                                        numericElementType =
-                                                                            dataTypeTree_
-                                                                                .getBackingClass(
-                                                                                    argumentDataTypeId);
-                                                                      }
-                                                                      if (numericElementType
-                                                                              == Number.class
-                                                                          || numericElementType
-                                                                              == UNumber.class) {
-                                                                        throw new UaException(
-                                                                            StatusCodes
-                                                                                .Bad_TypeMismatch,
-                                                                            "An empty or all-null"
-                                                                                + " abstract"
-                                                                                + " numeric array"
-                                                                                + " requires a"
-                                                                                + " concretely"
-                                                                                + " typed array");
-                                                                      }
-                                                                      Object numericArray =
-                                                                          Array.newInstance(
-                                                                              numericElementType,
-                                                                              Array.getLength(
-                                                                                  numericElements));
-                                                                      for (int numericIndex = 0;
-                                                                          numericIndex
-                                                                              < Array.getLength(
-                                                                                  numericElements);
-                                                                          numericIndex++) {
-                                                                        Array.set(
-                                                                            numericArray,
-                                                                            numericIndex,
-                                                                            Array.get(
-                                                                                numericElements,
-                                                                                numericIndex));
-                                                                      }
-                                                                      if (methodValue
-                                                                          instanceof Matrix) {
-                                                                        methodValue =
-                                                                            new Matrix(
-                                                                                numericArray,
-                                                                                ((Matrix)
-                                                                                        methodValue)
-                                                                                    .getDimensions()
-                                                                                    .clone(),
-                                                                                ((Matrix)
-                                                                                        methodValue)
-                                                                                    .getDataType()
-                                                                                    .orElseThrow(
-                                                                                        () ->
-                                                                                            new UaException(
-                                                                                                StatusCodes
-                                                                                                    .Bad_TypeMismatch,
-                                                                                                "A numeric"
-                                                                                                    + " Matrix"
-                                                                                                    + " requires"
-                                                                                                    + " an explicit"
-                                                                                                    + " wire"
-                                                                                                    + " DataType")),
-                                                                                ((Matrix)
-                                                                                        methodValue)
-                                                                                    .getDataTypeId()
-                                                                                    .orElse(null));
-                                                                      } else {
-                                                                        methodValue = numericArray;
-                                                                      }
-                                                                    }
+                                                                    methodValue =
+                                                                        NumericValues.normalize(
+                                                                            methodValue,
+                                                                            dataTypeTree_,
+                                                                            argumentDataTypeId);
                                                                     if (methodValue != null) {
                                                                       Object shapeElements =
                                                                           methodValue
@@ -12185,297 +7927,31 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
     return result;
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.5
-   *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. It can perform service I/O and
-   * construct or reuse a Java wrapper in Milo's address space cache. A reference can change after
-   * lookup.
-   *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
-   */
   @NullMarked
   @Override
   public @Nullable UaMethodNode getAddPublishedEventsTemplateMethodNode() throws UaException {
-    try {
-      return getAddPublishedEventsTemplateMethodNodeAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(getAddPublishedEventsTemplateMethodNodeAsync(), false);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.5
-   *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. It can perform service I/O and
-   * construct or reuse a Java wrapper in Milo's address space cache. A reference can change after
-   * lookup.
-   *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the existing member, or null for confirmed absence
-   */
   @NullMarked
   @Override
   public CompletableFuture<? extends @Nullable UaMethodNode>
       getAddPublishedEventsTemplateMethodNodeAsync() {
-    CompletableFuture<UaMethodNode> result = new CompletableFuture<>();
-    try {
-      CompletableFuture<NodeId> lookup = CompletableFuture.completedFuture(getNodeId());
-      CompletableFuture<UaNode> hop0 =
-          lookup.thenCompose(
-              parent -> {
-                NodeId parentId = parent;
-                if (result.isCancelled()) {
-                  return CompletableFuture.failedFuture(new CancellationException());
-                }
-                if (parentId == null) {
-                  return CompletableFuture.completedFuture(null);
-                }
-                CompletableFuture<Void> namespaceReady;
-                if (client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/") == null
-                    || client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/")
-                        == null) {
-                  namespaceReady = client.readNamespaceTableAsync().thenApply(ignored -> null);
-                } else {
-                  namespaceReady = CompletableFuture.completedFuture(null);
-                }
-                return namespaceReady.thenCompose(
-                    ignored -> {
-                      if (result.isCancelled()) {
-                        return CompletableFuture.failedFuture(new CancellationException());
-                      }
-                      var namespaceIndex =
-                          client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/");
-                      var referenceId =
-                          ExpandedNodeId.parse("i=47").toNodeId(client.getNamespaceTable());
-                      if (namespaceIndex == null || referenceId.isEmpty()) {
-                        return CompletableFuture.failedFuture(
-                            new UaException(
-                                StatusCodes.Bad_NodeIdInvalid,
-                                "http://opcfoundation.org/UA/:AddPublishedEventsTemplate"
-                                    + " (declaration i=16960, owner i=14477) on "
-                                    + getNodeId()));
-                      }
-                      var browsePath =
-                          new BrowsePath(
-                              parentId,
-                              new RelativePath(
-                                  new RelativePathElement[] {
-                                    new RelativePathElement(
-                                        referenceId.orElseThrow(),
-                                        false,
-                                        true,
-                                        new QualifiedName(
-                                            namespaceIndex, "AddPublishedEventsTemplate"))
-                                  }));
-                      return client
-                          .translateBrowsePathsAsync(List.of(browsePath))
-                          .thenCompose(
-                              response -> {
-                                if (result.isCancelled()) {
-                                  return CompletableFuture.failedFuture(
-                                      new CancellationException());
-                                }
-                                var results = response == null ? null : response.getResults();
-                                if (results == null
-                                    || results.length != 1
-                                    || results[0] == null
-                                    || results[0].getStatusCode() == null) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:AddPublishedEventsTemplate"
-                                              + " (declaration i=16960, owner i=14477) on "
-                                              + getNodeId()));
-                                }
-                                var operation = results[0];
-                                if (operation.getStatusCode().getValue()
-                                    == StatusCodes.Bad_NoMatch) {
-                                  return CompletableFuture.completedFuture(null);
-                                }
-                                if (!operation.getStatusCode().isGood()) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          operation.getStatusCode(),
-                                          "http://opcfoundation.org/UA/:AddPublishedEventsTemplate"
-                                              + " (declaration i=16960, owner i=14477)"));
-                                }
-                                var targets = operation.getTargets();
-                                if (targets == null || targets.length == 0) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:AddPublishedEventsTemplate"
-                                              + " (declaration i=16960, owner i=14477) on "
-                                              + getNodeId()));
-                                }
-                                var identities = new ArrayList<CompletableFuture<NodeId>>();
-                                for (var target : targets) {
-                                  if (target == null
-                                      || target.getTargetId() == null
-                                      || target.getRemainingPathIndex() == null
-                                      || target.getRemainingPathIndex().longValue()
-                                          != 0xffffffffL) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_UnexpectedError,
-                                            "http://opcfoundation.org/UA/:AddPublishedEventsTemplate"
-                                                + " (declaration i=16960, owner i=14477) on "
-                                                + getNodeId()));
-                                  }
-                                  if (!target.getTargetId().isLocal()) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_NotSupported,
-                                            "http://opcfoundation.org/UA/:AddPublishedEventsTemplate"
-                                                + " (declaration i=16960, owner i=14477) on "
-                                                + getNodeId()));
-                                  }
-                                  if (result.isCancelled()) {
-                                    return CompletableFuture.failedFuture(
-                                        new CancellationException());
-                                  }
-                                  var localTarget =
-                                      target.getTargetId().toNodeId(client.getNamespaceTable());
-                                  if (localTarget.isPresent()) {
-                                    identities.add(
-                                        CompletableFuture.completedFuture(
-                                            localTarget.orElseThrow()));
-                                  } else {
-                                    identities.add(
-                                        client
-                                            .readNamespaceTableAsync()
-                                            .thenCompose(
-                                                namespaceTable -> {
-                                                  var resolvedTarget =
-                                                      target.getTargetId().toNodeId(namespaceTable);
-                                                  if (resolvedTarget.isEmpty()) {
-                                                    return CompletableFuture.failedFuture(
-                                                        new UaException(
-                                                            StatusCodes.Bad_NodeIdInvalid,
-                                                            "http://opcfoundation.org/UA/:AddPublishedEventsTemplate"
-                                                                + " (declaration i=16960, owner"
-                                                                + " i=14477) on "
-                                                                + getNodeId()));
-                                                  }
-                                                  return CompletableFuture.completedFuture(
-                                                      resolvedTarget.orElseThrow());
-                                                }));
-                                  }
-                                }
-                                return CompletableFuture.allOf(
-                                        identities.toArray(CompletableFuture[]::new))
-                                    .thenCompose(
-                                        ready -> {
-                                          if (result.isCancelled()) {
-                                            return CompletableFuture.failedFuture(
-                                                new CancellationException());
-                                          }
-                                          var unique = new LinkedHashSet<NodeId>();
-                                          identities.forEach(
-                                              identity -> unique.add(identity.join()));
-                                          if (unique.stream().anyMatch(NodeId::isNull)) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_NodeIdInvalid,
-                                                    "http://opcfoundation.org/UA/:AddPublishedEventsTemplate"
-                                                        + " (declaration i=16960, owner i=14477) on"
-                                                        + " "
-                                                        + getNodeId()));
-                                          }
-                                          if (unique.size() != 1) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_TooManyMatches,
-                                                    "http://opcfoundation.org/UA/:AddPublishedEventsTemplate"
-                                                        + " (declaration i=16960, owner i=14477) on"
-                                                        + " "
-                                                        + getNodeId()));
-                                          }
-                                          return client
-                                              .getAddressSpace()
-                                              .getNodeAsync(unique.iterator().next())
-                                              .thenCompose(
-                                                  node -> {
-                                                    if (node == null
-                                                        || node.getNodeClass()
-                                                            != NodeClass.Method) {
-                                                      return CompletableFuture.failedFuture(
-                                                          new UaException(
-                                                              StatusCodes.Bad_NodeClassInvalid,
-                                                              "http://opcfoundation.org/UA/:AddPublishedEventsTemplate"
-                                                                  + " (declaration i=16960, owner"
-                                                                  + " i=14477) on "
-                                                                  + getNodeId()));
-                                                    }
-                                                    return CompletableFuture.completedFuture(node);
-                                                  });
-                                        });
-                              });
-                    });
-              });
-      hop0.whenComplete(
-          (node, failure) -> {
-            if (failure != null) {
-              result.completeExceptionally(failure);
-            } else if (node != null && !(node instanceof UaMethodNode)) {
-              result.completeExceptionally(
-                  new UaException(
-                      StatusCodes.Bad_TypeMismatch,
-                      "http://opcfoundation.org/UA/:AddPublishedEventsTemplate (declaration"
-                          + " i=16960, owner i=14477)"));
-            } else {
-              result.complete((UaMethodNode) node);
-            }
-          });
-    } catch (Exception e) {
-      result.completeExceptionally(e);
-    }
-    return result;
+    return ClientMembers.lookup(
+        client,
+        getNodeId(),
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "AddPublishedEventsTemplate",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            true,
+            "http://opcfoundation.org/UA/:AddPublishedEventsTemplate (declaration i=16960, owner"
+                + " i=14477)"));
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.5
-   *
-   * <p>Invokes <code>AddPublishedEventsTemplate</code> on this node's ObjectId using the effective
-   * Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param name ; the supplied payload may be null.
-   * @param dataSetMetaData ; the supplied payload may be null.
-   * @param eventNotifier ; the supplied payload may be null.
-   * @param selectedFields ; the supplied payload may be null.
-   * @param filter ; the supplied payload may be null.
-   * @return the output value or object, or its future; a single value may be null.
-   * @throws UaException if lookup, input validation, transport, service, operation status or output
-   *     conversion fails.
-   */
   @NullMarked
   @Override
   public @Nullable NodeId callAddPublishedEventsTemplate(
@@ -12490,30 +7966,6 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
         .requireGood();
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.5
-   *
-   * <p>Invokes <code>AddPublishedEventsTemplate</code> on this node's ObjectId using the effective
-   * Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param name ; the supplied payload may be null.
-   * @param dataSetMetaData ; the supplied payload may be null.
-   * @param eventNotifier ; the supplied payload may be null.
-   * @param selectedFields ; the supplied payload may be null.
-   * @param filter ; the supplied payload may be null.
-   * @return the output value or object, or its future; a single value may be null.
-   */
   @NullMarked
   @Override
   public CompletableFuture<? extends @Nullable NodeId> callAddPublishedEventsTemplateAsync(
@@ -12547,31 +7999,6 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
     return result;
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.5
-   *
-   * <p>Invokes <code>AddPublishedEventsTemplate</code> on this node's ObjectId using the effective
-   * Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param name ; the supplied payload may be null.
-   * @param dataSetMetaData ; the supplied payload may be null.
-   * @param eventNotifier ; the supplied payload may be null.
-   * @param selectedFields ; the supplied payload may be null.
-   * @param filter ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   * @throws UaException if lookup, input validation, transport, service or response envelope
-   *     validation fails.
-   */
   @NullMarked
   @Override
   public MethodCallResult<? extends @Nullable NodeId> callAddPublishedEventsTemplateDetailed(
@@ -12585,33 +8012,6 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
         MethodCallOptions.NONE, name, dataSetMetaData, eventNotifier, selectedFields, filter);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.5
-   *
-   * <p>Invokes <code>AddPublishedEventsTemplate</code> on this node's ObjectId using the effective
-   * Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param options request-wide diagnostics options for this Call only.
-   * @param name ; the supplied payload may be null.
-   * @param dataSetMetaData ; the supplied payload may be null.
-   * @param eventNotifier ; the supplied payload may be null.
-   * @param selectedFields ; the supplied payload may be null.
-   * @param filter ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   * @throws UaException if lookup, input validation, transport, service or response envelope
-   *     validation fails.
-   * @throws NullPointerException if a required options or presence object is null.
-   */
   @NullMarked
   @Override
   public MethodCallResult<? extends @Nullable NodeId> callAddPublishedEventsTemplateDetailed(
@@ -12623,51 +8023,12 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
       @Nullable ContentFilter filter)
       throws UaException {
     Objects.requireNonNull(options, "options");
-    var awaitedMethod =
+    return ClientMembers.await(
         callAddPublishedEventsTemplateDetailedAsync(
-            options, name, dataSetMetaData, eventNotifier, selectedFields, filter);
-    try {
-      return awaitedMethod.get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      awaitedMethod.cancel(false);
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+            options, name, dataSetMetaData, eventNotifier, selectedFields, filter),
+        true);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.5
-   *
-   * <p>Invokes <code>AddPublishedEventsTemplate</code> on this node's ObjectId using the effective
-   * Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param name ; the supplied payload may be null.
-   * @param dataSetMetaData ; the supplied payload may be null.
-   * @param eventNotifier ; the supplied payload may be null.
-   * @param selectedFields ; the supplied payload may be null.
-   * @param filter ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   */
   @NullMarked
   @Override
   public CompletableFuture<? extends MethodCallResult<? extends @Nullable NodeId>>
@@ -12681,33 +8042,6 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
         MethodCallOptions.NONE, name, dataSetMetaData, eventNotifier, selectedFields, filter);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.5
-   *
-   * <p>Invokes <code>AddPublishedEventsTemplate</code> on this node's ObjectId using the effective
-   * Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param options request-wide diagnostics options for this Call only.
-   * @param name ; the supplied payload may be null.
-   * @param dataSetMetaData ; the supplied payload may be null.
-   * @param eventNotifier ; the supplied payload may be null.
-   * @param selectedFields ; the supplied payload may be null.
-   * @param filter ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   * @throws NullPointerException if a required options or presence object is null (exceptional
-   *     completion).
-   */
   @NullMarked
   @Override
   public CompletableFuture<? extends MethodCallResult<? extends @Nullable NodeId>>
@@ -12833,78 +8167,9 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                               + " type tree; resolved DataType: "
                                               + argumentDataTypeId);
                                     }
-                                    Object numericElements =
-                                        methodValue instanceof Matrix
-                                            ? ((Matrix) methodValue).getElements()
-                                            : methodValue;
-                                    if (numericElements != null
-                                        && numericElements.getClass().isArray()
-                                        && (numericElements.getClass().getComponentType()
-                                                == Number.class
-                                            || numericElements.getClass().getComponentType()
-                                                == UNumber.class)
-                                        && (argumentDataTypeId.equals(NodeIds.Number)
-                                            || dataTypeTree_.isSubtypeOf(
-                                                argumentDataTypeId, NodeIds.Number))) {
-                                      Class<?> numericElementType = null;
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Object numericElement =
-                                            Array.get(numericElements, numericIndex);
-                                        if (numericElement != null) {
-                                          if (numericElementType != null
-                                              && numericElementType != numericElement.getClass()) {
-                                            throw new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "An abstract numeric array requires one homogeneous"
-                                                    + " wire element type");
-                                          }
-                                          numericElementType = numericElement.getClass();
-                                        }
-                                      }
-                                      if (numericElementType == null) {
-                                        numericElementType =
-                                            dataTypeTree_.getBackingClass(argumentDataTypeId);
-                                      }
-                                      if (numericElementType == Number.class
-                                          || numericElementType == UNumber.class) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "An empty or all-null abstract numeric array requires a"
-                                                + " concretely typed array");
-                                      }
-                                      Object numericArray =
-                                          Array.newInstance(
-                                              numericElementType, Array.getLength(numericElements));
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Array.set(
-                                            numericArray,
-                                            numericIndex,
-                                            Array.get(numericElements, numericIndex));
-                                      }
-                                      if (methodValue instanceof Matrix) {
-                                        methodValue =
-                                            new Matrix(
-                                                numericArray,
-                                                ((Matrix) methodValue).getDimensions().clone(),
-                                                ((Matrix) methodValue)
-                                                    .getDataType()
-                                                    .orElseThrow(
-                                                        () ->
-                                                            new UaException(
-                                                                StatusCodes.Bad_TypeMismatch,
-                                                                "A numeric Matrix requires an"
-                                                                    + " explicit wire DataType")),
-                                                ((Matrix) methodValue)
-                                                    .getDataTypeId()
-                                                    .orElse(null));
-                                      } else {
-                                        methodValue = numericArray;
-                                      }
-                                    }
+                                    methodValue =
+                                        NumericValues.normalize(
+                                            methodValue, dataTypeTree_, argumentDataTypeId);
                                     if (methodValue != null) {
                                       Object shapeElements =
                                           methodValue instanceof Matrix
@@ -13119,108 +8384,7 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                       wireValue instanceof Matrix
                                           ? ((Matrix) wireValue).getElements()
                                           : wireValue;
-                                  var numericWireValues = new ArrayDeque<Object[]>();
-                                  var numericWirePath =
-                                      Collections.newSetFromMap(
-                                          new IdentityHashMap<Object, Boolean>());
-                                  if (wireValue != null) {
-                                    numericWireValues.push(new Object[] {wireValue, false});
-                                  }
-                                  while (!numericWireValues.isEmpty()) {
-                                    Object[] numericWireFrame = numericWireValues.pop();
-                                    Object numericWireValue = numericWireFrame[0];
-                                    if ((Boolean) numericWireFrame[1]) {
-                                      numericWirePath.remove(numericWireValue);
-                                      continue;
-                                    }
-                                    while (numericWireValue instanceof Variant
-                                        || numericWireValue instanceof DataValue) {
-                                      if (numericWireValue instanceof DataValue) {
-                                        if (((DataValue) numericWireValue).getValue() == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a value wrapper; use"
-                                                  + " Variant.NULL_VALUE for null");
-                                        }
-                                        if (((DataValue) numericWireValue).getStatusCode()
-                                            == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a StatusCode; use"
-                                                  + " StatusCode.GOOD for Good");
-                                        }
-                                        numericWireValue =
-                                            ((DataValue) numericWireValue).getValue();
-                                      } else {
-                                        numericWireValue = ((Variant) numericWireValue).getValue();
-                                      }
-                                    }
-                                    if (numericWireValue instanceof Matrix) {
-                                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                                    }
-                                    if (numericWireValue != null
-                                        && numericWireValue.getClass().isArray()) {
-                                      if (!numericWirePath.add(numericWireValue)) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "Cyclic Variant arrays cannot be encoded");
-                                      }
-                                      numericWireValues.push(new Object[] {numericWireValue, true});
-                                      for (int numericWireIndex = 0;
-                                          numericWireIndex < Array.getLength(numericWireValue);
-                                          numericWireIndex++) {
-                                        Object numericWireElement =
-                                            Array.get(numericWireValue, numericWireIndex);
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Variant.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Variant wire array requires a wrapper for every"
-                                                  + " element; use Variant.NULL_VALUE for null");
-                                        }
-                                        if (numericWireElement == null
-                                            && (UaEnumeratedType.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue))
-                                                || OptionSetUInteger.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "An enum or OptionSet wire array cannot encode a null"
-                                                  + " element");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Boolean.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Boolean wire array cannot retain a null element;"
-                                                  + " Milo encodes it as false");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == StatusCode.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A StatusCode wire array cannot retain a null"
-                                                  + " element; Milo encodes it as Good");
-                                        }
-                                        if (numericWireElement == null
-                                            && Number.class.isAssignableFrom(
-                                                ArrayUtil.getBoxedType(numericWireValue))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A numeric wire array cannot retain a null element;"
-                                                  + " Milo encodes it as zero");
-                                        }
-                                        if (numericWireElement instanceof Variant
-                                            || numericWireElement instanceof DataValue) {
-                                          numericWireValues.push(
-                                              new Object[] {numericWireElement, false});
-                                        }
-                                      }
-                                    }
-                                  }
+                                  NumericValues.requireEncodable(wireValue);
                                   wireValue =
                                       ExtensionObject.encodeValue(
                                           this.client.getStaticEncodingContext(), wireValue);
@@ -13271,78 +8435,9 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                               + " effective type tree; resolved DataType: "
                                               + argumentDataTypeId);
                                     }
-                                    Object numericElements =
-                                        methodValue instanceof Matrix
-                                            ? ((Matrix) methodValue).getElements()
-                                            : methodValue;
-                                    if (numericElements != null
-                                        && numericElements.getClass().isArray()
-                                        && (numericElements.getClass().getComponentType()
-                                                == Number.class
-                                            || numericElements.getClass().getComponentType()
-                                                == UNumber.class)
-                                        && (argumentDataTypeId.equals(NodeIds.Number)
-                                            || dataTypeTree_.isSubtypeOf(
-                                                argumentDataTypeId, NodeIds.Number))) {
-                                      Class<?> numericElementType = null;
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Object numericElement =
-                                            Array.get(numericElements, numericIndex);
-                                        if (numericElement != null) {
-                                          if (numericElementType != null
-                                              && numericElementType != numericElement.getClass()) {
-                                            throw new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "An abstract numeric array requires one homogeneous"
-                                                    + " wire element type");
-                                          }
-                                          numericElementType = numericElement.getClass();
-                                        }
-                                      }
-                                      if (numericElementType == null) {
-                                        numericElementType =
-                                            dataTypeTree_.getBackingClass(argumentDataTypeId);
-                                      }
-                                      if (numericElementType == Number.class
-                                          || numericElementType == UNumber.class) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "An empty or all-null abstract numeric array requires a"
-                                                + " concretely typed array");
-                                      }
-                                      Object numericArray =
-                                          Array.newInstance(
-                                              numericElementType, Array.getLength(numericElements));
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Array.set(
-                                            numericArray,
-                                            numericIndex,
-                                            Array.get(numericElements, numericIndex));
-                                      }
-                                      if (methodValue instanceof Matrix) {
-                                        methodValue =
-                                            new Matrix(
-                                                numericArray,
-                                                ((Matrix) methodValue).getDimensions().clone(),
-                                                ((Matrix) methodValue)
-                                                    .getDataType()
-                                                    .orElseThrow(
-                                                        () ->
-                                                            new UaException(
-                                                                StatusCodes.Bad_TypeMismatch,
-                                                                "A numeric Matrix requires an"
-                                                                    + " explicit wire DataType")),
-                                                ((Matrix) methodValue)
-                                                    .getDataTypeId()
-                                                    .orElse(null));
-                                      } else {
-                                        methodValue = numericArray;
-                                      }
-                                    }
+                                    methodValue =
+                                        NumericValues.normalize(
+                                            methodValue, dataTypeTree_, argumentDataTypeId);
                                     if (methodValue != null) {
                                       Object shapeElements =
                                           methodValue instanceof Matrix
@@ -13557,108 +8652,7 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                       wireValue instanceof Matrix
                                           ? ((Matrix) wireValue).getElements()
                                           : wireValue;
-                                  var numericWireValues = new ArrayDeque<Object[]>();
-                                  var numericWirePath =
-                                      Collections.newSetFromMap(
-                                          new IdentityHashMap<Object, Boolean>());
-                                  if (wireValue != null) {
-                                    numericWireValues.push(new Object[] {wireValue, false});
-                                  }
-                                  while (!numericWireValues.isEmpty()) {
-                                    Object[] numericWireFrame = numericWireValues.pop();
-                                    Object numericWireValue = numericWireFrame[0];
-                                    if ((Boolean) numericWireFrame[1]) {
-                                      numericWirePath.remove(numericWireValue);
-                                      continue;
-                                    }
-                                    while (numericWireValue instanceof Variant
-                                        || numericWireValue instanceof DataValue) {
-                                      if (numericWireValue instanceof DataValue) {
-                                        if (((DataValue) numericWireValue).getValue() == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a value wrapper; use"
-                                                  + " Variant.NULL_VALUE for null");
-                                        }
-                                        if (((DataValue) numericWireValue).getStatusCode()
-                                            == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a StatusCode; use"
-                                                  + " StatusCode.GOOD for Good");
-                                        }
-                                        numericWireValue =
-                                            ((DataValue) numericWireValue).getValue();
-                                      } else {
-                                        numericWireValue = ((Variant) numericWireValue).getValue();
-                                      }
-                                    }
-                                    if (numericWireValue instanceof Matrix) {
-                                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                                    }
-                                    if (numericWireValue != null
-                                        && numericWireValue.getClass().isArray()) {
-                                      if (!numericWirePath.add(numericWireValue)) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "Cyclic Variant arrays cannot be encoded");
-                                      }
-                                      numericWireValues.push(new Object[] {numericWireValue, true});
-                                      for (int numericWireIndex = 0;
-                                          numericWireIndex < Array.getLength(numericWireValue);
-                                          numericWireIndex++) {
-                                        Object numericWireElement =
-                                            Array.get(numericWireValue, numericWireIndex);
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Variant.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Variant wire array requires a wrapper for every"
-                                                  + " element; use Variant.NULL_VALUE for null");
-                                        }
-                                        if (numericWireElement == null
-                                            && (UaEnumeratedType.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue))
-                                                || OptionSetUInteger.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "An enum or OptionSet wire array cannot encode a null"
-                                                  + " element");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Boolean.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Boolean wire array cannot retain a null element;"
-                                                  + " Milo encodes it as false");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == StatusCode.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A StatusCode wire array cannot retain a null"
-                                                  + " element; Milo encodes it as Good");
-                                        }
-                                        if (numericWireElement == null
-                                            && Number.class.isAssignableFrom(
-                                                ArrayUtil.getBoxedType(numericWireValue))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A numeric wire array cannot retain a null element;"
-                                                  + " Milo encodes it as zero");
-                                        }
-                                        if (numericWireElement instanceof Variant
-                                            || numericWireElement instanceof DataValue) {
-                                          numericWireValues.push(
-                                              new Object[] {numericWireElement, false});
-                                        }
-                                      }
-                                    }
-                                  }
+                                  NumericValues.requireEncodable(wireValue);
                                   wireValue =
                                       ExtensionObject.encodeValue(
                                           this.client.getStaticEncodingContext(), wireValue);
@@ -13709,78 +8703,9 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                               + " effective type tree; resolved DataType: "
                                               + argumentDataTypeId);
                                     }
-                                    Object numericElements =
-                                        methodValue instanceof Matrix
-                                            ? ((Matrix) methodValue).getElements()
-                                            : methodValue;
-                                    if (numericElements != null
-                                        && numericElements.getClass().isArray()
-                                        && (numericElements.getClass().getComponentType()
-                                                == Number.class
-                                            || numericElements.getClass().getComponentType()
-                                                == UNumber.class)
-                                        && (argumentDataTypeId.equals(NodeIds.Number)
-                                            || dataTypeTree_.isSubtypeOf(
-                                                argumentDataTypeId, NodeIds.Number))) {
-                                      Class<?> numericElementType = null;
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Object numericElement =
-                                            Array.get(numericElements, numericIndex);
-                                        if (numericElement != null) {
-                                          if (numericElementType != null
-                                              && numericElementType != numericElement.getClass()) {
-                                            throw new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "An abstract numeric array requires one homogeneous"
-                                                    + " wire element type");
-                                          }
-                                          numericElementType = numericElement.getClass();
-                                        }
-                                      }
-                                      if (numericElementType == null) {
-                                        numericElementType =
-                                            dataTypeTree_.getBackingClass(argumentDataTypeId);
-                                      }
-                                      if (numericElementType == Number.class
-                                          || numericElementType == UNumber.class) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "An empty or all-null abstract numeric array requires a"
-                                                + " concretely typed array");
-                                      }
-                                      Object numericArray =
-                                          Array.newInstance(
-                                              numericElementType, Array.getLength(numericElements));
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Array.set(
-                                            numericArray,
-                                            numericIndex,
-                                            Array.get(numericElements, numericIndex));
-                                      }
-                                      if (methodValue instanceof Matrix) {
-                                        methodValue =
-                                            new Matrix(
-                                                numericArray,
-                                                ((Matrix) methodValue).getDimensions().clone(),
-                                                ((Matrix) methodValue)
-                                                    .getDataType()
-                                                    .orElseThrow(
-                                                        () ->
-                                                            new UaException(
-                                                                StatusCodes.Bad_TypeMismatch,
-                                                                "A numeric Matrix requires an"
-                                                                    + " explicit wire DataType")),
-                                                ((Matrix) methodValue)
-                                                    .getDataTypeId()
-                                                    .orElse(null));
-                                      } else {
-                                        methodValue = numericArray;
-                                      }
-                                    }
+                                    methodValue =
+                                        NumericValues.normalize(
+                                            methodValue, dataTypeTree_, argumentDataTypeId);
                                     if (methodValue != null) {
                                       Object shapeElements =
                                           methodValue instanceof Matrix
@@ -13995,108 +8920,7 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                       wireValue instanceof Matrix
                                           ? ((Matrix) wireValue).getElements()
                                           : wireValue;
-                                  var numericWireValues = new ArrayDeque<Object[]>();
-                                  var numericWirePath =
-                                      Collections.newSetFromMap(
-                                          new IdentityHashMap<Object, Boolean>());
-                                  if (wireValue != null) {
-                                    numericWireValues.push(new Object[] {wireValue, false});
-                                  }
-                                  while (!numericWireValues.isEmpty()) {
-                                    Object[] numericWireFrame = numericWireValues.pop();
-                                    Object numericWireValue = numericWireFrame[0];
-                                    if ((Boolean) numericWireFrame[1]) {
-                                      numericWirePath.remove(numericWireValue);
-                                      continue;
-                                    }
-                                    while (numericWireValue instanceof Variant
-                                        || numericWireValue instanceof DataValue) {
-                                      if (numericWireValue instanceof DataValue) {
-                                        if (((DataValue) numericWireValue).getValue() == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a value wrapper; use"
-                                                  + " Variant.NULL_VALUE for null");
-                                        }
-                                        if (((DataValue) numericWireValue).getStatusCode()
-                                            == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a StatusCode; use"
-                                                  + " StatusCode.GOOD for Good");
-                                        }
-                                        numericWireValue =
-                                            ((DataValue) numericWireValue).getValue();
-                                      } else {
-                                        numericWireValue = ((Variant) numericWireValue).getValue();
-                                      }
-                                    }
-                                    if (numericWireValue instanceof Matrix) {
-                                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                                    }
-                                    if (numericWireValue != null
-                                        && numericWireValue.getClass().isArray()) {
-                                      if (!numericWirePath.add(numericWireValue)) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "Cyclic Variant arrays cannot be encoded");
-                                      }
-                                      numericWireValues.push(new Object[] {numericWireValue, true});
-                                      for (int numericWireIndex = 0;
-                                          numericWireIndex < Array.getLength(numericWireValue);
-                                          numericWireIndex++) {
-                                        Object numericWireElement =
-                                            Array.get(numericWireValue, numericWireIndex);
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Variant.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Variant wire array requires a wrapper for every"
-                                                  + " element; use Variant.NULL_VALUE for null");
-                                        }
-                                        if (numericWireElement == null
-                                            && (UaEnumeratedType.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue))
-                                                || OptionSetUInteger.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "An enum or OptionSet wire array cannot encode a null"
-                                                  + " element");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Boolean.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Boolean wire array cannot retain a null element;"
-                                                  + " Milo encodes it as false");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == StatusCode.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A StatusCode wire array cannot retain a null"
-                                                  + " element; Milo encodes it as Good");
-                                        }
-                                        if (numericWireElement == null
-                                            && Number.class.isAssignableFrom(
-                                                ArrayUtil.getBoxedType(numericWireValue))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A numeric wire array cannot retain a null element;"
-                                                  + " Milo encodes it as zero");
-                                        }
-                                        if (numericWireElement instanceof Variant
-                                            || numericWireElement instanceof DataValue) {
-                                          numericWireValues.push(
-                                              new Object[] {numericWireElement, false});
-                                        }
-                                      }
-                                    }
-                                  }
+                                  NumericValues.requireEncodable(wireValue);
                                   wireValue =
                                       ExtensionObject.encodeValue(
                                           this.client.getStaticEncodingContext(), wireValue);
@@ -14147,78 +8971,9 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                               + " effective type tree; resolved DataType: "
                                               + argumentDataTypeId);
                                     }
-                                    Object numericElements =
-                                        methodValue instanceof Matrix
-                                            ? ((Matrix) methodValue).getElements()
-                                            : methodValue;
-                                    if (numericElements != null
-                                        && numericElements.getClass().isArray()
-                                        && (numericElements.getClass().getComponentType()
-                                                == Number.class
-                                            || numericElements.getClass().getComponentType()
-                                                == UNumber.class)
-                                        && (argumentDataTypeId.equals(NodeIds.Number)
-                                            || dataTypeTree_.isSubtypeOf(
-                                                argumentDataTypeId, NodeIds.Number))) {
-                                      Class<?> numericElementType = null;
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Object numericElement =
-                                            Array.get(numericElements, numericIndex);
-                                        if (numericElement != null) {
-                                          if (numericElementType != null
-                                              && numericElementType != numericElement.getClass()) {
-                                            throw new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "An abstract numeric array requires one homogeneous"
-                                                    + " wire element type");
-                                          }
-                                          numericElementType = numericElement.getClass();
-                                        }
-                                      }
-                                      if (numericElementType == null) {
-                                        numericElementType =
-                                            dataTypeTree_.getBackingClass(argumentDataTypeId);
-                                      }
-                                      if (numericElementType == Number.class
-                                          || numericElementType == UNumber.class) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "An empty or all-null abstract numeric array requires a"
-                                                + " concretely typed array");
-                                      }
-                                      Object numericArray =
-                                          Array.newInstance(
-                                              numericElementType, Array.getLength(numericElements));
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Array.set(
-                                            numericArray,
-                                            numericIndex,
-                                            Array.get(numericElements, numericIndex));
-                                      }
-                                      if (methodValue instanceof Matrix) {
-                                        methodValue =
-                                            new Matrix(
-                                                numericArray,
-                                                ((Matrix) methodValue).getDimensions().clone(),
-                                                ((Matrix) methodValue)
-                                                    .getDataType()
-                                                    .orElseThrow(
-                                                        () ->
-                                                            new UaException(
-                                                                StatusCodes.Bad_TypeMismatch,
-                                                                "A numeric Matrix requires an"
-                                                                    + " explicit wire DataType")),
-                                                ((Matrix) methodValue)
-                                                    .getDataTypeId()
-                                                    .orElse(null));
-                                      } else {
-                                        methodValue = numericArray;
-                                      }
-                                    }
+                                    methodValue =
+                                        NumericValues.normalize(
+                                            methodValue, dataTypeTree_, argumentDataTypeId);
                                     if (methodValue != null) {
                                       Object shapeElements =
                                           methodValue instanceof Matrix
@@ -14468,108 +9223,7 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                       wireValue instanceof Matrix
                                           ? ((Matrix) wireValue).getElements()
                                           : wireValue;
-                                  var numericWireValues = new ArrayDeque<Object[]>();
-                                  var numericWirePath =
-                                      Collections.newSetFromMap(
-                                          new IdentityHashMap<Object, Boolean>());
-                                  if (wireValue != null) {
-                                    numericWireValues.push(new Object[] {wireValue, false});
-                                  }
-                                  while (!numericWireValues.isEmpty()) {
-                                    Object[] numericWireFrame = numericWireValues.pop();
-                                    Object numericWireValue = numericWireFrame[0];
-                                    if ((Boolean) numericWireFrame[1]) {
-                                      numericWirePath.remove(numericWireValue);
-                                      continue;
-                                    }
-                                    while (numericWireValue instanceof Variant
-                                        || numericWireValue instanceof DataValue) {
-                                      if (numericWireValue instanceof DataValue) {
-                                        if (((DataValue) numericWireValue).getValue() == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a value wrapper; use"
-                                                  + " Variant.NULL_VALUE for null");
-                                        }
-                                        if (((DataValue) numericWireValue).getStatusCode()
-                                            == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a StatusCode; use"
-                                                  + " StatusCode.GOOD for Good");
-                                        }
-                                        numericWireValue =
-                                            ((DataValue) numericWireValue).getValue();
-                                      } else {
-                                        numericWireValue = ((Variant) numericWireValue).getValue();
-                                      }
-                                    }
-                                    if (numericWireValue instanceof Matrix) {
-                                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                                    }
-                                    if (numericWireValue != null
-                                        && numericWireValue.getClass().isArray()) {
-                                      if (!numericWirePath.add(numericWireValue)) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "Cyclic Variant arrays cannot be encoded");
-                                      }
-                                      numericWireValues.push(new Object[] {numericWireValue, true});
-                                      for (int numericWireIndex = 0;
-                                          numericWireIndex < Array.getLength(numericWireValue);
-                                          numericWireIndex++) {
-                                        Object numericWireElement =
-                                            Array.get(numericWireValue, numericWireIndex);
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Variant.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Variant wire array requires a wrapper for every"
-                                                  + " element; use Variant.NULL_VALUE for null");
-                                        }
-                                        if (numericWireElement == null
-                                            && (UaEnumeratedType.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue))
-                                                || OptionSetUInteger.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "An enum or OptionSet wire array cannot encode a null"
-                                                  + " element");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Boolean.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Boolean wire array cannot retain a null element;"
-                                                  + " Milo encodes it as false");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == StatusCode.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A StatusCode wire array cannot retain a null"
-                                                  + " element; Milo encodes it as Good");
-                                        }
-                                        if (numericWireElement == null
-                                            && Number.class.isAssignableFrom(
-                                                ArrayUtil.getBoxedType(numericWireValue))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A numeric wire array cannot retain a null element;"
-                                                  + " Milo encodes it as zero");
-                                        }
-                                        if (numericWireElement instanceof Variant
-                                            || numericWireElement instanceof DataValue) {
-                                          numericWireValues.push(
-                                              new Object[] {numericWireElement, false});
-                                        }
-                                      }
-                                    }
-                                  }
+                                  NumericValues.requireEncodable(wireValue);
                                   wireValue =
                                       ExtensionObject.encodeValue(
                                           this.client.getStaticEncodingContext(), wireValue);
@@ -14620,78 +9274,9 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                               + " type tree; resolved DataType: "
                                               + argumentDataTypeId);
                                     }
-                                    Object numericElements =
-                                        methodValue instanceof Matrix
-                                            ? ((Matrix) methodValue).getElements()
-                                            : methodValue;
-                                    if (numericElements != null
-                                        && numericElements.getClass().isArray()
-                                        && (numericElements.getClass().getComponentType()
-                                                == Number.class
-                                            || numericElements.getClass().getComponentType()
-                                                == UNumber.class)
-                                        && (argumentDataTypeId.equals(NodeIds.Number)
-                                            || dataTypeTree_.isSubtypeOf(
-                                                argumentDataTypeId, NodeIds.Number))) {
-                                      Class<?> numericElementType = null;
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Object numericElement =
-                                            Array.get(numericElements, numericIndex);
-                                        if (numericElement != null) {
-                                          if (numericElementType != null
-                                              && numericElementType != numericElement.getClass()) {
-                                            throw new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "An abstract numeric array requires one homogeneous"
-                                                    + " wire element type");
-                                          }
-                                          numericElementType = numericElement.getClass();
-                                        }
-                                      }
-                                      if (numericElementType == null) {
-                                        numericElementType =
-                                            dataTypeTree_.getBackingClass(argumentDataTypeId);
-                                      }
-                                      if (numericElementType == Number.class
-                                          || numericElementType == UNumber.class) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "An empty or all-null abstract numeric array requires a"
-                                                + " concretely typed array");
-                                      }
-                                      Object numericArray =
-                                          Array.newInstance(
-                                              numericElementType, Array.getLength(numericElements));
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Array.set(
-                                            numericArray,
-                                            numericIndex,
-                                            Array.get(numericElements, numericIndex));
-                                      }
-                                      if (methodValue instanceof Matrix) {
-                                        methodValue =
-                                            new Matrix(
-                                                numericArray,
-                                                ((Matrix) methodValue).getDimensions().clone(),
-                                                ((Matrix) methodValue)
-                                                    .getDataType()
-                                                    .orElseThrow(
-                                                        () ->
-                                                            new UaException(
-                                                                StatusCodes.Bad_TypeMismatch,
-                                                                "A numeric Matrix requires an"
-                                                                    + " explicit wire DataType")),
-                                                ((Matrix) methodValue)
-                                                    .getDataTypeId()
-                                                    .orElse(null));
-                                      } else {
-                                        methodValue = numericArray;
-                                      }
-                                    }
+                                    methodValue =
+                                        NumericValues.normalize(
+                                            methodValue, dataTypeTree_, argumentDataTypeId);
                                     if (methodValue != null) {
                                       Object shapeElements =
                                           methodValue instanceof Matrix
@@ -14906,108 +9491,7 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                       wireValue instanceof Matrix
                                           ? ((Matrix) wireValue).getElements()
                                           : wireValue;
-                                  var numericWireValues = new ArrayDeque<Object[]>();
-                                  var numericWirePath =
-                                      Collections.newSetFromMap(
-                                          new IdentityHashMap<Object, Boolean>());
-                                  if (wireValue != null) {
-                                    numericWireValues.push(new Object[] {wireValue, false});
-                                  }
-                                  while (!numericWireValues.isEmpty()) {
-                                    Object[] numericWireFrame = numericWireValues.pop();
-                                    Object numericWireValue = numericWireFrame[0];
-                                    if ((Boolean) numericWireFrame[1]) {
-                                      numericWirePath.remove(numericWireValue);
-                                      continue;
-                                    }
-                                    while (numericWireValue instanceof Variant
-                                        || numericWireValue instanceof DataValue) {
-                                      if (numericWireValue instanceof DataValue) {
-                                        if (((DataValue) numericWireValue).getValue() == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a value wrapper; use"
-                                                  + " Variant.NULL_VALUE for null");
-                                        }
-                                        if (((DataValue) numericWireValue).getStatusCode()
-                                            == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a StatusCode; use"
-                                                  + " StatusCode.GOOD for Good");
-                                        }
-                                        numericWireValue =
-                                            ((DataValue) numericWireValue).getValue();
-                                      } else {
-                                        numericWireValue = ((Variant) numericWireValue).getValue();
-                                      }
-                                    }
-                                    if (numericWireValue instanceof Matrix) {
-                                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                                    }
-                                    if (numericWireValue != null
-                                        && numericWireValue.getClass().isArray()) {
-                                      if (!numericWirePath.add(numericWireValue)) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "Cyclic Variant arrays cannot be encoded");
-                                      }
-                                      numericWireValues.push(new Object[] {numericWireValue, true});
-                                      for (int numericWireIndex = 0;
-                                          numericWireIndex < Array.getLength(numericWireValue);
-                                          numericWireIndex++) {
-                                        Object numericWireElement =
-                                            Array.get(numericWireValue, numericWireIndex);
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Variant.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Variant wire array requires a wrapper for every"
-                                                  + " element; use Variant.NULL_VALUE for null");
-                                        }
-                                        if (numericWireElement == null
-                                            && (UaEnumeratedType.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue))
-                                                || OptionSetUInteger.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "An enum or OptionSet wire array cannot encode a null"
-                                                  + " element");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Boolean.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Boolean wire array cannot retain a null element;"
-                                                  + " Milo encodes it as false");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == StatusCode.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A StatusCode wire array cannot retain a null"
-                                                  + " element; Milo encodes it as Good");
-                                        }
-                                        if (numericWireElement == null
-                                            && Number.class.isAssignableFrom(
-                                                ArrayUtil.getBoxedType(numericWireValue))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A numeric wire array cannot retain a null element;"
-                                                  + " Milo encodes it as zero");
-                                        }
-                                        if (numericWireElement instanceof Variant
-                                            || numericWireElement instanceof DataValue) {
-                                          numericWireValues.push(
-                                              new Object[] {numericWireElement, false});
-                                        }
-                                      }
-                                    }
-                                  }
+                                  NumericValues.requireEncodable(wireValue);
                                   wireValue =
                                       ExtensionObject.encodeValue(
                                           this.client.getStaticEncodingContext(), wireValue);
@@ -15223,122 +9707,11 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                                                           + " DataType: "
                                                                           + argumentDataTypeId);
                                                                 }
-                                                                Object numericElements =
-                                                                    methodValue instanceof Matrix
-                                                                        ? ((Matrix) methodValue)
-                                                                            .getElements()
-                                                                        : methodValue;
-                                                                if (numericElements != null
-                                                                    && numericElements
-                                                                        .getClass()
-                                                                        .isArray()
-                                                                    && (numericElements
-                                                                                .getClass()
-                                                                                .getComponentType()
-                                                                            == Number.class
-                                                                        || numericElements
-                                                                                .getClass()
-                                                                                .getComponentType()
-                                                                            == UNumber.class)
-                                                                    && (argumentDataTypeId.equals(
-                                                                            NodeIds.Number)
-                                                                        || dataTypeTree_
-                                                                            .isSubtypeOf(
-                                                                                argumentDataTypeId,
-                                                                                NodeIds.Number))) {
-                                                                  Class<?> numericElementType =
-                                                                      null;
-                                                                  for (int numericIndex = 0;
-                                                                      numericIndex
-                                                                          < Array.getLength(
-                                                                              numericElements);
-                                                                      numericIndex++) {
-                                                                    Object numericElement =
-                                                                        Array.get(
-                                                                            numericElements,
-                                                                            numericIndex);
-                                                                    if (numericElement != null) {
-                                                                      if (numericElementType != null
-                                                                          && numericElementType
-                                                                              != numericElement
-                                                                                  .getClass()) {
-                                                                        throw new UaException(
-                                                                            StatusCodes
-                                                                                .Bad_TypeMismatch,
-                                                                            "An abstract numeric"
-                                                                                + " array requires"
-                                                                                + " one homogeneous"
-                                                                                + " wire element"
-                                                                                + " type");
-                                                                      }
-                                                                      numericElementType =
-                                                                          numericElement.getClass();
-                                                                    }
-                                                                  }
-                                                                  if (numericElementType == null) {
-                                                                    numericElementType =
-                                                                        dataTypeTree_
-                                                                            .getBackingClass(
-                                                                                argumentDataTypeId);
-                                                                  }
-                                                                  if (numericElementType
-                                                                          == Number.class
-                                                                      || numericElementType
-                                                                          == UNumber.class) {
-                                                                    throw new UaException(
-                                                                        StatusCodes
-                                                                            .Bad_TypeMismatch,
-                                                                        "An empty or all-null"
-                                                                            + " abstract numeric"
-                                                                            + " array requires a"
-                                                                            + " concretely typed"
-                                                                            + " array");
-                                                                  }
-                                                                  Object numericArray =
-                                                                      Array.newInstance(
-                                                                          numericElementType,
-                                                                          Array.getLength(
-                                                                              numericElements));
-                                                                  for (int numericIndex = 0;
-                                                                      numericIndex
-                                                                          < Array.getLength(
-                                                                              numericElements);
-                                                                      numericIndex++) {
-                                                                    Array.set(
-                                                                        numericArray,
-                                                                        numericIndex,
-                                                                        Array.get(
-                                                                            numericElements,
-                                                                            numericIndex));
-                                                                  }
-                                                                  if (methodValue
-                                                                      instanceof Matrix) {
-                                                                    methodValue =
-                                                                        new Matrix(
-                                                                            numericArray,
-                                                                            ((Matrix) methodValue)
-                                                                                .getDimensions()
-                                                                                .clone(),
-                                                                            ((Matrix) methodValue)
-                                                                                .getDataType()
-                                                                                .orElseThrow(
-                                                                                    () ->
-                                                                                        new UaException(
-                                                                                            StatusCodes
-                                                                                                .Bad_TypeMismatch,
-                                                                                            "A numeric"
-                                                                                                + " Matrix"
-                                                                                                + " requires"
-                                                                                                + " an explicit"
-                                                                                                + " wire"
-                                                                                                + " DataType")),
-                                                                            ((Matrix) methodValue)
-                                                                                .getDataTypeId()
-                                                                                .orElse(null));
-                                                                  } else {
-                                                                    methodValue = numericArray;
-                                                                  }
-                                                                }
+                                                                methodValue =
+                                                                    NumericValues.normalize(
+                                                                        methodValue,
+                                                                        dataTypeTree_,
+                                                                        argumentDataTypeId);
                                                                 if (methodValue != null) {
                                                                   Object shapeElements =
                                                                       methodValue instanceof Matrix
@@ -15722,317 +10095,37 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
     return result;
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.6
-   *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. It can perform service I/O and
-   * construct or reuse a Java wrapper in Milo's address space cache. A reference can change after
-   * lookup.
-   *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
-   */
   @NullMarked
   @Override
   public @Nullable UaMethodNode getRemovePublishedDataSetMethodNode() throws UaException {
-    try {
-      return getRemovePublishedDataSetMethodNodeAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(getRemovePublishedDataSetMethodNodeAsync(), false);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.6
-   *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. It can perform service I/O and
-   * construct or reuse a Java wrapper in Milo's address space cache. A reference can change after
-   * lookup.
-   *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the existing member, or null for confirmed absence
-   */
   @NullMarked
   @Override
   public CompletableFuture<? extends @Nullable UaMethodNode>
       getRemovePublishedDataSetMethodNodeAsync() {
-    CompletableFuture<UaMethodNode> result = new CompletableFuture<>();
-    try {
-      CompletableFuture<NodeId> lookup = CompletableFuture.completedFuture(getNodeId());
-      CompletableFuture<UaNode> hop0 =
-          lookup.thenCompose(
-              parent -> {
-                NodeId parentId = parent;
-                if (result.isCancelled()) {
-                  return CompletableFuture.failedFuture(new CancellationException());
-                }
-                if (parentId == null) {
-                  return CompletableFuture.completedFuture(null);
-                }
-                CompletableFuture<Void> namespaceReady;
-                if (client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/") == null
-                    || client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/")
-                        == null) {
-                  namespaceReady = client.readNamespaceTableAsync().thenApply(ignored -> null);
-                } else {
-                  namespaceReady = CompletableFuture.completedFuture(null);
-                }
-                return namespaceReady.thenCompose(
-                    ignored -> {
-                      if (result.isCancelled()) {
-                        return CompletableFuture.failedFuture(new CancellationException());
-                      }
-                      var namespaceIndex =
-                          client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/");
-                      var referenceId =
-                          ExpandedNodeId.parse("i=47").toNodeId(client.getNamespaceTable());
-                      if (namespaceIndex == null || referenceId.isEmpty()) {
-                        return CompletableFuture.failedFuture(
-                            new UaException(
-                                StatusCodes.Bad_NodeIdInvalid,
-                                "http://opcfoundation.org/UA/:RemovePublishedDataSet (declaration"
-                                    + " i=14499, owner i=14477) on "
-                                    + getNodeId()));
-                      }
-                      var browsePath =
-                          new BrowsePath(
-                              parentId,
-                              new RelativePath(
-                                  new RelativePathElement[] {
-                                    new RelativePathElement(
-                                        referenceId.orElseThrow(),
-                                        false,
-                                        true,
-                                        new QualifiedName(namespaceIndex, "RemovePublishedDataSet"))
-                                  }));
-                      return client
-                          .translateBrowsePathsAsync(List.of(browsePath))
-                          .thenCompose(
-                              response -> {
-                                if (result.isCancelled()) {
-                                  return CompletableFuture.failedFuture(
-                                      new CancellationException());
-                                }
-                                var results = response == null ? null : response.getResults();
-                                if (results == null
-                                    || results.length != 1
-                                    || results[0] == null
-                                    || results[0].getStatusCode() == null) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:RemovePublishedDataSet"
-                                              + " (declaration i=14499, owner i=14477) on "
-                                              + getNodeId()));
-                                }
-                                var operation = results[0];
-                                if (operation.getStatusCode().getValue()
-                                    == StatusCodes.Bad_NoMatch) {
-                                  return CompletableFuture.completedFuture(null);
-                                }
-                                if (!operation.getStatusCode().isGood()) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          operation.getStatusCode(),
-                                          "http://opcfoundation.org/UA/:RemovePublishedDataSet"
-                                              + " (declaration i=14499, owner i=14477)"));
-                                }
-                                var targets = operation.getTargets();
-                                if (targets == null || targets.length == 0) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:RemovePublishedDataSet"
-                                              + " (declaration i=14499, owner i=14477) on "
-                                              + getNodeId()));
-                                }
-                                var identities = new ArrayList<CompletableFuture<NodeId>>();
-                                for (var target : targets) {
-                                  if (target == null
-                                      || target.getTargetId() == null
-                                      || target.getRemainingPathIndex() == null
-                                      || target.getRemainingPathIndex().longValue()
-                                          != 0xffffffffL) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_UnexpectedError,
-                                            "http://opcfoundation.org/UA/:RemovePublishedDataSet"
-                                                + " (declaration i=14499, owner i=14477) on "
-                                                + getNodeId()));
-                                  }
-                                  if (!target.getTargetId().isLocal()) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_NotSupported,
-                                            "http://opcfoundation.org/UA/:RemovePublishedDataSet"
-                                                + " (declaration i=14499, owner i=14477) on "
-                                                + getNodeId()));
-                                  }
-                                  if (result.isCancelled()) {
-                                    return CompletableFuture.failedFuture(
-                                        new CancellationException());
-                                  }
-                                  var localTarget =
-                                      target.getTargetId().toNodeId(client.getNamespaceTable());
-                                  if (localTarget.isPresent()) {
-                                    identities.add(
-                                        CompletableFuture.completedFuture(
-                                            localTarget.orElseThrow()));
-                                  } else {
-                                    identities.add(
-                                        client
-                                            .readNamespaceTableAsync()
-                                            .thenCompose(
-                                                namespaceTable -> {
-                                                  var resolvedTarget =
-                                                      target.getTargetId().toNodeId(namespaceTable);
-                                                  if (resolvedTarget.isEmpty()) {
-                                                    return CompletableFuture.failedFuture(
-                                                        new UaException(
-                                                            StatusCodes.Bad_NodeIdInvalid,
-                                                            "http://opcfoundation.org/UA/:RemovePublishedDataSet"
-                                                                + " (declaration i=14499, owner"
-                                                                + " i=14477) on "
-                                                                + getNodeId()));
-                                                  }
-                                                  return CompletableFuture.completedFuture(
-                                                      resolvedTarget.orElseThrow());
-                                                }));
-                                  }
-                                }
-                                return CompletableFuture.allOf(
-                                        identities.toArray(CompletableFuture[]::new))
-                                    .thenCompose(
-                                        ready -> {
-                                          if (result.isCancelled()) {
-                                            return CompletableFuture.failedFuture(
-                                                new CancellationException());
-                                          }
-                                          var unique = new LinkedHashSet<NodeId>();
-                                          identities.forEach(
-                                              identity -> unique.add(identity.join()));
-                                          if (unique.stream().anyMatch(NodeId::isNull)) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_NodeIdInvalid,
-                                                    "http://opcfoundation.org/UA/:RemovePublishedDataSet"
-                                                        + " (declaration i=14499, owner i=14477) on"
-                                                        + " "
-                                                        + getNodeId()));
-                                          }
-                                          if (unique.size() != 1) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_TooManyMatches,
-                                                    "http://opcfoundation.org/UA/:RemovePublishedDataSet"
-                                                        + " (declaration i=14499, owner i=14477) on"
-                                                        + " "
-                                                        + getNodeId()));
-                                          }
-                                          return client
-                                              .getAddressSpace()
-                                              .getNodeAsync(unique.iterator().next())
-                                              .thenCompose(
-                                                  node -> {
-                                                    if (node == null
-                                                        || node.getNodeClass()
-                                                            != NodeClass.Method) {
-                                                      return CompletableFuture.failedFuture(
-                                                          new UaException(
-                                                              StatusCodes.Bad_NodeClassInvalid,
-                                                              "http://opcfoundation.org/UA/:RemovePublishedDataSet"
-                                                                  + " (declaration i=14499, owner"
-                                                                  + " i=14477) on "
-                                                                  + getNodeId()));
-                                                    }
-                                                    return CompletableFuture.completedFuture(node);
-                                                  });
-                                        });
-                              });
-                    });
-              });
-      hop0.whenComplete(
-          (node, failure) -> {
-            if (failure != null) {
-              result.completeExceptionally(failure);
-            } else if (node != null && !(node instanceof UaMethodNode)) {
-              result.completeExceptionally(
-                  new UaException(
-                      StatusCodes.Bad_TypeMismatch,
-                      "http://opcfoundation.org/UA/:RemovePublishedDataSet (declaration i=14499,"
-                          + " owner i=14477)"));
-            } else {
-              result.complete((UaMethodNode) node);
-            }
-          });
-    } catch (Exception e) {
-      result.completeExceptionally(e);
-    }
-    return result;
+    return ClientMembers.lookup(
+        client,
+        getNodeId(),
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "RemovePublishedDataSet",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            true,
+            "http://opcfoundation.org/UA/:RemovePublishedDataSet (declaration i=14499, owner"
+                + " i=14477)"));
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.6
-   *
-   * <p>Invokes <code>RemovePublishedDataSet</code> on this node's ObjectId using the effective
-   * Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param dataSetNodeId ; the supplied payload may be null.
-   * @throws UaException if lookup, input validation, transport, service, operation status or output
-   *     conversion fails.
-   */
   @NullMarked
   @Override
   public void callRemovePublishedDataSet(@Nullable NodeId dataSetNodeId) throws UaException {
     callRemovePublishedDataSetDetailed(dataSetNodeId).requireGood();
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.6
-   *
-   * <p>Invokes <code>RemovePublishedDataSet</code> on this node's ObjectId using the effective
-   * Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param dataSetNodeId ; the supplied payload may be null.
-   * @return a future whose successful payload is null.
-   */
   @NullMarked
   @Override
   public CompletableFuture<? extends @Nullable Void> callRemovePublishedDataSetAsync(
@@ -16060,27 +10153,6 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
     return result;
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.6
-   *
-   * <p>Invokes <code>RemovePublishedDataSet</code> on this node's ObjectId using the effective
-   * Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param dataSetNodeId ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   * @throws UaException if lookup, input validation, transport, service or response envelope
-   *     validation fails.
-   */
   @NullMarked
   @Override
   public MethodCallResult<? extends @Nullable Void> callRemovePublishedDataSetDetailed(
@@ -16088,73 +10160,15 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
     return callRemovePublishedDataSetDetailed(MethodCallOptions.NONE, dataSetNodeId);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.6
-   *
-   * <p>Invokes <code>RemovePublishedDataSet</code> on this node's ObjectId using the effective
-   * Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param options request-wide diagnostics options for this Call only.
-   * @param dataSetNodeId ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   * @throws UaException if lookup, input validation, transport, service or response envelope
-   *     validation fails.
-   * @throws NullPointerException if a required options or presence object is null.
-   */
   @NullMarked
   @Override
   public MethodCallResult<? extends @Nullable Void> callRemovePublishedDataSetDetailed(
       MethodCallOptions options, @Nullable NodeId dataSetNodeId) throws UaException {
     Objects.requireNonNull(options, "options");
-    var awaitedMethod = callRemovePublishedDataSetDetailedAsync(options, dataSetNodeId);
-    try {
-      return awaitedMethod.get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      awaitedMethod.cancel(false);
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(
+        callRemovePublishedDataSetDetailedAsync(options, dataSetNodeId), true);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.6
-   *
-   * <p>Invokes <code>RemovePublishedDataSet</code> on this node's ObjectId using the effective
-   * Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param dataSetNodeId ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   */
   @NullMarked
   @Override
   public CompletableFuture<? extends MethodCallResult<? extends @Nullable Void>>
@@ -16162,29 +10176,6 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
     return callRemovePublishedDataSetDetailedAsync(MethodCallOptions.NONE, dataSetNodeId);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.6
-   *
-   * <p>Invokes <code>RemovePublishedDataSet</code> on this node's ObjectId using the effective
-   * Method contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param options request-wide diagnostics options for this Call only.
-   * @param dataSetNodeId ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   * @throws NullPointerException if a required options or presence object is null (exceptional
-   *     completion).
-   */
   @NullMarked
   @Override
   public CompletableFuture<? extends MethodCallResult<? extends @Nullable Void>>
@@ -16296,78 +10287,9 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                               + " effective type tree; resolved DataType: "
                                               + argumentDataTypeId);
                                     }
-                                    Object numericElements =
-                                        methodValue instanceof Matrix
-                                            ? ((Matrix) methodValue).getElements()
-                                            : methodValue;
-                                    if (numericElements != null
-                                        && numericElements.getClass().isArray()
-                                        && (numericElements.getClass().getComponentType()
-                                                == Number.class
-                                            || numericElements.getClass().getComponentType()
-                                                == UNumber.class)
-                                        && (argumentDataTypeId.equals(NodeIds.Number)
-                                            || dataTypeTree_.isSubtypeOf(
-                                                argumentDataTypeId, NodeIds.Number))) {
-                                      Class<?> numericElementType = null;
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Object numericElement =
-                                            Array.get(numericElements, numericIndex);
-                                        if (numericElement != null) {
-                                          if (numericElementType != null
-                                              && numericElementType != numericElement.getClass()) {
-                                            throw new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "An abstract numeric array requires one homogeneous"
-                                                    + " wire element type");
-                                          }
-                                          numericElementType = numericElement.getClass();
-                                        }
-                                      }
-                                      if (numericElementType == null) {
-                                        numericElementType =
-                                            dataTypeTree_.getBackingClass(argumentDataTypeId);
-                                      }
-                                      if (numericElementType == Number.class
-                                          || numericElementType == UNumber.class) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "An empty or all-null abstract numeric array requires a"
-                                                + " concretely typed array");
-                                      }
-                                      Object numericArray =
-                                          Array.newInstance(
-                                              numericElementType, Array.getLength(numericElements));
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Array.set(
-                                            numericArray,
-                                            numericIndex,
-                                            Array.get(numericElements, numericIndex));
-                                      }
-                                      if (methodValue instanceof Matrix) {
-                                        methodValue =
-                                            new Matrix(
-                                                numericArray,
-                                                ((Matrix) methodValue).getDimensions().clone(),
-                                                ((Matrix) methodValue)
-                                                    .getDataType()
-                                                    .orElseThrow(
-                                                        () ->
-                                                            new UaException(
-                                                                StatusCodes.Bad_TypeMismatch,
-                                                                "A numeric Matrix requires an"
-                                                                    + " explicit wire DataType")),
-                                                ((Matrix) methodValue)
-                                                    .getDataTypeId()
-                                                    .orElse(null));
-                                      } else {
-                                        methodValue = numericArray;
-                                      }
-                                    }
+                                    methodValue =
+                                        NumericValues.normalize(
+                                            methodValue, dataTypeTree_, argumentDataTypeId);
                                     if (methodValue != null) {
                                       Object shapeElements =
                                           methodValue instanceof Matrix
@@ -16582,108 +10504,7 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                       wireValue instanceof Matrix
                                           ? ((Matrix) wireValue).getElements()
                                           : wireValue;
-                                  var numericWireValues = new ArrayDeque<Object[]>();
-                                  var numericWirePath =
-                                      Collections.newSetFromMap(
-                                          new IdentityHashMap<Object, Boolean>());
-                                  if (wireValue != null) {
-                                    numericWireValues.push(new Object[] {wireValue, false});
-                                  }
-                                  while (!numericWireValues.isEmpty()) {
-                                    Object[] numericWireFrame = numericWireValues.pop();
-                                    Object numericWireValue = numericWireFrame[0];
-                                    if ((Boolean) numericWireFrame[1]) {
-                                      numericWirePath.remove(numericWireValue);
-                                      continue;
-                                    }
-                                    while (numericWireValue instanceof Variant
-                                        || numericWireValue instanceof DataValue) {
-                                      if (numericWireValue instanceof DataValue) {
-                                        if (((DataValue) numericWireValue).getValue() == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a value wrapper; use"
-                                                  + " Variant.NULL_VALUE for null");
-                                        }
-                                        if (((DataValue) numericWireValue).getStatusCode()
-                                            == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a StatusCode; use"
-                                                  + " StatusCode.GOOD for Good");
-                                        }
-                                        numericWireValue =
-                                            ((DataValue) numericWireValue).getValue();
-                                      } else {
-                                        numericWireValue = ((Variant) numericWireValue).getValue();
-                                      }
-                                    }
-                                    if (numericWireValue instanceof Matrix) {
-                                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                                    }
-                                    if (numericWireValue != null
-                                        && numericWireValue.getClass().isArray()) {
-                                      if (!numericWirePath.add(numericWireValue)) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "Cyclic Variant arrays cannot be encoded");
-                                      }
-                                      numericWireValues.push(new Object[] {numericWireValue, true});
-                                      for (int numericWireIndex = 0;
-                                          numericWireIndex < Array.getLength(numericWireValue);
-                                          numericWireIndex++) {
-                                        Object numericWireElement =
-                                            Array.get(numericWireValue, numericWireIndex);
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Variant.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Variant wire array requires a wrapper for every"
-                                                  + " element; use Variant.NULL_VALUE for null");
-                                        }
-                                        if (numericWireElement == null
-                                            && (UaEnumeratedType.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue))
-                                                || OptionSetUInteger.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "An enum or OptionSet wire array cannot encode a null"
-                                                  + " element");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Boolean.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Boolean wire array cannot retain a null element;"
-                                                  + " Milo encodes it as false");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == StatusCode.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A StatusCode wire array cannot retain a null"
-                                                  + " element; Milo encodes it as Good");
-                                        }
-                                        if (numericWireElement == null
-                                            && Number.class.isAssignableFrom(
-                                                ArrayUtil.getBoxedType(numericWireValue))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A numeric wire array cannot retain a null element;"
-                                                  + " Milo encodes it as zero");
-                                        }
-                                        if (numericWireElement instanceof Variant
-                                            || numericWireElement instanceof DataValue) {
-                                          numericWireValues.push(
-                                              new Object[] {numericWireElement, false});
-                                        }
-                                      }
-                                    }
-                                  }
+                                  NumericValues.requireEncodable(wireValue);
                                   wireValue =
                                       ExtensionObject.encodeValue(
                                           this.client.getStaticEncodingContext(), wireValue);
@@ -16879,317 +10700,35 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
     return result;
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.7
-   *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. It can perform service I/O and
-   * construct or reuse a Java wrapper in Milo's address space cache. A reference can change after
-   * lookup.
-   *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
-   */
   @NullMarked
   @Override
   public @Nullable UaMethodNode getAddDataSetFolderMethodNode() throws UaException {
-    try {
-      return getAddDataSetFolderMethodNodeAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(getAddDataSetFolderMethodNodeAsync(), false);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.7
-   *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. It can perform service I/O and
-   * construct or reuse a Java wrapper in Milo's address space cache. A reference can change after
-   * lookup.
-   *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the existing member, or null for confirmed absence
-   */
   @NullMarked
   @Override
   public CompletableFuture<? extends @Nullable UaMethodNode> getAddDataSetFolderMethodNodeAsync() {
-    CompletableFuture<UaMethodNode> result = new CompletableFuture<>();
-    try {
-      CompletableFuture<NodeId> lookup = CompletableFuture.completedFuture(getNodeId());
-      CompletableFuture<UaNode> hop0 =
-          lookup.thenCompose(
-              parent -> {
-                NodeId parentId = parent;
-                if (result.isCancelled()) {
-                  return CompletableFuture.failedFuture(new CancellationException());
-                }
-                if (parentId == null) {
-                  return CompletableFuture.completedFuture(null);
-                }
-                CompletableFuture<Void> namespaceReady;
-                if (client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/") == null
-                    || client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/")
-                        == null) {
-                  namespaceReady = client.readNamespaceTableAsync().thenApply(ignored -> null);
-                } else {
-                  namespaceReady = CompletableFuture.completedFuture(null);
-                }
-                return namespaceReady.thenCompose(
-                    ignored -> {
-                      if (result.isCancelled()) {
-                        return CompletableFuture.failedFuture(new CancellationException());
-                      }
-                      var namespaceIndex =
-                          client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/");
-                      var referenceId =
-                          ExpandedNodeId.parse("i=47").toNodeId(client.getNamespaceTable());
-                      if (namespaceIndex == null || referenceId.isEmpty()) {
-                        return CompletableFuture.failedFuture(
-                            new UaException(
-                                StatusCodes.Bad_NodeIdInvalid,
-                                "http://opcfoundation.org/UA/:AddDataSetFolder (declaration"
-                                    + " i=16994, owner i=14477) on "
-                                    + getNodeId()));
-                      }
-                      var browsePath =
-                          new BrowsePath(
-                              parentId,
-                              new RelativePath(
-                                  new RelativePathElement[] {
-                                    new RelativePathElement(
-                                        referenceId.orElseThrow(),
-                                        false,
-                                        true,
-                                        new QualifiedName(namespaceIndex, "AddDataSetFolder"))
-                                  }));
-                      return client
-                          .translateBrowsePathsAsync(List.of(browsePath))
-                          .thenCompose(
-                              response -> {
-                                if (result.isCancelled()) {
-                                  return CompletableFuture.failedFuture(
-                                      new CancellationException());
-                                }
-                                var results = response == null ? null : response.getResults();
-                                if (results == null
-                                    || results.length != 1
-                                    || results[0] == null
-                                    || results[0].getStatusCode() == null) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:AddDataSetFolder"
-                                              + " (declaration i=16994, owner i=14477) on "
-                                              + getNodeId()));
-                                }
-                                var operation = results[0];
-                                if (operation.getStatusCode().getValue()
-                                    == StatusCodes.Bad_NoMatch) {
-                                  return CompletableFuture.completedFuture(null);
-                                }
-                                if (!operation.getStatusCode().isGood()) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          operation.getStatusCode(),
-                                          "http://opcfoundation.org/UA/:AddDataSetFolder"
-                                              + " (declaration i=16994, owner i=14477)"));
-                                }
-                                var targets = operation.getTargets();
-                                if (targets == null || targets.length == 0) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:AddDataSetFolder"
-                                              + " (declaration i=16994, owner i=14477) on "
-                                              + getNodeId()));
-                                }
-                                var identities = new ArrayList<CompletableFuture<NodeId>>();
-                                for (var target : targets) {
-                                  if (target == null
-                                      || target.getTargetId() == null
-                                      || target.getRemainingPathIndex() == null
-                                      || target.getRemainingPathIndex().longValue()
-                                          != 0xffffffffL) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_UnexpectedError,
-                                            "http://opcfoundation.org/UA/:AddDataSetFolder"
-                                                + " (declaration i=16994, owner i=14477) on "
-                                                + getNodeId()));
-                                  }
-                                  if (!target.getTargetId().isLocal()) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_NotSupported,
-                                            "http://opcfoundation.org/UA/:AddDataSetFolder"
-                                                + " (declaration i=16994, owner i=14477) on "
-                                                + getNodeId()));
-                                  }
-                                  if (result.isCancelled()) {
-                                    return CompletableFuture.failedFuture(
-                                        new CancellationException());
-                                  }
-                                  var localTarget =
-                                      target.getTargetId().toNodeId(client.getNamespaceTable());
-                                  if (localTarget.isPresent()) {
-                                    identities.add(
-                                        CompletableFuture.completedFuture(
-                                            localTarget.orElseThrow()));
-                                  } else {
-                                    identities.add(
-                                        client
-                                            .readNamespaceTableAsync()
-                                            .thenCompose(
-                                                namespaceTable -> {
-                                                  var resolvedTarget =
-                                                      target.getTargetId().toNodeId(namespaceTable);
-                                                  if (resolvedTarget.isEmpty()) {
-                                                    return CompletableFuture.failedFuture(
-                                                        new UaException(
-                                                            StatusCodes.Bad_NodeIdInvalid,
-                                                            "http://opcfoundation.org/UA/:AddDataSetFolder"
-                                                                + " (declaration i=16994, owner"
-                                                                + " i=14477) on "
-                                                                + getNodeId()));
-                                                  }
-                                                  return CompletableFuture.completedFuture(
-                                                      resolvedTarget.orElseThrow());
-                                                }));
-                                  }
-                                }
-                                return CompletableFuture.allOf(
-                                        identities.toArray(CompletableFuture[]::new))
-                                    .thenCompose(
-                                        ready -> {
-                                          if (result.isCancelled()) {
-                                            return CompletableFuture.failedFuture(
-                                                new CancellationException());
-                                          }
-                                          var unique = new LinkedHashSet<NodeId>();
-                                          identities.forEach(
-                                              identity -> unique.add(identity.join()));
-                                          if (unique.stream().anyMatch(NodeId::isNull)) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_NodeIdInvalid,
-                                                    "http://opcfoundation.org/UA/:AddDataSetFolder"
-                                                        + " (declaration i=16994, owner i=14477) on"
-                                                        + " "
-                                                        + getNodeId()));
-                                          }
-                                          if (unique.size() != 1) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_TooManyMatches,
-                                                    "http://opcfoundation.org/UA/:AddDataSetFolder"
-                                                        + " (declaration i=16994, owner i=14477) on"
-                                                        + " "
-                                                        + getNodeId()));
-                                          }
-                                          return client
-                                              .getAddressSpace()
-                                              .getNodeAsync(unique.iterator().next())
-                                              .thenCompose(
-                                                  node -> {
-                                                    if (node == null
-                                                        || node.getNodeClass()
-                                                            != NodeClass.Method) {
-                                                      return CompletableFuture.failedFuture(
-                                                          new UaException(
-                                                              StatusCodes.Bad_NodeClassInvalid,
-                                                              "http://opcfoundation.org/UA/:AddDataSetFolder"
-                                                                  + " (declaration i=16994, owner"
-                                                                  + " i=14477) on "
-                                                                  + getNodeId()));
-                                                    }
-                                                    return CompletableFuture.completedFuture(node);
-                                                  });
-                                        });
-                              });
-                    });
-              });
-      hop0.whenComplete(
-          (node, failure) -> {
-            if (failure != null) {
-              result.completeExceptionally(failure);
-            } else if (node != null && !(node instanceof UaMethodNode)) {
-              result.completeExceptionally(
-                  new UaException(
-                      StatusCodes.Bad_TypeMismatch,
-                      "http://opcfoundation.org/UA/:AddDataSetFolder (declaration i=16994, owner"
-                          + " i=14477)"));
-            } else {
-              result.complete((UaMethodNode) node);
-            }
-          });
-    } catch (Exception e) {
-      result.completeExceptionally(e);
-    }
-    return result;
+    return ClientMembers.lookup(
+        client,
+        getNodeId(),
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "AddDataSetFolder",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            true,
+            "http://opcfoundation.org/UA/:AddDataSetFolder (declaration i=16994, owner i=14477)"));
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.7
-   *
-   * <p>Invokes <code>AddDataSetFolder</code> on this node's ObjectId using the effective Method
-   * contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param name ; the supplied payload may be null.
-   * @return the output value or object, or its future; a single value may be null.
-   * @throws UaException if lookup, input validation, transport, service, operation status or output
-   *     conversion fails.
-   */
   @NullMarked
   @Override
   public @Nullable NodeId callAddDataSetFolder(@Nullable String name) throws UaException {
     return callAddDataSetFolderDetailed(name).requireGood();
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.7
-   *
-   * <p>Invokes <code>AddDataSetFolder</code> on this node's ObjectId using the effective Method
-   * contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param name ; the supplied payload may be null.
-   * @return the output value or object, or its future; a single value may be null.
-   */
   @NullMarked
   @Override
   public CompletableFuture<? extends @Nullable NodeId> callAddDataSetFolderAsync(
@@ -17217,27 +10756,6 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
     return result;
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.7
-   *
-   * <p>Invokes <code>AddDataSetFolder</code> on this node's ObjectId using the effective Method
-   * contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param name ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   * @throws UaException if lookup, input validation, transport, service or response envelope
-   *     validation fails.
-   */
   @NullMarked
   @Override
   public MethodCallResult<? extends @Nullable NodeId> callAddDataSetFolderDetailed(
@@ -17245,73 +10763,14 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
     return callAddDataSetFolderDetailed(MethodCallOptions.NONE, name);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.7
-   *
-   * <p>Invokes <code>AddDataSetFolder</code> on this node's ObjectId using the effective Method
-   * contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param options request-wide diagnostics options for this Call only.
-   * @param name ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   * @throws UaException if lookup, input validation, transport, service or response envelope
-   *     validation fails.
-   * @throws NullPointerException if a required options or presence object is null.
-   */
   @NullMarked
   @Override
   public MethodCallResult<? extends @Nullable NodeId> callAddDataSetFolderDetailed(
       MethodCallOptions options, @Nullable String name) throws UaException {
     Objects.requireNonNull(options, "options");
-    var awaitedMethod = callAddDataSetFolderDetailedAsync(options, name);
-    try {
-      return awaitedMethod.get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      awaitedMethod.cancel(false);
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(callAddDataSetFolderDetailedAsync(options, name), true);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.7
-   *
-   * <p>Invokes <code>AddDataSetFolder</code> on this node's ObjectId using the effective Method
-   * contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param name ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   */
   @NullMarked
   @Override
   public CompletableFuture<? extends MethodCallResult<? extends @Nullable NodeId>>
@@ -17319,29 +10778,6 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
     return callAddDataSetFolderDetailedAsync(MethodCallOptions.NONE, name);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.7
-   *
-   * <p>Invokes <code>AddDataSetFolder</code> on this node's ObjectId using the effective Method
-   * contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param options request-wide diagnostics options for this Call only.
-   * @param name ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   * @throws NullPointerException if a required options or presence object is null (exceptional
-   *     completion).
-   */
   @NullMarked
   @Override
   public CompletableFuture<? extends MethodCallResult<? extends @Nullable NodeId>>
@@ -17452,78 +10888,9 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                               + " type tree; resolved DataType: "
                                               + argumentDataTypeId);
                                     }
-                                    Object numericElements =
-                                        methodValue instanceof Matrix
-                                            ? ((Matrix) methodValue).getElements()
-                                            : methodValue;
-                                    if (numericElements != null
-                                        && numericElements.getClass().isArray()
-                                        && (numericElements.getClass().getComponentType()
-                                                == Number.class
-                                            || numericElements.getClass().getComponentType()
-                                                == UNumber.class)
-                                        && (argumentDataTypeId.equals(NodeIds.Number)
-                                            || dataTypeTree_.isSubtypeOf(
-                                                argumentDataTypeId, NodeIds.Number))) {
-                                      Class<?> numericElementType = null;
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Object numericElement =
-                                            Array.get(numericElements, numericIndex);
-                                        if (numericElement != null) {
-                                          if (numericElementType != null
-                                              && numericElementType != numericElement.getClass()) {
-                                            throw new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "An abstract numeric array requires one homogeneous"
-                                                    + " wire element type");
-                                          }
-                                          numericElementType = numericElement.getClass();
-                                        }
-                                      }
-                                      if (numericElementType == null) {
-                                        numericElementType =
-                                            dataTypeTree_.getBackingClass(argumentDataTypeId);
-                                      }
-                                      if (numericElementType == Number.class
-                                          || numericElementType == UNumber.class) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "An empty or all-null abstract numeric array requires a"
-                                                + " concretely typed array");
-                                      }
-                                      Object numericArray =
-                                          Array.newInstance(
-                                              numericElementType, Array.getLength(numericElements));
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Array.set(
-                                            numericArray,
-                                            numericIndex,
-                                            Array.get(numericElements, numericIndex));
-                                      }
-                                      if (methodValue instanceof Matrix) {
-                                        methodValue =
-                                            new Matrix(
-                                                numericArray,
-                                                ((Matrix) methodValue).getDimensions().clone(),
-                                                ((Matrix) methodValue)
-                                                    .getDataType()
-                                                    .orElseThrow(
-                                                        () ->
-                                                            new UaException(
-                                                                StatusCodes.Bad_TypeMismatch,
-                                                                "A numeric Matrix requires an"
-                                                                    + " explicit wire DataType")),
-                                                ((Matrix) methodValue)
-                                                    .getDataTypeId()
-                                                    .orElse(null));
-                                      } else {
-                                        methodValue = numericArray;
-                                      }
-                                    }
+                                    methodValue =
+                                        NumericValues.normalize(
+                                            methodValue, dataTypeTree_, argumentDataTypeId);
                                     if (methodValue != null) {
                                       Object shapeElements =
                                           methodValue instanceof Matrix
@@ -17738,108 +11105,7 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                       wireValue instanceof Matrix
                                           ? ((Matrix) wireValue).getElements()
                                           : wireValue;
-                                  var numericWireValues = new ArrayDeque<Object[]>();
-                                  var numericWirePath =
-                                      Collections.newSetFromMap(
-                                          new IdentityHashMap<Object, Boolean>());
-                                  if (wireValue != null) {
-                                    numericWireValues.push(new Object[] {wireValue, false});
-                                  }
-                                  while (!numericWireValues.isEmpty()) {
-                                    Object[] numericWireFrame = numericWireValues.pop();
-                                    Object numericWireValue = numericWireFrame[0];
-                                    if ((Boolean) numericWireFrame[1]) {
-                                      numericWirePath.remove(numericWireValue);
-                                      continue;
-                                    }
-                                    while (numericWireValue instanceof Variant
-                                        || numericWireValue instanceof DataValue) {
-                                      if (numericWireValue instanceof DataValue) {
-                                        if (((DataValue) numericWireValue).getValue() == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a value wrapper; use"
-                                                  + " Variant.NULL_VALUE for null");
-                                        }
-                                        if (((DataValue) numericWireValue).getStatusCode()
-                                            == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a StatusCode; use"
-                                                  + " StatusCode.GOOD for Good");
-                                        }
-                                        numericWireValue =
-                                            ((DataValue) numericWireValue).getValue();
-                                      } else {
-                                        numericWireValue = ((Variant) numericWireValue).getValue();
-                                      }
-                                    }
-                                    if (numericWireValue instanceof Matrix) {
-                                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                                    }
-                                    if (numericWireValue != null
-                                        && numericWireValue.getClass().isArray()) {
-                                      if (!numericWirePath.add(numericWireValue)) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "Cyclic Variant arrays cannot be encoded");
-                                      }
-                                      numericWireValues.push(new Object[] {numericWireValue, true});
-                                      for (int numericWireIndex = 0;
-                                          numericWireIndex < Array.getLength(numericWireValue);
-                                          numericWireIndex++) {
-                                        Object numericWireElement =
-                                            Array.get(numericWireValue, numericWireIndex);
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Variant.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Variant wire array requires a wrapper for every"
-                                                  + " element; use Variant.NULL_VALUE for null");
-                                        }
-                                        if (numericWireElement == null
-                                            && (UaEnumeratedType.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue))
-                                                || OptionSetUInteger.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "An enum or OptionSet wire array cannot encode a null"
-                                                  + " element");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Boolean.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Boolean wire array cannot retain a null element;"
-                                                  + " Milo encodes it as false");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == StatusCode.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A StatusCode wire array cannot retain a null"
-                                                  + " element; Milo encodes it as Good");
-                                        }
-                                        if (numericWireElement == null
-                                            && Number.class.isAssignableFrom(
-                                                ArrayUtil.getBoxedType(numericWireValue))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A numeric wire array cannot retain a null element;"
-                                                  + " Milo encodes it as zero");
-                                        }
-                                        if (numericWireElement instanceof Variant
-                                            || numericWireElement instanceof DataValue) {
-                                          numericWireValues.push(
-                                              new Object[] {numericWireElement, false});
-                                        }
-                                      }
-                                    }
-                                  }
+                                  NumericValues.requireEncodable(wireValue);
                                   wireValue =
                                       ExtensionObject.encodeValue(
                                           this.client.getStaticEncodingContext(), wireValue);
@@ -18055,122 +11321,11 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                                                           + " DataType: "
                                                                           + argumentDataTypeId);
                                                                 }
-                                                                Object numericElements =
-                                                                    methodValue instanceof Matrix
-                                                                        ? ((Matrix) methodValue)
-                                                                            .getElements()
-                                                                        : methodValue;
-                                                                if (numericElements != null
-                                                                    && numericElements
-                                                                        .getClass()
-                                                                        .isArray()
-                                                                    && (numericElements
-                                                                                .getClass()
-                                                                                .getComponentType()
-                                                                            == Number.class
-                                                                        || numericElements
-                                                                                .getClass()
-                                                                                .getComponentType()
-                                                                            == UNumber.class)
-                                                                    && (argumentDataTypeId.equals(
-                                                                            NodeIds.Number)
-                                                                        || dataTypeTree_
-                                                                            .isSubtypeOf(
-                                                                                argumentDataTypeId,
-                                                                                NodeIds.Number))) {
-                                                                  Class<?> numericElementType =
-                                                                      null;
-                                                                  for (int numericIndex = 0;
-                                                                      numericIndex
-                                                                          < Array.getLength(
-                                                                              numericElements);
-                                                                      numericIndex++) {
-                                                                    Object numericElement =
-                                                                        Array.get(
-                                                                            numericElements,
-                                                                            numericIndex);
-                                                                    if (numericElement != null) {
-                                                                      if (numericElementType != null
-                                                                          && numericElementType
-                                                                              != numericElement
-                                                                                  .getClass()) {
-                                                                        throw new UaException(
-                                                                            StatusCodes
-                                                                                .Bad_TypeMismatch,
-                                                                            "An abstract numeric"
-                                                                                + " array requires"
-                                                                                + " one homogeneous"
-                                                                                + " wire element"
-                                                                                + " type");
-                                                                      }
-                                                                      numericElementType =
-                                                                          numericElement.getClass();
-                                                                    }
-                                                                  }
-                                                                  if (numericElementType == null) {
-                                                                    numericElementType =
-                                                                        dataTypeTree_
-                                                                            .getBackingClass(
-                                                                                argumentDataTypeId);
-                                                                  }
-                                                                  if (numericElementType
-                                                                          == Number.class
-                                                                      || numericElementType
-                                                                          == UNumber.class) {
-                                                                    throw new UaException(
-                                                                        StatusCodes
-                                                                            .Bad_TypeMismatch,
-                                                                        "An empty or all-null"
-                                                                            + " abstract numeric"
-                                                                            + " array requires a"
-                                                                            + " concretely typed"
-                                                                            + " array");
-                                                                  }
-                                                                  Object numericArray =
-                                                                      Array.newInstance(
-                                                                          numericElementType,
-                                                                          Array.getLength(
-                                                                              numericElements));
-                                                                  for (int numericIndex = 0;
-                                                                      numericIndex
-                                                                          < Array.getLength(
-                                                                              numericElements);
-                                                                      numericIndex++) {
-                                                                    Array.set(
-                                                                        numericArray,
-                                                                        numericIndex,
-                                                                        Array.get(
-                                                                            numericElements,
-                                                                            numericIndex));
-                                                                  }
-                                                                  if (methodValue
-                                                                      instanceof Matrix) {
-                                                                    methodValue =
-                                                                        new Matrix(
-                                                                            numericArray,
-                                                                            ((Matrix) methodValue)
-                                                                                .getDimensions()
-                                                                                .clone(),
-                                                                            ((Matrix) methodValue)
-                                                                                .getDataType()
-                                                                                .orElseThrow(
-                                                                                    () ->
-                                                                                        new UaException(
-                                                                                            StatusCodes
-                                                                                                .Bad_TypeMismatch,
-                                                                                            "A numeric"
-                                                                                                + " Matrix"
-                                                                                                + " requires"
-                                                                                                + " an explicit"
-                                                                                                + " wire"
-                                                                                                + " DataType")),
-                                                                            ((Matrix) methodValue)
-                                                                                .getDataTypeId()
-                                                                                .orElse(null));
-                                                                  } else {
-                                                                    methodValue = numericArray;
-                                                                  }
-                                                                }
+                                                                methodValue =
+                                                                    NumericValues.normalize(
+                                                                        methodValue,
+                                                                        dataTypeTree_,
+                                                                        argumentDataTypeId);
                                                                 if (methodValue != null) {
                                                                   Object shapeElements =
                                                                       methodValue instanceof Matrix
@@ -18554,317 +11709,37 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
     return result;
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.8
-   *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. It can perform service I/O and
-   * construct or reuse a Java wrapper in Milo's address space cache. A reference can change after
-   * lookup.
-   *
-   * @return the existing member, or null for confirmed absence
-   * @throws org.eclipse.milo.opcua.stack.core.UaException if a required node is absent, resolution
-   *     fails, or a checked conversion fails
-   */
   @NullMarked
   @Override
   public @Nullable UaMethodNode getRemoveDataSetFolderMethodNode() throws UaException {
-    try {
-      return getRemoveDataSetFolderMethodNodeAsync().get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(getRemoveDataSetFolderMethodNodeAsync(), false);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.8
-   *
-   * <p>Resolves the optional member by its namespace-qualified path. Returns null only for
-   * confirmed absence. Resolution does not create a UA node. It can perform service I/O and
-   * construct or reuse a Java wrapper in Milo's address space cache. A reference can change after
-   * lookup.
-   *
-   * <p>Lookup, conversion and service failures complete the future exceptionally. UaException
-   * causes preserve OPC UA status. Incompatible plain payload casts can complete exceptionally with
-   * ClassCastException. Cancellation does not promise transport cancellation or rollback.
-   *
-   * @return a nonnull future completing with the existing member, or null for confirmed absence
-   */
   @NullMarked
   @Override
   public CompletableFuture<? extends @Nullable UaMethodNode>
       getRemoveDataSetFolderMethodNodeAsync() {
-    CompletableFuture<UaMethodNode> result = new CompletableFuture<>();
-    try {
-      CompletableFuture<NodeId> lookup = CompletableFuture.completedFuture(getNodeId());
-      CompletableFuture<UaNode> hop0 =
-          lookup.thenCompose(
-              parent -> {
-                NodeId parentId = parent;
-                if (result.isCancelled()) {
-                  return CompletableFuture.failedFuture(new CancellationException());
-                }
-                if (parentId == null) {
-                  return CompletableFuture.completedFuture(null);
-                }
-                CompletableFuture<Void> namespaceReady;
-                if (client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/") == null
-                    || client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/")
-                        == null) {
-                  namespaceReady = client.readNamespaceTableAsync().thenApply(ignored -> null);
-                } else {
-                  namespaceReady = CompletableFuture.completedFuture(null);
-                }
-                return namespaceReady.thenCompose(
-                    ignored -> {
-                      if (result.isCancelled()) {
-                        return CompletableFuture.failedFuture(new CancellationException());
-                      }
-                      var namespaceIndex =
-                          client.getNamespaceTable().getIndex("http://opcfoundation.org/UA/");
-                      var referenceId =
-                          ExpandedNodeId.parse("i=47").toNodeId(client.getNamespaceTable());
-                      if (namespaceIndex == null || referenceId.isEmpty()) {
-                        return CompletableFuture.failedFuture(
-                            new UaException(
-                                StatusCodes.Bad_NodeIdInvalid,
-                                "http://opcfoundation.org/UA/:RemoveDataSetFolder (declaration"
-                                    + " i=16997, owner i=14477) on "
-                                    + getNodeId()));
-                      }
-                      var browsePath =
-                          new BrowsePath(
-                              parentId,
-                              new RelativePath(
-                                  new RelativePathElement[] {
-                                    new RelativePathElement(
-                                        referenceId.orElseThrow(),
-                                        false,
-                                        true,
-                                        new QualifiedName(namespaceIndex, "RemoveDataSetFolder"))
-                                  }));
-                      return client
-                          .translateBrowsePathsAsync(List.of(browsePath))
-                          .thenCompose(
-                              response -> {
-                                if (result.isCancelled()) {
-                                  return CompletableFuture.failedFuture(
-                                      new CancellationException());
-                                }
-                                var results = response == null ? null : response.getResults();
-                                if (results == null
-                                    || results.length != 1
-                                    || results[0] == null
-                                    || results[0].getStatusCode() == null) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:RemoveDataSetFolder"
-                                              + " (declaration i=16997, owner i=14477) on "
-                                              + getNodeId()));
-                                }
-                                var operation = results[0];
-                                if (operation.getStatusCode().getValue()
-                                    == StatusCodes.Bad_NoMatch) {
-                                  return CompletableFuture.completedFuture(null);
-                                }
-                                if (!operation.getStatusCode().isGood()) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          operation.getStatusCode(),
-                                          "http://opcfoundation.org/UA/:RemoveDataSetFolder"
-                                              + " (declaration i=16997, owner i=14477)"));
-                                }
-                                var targets = operation.getTargets();
-                                if (targets == null || targets.length == 0) {
-                                  return CompletableFuture.failedFuture(
-                                      new UaException(
-                                          StatusCodes.Bad_UnexpectedError,
-                                          "http://opcfoundation.org/UA/:RemoveDataSetFolder"
-                                              + " (declaration i=16997, owner i=14477) on "
-                                              + getNodeId()));
-                                }
-                                var identities = new ArrayList<CompletableFuture<NodeId>>();
-                                for (var target : targets) {
-                                  if (target == null
-                                      || target.getTargetId() == null
-                                      || target.getRemainingPathIndex() == null
-                                      || target.getRemainingPathIndex().longValue()
-                                          != 0xffffffffL) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_UnexpectedError,
-                                            "http://opcfoundation.org/UA/:RemoveDataSetFolder"
-                                                + " (declaration i=16997, owner i=14477) on "
-                                                + getNodeId()));
-                                  }
-                                  if (!target.getTargetId().isLocal()) {
-                                    return CompletableFuture.failedFuture(
-                                        new UaException(
-                                            StatusCodes.Bad_NotSupported,
-                                            "http://opcfoundation.org/UA/:RemoveDataSetFolder"
-                                                + " (declaration i=16997, owner i=14477) on "
-                                                + getNodeId()));
-                                  }
-                                  if (result.isCancelled()) {
-                                    return CompletableFuture.failedFuture(
-                                        new CancellationException());
-                                  }
-                                  var localTarget =
-                                      target.getTargetId().toNodeId(client.getNamespaceTable());
-                                  if (localTarget.isPresent()) {
-                                    identities.add(
-                                        CompletableFuture.completedFuture(
-                                            localTarget.orElseThrow()));
-                                  } else {
-                                    identities.add(
-                                        client
-                                            .readNamespaceTableAsync()
-                                            .thenCompose(
-                                                namespaceTable -> {
-                                                  var resolvedTarget =
-                                                      target.getTargetId().toNodeId(namespaceTable);
-                                                  if (resolvedTarget.isEmpty()) {
-                                                    return CompletableFuture.failedFuture(
-                                                        new UaException(
-                                                            StatusCodes.Bad_NodeIdInvalid,
-                                                            "http://opcfoundation.org/UA/:RemoveDataSetFolder"
-                                                                + " (declaration i=16997, owner"
-                                                                + " i=14477) on "
-                                                                + getNodeId()));
-                                                  }
-                                                  return CompletableFuture.completedFuture(
-                                                      resolvedTarget.orElseThrow());
-                                                }));
-                                  }
-                                }
-                                return CompletableFuture.allOf(
-                                        identities.toArray(CompletableFuture[]::new))
-                                    .thenCompose(
-                                        ready -> {
-                                          if (result.isCancelled()) {
-                                            return CompletableFuture.failedFuture(
-                                                new CancellationException());
-                                          }
-                                          var unique = new LinkedHashSet<NodeId>();
-                                          identities.forEach(
-                                              identity -> unique.add(identity.join()));
-                                          if (unique.stream().anyMatch(NodeId::isNull)) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_NodeIdInvalid,
-                                                    "http://opcfoundation.org/UA/:RemoveDataSetFolder"
-                                                        + " (declaration i=16997, owner i=14477) on"
-                                                        + " "
-                                                        + getNodeId()));
-                                          }
-                                          if (unique.size() != 1) {
-                                            return CompletableFuture.failedFuture(
-                                                new UaException(
-                                                    StatusCodes.Bad_TooManyMatches,
-                                                    "http://opcfoundation.org/UA/:RemoveDataSetFolder"
-                                                        + " (declaration i=16997, owner i=14477) on"
-                                                        + " "
-                                                        + getNodeId()));
-                                          }
-                                          return client
-                                              .getAddressSpace()
-                                              .getNodeAsync(unique.iterator().next())
-                                              .thenCompose(
-                                                  node -> {
-                                                    if (node == null
-                                                        || node.getNodeClass()
-                                                            != NodeClass.Method) {
-                                                      return CompletableFuture.failedFuture(
-                                                          new UaException(
-                                                              StatusCodes.Bad_NodeClassInvalid,
-                                                              "http://opcfoundation.org/UA/:RemoveDataSetFolder"
-                                                                  + " (declaration i=16997, owner"
-                                                                  + " i=14477) on "
-                                                                  + getNodeId()));
-                                                    }
-                                                    return CompletableFuture.completedFuture(node);
-                                                  });
-                                        });
-                              });
-                    });
-              });
-      hop0.whenComplete(
-          (node, failure) -> {
-            if (failure != null) {
-              result.completeExceptionally(failure);
-            } else if (node != null && !(node instanceof UaMethodNode)) {
-              result.completeExceptionally(
-                  new UaException(
-                      StatusCodes.Bad_TypeMismatch,
-                      "http://opcfoundation.org/UA/:RemoveDataSetFolder (declaration i=16997, owner"
-                          + " i=14477)"));
-            } else {
-              result.complete((UaMethodNode) node);
-            }
-          });
-    } catch (Exception e) {
-      result.completeExceptionally(e);
-    }
-    return result;
+    return ClientMembers.lookup(
+        client,
+        getNodeId(),
+        UaMethodNode.class,
+        new MemberDeclaration(
+            "http://opcfoundation.org/UA/",
+            "RemoveDataSetFolder",
+            ExpandedNodeId.parse("i=47"),
+            true,
+            NodeClass.Method,
+            true,
+            "http://opcfoundation.org/UA/:RemoveDataSetFolder (declaration i=16997, owner"
+                + " i=14477)"));
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.8
-   *
-   * <p>Invokes <code>RemoveDataSetFolder</code> on this node's ObjectId using the effective Method
-   * contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param dataSetFolderNodeId ; the supplied payload may be null.
-   * @throws UaException if lookup, input validation, transport, service, operation status or output
-   *     conversion fails.
-   */
   @NullMarked
   @Override
   public void callRemoveDataSetFolder(@Nullable NodeId dataSetFolderNodeId) throws UaException {
     callRemoveDataSetFolderDetailed(dataSetFolderNodeId).requireGood();
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.8
-   *
-   * <p>Invokes <code>RemoveDataSetFolder</code> on this node's ObjectId using the effective Method
-   * contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Requires Good operation status, including Good subcodes. Uncertain and Bad statuses fail
-   * with UaException before any output conversion failure is reported. Application status outputs
-   * remain separate.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param dataSetFolderNodeId ; the supplied payload may be null.
-   * @return a future whose successful payload is null.
-   */
   @NullMarked
   @Override
   public CompletableFuture<? extends @Nullable Void> callRemoveDataSetFolderAsync(
@@ -18892,27 +11767,6 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
     return result;
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.8
-   *
-   * <p>Invokes <code>RemoveDataSetFolder</code> on this node's ObjectId using the effective Method
-   * contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param dataSetFolderNodeId ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   * @throws UaException if lookup, input validation, transport, service or response envelope
-   *     validation fails.
-   */
   @NullMarked
   @Override
   public MethodCallResult<? extends @Nullable Void> callRemoveDataSetFolderDetailed(
@@ -18920,73 +11774,15 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
     return callRemoveDataSetFolderDetailed(MethodCallOptions.NONE, dataSetFolderNodeId);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.8
-   *
-   * <p>Invokes <code>RemoveDataSetFolder</code> on this node's ObjectId using the effective Method
-   * contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Interrupted waiting cancels owned observation and pending discovery, restores the interrupt
-   * flag and fails with Bad_UnexpectedError. It does not cancel server execution.
-   *
-   * @param options request-wide diagnostics options for this Call only.
-   * @param dataSetFolderNodeId ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   * @throws UaException if lookup, input validation, transport, service or response envelope
-   *     validation fails.
-   * @throws NullPointerException if a required options or presence object is null.
-   */
   @NullMarked
   @Override
   public MethodCallResult<? extends @Nullable Void> callRemoveDataSetFolderDetailed(
       MethodCallOptions options, @Nullable NodeId dataSetFolderNodeId) throws UaException {
     Objects.requireNonNull(options, "options");
-    var awaitedMethod = callRemoveDataSetFolderDetailedAsync(options, dataSetFolderNodeId);
-    try {
-      return awaitedMethod.get();
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-        cause = cause.getCause();
-      }
-      if (cause instanceof UaException failure) {
-        throw failure;
-      }
-      throw new UaException(cause);
-    } catch (InterruptedException e) {
-      awaitedMethod.cancel(false);
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    return ClientMembers.await(
+        callRemoveDataSetFolderDetailedAsync(options, dataSetFolderNodeId), true);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.8
-   *
-   * <p>Invokes <code>RemoveDataSetFolder</code> on this node's ObjectId using the effective Method
-   * contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param dataSetFolderNodeId ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   */
   @NullMarked
   @Override
   public CompletableFuture<? extends MethodCallResult<? extends @Nullable Void>>
@@ -18994,29 +11790,6 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
     return callRemoveDataSetFolderDetailedAsync(MethodCallOptions.NONE, dataSetFolderNodeId);
   }
 
-  /**
-   * https://reference.opcfoundation.org/v105/Core/docs/Part14/9.1.4/#9.1.4.5.8
-   *
-   * <p>Invokes <code>RemoveDataSetFolder</code> on this node's ObjectId using the effective Method
-   * contract.
-   *
-   * <p>The Method node is required. Confirmed absence fails with Bad_NotFound; lookup and service
-   * failures are preserved. The call does not create a node or retry an invocation.
-   *
-   * <p>Retains operation status, request and response diagnostics, StringTable and raw outputs.
-   * Good and Uncertain outputs are decoded; output metadata and conversion failures remain
-   * available separately. Bad results preserve received wire outputs.
-   *
-   * <p>Returns a non-null future. Lookup, input metadata, transport and response envelope failures
-   * complete it exceptionally. Cancellation stops observation and dependent work that has not
-   * started; it does not cancel server execution.
-   *
-   * @param options request-wide diagnostics options for this Call only.
-   * @param dataSetFolderNodeId ; the supplied payload may be null.
-   * @return the detailed outcome, or its future.
-   * @throws NullPointerException if a required options or presence object is null (exceptional
-   *     completion).
-   */
   @NullMarked
   @Override
   public CompletableFuture<? extends MethodCallResult<? extends @Nullable Void>>
@@ -19128,78 +11901,9 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                               + " effective type tree; resolved DataType: "
                                               + argumentDataTypeId);
                                     }
-                                    Object numericElements =
-                                        methodValue instanceof Matrix
-                                            ? ((Matrix) methodValue).getElements()
-                                            : methodValue;
-                                    if (numericElements != null
-                                        && numericElements.getClass().isArray()
-                                        && (numericElements.getClass().getComponentType()
-                                                == Number.class
-                                            || numericElements.getClass().getComponentType()
-                                                == UNumber.class)
-                                        && (argumentDataTypeId.equals(NodeIds.Number)
-                                            || dataTypeTree_.isSubtypeOf(
-                                                argumentDataTypeId, NodeIds.Number))) {
-                                      Class<?> numericElementType = null;
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Object numericElement =
-                                            Array.get(numericElements, numericIndex);
-                                        if (numericElement != null) {
-                                          if (numericElementType != null
-                                              && numericElementType != numericElement.getClass()) {
-                                            throw new UaException(
-                                                StatusCodes.Bad_TypeMismatch,
-                                                "An abstract numeric array requires one homogeneous"
-                                                    + " wire element type");
-                                          }
-                                          numericElementType = numericElement.getClass();
-                                        }
-                                      }
-                                      if (numericElementType == null) {
-                                        numericElementType =
-                                            dataTypeTree_.getBackingClass(argumentDataTypeId);
-                                      }
-                                      if (numericElementType == Number.class
-                                          || numericElementType == UNumber.class) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "An empty or all-null abstract numeric array requires a"
-                                                + " concretely typed array");
-                                      }
-                                      Object numericArray =
-                                          Array.newInstance(
-                                              numericElementType, Array.getLength(numericElements));
-                                      for (int numericIndex = 0;
-                                          numericIndex < Array.getLength(numericElements);
-                                          numericIndex++) {
-                                        Array.set(
-                                            numericArray,
-                                            numericIndex,
-                                            Array.get(numericElements, numericIndex));
-                                      }
-                                      if (methodValue instanceof Matrix) {
-                                        methodValue =
-                                            new Matrix(
-                                                numericArray,
-                                                ((Matrix) methodValue).getDimensions().clone(),
-                                                ((Matrix) methodValue)
-                                                    .getDataType()
-                                                    .orElseThrow(
-                                                        () ->
-                                                            new UaException(
-                                                                StatusCodes.Bad_TypeMismatch,
-                                                                "A numeric Matrix requires an"
-                                                                    + " explicit wire DataType")),
-                                                ((Matrix) methodValue)
-                                                    .getDataTypeId()
-                                                    .orElse(null));
-                                      } else {
-                                        methodValue = numericArray;
-                                      }
-                                    }
+                                    methodValue =
+                                        NumericValues.normalize(
+                                            methodValue, dataTypeTree_, argumentDataTypeId);
                                     if (methodValue != null) {
                                       Object shapeElements =
                                           methodValue instanceof Matrix
@@ -19414,108 +12118,7 @@ public class DataSetFolderTypeNode extends FolderTypeNode implements DataSetFold
                                       wireValue instanceof Matrix
                                           ? ((Matrix) wireValue).getElements()
                                           : wireValue;
-                                  var numericWireValues = new ArrayDeque<Object[]>();
-                                  var numericWirePath =
-                                      Collections.newSetFromMap(
-                                          new IdentityHashMap<Object, Boolean>());
-                                  if (wireValue != null) {
-                                    numericWireValues.push(new Object[] {wireValue, false});
-                                  }
-                                  while (!numericWireValues.isEmpty()) {
-                                    Object[] numericWireFrame = numericWireValues.pop();
-                                    Object numericWireValue = numericWireFrame[0];
-                                    if ((Boolean) numericWireFrame[1]) {
-                                      numericWirePath.remove(numericWireValue);
-                                      continue;
-                                    }
-                                    while (numericWireValue instanceof Variant
-                                        || numericWireValue instanceof DataValue) {
-                                      if (numericWireValue instanceof DataValue) {
-                                        if (((DataValue) numericWireValue).getValue() == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a value wrapper; use"
-                                                  + " Variant.NULL_VALUE for null");
-                                        }
-                                        if (((DataValue) numericWireValue).getStatusCode()
-                                            == null) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A DataValue requires a StatusCode; use"
-                                                  + " StatusCode.GOOD for Good");
-                                        }
-                                        numericWireValue =
-                                            ((DataValue) numericWireValue).getValue();
-                                      } else {
-                                        numericWireValue = ((Variant) numericWireValue).getValue();
-                                      }
-                                    }
-                                    if (numericWireValue instanceof Matrix) {
-                                      numericWireValue = ((Matrix) numericWireValue).getElements();
-                                    }
-                                    if (numericWireValue != null
-                                        && numericWireValue.getClass().isArray()) {
-                                      if (!numericWirePath.add(numericWireValue)) {
-                                        throw new UaException(
-                                            StatusCodes.Bad_TypeMismatch,
-                                            "Cyclic Variant arrays cannot be encoded");
-                                      }
-                                      numericWireValues.push(new Object[] {numericWireValue, true});
-                                      for (int numericWireIndex = 0;
-                                          numericWireIndex < Array.getLength(numericWireValue);
-                                          numericWireIndex++) {
-                                        Object numericWireElement =
-                                            Array.get(numericWireValue, numericWireIndex);
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Variant.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Variant wire array requires a wrapper for every"
-                                                  + " element; use Variant.NULL_VALUE for null");
-                                        }
-                                        if (numericWireElement == null
-                                            && (UaEnumeratedType.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue))
-                                                || OptionSetUInteger.class.isAssignableFrom(
-                                                    ArrayUtil.getBoxedType(numericWireValue)))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "An enum or OptionSet wire array cannot encode a null"
-                                                  + " element");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == Boolean.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A Boolean wire array cannot retain a null element;"
-                                                  + " Milo encodes it as false");
-                                        }
-                                        if (numericWireElement == null
-                                            && ArrayUtil.getBoxedType(numericWireValue)
-                                                == StatusCode.class) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A StatusCode wire array cannot retain a null"
-                                                  + " element; Milo encodes it as Good");
-                                        }
-                                        if (numericWireElement == null
-                                            && Number.class.isAssignableFrom(
-                                                ArrayUtil.getBoxedType(numericWireValue))) {
-                                          throw new UaException(
-                                              StatusCodes.Bad_TypeMismatch,
-                                              "A numeric wire array cannot retain a null element;"
-                                                  + " Milo encodes it as zero");
-                                        }
-                                        if (numericWireElement instanceof Variant
-                                            || numericWireElement instanceof DataValue) {
-                                          numericWireValues.push(
-                                              new Object[] {numericWireElement, false});
-                                        }
-                                      }
-                                    }
-                                  }
+                                  NumericValues.requireEncodable(wireValue);
                                   wireValue =
                                       ExtensionObject.encodeValue(
                                           this.client.getStaticEncodingContext(), wireValue);
