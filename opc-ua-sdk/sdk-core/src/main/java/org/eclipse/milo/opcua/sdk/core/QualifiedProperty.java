@@ -64,8 +64,7 @@ public class QualifiedProperty<T> {
     return javaType;
   }
 
-  @Nullable
-  public UInteger[] getArrayDimensions() {
+  public UInteger @Nullable [] getArrayDimensions() {
     int valueRank = getValueRank();
 
     if (valueRank <= 0) {

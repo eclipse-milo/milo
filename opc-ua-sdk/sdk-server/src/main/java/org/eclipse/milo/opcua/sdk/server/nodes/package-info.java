@@ -20,5 +20,21 @@
  * org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode#compareAndSetInvocationHandler} so cleanup
  * cannot remove a handler installed later. A call that already obtained the old handler may finish
  * after replacement; changing the handler controls subsequent dispatch.
+ *
+ * <p>A Method shared by several Objects can also carry one handler per invocation ObjectId, set
+ * with {@link org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode#setInvocationHandler(NodeId,
+ * MethodInvocationHandler)}. Call dispatch resolves the Method through the ObjectId's ownership
+ * rules first, then selects that ObjectId's handler and falls back to the default handler. The two
+ * are independent: replacing the default never touches ObjectId handlers, and owners release an
+ * ObjectId handler with {@link
+ * org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode#removeInvocationHandler} so a stale owner
+ * cannot remove a replacement.
+ *
+ * <p>Object and ObjectType Method lookup follows forward HasComponent references and their
+ * subtypes, including HasOrderedComponent, as recorded in the server's ReferenceTypeTree. A
+ * namespace that adds ReferenceTypes after that tree was first built must call {@link
+ * org.eclipse.milo.opcua.sdk.server.OpcUaServer#updateReferenceTypeTree()}, the same rule Browse
+ * already imposes. The same lookup resolves Method declarations on an object's type hierarchy.
+ * Organizes references provide navigation and do not establish invocation ownership.
  */
 package org.eclipse.milo.opcua.sdk.server.nodes;

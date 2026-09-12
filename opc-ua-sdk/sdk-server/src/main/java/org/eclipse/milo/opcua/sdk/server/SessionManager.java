@@ -1189,7 +1189,7 @@ public class SessionManager {
    */
   @NonNull
   private UserIdentityToken decodeIdentityToken(
-      @Nullable ExtensionObject identityTokenXo, @Nullable UserTokenPolicy[] tokenPolicies) {
+      @Nullable ExtensionObject identityTokenXo, UserTokenPolicy @Nullable [] tokenPolicies) {
 
     if (identityTokenXo != null && !identityTokenXo.isNull()) {
       Object identityToken;

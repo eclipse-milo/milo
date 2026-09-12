@@ -10,9 +10,6 @@
 
 package org.eclipse.milo.opcua.sdk.server;
 
-import static org.eclipse.milo.opcua.sdk.core.Reference.COMPONENT_OF_PREDICATE;
-import static org.eclipse.milo.opcua.sdk.core.Reference.ORDERED_COMPONENT_OF_PREDICATE;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
@@ -308,7 +305,7 @@ public abstract class ManagedAddressSpace implements AddressSpace {
     }
 
     if (methodNode != null) {
-      return methodNode.getInvocationHandler();
+      return methodNode.getInvocationHandler(objectId);
     } else {
       throw new UaException(StatusCodes.Bad_MethodInvalid);
     }
@@ -345,7 +342,13 @@ public abstract class ManagedAddressSpace implements AddressSpace {
    */
   private boolean isConditionInstanceMethod(UaMethodNode methodNode) {
     return methodNode.getReferences().stream()
-        .filter(COMPONENT_OF_PREDICATE.or(ORDERED_COMPONENT_OF_PREDICATE))
+        .filter(
+            reference ->
+                reference.isInverse()
+                    && (reference.getReferenceTypeId().equals(NodeIds.HasComponent)
+                        || server
+                            .getReferenceTypeTree()
+                            .isSubtypeOf(reference.getReferenceTypeId(), NodeIds.HasComponent)))
         .flatMap(
             reference ->
                 server

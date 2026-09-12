@@ -70,7 +70,7 @@ public class DefaultServerCertificateValidator implements CertificateValidator {
   public void validateCertificateChain(
       List<X509Certificate> certificateChain,
       @Nullable String applicationUri,
-      @Nullable String[] validHostnames)
+      String @Nullable [] validHostnames)
       throws UaException {
 
     validateCertificateChain(certificateChain, applicationUri, validHostnames, null);
@@ -80,7 +80,7 @@ public class DefaultServerCertificateValidator implements CertificateValidator {
   public void validateCertificateChain(
       List<X509Certificate> certificateChain,
       @Nullable String applicationUri,
-      @Nullable String[] validHostnames,
+      String @Nullable [] validHostnames,
       @Nullable SecurityPolicyProfile securityPolicyProfile)
       throws UaException {
 

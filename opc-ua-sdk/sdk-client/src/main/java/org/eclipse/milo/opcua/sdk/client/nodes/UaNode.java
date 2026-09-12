@@ -234,7 +234,7 @@ public abstract class UaNode implements Node {
    * @see #readRolePermissions()
    */
   @Override
-  public synchronized @Nullable RolePermissionType[] getRolePermissions() {
+  public synchronized RolePermissionType @Nullable [] getRolePermissions() {
     return rolePermissions;
   }
 
@@ -246,7 +246,7 @@ public abstract class UaNode implements Node {
    * @see #readUserRolePermissions()
    */
   @Override
-  public synchronized @Nullable RolePermissionType[] getUserRolePermissions() {
+  public synchronized RolePermissionType @Nullable [] getUserRolePermissions() {
     return userRolePermissions;
   }
 
@@ -534,8 +534,7 @@ public abstract class UaNode implements Node {
    * @return the {@link RolePermissionType} read from the server.
    * @throws UaException if a service- or operation-level error occurs.
    */
-  @Nullable
-  public RolePermissionType[] readRolePermissions() throws UaException {
+  public RolePermissionType @Nullable [] readRolePermissions() throws UaException {
     DataValue value = readAttribute(AttributeId.RolePermissions);
 
     StatusCode statusCode = value.statusCode();
@@ -557,8 +556,7 @@ public abstract class UaNode implements Node {
    * @return the {@link RolePermissionType} read from the server.
    * @throws UaException if a service- or operation-level error occurs.
    */
-  @Nullable
-  public RolePermissionType[] readUserRolePermissions() throws UaException {
+  public RolePermissionType @Nullable [] readUserRolePermissions() throws UaException {
     DataValue value = readAttribute(AttributeId.UserRolePermissions);
 
     StatusCode statusCode = value.statusCode();
