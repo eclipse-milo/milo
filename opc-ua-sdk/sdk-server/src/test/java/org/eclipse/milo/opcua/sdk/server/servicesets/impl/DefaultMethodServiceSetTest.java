@@ -33,6 +33,7 @@ import org.eclipse.milo.opcua.sdk.server.SessionManager;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionDiagnostics;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
@@ -69,6 +70,7 @@ class DefaultMethodServiceSetTest {
 
     when(server.getConfig()).thenReturn(config);
     when(config.getLimits()).thenReturn(new OpcUaServerConfigLimits() {});
+    when(config.getEncodingLimits()).thenReturn(EncodingLimits.DEFAULT);
     when(server.getSessionManager()).thenReturn(sessionManager);
     when(sessionManager.getSession(context, requestHeader)).thenReturn(session);
     when(session.getSessionDiagnostics()).thenReturn(new SessionDiagnostics(session));

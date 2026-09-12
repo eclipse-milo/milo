@@ -10,8 +10,10 @@
 
 package org.eclipse.milo.opcua.sdk.server.servicesets.impl;
 
+import static java.util.Objects.requireNonNullElse;
 import static org.eclipse.milo.opcua.sdk.core.util.GroupMapCollate.groupMapCollate;
 import static org.eclipse.milo.opcua.sdk.server.servicesets.AbstractServiceSet.createResponseHeader;
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
 import java.util.Collections;
 import java.util.List;
@@ -25,6 +27,7 @@ import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.Acces
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallRequest;
@@ -74,6 +77,11 @@ public class DefaultMethodServiceSet implements MethodServiceSet {
     Map<CallMethodRequest, AccessResult> accessResults =
         server.getAccessController().checkCallAccess(session, methodsToCall);
 
+    // One context for the whole request, so handlers in every group share a string table.
+    var diagnosticsContext =
+        new DiagnosticsContext<CallMethodRequest>(
+            requireNonNullElse(request.getRequestHeader().getReturnDiagnostics(), uint(0)));
+
     List<CallMethodResult> results =
         groupMapCollate(
             methodsToCall,
@@ -84,8 +92,6 @@ public class DefaultMethodServiceSet implements MethodServiceSet {
                     var result = new CallMethodResult(denied.statusCode(), null, null, null);
                     return Collections.nCopies(group.size(), result);
                   } else {
-                    var diagnosticsContext = new DiagnosticsContext<CallMethodRequest>();
-
                     var callContext =
                         new CallContext(
                             server,
@@ -99,9 +105,17 @@ public class DefaultMethodServiceSet implements MethodServiceSet {
                   }
                 });
 
-    ResponseHeader header = createResponseHeader(request);
+    MethodDiagnostics.Normalized normalized =
+        MethodDiagnostics.normalize(
+            diagnosticsContext.getReturnDiagnostics(),
+            methodsToCall,
+            results,
+            diagnosticsContext.getStringTable(),
+            server.getConfig().getEncodingLimits().getMaxRecursionDepth());
 
-    return new CallResponse(
-        header, results.toArray(CallMethodResult[]::new), new DiagnosticInfo[0]);
+    ResponseHeader header =
+        createResponseHeader(request, StatusCode.GOOD, normalized.stringTable(), null);
+
+    return new CallResponse(header, normalized.results(), new DiagnosticInfo[0]);
   }
 }
