@@ -45,5 +45,18 @@
  * there and return argument diagnostics indexed by supplied input position. The service filters
  * fields using ReturnDiagnostics and assembles a compact response-wide StringTable after all
  * address-space groups finish. This does not add service or per-operation diagnostic producers.
+ *
+ * <p>{@link org.eclipse.milo.opcua.sdk.server.methods.MethodBindings} owns explicit application
+ * registrations for Methods shared by several Objects. One dispatcher per Method selects by the
+ * invocation ObjectId and invokes application code outside its lifecycle lock. Each {@link
+ * org.eclipse.milo.opcua.sdk.server.methods.MethodBinding} token owns only its registration;
+ * closing a replaced token cannot remove the replacement. The last registration restores the
+ * captured fallback only while the registry still owns the Method handler. External raw replacement
+ * takes precedence, and another registry cannot chain its dispatcher around an active one.
+ *
+ * <p>Applications close tokens or remove ObjectId registrations before deleting owner nodes, and
+ * close the registry on namespace shutdown. Cleanup does not delete nodes, cancel callbacks or wait
+ * for selected invocations. A callback selected before cleanup can complete afterward. Actual Call
+ * dispatch continues to enforce Method ownership, ConditionManager precedence and session access.
  */
 package org.eclipse.milo.opcua.sdk.server.methods;

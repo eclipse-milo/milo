@@ -20,5 +20,13 @@
  * org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode#compareAndSetInvocationHandler} so cleanup
  * cannot remove a handler installed later. A call that already obtained the old handler may finish
  * after replacement; changing the handler controls subsequent dispatch.
+ *
+ * <p>Object and ObjectType Method lookup follows forward HasComponent references and their
+ * subtypes, including HasOrderedComponent. ReferenceType definitions in the source node's actual
+ * NodeManager take precedence over registered definitions. The cached server reference type tree
+ * supplies ancestry only where no managed definition can be resolved; keep that tree current when
+ * relying on this fallback. Malformed managed ancestry does not establish ownership. The same rule
+ * resolves Method declarations on an object's type hierarchy. Organizes references provide
+ * navigation and do not establish invocation ownership.
  */
 package org.eclipse.milo.opcua.sdk.server.nodes;
