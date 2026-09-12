@@ -14,10 +14,13 @@ try (MethodBindings bindings = new MethodBindings()) {
 ```
 
 The owner must be a live Object or ObjectType with a callable component relationship to the Method.
-Method lookup includes registered HasComponent subtypes, including HasOrderedComponent, and retains
-qualified Method declaration lookup through the Object's type hierarchy. Update the server's
-reference type tree after adding reference types. Organizes references do not establish invocation
-ownership. A modelled instance declaration cannot be called with its ObjectType as ObjectId.
+Method lookup includes HasComponent subtypes, including HasOrderedComponent, and retains qualified
+Method declaration lookup through the Object's type hierarchy. ReferenceType definitions in the
+actual source node's NodeManager take precedence over registered definitions. The cached server
+reference type tree supplies ancestry only where no managed definition can be resolved; keep that
+tree current when relying on this fallback. Malformed managed ancestry does not establish ownership.
+Organizes references do not establish invocation ownership. A modelled instance declaration cannot
+be called with its ObjectType as ObjectId.
 ConditionManager-owned handlers retain their existing precedence; bind rejects those relationships
 with Bad_NotSupported.
 
