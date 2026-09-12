@@ -47,5 +47,18 @@
  * and returns argument diagnostics that index them, one per supplied input. After every
  * address-space group has finished, the service keeps only the fields the ReturnDiagnostics mask
  * requests and builds the response StringTable from the strings those fields reference.
+ *
+ * <p>{@link org.eclipse.milo.opcua.sdk.server.methods.MethodBindings} is an application-owned
+ * lifetime for ObjectId-specific handlers on Methods shared by several Objects. Bind validates the
+ * ownership relationship and typed argument metadata, then installs the handler on the Method node
+ * for that ObjectId. Each {@link org.eclipse.milo.opcua.sdk.server.methods.MethodBinding} token
+ * owns only its registration; closing a replaced token cannot remove the replacement. The Method's
+ * default handler is never touched, so raw handler replacement and ObjectId registrations do not
+ * interfere.
+ *
+ * <p>Applications close tokens or remove ObjectId registrations before deleting owner nodes, and
+ * close the registry on namespace shutdown. Cleanup does not delete nodes, cancel callbacks or wait
+ * for selected invocations. A callback selected before cleanup can complete afterward. Actual Call
+ * dispatch continues to enforce Method ownership, ConditionManager precedence and session access.
  */
 package org.eclipse.milo.opcua.sdk.server.methods;
